@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garuda Nexa Bahtera - Solusi Digital</title>
+    <meta name="description" content="Jasa pembuatan website dan aplikasi profesional. From Idea to Digital Innovation.">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dark-theme">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <img src="assets/img/logo/logogarudanexa.png" alt="Garuda Nexa Logo" class="logo-image">
+                <div class="logo-text">Garuda Nexa Bahtera</div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#products" data-i18n="nav-products">Produk</a></li>
+                <li><a href="#portfolio" data-i18n="nav-portfolio">Portofolio</a></li>
+                <li><a href="#process" data-i18n="nav-process">Proses</a></li>
+                <li><a href="#pricing" data-i18n="nav-pricing">Harga</a></li>
+                <li><a href="#faq" data-i18n="nav-faq">FAQ</a></li>
+                <li class="mobile-only"><a href="#contact" data-i18n="nav-login">Masuk</a></li>
+                <li class="mobile-only mt-3"><a href="#contact" class="btn btn-primary btn-small w-100" data-i18n="nav-consult">Konsultasi Gratis</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button id="theme-toggle" aria-label="Toggle Theme" style="background: transparent; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.3s ease;">
+                    <svg id="theme-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <a href="#contact" class="nav-link-secondary" data-i18n="nav-login">Masuk</a>
+                <a href="#contact" class="btn btn-primary btn-small" data-i18n="nav-consult">Konsultasi Gratis</a>
+            </div>
+
+            <!-- Hamburger for Mobile -->
+            <button class="mobile-menu-toggle" aria-label="Toggle Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-slides">
+            <div class="hero-slide active" style="background-image: url('assets/img/bg/hero.png');"></div>
+            <div class="hero-slide" style="background-image: url('assets/img/bg/hero1.png');"></div>
+            <div class="hero-slide" style="background-image: url('assets/img/bg/hero2.png');"></div>
+            <div class="hero-slide" style="background-image: url('assets/img/bg/hero3.png');"></div>
+        </div>
+        <div class="hero-bg-glow"></div>
+        <div class="container hero-container">
+            <div class="hero-content-left reveal">
+                <div class="hero-badge" data-i18n="hero-badge" style="margin-left: 0; margin-right: auto;">JASA PEMBUATAN WEBSITE & APLIKASI</div>
+                <h1 class="hero-title" data-i18n="hero-title">Memimpin dengan visi untuk mengarahkan karya terbaik Anda</h1>
+                <p class="hero-subtitle" data-i18n="hero-subtitle">Kami tidak hanya membuat aplikasi dan website. Kami membangun sistem digital yang membantu bisnis dan institusi Anda berkembang lebih cepat, lebih efisien, dan lebih profesional.</p>
+                <div class="hero-buttons" style="justify-content: flex-start;">
+                    <a href="#products" class="btn btn-primary" data-i18n="hero-btn-products">Lihat Produk Kami</a>
+                    <a href="#contact" class="btn btn-secondary glass-btn">
+                        <span data-i18n="hero-btn-contact">Hubungi Kami</span> <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 8px;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Products Section -->
+    <section id="products" class="products">
+        <div class="container">
+            <div class="section-header text-center reveal">
+                <h2 data-i18n="prod-title">Solusi Produk Kami</h2>
+                <p data-i18n="prod-subtitle">Solusi Digital untuk Bisnis & Institusi Modern</p>
+            </div>
+            
+            <div class="filter-pills">
+                <button class="pill active" data-category="all" data-i18n="pill-all">Semua</button>
+                <button class="pill" data-category="website">Website</button>
+                <button class="pill" data-category="santri">I-Santri</button>
+                <button class="pill" data-category="school">I-School</button>
+                <button class="pill" data-category="pos">POS</button>
+                <button class="pill" data-category="absensi">Absensi</button>
+            </div>
+
+            <div class="product-showcase glass-panel reveal" data-category="website">
+                <div class="product-info">
+                    <div class="product-badge" data-i18n="feat-badge">Jasa Pembuatan Website</div>
+                    <h3 data-i18n="feat-title">Profil Perusahaan & Web Kustom</h3>
+                    <p data-i18n="feat-desc">Website sekolah/instansi, Landing Page Produk, dan Website Custom System.</p>
+                    <a href="#contact" class="btn btn-secondary btn-small mt-4" data-i18n="btn-learn-more">Pelajari lebih lanjut</a>
+                </div>
+                <div class="product-image">
+                    <img src="assets/portfolio1.png" alt="Website Creation">
+                </div>
+            </div>
+
+            <div class="product-grid-small mt-5">
+                <div class="p-card glass-panel reveal reveal-delay-1" data-category="santri">
+                    <h4>Aplikasi I-Santri</h4>
+                    <p data-i18n="card-santri">Manajemen pesantren yang lebih terstruktur and modern.</p>
+                </div>
+                <div class="p-card glass-panel reveal reveal-delay-2" data-category="school">
+                    <h4>Aplikasi I-School</h4>
+                    <p data-i18n="card-school">Manajemen sekolah berbasis digital tingkat lanjut.</p>
+                </div>
+                <div class="p-card glass-panel reveal reveal-delay-3" data-category="pos">
+                    <h4>Aplikasi Kasir</h4>
+                    <p data-i18n="card-pos">Sistem Point of Sale (POS) untuk UMKM & retail.</p>
+                </div>
+                <div class="p-card glass-panel reveal reveal-delay-4" data-category="absensi">
+                    <h4>Aplikasi Absensi</h4>
+                    <p data-i18n="card-absensi">Sistem absensi digital berbasis web / mobile.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="portfolio">
+        <div class="container">
+            <div class="section-header flex-header reveal">
+                <div>
+                    <h2 data-i18n="port-title">Portofolio</h2>
+                    <p data-i18n="port-subtitle">Karya Terbaik Kami untuk Kesuksesan Digital Anda</p>
+                </div>
+                <a href="#contact" class="btn btn-secondary btn-small" data-i18n="btn-view-all">Lihat semua karya</a>
+            </div>
+            
+            <div class="portfolio-bento">
+                <div class="bento-item glass-panel item-1 reveal">
+                    <img src="assets/portfolio1.png" alt="Dashboard Portofolio">
+                    <div class="bento-content">
+                        <h3>Web App Dashboard</h3>
+                        <p data-i18n="port-1-desc">Sistem Manajemen Pendidikan</p>
+                    </div>
+                </div>
+                <div class="bento-item glass-panel item-2 reveal">
+                    <img src="assets/portfolio2.png" alt="Mobile App Portofolio">
+                    <div class="bento-content">
+                        <h3>Mobile POS App</h3>
+                        <p data-i18n="port-2-desc">Ritel & Transaksi</p>
+                    </div>
+                </div>
+                <div class="bento-item glass-panel item-3 reveal">
+                    <img src="assets/portfolio1.png" alt="E-Commerce App">
+                    <div class="bento-content">
+                        <h3>E-Commerce System</h3>
+                        <p data-i18n="port-4-desc">Marketplace & Retail</p>
+                    </div>
+                </div>
+                <div class="bento-item glass-panel item-4 reveal">
+                    <img src="assets/hero.png" alt="Custom Website">
+                    <div class="bento-content">
+                        <h3>Corporate Website</h3>
+                        <p data-i18n="port-3-desc">Profil Perusahaan</p>
+                    </div>
+                </div>
+                <div class="bento-item glass-panel item-5 reveal">
+                    <img src="assets/portfolio2.png" alt="Digital Asset">
+                    <div class="bento-content">
+                        <h3>Sistem Informasi Desa</h3>
+                        <p data-i18n="port-5-desc">Layanan Publik</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section id="process" class="process">
+        <div class="container text-center">
+            <h2 class="section-title-large reveal" data-i18n="proc-title">Proses Pengembangan</h2>
+            <p class="section-subtitle-large reveal" data-i18n="proc-subtitle">Bangun Sistem Digital yang Bekerja untuk Bisnis Anda.</p>
+            
+            <div class="process-glass-container glass-panel mt-5">
+                <div class="process-grid">
+                    <div class="process-step reveal reveal-delay-1">
+                        <div class="step-num">01</div>
+                        <h4 data-i18n="step-1-title">Konsultasi</h4>
+                        <p data-i18n="step-1-desc">Analisis Kebutuhan & Perencanaan</p>
+                    </div>
+                    <div class="process-step reveal reveal-delay-2">
+                        <div class="step-num">02</div>
+                        <h4>Desain UI/UX</h4>
+                        <p data-i18n="step-2-desc">Pembuatan Wireframe & Prototipe</p>
+                    </div>
+                    <div class="process-step reveal reveal-delay-3">
+                        <div class="step-num">03</div>
+                        <h4 data-i18n="step-3-title">Pengembangan</h4>
+                        <p data-i18n="step-3-desc">Pengkodean & Pengujian Sistem</p>
+                    </div>
+                    <div class="process-step reveal reveal-delay-4">
+                        <div class="step-num">04</div>
+                        <h4 data-i18n="step-4-title">Peluncuran</h4>
+                        <p data-i18n="step-4-desc">Penerapan & Pemeliharaan</p>
+                    </div>
+                </div>
+
+                <div class="profit-banner">
+                    <div class="profit-title" data-i18n="profit-title">KEUNTUNGAN TERMASUK:</div>
+                    <ul class="profit-list">
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-1">Garansi Bug</span></li>
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-2">Konsultasi Gratis</span></li>
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-3">Support responsif</span></li>
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-4">Gratis hosting & domain</span></li>
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-5">Training Penggunaan</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 data-i18n="price-title">Daftar Harga Produk</h2>
+                <p data-i18n="price-subtitle">Solusi pembuatan website dan aplikasi modern</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <!-- Basic -->
+                <div class="pricing-card glass-panel reveal reveal-delay-1">
+                    <div class="card-header">
+                        <h3 data-i18n="pack-1-title">Paket Basic</h3>
+                        <p data-i18n="pack-1-desc">Untuk UMKM & landing page</p>
+                        <div class="price">Rp 2.000.000</div>
+                    </div>
+                    <button class="btn btn-secondary w-100" data-i18n="btn-get-started">Mulai Sekarang</button>
+                    <ul class="features-list">
+                        <li data-i18n="feat-1-1">Maksimal 5 Halaman</li>
+                        <li data-i18n="feat-1-2">Formulir & WA Button</li>
+                        <li data-i18n="feat-1-3">Maintenance 1 Bulan</li>
+                        <li data-i18n="feat-1-4">SEO Dasar</li>
+                        <li data-i18n="feat-1-5">Pengerjaan: 4-7 Hari</li>
+                    </ul>
+                </div>
+                
+                <!-- Profesional -->
+                <div class="pricing-card glass-panel popular reveal reveal-delay-2">
+                    <div class="popular-tag" data-i18n="tag-popular">Nilai Terbaik</div>
+                    <div class="card-header">
+                        <h3 data-i18n="pack-2-title">Paket Profesional</h3>
+                        <p data-i18n="pack-2-desc">Desain kustom eksklusif</p>
+                        <div class="price">Rp 4.500.000</div>
+                    </div>
+                    <button class="btn btn-primary w-100" data-i18n="btn-get-started-2">Mulai Sekarang</button>
+                    <ul class="features-list">
+                        <li data-i18n="feat-2-1">Maksimal 10 Halaman</li>
+                        <li data-i18n="feat-2-2">Desain Kustom Branding</li>
+                        <li data-i18n="feat-2-3">CMS & Blog</li>
+                        <li data-i18n="feat-2-4">Optimasi SEO Lanjut</li>
+                        <li data-i18n="feat-2-5">Pengerjaan: 10-14 Hari</li>
+                    </ul>
+                </div>
+                
+                <!-- Premium -->
+                <div class="pricing-card glass-panel reveal reveal-delay-3">
+                    <div class="card-header">
+                        <h3 data-i18n="pack-3-title">Paket Premium</h3>
+                        <p data-i18n="pack-3-desc">E-commerce & Sistem kustom</p>
+                        <div class="price">Rp 8.500.000</div>
+                    </div>
+                    <button class="btn btn-secondary w-100" data-i18n="btn-contact-us">Hubungi Kami</button>
+                    <ul class="features-list">
+                        <li data-i18n="feat-3-1">Web Dinamis / E-Commerce</li>
+                        <li data-i18n="feat-3-2">Katalog & Keranjang</li>
+                        <li data-i18n="feat-3-3">Payment Gateway</li>
+                        <li data-i18n="feat-3-4">Membership / Akun</li>
+                        <li data-i18n="feat-3-5">Maintenance 3 Bulan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="faq">
+        <div class="container">
+            <div class="section-header text-center reveal">
+                <h2 data-i18n="faq-title">Pertanyaan Umum</h2>
+                <p data-i18n="faq-subtitle">Segala hal yang perlu Anda ketahui tentang layanan kami</p>
+            </div>
+
+            <div class="faq-grid reveal reveal-delay-1">
+                <div class="faq-item glass-panel">
+                    <div class="faq-question">
+                        <span>Berapa lama proses pembuatan satu website?</span>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Waktu pengerjaan bervariasi tergantung paket. Paket Basic memakan waktu 4-7 hari, sedangkan Paket Profesional dan Premium berkisar antara 10-14 hari kerja.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item glass-panel">
+                    <div class="faq-question">
+                        <span>Apakah harga sudah termasuk hosting dan domain?</span>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Ya, untuk tahun pertama kami memberikan gratis Hosting Cloud kecepatan tinggi dan Domain (.com/.id/.net) untuk setiap paket yang Anda pilih.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item glass-panel">
+                    <div class="faq-question">
+                        <span>Apakah website yang dibuat bisa saya edit sendiri?</span>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Tentu. Kami menggunakan sistem CMS (Content Management System) yang memudahkan Anda untuk mengubah teks, gambar, atau menambahkan artikel blog tanpa harus mengerti bahasa pemrograman.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item glass-panel">
+                    <div class="faq-question">
+                        <span>Bagaimana dengan sistem keamanannya?</span>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Setiap website yang kami bangun dilengkapi dengan sertifikat SSL (HTTPS) gratis dan sistem keamanan standar industri untuk melindungi data Anda dan pengunjung.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Section -->
+    <section id="contact" class="footer-cta-wrap">
+        <div class="container">
+            <div class="footer-cta text-center">
+                <h2 class="massive-text"><span data-i18n="cta-massive-1">Dari Ide hingga</span><br><span data-i18n="cta-massive-2">Inovasi Digital.</span></h2>
+                <div class="mt-5">
+                    <a href="https://wa.me/6285188009152" target="_blank" class="btn btn-primary btn-large">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg> <span data-i18n="cta-wa">Hubungi WhatsApp</span>
+                    </a>
+                </div>
+                <p class="cta-note mt-4" style="color:#888; font-size: 14px;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <span data-i18n="cta-note" style="vertical-align: middle;">085188009152 — Konsultasi GRATIS untuk kebutuhan digital Anda.</span>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid-wrap">
+                <div class="footer-grid">
+                    <div class="footer-col brand-col">
+                        <div class="footer-logo mb-3">
+                            <img src="assets/img/logo/logogarudanexa.png" alt="Garuda Nexa Logo" class="logo-image">
+                            <div class="logo-text">Garuda Nexa</div>
+                        </div>
+                        <p class="brand-desc" data-i18n="foot-desc">Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis.</p>
+                        <button id="lang-toggle" class="btn btn-secondary btn-small lang-btn mt-4">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            <span id="lang-text">English</span>
+                        </button>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h4 data-i18n="foot-col-1">Produk</h4>
+                        <a href="#" data-i18n="foot-l1">Jasa Pembuatan Website</a>
+                        <a href="#" data-i18n="foot-l2">Aplikasi I-Santri</a>
+                        <a href="#" data-i18n="foot-l3">Aplikasi I-School</a>
+                        <a href="#" data-i18n="foot-l4">Aplikasi Kasir (POS)</a>
+                        <a href="#" data-i18n="foot-l5">Aplikasi Absensi</a>
+                        <a href="#" data-i18n="foot-l6">Aplikasi Perbendaharaan</a>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h4 data-i18n="foot-col-2">Mulai</h4>
+                        <a href="#" data-i18n="foot-s1">Konsultasi Gratis</a>
+                        <a href="#" data-i18n="foot-s2">Portofolio</a>
+                        <a href="#" data-i18n="foot-s3">Pricelist</a>
+                        <a href="#" data-i18n="foot-s4">Proses Kerja</a>
+                        <a href="#" data-i18n="foot-s5">Syarat & Ketentuan</a>
+                        <a href="#" data-i18n="foot-s6">Kebijakan Privasi</a>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h4 data-i18n="foot-col-3">Perusahaan</h4>
+                        <a href="#" data-i18n="foot-c1">Tentang Kami</a>
+                        <a href="#" data-i18n="foot-c2">Tim Kami</a>
+                        <a href="#" data-i18n="foot-c3">Karir</a>
+                        <a href="#" data-i18n="foot-c4">Blog</a>
+                        <a href="#">FAQ</a>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h4 data-i18n="foot-col-4">Hubungi Kami</h4>
+                        <a href="#" data-i18n="foot-g1">Dukungan Pelanggan</a>
+                        <a href="#">Instagram</a>
+                        <a href="#">TikTok</a>
+                        <a href="#">WhatsApp</a>
+                        <a href="#">Email</a>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2026 Garuda Nexa Bahtera. <span data-i18n="foot-copy">Semua hak dilindungi.</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- WhatsApp Floating Widget -->
+    <a href="https://wa.me/6285188009152" target="_blank" class="wa-floating-btn" aria-label="Chat with us on WhatsApp">
+        <div class="wa-tooltip">Chat Sekarang</div>
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .018 5.394 0 12.03c0 2.123.554 4.197 1.604 6.013l-1.706 6.233 6.376-1.673a11.77 11.77 0 005.772 1.515h.005c6.634 0 12.032-5.396 12.035-12.032a11.75 11.75 0 00-3.486-8.508"/></svg>
+    </a>
+
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="back-to-top" aria-label="Back to top">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+
+    <!-- Theme & Language Scripts -->
+    <script>
+        // --- Theme Toggle Logic ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const body = document.body;
+
+        function setTheme(isLight) {
+            if (isLight) {
+                body.classList.add('light-theme');
+                body.classList.remove('dark-theme');
+                themeIcon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.add('dark-theme');
+                body.classList.remove('light-theme');
+                themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light') {
+            setTheme(true);
+        } else {
+            setTheme(false);
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isLight = !body.classList.contains('light-theme');
+            setTheme(isLight);
+        });
+
+        // --- Back to Top Logic ---
+        const backToTopBtn = document.getElementById('back-to-top');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 400) {
+                backToTopBtn.classList.add('show');
+            } else {
+                backToTopBtn.classList.remove('show');
+            }
+        });
+
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // --- Internationalization (i18n) Logic ---
+        const translations = {
+            "nav-products": { id: "Produk", en: "Products" },
+            "nav-portfolio": { id: "Portofolio", en: "Portfolio" },
+            "nav-process": { id: "Proses", en: "Process" },
+            "nav-pricing": { id: "Harga", en: "Pricing" },
+            "nav-login": { id: "Masuk", en: "Log in" },
+            "nav-consult": { id: "Konsultasi Gratis", en: "Free Consultation" },
+            
+            "hero-badge": { id: "JASA PEMBUATAN WEBSITE & APLIKASI", en: "WEBSITE & APP DEVELOPMENT SERVICES" },
+            "hero-title": { id: "Memimpin dengan visi untuk mengarahkan karya terbaik Anda", en: "Leading with vision to direct your best work" },
+            "hero-subtitle": { id: "Kami tidak hanya membuat aplikasi dan website. Kami membangun sistem digital yang membantu bisnis dan institusi Anda berkembang lebih cepat, lebih efisien, dan lebih profesional.", en: "We don't just build apps and websites. We build digital systems that help your business and institution grow faster, more efficiently, and more professionally." },
+            "hero-btn-products": { id: "Lihat Produk Kami", en: "View Our Products" },
+            "hero-btn-contact": { id: "Hubungi Kami", en: "Contact Us" },
+
+            "prod-title": { id: "Solusi Produk Kami", en: "Our Product Solutions" },
+            "prod-subtitle": { id: "Solusi Digital untuk Bisnis & Institusi Modern", en: "Digital Solutions for Modern Business & Institutions" },
+            "pill-all": { id: "Semua", en: "All" },
+            "feat-badge": { id: "Jasa Pembuatan Website", en: "Website Development Service" },
+            "feat-title": { id: "Profil Perusahaan & Web Kustom", en: "Company Profile & Custom Web" },
+            "feat-desc": { id: "Website sekolah/instansi, Landing Page Produk, dan Website Custom System.", en: "School/institution websites, Product Landing Pages, and Custom System Websites." },
+            "btn-learn-more": { id: "Pelajari lebih lanjut", en: "Learn more" },
+
+            "card-santri": { id: "Manajemen pesantren yang lebih terstruktur dan modern.", en: "More structured and modern Islamic boarding school management." },
+            "card-school": { id: "Manajemen sekolah berbasis digital tingkat lanjut.", en: "Advanced digital-based school management." },
+            "card-pos": { id: "Sistem Point of Sale (POS) untuk UMKM & retail.", en: "Point of Sale (POS) system for SMEs & retail." },
+            "card-absensi": { id: "Sistem absensi digital berbasis web / mobile.", en: "Web/mobile-based digital attendance system." },
+
+            "port-title": { id: "Portofolio", en: "Portfolio" },
+            "port-subtitle": { id: "Karya Terbaik Kami untuk Kesuksesan Digital Anda", en: "Our Best Works for Your Digital Success" },
+            "btn-view-all": { id: "Lihat semua karya", en: "View all works" },
+            "port-1-desc": { id: "Sistem Manajemen Pendidikan", en: "Education Management System" },
+            "port-2-desc": { id: "Ritel & Transaksi", en: "Retail & Transaction" },
+            "port-3-desc": { id: "Profil Perusahaan", en: "Corporate Profile" },
+            "port-4-desc": { id: "Marketplace & Retail", en: "Marketplace & Retail" },
+            "port-5-desc": { id: "Layanan Publik", en: "Public Services" },
+
+            "proc-title": { id: "Proses Pengembangan", en: "Development Process" },
+            "proc-subtitle": { id: "Bangun Sistem Digital yang Bekerja untuk Bisnis Anda.", en: "Build a Digital System that Works for Your Business." },
+            "step-1-title": { id: "Konsultasi", en: "Consultation" },
+            "step-1-desc": { id: "Analisis Kebutuhan & Perencanaan", en: "Needs Analysis & Planning" },
+            "step-2-desc": { id: "Pembuatan Wireframe & Prototipe", en: "Wireframing & Prototyping" },
+            "step-3-title": { id: "Pengembangan", en: "Development" },
+            "step-3-desc": { id: "Pengkodean & Pengujian Sistem", en: "Coding & System Testing" },
+            "step-4-title": { id: "Peluncuran", en: "Launching" },
+            "step-4-desc": { id: "Penerapan & Pemeliharaan", en: "Deployment & Maintenance" },
+
+            "profit-title": { id: "KEUNTUNGAN TERMASUK:", en: "PROFIT INCLUDED:" },
+            "prof-1": { id: "Garansi Bug", en: "Bug Warranty" },
+            "prof-2": { id: "Konsultasi Gratis", en: "Free Consultation" },
+            "prof-3": { id: "Support responsif", en: "Responsive Support" },
+            "prof-4": { id: "Gratis hosting & domain", en: "Free Hosting & Domain" },
+            "prof-5": { id: "Training Penggunaan", en: "Usage Training" },
+
+            "price-title": { id: "Daftar Harga Produk", en: "Pricelist Product" },
+            "price-subtitle": { id: "Solusi pembuatan website dan aplikasi modern", en: "Modern website and app development solutions" },
+            "pack-1-title": { id: "Paket Basic", en: "Basic Package" },
+            "pack-1-desc": { id: "Untuk UMKM & landing page", en: "For SMEs & landing pages" },
+            "btn-get-started": { id: "Mulai Sekarang", en: "Get Started" },
+            "feat-1-1": { id: "Maksimal 5 Halaman", en: "Max 5 Pages" },
+            "feat-1-2": { id: "Formulir & WA Button", en: "Form & WA Button" },
+            "feat-1-3": { id: "Maintenance 1 Bulan", en: "1 Month Maintenance" },
+            "feat-1-4": { id: "SEO Dasar", en: "Basic SEO" },
+            "feat-1-5": { id: "Pengerjaan: 4-7 Hari", en: "Duration: 4-7 Days" },
+
+            "tag-popular": { id: "Nilai Terbaik", en: "Best Value" },
+            "pack-2-title": { id: "Paket Profesional", en: "Professional Package" },
+            "pack-2-desc": { id: "Desain kustom eksklusif", en: "Exclusive custom design" },
+            "btn-get-started-2": { id: "Mulai Sekarang", en: "Get Started" },
+            "feat-2-1": { id: "Maksimal 10 Halaman", en: "Max 10 Pages" },
+            "feat-2-2": { id: "Desain Kustom Branding", en: "Custom Branding Design" },
+            "feat-2-3": { id: "CMS & Blog", en: "CMS & Blog" },
+            "feat-2-4": { id: "Optimasi SEO Lanjut", en: "Advanced SEO Optimization" },
+            "feat-2-5": { id: "Pengerjaan: 10-14 Hari", en: "Duration: 10-14 Days" },
+
+            "pack-3-title": { id: "Paket Premium", en: "Premium Package" },
+            "pack-3-desc": { id: "E-commerce & Sistem kustom", en: "E-commerce & Custom Systems" },
+            "btn-contact-us": { id: "Hubungi Kami", en: "Contact Us" },
+            "feat-3-1": { id: "Web Dinamis / E-Commerce", en: "Dynamic Web / E-Commerce" },
+            "feat-3-2": { id: "Katalog & Keranjang", en: "Catalog & Cart" },
+            "feat-3-3": { id: "Payment Gateway", en: "Payment Gateway" },
+            "feat-3-4": { id: "Membership / Akun", en: "Membership / Account" },
+            "feat-3-5": { id: "Maintenance 3 Bulan", en: "3 Months Maintenance" },
+
+            "cta-massive-1": { id: "Dari Ide hingga", en: "From Idea to" },
+            "cta-massive-2": { id: "Inovasi Digital.", en: "Digital Innovation." },
+            "cta-wa": { id: "Hubungi WhatsApp", en: "Contact WhatsApp" },
+            "cta-note": { id: "085188009152 — Konsultasi GRATIS untuk kebutuhan digital Anda.", en: "085188009152 — FREE Consultation for your digital needs." },
+
+            "foot-desc": { id: "Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis.", en: "Trusted partner for your business's digital innovation. Helping from idea to a ready-to-release product." },
+            "foot-col-1": { id: "Produk", en: "Products" },
+            "foot-l1": { id: "Jasa Pembuatan Website", en: "Website Development" },
+            "foot-l2": { id: "Aplikasi I-Santri", en: "I-Santri App" },
+            "foot-l3": { id: "Aplikasi I-School", en: "I-School App" },
+            "foot-l4": { id: "Aplikasi Kasir (POS)", en: "Cashier App (POS)" },
+            "foot-l5": { id: "Aplikasi Absensi", en: "Attendance App" },
+            "foot-l6": { id: "Aplikasi Perbendaharaan", en: "Treasury App" },
+
+            "foot-col-2": { id: "Mulai", en: "Get started" },
+            "foot-s1": { id: "Konsultasi Gratis", en: "Free Consultation" },
+            "foot-s2": { id: "Portofolio", en: "Portfolio" },
+            "foot-s3": { id: "Pricelist", en: "Pricelist" },
+            "foot-s4": { id: "Proses Kerja", en: "Work Process" },
+            "foot-s5": { id: "Syarat & Ketentuan", en: "Terms & Conditions" },
+            "foot-s6": { id: "Kebijakan Privasi", en: "Privacy Policy" },
+
+            "foot-col-3": { id: "Perusahaan", en: "Company" },
+            "foot-c1": { id: "Tentang Kami", en: "About Us" },
+            "foot-c2": { id: "Tim Kami", en: "Our Team" },
+            "foot-c3": { id: "Karir", en: "Careers" },
+            "foot-c4": { id: "Blog", en: "Blog" },
+
+            "foot-col-4": { id: "Hubungi Kami", en: "Get in touch" },
+            "foot-g1": { id: "Dukungan Pelanggan", en: "Customer support" },
+            "foot-copy": { id: "Semua hak dilindungi.", en: "All rights reserved." }
+        };
+
+        let currentLang = localStorage.getItem('language') || 'id';
+        const langToggleBtn = document.getElementById('lang-toggle');
+        const langText = document.getElementById('lang-text');
+
+        function applyLanguage(lang) {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[key] && translations[key][lang]) {
+                    el.innerHTML = translations[key][lang];
+                }
+            });
+            // Update button text to the OTHER language option
+            langText.textContent = lang === 'id' ? 'English' : 'Bahasa Indonesia';
+            document.documentElement.lang = lang;
+            localStorage.setItem('language', lang);
+        }
+
+        // Initialize language
+        applyLanguage(currentLang);
+
+        // Toggle language listener
+        langToggleBtn.addEventListener('click', () => {
+            currentLang = currentLang === 'id' ? 'en' : 'id';
+            applyLanguage(currentLang);
+        });
+
+        // --- Product Filtering Logic ---
+        const filterButtons = document.querySelectorAll('.pill');
+        const showcase = document.querySelector('.product-showcase');
+        const gridSmall = document.querySelector('.product-grid-small');
+        const smallCards = document.querySelectorAll('.p-card');
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const category = btn.getAttribute('data-category');
+                
+                // Update active button
+                filterButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Helper for animations
+                const animate = (el, show) => {
+                    el.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                    if (show) {
+                        el.style.display = el.classList.contains('product-grid-small') ? 'grid' : (el.classList.contains('product-showcase') ? 'flex' : 'block');
+                        setTimeout(() => {
+                            el.style.opacity = '1';
+                            el.style.transform = 'translateY(0) scale(1)';
+                        }, 10);
+                    } else {
+                        el.style.opacity = '0';
+                        el.style.transform = 'translateY(20px) scale(0.98)';
+                        setTimeout(() => {
+                            el.style.display = 'none';
+                        }, 400);
+                    }
+                };
+
+                // Filter logic
+                if (category === 'all') {
+                    animate(showcase, true);
+                    animate(gridSmall, true);
+                    smallCards.forEach(c => c.style.display = 'block');
+                } else if (category === 'website') {
+                    animate(showcase, true);
+                    animate(gridSmall, false);
+                } else {
+                    animate(showcase, false);
+                    animate(gridSmall, true);
+                    smallCards.forEach(card => {
+                        if (card.getAttribute('data-category') === category) {
+                            card.style.display = 'block';
+                            card.style.opacity = '1';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                }
+            });
+        });
+
+        // --- Hero Background Slider Logic ---
+        const slides = document.querySelectorAll('.hero-slide');
+        let currentSlide = 0;
+
+        function nextSlide() {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+
+        setInterval(nextSlide, 3000); // Change every 3 seconds
+
+        // --- Scroll Reveal Logic ---
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => {
+            observer.observe(el);
+        });
+
+        // --- Mobile Menu Logic ---
+        const menuToggle = document.querySelector('.mobile-menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        const navItems = document.querySelectorAll('.nav-links a');
+
+        menuToggle.addEventListener('click', () => {
+            menuToggle.classList.toggle('active');
+            navLinks.classList.toggle('active');
+        });
+
+        // Close menu when link is clicked
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                menuToggle.classList.remove('active');
+                navLinks.classList.remove('active');
+            });
+        });
+
+        // --- FAQ Accordion Logic ---
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const isActive = item.classList.contains('active');
+                
+                // Close all other items
+                faqItems.forEach(otherItem => {
+                    otherItem.classList.remove('active');
+                });
+
+                // Toggle current item
+                if (!isActive) {
+                    item.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
