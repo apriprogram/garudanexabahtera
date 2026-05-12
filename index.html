@@ -5,40 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Garuda Nexa Bahtera - Solusi Digital</title>
     <meta name="description" content="Jasa pembuatan website dan aplikasi profesional. From Idea to Digital Innovation.">
+    <link rel="icon" type="image/png" href="assets/img/logo/logogarudanexa.png">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body class="dark-theme">
     <!-- Navbar -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo">
-                <img src="assets/img/logo/logogarudanexa.png" alt="Garuda Nexa Logo" class="logo-image">
-                <div class="logo-text">Garuda Nexa Bahtera</div>
-            </div>
-            <ul class="nav-links">
-                <li><a href="#products" data-i18n="nav-products">Produk</a></li>
-                <li><a href="#portfolio" data-i18n="nav-portfolio">Portofolio</a></li>
-                <li><a href="#process" data-i18n="nav-process">Proses</a></li>
-                <li><a href="#pricing" data-i18n="nav-pricing">Harga</a></li>
-                <li><a href="#faq" data-i18n="nav-faq">FAQ</a></li>
-                <li class="mobile-only"><a href="#contact" data-i18n="nav-login">Masuk</a></li>
-                <li class="mobile-only mt-3"><a href="#contact" class="btn btn-primary btn-small w-100" data-i18n="nav-consult">Konsultasi Gratis</a></li>
-            </ul>
-            <div class="nav-actions">
-                <button id="theme-toggle" aria-label="Toggle Theme" style="background: transparent; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.3s ease;">
-                    <svg id="theme-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                </button>
-                <a href="#contact" class="nav-link-secondary" data-i18n="nav-login">Masuk</a>
-                <a href="#contact" class="btn btn-primary btn-small" data-i18n="nav-consult">Konsultasi Gratis</a>
-            </div>
-
             <!-- Hamburger for Mobile -->
             <button class="mobile-menu-toggle" aria-label="Toggle Menu">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
+
+            <a href="index.html" class="nav-logo">
+                <img src="assets/img/logo/logogarudanexa.png" alt="Garuda Nexa Logo" class="logo-image">
+                <div class="logo-text">Garuda Nexa Bahtera</div>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="#products" data-i18n="nav-products">Produk</a></li>
+                <li><a href="#portfolio" data-i18n="nav-portfolio">Portofolio</a></li>
+                <li><a href="#process" data-i18n="nav-process">Proses</a></li>
+                <li><a href="#pricing" data-i18n="nav-pricing">Harga</a></li>
+                <li><a href="#faq" data-i18n="nav-faq">FAQ</a></li>
+                <li class="mobile-only"><a href="login.html" data-i18n="nav-login">Masuk</a></li>
+                <li class="mobile-only mt-3"><a href="#contact" class="btn btn-primary btn-small w-100" data-i18n="nav-consult">Konsultasi Gratis</a></li>
+            </ul>
+            <div class="nav-actions">
+                <div class="search-bar">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="Search" id="navbarSearch">
+                </div>
+                <button id="theme-toggle" aria-label="Toggle Theme" style="background: transparent; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.3s ease;">
+                    <svg id="theme-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <a href="login.html" class="nav-link-secondary" data-i18n="nav-login">Masuk</a>
+                <a href="#contact" class="btn btn-primary btn-small" data-i18n="nav-consult">Konsultasi Gratis</a>
+            </div>
         </div>
     </nav>
 
@@ -54,7 +61,7 @@
         <div class="container hero-container">
             <div class="hero-content-left reveal">
                 <div class="hero-badge" data-i18n="hero-badge" style="margin-left: 0; margin-right: auto;">JASA PEMBUATAN WEBSITE & APLIKASI</div>
-                <h1 class="hero-title" data-i18n="hero-title">Memimpin dengan visi untuk mengarahkan karya terbaik Anda</h1>
+                <h1 class="hero-title" data-i18n="hero-title">Memimpin dengan visi, bergerak dengan tujuan.</h1>
                 <p class="hero-subtitle" data-i18n="hero-subtitle">Kami tidak hanya membuat aplikasi dan website. Kami membangun sistem digital yang membantu bisnis dan institusi Anda berkembang lebih cepat, lebih efisien, dan lebih profesional.</p>
                 <div class="hero-buttons" style="justify-content: flex-start;">
                     <a href="#products" class="btn btn-primary" data-i18n="hero-btn-products">Lihat Produk Kami</a>
@@ -62,6 +69,30 @@
                         <span data-i18n="hero-btn-contact">Hubungi Kami</span> <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 8px;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                     </a>
                 </div>
+            </div>
+        </div>
+
+        <!-- Infinite Logo Ticker -->
+        <div class="logo-ticker">
+            <div class="logo-ticker-track">
+                <!-- Group 1 -->
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Garuda Nexa</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>I-School</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>I-Santri</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Company Profile</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Garuda Village</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Absensi</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>POS</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Digital Invitation</span></div>
+                <!-- Group 2 (Duplicate for seamless loop) -->
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Apps Restoran</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Mobile Apps</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Web Development</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Software Development</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Database Management</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>IT Security</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Domain</span></div>
+                <div class="logo-ticker-item"><img src="assets/img/logo/logogarudanexa.png" alt="Logo"><span>Web Hosting</span></div>
             </div>
         </div>
     </header>
@@ -83,34 +114,70 @@
                 <button class="pill" data-category="absensi">Absensi</button>
             </div>
 
-            <div class="product-showcase glass-panel reveal" data-category="website">
-                <div class="product-info">
-                    <div class="product-badge" data-i18n="feat-badge">Jasa Pembuatan Website</div>
-                    <h3 data-i18n="feat-title">Profil Perusahaan & Web Kustom</h3>
-                    <p data-i18n="feat-desc">Website sekolah/instansi, Landing Page Produk, dan Website Custom System.</p>
-                    <a href="#contact" class="btn btn-secondary btn-small mt-4" data-i18n="btn-learn-more">Pelajari lebih lanjut</a>
+            <div class="products-container">
+                <!-- Website Showcase -->
+                <div class="product-showcase glass-panel reveal" data-category="website">
+                    <div class="product-info">
+                        <div class="product-badge" data-i18n="feat-badge">Jasa Pembuatan Website</div>
+                        <h3 data-i18n="feat-title">Profil Perusahaan & Web Kustom</h3>
+                        <p data-i18n="feat-desc">Website sekolah/instansi, Landing Page Produk, dan Website Custom System.</p>
+                        <a href="#contact" class="btn btn-secondary btn-small mt-4" data-i18n="btn-learn-more">Pelajari lebih lanjut</a>
+                    </div>
+                    <div class="product-image">
+                        <img src="assets/portfolio1.png" alt="Website Creation">
+                    </div>
                 </div>
-                <div class="product-image">
-                    <img src="assets/portfolio1.png" alt="Website Creation">
-                </div>
-            </div>
 
-            <div class="product-grid-small mt-5">
-                <div class="p-card glass-panel reveal reveal-delay-1" data-category="santri">
-                    <h4>Aplikasi I-Santri</h4>
-                    <p data-i18n="card-santri">Manajemen pesantren yang lebih terstruktur and modern.</p>
+                <!-- I-Santri Showcase -->
+                <div class="product-showcase glass-panel reveal" data-category="santri" style="display: none;">
+                    <div class="product-info">
+                        <div class="product-badge">Aplikasi I-Santri</div>
+                        <h3>Manajemen Pesantren Modern</h3>
+                        <p data-i18n="card-santri">Manajemen pesantren yang lebih terstruktur dan modern dengan sistem digital terintegrasi.</p>
+                        <a href="#contact" class="btn btn-secondary btn-small mt-4">Pelajari lebih lanjut</a>
+                    </div>
+                    <div class="product-image">
+                        <img src="assets/img/products/isantri.png" alt="I-Santri App">
+                    </div>
                 </div>
-                <div class="p-card glass-panel reveal reveal-delay-2" data-category="school">
-                    <h4>Aplikasi I-School</h4>
-                    <p data-i18n="card-school">Manajemen sekolah berbasis digital tingkat lanjut.</p>
+
+                <!-- I-School Showcase -->
+                <div class="product-showcase glass-panel reveal" data-category="school" style="display: none;">
+                    <div class="product-info">
+                        <div class="product-badge">Aplikasi I-School</div>
+                        <h3>Digitalisasi Ekosistem Sekolah</h3>
+                        <p data-i18n="card-school">Manajemen sekolah berbasis digital tingkat lanjut untuk efisiensi administrasi dan akademik.</p>
+                        <a href="#contact" class="btn btn-secondary btn-small mt-4">Pelajari lebih lanjut</a>
+                    </div>
+                    <div class="product-image">
+                        <img src="assets/img/products/ischool.png" alt="I-School App">
+                    </div>
                 </div>
-                <div class="p-card glass-panel reveal reveal-delay-3" data-category="pos">
-                    <h4>Aplikasi Kasir</h4>
-                    <p data-i18n="card-pos">Sistem Point of Sale (POS) untuk UMKM & retail.</p>
+
+                <!-- POS Showcase -->
+                <div class="product-showcase glass-panel reveal" data-category="pos" style="display: none;">
+                    <div class="product-info">
+                        <div class="product-badge">Aplikasi Kasir</div>
+                        <h3>Sistem POS Cerdas untuk UMKM</h3>
+                        <p data-i18n="card-pos">Sistem Point of Sale (POS) yang memudahkan transaksi dan manajemen stok untuk UMKM & retail.</p>
+                        <a href="#contact" class="btn btn-secondary btn-small mt-4">Pelajari lebih lanjut</a>
+                    </div>
+                    <div class="product-image">
+                        <img src="assets/img/products/pos.png" alt="POS App">
+                    </div>
                 </div>
-                <div class="p-card glass-panel reveal reveal-delay-4" data-category="absensi">
-                    <h4>Aplikasi Absensi</h4>
-                    <p data-i18n="card-absensi">Sistem absensi digital berbasis web / mobile.</p>
+
+                <!-- Absensi Showcase -->
+                <div class="product-showcase glass-panel reveal" data-category="absensi" style="display: none;">
+                    <div class="product-info">
+                        <div class="product-badge">Aplikasi Absensi</div>
+                        <h3>Kehadiran Digital Real-time</h3>
+                        <p data-i18n="card-absensi">Sistem absensi digital berbasis web dan mobile dengan verifikasi yang akurat dan aman.</p>
+                        <a href="#contact" class="btn btn-secondary btn-small mt-4">Pelajari lebih lanjut</a>
+                    </div>
+                    <div class="product-image">
+                        <img src="assets/img/products/absensi.png" alt="Attendance App">
+                    </div>
                 </div>
             </div>
         </div>
@@ -200,11 +267,11 @@
                 <div class="profit-banner">
                     <div class="profit-title" data-i18n="profit-title">KEUNTUNGAN TERMASUK:</div>
                     <ul class="profit-list">
-                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-1">Garansi Bug</span></li>
-                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-2">Konsultasi Gratis</span></li>
-                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-3">Support responsif</span></li>
-                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-4">Gratis hosting & domain</span></li>
-                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#211FFE" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-5">Training Penggunaan</span></li>
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-1">Garansi Bug</span></li>
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-2">Konsultasi Gratis</span></li>
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-3">Support responsif</span></li>
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-4">Gratis hosting & domain</span></li>
+                        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> <span data-i18n="prof-5">Training Penggunaan</span></li>
                     </ul>
                 </div>
             </div>
@@ -278,49 +345,63 @@
     <!-- FAQ Section -->
     <section id="faq" class="faq">
         <div class="container">
-            <div class="section-header text-center reveal">
-                <h2 data-i18n="faq-title">Pertanyaan Umum</h2>
-                <p data-i18n="faq-subtitle">Segala hal yang perlu Anda ketahui tentang layanan kami</p>
-            </div>
-
-            <div class="faq-grid reveal reveal-delay-1">
-                <div class="faq-item glass-panel">
-                    <div class="faq-question">
-                        <span>Berapa lama proses pembuatan satu website?</span>
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Waktu pengerjaan bervariasi tergantung paket. Paket Basic memakan waktu 4-7 hari, sedangkan Paket Profesional dan Premium berkisar antara 10-14 hari kerja.</p>
-                    </div>
+            <div class="faq-wrapper">
+                <div class="faq-left reveal">
+                    <h2 class="faq-main-title" data-i18n="faq-title">Answers to your top questions</h2>
+                    <a href="#contact" class="btn btn-secondary faq-btn">Contact support</a>
                 </div>
 
-                <div class="faq-item glass-panel">
-                    <div class="faq-question">
-                        <span>Apakah harga sudah termasuk hosting dan domain?</span>
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Ya, untuk tahun pertama kami memberikan gratis Hosting Cloud kecepatan tinggi dan Domain (.com/.id/.net) untuk setiap paket yang Anda pilih.</p>
-                    </div>
-                </div>
+                <div class="faq-right reveal">
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Berapa lama proses pembuatan satu website?</span>
+                                <span class="faq-icon"></span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Waktu pengerjaan bervariasi tergantung paket. Paket Basic memakan waktu 4-7 hari, sedangkan Paket Profesional dan Premium berkisar antara 10-14 hari kerja.</p>
+                            </div>
+                        </div>
 
-                <div class="faq-item glass-panel">
-                    <div class="faq-question">
-                        <span>Apakah website yang dibuat bisa saya edit sendiri?</span>
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Tentu. Kami menggunakan sistem CMS (Content Management System) yang memudahkan Anda untuk mengubah teks, gambar, atau menambahkan artikel blog tanpa harus mengerti bahasa pemrograman.</p>
-                    </div>
-                </div>
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Apakah harga sudah termasuk hosting dan domain?</span>
+                                <span class="faq-icon"></span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Ya, untuk tahun pertama kami memberikan gratis Hosting Cloud kecepatan tinggi dan Domain (.com/.id/.net) untuk setiap paket yang Anda pilih.</p>
+                            </div>
+                        </div>
 
-                <div class="faq-item glass-panel">
-                    <div class="faq-question">
-                        <span>Bagaimana dengan sistem keamanannya?</span>
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Setiap website yang kami bangun dilengkapi dengan sertifikat SSL (HTTPS) gratis dan sistem keamanan standar industri untuk melindungi data Anda dan pengunjung.</p>
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Apakah website yang dibuat bisa saya edit sendiri?</span>
+                                <span class="faq-icon"></span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Tentu. Kami menggunakan sistem CMS (Content Management System) yang memudahkan Anda untuk mengubah teks, gambar, atau menambahkan artikel blog tanpa harus mengerti bahasa pemrograman.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Bagaimana dengan sistem keamanannya?</span>
+                                <span class="faq-icon"></span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Setiap website yang kami bangun dilengkapi dengan sertifikat SSL (HTTPS) gratis dan sistem keamanan standar industri untuk melindungi data Anda dan pengunjung.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Siapa pemilik konten yang saya buat?</span>
+                                <span class="faq-icon"></span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Seluruh konten dan data yang ada pada website atau aplikasi Anda sepenuhnya adalah milik Anda. Kami hanya membantu dalam proses pengembangan dan pemeliharaan sistem.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -474,7 +555,7 @@
             "nav-consult": { id: "Konsultasi Gratis", en: "Free Consultation" },
             
             "hero-badge": { id: "JASA PEMBUATAN WEBSITE & APLIKASI", en: "WEBSITE & APP DEVELOPMENT SERVICES" },
-            "hero-title": { id: "Memimpin dengan visi untuk mengarahkan karya terbaik Anda", en: "Leading with vision to direct your best work" },
+            "hero-title": { id: "Memimpin dengan visi, bergerak dengan tujuan.", en: "Leading With Vision, Moving With Purpose" },
             "hero-subtitle": { id: "Kami tidak hanya membuat aplikasi dan website. Kami membangun sistem digital yang membantu bisnis dan institusi Anda berkembang lebih cepat, lebih efisien, dan lebih profesional.", en: "We don't just build apps and websites. We build digital systems that help your business and institution grow faster, more efficiently, and more professionally." },
             "hero-btn-products": { id: "Lihat Produk Kami", en: "View Our Products" },
             "hero-btn-contact": { id: "Hubungi Kami", en: "Contact Us" },
@@ -609,9 +690,7 @@
 
         // --- Product Filtering Logic ---
         const filterButtons = document.querySelectorAll('.pill');
-        const showcase = document.querySelector('.product-showcase');
-        const gridSmall = document.querySelector('.product-grid-small');
-        const smallCards = document.querySelectorAll('.p-card');
+        const showcases = document.querySelectorAll('.product-showcase');
 
         filterButtons.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -623,42 +702,31 @@
 
                 // Helper for animations
                 const animate = (el, show) => {
-                    el.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                    el.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
                     if (show) {
-                        el.style.display = el.classList.contains('product-grid-small') ? 'grid' : (el.classList.contains('product-showcase') ? 'flex' : 'block');
+                        el.style.display = 'flex';
                         setTimeout(() => {
                             el.style.opacity = '1';
                             el.style.transform = 'translateY(0) scale(1)';
-                        }, 10);
+                        }, 50);
                     } else {
                         el.style.opacity = '0';
-                        el.style.transform = 'translateY(20px) scale(0.98)';
+                        el.style.transform = 'translateY(30px) scale(0.95)';
                         setTimeout(() => {
                             el.style.display = 'none';
-                        }, 400);
+                        }, 500);
                     }
                 };
 
                 // Filter logic
-                if (category === 'all') {
-                    animate(showcase, true);
-                    animate(gridSmall, true);
-                    smallCards.forEach(c => c.style.display = 'block');
-                } else if (category === 'website') {
-                    animate(showcase, true);
-                    animate(gridSmall, false);
-                } else {
-                    animate(showcase, false);
-                    animate(gridSmall, true);
-                    smallCards.forEach(card => {
-                        if (card.getAttribute('data-category') === category) {
-                            card.style.display = 'block';
-                            card.style.opacity = '1';
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
-                }
+                showcases.forEach(showcase => {
+                    const cat = showcase.getAttribute('data-category');
+                    if (category === 'all' || category === cat) {
+                        animate(showcase, true);
+                    } else {
+                        animate(showcase, false);
+                    }
+                });
             });
         });
 
@@ -727,6 +795,37 @@
                 }
             });
         });
+        // Search functionality
+        const navbarSearch = document.getElementById('navbarSearch');
+        navbarSearch.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const sections = document.querySelectorAll('section, header');
+            
+            // This is a simple visual filter or just to find sections
+            if (query.length > 2) {
+                sections.forEach(section => {
+                    const text = section.innerText.toLowerCase();
+                    if (text.includes(query)) {
+                        section.style.opacity = '1';
+                    } else {
+                        section.style.opacity = '0.3';
+                    }
+                });
+            } else {
+                sections.forEach(section => section.style.opacity = '1');
+            }
+        });
+
+        // Clear search on blur
+        navbarSearch.addEventListener('blur', () => {
+            if (!navbarSearch.value) {
+                const sections = document.querySelectorAll('section, header');
+                sections.forEach(section => section.style.opacity = '1');
+            }
+        });
+
+        // Initialize Icons
+        lucide.createIcons();
     </script>
 </body>
 </html>
