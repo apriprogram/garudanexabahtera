@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+@variant light-theme (&:where(.light-theme, .light-theme *));
+
+@theme {
+  --color-primary: #211FFE;
+  --color-primary-hover: #1b1ad1;
+  --color-bg-dark: #0a0a0b;
+  
+  --radius-card: 15px;
+  
+  --font-sans: "Inter", sans-serif;
+  --font-outfit: "Outfit", sans-serif;
+  
+  --animate-hero-zoom: heroZoom 20s infinite alternate;
+  --animate-floating-glow: floatingGlow 10s infinite alternate;
+
+  @keyframes heroZoom {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
+  }
+  
+  @keyframes floatingGlow {
+    0% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+    50% { transform: translate(-50px, 100px) scale(1.2); opacity: 0.8; }
+    100% { transform: translate(50px, -50px) scale(0.9); opacity: 0.4; }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply font-sans antialiased bg-bg-dark text-white transition-colors duration-500;
+  }
+  
+  body.light-theme {
+    @apply bg-slate-50 text-slate-900;
+  }
+
+  button {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/5 border border-white/10 backdrop-blur-lg rounded-card transition-all duration-500;
+  }
+  
+  .light-theme .glass-panel {
+    @apply bg-white border-slate-200;
+  }
+  
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-full font-semibold text-sm cursor-pointer transition-all duration-300 border-none select-none;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-hover;
+  }
+  
+  .btn-secondary {
+    @apply bg-white/10 text-white border border-white/20 hover:bg-white/15;
+  }
+  
+  .light-theme .btn-secondary {
+    @apply bg-slate-100 text-slate-900 border-slate-200 hover:bg-slate-200;
+  }
+}
+
+.reveal {
+  @apply opacity-0 translate-y-[30px] transition-all duration-700 ease-out;
+}
+
+.reveal.active {
+  @apply opacity-100 translate-y-0;
+}
+
+.hero-slides::after {
+  content: '';
+  @apply absolute inset-0 z-[1];
+  background: linear-gradient(135deg, rgba(10, 10, 11, 0.95) 20%, rgba(10, 10, 11, 0.4) 60%, rgba(10, 10, 11, 0.8) 100%);
+}
+
+.light-theme .hero-slides::after {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 20%, rgba(255, 255, 255, 0.4) 60%, rgba(255, 255, 255, 0.8) 100%);
+}
+
+/* Flip Card Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Hide Google Translate Top Bar */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-te-menu-value span:nth-child(2),
+.goog-te-menu-value img,
+.goog-te-menu-frame.skiptranslate {
+    display: none !important;
+}
+
+body {
+    top: 0px !important;
+}
+
+.goog-te-gadget {
+    color: transparent !important;
+    font-size: 0 !important;
+}
+
+.goog-te-gadget .goog-te-combo {
+    display: none !important;
+}
+
+#google_translate_element {
+    display: none !important;
+}
+
