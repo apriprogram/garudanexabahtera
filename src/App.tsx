@@ -1,0 +1,104 @@
+import { useEffect, useState } from 'react';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
+import Hero from './components/sections/Hero';
+import LogoTicker from './components/sections/LogoTicker';
+import Products from './components/sections/Products';
+import Portfolio from './components/sections/Portfolio';
+import Pricing from './components/sections/Pricing';
+import Process from './components/sections/Process';
+import FAQ from './components/sections/FAQ';
+import { useStore } from './store/useStore';
+import { ArrowUp } from 'lucide-react';
+
+import { Routes, Route } from 'react-router-dom';
+import Auth from './pages/Auth';
+
+function App() {
+  const { theme } = useStore();
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  return (
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-bg-dark text-white' : 'bg-white text-slate-900'}`}>
+      <Routes>
+        <Route path="/login" element={<Auth />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="*" element={
+          <>
+            <Navbar />
+            <main>
+              <Routes>
+                <Route path="/" element={
+                  <>
+                    <header className="relative">
+                      <Hero />
+                      <LogoTicker />
+                    </header>
+                    <Products />
+                    <Portfolio />
+                    <Pricing />
+                    <Process />
+                    <FAQ />
+                  </>
+                } />
+              </Routes>
+            </main>
+            <Footer />
+          </>
+        } />
+      </Routes>
+      
+      {/* Floating Widgets */}
+      <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-[100] flex items-center gap-3">
+        {/* Scroll To Top */}
+        {showScrollTop && (
+          <button 
+            onClick={scrollToTop}
+            className="bg-white/10 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-full shadow-lg hover:bg-primary hover:text-white transition-all duration-300 group light-theme:bg-slate-200 light-theme:border-slate-300 light-theme:text-slate-900"
+            aria-label="Scroll to top"
+          >
+            <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+        )}
+
+        {/* Floating WhatsApp Widget */}
+        <a 
+          href="https://wa.me/6285188009152?text=Halo%20Admin%2C%20saya%20tertarik%20untuk%20membeli%20produk%20atau%20memesan%20jasa%20digital%20Anda." 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="bg-[#25D366] p-3 sm:p-4 rounded-full shadow-lg hover:scale-110 transition-transform group flex items-center justify-center"
+        >
+          <div className="absolute bottom-full mb-4 right-0 bg-white text-black px-4 py-2 rounded-lg text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl pointer-events-none">
+            Chat Sekarang
+          </div>
+          <svg viewBox="0 0 24 24" className="w-5 h-5 sm:w-6 sm:h-6" fill="white">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.414 0 .018 5.394 0 12.03c0 2.123.554 4.197 1.604 6.013l-1.706 6.233 6.376-1.673a11.77 11.77 0 005.772 1.515h.005c6.634 0 12.032-5.396 12.035-12.032a11.75 11.75 0 00-3.486-8.508" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  );
+}
+
+export default App;
