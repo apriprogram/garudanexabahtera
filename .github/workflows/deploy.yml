@@ -1,0 +1,35 @@
+name: Deploy React App to cPanel
+
+on:
+  push:
+    branches:
+      - main # Akan berjalan otomatis saat ada push ke branch main
+
+jobs:
+  web-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Ambil kode terbaru
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Build Project
+      run: npm run build
+
+    - name: Sinkronisasi ke cPanel (FTP)
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./dist/ # Hanya folder dist hasil build yang di-upload
+        server-dir: /public/garudanexabahtera.web.id/ # Target folder di cPanel
