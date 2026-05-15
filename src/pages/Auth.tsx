@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Github, Chrome, ArrowLeft, Phone } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Mail, Lock, User, ArrowRight, Github, Chrome, ArrowLeft, Phone, Eye, EyeOff } from 'lucide-react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 
 const Auth: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -10,14 +10,52 @@ const Auth: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsLogin(searchParams.get('type') !== 'register');
   }, [searchParams]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', { email, password, name, phone, isLogin });
+    setIsLoading(true);
+    
+    try {
+      const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost/api.php' : '/api.php';
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: isLogin ? 'login' : 'add_user', 
+          email, 
+          password, 
+          name, 
+          phone,
+          role: 'user',
+          status: 'active'
+        })
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        if (isLogin) {
+          localStorage.setItem('currentUser', JSON.stringify(data.user));
+          navigate('/admin');
+        } else {
+          alert('Registration successful! Please login.');
+          setIsLogin(true);
+        }
+      } else {
+        alert(data.error || 'Operation failed');
+      }
+    } catch (error) {
+      alert('Connection error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -162,13 +200,20 @@ const Auth: React.FC = () => {
               <div className="relative group/input">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 md:w-4 md:h-4 text-slate-500 group-focus-within/input:text-white transition-colors" />
                 <input 
-                  type="password" 
+                  type={showPassword ? 'text' : 'password'} 
                   placeholder="••••••••"
                   className="w-full bg-white/5 border border-white/10 rounded-lg py-2 md:py-3.5 px-10 md:px-12 text-xs md:text-sm text-white outline-none focus:border-white/20 focus:bg-white/10 transition-all"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 

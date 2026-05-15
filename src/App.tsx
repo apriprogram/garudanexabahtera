@@ -13,6 +13,15 @@ import { ArrowUp } from 'lucide-react';
 
 import { Routes, Route } from 'react-router-dom';
 import Auth from './pages/Auth';
+import AdminLayout from './pages/admin/Layout';
+import Dashboard from './pages/admin/Dashboard';
+import HeroSettings from './pages/admin/HeroSettings';
+import ServicesManager from './pages/admin/ServicesManager';
+import ProductManager from './pages/admin/ProductManager';
+import UserManager from './pages/admin/UserManager';
+import SiteSettings from './pages/admin/SiteSettings';
+import ProfileSettings from './pages/admin/ProfileSettings';
+import HelpCenter from './pages/admin/HelpCenter';
 
 function App() {
   const { theme } = useStore();
@@ -25,6 +34,19 @@ function App() {
       document.body.classList.remove('light-theme');
     }
   }, [theme]);
+
+  useEffect(() => {
+    // Only track visit once per session
+    const hasVisited = sessionStorage.getItem('hasVisited');
+    if (!hasVisited) {
+      sessionStorage.setItem('hasVisited', 'true'); // Set immediately to prevent double fetch in StrictMode
+      const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost/api.php' : '/api.php';
+      fetch(`${apiUrl}?action=track_visit`)
+        .catch(err => {
+          console.error('Error tracking visit:', err);
+        });
+    }
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,31 +64,42 @@ function App() {
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'bg-bg-dark text-white' : 'bg-white text-slate-900'}`}>
       <Routes>
-        <Route path="/login" element={<Auth />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="*" element={
+        {/* Public Routes */}
+        <Route path="/" element={
           <>
             <Navbar />
             <main>
-              <Routes>
-                <Route path="/" element={
-                  <>
-                    <header className="relative">
-                      <Hero />
-                      <LogoTicker />
-                    </header>
-                    <Products />
-                    <Portfolio />
-                    <Pricing />
-                    <Process />
-                    <FAQ />
-                  </>
-                } />
-              </Routes>
+              <header className="relative">
+                <Hero />
+                <LogoTicker />
+              </header>
+              <Products />
+              <Portfolio />
+              <Pricing />
+              <Process />
+              <FAQ />
             </main>
             <Footer />
           </>
         } />
+        
+        <Route path="/login" element={<Auth />} />
+        <Route path="/auth" element={<Auth />} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="hero" element={<HeroSettings />} />
+          <Route path="services" element={<ServicesManager />} />
+          <Route path="products" element={<ProductManager />} />
+          <Route path="users" element={<UserManager />} />
+          <Route path="settings" element={<SiteSettings />} />
+          <Route path="profile" element={<ProfileSettings />} />
+          <Route path="help" element={<HelpCenter />} />
+        </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<Auth />} />
       </Routes>
       
       {/* Floating Widgets */}
