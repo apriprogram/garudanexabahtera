@@ -6,19 +6,39 @@ import { Reveal } from '../ui/Reveal';
 const Hero: React.FC = () => {
   const { t } = useTranslation();
   const [currentSlide, setCurrentSlide] = useState(0);
-  
-  const slides = [
+  const [settings, setSettings] = useState<any>({});
+  const [slides, setSlides] = useState<string[]>([
     '/assets/bg/hero.png',
     '/assets/bg/hero1.png',
     '/assets/bg/hero2.png',
-  ];
+  ]);
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api.php?action=get_settings');
+        const data = await response.json();
+        setSettings(data);
+        if (data.hero_images) {
+          const parsedImages = JSON.parse(data.hero_images);
+          if (parsedImages.length > 0) {
+            setSlides(parsedImages);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
+    }, 4000);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides]);
   
   return (
     <section className="relative min-h-[70vh] lg:min-h-screen flex items-center pt-32 pb-20 lg:py-0 lg:pt-20 overflow-hidden bg-[#050510]">
@@ -50,29 +70,31 @@ const Hero: React.FC = () => {
             />
             <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/5 border border-white/10 mb-6 sm:mb-8">
               <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#FFD700] animate-pulse shadow-[0_0_10px_#FFD700]" />
-              <span className="text-[8px] sm:text-xs font-semibold text-white uppercase tracking-[2px] pt-[1px]">{t('hero-badge')}</span>
+              <span className="text-[8px] sm:text-xs font-semibold text-white uppercase tracking-[2px] pt-[1px]">
+                {settings.hero_badge || t('hero-badge')}
+              </span>
             </div>
           </Reveal>
           
           <Reveal delay={0.3}>
             <h1 className="text-2xl sm:text-3xl lg:text-7xl font-semibold leading-[1.05] tracking-tight text-white mb-6">
-              {t('hero-title')}
+              {settings.hero_title || t('hero-title')}
             </h1>
           </Reveal>
-
+ 
           <Reveal delay={0.4}>
             <p className="text-sm sm:text-base text-slate-300 mb-8 sm:mb-10 leading-relaxed max-w-2xl">
-              {t('hero-subtitle')}
+              {settings.hero_subtitle || t('hero-subtitle')}
             </p>
           </Reveal>
           
           <Reveal delay={0.7}>
             <div className="flex gap-3 sm:gap-4">
               <button className="btn btn-primary px-4 py-2.5 sm:px-6 sm:py-4 text-xs sm:text-base font-semibold">
-                {t('hero-btn-products')}
+                {settings.hero_primary_btn || t('hero-btn-products')}
               </button>
               <button className="btn btn-secondary px-4 py-2.5 sm:px-6 sm:py-4 text-xs sm:text-base font-semibold glass-btn flex items-center group">
-                {t('hero-btn-contact')}
+                {settings.hero_secondary_btn || t('hero-btn-contact')}
                 <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 sm:w-5 sm:h-5 ml-1.5 sm:ml-2 transition-transform group-hover:translate-x-1">
                   <path
                       d="M4 12H20M20 12L14 6M20 12L14 18"
