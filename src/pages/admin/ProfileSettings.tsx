@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Camera, Upload, Save, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, Mail, Phone, Camera, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const ProfileSettings: React.FC = () => {

@@ -4,8 +4,6 @@ import {
   Users, 
   ShoppingBag, 
   Eye, 
-  TrendingUp, 
-  MoreVertical,
   Plus,
   ExternalLink,
   Edit2,

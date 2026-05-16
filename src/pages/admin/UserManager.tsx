@@ -1,23 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, 
-  UserPlus, 
+  UserPlus,
   Search, 
-  MoreVertical, 
   Edit2, 
   Trash2, 
   Mail, 
-  Phone, 
   Shield, 
-  Check, 
-  X,
-  ChevronLeft,
-  ChevronRight,
   Eye,
   EyeOff,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
   Camera,
   Upload,
-  AlertTriangle
+  Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -37,7 +33,7 @@ const API_URL = window.location.hostname === 'localhost' ? 'http://localhost/api
 const UserManager: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);

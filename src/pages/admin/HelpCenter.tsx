@@ -1,5 +1,5 @@
 import React from 'react';
-import { HelpCircle, MessageCircle, Mail, ExternalLink, ShieldCheck, Zap, Package, CreditCard } from 'lucide-react';
+import { HelpCircle, MessageCircle, Mail, ShieldCheck, Zap, Package, CreditCard } from 'lucide-react';
 
 const HelpCenter: React.FC = () => {
   const faqs = [

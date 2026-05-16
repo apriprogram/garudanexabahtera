@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Reveal } from '../ui/Reveal';
 
 const Products: React.FC = () => {
@@ -169,7 +169,7 @@ const Products: React.FC = () => {
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.2}
-                onDragEnd={(e, { offset, velocity }) => {
+                onDragEnd={(_, { offset, velocity }) => {
                   const swipe = Math.abs(offset.x) * velocity.x;
                   if (swipe < -1000 || offset.x < -50) {
                     nextSlide();

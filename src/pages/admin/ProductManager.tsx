@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Search, Filter, MoreVertical, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2 } from 'lucide-react';
 
 const ProductManager: React.FC = () => {
   const products = [

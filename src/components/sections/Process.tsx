@@ -1,7 +1,7 @@
 import React from 'react';
-import { MessageSquare, Palette, Code2, Rocket, CheckCircle2, RotateCcw } from 'lucide-react';
+import { MessageSquare, Palette, Code2, Rocket, CheckCircle2 } from 'lucide-react';
 import { Reveal } from '../ui/Reveal';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const Process: React.FC = () => {
   const [activeStep, setActiveStep] = React.useState<string | null>(null);
@@ -90,7 +90,7 @@ const Process: React.FC = () => {
                         step.id === '03' ? 'text-indigo-500' : 
                         'text-orange-500'
                       }`}>
-                        {React.cloneElement(step.icon as React.ReactElement, { className: "w-10 h-10 lg:w-14 lg:h-14" })}
+                        {React.cloneElement(step.icon as React.ReactElement<any>, { className: "w-10 h-10 lg:w-14 lg:h-14" })}
                       </div>
                     </div>
                     
@@ -120,7 +120,7 @@ const Process: React.FC = () => {
                         step.id === '03' ? 'text-indigo-500' : 
                         'text-orange-500'
                       }`}>
-                        {React.cloneElement(step.icon as React.ReactElement, { className: "w-8 h-8 lg:w-10 lg:h-10" })}
+                        {React.cloneElement(step.icon as React.ReactElement<any>, { className: "w-8 h-8 lg:w-10 lg:h-10" })}
                       </div>
                       <h4 className="text-sm font-bold text-white light-theme:text-slate-900 uppercase tracking-[1px]">Detail {step.title}</h4>
                     </div>

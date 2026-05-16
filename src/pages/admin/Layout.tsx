@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/admin/Sidebar';
 import Header from '../../components/admin/Header';
@@ -6,7 +6,7 @@ import { useStore } from '../../store/useStore';
 
 const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
-  const { isSidebarCollapsed } = useStore();
+  const { } = useStore();
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');

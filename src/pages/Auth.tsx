@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Github, Chrome, ArrowLeft, Phone, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Chrome, ArrowLeft, Phone, Eye, EyeOff } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 
 const Auth: React.FC = () => {
@@ -12,7 +12,7 @@ const Auth: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
