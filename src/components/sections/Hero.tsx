@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Reveal } from '../ui/Reveal';
 

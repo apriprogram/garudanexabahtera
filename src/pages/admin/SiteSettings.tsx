@@ -8,12 +8,9 @@ import {
   Activity, 
   Settings, 
   HelpCircle, 
-  Maximize2,
   Save,
   CheckCircle2,
-  AlertCircle,
-  X,
-  Plus
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import HeroSettings from './HeroSettings';

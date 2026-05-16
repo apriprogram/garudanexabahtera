@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  Settings, 
   Code, 
   Palette, 
   Megaphone, 

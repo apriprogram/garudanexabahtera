@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, Sun, Moon, Menu, X, Globe, ChevronDown, Globe2, 
-  GraduationCap, ShoppingCart, Users2, ShieldCheck, 
-  Rocket, Briefcase, MessageSquare, Info, Star, Zap,
-  CheckCircle2, Layout, Smartphone, Cloud, Code2, HeartHandshake
+  Search, Sun, Moon, Menu, X, ChevronDown, Globe2,
+  ShoppingCart, GraduationCap, Users2, ShieldCheck, HeartHandshake,
+  Briefcase, MessageSquare, Info
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
@@ -181,7 +180,7 @@ const Navbar: React.FC = () => {
             {theme === 'dark' ? <Sun className="w-5 h-5 sm:w-4.5 sm:h-4.5" /> : <Moon className="w-5 h-5 sm:w-4.5 sm:h-4.5" />}
           </button>
 
-          <Link to="/auth?type=register" className="text-sm font-semibold text-white hover:text-[#FFD700] light-theme:hover:text-primary transition-colors light-theme:text-slate-900 whitespace-nowrap ml-2 sm:ml-4">Log in</Link>
+          <Link to="/auth?type=login" className="text-sm font-semibold text-white hover:text-[#FFD700] light-theme:hover:text-primary transition-colors light-theme:text-slate-900 whitespace-nowrap ml-2 sm:ml-4">Log in</Link>
           <button className="btn btn-primary hidden lg:inline-flex px-6 py-2.5 ml-2">{t('nav-consult')}</button>
         </div>
       </div>

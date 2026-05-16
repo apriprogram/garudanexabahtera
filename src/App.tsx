@@ -89,7 +89,7 @@ function App() {
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="hero" element={<HeroSettings />} />
+          <Route path="hero" element={<HeroSettings settings={{}} heroImages={[]} setHeroImages={() => {}} heroLogos={[]} setHeroLogos={() => {}} />} />
           <Route path="services" element={<ServicesManager />} />
           <Route path="products" element={<ProductManager />} />
           <Route path="users" element={<UserManager />} />
