@@ -77,7 +77,7 @@ const Sidebar: React.FC = () => {
             <motion.img 
               src="/assets/logo/logognbputih.png" 
               alt="Logo" 
-              className={`h-6 md:h-7 w-auto object-contain min-w-[24px] md:min-w-[28px] transition-all duration-300 ${
+              className={`h-5 w-auto object-contain min-w-[20px] transition-all duration-300 ${
                 theme === 'light' ? 'brightness-0' : ''
               }`}
               animate={{ scale: isSidebarCollapsed ? 0.9 : 1 }}
