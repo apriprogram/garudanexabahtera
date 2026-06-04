@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { MessageSquare, Palette, Code2, Rocket, CheckCircle2 } from 'lucide-react';
 import { Reveal } from '../ui/Reveal';
 import { motion } from 'framer-motion';
@@ -6,40 +6,60 @@ import { motion } from 'framer-motion';
 const Process: React.FC = () => {
   const [activeStep, setActiveStep] = React.useState<string | null>(null);
 
-  const steps = [
+  const defaultSteps = [
     {
-      id: '01',
+      step: '01',
       title: 'Consultation',
       desc: 'Needs Analysis & Planning',
-      detail: 'Kami memulai dengan mendalami visi bisnis Anda. Sesi brainstorming intensif untuk menentukan fitur utama, target pasar, dan strategi teknologi yang paling efektif untuk mencapai tujuan Anda.',
-      icon: <MessageSquare className="w-8 h-8" />,
-      color: 'from-blue-500 to-cyan-400'
+      detail: 'Kami memulai dengan mendalami visi bisnis Anda. Sesi brainstorming intensif untuk menentukan fitur utama, target pasar, dan strategi teknologi yang paling efektif untuk mencapai tujuan Anda.'
     },
     {
-      id: '02',
+      step: '02',
       title: 'Desain UI/UX',
       desc: 'Wireframing & Prototyping',
-      detail: 'Fokus pada pengalaman pengguna yang intuitif dan estetika modern. Kami membuat purwarupa interaktif sehingga Anda dapat merasakan alur navigasi aplikasi sebelum proses coding dimulai.',
-      icon: <Palette className="w-8 h-8" />,
-      color: 'from-purple-500 to-pink-400'
+      detail: 'Fokus pada pengalaman pengguna yang intuitif dan estetika modern. Kami membuat purwarupa interaktif sehingga Anda dapat merasakan alur navigasi aplikasi sebelum proses coding dimulai.'
     },
     {
-      id: '03',
+      step: '03',
       title: 'Development',
       desc: 'Coding & System Testing',
-      detail: 'Tim engineer kami membangun sistem menggunakan teknologi terkini yang skalabel. Kami menerapkan standar keamanan tinggi dan pengujian menyeluruh (QA) untuk memastikan performa yang stabil.',
-      icon: <Code2 className="w-8 h-8" />,
-      color: 'from-indigo-500 to-blue-400'
+      detail: 'Tim engineer kami membangun sistem menggunakan teknologi terkini yang skalabel. Kami menerapkan standar keamanan tinggi dan pengujian menyeluruh (QA) untuk memastikan performa yang stabil.'
     },
     {
-      id: '04',
+      step: '04',
       title: 'Launching',
       desc: 'Deployment & Maintenance',
-      detail: 'Membantu proses rilis ke App Store/Play Store atau hosting cloud. Kami tidak berhenti di sana; kami menyediakan dukungan teknis berkelanjutan dan pemeliharaan untuk menjaga sistem tetap prima.',
-      icon: <Rocket className="w-8 h-8" />,
-      color: 'from-orange-500 to-yellow-400'
+      detail: 'Membantu proses rilis ke App Store/Play Store atau hosting cloud. Kami tidak berhenti di sana; kami menyediakan dukungan teknis berkelanjutan dan pemeliharaan untuk menjaga sistem tetap prima.'
     }
   ];
+
+  const [steps, setSteps] = React.useState<any[]>(defaultSteps);
+
+  React.useEffect(() => {
+    const fetchDynamicData = async () => {
+      try {
+        const apiUrl = '/api.php';
+        const response = await fetch(`${apiUrl}?action=get_settings`);
+        const data = await response.json();
+        if (data.process_data) {
+          setSteps(JSON.parse(data.process_data));
+        }
+      } catch (e) {
+        console.error('Error fetching dynamic process steps:', e);
+      }
+    };
+    fetchDynamicData();
+  }, []);
+
+  const getStepIcon = (stepNum: string) => {
+    switch (stepNum) {
+      case '01': return <MessageSquare />;
+      case '02': return <Palette />;
+      case '03': return <Code2 />;
+      case '04': return <Rocket />;
+      default: return <MessageSquare />;
+    }
+  };
 
   const profits = [
     'Bug Warranty',
@@ -63,20 +83,20 @@ const Process: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {steps.map((step, index) => (
-            <Reveal key={step.id} delay={0.2 + (index * 0.1)}>
+            <Reveal key={step.step} delay={0.2 + (index * 0.1)}>
               <div 
                 className="group perspective-1000 h-[280px] lg:h-[350px] cursor-pointer my-2 lg:my-4 mx-2"
-                onClick={() => setActiveStep(activeStep === step.id ? null : step.id)}
+                onClick={() => setActiveStep(activeStep === step.step ? null : step.step)}
               >
                 <motion.div 
                   initial={false}
-                  animate={{ rotateY: activeStep === step.id ? 180 : 0 }}
+                  animate={{ rotateY: activeStep === step.step ? 180 : 0 }}
                   transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
                   className="relative w-full h-full preserve-3d"
                 >
                   {/* Front Side */}
                   <div className={`absolute inset-0 backface-hidden p-6 lg:p-10 rounded-[30px] bg-white/5 border transition-all duration-500 flex flex-col items-start overflow-hidden ${
-                    activeStep === step.id 
+                    activeStep === step.step 
                       ? 'border-primary' 
                       : 'border-white/10 group-hover:border-primary/50 light-theme:bg-white light-theme:border-slate-200 light-theme:group-hover:border-primary/50'
                   }`}>
@@ -85,21 +105,23 @@ const Process: React.FC = () => {
                     
                     <div className="flex items-center mb-6 lg:mb-8 w-full">
                       <div className={`${
-                        step.id === '01' ? 'text-blue-500' : 
-                        step.id === '02' ? 'text-purple-500' : 
-                        step.id === '03' ? 'text-indigo-500' : 
+                        step.step === '01' ? 'text-blue-500' : 
+                        step.step === '02' ? 'text-purple-500' : 
+                        step.step === '03' ? 'text-indigo-500' : 
                         'text-orange-500'
                       }`}>
-                        {React.cloneElement(step.icon as React.ReactElement<any>, { className: "w-10 h-10 lg:w-14 lg:h-14" })}
+                        {React.cloneElement(getStepIcon(step.step) as React.ReactElement<any>, { className: "w-10 h-10 lg:w-14 lg:h-14" })}
                       </div>
                     </div>
                     
                     <div className="absolute top-6 lg:top-10 right-6 lg:right-10 text-xs lg:text-sm font-black opacity-40 text-slate-500">
-                      {step.id}
+                      {step.step}
                     </div>
                     
-                    <h3 className="text-lg lg:text-2xl font-semibold text-white mb-2 lg:mb-3 light-theme:text-slate-900">{step.title}</h3>
-                    <p className="text-slate-400 text-[10px] lg:text-sm leading-relaxed light-theme:text-slate-600">{step.desc}</p>
+                    <h3 className="text-lg lg:text-2xl font-bold text-white mb-2 lg:mb-3 light-theme:text-slate-900 tracking-tight">{step.title}</h3>
+                    <p className="text-slate-400 text-xs lg:text-sm leading-relaxed light-theme:text-slate-600">
+                      {step.desc}
+                    </p>
                     
                     <div className="mt-auto w-full pt-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Detail Langkah</span>
@@ -109,24 +131,24 @@ const Process: React.FC = () => {
 
                   {/* Back Side */}
                   <div className={`absolute inset-0 backface-hidden rotate-y-180 p-6 lg:p-10 rounded-[30px] bg-[#121214] border flex flex-col items-start text-left transition-all duration-500 ${
-                    activeStep === step.id 
+                    activeStep === step.step 
                       ? 'border-primary' 
                       : 'border-white/10 light-theme:bg-slate-50 light-theme:border-slate-200'
                   } light-theme:bg-slate-50`}>
                     <div className="flex items-center gap-4 mb-6 w-full">
                       <div className={`${
-                        step.id === '01' ? 'text-blue-500' : 
-                        step.id === '02' ? 'text-purple-500' : 
-                        step.id === '03' ? 'text-indigo-500' : 
+                        step.step === '01' ? 'text-blue-500' : 
+                        step.step === '02' ? 'text-purple-500' : 
+                        step.step === '03' ? 'text-indigo-500' : 
                         'text-orange-500'
                       }`}>
-                        {React.cloneElement(step.icon as React.ReactElement<any>, { className: "w-8 h-8 lg:w-10 lg:h-10" })}
+                        {React.cloneElement(getStepIcon(step.step) as React.ReactElement<any>, { className: "w-8 h-8 lg:w-8 lg:h-8" })}
                       </div>
-                      <h4 className="text-sm font-bold text-white light-theme:text-slate-900 uppercase tracking-[1px]">Detail {step.title}</h4>
+                      <h4 className="text-sm lg:text-sm font-bold text-white light-theme:text-slate-900 uppercase tracking-[1.5px]">{step.back_title || `DETAIL ${step.title}`.toUpperCase()}</h4>
                     </div>
                     
-                    <p className="text-slate-300 text-xs lg:text-[13px] leading-relaxed light-theme:text-slate-700 font-medium mb-auto transition-colors duration-500">
-                      {step.detail}
+                    <p className="text-slate-300 text-[11px] lg:text-xs leading-relaxed light-theme:text-slate-700 font-medium mb-auto transition-colors duration-500">
+                      {step.detail || step.desc}
                     </p>
                   </div>
                 </motion.div>

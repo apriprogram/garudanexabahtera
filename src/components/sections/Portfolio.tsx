@@ -1,40 +1,58 @@
-import React from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Reveal } from '../ui/Reveal';
 import { motion } from 'framer-motion';
 
 const Portfolio: React.FC = () => {
-  const portfolioItems = [
+  const defaultPortfolioItems = [
     {
       title: "Web App Dashboard",
       desc: "SAAS / FINANCE",
-      image: "/assets/portfolio/portfolio1.png",
+      image: "/assets/portofolio/portfolio1.png",
       span: "md:col-span-4"
     },
     {
       title: "Mobile POS App",
       desc: "RETAIL / ANDROID",
-      image: "/assets/portfolio/portfolio2.png",
+      image: "/assets/portofolio/portfolio2.png",
       span: "md:col-span-4"
     },
     {
       title: "E-Commerce System",
       desc: "SHOPPING / WEB",
-      image: "/assets/products/ischool.png",
+      image: "/assets/product/ischool.png",
       span: "md:col-span-4"
     },
     {
       title: "Corporate Website",
       desc: "BRANDING / MODERN",
-      image: "/assets/products/isantri.png",
+      image: "/assets/product/isantri.png",
       span: "md:col-span-7"
     },
     {
       title: "Sistem Informasi Desa",
       desc: "GOVERNMENT / WEB",
-      image: "/assets/products/pos.png",
+      image: "/assets/product/pos.png",
       span: "md:col-span-5"
     }
   ];
+
+  const [portfolioItems, setPortfolioItems] = useState<any[]>(defaultPortfolioItems);
+
+  useEffect(() => {
+    const fetchDynamicData = async () => {
+      try {
+        const apiUrl = '/api.php';
+        const response = await fetch(`${apiUrl}?action=get_settings`);
+        const data = await response.json();
+        if (data.portfolio_data) {
+          setPortfolioItems(JSON.parse(data.portfolio_data));
+        }
+      } catch (e) {
+        console.error('Error fetching dynamic portfolio:', e);
+      }
+    };
+    fetchDynamicData();
+  }, []);
 
   return (
     <section id="portfolio" className="py-12 lg:py-32 bg-[#0a0a0b] light-theme:bg-white relative overflow-hidden transition-colors duration-500">

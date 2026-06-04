@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "sync": "powershell -ExecutionPolicy Bypass -File ./sync-backend.ps1",
+    "dev:full": "powershell -ExecutionPolicy Bypass -File ./sync-backend.ps1 && vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

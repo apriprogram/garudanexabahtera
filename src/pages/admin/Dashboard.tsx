@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { 
   Users, 
@@ -30,7 +30,9 @@ import {
   ZoomIn,
   ZoomOut,
   Hand,
-  GripVertical
+  GripVertical,
+  Play,
+  XCircle
 } from 'lucide-react';
 
 interface Project {
@@ -50,7 +52,7 @@ interface Project {
   assigned_user: string;
 }
 
-const API_URL = window.location.hostname === 'localhost' ? 'http://localhost/api.php' : '/api.php';
+const API_URL = '/api.php';
 
 const Dashboard: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -337,10 +339,10 @@ const Dashboard: React.FC = () => {
   };
 
   const stats = [
-    { label: 'Total Visitors', value: visitorCount.toLocaleString(), change: '+12.5%', icon: Eye, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { label: 'Project Orders', value: projects.length.toLocaleString(), change: '+18.2%', icon: ShoppingBag, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { label: 'Total Users', value: userCount.toLocaleString(), change: '+5.4%', icon: Users, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { label: 'Total Revenue', value: 'IDR ' + totalRevenue.toLocaleString('id-ID'), change: '+2.1%', icon: DollarSign, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+    { label: 'Total Visitors', value: visitorCount.toLocaleString(), change: '+12.5%', icon: Eye, color: 'text-blue-400 light-theme:text-blue-600', bg: 'bg-blue-400/10 light-theme:bg-blue-50' },
+    { label: 'Project Orders', value: projects.length.toLocaleString(), change: '+18.2%', icon: ShoppingBag, color: 'text-emerald-400 light-theme:text-emerald-600', bg: 'bg-emerald-400/10 light-theme:bg-emerald-50' },
+    { label: 'Total Users', value: userCount.toLocaleString(), change: '+5.4%', icon: Users, color: 'text-purple-400 light-theme:text-purple-600', bg: 'bg-purple-400/10 light-theme:bg-purple-50' },
+    { label: 'Total Revenue', value: 'IDR ' + totalRevenue.toLocaleString('id-ID'), change: '+2.1%', icon: DollarSign, color: 'text-amber-400 light-theme:text-amber-600', bg: 'bg-amber-400/10 light-theme:bg-amber-50' },
   ];
 
   return (
@@ -352,13 +354,16 @@ const Dashboard: React.FC = () => {
           <p className="text-slate-500 text-[11px] md:text-sm mt-0.5 md:mt-1">Welcome back, Admin. Manage your projects and clients here.</p>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white/5 border border-white/10 rounded-lg md:rounded-xl text-[11px] md:text-sm font-medium hover:bg-white/10 transition-all">
+          <button 
+            onClick={() => window.open('/', '_blank')}
+            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 md:px-5 md:py-2 bg-transparent border border-white/25 hover:bg-white/5 hover:border-white/45 text-white rounded-full font-bold transition-all active:scale-95 text-[10px] md:text-xs"
+          >
             <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4" />
             View Site
           </button>
           <button 
             onClick={() => handleOpenModal()}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg md:rounded-xl text-[11px] md:text-sm font-medium transition-all shadow-lg shadow-blue-600/20"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 md:px-5 md:py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white rounded-full font-bold transition-all border border-blue-400/40 active:scale-95 text-[10px] md:text-xs"
           >
             <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
             Add Project
@@ -374,10 +379,10 @@ const Dashboard: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
             key={stat.label}
-            className="p-4 md:p-6 bg-[#0D0D0D] border border-white/5 rounded-xl md:rounded-2xl hover:border-blue-500/30 transition-all group"
+            className="p-4 md:p-6 bg-[#0D0D0D] border border-white/5 rounded-xl md:rounded-2xl hover:border-blue-500 transition-all duration-300 group stats-card"
           >
             <div className="flex items-center justify-between mb-2 md:mb-4">
-              <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
+              <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${stat.bg} ${stat.color}`}>
                 <stat.icon className="w-4 h-4 md:w-5 md:h-5" />
               </div>
               <span className="text-[9px] md:text-xs font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">{stat.change}</span>
@@ -424,11 +429,18 @@ const Dashboard: React.FC = () => {
                 <tr><td colSpan={7} className="px-8 py-10 text-center text-slate-500 text-xs md:text-sm animate-pulse">Loading Projects...</td></tr>
               ) : projects.length === 0 ? (
                 <tr><td colSpan={7} className="px-8 py-10 text-center text-slate-500 text-xs md:text-sm">No projects found. Add your first project!</td></tr>
-              ) : projects.map((project) => (
-                <tr key={project.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-4 py-3 md:px-8 md:py-6">
+              ) : projects.map((project, index) => (
+                <motion.tr 
+                  key={project.id} 
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.35, ease: 'easeOut', delay: Math.min(index * 0.04, 0.4) }}
+                  className="hover:bg-white/[0.02] transition-colors group"
+                >
+                  <td className="px-4 py-2 md:px-8 md:py-2.5">
                     <div className="flex items-center gap-2.5 md:gap-5">
-                      <div className="w-8 h-8 md:w-14 md:h-14 rounded-xl overflow-hidden border border-white/10 group-hover:border-blue-500/50 transition-all bg-white/5 flex items-center justify-center">
+                      <div className="w-8 h-8 md:w-11 md:h-11 rounded-xl overflow-hidden border border-white/10 group-hover:border-blue-500/50 transition-all bg-white/5 flex items-center justify-center shrink-0">
                         {project.image ? (
                           <img src={project.image} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -441,21 +453,52 @@ const Dashboard: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="hidden sm:table-cell px-8 py-3.5">
+                  <td className="hidden sm:table-cell px-8 py-2 md:py-2.5">
                     <span className="text-xs md:text-base text-slate-400 capitalize font-semibold">{project.service_type.replace('_', ' ')}</span>
                   </td>
-                  <td className="px-4 py-2 md:px-8 md:py-3.5">
+                  <td className="px-4 py-2 md:px-8 md:py-2.5">
                     <span className={`
-                      inline-flex items-center px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-[11px] font-semibold uppercase tracking-widest
-                      ${project.status?.toLowerCase() === 'active' ? 'bg-blue-500/10 text-blue-400' : 
-                        project.status?.toLowerCase() === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 
-                        (project.status?.toLowerCase() === 'canceled' || project.status?.toLowerCase() === 'cancel') ? 'bg-red-500/10 text-red-400' :
-                        'bg-amber-500/10 text-amber-400'}
+                      inline-flex items-center gap-1 md:gap-1.5 px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[9px] md:text-[11px] font-bold uppercase tracking-widest
+                      ${project.status?.toLowerCase() === 'active' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
+                        project.status?.toLowerCase() === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                        (project.status?.toLowerCase() === 'canceled' || project.status?.toLowerCase() === 'cancel') ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                        'bg-amber-500/10 text-amber-400 border border-amber-500/20'}
                     `}>
-                      {(project.status?.toLowerCase() === 'canceled' || project.status?.toLowerCase() === 'cancel') ? 'Cancel' : project.status || 'Pending'}
+                      {(() => {
+                        const status = project.status?.toLowerCase() || 'pending';
+                        if (status === 'active') {
+                          return (
+                            <>
+                              <Play className="w-2.5 h-2.5 md:w-3 md:h-3 text-blue-400 shrink-0 fill-blue-400/20" />
+                              <span>Active</span>
+                            </>
+                          );
+                        } else if (status === 'completed') {
+                          return (
+                            <>
+                              <CheckCircle className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-400 shrink-0 fill-emerald-400/20" />
+                              <span>Completed</span>
+                            </>
+                          );
+                        } else if (status === 'canceled' || status === 'cancel') {
+                          return (
+                            <>
+                              <XCircle className="w-2.5 h-2.5 md:w-3 md:h-3 text-red-400 shrink-0 fill-red-400/20" />
+                              <span>Cancel</span>
+                            </>
+                          );
+                        } else {
+                          return (
+                            <>
+                              <Clock className="w-2.5 h-2.5 md:w-3 md:h-3 text-amber-400 shrink-0 fill-amber-400/20" />
+                              <span>Pending</span>
+                            </>
+                          );
+                        }
+                      })()}
                     </span>
                   </td>
-                  <td className="hidden lg:table-cell px-8 py-6">
+                  <td className="hidden lg:table-cell px-8 py-2 md:py-2.5">
                     {(() => {
                       const s = new Date(project.start_date);
                       const e = project.end_date ? new Date(project.end_date) : null;
@@ -471,7 +514,7 @@ const Dashboard: React.FC = () => {
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-slate-500" />
-                            <span className="text-xs md:text-sm text-white font-semibold">{duration !== null ? `${duration} Days` : '-'}</span>
+                            <span className="text-xs md:text-sm text-slate-400 font-semibold">{duration !== null ? `${duration} Days` : '-'}</span>
                           </div>
                           <div className={`
                             inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-bold mt-1.5 w-fit
@@ -491,7 +534,7 @@ const Dashboard: React.FC = () => {
                       );
                     })()}
                   </td>
-                  <td className="hidden lg:table-cell px-8 py-3.5">
+                  <td className="hidden lg:table-cell px-8 py-2 md:py-2.5">
                     <div className="flex items-center">
                       {project.assigned_user ? (
                         <div className="flex -space-x-2">
@@ -523,10 +566,10 @@ const Dashboard: React.FC = () => {
                       )}
                     </div>
                   </td>
-                  <td className="hidden md:table-cell px-8 py-3.5 text-right text-xs md:text-base text-slate-300 font-semibold">
+                  <td className="hidden md:table-cell px-8 py-2 md:py-2.5 text-right text-xs md:text-base text-slate-300 font-semibold">
                     IDR {Number(project.price).toLocaleString('id-ID')}
                   </td>
-                  <td className="px-4 py-2 md:px-8 md:py-3.5 text-right">
+                  <td className="px-4 py-2 md:px-8 md:py-2.5 text-right">
                     <div className="flex justify-end gap-1 md:gap-3">
                         <button
                           onClick={() => handleViewProject(project)}
@@ -549,7 +592,7 @@ const Dashboard: React.FC = () => {
                         </button>
                       </div>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
@@ -576,7 +619,7 @@ const Dashboard: React.FC = () => {
               className="relative w-full max-w-xl md:max-w-2xl bg-[#0D0D0D] border-l border-white/10 shadow-2xl h-full flex flex-col z-10"
             >
               {/* Panel Header */}
-              <div className="p-5 md:p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+              <div className="px-5 py-3 md:px-8 md:py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
                 <div>
                   <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
                     {editingProject ? 'Project Details' : 'Create New Project'}
@@ -704,14 +747,17 @@ const Dashboard: React.FC = () => {
                           onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm flex justify-between items-center cursor-pointer hover:bg-white/[0.08] transition-all min-h-[46px]"
                         >
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${
-                              formData.status === 'active' ? 'bg-blue-400' : 
-                              formData.status === 'completed' ? 'bg-emerald-400' : 
-                              formData.status === 'canceled' ? 'bg-red-400' : 
-                              'bg-amber-400'
-                            }`} />
-                            <span className="text-white capitalize">
+                          <div className="flex items-center gap-2.5">
+                            {formData.status === 'active' ? (
+                              <Play className="w-3.5 h-3.5 text-blue-400 shrink-0 fill-blue-400/20" />
+                            ) : formData.status === 'completed' ? (
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0 fill-emerald-400/20" />
+                            ) : formData.status === 'canceled' ? (
+                              <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 fill-red-400/20" />
+                            ) : (
+                              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0 fill-amber-400/20" />
+                            )}
+                            <span className="text-white capitalize font-medium">
                               {formData.status === 'active' ? 'Active / In Progress' : 
                                formData.status === 'pending' ? 'Pending Review' : 
                                formData.status === 'completed' ? 'Completed' : 
@@ -732,26 +778,29 @@ const Dashboard: React.FC = () => {
                                 className="absolute top-[110%] left-0 right-0 bg-[#0A0A0A] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden p-1 flex flex-col gap-0.5"
                               >
                                 {[
-                                  { id: 'active', label: 'Active / In Progress', color: 'bg-blue-400' },
-                                  { id: 'pending', label: 'Pending Review', color: 'bg-amber-400' },
-                                  { id: 'completed', label: 'Completed', color: 'bg-emerald-400' },
-                                  { id: 'canceled', label: 'Cancel', color: 'bg-red-400' }
-                                ].map((opt) => (
-                                  <div 
-                                    key={opt.id}
-                                    onClick={() => { 
-                                      setFormData({...formData, status: opt.id as any}); 
-                                      setIsStatusDropdownOpen(false); 
-                                    }}
-                                    className={`flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white/5 rounded-lg transition-all ${formData.status === opt.id ? 'bg-white/5' : ''}`}
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <div className={`w-2 h-2 rounded-full ${opt.color}`} />
-                                      <span className={`text-sm font-medium ${formData.status === opt.id ? 'text-white' : 'text-slate-400'}`}>{opt.label}</span>
+                                  { id: 'active', label: 'Active / In Progress', icon: Play, iconColor: 'text-blue-400', bg: 'fill-blue-400/20' },
+                                  { id: 'pending', label: 'Pending Review', icon: Clock, iconColor: 'text-amber-400', bg: 'fill-amber-400/20' },
+                                  { id: 'completed', label: 'Completed', icon: CheckCircle, iconColor: 'text-emerald-400', bg: 'fill-emerald-400/20' },
+                                  { id: 'canceled', label: 'Cancel', icon: XCircle, iconColor: 'text-red-400', bg: 'fill-red-400/20' }
+                                ].map((opt) => {
+                                  const IconComponent = opt.icon;
+                                  return (
+                                    <div 
+                                      key={opt.id}
+                                      onClick={() => { 
+                                        setFormData({...formData, status: opt.id as any}); 
+                                        setIsStatusDropdownOpen(false); 
+                                      }}
+                                      className={`flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white/5 rounded-lg transition-all ${formData.status === opt.id ? 'bg-white/5' : ''}`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <IconComponent className={`w-3.5 h-3.5 ${opt.iconColor} ${opt.bg} shrink-0`} />
+                                        <span className={`text-sm font-medium ${formData.status === opt.id ? 'text-white' : 'text-slate-400'}`}>{opt.label}</span>
+                                      </div>
+                                      {formData.status === opt.id && <CheckCircle className="w-3.5 h-3.5 text-blue-400" />}
                                     </div>
-                                    {formData.status === opt.id && <CheckCircle className="w-3.5 h-3.5 text-blue-400" />}
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </motion.div>
                             </>
                           )}
@@ -982,18 +1031,18 @@ const Dashboard: React.FC = () => {
                       ⚠️ {saveError}
                     </div>
                   )}
-                  <div className="p-5 md:p-6 border-t border-white/5 bg-[#0D0D0D] flex gap-3">
+                  <div className="px-5 py-3 md:px-6 md:py-3.5 border-t border-white/5 bg-[#0D0D0D] flex gap-3">
                     <button 
                       type="button" 
                       onClick={() => setIsModalOpen(false)} 
-                      className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-all"
+                      className="flex-1 py-2 md:py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-full text-xs font-semibold transition-all"
                     >
                       Cancel
                     </button>
                     <button 
                       type="submit"
                       disabled={isSaving}
-                      className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95 flex items-center justify-center gap-2"
+                      className="flex-1 py-2 md:py-2.5 bg-gradient-to-b from-blue-500 to-blue-600 border border-blue-400/40 hover:from-blue-600 hover:to-blue-700 disabled:opacity-60 text-white rounded-full text-xs font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
                       {isSaving ? (
                         <><div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> Saving...</>
@@ -1043,7 +1092,7 @@ const Dashboard: React.FC = () => {
               className="relative w-full max-w-xl md:max-w-2xl bg-[#0D0D0D] border-l border-white/10 shadow-2xl h-full flex flex-col z-[30]"
             >
               {/* Header */}
-              <div className="p-5 md:p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+              <div className="px-5 py-3 md:px-8 md:py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-cyan-500/10 rounded-xl">
                     <Eye className="w-5 h-5 text-cyan-400" />
@@ -1056,12 +1105,16 @@ const Dashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => { setIsViewOpen(false); handleOpenModal(viewingProject); }}
-                    className="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-all"
+                    className="px-3 py-1 md:px-3.5 md:py-1.5 bg-gradient-to-b from-blue-500 to-blue-600 border border-blue-400/40 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-[10px] md:text-xs font-semibold flex items-center gap-1.5 transition-all"
                   >
-                    Edit
+                    <Edit2 className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                    <span>Edit</span>
                   </button>
-                  <button onClick={() => setIsViewOpen(false)} className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all">
-                    <X className="w-5 h-5" />
+                  <button 
+                    onClick={() => setIsViewOpen(false)} 
+                    className="p-1.5 md:p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all"
+                  >
+                    <X className="w-4 h-4 md:w-5 md:h-5" />
                   </button>
                 </div>
               </div>
@@ -1233,13 +1286,13 @@ const Dashboard: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="p-5 border-t border-white/5 bg-[#0D0D0D] flex gap-3 flex-shrink-0">
-                <button onClick={() => setIsViewOpen(false)} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-all">
+              <div className="px-5 py-3 border-t border-white/5 bg-[#0D0D0D] flex gap-3 flex-shrink-0">
+                <button onClick={() => setIsViewOpen(false)} className="flex-1 py-2 md:py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-full text-xs font-semibold transition-all">
                   Close
                 </button>
                 <button
                   onClick={() => { setIsViewOpen(false); handleOpenModal(viewingProject); }}
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-600/20"
+                  className="flex-1 py-2 md:py-2.5 bg-gradient-to-b from-blue-500 to-blue-600 border border-blue-400/40 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-xs font-semibold transition-all"
                 >
                   Edit Project
                 </button>

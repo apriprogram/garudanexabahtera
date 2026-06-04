@@ -1,4 +1,8 @@
--- Database for Garuda Nexa Bahtera
+-- ============================================================
+-- DATABASE: Garuda Nexa Bahtera
+-- Setup: Import file ini di phpMyAdmin atau jalankan via MySQL CLI
+-- ============================================================
+
 CREATE DATABASE IF NOT EXISTS db_garudanexabahtera;
 USE db_garudanexabahtera;
 
@@ -28,7 +32,7 @@ CREATE TABLE IF NOT EXISTS services (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    icon VARCHAR(100), -- Lucide icon name
+    icon VARCHAR(100),
     is_active BOOLEAN DEFAULT TRUE,
     order_index INT DEFAULT 0
 );
@@ -59,17 +63,28 @@ CREATE TABLE IF NOT EXISTS project_client (
     start_date DATE,
     end_date DATE,
     image LONGTEXT,
-    project_files LONGTEXT, -- Stores JSON array of files: [{name, type, data}]
+    project_files LONGTEXT,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Initial Admin User (password: admin123 - should be hashed in production)
-INSERT INTO users (name, email, password, role) 
-VALUES ('Administrator', 'admin@garudanexa.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin')
+-- Visitor stats (tracking jumlah pengunjung website)
+CREATE TABLE IF NOT EXISTS visitor_stats (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    total_visits INT DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- DATA AWAL (Initial Seed)
+-- ============================================================
+
+-- Admin default (password: admin123)
+INSERT INTO users (name, email, password, role, status) 
+VALUES ('Administrator', 'admin@garudanexa.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'active')
 ON DUPLICATE KEY UPDATE email=email;
 
--- Initial Settings
+-- Settings awal
 INSERT INTO hero_settings (setting_key, setting_value) VALUES 
 ('hero_title', 'Elevate Your Business with Garuda Nexa'),
 ('hero_subtitle', 'Leading edge technology solutions for the modern world.'),
@@ -78,3 +93,8 @@ INSERT INTO hero_settings (setting_key, setting_value) VALUES
 ('site_logo', '/assets/logo/logogarudanexa.png'),
 ('hero_logos', '[]')
 ON DUPLICATE KEY UPDATE setting_key=setting_key;
+
+-- Baris awal visitor stats (wajib ada id=1)
+INSERT INTO visitor_stats (id, total_visits) VALUES (1, 0)
+ON DUPLICATE KEY UPDATE id=id;
+

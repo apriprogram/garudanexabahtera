@@ -4,7 +4,6 @@ import {
   Settings, 
   LayoutDashboard, 
   Users, 
-  Moon,
   LogOut,
   X
 } from 'lucide-react';
@@ -12,13 +11,16 @@ import { NavLink, Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 
 const Sidebar: React.FC = () => {
-  const { isSidebarCollapsed, isMobileSidebarOpen, toggleMobileSidebar } = useStore();
+  const { isSidebarCollapsed, isMobileSidebarOpen, toggleMobileSidebar, theme } = useStore();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Get current user role from localStorage
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
-      // Auto-close mobile sidebar when transitioning to desktop
       if (window.innerWidth >= 1024 && isMobileSidebarOpen) {
         toggleMobileSidebar(false);
       }
@@ -27,11 +29,14 @@ const Sidebar: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [isMobileSidebarOpen, toggleMobileSidebar]);
   
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-    { icon: Settings, label: 'Website Settings', path: '/admin/settings' },
-    { icon: Users, label: 'Users', path: '/admin/users' },
+  const allMenuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', adminOnly: false },
+    { icon: Settings, label: 'Website Settings', path: '/admin/settings', adminOnly: false },
+    { icon: Users, label: 'Users', path: '/admin/users', adminOnly: true },
   ];
+
+  // Filter menu berdasarkan role
+  const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
 
   const isDesktop = windowWidth >= 1024;
 
@@ -54,23 +59,27 @@ const Sidebar: React.FC = () => {
       <motion.aside 
         initial={false}
         animate={{ 
-          width: !isDesktop ? 224 : (isSidebarCollapsed ? 80 : 256),
+          width: !isDesktop ? 224 : (isSidebarCollapsed ? 70 : 232),
           x: isDesktop ? 0 : (isMobileSidebarOpen ? 0 : -240)
         }}
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }} 
         className={`
-          bg-[#0D0D0D] border-r border-white/5 flex flex-col z-[101]
-          fixed inset-y-0 left-0 lg:relative
+          flex flex-col z-[101] lg:z-10 fixed inset-y-0 left-0 lg:relative transition-colors duration-300
+          ${theme === 'light' ? 'bg-white border-r border-slate-200' : 'bg-[#0D0D0D] border-r border-white/5'}
           ${isMobileSidebarOpen ? 'w-56 md:w-64' : ''}
         `}
       >
         {/* Header / Logo */}
-        <div className={`p-4 md:p-6 flex items-center h-16 md:h-20 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
-          <Link to="/" className="flex items-center gap-2 md:gap-3 overflow-hidden">
+        <div className={`px-3 md:px-4 flex items-center justify-center h-14 relative border-b transition-colors duration-300 ${
+          theme === 'light' ? 'border-slate-200' : 'border-white/5'
+        }`}>
+          <Link to="/" className="flex items-center justify-center gap-2 md:gap-2.5 overflow-hidden">
             <motion.img 
               src="/assets/logo/logognbputih.png" 
               alt="Logo" 
-              className="h-5 md:h-6 w-auto object-contain min-w-[20px] md:min-w-[24px]" 
+              className={`h-4.5 md:h-5 w-auto object-contain min-w-[18px] md:min-w-[20px] transition-all duration-300 ${
+                theme === 'light' ? 'brightness-0' : ''
+              }`}
               animate={{ scale: isSidebarCollapsed ? 0.9 : 1 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
             />
@@ -81,7 +90,9 @@ const Sidebar: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
                   transition={{ duration: 0.3 }}
-                  className="font-bold text-base md:text-lg tracking-tight whitespace-nowrap text-white"
+                  className={`font-bold text-sm md:text-base tracking-tight whitespace-nowrap transition-colors duration-300 ${
+                    theme === 'light' ? 'text-slate-900' : 'text-white'
+                  }`}
                 >
                   Garuda Nexa
                 </motion.span>
@@ -92,14 +103,16 @@ const Sidebar: React.FC = () => {
           {/* Close Button (Mobile) */}
           <button 
             onClick={() => toggleMobileSidebar(false)}
-            className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+            className={`lg:hidden absolute right-3 p-1.5 rounded-lg transition-all ${
+              theme === 'light' ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-500 hover:text-white hover:bg-white/5'
+            }`}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 px-2.5 md:px-3 mt-2 md:mt-4 space-y-1 md:space-y-2">
+        <nav className="flex-1 px-3 md:px-4 mt-2 md:mt-3 space-y-0.5 md:space-y-1">
           {menuItems.map((item) => (
             <NavLink
               key={item.path}
@@ -107,10 +120,14 @@ const Sidebar: React.FC = () => {
               end
               onClick={() => toggleMobileSidebar(false)}
               className={({ isActive }) => `
-                flex items-center gap-2.5 md:gap-3 px-3 py-2.5 md:px-4 md:py-3 rounded-xl transition-all group relative
+                flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 rounded-xl transition-all group relative border
                 ${isActive 
-                  ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'}
+                  ? (theme === 'light'
+                      ? 'bg-blue-50/80 text-blue-600 border-blue-100 shadow-[inset_0_0_10px_rgba(37,99,235,0.03)]'
+                      : 'bg-blue-600/10 text-blue-400 border-blue-600/20 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]')
+                  : (theme === 'light' 
+                      ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent')}
                 ${isSidebarCollapsed ? 'justify-center' : ''}
               `}
             >
@@ -121,7 +138,7 @@ const Sidebar: React.FC = () => {
                     whileHover={{ scale: 1.1 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <item.icon className="w-4.5 h-4.5 md:w-5 md:h-5 min-w-[18px] md:min-w-[20px]" />
+                    <item.icon className="w-4 h-4 md:w-4.5 md:h-4.5 min-w-[16px] md:min-w-[18px]" />
                   </motion.div>
 
                   <AnimatePresence initial={false}>
@@ -131,7 +148,7 @@ const Sidebar: React.FC = () => {
                         animate={{ opacity: 1, width: 'auto', x: 0 }}
                         exit={{ opacity: 0, width: 0, x: -10 }}
                         transition={{ duration: 0.3, ease: 'easeOut' }}
-                        className="text-[13px] md:text-sm font-medium whitespace-nowrap overflow-hidden"
+                        className="text-[12.5px] md:text-sm font-medium whitespace-nowrap overflow-hidden"
                       >
                         {item.label}
                       </motion.span>
@@ -140,7 +157,9 @@ const Sidebar: React.FC = () => {
                   
                   {/* Tooltip for collapsed mode */}
                   {isSidebarCollapsed && (
-                    <div className="absolute left-full ml-4 px-3 py-2 bg-white text-black text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                    <div className={`absolute left-full ml-4 px-3 py-2 text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md ${
+                      theme === 'light' ? 'bg-slate-900 text-white' : 'bg-white text-black'
+                    }`}>
                       {item.label}
                     </div>
                   )}
@@ -151,14 +170,17 @@ const Sidebar: React.FC = () => {
         </nav>
 
         {/* Footer Actions */}
-        <div className="p-3 md:p-4 border-t border-white/5 space-y-1">
-          <button className={`w-full flex items-center gap-2.5 md:gap-3 px-3 py-2.5 md:px-4 md:py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-            <Moon className="w-4.5 h-4.5 md:w-5 md:h-5 min-w-[18px] md:min-w-[20px]" />
-            {!isSidebarCollapsed && <span className="text-[13px] md:text-sm font-medium">Dark Mode</span>}
-          </button>
-          <Link to="/login" className={`w-full flex items-center gap-2.5 md:gap-3 px-3 py-2.5 md:px-4 md:py-3 text-red-400 hover:text-red-300 hover:bg-red-400/5 rounded-xl transition-all ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-            <LogOut className="w-4.5 h-4.5 md:w-5 md:h-5 min-w-[18px] md:min-w-[20px]" />
-            {!isSidebarCollapsed && <span className="text-[13px] md:text-sm font-medium whitespace-nowrap">Logout</span>}
+        <div className={`px-3 py-2.5 md:px-4 md:py-3 border-t transition-colors duration-300 ${
+          theme === 'light' ? 'border-slate-200' : 'border-white/5'
+        }`}>
+          <Link 
+            to="/login" 
+            className={`w-full flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 text-red-400 hover:text-red-300 hover:bg-red-400/5 rounded-xl transition-all ${
+              isSidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut className="w-4 h-4 md:w-4.5 md:h-4.5 min-w-[16px] md:min-w-[18px]" />
+            {!isSidebarCollapsed && <span className="text-[12.5px] md:text-sm font-medium whitespace-nowrap">Logout</span>}
           </Link>
         </div>
       </motion.aside>

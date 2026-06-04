@@ -177,3 +177,231 @@ body {
 .admin-dashboard-container ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ==========================================
+   LIGHT THEME ADMIN PANEL OVERRIDES
+   ========================================== */
+.light-theme .admin-panel {
+  background-color: #F8FAFC !important;
+  color: #0f172a !important;
+}
+
+/* Sidebar Overrides */
+.light-theme .admin-panel aside {
+  background-color: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+}
+
+/* Card & Background Overrides */
+.light-theme .admin-panel .bg-\[\#0D0D0D\],
+.light-theme .admin-panel .bg-\[\#0A0A0A\],
+.light-theme .admin-panel .bg-\[\#121212\],
+.light-theme .admin-panel .bg-\[\#0A0A0B\] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-theme .admin-panel .border-white\/5,
+.light-theme .admin-panel .border-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+
+.light-theme .admin-panel .text-white {
+  color: #0f172a !important;
+}
+
+/* Restore crisp white text & icons on colored/gradient backgrounds (blue, primary, red, emerald, gradients) */
+.light-theme .admin-panel .bg-blue-600,
+.light-theme .admin-panel .bg-blue-500,
+.light-theme .admin-panel .bg-blue-700,
+.light-theme .admin-panel .bg-primary,
+.light-theme .admin-panel .bg-red-600,
+.light-theme .admin-panel .bg-red-500,
+.light-theme .admin-panel .bg-emerald-600,
+.light-theme .admin-panel .bg-emerald-500,
+.light-theme .admin-panel .bg-indigo-600,
+.light-theme .admin-panel .bg-indigo-500,
+.light-theme .admin-panel .bg-gradient-to-br,
+.light-theme .admin-panel .bg-gradient-to-b,
+.light-theme .admin-panel .bg-blue-600 *,
+.light-theme .admin-panel .bg-blue-500 *,
+.light-theme .admin-panel .bg-blue-700 *,
+.light-theme .admin-panel .bg-primary *,
+.light-theme .admin-panel .bg-red-600 *,
+.light-theme .admin-panel .bg-red-500 *,
+.light-theme .admin-panel .bg-emerald-600 *,
+.light-theme .admin-panel .bg-emerald-500 *,
+.light-theme .admin-panel .bg-indigo-600 *,
+.light-theme .admin-panel .bg-indigo-500 *,
+.light-theme .admin-panel .bg-gradient-to-br *,
+.light-theme .admin-panel .bg-gradient-to-b * {
+  color: #ffffff !important;
+}
+
+
+.light-theme .admin-panel .text-slate-300 {
+  color: #334155 !important;
+}
+
+.light-theme .admin-panel .text-slate-400 {
+  color: #475569 !important;
+}
+
+.light-theme .admin-panel .bg-white\/5 {
+  background-color: #f1f5f9 !important;
+}
+
+.light-theme .admin-panel .bg-white\/\[0\.02\],
+.light-theme .admin-panel .bg-white\/\[0\.01\] {
+  background-color: #f8fafc !important;
+}
+
+.light-theme .admin-panel .hover\:bg-white\/5:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.light-theme .admin-panel .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+.light-theme .admin-panel .divide-white\/5 > * + * {
+  border-color: #e2e8f0 !important;
+}
+
+.light-theme .admin-panel .hover\:bg-white\/\[0\.02\]:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Inputs & Form Controls */
+.light-theme .admin-panel input,
+.light-theme .admin-panel select,
+.light-theme .admin-panel textarea {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.light-theme .admin-panel input::placeholder,
+.light-theme .admin-panel textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.light-theme .admin-panel select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Headings and Breadcrumbs */
+.light-theme .admin-panel .text-blue-50 {
+  color: #1e3a8a !important;
+}
+
+.light-theme .admin-panel .bg-blue-600\/10 {
+  background-color: #eff6ff !important;
+}
+
+.light-theme .admin-panel .border-blue-500\/20 {
+  border-color: #bfdbfe !important;
+}
+
+/* Modals & side panels background */
+.light-theme .admin-panel .bg-\[\#0D0D0D\],
+.light-theme .admin-panel [role="dialog"],
+.light-theme .admin-panel form {
+  background-color: #ffffff !important;
+}
+
+/* Scrollbars in Light Mode */
+.light-theme .admin-dashboard-container ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-theme .admin-dashboard-container ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15) !important;
+}
+
+.light-theme .admin-dashboard-container ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Specific elements like detail modals & headers */
+.light-theme .admin-panel .bg-white\/10 {
+  background-color: #e2e8f0 !important;
+}
+.light-theme .admin-panel .hover\:bg-white\/10:hover {
+  background-color: #cbd5e1 !important;
+}
+
+/* Avatar list backdrops */
+.light-theme .admin-panel .bg-\[\#0A0A0A\] {
+  background-color: #ffffff !important;
+}
+
+/* Glow widgets and highlights */
+.light-theme .admin-panel .text-orange-400 {
+  color: #d97706 !important;
+}
+
+/* Remove box shadows on blue buttons & tables in Light Mode for a clean, flat look */
+.light-theme .admin-panel .bg-blue-600,
+.light-theme .admin-panel .bg-blue-500,
+.light-theme .admin-panel .shadow-2xl,
+.light-theme .admin-panel .shadow-xl,
+.light-theme .admin-panel .shadow-lg,
+.light-theme .admin-panel .shadow-md,
+.light-theme .admin-panel .shadow {
+  box-shadow: none !important;
+}
+
+/* Allow bright blue hover border on stats cards specifically in Light Mode */
+.light-theme .admin-panel .stats-card:hover {
+  border-color: #3b82f6 !important;
+}
+
+/* Ensure consistent and beautiful table row divider lines in Light Mode */
+.light-theme .admin-panel table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+
+.light-theme .admin-panel tr {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.light-theme .admin-panel thead tr {
+  border-bottom: 2px solid #e2e8f0 !important; /* Thick divider below table headers */
+}
+
+.light-theme .admin-panel tbody tr:last-child {
+  border-bottom: none !important; /* Blends last row perfectly with the footer */
+}
+
+/* Beautiful hover background transition and colors for table rows in both Dark and Light Modes */
+.admin-panel tbody tr,
+.admin-panel tbody tr td {
+  transition: background-color 0.2s ease !important;
+}
+
+/* Default theme (Dark Mode) row hover background */
+.admin-panel tbody tr:hover,
+.admin-panel tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.03) !important; /* Premium, extremely subtle 3% white hover background */
+}
+
+/* Light Mode row hover background override */
+.light-theme .admin-panel tbody tr:hover,
+.light-theme .admin-panel tbody tr:hover td {
+  background-color: #f1f5f9 !important; /* Soft, slightly darker slate-100 gray */
+}
+
+/* Premium soft shadow for the profile dropdown in Light Mode */
+.light-theme .admin-panel .profile-dropdown {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03) !important;
+}
+
+
+
+
+
+
+

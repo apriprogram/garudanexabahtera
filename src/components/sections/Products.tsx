@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Reveal } from '../ui/Reveal';
@@ -28,7 +28,7 @@ const Products: React.FC = () => {
     setCurrentIndex((prev) => (prev - 1 + filteredProducts.length) % filteredProducts.length);
   };
 
-  const categories = [
+  const defaultCategories = [
     { id: 'all', label: 'Semua' },
     { id: 'website', label: 'Website' },
     { id: 'santri', label: 'I-Santri' },
@@ -38,14 +38,14 @@ const Products: React.FC = () => {
     { id: 'invitation', label: 'Undangan Digital' },
   ];
 
-  const products = [
+  const defaultProducts = [
     {
       id: 'website',
       category: 'website',
       badge: 'Jasa Pembuatan Website',
       title: 'Profil Perusahaan & Web Kustom',
       description: 'Website sekolah/instansi, Landing Page Produk, dan Website Custom System.',
-      image: '/assets/portfolio/portfolio1.png'
+      image: '/assets/portofolio/portfolio1.png'
     },
     {
       id: 'santri',
@@ -54,7 +54,7 @@ const Products: React.FC = () => {
       badge: 'Aplikasi I-Santri',
       title: 'Manajemen Pesantren Modern',
       description: 'Manajemen pesantren yang lebih terstruktur dan modern dengan sistem digital terintegrasi.',
-      image: '/assets/products/isantri.png'
+      image: '/assets/product/isantri.png'
     },
     {
       id: 'school',
@@ -63,7 +63,7 @@ const Products: React.FC = () => {
       badge: 'Aplikasi I-School',
       title: 'Digitalisasi Ekosistem Sekolah',
       description: 'Manajemen sekolah berbasis digital tingkat lanjut untuk efisiensi administrasi dan akademik.',
-      image: '/assets/products/ischool.png'
+      image: '/assets/product/ischool.png'
     },
     {
       id: 'pos',
@@ -71,15 +71,15 @@ const Products: React.FC = () => {
       badge: 'Aplikasi Kasir',
       title: 'Sistem POS Cerdas untuk UMKM',
       description: 'Sistem Point of Sale (POS) yang memudahkan transaksi dan manajemen stok untuk UMKM & retail.',
-      image: '/assets/products/pos.png'
+      image: '/assets/product/pos.png'
     },
     {
       id: 'absensi',
       category: 'absensi',
       badge: 'Aplikasi Absensi',
       title: 'Kehadiran Digital Real-time',
-      description: 'Sistem absensi digital berbasis web dan mobile dengan verifikasi yang akurat dan aman.',
-      image: '/assets/products/absensi.png'
+      description: 'Sistem absensi digital berbasis web dan mobile dengan verifikasi yang akurat and aman.',
+      image: '/assets/product/absensi.png'
     },
     {
       id: 'invitation',
@@ -88,9 +88,31 @@ const Products: React.FC = () => {
       badge: 'Undangan Digital Premium',
       title: 'Undangan Digital Interaktif',
       description: 'Solusi undangan pernikahan dan acara spesial dalam bentuk website modern yang elegan dan mudah dibagikan.',
-      image: '/assets/products/undangan_digital.png'
+      image: '/assets/product/undangan_digital.png'
     }
   ];
+
+  const [categories, setCategories] = useState<any[]>(defaultCategories);
+  const [products, setProducts] = useState<any[]>(defaultProducts);
+
+  useEffect(() => {
+    const fetchDynamicData = async () => {
+      try {
+        const apiUrl = '/api.php';
+        const response = await fetch(`${apiUrl}?action=get_settings`);
+        const data = await response.json();
+        if (data.products_categories) {
+          setCategories(JSON.parse(data.products_categories));
+        }
+        if (data.products_data) {
+          setProducts(JSON.parse(data.products_data));
+        }
+      } catch (e) {
+        console.error('Error fetching dynamic products:', e);
+      }
+    };
+    fetchDynamicData();
+  }, []);
 
   const filteredProducts = activeCategory === 'all' 
     ? products 
@@ -227,10 +249,15 @@ const Products: React.FC = () => {
                           {product.description}
                         </p>
                         
-                        <button className="group/btn pointer-events-auto bg-white hover:bg-slate-100 text-black px-4 py-2 md:px-6 md:py-3 rounded-full transition-all duration-300 flex items-center gap-1.5 md:gap-2 font-bold text-[10px] md:text-sm shadow-xl">
-                          Pesan Sekarang
+                        <a 
+                          href={product.buttonLink || `https://wa.me/6285188009152?text=Halo%20Admin%2C%20saya%20tertarik%20dengan%20produk%20${encodeURIComponent(product.title)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group/btn pointer-events-auto bg-white hover:bg-slate-100 text-black px-4 py-2 md:px-6 md:py-3 rounded-full transition-all duration-300 flex items-center gap-1.5 md:gap-2 font-bold text-[10px] md:text-sm shadow-xl select-none"
+                        >
+                          {product.buttonText || 'Pesan Sekarang'}
                           <ArrowRight className="w-3 h-3 md:w-4 md:h-4 transition-transform group-hover/btn:translate-x-1" />
-                        </button>
+                        </a>
                       </div>
                     </div>
                   </motion.div>

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 const LogoTicker: React.FC = () => {
   const [logos, setLogos] = React.useState<{ name: string, src: string }[]>([
@@ -15,7 +15,8 @@ const LogoTicker: React.FC = () => {
   React.useEffect(() => {
     const fetchLogos = async () => {
       try {
-        const response = await fetch('/api.php?action=get_settings');
+        const apiUrl = '/api.php';
+        const response = await fetch(`${apiUrl}?action=get_settings`);
         const data = await response.json();
         if (data.hero_logos) {
           const parsedLogos = JSON.parse(data.hero_logos);
