@@ -15,10 +15,29 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path,
       },
-      '/assets': {
+      '/assets/product': {
         target: 'http://localhost',
         changeOrigin: true,
-        rewrite: (path) => path,
+      },
+      '/assets/portofolio': {
+        target: 'http://localhost',
+        changeOrigin: true,
+      },
+      '/assets/services': {
+        target: 'http://localhost',
+        changeOrigin: true,
+      },
+      '/assets/bg': {
+        target: 'http://localhost',
+        changeOrigin: true,
+      },
+      '/assets/logo-product': {
+        target: 'http://localhost',
+        changeOrigin: true,
+      },
+      '/assets/dokumen-client': {
+        target: 'http://localhost',
+        changeOrigin: true,
       },
     }
   }
