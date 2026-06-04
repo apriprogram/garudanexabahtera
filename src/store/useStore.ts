@@ -14,7 +14,7 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set) => ({
-  theme: (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
+  theme: (localStorage.getItem('theme') as 'light' | 'dark') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
   language: (localStorage.getItem('language') as 'id' | 'en') || 'id',
   isSearchActive: false,
   isSidebarCollapsed: false,

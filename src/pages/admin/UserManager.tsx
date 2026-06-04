@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   UserPlus,
   Search, 
@@ -28,7 +28,7 @@ interface User {
   avatar?: string;
 }
 
-const API_URL = window.location.hostname === 'localhost' ? 'http://localhost/api.php' : '/api.php';
+const API_URL = '/api.php';
 
 const UserManager: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -210,7 +210,7 @@ const UserManager: React.FC = () => {
         </div>
         <button 
           onClick={() => handleOpenModal()}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 md:px-6 md:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95 text-xs md:text-base"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 md:px-5 md:py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white rounded-full font-bold transition-all border border-blue-400/40 active:scale-95 text-[10px] md:text-xs"
         >
           <UserPlus className="w-4 h-4 md:w-5 md:h-5" />
           Add New User
@@ -224,7 +224,7 @@ const UserManager: React.FC = () => {
           <input 
             type="text" 
             placeholder="Search by name or email..." 
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 md:py-2.5 text-xs md:text-sm text-white outline-none focus:border-blue-500/50 transition-all"
+            className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 md:py-2.5 text-xs md:text-sm text-white outline-none focus:border-blue-500/50 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -473,13 +473,13 @@ const UserManager: React.FC = () => {
                   <button 
                     type="button"
                     onClick={handleCloseModal}
-                    className="flex-1 px-4 py-2 md:py-3 bg-white/5 hover:bg-white/10 text-white rounded-lg font-bold transition-all text-[11px] md:text-xs"
+                    className="flex-1 px-4 py-2 md:py-3 bg-white/5 hover:bg-white/10 text-white rounded-full font-bold transition-all text-[11px] md:text-xs"
                   >
                     Cancel
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 px-4 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95 text-[11px] md:text-xs"
+                    className="flex-1 px-4 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95 text-[11px] md:text-xs"
                   >
                     {editingUser ? 'Save' : 'Create'}
                   </button>

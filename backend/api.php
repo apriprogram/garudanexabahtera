@@ -8,9 +8,15 @@ ini_set('post_max_size', '64M');
 ini_set('max_execution_time', '300');
 
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: *");
-header("Access-Control-Allow-Methods: *");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Content-Type: application/json");
+
+// Handle browser preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 $host = "localhost";
 $user = "root";
@@ -33,6 +39,36 @@ $error = null;
 $success = true;
 
 switch ($action) {
+    case 'migrate_paths':
+        // Update path lama ke path baru di semua setting yang menyimpan JSON gambar
+        $keys = ['products_data', 'portfolio_data'];
+        $results = [];
+        foreach ($keys as $key) {
+            $res = $conn->query("SELECT setting_value FROM hero_settings WHERE setting_key = '$key'");
+            if ($res && $row = $res->fetch_assoc()) {
+                $val = $row['setting_value'];
+                $newVal = str_replace('/assets/products/', '/assets/product/', $val);
+                $newVal = str_replace('/assets/portfolio/', '/assets/portofolio/', $newVal);
+                if ($newVal !== $val) {
+                    $escaped = $conn->real_escape_string($newVal);
+                    $conn->query("UPDATE hero_settings SET setting_value = '$escaped' WHERE setting_key = '$key'");
+                    $results[] = "$key: updated";
+                } else {
+                    $results[] = "$key: no change needed";
+                }
+            } else {
+                $results[] = "$key: not found";
+            }
+        }
+        echo json_encode(["success" => true, "results" => $results]);
+        break;
+
+    case 'reset_product_portfolio':
+        // Reset products & portfolio ke default agar gambar statis bawaan tampil
+        $conn->query("DELETE FROM hero_settings WHERE setting_key IN ('products_data', 'portfolio_data')");
+        echo json_encode(["success" => true, "message" => "Reset berhasil, data kembali ke default."]);
+        break;
+
     case 'get_users':
         $result = $conn->query("SELECT id, name, email, phone, role, status, avatar FROM users ORDER BY id DESC");
         $users = [];
@@ -102,14 +138,16 @@ switch ($action) {
         
         $result = $conn->query("SELECT * FROM users WHERE email='$email'");
         if ($row = $result->fetch_assoc()) {
-            if (password_verify($password, $row['password'])) {
+            if ($row['status'] === 'inactive') {
+                echo json_encode(["error" => "Akun Anda tidak aktif. Hubungi administrator."]);
+            } elseif (password_verify($password, $row['password'])) {
                 unset($row['password']);
                 echo json_encode(["success" => true, "user" => $row]);
             } else {
-                echo json_encode(["error" => "Invalid password"]);
+                echo json_encode(["error" => "Password salah"]);
             }
         } else {
-            echo json_encode(["error" => "User not found"]);
+            echo json_encode(["error" => "Email tidak ditemukan"]);
         }
         break;
 
@@ -125,6 +163,100 @@ switch ($action) {
     case 'update_settings':
         $settings = $input['settings'] ?? [];
         $success = true;
+
+        if (!function_exists('save_base64_setting_image')) {
+            function save_base64_setting_image($base64_data, $section) {
+                if (strpos($base64_data, 'data:image') === false) {
+                    return $base64_data;
+                }
+                $folder = __DIR__ . "/../public/assets/" . $section . "/";
+                if (!is_dir($folder)) mkdir($folder, 0777, true);
+                
+                $parts = explode(',', $base64_data);
+                $header = $parts[0];
+                $content = base64_decode($parts[1]);
+                
+                $ext = 'jpg';
+                if (strpos($header, 'png') !== false) $ext = 'png';
+                else if (strpos($header, 'svg') !== false) $ext = 'svg';
+                else if (strpos($header, 'webp') !== false) $ext = 'webp';
+                else if (strpos($header, 'gif') !== false) $ext = 'gif';
+                
+                $filename = $section . "_" . uniqid() . "." . $ext;
+                file_put_contents($folder . $filename, $content);
+                return "/assets/" . $section . "/" . $filename;
+            }
+        }
+
+        // Special handling for products_data
+        // Gambar disimpan sebagai base64 langsung di DB (tidak ke disk)
+        // agar tidak bergantung pada path file server yang berbeda-beda
+        if (isset($settings['products_data'])) {
+            $newItems = json_decode($settings['products_data'], true);
+            if (is_array($newItems)) {
+                // Ambil data existing untuk preserve gambar yang sudah ada
+                $existingRes = $conn->query("SELECT setting_value FROM hero_settings WHERE setting_key = 'products_data'");
+                $existingByID = [];
+                if ($existingRes && $existingRow = $existingRes->fetch_assoc()) {
+                    $existingParsed = json_decode($existingRow['setting_value'], true);
+                    if (is_array($existingParsed)) {
+                        foreach ($existingParsed as $ep) {
+                            if (!empty($ep['id'])) $existingByID[$ep['id']] = $ep;
+                        }
+                    }
+                }
+                foreach ($newItems as &$item) {
+                    $existID = $item['id'] ?? '';
+                    // Jika image kosong, gunakan image yang sudah ada
+                    if (empty($item['image']) && !empty($existingByID[$existID]['image'])) {
+                        $item['image'] = $existingByID[$existID]['image'];
+                    }
+                    // Jika logo kosong, gunakan logo yang sudah ada
+                    if (empty($item['logo']) && !empty($existingByID[$existID]['logo'])) {
+                        $item['logo'] = $existingByID[$existID]['logo'];
+                    }
+                    // Base64 images disimpan langsung (tidak perlu save ke disk)
+                    // File path images (/assets/...) juga disimpan langsung
+                }
+                $settings['products_data'] = json_encode($newItems);
+            }
+        }
+
+        // Special handling for portfolio_data - sama seperti products
+        if (isset($settings['portfolio_data'])) {
+            $newItems = json_decode($settings['portfolio_data'], true);
+            if (is_array($newItems)) {
+                // Ambil data existing untuk preserve gambar yang sudah ada
+                $existingRes = $conn->query("SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data'");
+                $existingArr = [];
+                if ($existingRes && $existingRow = $existingRes->fetch_assoc()) {
+                    $existingArr = json_decode($existingRow['setting_value'], true) ?: [];
+                }
+                foreach ($newItems as $idx => &$item) {
+                    // Jika image kosong, gunakan image yang sudah ada berdasarkan posisi
+                    if (empty($item['image']) && !empty($existingArr[$idx]['image'])) {
+                        $item['image'] = $existingArr[$idx]['image'];
+                    }
+                }
+                $settings['portfolio_data'] = json_encode($newItems);
+            }
+        }
+
+        // Special handling for services_data
+        if (isset($settings['services_data'])) {
+            $items = json_decode($settings['services_data'], true);
+            if (is_array($items)) {
+                foreach ($items as &$item) {
+                    if (isset($item['image'])) {
+                        $item['image'] = save_base64_setting_image($item['image'], 'services');
+                    }
+                    if (isset($item['icon'])) {
+                        $item['icon'] = save_base64_setting_image($item['icon'], 'services');
+                    }
+                }
+                $settings['services_data'] = json_encode($items);
+            }
+        }
         
         // Special handling for hero_images
         if (isset($settings['hero_images'])) {

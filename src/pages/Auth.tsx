@@ -1,7 +1,14 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Chrome, ArrowLeft, Phone, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Chrome, ArrowLeft, Phone, Eye, EyeOff, CheckCircle, XCircle, X } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+
+type ToastType = 'success' | 'error';
+interface Toast {
+  id: number;
+  message: string;
+  type: ToastType;
+}
 
 const Auth: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -11,6 +18,7 @@ const Auth: React.FC = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   const [, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -19,12 +27,24 @@ const Auth: React.FC = () => {
     setIsLogin(searchParams.get('type') !== 'register');
   }, [searchParams]);
 
+  const showToast = (message: string, type: ToastType) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  };
+
+  const dismissToast = (id: number) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost/api.php' : '/api.php';
+      const apiUrl = '/api.php';
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,14 +65,14 @@ const Auth: React.FC = () => {
           localStorage.setItem('currentUser', JSON.stringify(data.user));
           navigate('/admin');
         } else {
-          alert('Registration successful! Please login.');
+          showToast('Registrasi berhasil! Silakan login.', 'success');
           setIsLogin(true);
         }
       } else {
-        alert(data.error || 'Operation failed');
+        showToast(data.error || 'Operasi gagal', 'error');
       }
     } catch (error) {
-      alert('Connection error');
+      showToast('Gagal terhubung ke server', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -60,6 +80,41 @@ const Auth: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-bg-dark flex items-center justify-center p-4 relative overflow-hidden">
+
+      {/* Toast Notifications */}
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-3 items-center w-full max-w-sm px-4 pointer-events-none">
+        <AnimatePresence>
+          {toasts.map(toast => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border pointer-events-auto relative overflow-hidden
+                ${toast.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300'
+                  : 'bg-red-500/10 border-red-500/25 text-red-300'}
+                backdrop-blur-2xl`}
+            >
+              {/* Glass inner highlight */}
+              <div className="absolute inset-0 bg-white/[0.03] pointer-events-none" />
+              <div className="shrink-0">
+                {toast.type === 'success'
+                  ? <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  : <XCircle className="w-4 h-4 text-red-400" />}
+              </div>
+              <p className="flex-1 text-xs font-medium leading-relaxed">{toast.message}</p>
+              <button
+                onClick={() => dismissToast(toast.id)}
+                className="shrink-0 opacity-50 hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
       {/* Background Glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/5 blur-[120px] rounded-full animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full animate-pulse" />

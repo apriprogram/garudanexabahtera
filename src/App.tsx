@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import Hero from './components/sections/Hero';
@@ -40,7 +40,7 @@ function App() {
     const hasVisited = sessionStorage.getItem('hasVisited');
     if (!hasVisited) {
       sessionStorage.setItem('hasVisited', 'true'); // Set immediately to prevent double fetch in StrictMode
-      const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost/api.php' : '/api.php';
+      const apiUrl = '/api.php';
       fetch(`${apiUrl}?action=track_visit`)
         .catch(err => {
           console.error('Error tracking visit:', err);
@@ -55,6 +55,24 @@ function App() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const [whatsapp, setWhatsapp] = useState('6285188009152');
+
+  useEffect(() => {
+    const fetchWhatsApp = async () => {
+      try {
+        const apiUrl = '/api.php';
+        const response = await fetch(`${apiUrl}?action=get_settings`);
+        const data = await response.json();
+        if (data.footer_whatsapp) {
+          setWhatsapp(data.footer_whatsapp.replace(/\D/g, ''));
+        }
+      } catch (e) {
+        console.error('Error fetching dynamic WhatsApp widget number:', e);
+      }
+    };
+    fetchWhatsApp();
   }, []);
 
   const scrollToTop = () => {
@@ -117,7 +135,7 @@ function App() {
 
         {/* Floating WhatsApp Widget */}
         <a 
-          href="https://wa.me/6285188009152?text=Halo%20Admin%2C%20saya%20tertarik%20untuk%20membeli%20produk%20atau%20memesan%20jasa%20digital%20Anda." 
+          href={`https://wa.me/${whatsapp}?text=Halo%20Admin%2C%20saya%20tertarik%20untuk%20membeli%20produk%20atau%20memesan%20jasa%20digital%20Anda.`}
           target="_blank" 
           rel="noopener noreferrer"
           className="bg-[#25D366] p-3 sm:p-4 rounded-full shadow-lg hover:scale-110 transition-transform group flex items-center justify-center"

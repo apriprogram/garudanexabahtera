@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Reveal } from '../ui/Reveal';
@@ -16,7 +16,8 @@ const Hero: React.FC = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch('/api.php?action=get_settings');
+        const apiUrl = '/api.php';
+        const response = await fetch(`${apiUrl}?action=get_settings`);
         const data = await response.json();
         setSettings(data);
         if (data.hero_images) {

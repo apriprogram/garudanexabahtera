@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Camera, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -64,7 +64,8 @@ const ProfileSettings: React.FC = () => {
     setStatus(null);
 
     try {
-      const response = await fetch('/api.php', {
+      const apiUrl = '/api.php';
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -195,7 +196,7 @@ const ProfileSettings: React.FC = () => {
               <button 
                 type="submit" 
                 disabled={isSaving}
-                className="flex items-center gap-2 md:gap-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-6 py-3 md:px-10 md:py-4 rounded-xl md:rounded-2xl font-bold transition-all shadow-xl shadow-blue-600/20 active:scale-95 text-xs md:text-base"
+                className="flex items-center justify-center gap-1.5 px-4 py-2 md:px-5 md:py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 disabled:opacity-50 text-white rounded-full font-bold transition-all border border-blue-400/40 active:scale-95 text-[10px] md:text-xs"
               >
                 {isSaving ? 'Saving...' : <><Save className="w-4 h-4 md:w-5 md:h-5" /> Save Changes</>}
               </button>
