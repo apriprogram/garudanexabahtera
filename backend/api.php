@@ -680,6 +680,493 @@ switch ($action) {
         }
         break;
 
+    // ═══════════════════════════════════════════════
+    // Monitoring Center API Endpoints
+    // ═══════════════════════════════════════════════
+
+    // ── Website Monitoring ──
+    case 'monitor_get_websites':
+        $result = $conn->query("SELECT * FROM monitoring_websites ORDER BY category, name");
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $row['id'] = (int)$row['id'];
+            $row['is_active'] = (bool)$row['is_active'];
+            $row['uptime_total'] = (float)$row['uptime_total'];
+            $data[] = $row;
+        }
+        echo json_encode($data);
+        break;
+
+    case 'monitor_add_website':
+        $name = $conn->real_escape_string($input['name'] ?? '');
+        $url = $conn->real_escape_string($input['url'] ?? '');
+        $category = $conn->real_escape_string($input['category'] ?? 'Umum');
+        $notes = $conn->real_escape_string($input['notes'] ?? '');
+        $is_active = (int)($input['is_active'] ?? 1);
+        $sql = "INSERT INTO monitoring_websites (name, url, category, is_active, notes) VALUES ('$name', '$url', '$category', $is_active, '$notes')";
+        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
+        else echo json_encode(["error" => $conn->error]);
+        break;
+
+    case 'monitor_update_website':
+        $id = (int)($input['id'] ?? 0);
+        $name = $conn->real_escape_string($input['name'] ?? '');
+        $url = $conn->real_escape_string($input['url'] ?? '');
+        $category = $conn->real_escape_string($input['category'] ?? 'Umum');
+        $notes = $conn->real_escape_string($input['notes'] ?? '');
+        $is_active = (int)($input['is_active'] ?? 1);
+        $sql = "UPDATE monitoring_websites SET name='$name', url='$url', category='$category', is_active=$is_active, notes='$notes' WHERE id=$id";
+        if ($conn->query($sql)) echo json_encode(["success" => true]);
+        else echo json_encode(["error" => $conn->error]);
+        break;
+
+    case 'monitor_delete_website':
+        $id = (int)($input['id'] ?? 0);
+        $conn->query("DELETE FROM monitoring_website_checks WHERE website_id=$id");
+        $conn->query("DELETE FROM monitoring_websites WHERE id=$id");
+        echo json_encode(["success" => true]);
+        break;
+
+    case 'monitor_check_website':
+        $id = (int)($input['id'] ?? 0);
+        $res = $conn->query("SELECT url FROM monitoring_websites WHERE id=$id");
+        $row = $res->fetch_assoc();
+        if (!$row) { echo json_encode(["error" => "Website not found"]); break; }
+        $url = $row['url'];
+        $start = microtime(true);
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_NOBODY => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+        ]);
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        $elapsed = round((microtime(true) - $start) * 1000);
+        $isOnline = ($httpCode >= 200 && $httpCode < 500) && empty($err);
+        $status = $isOnline ? 'online' : 'offline';
+
+        $conn->query("UPDATE monitoring_websites SET status='$status', last_checked=NOW() WHERE id=$id");
+        $errEsc = $conn->real_escape_string($err);
+        $conn->query("INSERT INTO monitoring_website_checks (website_id, status, response_time_ms, http_status, error_message) VALUES ($id, '$status', $elapsed, $httpCode, '$errEsc')");
+        echo json_encode(["status" => $status, "response_time_ms" => $elapsed, "http_status" => $httpCode, "error" => $err]);
+        break;
+
+    case 'monitor_check_all_websites':
+        $res = $conn->query("SELECT id, url FROM monitoring_websites WHERE is_active=1");
+        $results = [];
+        while ($row = $res->fetch_assoc()) {
+            $wid = (int)$row['id'];
+            $url = $row['url'];
+            $start = microtime(true);
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10,
+                CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 2,
+                CURLOPT_NOBODY => true, CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $err = curl_error($ch);
+            curl_close($ch);
+            $elapsed = round((microtime(true) - $start) * 1000);
+            $status = ($httpCode >= 200 && $httpCode < 500) && empty($err) ? 'online' : 'offline';
+            $conn->query("UPDATE monitoring_websites SET status='$status', last_checked=NOW() WHERE id=$wid");
+            $errEsc = $conn->real_escape_string($err);
+            $conn->query("INSERT INTO monitoring_website_checks (website_id, status, response_time_ms, http_status, error_message) VALUES ($wid, '$status', $elapsed, $httpCode, '$errEsc')");
+            $results[] = ["id" => $wid, "status" => $status, "response_time_ms" => $elapsed];
+        }
+        echo json_encode(["success" => true, "results" => $results]);
+        break;
+
+    case 'monitor_get_websites_stats':
+        $total = 0; $online = 0; $offline = 0;
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites");
+        if ($r) { $total = (int)$r->fetch_assoc()['c']; }
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='online'");
+        if ($r) { $online = (int)$r->fetch_assoc()['c']; }
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='offline'");
+        if ($r) { $offline = (int)$r->fetch_assoc()['c']; }
+        echo json_encode(["total" => $total, "online" => $online, "offline" => $offline]);
+        break;
+
+    case 'monitor_get_website_checks':
+        $id = (int)($input['id'] ?? $_GET['id'] ?? 0);
+        $limit = (int)($input['limit'] ?? $_GET['limit'] ?? 60);
+        $result = $conn->query("SELECT * FROM monitoring_website_checks WHERE website_id=$id ORDER BY checked_at DESC LIMIT $limit");
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $row['id'] = (int)$row['id'];
+            $row['response_time_ms'] = (int)$row['response_time_ms'];
+            $row['http_status'] = (int)$row['http_status'];
+            $data[] = $row;
+        }
+        echo json_encode(array_reverse($data));
+        break;
+
+    // ── Server Monitoring ──
+    case 'monitor_get_server_status':
+        $result = $conn->query("SELECT * FROM monitoring_server_status WHERE id=1");
+        if ($row = $result->fetch_assoc()) {
+            $row['ram_used'] = (float)$row['ram_used'];
+            $row['ram_total'] = (float)$row['ram_total'];
+            $row['disk_used'] = (float)$row['disk_used'];
+            $row['disk_total'] = (float)$row['disk_total'];
+            echo json_encode($row);
+        } else echo json_encode(["error" => "No server data"]);
+        break;
+
+    case 'monitor_update_server':
+        $cpu = (float)($input['cpu_usage'] ?? 0);
+        $ramUsed = (float)($input['ram_used'] ?? 0);
+        $ramTotal = (float)($input['ram_total'] ?? 1);
+        $diskUsed = (float)($input['disk_used'] ?? 0);
+        $diskTotal = (float)($input['disk_total'] ?? 1);
+        $netIn = (float)($input['network_in'] ?? 0);
+        $netOut = (float)($input['network_out'] ?? 0);
+        $uptime = (int)($input['uptime_seconds'] ?? 0);
+        $ramPct = round(($ramUsed / $ramTotal) * 100, 2);
+        $diskPct = round(($diskUsed / $diskTotal) * 100, 2);
+        $status = 'healthy';
+        if ($cpu > 80 || $ramPct > 80 || $diskPct > 90) $status = 'critical';
+        elseif ($cpu > 60 || $ramPct > 60 || $diskPct > 75) $status = 'warning';
+        $conn->query("UPDATE monitoring_server_status SET cpu_usage=$cpu, ram_used=$ramUsed, ram_total=$ramTotal, ram_percent=$ramPct, disk_used=$diskUsed, disk_total=$diskTotal, disk_percent=$diskPct, network_in=$netIn, network_out=$netOut, uptime_seconds=$uptime, status='$status', last_updated=NOW() WHERE id=1");
+        $conn->query("INSERT INTO monitoring_server_metrics (cpu_usage, ram_used, ram_total, disk_used, disk_total, network_in, network_out) VALUES ($cpu, $ramUsed, $ramTotal, $diskUsed, $diskTotal, $netIn, $netOut)");
+        echo json_encode(["success" => true, "status" => $status]);
+        break;
+
+    case 'monitor_get_server_metrics':
+        $limit = (int)($input['limit'] ?? $_GET['limit'] ?? 60);
+        $result = $conn->query("SELECT * FROM monitoring_server_metrics ORDER BY recorded_at DESC LIMIT $limit");
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $row['cpu_usage'] = (float)$row['cpu_usage'];
+            $row['ram_used'] = (float)$row['ram_used'];
+            $row['ram_total'] = (float)$row['ram_total'];
+            $row['disk_used'] = (float)$row['disk_used'];
+            $row['disk_total'] = (float)$row['disk_total'];
+            $data[] = $row;
+        }
+        echo json_encode(array_reverse($data));
+        break;
+
+    // ── Visitor Stats ──
+    case 'monitor_get_visitor_stats':
+        // Reuse existing get_visitor_details data + add summary
+        $total = 0;
+        $r = $conn->query("SELECT total_visits FROM visitor_stats WHERE id=1");
+        if ($row = $r->fetch_assoc()) $total = (int)$row['total_visits'];
+        $today = 0;
+        $tr = $conn->query("SELECT COUNT(*) as cnt FROM visitor_logs WHERE DATE(visited_at)=CURDATE()");
+        if ($rw = $tr->fetch_assoc()) $today = (int)$rw['cnt'];
+        $active = 0;
+        $ar = $conn->query("SELECT COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)");
+        if ($aw = $ar->fetch_assoc()) $active = (int)$aw['cnt'];
+
+        $daily = []; $weekly = []; $monthly = [];
+        $dr = $conn->query("SELECT DATE(visited_at) as d, COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY d ORDER BY d ASC");
+        if ($dr) { while ($w = $dr->fetch_assoc()) $daily[] = ["date" => $w['d'], "count" => (int)$w['cnt']]; }
+        $wr = $conn->query("SELECT YEARWEEK(visited_at) as w, COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 12 WEEK) GROUP BY w ORDER BY w ASC");
+        if ($wr) { while ($w = $wr->fetch_assoc()) $weekly[] = ["week" => $w['w'], "count" => (int)$w['cnt']]; }
+        $mr = $conn->query("SELECT DATE_FORMAT(visited_at, '%Y-%m') as m, COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH) GROUP BY m ORDER BY m ASC");
+        if ($mr) { while ($w = $mr->fetch_assoc()) $monthly[] = ["month" => $w['m'], "count" => (int)$w['cnt']]; }
+
+        // Devices
+        $devices = [];
+        $dvr = $conn->query("SELECT device, COUNT(*) as cnt FROM visitor_logs GROUP BY device ORDER BY cnt DESC");
+        if ($dvr) { while ($w = $dvr->fetch_assoc()) $devices[] = ["label" => $w['device'] ?: 'Unknown', "value" => (int)$w['cnt']]; }
+        // Browsers
+        $browsers = [];
+        $brr = $conn->query("SELECT browser, COUNT(*) as cnt FROM visitor_logs GROUP BY browser ORDER BY cnt DESC");
+        if ($brr) { while ($w = $brr->fetch_assoc()) $browsers[] = ["label" => $w['browser'] ?: 'Unknown', "value" => (int)$w['cnt']]; }
+        // Countries
+        $countries = [];
+        $crr = $conn->query("SELECT country, COUNT(*) as cnt FROM visitor_logs GROUP BY country ORDER BY cnt DESC");
+        if ($crr) { while ($w = $crr->fetch_assoc()) $countries[] = ["label" => $w['country'] ?: 'Unknown', "value" => (int)$w['cnt']]; }
+
+        echo json_encode([
+            "total" => $total, "today" => $today, "active" => $active,
+            "daily" => $daily, "weekly" => $weekly, "monthly" => $monthly,
+            "devices" => $devices, "browsers" => $browsers, "countries" => $countries
+        ]);
+        break;
+
+    // ── Database Monitoring ──
+    case 'monitor_get_database_status':
+        $result = $conn->query("SELECT * FROM monitoring_database WHERE id=1");
+        if (!$result || !($row = $result->fetch_assoc())) {
+            $row = ["db_name" => "db_garudanexabahtera", "status" => "connected", "size_mb" => 0, "active_connections" => 0, "last_backup" => null, "backup_status" => "No backup yet"];
+        }
+        // Calculate actual DB size
+        $sizeRes = $conn->query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size_mb FROM information_schema.tables WHERE table_schema='$db'");
+        if ($sizeRes && $s = $sizeRes->fetch_assoc()) {
+            $row['size_mb'] = (float)$s['size_mb'];
+        }
+        // Active connections
+        $connRes = $conn->query("SELECT COUNT(*) as c FROM information_schema.processlist WHERE db='$db'");
+        if ($connRes && $c = $connRes->fetch_assoc()) {
+            $row['active_connections'] = (int)$c['c'];
+        }
+        $row['size_mb'] = $row['size_mb'] ?? 0;
+        $row['active_connections'] = $row['active_connections'] ?? 0;
+        echo json_encode($row);
+        break;
+
+    // ── Domain Monitoring ──
+    case 'monitor_get_domains':
+        $result = $conn->query("SELECT md.*, mw.name as website_name FROM monitoring_domains md LEFT JOIN monitoring_websites mw ON md.website_id = mw.id ORDER BY md.expiry_date ASC");
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $row['id'] = (int)$row['id'];
+            $row['days_until_expiry'] = (int)$row['days_until_expiry'];
+            $row['ssl_days_until_expiry'] = (int)$row['ssl_days_until_expiry'];
+            $data[] = $row;
+        }
+        echo json_encode($data);
+        break;
+
+    case 'monitor_add_domain':
+        $domain = $conn->real_escape_string($input['domain'] ?? '');
+        $website_id = (int)($input['website_id'] ?? 0);
+        $registrar = $conn->real_escape_string($input['registrar'] ?? '');
+        $expiry = $conn->real_escape_string($input['expiry_date'] ?? '');
+        $ssl_expiry = $conn->real_escape_string($input['ssl_expiry_date'] ?? '');
+        $days = $expiry ? round((strtotime($expiry) - time()) / 86400) : 0;
+        $ssl_days = $ssl_expiry ? round((strtotime($ssl_expiry) - time()) / 86400) : 0;
+        $status = $days < 0 ? 'expired' : ($days < 30 ? 'expiring_soon' : 'valid');
+        $wid = $website_id > 0 ? $website_id : "NULL";
+        $sql = "INSERT INTO monitoring_domains (domain, website_id, registrar, expiry_date, days_until_expiry, ssl_expiry_date, ssl_days_until_expiry, status) VALUES ('$domain', $wid, '$registrar', " . ($expiry ? "'$expiry'" : "NULL") . ", $days, " . ($ssl_expiry ? "'$ssl_expiry'" : "NULL") . ", $ssl_days, '$status')";
+        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
+        else echo json_encode(["error" => $conn->error]);
+        break;
+
+    case 'monitor_delete_domain':
+        $id = (int)($input['id'] ?? 0);
+        $conn->query("DELETE FROM monitoring_domains WHERE id=$id");
+        echo json_encode(["success" => true]);
+        break;
+
+    // ── API Monitoring ──
+    case 'monitor_get_apis':
+        $result = $conn->query("SELECT * FROM monitoring_api ORDER BY name");
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $row['id'] = (int)$row['id'];
+            $row['response_time_ms'] = (int)$row['response_time_ms'];
+            $row['success_count'] = (int)$row['success_count'];
+            $row['fail_count'] = (int)$row['fail_count'];
+            $data[] = $row;
+        }
+        echo json_encode($data);
+        break;
+
+    case 'monitor_add_api':
+        $name = $conn->real_escape_string($input['name'] ?? '');
+        $endpoint = $conn->real_escape_string($input['endpoint'] ?? '');
+        $method = $conn->real_escape_string($input['method'] ?? 'GET');
+        $sql = "INSERT INTO monitoring_api (name, endpoint, method) VALUES ('$name', '$endpoint', '$method')";
+        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
+        else echo json_encode(["error" => $conn->error]);
+        break;
+
+    case 'monitor_check_api':
+        $id = (int)($input['id'] ?? 0);
+        $res = $conn->query("SELECT * FROM monitoring_api WHERE id=$id");
+        $api = $res->fetch_assoc();
+        if (!$api) { echo json_encode(["error" => "API not found"]); break; }
+        $start = microtime(true);
+        $ch = curl_init($api['endpoint']);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_SSL_VERIFYPEER => false]);
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        $elapsed = round((microtime(true) - $start) * 1000);
+        $success = ($httpCode >= 200 && $httpCode < 500 && empty($err));
+        if ($success) $conn->query("UPDATE monitoring_api SET status='active', response_time_ms=$elapsed, success_count=success_count+1, last_checked=NOW() WHERE id=$id");
+        else $conn->query("UPDATE monitoring_api SET status='down', response_time_ms=$elapsed, fail_count=fail_count+1, last_checked=NOW() WHERE id=$id");
+        echo json_encode(["success" => $success, "response_time_ms" => $elapsed, "http_status" => $httpCode]);
+        break;
+
+    case 'monitor_delete_api':
+        $id = (int)($input['id'] ?? 0);
+        $conn->query("DELETE FROM monitoring_api WHERE id=$id");
+        echo json_encode(["success" => true]);
+        break;
+
+    // ── Security Logs ──
+    case 'monitor_get_security_logs':
+        $limit = (int)($input['limit'] ?? $_GET['limit'] ?? 50);
+        $result = $conn->query("SELECT * FROM monitoring_security_logs ORDER BY created_at DESC LIMIT $limit");
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $row['id'] = (int)$row['id'];
+            $data[] = $row;
+        }
+        echo json_encode($data);
+        break;
+
+    case 'monitor_security_summary':
+        $total = 0; $new = 0; $high = 0; $blocked = 0;
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_security_logs");
+        if ($r) $total = (int)$r->fetch_assoc()['c'];
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_security_logs WHERE status='new'");
+        if ($r) $new = (int)$r->fetch_assoc()['c'];
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_security_logs WHERE severity IN ('high','critical')");
+        if ($r) $high = (int)$r->fetch_assoc()['c'];
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_security_logs WHERE type='blocked_ip'");
+        if ($r) $blocked = (int)$r->fetch_assoc()['c'];
+        echo json_encode(["total" => $total, "new" => $new, "high_severity" => $high, "blocked_ips" => $blocked]);
+        break;
+
+    case 'monitor_update_security_status':
+        $id = (int)($input['id'] ?? 0);
+        $status = $conn->real_escape_string($input['status'] ?? 'reviewed');
+        $conn->query("UPDATE monitoring_security_logs SET status='$status' WHERE id=$id");
+        echo json_encode(["success" => true]);
+        break;
+
+    // ── Notifications ──
+    case 'monitor_get_notifications':
+        $limit = (int)($input['limit'] ?? $_GET['limit'] ?? 20);
+        $type = $conn->real_escape_string($input['type'] ?? '');
+        $sql = "SELECT * FROM monitoring_notifications";
+        if ($type) $sql .= " WHERE type='$type'";
+        $sql .= " ORDER BY created_at DESC LIMIT $limit";
+        $result = $conn->query($sql);
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $row['id'] = (int)$row['id'];
+            $row['is_read'] = (bool)$row['is_read'];
+            $row['sent_wa'] = (bool)$row['sent_wa'];
+            $data[] = $row;
+        }
+        echo json_encode($data);
+        break;
+
+    case 'monitor_mark_notification_read':
+        $id = (int)($input['id'] ?? 0);
+        $conn->query("UPDATE monitoring_notifications SET is_read=1 WHERE id=$id");
+        echo json_encode(["success" => true]);
+        break;
+
+    case 'monitor_mark_all_read':
+        $conn->query("UPDATE monitoring_notifications SET is_read=1 WHERE is_read=0");
+        echo json_encode(["success" => true]);
+        break;
+
+    case 'monitor_add_notification':
+        $type = $conn->real_escape_string($input['type'] ?? 'info');
+        $title = $conn->real_escape_string($input['title'] ?? '');
+        $message = $conn->real_escape_string($input['message'] ?? '');
+        $severity = $conn->real_escape_string($input['severity'] ?? 'info');
+        $sent_wa = (int)($input['sent_wa'] ?? 0);
+        $sql = "INSERT INTO monitoring_notifications (type, title, message, severity, sent_wa) VALUES ('$type', '$title', '$message', '$severity', $sent_wa)";
+        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
+        else echo json_encode(["error" => $conn->error]);
+        break;
+
+    case 'monitor_get_unread_count':
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_notifications WHERE is_read=0");
+        $count = $r ? (int)$r->fetch_assoc()['c'] : 0;
+        echo json_encode(["unread" => $count]);
+        break;
+
+    // ── Categories ──
+    case 'monitor_get_categories':
+        $result = $conn->query("SELECT * FROM monitoring_categories ORDER BY sort_order");
+        $data = [];
+        while ($row = $result->fetch_assoc()) $data[] = $row;
+        echo json_encode($data);
+        break;
+
+    case 'monitor_add_category':
+        $name = $conn->real_escape_string($input['name'] ?? '');
+        $icon = $conn->real_escape_string($input['icon'] ?? 'Globe');
+        $sort = (int)($input['sort_order'] ?? 0);
+        $sql = "INSERT INTO monitoring_categories (name, icon, sort_order) VALUES ('$name', '$icon', $sort)";
+        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
+        else echo json_encode(["error" => $conn->error]);
+        break;
+
+    case 'monitor_delete_category':
+        $id = (int)($input['id'] ?? 0);
+        $conn->query("DELETE FROM monitoring_categories WHERE id=$id");
+        echo json_encode(["success" => true]);
+        break;
+
+    // ── Settings ──
+    case 'monitor_get_settings':
+        $result = $conn->query("SELECT * FROM monitoring_settings WHERE id=1");
+        if ($row = $result->fetch_assoc()) echo json_encode($row);
+        else echo json_encode([]);
+        break;
+
+    case 'monitor_update_settings':
+        $fields = ['check_interval', 'wa_notifications', 'notify_website_down', 'notify_high_resource', 'notify_ssl_expiry', 'notify_domain_expiry'];
+        $sets = [];
+        foreach ($fields as $f) {
+            if (isset($input[$f])) $sets[] = "$f=" . (int)$input[$f];
+        }
+        if (isset($input['wa_phone'])) $sets[] = "wa_phone='" . $conn->real_escape_string($input['wa_phone']) . "'";
+        if (isset($input['wa_group'])) $sets[] = "wa_group='" . $conn->real_escape_string($input['wa_group']) . "'";
+        if (!empty($sets)) {
+            $conn->query("UPDATE monitoring_settings SET " . implode(',', $sets) . " WHERE id=1");
+        }
+        echo json_encode(["success" => true]);
+        break;
+
+    // ── Dashboard Summary ──
+    case 'monitor_dashboard_summary':
+        // Websites
+        $totalWeb = 0; $onlineWeb = 0; $offlineWeb = 0;
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites");
+        if ($r) $totalWeb = (int)$r->fetch_assoc()['c'];
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='online'");
+        if ($r) $onlineWeb = (int)$r->fetch_assoc()['c'];
+        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='offline'");
+        if ($r) $offlineWeb = (int)$r->fetch_assoc()['c'];
+
+        // Server
+        $server = null;
+        $sr = $conn->query("SELECT * FROM monitoring_server_status WHERE id=1");
+        if ($sr) $server = $sr->fetch_assoc();
+
+        // Visitors
+        $visitors = 0;
+        $vr = $conn->query("SELECT total_visits FROM visitor_stats WHERE id=1");
+        if ($vr) $visitors = (int)$vr->fetch_assoc()['total_visits'];
+
+        // Database
+        $dbSize = 0;
+        $dr = $conn->query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as s FROM information_schema.tables WHERE table_schema='$db'");
+        if ($dr && $d = $dr->fetch_assoc()) $dbSize = (float)$d['s'];
+
+        // Notifications unread
+        $unreadN = 0;
+        $nr = $conn->query("SELECT COUNT(*) as c FROM monitoring_notifications WHERE is_read=0");
+        if ($nr) $unreadN = (int)$nr->fetch_assoc()['c'];
+
+        // Domains expiring soon
+        $domainsExpiring = [];
+        $der = $conn->query("SELECT domain, days_until_expiry, ssl_days_until_expiry FROM monitoring_domains WHERE (days_until_expiry BETWEEN 0 AND 30) OR (ssl_days_until_expiry BETWEEN 0 AND 30)");
+        if ($der) { while ($d = $der->fetch_assoc()) $domainsExpiring[] = $d; }
+
+        echo json_encode([
+            "websites" => ["total" => $totalWeb, "online" => $onlineWeb, "offline" => $offlineWeb],
+            "server" => $server,
+            "visitors" => $visitors,
+            "database_size_mb" => $dbSize,
+            "unread_notifications" => $unreadN,
+            "domains_expiring" => $domainsExpiring
+        ]);
+        break;
+
     default:
         echo json_encode(["error" => "Invalid action: " . $action]);
         break;
