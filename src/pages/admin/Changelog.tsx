@@ -47,9 +47,13 @@ const Changelog: React.FC = () => {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch(`${API}?action=get_changelogs`);
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_changelogs' })
+      });
       const data = await res.json();
-      setLogs(Array.isArray(data) ? data : []);
+      setLogs(data.success && Array.isArray(data.data) ? data.data : []);
     } catch (e) {
       console.error('Gagal ambil changelog:', e);
     } finally {

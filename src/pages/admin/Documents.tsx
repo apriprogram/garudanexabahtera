@@ -48,7 +48,11 @@ const Documents: React.FC = () => {
   const fetchDocuments = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api.php?action=get_documents');
+      const res = await fetch('/api.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_documents' })
+      });
       if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
       const data = await res.json();
       if (data.success) {
