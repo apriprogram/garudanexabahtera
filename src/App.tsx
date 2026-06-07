@@ -147,7 +147,7 @@ function App() {
           <Route path="hero" element={<HeroSettings settings={{}} heroImages={[]} setHeroImages={() => {}} heroLogos={[]} setHeroLogos={() => {}} />} />
           <Route path="services" element={<ServicesManager />} />
           <Route path="products" element={<ProductsIndex />} />
-          <Route path="products/:productId" element={<ProductsIndex />} />
+          <Route path="products/:productId" element={<ProductDetail />} />
           <Route path="product-manager" element={<ProductManager />} />
           <Route path="documents" element={<Documents />} />
           <Route path="users" element={<UserManager />} />
