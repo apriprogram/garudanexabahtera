@@ -140,8 +140,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
             <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Main Heading</label>
             <textarea 
               id="hero_title"
-              rows={3}
-              className="w-full bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-4 py-3 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all resize-none text-sm md:text-lg font-semibold"
+              className="w-full bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-4 py-3 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all overflow-hidden min-h-[80px] resize-y text-sm md:text-lg font-semibold"
               placeholder="Enter main hero title..."
               defaultValue={settings.hero_title || ""}
             />
@@ -150,8 +149,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
             <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Sub-heading Description</label>
             <textarea 
               id="hero_subtitle"
-              rows={4}
-              className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-2xl px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all resize-none text-[10px] md:text-sm text-slate-400"
+              className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-2xl px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all overflow-hidden min-h-[100px] resize-y text-[10px] md:text-sm text-slate-400"
               placeholder="Enter supporting description..."
               defaultValue={settings.hero_subtitle || ""}
             />

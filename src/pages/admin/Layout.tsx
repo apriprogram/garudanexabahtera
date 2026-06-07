@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../../components/admin/Sidebar';
 import Header from '../../components/admin/Header';
+import AIChatWidget from '../../components/admin/AIChatWidget';
 import { useStore } from '../../store/useStore';
 
 const AdminLayout: React.FC = () => {
@@ -41,6 +42,7 @@ const AdminLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+      <AIChatWidget />
     </div>
   );
 };

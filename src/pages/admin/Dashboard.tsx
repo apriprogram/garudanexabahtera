@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { 
   Users, 
@@ -32,7 +32,10 @@ import {
   Hand,
   GripVertical,
   Play,
-  XCircle
+  XCircle,
+  Monitor,
+  Globe,
+  Smartphone
 } from 'lucide-react';
 
 interface Project {
@@ -72,6 +75,19 @@ const Dashboard: React.FC = () => {
   const [previewFile, setPreviewFile] = useState<any>(null);
   const [pdfZoom, setPdfZoom] = useState(100);
   const [isGrabMode, setIsGrabMode] = useState(false);
+  const [isVisitorModalOpen, setIsVisitorModalOpen] = useState(false);
+  const [visitorDetails, setVisitorDetails] = useState<any>(null);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const startPinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+
+  // Reset states when closing preview or changing file
+  useEffect(() => {
+    if (!previewFile) {
+      setPanOffset({ x: 0, y: 0 });
+      setPdfZoom(100);
+      setIsGrabMode(false);
+    }
+  }, [previewFile]);
 
   const handleViewProject = (project: Project) => {
     setViewingProject(project);
@@ -147,6 +163,10 @@ const Dashboard: React.FC = () => {
   const handleOpenModal = (project?: Project) => {
     if (project) {
       setEditingProject(project);
+      // Ensure dates are in YYYY-MM-DD format for HTML input
+      const sDate = project.start_date ? (project.start_date.includes('T') ? project.start_date.split('T')[0] : project.start_date.split(' ')[0]) : '';
+      const eDate = project.end_date ? (project.end_date.includes('T') ? project.end_date.split('T')[0] : project.end_date.split(' ')[0]) : '';
+
       setFormData({
         name: project.name,
         client_name: project.client_name,
@@ -154,9 +174,9 @@ const Dashboard: React.FC = () => {
         client_phone: project.client_phone || '',
         service_type: project.service_type,
         status: project.status,
-        price: project.price,
-        start_date: project.start_date,
-        end_date: project.end_date || '',
+        price: Math.round(Number(project.price) || 0),
+        start_date: sDate,
+        end_date: eDate,
         image: project.image || '',
         project_files: project.project_files || '[]',
         description: project.description || '',
@@ -338,6 +358,17 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const fetchVisitorDetails = async () => {
+    try {
+      const res = await fetch(`${API_URL}?action=get_visitor_details`);
+      const data = await res.json();
+      setVisitorDetails(data);
+      setIsVisitorModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching visitor details:', error);
+    }
+  };
+
   const stats = [
     { label: 'Total Visitors', value: visitorCount.toLocaleString(), change: '+12.5%', icon: Eye, color: 'text-blue-400 light-theme:text-blue-600', bg: 'bg-blue-400/10 light-theme:bg-blue-50' },
     { label: 'Project Orders', value: projects.length.toLocaleString(), change: '+18.2%', icon: ShoppingBag, color: 'text-emerald-400 light-theme:text-emerald-600', bg: 'bg-emerald-400/10 light-theme:bg-emerald-50' },
@@ -392,13 +423,22 @@ const Dashboard: React.FC = () => {
               <div className="flex items-end justify-between mt-0.5 md:mt-1">
                 <p className="text-base md:text-2xl font-bold text-white">{stat.value}</p>
                 {stat.label === 'Total Visitors' && (
-                  <button 
-                    onClick={() => setIsResetModalOpen(true)}
-                    className="p-1.5 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    title="Reset Visitors"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={fetchVisitorDetails}
+                      className="p-1.5 bg-white/5 hover:bg-blue-500/10 text-slate-500 hover:text-blue-400 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      title="Lihat Detail"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => setIsResetModalOpen(true)}
+                      className="p-1.5 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-400 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      title="Reset Visitors"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -567,7 +607,7 @@ const Dashboard: React.FC = () => {
                     </div>
                   </td>
                   <td className="hidden md:table-cell px-8 py-2 md:py-2.5 text-right text-xs md:text-base text-slate-300 font-semibold">
-                    IDR {Number(project.price).toLocaleString('id-ID')}
+                    Rp {Number(project.price).toLocaleString('id-ID')}
                   </td>
                   <td className="px-4 py-2 md:px-8 md:py-2.5 text-right">
                     <div className="flex justify-end gap-1 md:gap-3">
@@ -616,7 +656,7 @@ const Dashboard: React.FC = () => {
               animate={{ x: 0 }} 
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-xl md:max-w-2xl bg-[#0D0D0D] border-l border-white/10 shadow-2xl h-full flex flex-col z-10"
+              className="relative w-full sm:max-w-xl md:max-w-2xl bg-[#0D0D0D] border-l border-white/10 shadow-2xl h-full flex flex-col z-10"
             >
               {/* Panel Header */}
               <div className="px-5 py-3 md:px-8 md:py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
@@ -909,17 +949,17 @@ const Dashboard: React.FC = () => {
                       <div className="col-span-full space-y-2">
                         <label className="text-[11px] font-medium text-slate-400 ml-1">Budget (IDR)</label>
                         <div className="relative">
-                          <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-500">Rp</span>
                           <input 
                             type="text" required 
-                            value={formData.price.toLocaleString('id-ID')} 
+                            value={formData.price === 0 ? '' : formData.price.toLocaleString('id-ID')} 
                             onChange={e => {
                               const val = e.target.value.replace(/\./g, '');
                               if (!isNaN(Number(val))) {
                                 setFormData({...formData, price: Number(val)});
                               }
                             }} 
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none focus:border-blue-500/50 transition-all font-mono"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white outline-none focus:border-blue-500/50 transition-all font-mono font-bold"
                             placeholder="0"
                           />
                         </div>
@@ -932,8 +972,9 @@ const Dashboard: React.FC = () => {
                             type="date" required 
                             value={formData.start_date} 
                             onChange={e => setFormData({...formData, start_date: e.target.value})} 
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none focus:border-blue-500/50 transition-all"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none focus:border-blue-500/50 transition-all appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                           />
+                          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -944,8 +985,9 @@ const Dashboard: React.FC = () => {
                             type="date"
                             value={formData.end_date} 
                             onChange={e => setFormData({...formData, end_date: e.target.value})} 
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none focus:border-blue-500/50 transition-all"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-sm text-white outline-none focus:border-blue-500/50 transition-all appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                           />
+                          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                         </div>
                       </div>
                     </div>
@@ -1089,7 +1131,7 @@ const Dashboard: React.FC = () => {
             <motion.div
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-xl md:max-w-2xl bg-[#0D0D0D] border-l border-white/10 shadow-2xl h-full flex flex-col z-[30]"
+              className="relative w-full sm:max-w-xl md:max-w-2xl bg-[#0D0D0D] border-l border-white/10 shadow-2xl h-full flex flex-col z-[30]"
             >
               {/* Header */}
               <div className="px-5 py-3 md:px-8 md:py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
@@ -1218,16 +1260,16 @@ const Dashboard: React.FC = () => {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="col-span-2 bg-white/[0.03] border border-white/5 rounded-xl p-4">
                         <p className="text-[10px] text-slate-500 mb-1">Budget</p>
-                        <p className="text-base font-bold text-white">IDR {Number(viewingProject.price).toLocaleString('id-ID')}</p>
+                        <p className="text-base font-bold text-emerald-400">Rp {Number(viewingProject.price).toLocaleString('id-ID')}</p>
                       </div>
                       <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
                         <p className="text-[10px] text-slate-500 mb-1">Start Date</p>
-                        <p className="text-sm font-bold text-white">{viewingProject.start_date || '—'}</p>
+                        <p className="text-sm font-bold text-white">{viewingProject.start_date ? new Date(viewingProject.start_date).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}</p>
                       </div>
                       {viewingProject.end_date && (
                         <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
                           <p className="text-[10px] text-slate-500 mb-1">Estimated End Date</p>
-                          <p className="text-sm font-bold text-emerald-400">{viewingProject.end_date}</p>
+                          <p className="text-sm font-bold text-emerald-400">{viewingProject.end_date ? new Date(viewingProject.end_date).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}</p>
                         </div>
                       )}
                     </div>
@@ -1255,23 +1297,23 @@ const Dashboard: React.FC = () => {
                                     <p className="text-[9px] text-slate-500">{file.size}</p>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1 opacity-100">
                                   {(file.name.toLowerCase().endsWith('.pdf') || 
                                     ['.jpg', '.jpeg', '.png', '.webp', '.gif'].some(ext => file.name.toLowerCase().endsWith(ext))) && (
                                     <button
                                       onClick={() => setPreviewFile(file)}
-                                      className="p-1.5 text-slate-400 hover:text-cyan-400 hover:bg-white/5 rounded-lg transition-all"
+                                      className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-white/5 rounded-lg transition-all active:scale-90"
                                       title="Preview Document"
                                     >
-                                      <Eye className="w-3.5 h-3.5" />
+                                      <Eye className="w-4 h-4" />
                                     </button>
                                   )}
                                   <a
                                     href={file.path || file.data}
                                     download={file.name}
-                                    className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                                    className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all active:scale-90"
                                   >
-                                    <Download className="w-3.5 h-3.5" />
+                                    <Download className="w-4 h-4" />
                                   </a>
                                 </div>
                               </div>
@@ -1302,34 +1344,43 @@ const Dashboard: React.FC = () => {
         )}
       </AnimatePresence>
       
-      {/* PDF Preview Side Panel */}
+      {/* PDF Preview Modal - Centered */}
       <AnimatePresence>
         {previewFile && isViewOpen && (
-          <div className="fixed inset-0 z-[82] flex justify-end">
-            {/* Transparent backdrop to catch clicks outside the preview panel, but doesn't block the detail panel */}
-            <div className="absolute inset-0" onClick={() => setPreviewFile(null)} />
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/80" onClick={() => setPreviewFile(null)} />
             
             <motion.div
-              initial={{ x: '100%', opacity: 0 }} 
-              animate={{ x: '-672px', opacity: 1 }} 
-              exit={{ x: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 200 }}
-              className="absolute top-0 bottom-0 w-full max-w-2xl bg-[#0D0D0D] border-l border-white/10 shadow-2xl flex flex-col z-[20]"
-              style={{ right: 0 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-4xl max-h-[90vh] bg-[#0D0D0D] border border-white/10 shadow-2xl rounded-2xl flex flex-col z-[30] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header - Matched with Detail Panel */}
-              <div className="p-5 md:p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/10 rounded-xl">
-                    <FileText className="w-5 h-5 text-blue-400" />
+              {/* Header with description + toolbar below */}
+              <div className="p-5 md:p-8 border-b border-white/5 bg-white/[0.01]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-xl">
+                      <FileText className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white tracking-tight truncate max-w-[160px] md:max-w-[300px]">{previewFile.name}</h2>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white tracking-tight truncate max-w-[120px] md:max-w-[240px]">{previewFile.name}</h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Read-only document preview</p>
-                  </div>
+                  <button 
+                    onClick={() => setPreviewFile(null)} 
+                    className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all"
+                    title="Close Preview"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <div className="flex items-center gap-1">
+                <p className="text-xs text-slate-500 mt-1.5">Read-only document preview</p>
+                {/* Toolbar below description */}
+                <div className="flex items-center gap-1 mt-3">
                   <div className="flex items-center bg-white/5 rounded-xl px-1 mr-2 border border-white/5">
                     <button 
                       onClick={() => setIsGrabMode(!isGrabMode)}
@@ -1378,65 +1429,104 @@ const Dashboard: React.FC = () => {
                   >
                     <Download className="w-5 h-5" />
                   </button>
-                  <button 
-                    onClick={() => setPreviewFile(null)} 
-                    className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all"
-                    title="Close Preview"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
                 </div>
               </div>
 
               {/* PDF Content Area */}
               <div 
                 id="pdf-container"
-                className={`flex-1 bg-[#0A0A0A] overflow-auto custom-scrollbar relative ${isGrabMode ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
-                onMouseDown={(e) => {
-                  if (!isGrabMode) return;
-                  const container = e.currentTarget;
-                  const startX = e.pageX - container.offsetLeft;
-                  const startY = e.pageY - container.offsetTop;
-                  const scrollLeft = container.scrollLeft;
-                  const scrollTop = container.scrollTop;
-
-                  const onMouseMove = (e: MouseEvent) => {
-                    const x = e.pageX - container.offsetLeft;
-                    const y = e.pageY - container.offsetTop;
-                    const walkX = (x - startX) * 2.2;
-                    const walkY = (y - startY) * 2.2;
-                    container.scrollLeft = scrollLeft - walkX;
-                    container.scrollTop = scrollTop - walkY;
-                  };
-
-                  const onMouseUp = () => {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                  };
-
-                  document.addEventListener('mousemove', onMouseMove);
-                  document.addEventListener('mouseup', onMouseUp);
-                }}
+                className={`flex-1 bg-[#0A0A0A] overflow-hidden custom-scrollbar relative ${isGrabMode ? 'cursor-grab active:cursor-grabbing select-none' : ''}`}
               >
-                {isGrabMode && <div className="absolute inset-0 z-10" />}
+                {isGrabMode && <div className="absolute inset-0 z-10" 
+                  onMouseDown={(e) => {
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startPanX = panOffset.x;
+                    const startPanY = panOffset.y;
+
+                    const onMouseMove = (e: MouseEvent) => {
+                      const dx = e.clientX - startX;
+                      const dy = e.clientY - startY;
+                      setPanOffset({ x: startPanX + dx, y: startPanY + dy });
+                    };
+
+                    const onMouseUp = () => {
+                      document.removeEventListener('mousemove', onMouseMove);
+                      document.removeEventListener('mouseup', onMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                  }}
+                  onTouchStart={(e) => {
+                    const touches = e.touches;
+                    if (touches.length === 2) {
+                      // Pinch start
+                      const dx = touches[0].clientX - touches[1].clientX;
+                      const dy = touches[0].clientY - touches[1].clientY;
+                      startPinchRef.current = { dist: Math.hypot(dx, dy), zoom: pdfZoom };
+                      return;
+                    }
+                    if (touches.length === 1) {
+                      // Pan start
+                      const touch = touches[0];
+                      const startX = touch.clientX;
+                      const startY = touch.clientY;
+                      const startPanX = panOffset.x;
+                      const startPanY = panOffset.y;
+
+                      const onTouchMove = (ev: TouchEvent) => {
+                        if (ev.touches.length === 1) {
+                          const t = ev.touches[0];
+                          const dx = t.clientX - startX;
+                          const dy = t.clientY - startY;
+                          setPanOffset({ x: startPanX + dx, y: startPanY + dy });
+                        }
+                      };
+
+                      const onTouchEnd = () => {
+                        document.removeEventListener('touchmove', onTouchMove);
+                        document.removeEventListener('touchend', onTouchEnd);
+                      };
+
+                      document.addEventListener('touchmove', onTouchMove, { passive: false });
+                      document.addEventListener('touchend', onTouchEnd);
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    const touches = e.touches;
+                    if (touches.length === 2 && startPinchRef.current) {
+                      e.preventDefault();
+                      const dx = touches[0].clientX - touches[1].clientX;
+                      const dy = touches[0].clientY - touches[1].clientY;
+                      const dist = Math.hypot(dx, dy);
+                      const ratio = dist / startPinchRef.current.dist;
+                      const newZoom = Math.round(Math.min(300, Math.max(50, startPinchRef.current.zoom * ratio)));
+                      setPdfZoom(newZoom);
+                    }
+                  }}
+                  onTouchEnd={() => {
+                    startPinchRef.current = null;
+                  }}
+                />}
                 <div 
-                  className="transition-all duration-200 ease-out"
+                  className="transition-all duration-200 ease-out flex items-center justify-center min-h-full"
                   style={{ 
-                    width: pdfZoom === 100 ? '100%' : `${pdfZoom}%`, 
-                    height: pdfZoom === 100 ? '100%' : `${pdfZoom * 1.5}vh`,
-                    minHeight: '100%'
+                    transform: `scale(${pdfZoom / 100}) translate(${panOffset.x}px, ${panOffset.y}px)`,
+                    transformOrigin: 'center center',
+                    width: '100%'
                   }}
                 >
                   {['.jpg', '.jpeg', '.png', '.webp', '.gif'].some(ext => previewFile.name.toLowerCase().endsWith(ext)) ? (
                     <img 
                       src={previewFile.path || previewFile.data} 
                       alt={previewFile.name}
-                      className="w-full h-full object-contain"
+                      className="max-w-full h-auto object-contain shadow-2xl"
                     />
                   ) : (
                     <iframe 
                       src={previewFile.path || previewFile.data} 
-                      className="w-full h-full border-none"
+                      className="w-full h-[80vh] border-none shadow-2xl"
                       title="Document Preview"
                     />
                   )}
@@ -1507,6 +1597,207 @@ const Dashboard: React.FC = () => {
                   className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-red-600/20"
                 >
                   Confirm Reset
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Visitor Detail Modal */}
+      <AnimatePresence>
+        {isVisitorModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-4xl bg-[#0A0A0A] border border-white/10 rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-500/10 rounded-xl">
+                    <Eye className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Visitor Analytics</h2>
+                    <p className="text-xs text-slate-500">Detailed insights about your site traffic</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsVisitorModalOpen(false)}
+                  className="p-2 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+                {visitorDetails ? (
+                  <div className="space-y-8">
+                    {/* Top Stats Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Visits</p>
+                        <p className="text-2xl font-black text-white">{visitorDetails.total?.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Today Visits</p>
+                        <p className="text-2xl font-black text-blue-400">{visitorDetails.today?.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">30D Avg</p>
+                        <p className="text-2xl font-black text-emerald-400">
+                          {visitorDetails.daily?.length > 0 
+                            ? Math.round(visitorDetails.daily.reduce((acc: any, curr: any) => acc + curr.count, 0) / visitorDetails.daily.length)
+                            : 0}
+                        </p>
+                      </div>
+                      <div className="bg-white/5 border border-white/5 p-4 rounded-xl">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Peak Day</p>
+                        <p className="text-2xl font-black text-amber-400">
+                          {visitorDetails.daily?.length > 0 
+                            ? Math.max(...visitorDetails.daily.map((d: any) => d.count))
+                            : 0}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Breakdown Sections */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Devices Breakdown */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                          <Monitor className="w-4 h-4 text-blue-400" /> Devices
+                        </h3>
+                        <div className="space-y-3 bg-white/[0.02] border border-white/5 p-5 rounded-xl">
+                          {visitorDetails.devices?.map((item: any, i: number) => {
+                            const total = visitorDetails.devices.reduce((acc: any, curr: any) => acc + curr.value, 0);
+                            const percentage = Math.round((item.value / total) * 100);
+                            return (
+                              <div key={i} className="space-y-1.5">
+                                <div className="flex justify-between text-[11px] font-bold">
+                                  <span className="text-slate-400 flex items-center gap-2">
+                                    {item.label === 'Mobile' ? <Smartphone className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
+                                    {item.label}
+                                  </span>
+                                  <span className="text-white">{percentage}% ({item.value})</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${percentage}%` }}
+                                    className={`h-full ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-purple-500' : 'bg-slate-500'}`}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Browsers Breakdown */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-emerald-400" /> Browsers
+                        </h3>
+                        <div className="space-y-3 bg-white/[0.02] border border-white/5 p-5 rounded-xl">
+                          {visitorDetails.browsers?.slice(0, 4).map((item: any, i: number) => {
+                            const total = visitorDetails.browsers.reduce((acc: any, curr: any) => acc + curr.value, 0);
+                            const percentage = Math.round((item.value / total) * 100);
+                            return (
+                              <div key={i} className="space-y-1.5">
+                                <div className="flex justify-between text-[11px] font-bold">
+                                  <span className="text-slate-400">{item.label}</span>
+                                  <span className="text-white">{percentage}%</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${percentage}%` }}
+                                    className={`h-full ${i === 0 ? 'bg-emerald-500' : i === 1 ? 'bg-cyan-500' : i === 2 ? 'bg-blue-500' : 'bg-slate-500'}`}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* OS Breakdown */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                          <Monitor className="w-4 h-4 text-purple-400" /> Operating Systems
+                        </h3>
+                        <div className="space-y-3 bg-white/[0.02] border border-white/5 p-5 rounded-xl">
+                          {visitorDetails.os?.slice(0, 4).map((item: any, i: number) => {
+                            const total = visitorDetails.os.reduce((acc: any, curr: any) => acc + curr.value, 0);
+                            const percentage = Math.round((item.value / total) * 100);
+                            return (
+                              <div key={i} className="space-y-1.5">
+                                <div className="flex justify-between text-[11px] font-bold">
+                                  <span className="text-slate-400">{item.label}</span>
+                                  <span className="text-white">{percentage}%</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${percentage}%` }}
+                                    className={`h-full ${i === 0 ? 'bg-purple-500' : i === 1 ? 'bg-pink-500' : i === 2 ? 'bg-indigo-500' : 'bg-slate-500'}`}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Countries Breakdown */}
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-amber-400" /> Locations
+                        </h3>
+                        <div className="space-y-3 bg-white/[0.02] border border-white/5 p-5 rounded-xl">
+                          {visitorDetails.countries?.slice(0, 4).map((item: any, i: number) => {
+                            const total = visitorDetails.countries.reduce((acc: any, curr: any) => acc + curr.value, 0);
+                            const percentage = Math.round((item.value / total) * 100);
+                            return (
+                              <div key={i} className="space-y-1.5">
+                                <div className="flex justify-between text-[11px] font-bold">
+                                  <span className="text-slate-400">{item.label || 'Unknown'}</span>
+                                  <span className="text-white">{percentage}%</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${percentage}%` }}
+                                    className={`h-full ${i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-orange-500' : i === 2 ? 'bg-yellow-500' : 'bg-slate-500'}`}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                    <div className="w-12 h-12 border-4 border-white/5 border-t-blue-500 rounded-full animate-spin mb-4" />
+                    <p className="text-sm font-bold">Loading analytical data...</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-white/5 bg-[#0D0D0D] flex justify-end">
+                <button 
+                  onClick={() => setIsVisitorModalOpen(false)}
+                  className="px-8 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-full text-xs font-black uppercase tracking-widest transition-all active:scale-95"
+                >
+                  Close Panel
                 </button>
               </div>
             </motion.div>

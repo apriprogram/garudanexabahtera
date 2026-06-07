@@ -10,10 +10,9 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const Navbar: React.FC = () => {
-  const { theme, toggleTheme, language, setLanguage } = useStore();
+  const { theme, toggleTheme, language, setLanguage, isSearchActive, toggleSearch } = useStore();
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
@@ -152,7 +151,7 @@ const Navbar: React.FC = () => {
 
           <button 
             className="lg:hidden p-2 text-white/70 hover:text-white transition-all light-theme:text-slate-600 light-theme:hover:text-slate-900"
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
+            onClick={() => { toggleSearch(); setIsMenuOpen(false); }}
           >
             <Search className="w-5 h-5" />
           </button>
@@ -262,35 +261,33 @@ const Navbar: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Mobile Search Bar */}
+      {/* Mobile Search Bar — slides down below navbar */}
       <AnimatePresence>
-        {isSearchOpen && (
+        {isSearchActive && (
           <motion.div 
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            className="lg:hidden absolute top-full left-0 w-full bg-bg-dark/95 backdrop-blur-md p-4 border-b border-white/10 z-[999] light-theme:bg-slate-50/95 light-theme:border-slate-300"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden bg-bg-dark border-b border-white/5 overflow-hidden light-theme:bg-slate-50 light-theme:border-slate-300"
           >
-            <div className="relative">
-              <input 
-                autoFocus
-                type="text" 
-                placeholder="Search products, solutions..." 
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-12 text-white outline-none focus:border-primary transition-all light-theme:bg-slate-100 light-theme:border-slate-500 light-theme:text-slate-900 light-theme:focus:border-slate-800"
-                value={searchQuery}
-                onChange={handleSearch}
-              />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-              <button 
-                onClick={() => setIsSearchOpen(false)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <div className="px-4 pb-4">
+              <div className="flex items-center border border-white/10 rounded-xl px-4 py-2.5 gap-3 bg-white/5 light-theme:border-slate-500 light-theme:bg-transparent">
+                <Search className="w-4 h-4 text-white/50 light-theme:text-slate-500" />
+                <input 
+                  type="text" 
+                  placeholder="Search" 
+                  className="bg-transparent border-none text-white text-sm outline-none w-full placeholder:text-white/40 light-theme:text-slate-900 light-theme:placeholder:text-slate-600"
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  autoFocus
+                />
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
     </motion.nav>
   );
 };

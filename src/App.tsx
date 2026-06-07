@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import Hero from './components/sections/Hero';
@@ -9,7 +10,7 @@ import Pricing from './components/sections/Pricing';
 import Process from './components/sections/Process';
 import FAQ from './components/sections/FAQ';
 import { useStore } from './store/useStore';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, Search, X } from 'lucide-react';
 
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Auth from './pages/Auth';
@@ -22,9 +23,12 @@ import UserManager from './pages/admin/UserManager';
 import SiteSettings from './pages/admin/SiteSettings';
 import ProfileSettings from './pages/admin/ProfileSettings';
 import HelpCenter from './pages/admin/HelpCenter';
+import Documents from './pages/admin/Documents';
+import ProductsIndex from './pages/admin/products';
 
 function App() {
-  const { theme } = useStore();
+  const { theme, isSearchActive, toggleSearch } = useStore();
+  const [searchQuery, setSearchQuery] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const location = useLocation();
 
@@ -87,6 +91,38 @@ function App() {
         <Route path="/" element={
           <>
             <Navbar />
+            {/* Mobile Search Bar - pushes content down */} 
+            <AnimatePresence>
+              {isSearchActive && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="lg:hidden fixed top-[72px] left-0 w-full z-[999] bg-bg-dark/60 backdrop-blur-xl border-b border-white/5 light-theme:bg-slate-50/80 light-theme:border-slate-300 overflow-hidden"
+                >
+                  <div className="px-4 py-3 flex items-center gap-3">
+                    <Search className="w-4 h-4 text-white/50 shrink-0 light-theme:text-slate-500" />
+                    <input 
+                      autoFocus
+                      type="text" 
+                      placeholder="Search products, solutions..." 
+                      className="flex-1 bg-transparent border-none text-white text-sm outline-none placeholder:text-white/40 light-theme:text-slate-900 light-theme:placeholder:text-slate-500"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <button 
+                      onClick={() => {
+                        toggleSearch(false);
+                        setSearchQuery('');
+                      }}
+                      className="p-1 shrink-0 text-white/50 hover:text-white light-theme:text-slate-500 light-theme:hover:text-slate-900"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <main>
               <header className="relative">
                 <Hero />
@@ -110,7 +146,10 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="hero" element={<HeroSettings settings={{}} heroImages={[]} setHeroImages={() => {}} heroLogos={[]} setHeroLogos={() => {}} />} />
           <Route path="services" element={<ServicesManager />} />
-          <Route path="products" element={<ProductManager />} />
+          <Route path="products" element={<ProductsIndex />} />
+          <Route path="products/:productId" element={<ProductsIndex />} />
+          <Route path="product-manager" element={<ProductManager />} />
+          <Route path="documents" element={<Documents />} />
           <Route path="users" element={<UserManager />} />
           <Route path="settings" element={<SiteSettings />} />
           <Route path="profile" element={<ProfileSettings />} />

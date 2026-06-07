@@ -1,88 +1,179 @@
-import React from 'react';
-import { HelpCircle, MessageCircle, Mail, ShieldCheck, Zap, Package, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { History, Package, LayoutDashboard, Palette, Settings, Image, GripVertical, Zap, ChevronDown, Star, Bug, Sparkles } from 'lucide-react';
+
+const changelogData = [
+  {
+    version: '2.5.0',
+    date: '4 Juni 2026',
+    badge: 'Terbaru',
+    badgeColor: 'bg-blue-600',
+    changes: [
+      { type: 'improvement', icon: GripVertical, text: 'Drag & Drop — Tambah icon handle di bawah card List Product, animasi smooth spring, auto-simpan urutan ke database.' },
+      { type: 'fix', icon: Bug, text: 'Perbaiki urutan gagal simpan saat drag and drop List Product.' },
+      { type: 'improvement', icon: LayoutDashboard, text: 'Modal Visitor Dashboard — ubah border-radius ke rounded-xl (lebih proporsional).' },
+      { type: 'fix', icon: LayoutDashboard, text: 'Sidebar admin — munculin kembali menu List Product yang menghilang.' },
+    ]
+  },
+  {
+    version: '2.4.0',
+    date: '4 Juni 2026',
+    changes: [
+      { type: 'improvement', icon: Package, text: 'Tambah menu List Product di sidebar admin dengan routing dan CRUD lengkap.' },
+      { type: 'improvement', icon: LayoutDashboard, text: 'Upgrade Dashboard admin — tambah tampilan visitor stats dengan tabel detail, grafik. Modal slide-in smooth dari kanan.' },
+      { type: 'improvement', icon: Palette, text: 'Upgrade UI Help Center jadi halaman Catatan Perubahan dengan timeline.' },
+      { type: 'fix', icon: Bug, text: 'Perbaiki endpoint visitor detail via Node.js (server.js).' },
+      { type: 'improvement', icon: Settings, text: 'Nginx proxy routing diperbaiki — semua request /api.php dialihkan ke Node.js.' },
+    ]
+  },
+  {
+    version: '2.3.0',
+    date: '16 Mei 2026',
+    changes: [
+      { type: 'improvement', icon: Settings, text: 'Update Admin Panel — perbaikan menu settings dan users management.' },
+      { type: 'improvement', icon: Image, text: 'Logo sidebar diperkecil ukurannya, floating WhatsApp widget disembunyikan di halaman admin.' },
+    ]
+  },
+  {
+    version: '2.2.0',
+    date: '15 Mei 2026',
+    changes: [
+      { type: 'improvement', icon: Image, text: 'Optimasi mobile responsiveness — hero section typography, navbar icons distandarisasi.' },
+      { type: 'improvement', icon: Sparkles, text: 'Modernisasi tampilan UI — logo ticker, pricing hover effects diperhalus.' },
+      { type: 'improvement', icon: Image, text: 'Penambahan carousel interaktif pada landing page.' },
+    ]
+  },
+  {
+    version: '2.1.0',
+    date: '13 Mei 2026',
+    changes: [
+      { type: 'improvement', icon: Settings, text: 'Autodeploy via GitHub Actions ke FTP cPanel — push otomatis deploy.' },
+      { type: 'improvement', icon: Sparkles, text: 'Finalisasi modern SaaS landing page UI dengan fitur lengkap.' },
+    ]
+  },
+  {
+    version: '2.0.0',
+    date: '12 Mei 2026',
+    changes: [
+      { type: 'improvement', icon: Star, text: 'Peluncuran awal Garuda Nexa — landing page modern, admin panel, sistem manajemen produk & layanan.' },
+    ]
+  }
+];
 
 const HelpCenter: React.FC = () => {
-  const faqs = [
-    {
-      question: 'Bagaimana cara menambahkan produk baru?',
-      answer: 'Anda bisa masuk ke menu "Products" di sidebar, lalu klik tombol "Add New Product" di pojok kanan atas.',
-      icon: Package
-    },
-    {
-      question: 'Bagaimana cara mengubah harga layanan?',
-      answer: 'Buka menu "Website Settings", pilih tab "Pricelist", dan Anda bisa langsung mengedit harga pada kartu yang tersedia.',
-      icon: CreditCard
-    },
-    {
-      question: 'Apakah sistem ini mendukung backup data?',
-      answer: 'Ya, database Garuda Nexa secara otomatis mencadangkan data setiap kali ada perubahan signifikan pada pengaturan situs.',
-      icon: ShieldCheck
-    },
-    {
-      question: 'Bagaimana cara mengganti gambar Hero?',
-      answer: 'Buka "Website Settings" > "Hero Section". Anda bisa melakukan drag & drop pada area upload untuk menambah atau mengatur ulang urutan gambar.',
-      icon: Zap
+  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set([changelogData[0].version]));
+
+  const toggleVersion = (version: string) => {
+    const newSet = new Set(expandedVersions);
+    if (newSet.has(version)) {
+      newSet.delete(version);
+    } else {
+      newSet.add(version);
     }
-  ];
+    setExpandedVersions(newSet);
+  };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 md:space-y-10 pb-10 md:pb-20">
+    <div className="max-w-4xl mx-auto space-y-6 md:space-y-10 pb-10 md:pb-20">
+      {/* Header */}
       <div className="text-center space-y-2.5 md:space-y-4">
-        <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-600/10 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto border border-blue-600/20 mb-1 md:mb-2">
-          <HelpCircle className="w-6 h-6 md:w-8 md:h-8 text-blue-400" />
+        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto border border-blue-600/20 mb-1 md:mb-2">
+          <History className="w-6 h-6 md:w-8 md:h-8 text-blue-400" />
         </div>
-        <h1 className="text-2xl md:text-4xl font-bold text-white tracking-tight">Pusat Bantuan</h1>
-        <p className="text-[10px] md:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">Kami di sini untuk membantu Anda mengelola Garuda Nexa dengan lancar. Temukan jawaban untuk pertanyaan umum atau hubungi tim teknis kami.</p>
+        <h1 className="text-2xl md:text-4xl font-bold text-white tracking-tight">Catatan Perubahan</h1>
+        <p className="text-[10px] md:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
+          Riwayat pembaruan dan perbaikan pada platform Garuda Nexa.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-        {faqs.map((faq, index) => (
-          <div key={index} className="bg-[#0D0D0D] border border-white/5 rounded-2xl md:rounded-3xl p-6 md:p-8 hover:border-blue-500/30 transition-all group">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-white/5 rounded-lg md:rounded-xl flex items-center justify-center mb-3 md:mb-4 group-hover:bg-blue-600/20 transition-all">
-              <faq.icon className="w-4 h-4 md:w-5 md:h-5 text-slate-400 group-hover:text-blue-400" />
+      {/* Timeline */}
+      <div className="relative space-y-4 md:space-y-6">
+        {/* Timeline Line */}
+        <div className="absolute left-[18px] md:left-[23px] top-0 bottom-0 w-[2px] bg-gradient-to-b from-blue-500/50 via-purple-500/20 to-transparent" />
+
+        {changelogData.map((release) => {
+          const isExpanded = expandedVersions.has(release.version);
+          return (
+            <div key={release.version} className="relative pl-12 md:pl-14">
+              {/* Timeline Dot */}
+              <div className={`absolute left-[10px] md:left-[15px] top-[18px] w-[18px] h-[18px] rounded-full border-[3px] z-10 transition-colors ${
+                release.badge 
+                  ? 'bg-blue-600 border-blue-900 shadow-lg shadow-blue-600/30' 
+                  : 'bg-[#0D0D0D] border-slate-600'
+              }`} />
+
+              {/* Card */}
+              <div className={`rounded-2xl border overflow-hidden transition-all duration-300 ${
+                release.badge
+                  ? 'border-blue-500/30 bg-blue-950/20'
+                  : 'border-white/5 bg-[#0D0D0D]'
+              }`}>
+                {/* Header */}
+                <button
+                  onClick={() => toggleVersion(release.version)}
+                  className="w-full flex items-center justify-between p-4 md:p-6 text-left hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <span className="text-lg md:text-xl font-bold text-white tracking-tight">
+                          v{release.version}
+                        </span>
+                        {release.badge && (
+                          <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-white ${release.badgeColor}`}>
+                            {release.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] md:text-xs text-slate-500 mt-0.5">{release.date}</p>
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${
+                    isExpanded ? 'rotate-180' : ''
+                  }`} />
+                </button>
+
+                {/* Body */}
+                {isExpanded && (
+                  <div className="px-4 md:px-6 pb-4 md:pb-6 space-y-2 md:space-y-3">
+                    {release.changes.map((change, idx) => (
+                      <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl text-sm transition-colors ${
+                        change.type === 'fix'
+                          ? 'bg-red-500/5 border border-red-500/10'
+                          : 'bg-white/[0.02] border border-white/5'
+                      }`}>
+                        <div className={`p-1.5 rounded-lg flex-shrink-0 mt-0.5 ${
+                          change.type === 'fix'
+                            ? 'bg-red-500/10 text-red-400'
+                            : 'bg-blue-500/10 text-blue-400'
+                        }`}>
+                          <change.icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                              change.type === 'fix' ? 'text-red-400' : 'text-blue-400'
+                            }`}>
+                              {change.type === 'fix' ? 'Perbaikan' : 'Peningkatan'}
+                            </span>
+                          </div>
+                          <p className="text-[12px] md:text-sm text-slate-300 leading-relaxed">{change.text}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <h3 className="text-base md:text-lg font-bold text-white mb-1.5 md:mb-2">{faq.question}</h3>
-            <p className="text-[11px] md:text-sm text-slate-400 leading-relaxed">{faq.answer}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-8 md:gap-10">
-        <div className="relative z-10 space-y-3 md:space-y-4">
-          <h2 className="text-xl md:text-3xl font-bold text-white">Masih Butuh Bantuan?</h2>
-          <p className="text-[10px] md:text-base text-blue-100 max-w-md">Tim support kami tersedia 24/7 untuk membantu masalah teknis atau pertanyaan Anda.</p>
-          <div className="flex flex-wrap justify-center md:justify-start gap-3 md:gap-4">
-            <a 
-              href="https://wa.me/6285188009152" 
-              target="_blank" 
-              className="flex items-center gap-2 bg-white text-blue-600 px-5 py-2.5 md:px-6 md:py-3 rounded-full text-xs md:text-base font-bold hover:bg-blue-50 transition-all shadow-xl"
-            >
-              <MessageCircle className="w-4 h-4" />
-              Chat WhatsApp
-            </a>
-            <a 
-              href="mailto:support@garudanexa.com" 
-              className="flex items-center gap-2 bg-blue-700/50 text-white border border-white/20 px-5 py-2.5 md:px-6 md:py-3 rounded-full text-xs md:text-base font-bold hover:bg-blue-700 transition-all"
-            >
-              <Mail className="w-4 h-4" />
-              Kirim Email
-            </a>
-          </div>
+      {/* Footer */}
+      <div className="text-center pt-4 md:pt-8">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/5 text-xs md:text-sm text-slate-500">
+          <Zap className="w-3.5 h-3.5" />
+          Ada saran fitur? Hubungi tim pengembang
         </div>
-        <div className="relative z-10 flex gap-3 md:gap-4">
-          <div className="bg-white/10 backdrop-blur-md p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 text-center w-28 md:w-40">
-            <p className="text-lg md:text-2xl font-bold text-white">99%</p>
-            <p className="text-[8px] md:text-[10px] text-blue-200 uppercase tracking-widest font-bold">Uptime</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 text-center w-28 md:w-40">
-            <p className="text-lg md:text-2xl font-bold text-white">24h</p>
-            <p className="text-[8px] md:text-[10px] text-blue-200 uppercase tracking-widest font-bold">Response</p>
-          </div>
-        </div>
-        
-        {/* Background Decorative Circles */}
-        <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-[-20%] left-[-10%] w-64 h-64 bg-black/10 rounded-full blur-3xl" />
       </div>
     </div>
   );
