@@ -24,6 +24,7 @@ import SiteSettings from './pages/admin/SiteSettings';
 import ProfileSettings from './pages/admin/ProfileSettings';
 import HelpCenter from './pages/admin/HelpCenter';
 import Documents from './pages/admin/Documents';
+import Changelog from './pages/admin/Changelog';
 import ProductsIndex from './pages/admin/products';
 
 function App() {
@@ -150,6 +151,7 @@ function App() {
           <Route path="products/:productId" element={<ProductsIndex />} />
           <Route path="product-manager" element={<ProductManager />} />
           <Route path="documents" element={<Documents />} />
+          <Route path="changelog" element={<Changelog />} />
           <Route path="users" element={<UserManager />} />
           <Route path="settings" element={<SiteSettings />} />
           <Route path="profile" element={<ProfileSettings />} />

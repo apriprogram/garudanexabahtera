@@ -618,6 +618,68 @@ switch ($action) {
         ]);
         break;
 
+    // ── Changelog ──
+    case 'get_changelogs':
+        $result = $conn->query("SELECT * FROM changelogs ORDER BY change_date DESC, time DESC");
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = [
+                'id' => (int)$row['id'],
+                'change_date' => $row['change_date'],
+                'time' => $row['time'],
+                'title' => $row['title'],
+                'description' => $row['description'],
+                'category' => $row['category'],
+                'created_at' => $row['created_at']
+            ];
+        }
+        echo json_encode($data);
+        break;
+
+    case 'add_changelog':
+        $title = $conn->real_escape_string($input['title'] ?? '');
+        $description = $conn->real_escape_string($input['description'] ?? '');
+        $category = $conn->real_escape_string($input['category'] ?? 'fitur');
+        $change_date = $conn->real_escape_string($input['change_date'] ?? date('Y-m-d'));
+        $time = $conn->real_escape_string($input['time'] ?? date('H:i:s'));
+
+        $sql = "INSERT INTO changelogs (change_date, time, title, description, category) VALUES ('$change_date', '$time', '$title', '$description', '$category')";
+        if ($conn->query($sql)) {
+            echo json_encode(["success" => true, "id" => $conn->insert_id]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["success" => false, "error" => $conn->error]);
+        }
+        break;
+
+    case 'update_changelog':
+        $id = (int)($input['id'] ?? 0);
+        $title = $conn->real_escape_string($input['title'] ?? '');
+        $description = $conn->real_escape_string($input['description'] ?? '');
+        $category = $conn->real_escape_string($input['category'] ?? 'fitur');
+        $change_date = $conn->real_escape_string($input['change_date'] ?? date('Y-m-d'));
+        $time = $conn->real_escape_string($input['time'] ?? date('H:i:s'));
+
+        $sql = "UPDATE changelogs SET change_date='$change_date', time='$time', title='$title', description='$description', category='$category' WHERE id=$id";
+        if ($conn->query($sql)) {
+            echo json_encode(["success" => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["success" => false, "error" => $conn->error]);
+        }
+        break;
+
+    case 'delete_changelog':
+        $id = (int)($input['id'] ?? 0);
+        $sql = "DELETE FROM changelogs WHERE id=$id";
+        if ($conn->query($sql)) {
+            echo json_encode(["success" => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["success" => false, "error" => $conn->error]);
+        }
+        break;
+
     default:
         echo json_encode(["error" => "Invalid action: " . $action]);
         break;
