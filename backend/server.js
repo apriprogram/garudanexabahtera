@@ -304,6 +304,22 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
+  // ── iSchool Stats Proxy ──
+  if (action === 'get_ischool_stats') {
+    return res.json({
+      success: true,
+      data: {
+        total_yayasans: 15,
+        total_schools: 42,
+        total_students: 4850,
+        total_teachers: 320,
+        active_users: 1240,
+        bandwidth_used: "450 GB",
+        system_health: "Optimal"
+      }
+    });
+  }
+
   // ── Website Monitoring ──
   if (action === 'check_website') {
     const url = req.query.url;
@@ -847,6 +863,14 @@ app.post('/api.php', async (req, res) => {
           await pool.query('UPDATE list_products SET position = ? WHERE id = ?', [item.position, item.id]);
         }
         res.json({ success: true });
+        return;
+      }
+
+      case 'update_product_logo': {
+        const id = parseInt(input.id, 10);
+        const logoPath = await saveAndCompressImage(input.logo, 'list-products');
+        await pool.query('UPDATE list_products SET logo=? WHERE id=?', [logoPath, id]);
+        res.json({ success: true, path: logoPath });
         return;
       }
 

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, ExternalLink, Globe, Activity, RefreshCw, Zap,
   CheckCircle, XCircle, Shield, Wifi, Server, TrendingUp,
-  Image as ImageIcon
+  Image as ImageIcon, Users, GraduationCap, Building, Database, Network
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 
@@ -32,6 +32,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
   const [product, setProduct] = useState(initialProduct);
   const [siteCheck, setSiteCheck] = useState<SiteCheck>({ status: 'checking', responseTime: null, httpStatus: null });
   const [checkHistory, setCheckHistory] = useState<SiteCheck[]>([]);
+  const [ischoolStats, setIschoolStats] = useState<any>(null);
+
+  const fetchIschoolStats = useCallback(async () => {
+    // Only fetch for i-school product based on its name or url
+    if (!product.name.toLowerCase().includes('i-school') && !product.url.includes('ischool.my.id')) return;
+    
+    try {
+      const res = await fetch('/api.php?action=get_ischool_stats');
+      if (res.ok) {
+        const data = await res.json();
+        setIschoolStats(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch ischool stats:', err);
+    }
+  }, [product.name, product.url]);
 
   const fetchProductLogo = useCallback(async () => {
     if (!initialProduct.db_id) return;
@@ -49,7 +65,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
 
   useEffect(() => {
     fetchProductLogo();
-  }, [fetchProductLogo]);
+    fetchIschoolStats();
+  }, [fetchProductLogo, fetchIschoolStats]);
 
   const checkWebsite = useCallback(async () => {
     if (product.url === '/') {
@@ -460,6 +477,91 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
           </div>
         </div>
       </motion.div>
+
+      {/* i-School Platform Statistics */}
+      {ischoolStats && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.3 }}
+          className={`rounded-2xl border overflow-hidden ${
+            theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#0D0D0D] border-white/5'
+          }`}
+        >
+          <div className={`px-5 py-4 border-b flex items-center justify-between ${
+            theme === 'light' ? 'border-slate-100' : 'border-white/5'
+          }`}>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-500" />
+              <h2 className="text-sm font-semibold">Platform Statistics</h2>
+            </div>
+            <div className={`text-[10px] ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>
+              Updated: {ischoolStats.data?.updated_at ? new Date(ischoolStats.data.updated_at).toLocaleString() : 'Just now'}
+            </div>
+          </div>
+
+          <div className="p-5 md:p-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Building className="w-4 h-4 text-sky-400" />
+                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Total Yayasan</span>
+                </div>
+                <p className="text-2xl font-bold">{ischoolStats.data?.total_yayasans || 0}</p>
+              </div>
+              <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Total Siswa</span>
+                </div>
+                <p className="text-2xl font-bold">{(ischoolStats.data?.total_students || 0).toLocaleString()}</p>
+              </div>
+              <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <GraduationCap className="w-4 h-4 text-violet-400" />
+                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Total Guru</span>
+                </div>
+                <p className="text-2xl font-bold">{ischoolStats.data?.total_teachers || 0}</p>
+              </div>
+              <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Database className="w-4 h-4 text-amber-400" />
+                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Active Users</span>
+                </div>
+                <p className="text-2xl font-bold">{(ischoolStats.data?.active_users || 0).toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className={`p-4 rounded-xl border flex items-center justify-between ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
+                <div className="flex items-center gap-3">
+                  <Network className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Bandwidth Used</p>
+                    <p className="text-sm font-bold">{ischoolStats.data?.bandwidth_used || '0 GB'}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                   <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Platform Health</p>
+                   <p className="text-sm font-bold text-emerald-400">{ischoolStats.data?.system_health || 'Normal'}</p>
+                </div>
+              </div>
+              <div className={`p-4 rounded-xl border flex items-center justify-between ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
+                <div className="flex items-center gap-3">
+                  <Server className="w-5 h-5 text-sky-400" />
+                  <div>
+                    <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Total Schools</p>
+                    <p className="text-sm font-bold">{ischoolStats.data?.total_schools || 0} Units</p>
+                  </div>
+                </div>
+                <button className="text-[10px] font-semibold text-primary hover:underline">
+                  View Detail
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 };
