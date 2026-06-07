@@ -25,7 +25,6 @@ import ProfileSettings from './pages/admin/ProfileSettings';
 import HelpCenter from './pages/admin/HelpCenter';
 import Documents from './pages/admin/Documents';
 import ProductsIndex from './pages/admin/products';
-import ProductDetail from './pages/admin/products/ProductDetail';
 
 function App() {
   const { theme, isSearchActive, toggleSearch } = useStore();
@@ -148,7 +147,7 @@ function App() {
           <Route path="hero" element={<HeroSettings settings={{}} heroImages={[]} setHeroImages={() => {}} heroLogos={[]} setHeroLogos={() => {}} />} />
           <Route path="services" element={<ServicesManager />} />
           <Route path="products" element={<ProductsIndex />} />
-          <Route path="products/:productId" element={<ProductDetail />} />
+          <Route path="products/:productId" element={<ProductsIndex />} />
           <Route path="product-manager" element={<ProductManager />} />
           <Route path="documents" element={<Documents />} />
           <Route path="users" element={<UserManager />} />
