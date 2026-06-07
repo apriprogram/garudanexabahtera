@@ -229,7 +229,7 @@ const Sidebar: React.FC = () => {
                       transition={{ duration: 0.3, ease: 'easeOut' }}
                       className="text-[12.5px] md:text-sm font-medium whitespace-nowrap overflow-hidden flex-1 text-left"
                     >
-                      Products
+                      Monitor Products
                     </motion.span>
                   )}
                 </AnimatePresence>
