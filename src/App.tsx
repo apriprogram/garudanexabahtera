@@ -25,6 +25,7 @@ import ProfileSettings from './pages/admin/ProfileSettings';
 import HelpCenter from './pages/admin/HelpCenter';
 import Documents from './pages/admin/Documents';
 import ProductsIndex from './pages/admin/products';
+import ProductDetail from './pages/admin/products/ProductDetail';
 
 function App() {
   const { theme, isSearchActive, toggleSearch } = useStore();
