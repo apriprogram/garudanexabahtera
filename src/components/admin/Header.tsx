@@ -46,6 +46,7 @@ const Header: React.FC = () => {
   const pathnames = location.pathname.split('/').filter((x) => x);
 
   return (
+    <>
     <header className={`sticky top-0 z-50 transition-colors duration-300 border-b h-14 flex items-center ${
       theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#080808] border-white/5'
     }`}>
@@ -260,7 +261,7 @@ const Header: React.FC = () => {
                       <HelpCircle className={`w-5 h-5 transition-colors duration-200 ${
                         theme === 'light' ? 'text-slate-400 group-hover:text-slate-900' : 'text-slate-500 group-hover:text-white'
                       }`} />
-                      Bantuan
+                      Catatan Perubahan
                     </button>
                     
                     <div className={`h-[1px] my-1.5 mx-2 ${
@@ -287,37 +288,39 @@ const Header: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Mobile Search Input Bar */}
-      <AnimatePresence>
-        {isMobileSearchOpen && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className={`overflow-hidden border-t ${
-              theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#0D0D0D]/50 border-white/5'
-            }`}
-          >
-            <div className="p-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-                <input 
-                  type="text" 
-                  autoFocus
-                  placeholder="Search settings, users, or products..." 
-                  className={`w-full border rounded-xl pl-9 pr-4 py-2 text-xs outline-none focus:border-blue-500/50 transition-all ${
-                    theme === 'light'
-                      ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
-                      : 'bg-white/5 border-white/10 text-white placeholder:text-slate-600'
-                  }`}
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </header>
+
+    {/* Mobile Search Bar — below header, pushes content down */}
+    <AnimatePresence>
+      {isMobileSearchOpen && (
+        <motion.div 
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className={`overflow-hidden border-b ${
+            theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#0D0D0D]/50 border-white/5'
+          }`}
+        >
+          <div className="p-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+              <input 
+                type="text" 
+                autoFocus
+                placeholder="Search settings, users, or products..." 
+                className={`w-full border rounded-xl pl-9 pr-4 py-2 text-xs outline-none focus:border-blue-500/50 transition-all ${
+                  theme === 'light'
+                    ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
+                    : 'bg-white/5 border-white/10 text-white placeholder:text-slate-600'
+                }`}
+              />
+            </div>
+          </div>
+        </motion.div>
+      )}  
+    </AnimatePresence>
+    </>
   );
 };
 

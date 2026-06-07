@@ -597,14 +597,14 @@ const SiteSettings: React.FC = () => {
 
             {/* Products CRUD Panel */}
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
                 <div>
                   <h3 className="text-white text-base font-semibold">Custom Product Items</h3>
                   <p className="text-slate-500 text-xs mt-0.5">Manage products that appear in the digital solutions carousel.</p>
                 </div>
                 <button 
                   onClick={() => handleOpenProductModal()}
-                  className="px-4 py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 border border-blue-400/40 transition-all active:scale-95"
+                  className="self-start px-4 py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 border border-blue-400/40 transition-all active:scale-95"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Product Card
                 </button>
@@ -654,14 +654,14 @@ const SiteSettings: React.FC = () => {
       case 'portfolio':
         return (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
               <div>
                 <h3 className="text-white text-base font-semibold">Portfolio Projects</h3>
                 <p className="text-slate-500 text-xs mt-0.5">Manage grid gallery of client portfolio items shown below products.</p>
               </div>
               <button 
                 onClick={() => handleOpenPortfolioModal()}
-                className="px-4 py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 border border-blue-400/40 transition-all active:scale-95"
+                className="self-start px-4 py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 border border-blue-400/40 transition-all active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Portfolio Item
               </button>
@@ -767,7 +767,6 @@ const SiteSettings: React.FC = () => {
                     <div>
                       <label className="block text-[9px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Back Card Description</label>
                       <textarea 
-                        rows={4}
                         value={step.detail || ''} 
                         onChange={(e) => {
                           const updated = [...processList];
@@ -775,7 +774,7 @@ const SiteSettings: React.FC = () => {
                           setProcessList(updated);
                         }} 
                         placeholder="Back Description text" 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 text-[11px] md:text-sm leading-relaxed text-slate-300 resize-none transition-all"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 text-[11px] md:text-sm leading-relaxed text-slate-300 overflow-hidden min-h-[100px] transition-all resize-y"
                       />
                     </div>
                   </div>
@@ -796,18 +795,18 @@ const SiteSettings: React.FC = () => {
               </div>
               <div>
                 <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Section Description</label>
-                <textarea id="pricing_subtitle" rows={1} className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-2xl px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 resize-none transition-all text-[11px] md:text-sm" defaultValue={settings.pricing_subtitle || "Pilih paket yang sesuai dengan skala bisnis dan kebutuhan Anda"} />
+                <textarea id="pricing_subtitle" className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-2xl px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 overflow-hidden min-h-[60px] transition-all resize-y text-[11px] md:text-sm" defaultValue={settings.pricing_subtitle || "Pilih paket yang sesuai dengan skala bisnis dan kebutuhan Anda"} />
               </div>
             </div>
 
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
               <div>
                 <h3 className="text-white text-base font-semibold">Pricing Tiers</h3>
                 <p className="text-slate-500 text-xs mt-0.5">Manage pricing tiers with listing features for custom development.</p>
               </div>
               <button 
                 onClick={() => handleOpenPricingModal()}
-                className="px-4 py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 border border-blue-400/40 transition-all active:scale-95"
+                className="self-start px-4 py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 border border-blue-400/40 transition-all active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Tier
               </button>
@@ -860,14 +859,14 @@ const SiteSettings: React.FC = () => {
       case 'faq':
         return (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
               <div>
                 <h3 className="text-white text-base font-semibold">Frequently Asked Questions</h3>
                 <p className="text-slate-500 text-xs mt-0.5">Manage questions and answers displayed in accordion format.</p>
               </div>
               <button 
                 onClick={() => handleOpenFaqModal()}
-                className="px-4 py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 border border-blue-400/40 transition-all active:scale-95"
+                className="self-start px-4 py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 border border-blue-400/40 transition-all active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" /> Add FAQ
               </button>
@@ -911,7 +910,7 @@ const SiteSettings: React.FC = () => {
             <div className="bg-[#121212] p-5 rounded-2xl border border-white/5 space-y-4">
               <div>
                 <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">CTA Title Text (Use newline to split header)</label>
-                <textarea id="cta_title" rows={2} className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-2xl px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all resize-none text-[11px] md:text-sm" placeholder="Siap Membangun Sistem Digital?&#10;Konsultasikan Sekarang Juga!" defaultValue={settings.cta_title || "Siap Membangun Sistem Digital?\nKonsultasikan Sekarang Juga!"} />
+                <textarea id="cta_title" className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-2xl px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all overflow-hidden min-h-[60px] resize-y text-[11px] md:text-sm" placeholder="Siap Membangun Sistem Digital?&#10;Konsultasikan Sekarang Juga!" defaultValue={settings.cta_title || "Siap Membangun Sistem Digital?\\nKonsultasikan Sekarang Juga!"} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
@@ -950,7 +949,7 @@ const SiteSettings: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Company Address</label>
-                    <textarea id="footer_address" rows={2} className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-2xl px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all resize-none text-[11px] md:text-sm" placeholder="Address..." defaultValue={settings.footer_address || "Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis."} />
+                    <textarea id="footer_address" className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-2xl px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all overflow-hidden min-h-[60px] resize-y text-[11px] md:text-sm" placeholder="Address..." defaultValue={settings.footer_address || "Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis."} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -1231,11 +1230,10 @@ const SiteSettings: React.FC = () => {
                  <div>
                   <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Product Description</label>
                   <textarea 
-                    rows={3}
                     value={productForm.description}
                     onChange={(e) => setProductForm(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Provide short description..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 resize-none transition-all text-[11px] md:text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 overflow-hidden min-h-[80px] transition-all resize-y text-[11px] md:text-sm"
                   />
                 </div>
 
@@ -1541,21 +1539,19 @@ const SiteSettings: React.FC = () => {
                 <div>
                   <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Short Description</label>
                   <textarea 
-                    rows={2}
                     value={pricingForm.description}
                     onChange={(e) => setPricingForm(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Provide short explanation..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 resize-none transition-all text-[11px] md:text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 overflow-hidden min-h-[60px] transition-all resize-y text-[11px] md:text-sm"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Features (Separate with COMMAS)</label>
                   <textarea 
-                    rows={3}
                     value={pricingForm.features}
                     onChange={(e) => setPricingForm(prev => ({ ...prev, features: e.target.value }))}
                     placeholder="E.g. Domain .com, Hosting SSD 5GB, 10 Halaman, Desain Premium"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 resize-none leading-relaxed transition-all text-[11px] md:text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 overflow-hidden min-h-[80px] transition-all resize-y text-[11px] md:text-sm"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3 pt-2">
@@ -1617,11 +1613,10 @@ const SiteSettings: React.FC = () => {
                 <div>
                   <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Answer Text</label>
                   <textarea 
-                    rows={4}
                     value={faqForm.answer}
                     onChange={(e) => setFaqForm(prev => ({ ...prev, answer: e.target.value }))}
                     placeholder="E.g. Tidak ada biaya bulanan wajib kecuali perpanjangan tahunan domain & hosting..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 resize-none leading-relaxed transition-all text-[11px] md:text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 overflow-hidden min-h-[100px] transition-all resize-y text-[11px] md:text-sm"
                   />
                 </div>
               </div>

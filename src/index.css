@@ -405,3 +405,212 @@ body {
 
 
 
+
+/* ── AI Chat Markdown Styling ── */
+.prose-aichat {
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.light-theme .prose-aichat {
+  color: #1e293b;
+}
+
+.prose-aichat p {
+  margin: 0 0 8px 0;
+}
+.prose-aichat p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-aichat strong {
+  font-weight: 700;
+  color: #facc15;
+}
+.light-theme .prose-aichat strong {
+  color: #b45309;
+}
+
+.prose-aichat em {
+  font-style: italic;
+  color: #94a3b8;
+}
+.light-theme .prose-aichat em {
+  color: #64748b;
+}
+
+.prose-aichat h1, 
+.prose-aichat h2, 
+.prose-aichat h3, 
+.prose-aichat h4 {
+  font-weight: 700;
+  margin: 12px 0 6px 0;
+  line-height: 1.3;
+  color: #f1f5f9;
+}
+.light-theme .prose-aichat h1,
+.light-theme .prose-aichat h2,
+.light-theme .prose-aichat h3,
+.light-theme .prose-aichat h4 {
+  color: #0f172a;
+}
+.prose-aichat h1 { font-size: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
+.prose-aichat h2 { font-size: 15px; }
+.prose-aichat h3 { font-size: 14px; }
+.prose-aichat h4 { font-size: 13px; }
+
+.prose-aichat ul, 
+.prose-aichat ol {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.prose-aichat li {
+  margin-bottom: 3px;
+}
+.prose-aichat li::marker {
+  color: #3b82f6;
+}
+
+.prose-aichat code {
+  background: rgba(59, 130, 246, 0.15);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  color: #60a5fa;
+}
+.light-theme .prose-aichat code {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.prose-aichat pre {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+.light-theme .prose-aichat pre {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+.prose-aichat pre code {
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: #e2e8f0;
+}
+.light-theme .prose-aichat pre code {
+  color: #334155;
+}
+
+.prose-aichat table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.light-theme .prose-aichat table {
+  border-color: #e2e8f0;
+}
+.prose-aichat thead {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+}
+.light-theme .prose-aichat thead {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+}
+.prose-aichat th {
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  border-bottom: 2px solid rgba(255,255,255,0.15);
+}
+.prose-aichat th:not(:last-child) {
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+.prose-aichat td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  color: #cbd5e1;
+}
+.light-theme .prose-aichat td {
+  color: #475569;
+  border-bottom-color: #f1f5f9;
+}
+.prose-aichat td:not(:last-child) {
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.light-theme .prose-aichat td:not(:last-child) {
+  border-right-color: #f1f5f9;
+}
+.prose-aichat tbody tr:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+.light-theme .prose-aichat tbody tr:hover {
+  background: #f8fafc;
+}
+.prose-aichat tbody tr:nth-child(even) {
+  background: rgba(255,255,255,0.03);
+}
+.light-theme .prose-aichat tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+.prose-aichat blockquote {
+  border-left: 3px solid #3b82f6;
+  padding-left: 12px;
+  margin: 8px 0;
+  color: #94a3b8;
+  font-style: italic;
+}
+.light-theme .prose-aichat blockquote {
+  color: #64748b;
+}
+.prose-aichat hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  margin: 12px 0;
+}
+.light-theme .prose-aichat hr {
+  border-top-color: #e2e8f0;
+}
+.prose-aichat a {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+.light-theme .prose-aichat a {
+  color: #2563eb;
+}
+.prose-aichat a:hover {
+  opacity: 0.8;
+}
+
+/* ── Chat Widget Scrollbar ── */
+.chat-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 99px;
+}
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+.light-theme .chat-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+}
+.light-theme .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}

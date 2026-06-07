@@ -230,15 +230,7 @@ const Products: React.FC = () => {
 
                       {/* Content Overlaid */}
                       <div className="absolute inset-0 p-5 md:p-12 flex flex-col justify-end items-start text-left pointer-events-none">
-                        {product.logo && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="mb-3 md:mb-4"
-                          >
-                            <img src={product.logo} alt={`${product.title} logo`} className="h-6 md:h-14 w-auto object-contain brightness-0 invert" />
-                          </motion.div>
-                        )}
+                        {/* Logo removed as per request */}
                         <div className="inline-block text-[9px] md:text-xs font-bold text-white/90 uppercase px-2 py-1 md:px-3 md:py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10 mb-2 md:mb-3">
                           {product.badge}
                         </div>

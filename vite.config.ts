@@ -39,6 +39,10 @@ export default defineConfig({
         target: 'http://localhost',
         changeOrigin: true,
       },
+      '/assets/documents': {
+        target: 'http://localhost',
+        changeOrigin: true,
+      },
     }
   }
 })

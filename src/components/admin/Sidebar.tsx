@@ -5,18 +5,45 @@ import {
   LayoutDashboard, 
   Users, 
   LogOut,
-  X
+  X,
+  Package,
+  ChevronDown,
+  Globe,
+  BookOpen,
+  Mail,
+  Building,
+  GraduationCap,
+  FolderOpen,
 } from 'lucide-react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 
 const Sidebar: React.FC = () => {
   const { isSidebarCollapsed, isMobileSidebarOpen, toggleMobileSidebar, theme } = useStore();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const location = useLocation();
 
   // Get current user role from localStorage
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
   const isAdmin = currentUser?.role === 'admin';
+
+  const [productsOpen, setProductsOpen] = useState(() => {
+    return location.pathname.startsWith('/admin/products');
+  });
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin/products') && !productsOpen) {
+      setProductsOpen(true);
+    }
+  }, [location.pathname]);
+
+  const productSubmenus = [
+    { icon: GraduationCap, label: 'i-School', path: '/admin/products/ischool' },
+    { icon: BookOpen, label: 'i-Santri', path: '/admin/products/isantri' },
+    { icon: Mail, label: 'Digital Invitation', path: '/admin/products/digital-invitation' },
+    { icon: Building, label: 'Website Desa', path: '/admin/products/website-desa' },
+    { icon: Globe, label: 'Garuda Nexa', path: '/admin/products/garuda-nexa' },
+  ];
 
   useEffect(() => {
     const handleResize = () => {
@@ -31,6 +58,7 @@ const Sidebar: React.FC = () => {
   
   const allMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', adminOnly: false },
+    { icon: FolderOpen, label: 'Dokumen', path: '/admin/documents', adminOnly: false },
     { icon: Settings, label: 'Website Settings', path: '/admin/settings', adminOnly: false },
     { icon: Users, label: 'Users', path: '/admin/users', adminOnly: true },
   ];
@@ -39,6 +67,8 @@ const Sidebar: React.FC = () => {
   const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
 
   const isDesktop = windowWidth >= 1024;
+
+  const isProductsActive = location.pathname.startsWith('/admin/products');
 
   return (
     <>
@@ -112,7 +142,7 @@ const Sidebar: React.FC = () => {
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 px-3 md:px-4 mt-2 md:mt-3 space-y-0.5 md:space-y-1">
+        <nav className="flex-1 px-3 md:px-4 mt-2 md:mt-3 space-y-0.5 md:space-y-1 overflow-y-auto">
           {menuItems.map((item) => (
             <NavLink
               key={item.path}
@@ -167,6 +197,94 @@ const Sidebar: React.FC = () => {
               )}
             </NavLink>
           ))}
+
+          {/* ── Products Submenu ── */}
+          <div>
+            <div className="flex">
+              <Link
+                to="/admin/products"
+                onClick={() => toggleMobileSidebar(false)}
+                className={`
+                  flex-1 flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 rounded-xl transition-all group relative border
+                  ${isProductsActive
+                    ? (theme === 'light'
+                        ? 'bg-blue-50/80 text-blue-600 border-blue-100'
+                        : 'bg-blue-600/10 text-blue-400 border-blue-600/20')
+                    : (theme === 'light'
+                        ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent')}
+                  ${isSidebarCollapsed ? 'justify-center' : ''}
+                `}
+              >
+                <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.2 }}>
+                  <Package className="w-4 h-4 md:w-4.5 md:h-4.5 min-w-[16px] md:min-w-[18px]" />
+                </motion.div>
+
+                <AnimatePresence initial={false}>
+                  {!isSidebarCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0, x: -10 }}
+                      animate={{ opacity: 1, width: 'auto', x: 0 }}
+                      exit={{ opacity: 0, width: 0, x: -10 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                      className="text-[12.5px] md:text-sm font-medium whitespace-nowrap overflow-hidden flex-1 text-left"
+                    >
+                      Products
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </Link>
+
+              {!isSidebarCollapsed && (
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setProductsOpen(!productsOpen); }}
+                  className="px-2 hover:bg-white/5 rounded-lg transition-colors"
+                >
+                  <motion.div
+                    animate={{ rotate: productsOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-3 h-3 md:w-3.5 md:h-3.5 text-slate-400" />
+                  </motion.div>
+                </button>
+              )}
+            </div>
+
+            <AnimatePresence>
+              {productsOpen && !isSidebarCollapsed && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  className="overflow-hidden pl-6 md:pl-8"
+                >
+                  <div className="py-1 space-y-0.5">
+                    {productSubmenus.map((sub) => (
+                      <NavLink
+                        key={sub.path}
+                        to={sub.path}
+                        onClick={() => toggleMobileSidebar(false)}
+                        className={({ isActive }) => `
+                          flex items-center gap-2.5 px-2.5 py-1.5 md:py-2 rounded-lg transition-all text-[11.5px] md:text-xs
+                          ${isActive
+                            ? (theme === 'light'
+                                ? 'bg-blue-50 text-blue-600 font-medium'
+                                : 'bg-blue-600/10 text-blue-400 font-medium')
+                            : (theme === 'light'
+                                ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                                : 'text-slate-500 hover:text-white hover:bg-white/5')}
+                        `}
+                      >
+                        <sub.icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{sub.label}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </nav>
 
         {/* Footer Actions */}
