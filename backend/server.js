@@ -363,6 +363,16 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
+  // ── Get Products Data ──
+  if (action === 'get_products') {
+    try {
+      const [rows] = await pool.query('SELECT id, logo FROM list_products');
+      return res.json(rows);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   res.status(400).json({ error: 'Invalid action: ' + action });
 });
 
@@ -987,14 +997,6 @@ FORMAT JAWABAN: Gunakan Markdown yang rapi dan menarik:
   }
 });
 
-// ── AI Context (get website data for context) ──
-app.get('/api/ai-context', async (req, res) => {
-  try {
-    const [settingsRows] = await pool.query('SELECT setting_key, setting_value FROM hero_settings');
-    const settings = {};
-    for (const row of settingsRows) {
-      settings[row.setting_key] = row.setting_value;
-    }
-
-    const [productRows] = await pool.query('SELECT id, title, description, link_button, logo FROM list_products ORDER BY id');
-    const [projectCount] = await pool.query('SELECT COUNT(*) as count FROM project_client');
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[API] Server running on port ${PORT}`);
+});
