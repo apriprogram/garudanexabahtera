@@ -130,7 +130,7 @@ function MiniBar({ data, color = '#6366f1', height = 40 }) {
 }
 
 // === Stat Card ===
-function StatCard({ icon: Icon, label, value, sub, color = COLORS.primary, loading }) {
+function StatCard({ icon: Icon, label, value, sub, color = COLORS.primary, loading }: any) {
   const { theme } = useStore();
   const isDark = theme === 'dark';
   return (
@@ -163,7 +163,7 @@ function StatCard({ icon: Icon, label, value, sub, color = COLORS.primary, loadi
 }
 
 // === Status Badge ===
-function StatusBadge({ status, size = 'sm' }) {
+function StatusBadge({ status, size = 'sm' }: any) {
   const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs';
   return (
     <span className={cn(
@@ -338,7 +338,7 @@ export default function MonitoringCenter() {
 // =============================================
 // DASHBOARD TAB
 // =============================================
-function DashboardTab({ data, isDark, onRefresh }) {
+function DashboardTab({ data, isDark, onRefresh }: any) {
   if (!data) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -466,12 +466,12 @@ function DashboardTab({ data, isDark, onRefresh }) {
 // =============================================
 // WEBSITES TAB
 // =============================================
-function WebsitesTab({ websites, isDark, onRefresh, categories }) {
+function WebsitesTab({ websites, isDark, onRefresh, categories }: any) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [search, setSearch] = useState('');
-  const [checking, setChecking] = useState({});
-  const [form, setForm] = useState({ name: '', url: '', category: 'Umum', notes: '', is_active: 1 });
+  const [checking, setChecking] = useState<any>({});
+  const [form, setForm] = useState<any>({ name: '', url: '', category: 'Umum', notes: '', is_active: 1 });
 
   const filtered = websites.filter(w =>
     !search || w.name.toLowerCase().includes(search.toLowerCase()) || w.url.toLowerCase().includes(search.toLowerCase())
@@ -676,7 +676,7 @@ function WebsitesTab({ websites, isDark, onRefresh, categories }) {
 // =============================================
 // VISITORS TAB
 // =============================================
-function VisitorsTab({ data, isDark }) {
+function VisitorsTab({ data, isDark }: any) {
   const [period, setPeriod] = useState('daily');
 
   if (!data) {
@@ -779,7 +779,7 @@ function VisitorsTab({ data, isDark }) {
 // =============================================
 // SERVER TAB
 // =============================================
-function ServerTab({ data, isDark }) {
+function ServerTab({ data, isDark }: any) {
   if (!data) {
     return <div className="flex items-center justify-center py-20">
       <div className="text-center">
@@ -877,7 +877,7 @@ function ServerTab({ data, isDark }) {
 // =============================================
 // DATABASE TAB
 // =============================================
-function DatabaseTab({ data, isDark }) {
+function DatabaseTab({ data, isDark }: any) {
   if (!data) {
     return <div className="flex items-center justify-center py-20">
       <RefreshCw className="animate-spin text-indigo-500" size={24} />
@@ -918,7 +918,7 @@ function DatabaseTab({ data, isDark }) {
 // =============================================
 // DOMAINS TAB
 // =============================================
-function DomainsTab({ domains, isDark, onRefresh }) {
+function DomainsTab({ domains, isDark, onRefresh }: any) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ domain: '', website_id: 0, registrar: '', expiry_date: '', ssl_expiry_date: '' });
   const [websites, setWebsites] = useState([]);
@@ -1052,10 +1052,10 @@ function DomainsTab({ domains, isDark, onRefresh }) {
 // =============================================
 // API TAB
 // =============================================
-function ApiTab({ apis, isDark, onRefresh }) {
+function ApiTab({ apis, isDark, onRefresh }: any) {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', endpoint: '', method: 'GET' });
-  const [checking, setChecking] = useState({});
+  const [form, setForm] = useState<any>({ name: '', endpoint: '', method: 'GET' });
+  const [checking, setChecking] = useState<any>({});
 
   async function handleSave() {
     await fetchAPI('monitor_add_api', form);
@@ -1179,8 +1179,8 @@ function ApiTab({ apis, isDark, onRefresh }) {
 // =============================================
 // SECURITY TAB
 // =============================================
-function SecurityTab({ logs, isDark, onRefresh }) {
-  const [summary, setSummary] = useState(null);
+function SecurityTab({ logs, isDark, onRefresh }: any) {
+  const [summary, setSummary] = useState<any>(null);
 
   useEffect(() => {
     fetchAPI('monitor_security_summary').then(setSummary);
@@ -1224,7 +1224,7 @@ function SecurityTab({ logs, isDark, onRefresh }) {
                   <td colSpan={7} className={cn('p-6 text-center', isDark ? 'text-gray-500' : 'text-gray-400')}>Belum ada log keamanan</td>
                 </tr>
               ) : (
-                logs.map(log => (
+                logs.map((log: any) => (
                   <tr key={log.id} className={cn('border-t', isDark ? 'border-gray-800' : 'border-gray-100')}>
                     <td className="p-3">
                       <span className={cn(
@@ -1261,7 +1261,7 @@ function SecurityTab({ logs, isDark, onRefresh }) {
 // =============================================
 // NOTIFICATIONS TAB
 // =============================================
-function NotificationsTab({ notifications, isDark, onRefresh, setUnreadCount }) {
+function NotificationsTab({ notifications, isDark, onRefresh, setUnreadCount }: any) {
   async function markRead(id) {
     await fetchAPI('monitor_mark_notification_read', { id });
     onRefresh();
@@ -1273,12 +1273,12 @@ function NotificationsTab({ notifications, isDark, onRefresh, setUnreadCount }) 
     onRefresh();
   }
 
-  const icons = {
+  const icons: any = {
     info: Info,
     warning: AlertTriangle,
     critical: AlertCircle,
   };
-  const iconsColors = {
+  const iconsColors: any = {
     info: COLORS.info,
     warning: COLORS.warning,
     critical: COLORS.danger,
@@ -1303,7 +1303,7 @@ function NotificationsTab({ notifications, isDark, onRefresh, setUnreadCount }) 
             <p className="text-sm">Tidak ada notifikasi</p>
           </div>
         ) : (
-          notifications.map(n => {
+          notifications.map((n: any) => {
             const Icon = icons[n.severity] || Info;
             const color = iconsColors[n.severity] || COLORS.info;
             return (
@@ -1352,9 +1352,8 @@ function NotificationsTab({ notifications, isDark, onRefresh, setUnreadCount }) 
 // =============================================
 // REPORTS TAB
 // =============================================
-function ReportsTab({ isDark }) {
+function ReportsTab({ isDark }: any) {
   const [selectedReport, setSelectedReport] = useState('daily');
-  const [dateRange, setDateRange] = useState('7');
 
   const reports = [
     { id: 'daily', label: 'Harian', icon: Calendar },
@@ -1408,8 +1407,8 @@ function ReportsTab({ isDark }) {
 // =============================================
 // SETTINGS TAB
 // =============================================
-function SettingsTab({ settings, isDark, onRefresh }) {
-  const [form, setForm] = useState({
+function SettingsTab({ settings, isDark, onRefresh }: any) {
+  const [form, setForm] = useState<any>({
     check_interval: 30,
     wa_notifications: 1,
     wa_phone: '082181361433',
