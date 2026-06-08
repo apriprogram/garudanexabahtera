@@ -177,7 +177,7 @@ const ProductsMonitor: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight">Products Monitoring</h1>
-          <p className={`text-xs md:text-sm mt-1 ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-xs md:text-sm mt-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
             Pantau status semua website Anda — {formatTime(currentTime)}
           </p>
         </div>
@@ -271,14 +271,16 @@ const ProductsMonitor: React.FC = () => {
               </div>
 
               <p className={`text-xs md:text-sm line-clamp-2 ${
-                theme === 'light' ? 'text-slate-500' : 'text-slate-400'
+                theme === 'light' ? 'text-slate-700' : 'text-slate-400'
               }`}>
                 {product.description}
               </p>
 
-              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5 light-theme:border-slate-100">
-                <Globe className="w-3 h-3 text-slate-400" />
-                <span className="text-[10px] md:text-xs text-slate-500 truncate">{product.url}</span>
+              <div className={`flex items-center gap-2 mt-3 pt-3 border-t ${
+                theme === 'light' ? 'border-slate-200' : 'border-white/5'
+              }`}>
+                <Globe className={`w-3 h-3 ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`} />
+                <span className={`text-[10px] md:text-xs truncate ${theme === 'light' ? 'text-slate-600' : 'text-slate-500'}`}>{product.url}</span>
               </div>
             </div>
 
@@ -318,10 +320,10 @@ const ProductsMonitor: React.FC = () => {
             }`}>
               <Server className="w-6 h-6" />
             </div>
-            <p className={`text-sm font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+            <p className={`text-sm font-medium ${theme === 'light' ? 'text-slate-600' : 'text-slate-300'}`}>
               Tambah Website Baru
             </p>
-            <p className={`text-xs mt-1 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>
+            <p className={`text-xs mt-1 ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
               Hubungi developer untuk menambahkan
             </p>
           </div>
