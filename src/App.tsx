@@ -34,7 +34,7 @@ import ProductsIndex from './pages/admin/products';
 // import MonitoringErrors from './pages/admin/monitoring/Errors';
 
 function App() {
-...[truncated]
+  const { theme, isSearchActive, toggleSearch } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const location = useLocation();
