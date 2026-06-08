@@ -24,6 +24,11 @@ services:
       - MYSQL_USER=root
       - MYSQL_PASS=***REMOVED***
       - OPENAI_API_KEY=${OPENAI_API_KEY:-sk-isi-key-disini}
+      - S3_ACCESS_KEY=***REMOVED***
+      - S3_SECRET_KEY=***REMOVED***
+      - S3_ENDPOINT=https://is3.cloudhost.id
+      - S3_BUCKET=garudanexa
+      - S3_REGION=us-east-1
     depends_on:
       - mysql
     restart: unless-stopped
