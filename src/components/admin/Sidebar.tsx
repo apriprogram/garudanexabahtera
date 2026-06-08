@@ -15,7 +15,6 @@ import {
   GraduationCap,
   FolderOpen,
   History,
-  GlobeLock,
 } from 'lucide-react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
@@ -62,7 +61,6 @@ const Sidebar: React.FC = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', adminOnly: false },
     { icon: FolderOpen, label: 'Dokumen', path: '/admin/documents', adminOnly: false },
     { icon: History, label: 'Changelog', path: '/admin/changelog', adminOnly: true },
-    { icon: GlobeLock, label: 'Monitoring (iSchool)', path: 'https://office.ischool.my.id', isExternal: true, adminOnly: true },
     { icon: Settings, label: 'Website Settings', path: '/admin/settings', adminOnly: false },
     { icon: Users, label: 'Users', path: '/admin/users', adminOnly: true },
   ];
@@ -147,24 +145,28 @@ const Sidebar: React.FC = () => {
 
         {/* Menu */}
         <nav className="flex-1 px-3 md:px-4 mt-2 md:mt-3 space-y-0.5 md:space-y-1 overflow-y-auto">
-          {menuItems.map((item) => {
-            if (item.isExternal) {
-              return (
-                <a
-                  key={item.path}
-                  href={item.path}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => toggleMobileSidebar(false)}
-                  className={`
-                    flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 rounded-xl transition-all group relative border
-                    ${theme === 'light'
-                      ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent'}
-                    ${isSidebarCollapsed ? 'justify-center' : ''}
-                  `}
-                >
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end
+              onClick={() => toggleMobileSidebar(false)}
+              className={({ isActive }) => `
+                flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 rounded-xl transition-all group relative border
+                ${isActive 
+                  ? (theme === 'light'
+                      ? 'bg-blue-50/80 text-blue-600 border-blue-100 shadow-[inset_0_0_10px_rgba(37,99,235,0.03)]'
+                      : 'bg-blue-600/10 text-blue-400 border-blue-600/20 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]')
+                  : (theme === 'light' 
+                      ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent')}
+                ${isSidebarCollapsed ? 'justify-center' : ''}
+              `}
+            >
+              {({ isActive }) => (
+                <>
                   <motion.div
+                    animate={{ scale: isActive ? 1.05 : 1 }}
                     whileHover={{ scale: 1.1 }}
                     transition={{ duration: 0.2 }}
                   >
@@ -185,6 +187,7 @@ const Sidebar: React.FC = () => {
                     )}
                   </AnimatePresence>
                   
+                  {/* Tooltip for collapsed mode */}
                   {isSidebarCollapsed && (
                     <div className={`absolute left-full ml-4 px-3 py-2 text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md ${
                       theme === 'light' ? 'bg-slate-900 text-white' : 'bg-white text-black'
@@ -192,64 +195,10 @@ const Sidebar: React.FC = () => {
                       {item.label}
                     </div>
                   )}
-                </a>
-              );
-            }
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end
-                onClick={() => toggleMobileSidebar(false)}
-                className={({ isActive }) => `
-                  flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 rounded-xl transition-all group relative border
-                  ${isActive 
-                    ? (theme === 'light'
-                        ? 'bg-blue-50/80 text-blue-600 border-blue-100 shadow-[inset_0_0_10px_rgba(37,99,235,0.03)]'
-                        : 'bg-blue-600/10 text-blue-400 border-blue-600/20 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]')
-                    : (theme === 'light' 
-                        ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent' 
-                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent')}
-                  ${isSidebarCollapsed ? 'justify-center' : ''}
-                `}
-              >
-                {({ isActive }) => (
-                  <>
-                    <motion.div
-                      animate={{ scale: isActive ? 1.05 : 1 }}
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <item.icon className="w-4 h-4 md:w-4.5 md:h-4.5 min-w-[16px] md:min-w-[18px]" />
-                    </motion.div>
-
-                    <AnimatePresence initial={false}>
-                      {!isSidebarCollapsed && (
-                        <motion.span 
-                          initial={{ opacity: 0, width: 0, x: -10 }}
-                          animate={{ opacity: 1, width: 'auto', x: 0 }}
-                          exit={{ opacity: 0, width: 0, x: -10 }}
-                          transition={{ duration: 0.3, ease: 'easeOut' }}
-                          className="text-[12.5px] md:text-sm font-medium whitespace-nowrap overflow-hidden"
-                        >
-                          {item.label}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                    
-                    {/* Tooltip for collapsed mode */}
-                    {isSidebarCollapsed && (
-                      <div className={`absolute left-full ml-4 px-3 py-2 text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md ${
-                        theme === 'light' ? 'bg-slate-900 text-white' : 'bg-white text-black'
-                      }`}>
-                        {item.label}
-                      </div>
-                    )}
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
+                </>
+              )}
+            </NavLink>
+          ))}
 
           {/* ── Products Submenu ── */}
           <div>
