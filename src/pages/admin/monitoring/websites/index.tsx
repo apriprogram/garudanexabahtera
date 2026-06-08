@@ -63,10 +63,10 @@ function WebToast({ toasts, clear }: { toasts: ToastMsg[]; clear: (id: number) =
               : 'bg-rose-900/90 border border-rose-700 text-rose-200'
           }`}
         >
-          {t.type === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}
+          {t.type === 'success' ? <Check className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
           <span className="flex-1">{t.text}</span>
           <button onClick={() => clear(t.id)} className="p-0.5 hover:bg-white/10 rounded">
-            <X size={14} />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       ))}
@@ -228,7 +228,7 @@ export default function WebsitesMonitor() {
             : 'bg-rose-500/10 text-rose-400'
         }`}
       >
-        {isOnline ? <Wifi size={12} /> : <WifiOff size={12} />}
+        {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
         {isOnline ? 'Online' : 'Offline'}
       </span>
     );
@@ -244,9 +244,9 @@ export default function WebsitesMonitor() {
           isExpiring ? 'text-amber-400' : 'text-slate-400'
         }`}
       >
-        <Shield size={12} />
+        <Shield className="w-3 h-3" />
         SSL {days}d
-        {isExpiring && <AlertTriangle size={12} className="text-amber-400" />}
+        {isExpiring && <AlertTriangle className="w-3 h-3" className="text-amber-400" />}
       </span>
     );
   };
@@ -292,7 +292,7 @@ export default function WebsitesMonitor() {
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-xl text-sm font-medium transition-all"
         >
-          <Plus size={16} /> Add Website
+          <Plus className="w-4 h-4" /> Add Website
         </button>
       </div>
 
@@ -300,7 +300,7 @@ export default function WebsitesMonitor() {
       {websites.length === 0 ? (
         <div className="text-center py-16">
           <div className="inline-flex p-4 rounded-full bg-slate-800/50 text-slate-500 mb-4">
-            <Globe size={40} />
+            <Globe className="w-10 h-10" />
           </div>
           <p className="text-slate-400 text-sm">No websites monitored yet.</p>
           <p className="text-slate-500 text-xs mt-1">Click "Add Website" to start monitoring.</p>
@@ -323,9 +323,9 @@ export default function WebsitesMonitor() {
                     }`}
                   >
                     {w.status === 'online' || w.status === 'up' ? (
-                      <Wifi size={18} className="text-emerald-400" />
+                      <Wifi className="w-4.5 h-4.5" className="text-emerald-400" />
                     ) : (
-                      <WifiOff size={18} className="text-rose-400" />
+                      <WifiOff className="w-4.5 h-4.5" className="text-rose-400" />
                     )}
                   </div>
                   <div className="min-w-0">
@@ -337,7 +337,7 @@ export default function WebsitesMonitor() {
                       className="text-xs text-slate-500 hover:text-primary flex items-center gap-1 truncate"
                     >
                       {w.url.length > 30 ? w.url.slice(0, 30) + '…' : w.url}
-                      <ExternalLink size={10} className="shrink-0" />
+                      <ExternalLink className="w-2.5 h-2.5" className="shrink-0" />
                     </a>
                   </div>
                 </div>
@@ -349,7 +349,7 @@ export default function WebsitesMonitor() {
                   title="Check now"
                 >
                   <RefreshCw
-                    size={14}
+                    className="w-3.5 h-3.5"
                     className={`text-slate-400 ${refreshingId === w.id ? 'animate-spin' : ''}`}
                   />
                 </button>
@@ -359,7 +359,7 @@ export default function WebsitesMonitor() {
               <div className="flex items-center gap-3 mb-3">
                 {statusBadge(w.status)}
                 <span className="text-xs text-slate-500 flex items-center gap-1">
-                  <Clock size={12} /> {formatMs(w.response_time)}
+                  <Clock className="w-3 h-3" /> {formatMs(w.response_time)}
                 </span>
                 {sslIndicator(w.ssl_expiry)}
               </div>
@@ -378,13 +378,13 @@ export default function WebsitesMonitor() {
                   onClick={() => openEdit(w)}
                   className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
                 >
-                  <Edit3 size={12} /> Edit
+                  <Edit3 className="w-3 h-3" /> Edit
                 </button>
                 <button
                   onClick={() => setDeleteItem(w)}
                   className="flex items-center gap-1 px-3 py-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-all"
                 >
-                  <Trash2 size={12} /> Delete
+                  <Trash2 className="w-3 h-3" /> Delete
                 </button>
               </div>
             </div>
@@ -404,7 +404,7 @@ export default function WebsitesMonitor() {
                 onClick={() => setShowAdd(false)}
                 className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
               >
-                <X size={18} />
+                <X className="w-4.5 h-4.5" />
               </button>
             </div>
 
@@ -471,7 +471,7 @@ export default function WebsitesMonitor() {
                 onClick={() => setEditItem(null)}
                 className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
               >
-                <X size={18} />
+                <X className="w-4.5 h-4.5" />
               </button>
             </div>
 
@@ -536,7 +536,7 @@ export default function WebsitesMonitor() {
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
             <div className="flex items-center gap-4 mb-5">
               <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400">
-                <AlertTriangle size={22} />
+                <AlertTriangle className="w-5.5 h-5.5" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">Confirm Delete</h3>
@@ -563,7 +563,7 @@ export default function WebsitesMonitor() {
                 className="px-4 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {submitting && <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />}
-                <Trash2 size={14} /> Delete
+                <Trash2 className="w-3.5 h-3.5" /> Delete
               </button>
             </div>
           </div>

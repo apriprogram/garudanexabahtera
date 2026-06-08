@@ -50,12 +50,12 @@ const ErrorCenter = () => {
 
   const sourceIcon = (s: string) => {
     switch (s) {
-      case 'website': return <Globe size={14} />;
-      case 'server': return <Server size={14} />;
-      case 'ai': return <Cpu size={14} />;
-      case 'database': return <Database size={14} />;
-      case 'api': return <Bug size={14} />;
-      default: return <AlertCircle size={14} />;
+      case 'website': return <Globe className="w-3.5 h-3.5" />;
+      case 'server': return <Server className="w-3.5 h-3.5" />;
+      case 'ai': return <Cpu className="w-3.5 h-3.5" />;
+      case 'database': return <Database className="w-3.5 h-3.5" />;
+      case 'api': return <Bug className="w-3.5 h-3.5" />;
+      default: return <AlertCircle className="w-3.5 h-3.5" />;
     }
   };
 
@@ -106,7 +106,7 @@ const ErrorCenter = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-          <AlertTriangle className="text-amber-400" size={24} /> Error Center
+          <AlertTriangle className="text-amber-400" className="w-6 h-6" /> Error Center
           {errors.filter(e => !e.is_resolved).length > 0 && (
             <span className="text-xs bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded-full">
               {errors.filter(e => !e.is_resolved).length} unresolved
@@ -115,14 +115,14 @@ const ErrorCenter = () => {
         </h2>
         <button onClick={fetchErrors}
           className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-xs transition-all">
-          <RefreshCw size={14} /> Refresh
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1.5 bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">
-          <Filter size={13} className="text-slate-500" />
+          <Filter className="w-3 h-3" className="text-slate-500" />
           <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
             className="bg-transparent text-slate-300 focus:outline-none">
             <option value="all">All Sources</option>
@@ -141,11 +141,11 @@ const ErrorCenter = () => {
           <option value="critical">Critical</option>
         </select>
         <div className="flex items-center gap-1.5 bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">
-          <Search size={13} className="text-slate-500" />
+          <Search className="w-3 h-3" className="text-slate-500" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search errors..."
             className="bg-transparent text-slate-300 placeholder:text-slate-600 focus:outline-none w-32" />
-          {search && <button onClick={() => setSearch('')}><X size={12} className="text-slate-500" /></button>}
+          {search && <button onClick={() => setSearch('')}><X className="w-3 h-3" className="text-slate-500" /></button>}
         </div>
         <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
           <input type="checkbox" checked={showResolved} onChange={e => setShowResolved(e.target.checked)}
@@ -157,7 +157,7 @@ const ErrorCenter = () => {
       {/* Error List */}
       {filtered.length === 0 ? (
         <div className="bg-slate-900/20 border border-dashed border-slate-800 rounded-2xl p-16 text-center">
-          <CheckCircle size={40} className="mx-auto text-emerald-500 mb-3" />
+          <CheckCircle className="w-10 h-10" className="mx-auto text-emerald-500 mb-3" />
           <p className="text-slate-500 text-sm">No errors detected. Everything is running smoothly.</p>
         </div>
       ) : (
@@ -187,7 +187,7 @@ const ErrorCenter = () => {
                       )}
                       {e.is_resolved ? (
                         <span className="text-[10px] text-emerald-500 flex items-center gap-0.5">
-                          <CheckCircle size={10} /> Resolved
+                          <CheckCircle className="w-2.5 h-2.5" /> Resolved
                         </span>
                       ) : (
                         <span className="text-[10px] text-amber-500">Active</span>
@@ -205,7 +205,7 @@ const ErrorCenter = () => {
                     <button onClick={() => handleResolve(e.id)} disabled={resolving === e.id}
                       className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-400 transition-all disabled:opacity-50"
                       title="Mark resolved">
-                      <CheckCircle size={14} className={resolving === e.id ? 'animate-spin' : ''} />
+                      <CheckCircle className="w-3.5 h-3.5" className={resolving === e.id ? 'animate-spin' : ''} />
                     </button>
                   )}
                 </div>
