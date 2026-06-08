@@ -13,7 +13,7 @@ import { monitorAPI, formatNumber, formatDate } from '../../../../lib/monitor-ap
 const StatCard = ({ title, value, subValue, icon: Icon, color }: any) => (
   <div className="bg-slate-900/30 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group">
     <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity`}>
-      <Icon size={80} color={color} />
+      <Icon className="w-20 h-20" color={color} />
     </div>
     <div className="relative z-10">
       <p className="text-slate-400 text-sm font-medium">{title}</p>
@@ -35,7 +35,7 @@ const StatusBadge = ({ status }: { status: string }) => {
           : 'bg-rose-500/10 text-rose-400'
       }`}
     >
-      {isSuccess ? <CheckCircle size={12} /> : <XCircle size={12} />}
+      {isSuccess ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
       {status}
     </span>
   );
@@ -149,7 +149,7 @@ const AiMonitoring = () => {
         <div className="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="p-5 border-b border-slate-800">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Brain size={18} className="text-primary" /> Usage by Model
+              <Brain className="w-4.5 h-4.5" className="text-primary" /> Usage by Model
             </h3>
           </div>
           {usage.length > 0 ? (
@@ -190,7 +190,7 @@ const AiMonitoring = () => {
               </table>
             </div>
           ) : (
-            emptyState(<Database size={24} />, 'No usage data available')
+            emptyState(<Database className="w-6 h-6" />, 'No usage data available')
           )}
         </div>
 
@@ -198,7 +198,7 @@ const AiMonitoring = () => {
         <div className="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="p-5 border-b border-slate-800">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Activity size={18} className="text-primary" /> Usage by Website
+              <Activity className="w-4.5 h-4.5" className="text-primary" /> Usage by Website
             </h3>
           </div>
           {byWebsite.length > 0 ? (
@@ -234,7 +234,7 @@ const AiMonitoring = () => {
               </table>
             </div>
           ) : (
-            emptyState(<Activity size={24} />, 'No website usage data available')
+            emptyState(<Activity className="w-6 h-6" />, 'No website usage data available')
           )}
         </div>
       </div>
@@ -243,7 +243,7 @@ const AiMonitoring = () => {
       <div className="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden">
         <div className="p-5 border-b border-slate-800 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Clock size={18} className="text-primary" /> Recent AI Logs
+            <Clock className="w-4.5 h-4.5" className="text-primary" /> Recent AI Logs
           </h3>
           {logs.length > 0 && (
             <span className="text-xs text-slate-500">{logs.length} entries</span>
@@ -294,7 +294,7 @@ const AiMonitoring = () => {
             </table>
           </div>
         ) : (
-          emptyState(<Clock size={24} />, 'No AI logs recorded yet')
+          emptyState(<Clock className="w-6 h-6" />, 'No AI logs recorded yet')
         )}
       </div>
     </div>

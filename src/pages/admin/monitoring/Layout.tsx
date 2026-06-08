@@ -35,7 +35,7 @@ const MonitoringLayout = () => {
               }`
             }
           >
-            <Icon size={16} />
+            <Icon className="w-4 h-4" />
             {label}
           </NavLink>
         ))}
