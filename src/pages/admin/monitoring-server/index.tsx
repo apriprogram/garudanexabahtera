@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Server, Globe, Activity, Cpu, Monitor, HardDrive, RefreshCw,
+  Server, Globe, Cpu, Monitor, HardDrive, RefreshCw,
   Clock, AlertTriangle, CheckCircle2, Shield, ShieldAlert, Zap,
-  ExternalLink, Database, Wifi, Terminal, ArrowUpRight,
-  BarChart3, Bug, Lock, Unlock, Eye, EyeOff
+  ExternalLink, Wifi,
+  BarChart3, Bug, Lock, Unlock
 } from 'lucide-react';
 
 // ── Types ──
@@ -63,12 +63,6 @@ const timeAgo = (ts: string | null): string => {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
-};
-
-const usageColor = (val: number): string => {
-  if (val > 80) return 'bg-rose-500';
-  if (val > 60) return 'bg-amber-500';
-  return 'bg-emerald-500';
 };
 
 const usageBarColor = (val: number): string => {
