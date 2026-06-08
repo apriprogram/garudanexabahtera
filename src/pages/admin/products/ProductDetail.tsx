@@ -195,7 +195,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
               )}
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold">{product.name}</h1>
+              <h1 className={`text-xl md:text-2xl font-bold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{product.name}</h1>
               <div className="flex items-center gap-2 mt-1">
                 <p className={`text-sm ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
                   {product.description}
@@ -304,7 +304,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
         }`}>
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-semibold">Live Monitoring</h2>
+            <h2 className={`text-sm font-semibold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Live Monitoring</h2>
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${
               theme === 'light' ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'
             }`}>
@@ -493,7 +493,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
           }`}>
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-emerald-500" />
-              <h2 className="text-sm font-semibold">Platform Statistics</h2>
+              <h2 className={`text-sm font-semibold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Platform Statistics</h2>
             </div>
             <div className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-500'}`}>
               Updated: {ischoolStats.data?.updated_at ? new Date(ischoolStats.data.updated_at).toLocaleString() : 'Just now'}
@@ -507,28 +507,28 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
                   <Building className="w-4 h-4 text-sky-400" />
                   <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Total Yayasan</span>
                 </div>
-                <p className="text-2xl font-bold">{ischoolStats.data?.total_yayasans || 0}</p>
+                <p className={`text-2xl font-bold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{ischoolStats.data?.total_yayasans || 0}</p>
               </div>
               <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="w-4 h-4 text-emerald-400" />
                   <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Total Siswa</span>
                 </div>
-                <p className="text-2xl font-bold">{(ischoolStats.data?.total_students || 0).toLocaleString()}</p>
+                <p className={`text-2xl font-bold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{(ischoolStats.data?.total_students || 0).toLocaleString()}</p>
               </div>
               <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <GraduationCap className="w-4 h-4 text-violet-400" />
                   <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Total Guru</span>
                 </div>
-                <p className="text-2xl font-bold">{ischoolStats.data?.total_teachers || 0}</p>
+                <p className={`text-2xl font-bold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{ischoolStats.data?.total_teachers || 0}</p>
               </div>
               <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Database className="w-4 h-4 text-amber-400" />
                   <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Active Users</span>
                 </div>
-                <p className="text-2xl font-bold">{(ischoolStats.data?.active_users || 0).toLocaleString()}</p>
+                <p className={`text-2xl font-bold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{(ischoolStats.data?.active_users || 0).toLocaleString()}</p>
               </div>
             </div>
 
@@ -538,7 +538,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
                   <Network className="w-5 h-5 text-primary" />
                   <div>
                     <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Bandwidth Used</p>
-                    <p className="text-sm font-bold">{ischoolStats.data?.bandwidth_used || '0 GB'}</p>
+                    <p className={`text-sm font-bold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{ischoolStats.data?.bandwidth_used || '0 GB'}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -551,7 +551,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
                   <Server className="w-5 h-5 text-sky-400" />
                   <div>
                     <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Total Schools</p>
-                    <p className="text-sm font-bold">{ischoolStats.data?.total_schools || 0} Units</p>
+                    <p className={`text-sm font-bold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{ischoolStats.data?.total_schools || 0} Units</p>
                   </div>
                 </div>
                 <button className="text-[10px] font-semibold text-primary hover:underline">
