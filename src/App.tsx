@@ -32,6 +32,8 @@ import MonitoringDashboard from './pages/admin/monitoring/index';
 import MonitoringWebsites from './pages/admin/monitoring/websites';
 import MonitoringAI from './pages/admin/monitoring/ai';
 import MonitoringErrors from './pages/admin/monitoring/errors';
+import MonitoringServers from './pages/admin/monitoring/Servers';
+import MonitoringAgents from './pages/admin/monitoring/Agents';
 
 function App() {
   const { theme, isSearchActive, toggleSearch } = useStore();
@@ -164,6 +166,8 @@ function App() {
             <Route path="websites" element={<MonitoringWebsites />} />
             <Route path="ai" element={<MonitoringAI />} />
             <Route path="errors" element={<MonitoringErrors />} />
+            <Route path="servers" element={<MonitoringServers />} />
+            <Route path="agents" element={<MonitoringAgents />} />
           </Route>
           <Route path="users" element={<UserManager />} />
           <Route path="settings" element={<SiteSettings />} />
