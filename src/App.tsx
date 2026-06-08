@@ -25,8 +25,13 @@ import ProfileSettings from './pages/admin/ProfileSettings';
 import HelpCenter from './pages/admin/HelpCenter';
 import Documents from './pages/admin/Documents';
 import Changelog from './pages/admin/Changelog';
-import MonitoringCenter from './pages/admin/MonitoringCenter';
 import ProductsIndex from './pages/admin/products';
+import MonitoringLayout from './pages/admin/monitoring/Layout';
+import MonitoringDashboard from './pages/admin/monitoring/Dashboard';
+import MonitoringWebsites from './pages/admin/monitoring/Websites';
+import MonitoringServers from './pages/admin/monitoring/Servers';
+import MonitoringAgents from './pages/admin/monitoring/Agents';
+import MonitoringErrors from './pages/admin/monitoring/Errors';
 
 function App() {
   const { theme, isSearchActive, toggleSearch } = useStore();
@@ -153,7 +158,13 @@ function App() {
           <Route path="product-manager" element={<ProductManager />} />
           <Route path="documents" element={<Documents />} />
           <Route path="changelog" element={<Changelog />} />
-          <Route path="monitoring" element={<MonitoringCenter />} />
+          <Route path="monitoring" element={<MonitoringLayout />}>
+            <Route index element={<MonitoringDashboard />} />
+            <Route path="websites" element={<MonitoringWebsites />} />
+            <Route path="servers" element={<MonitoringServers />} />
+            <Route path="agents" element={<MonitoringAgents />} />
+            <Route path="errors" element={<MonitoringErrors />} />
+          </Route>
           <Route path="users" element={<UserManager />} />
           <Route path="settings" element={<SiteSettings />} />
           <Route path="profile" element={<ProfileSettings />} />

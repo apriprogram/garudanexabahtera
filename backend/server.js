@@ -354,6 +354,180 @@ app.get('/api.php', async (req, res) => {
     }
   }
 
+  // ════════════════════════════════════════════════════════════
+  // New Monitoring System API Endpoints (GET)
+  // ════════════════════════════════════════════════════════════
+
+  if (action === 'get_monitor_dashboard') {
+    try {
+      // Websites stats
+      const [[{ total: webTotal }]] = await pool.query('SELECT COUNT(*) as total FROM monitor_websites');
+      const [[{ online: webOnline }]] = await pool.query("SELECT COUNT(*) as online FROM monitor_websites WHERE status='online'");
+      const [[{ offline: webOffline }]] = await pool.query("SELECT COUNT(*) as offline FROM monitor_websites WHERE status='offline'");
+
+      // Servers stats
+      const [[{ total: srvTotal }]] = await pool.query('SELECT COUNT(*) as total FROM monitor_servers');
+      const [[{ online: srvOnline }]] = await pool.query("SELECT COUNT(*) as online FROM monitor_servers WHERE status='online'");
+      const [[{ warning: srvWarning }]] = await pool.query("SELECT COUNT(*) as warning FROM monitor_servers WHERE status='warning'");
+      const [[{ critical: srvCritical }]] = await pool.query("SELECT COUNT(*) as critical FROM monitor_servers WHERE status='critical'");
+
+      // Visitors
+      const [[{ today: visToday }]] = await pool.query("SELECT COUNT(*) as today FROM visitor_logs WHERE DATE(visited_at)=CURDATE()");
+      const [[{ month: visMonth }]] = await pool.query("SELECT COUNT(*) as month FROM visitor_logs WHERE DATE_FORMAT(visited_at,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')");
+      const [[{ year: visYear }]] = await pool.query("SELECT COUNT(*) as year FROM visitor_logs WHERE YEAR(visited_at)=YEAR(CURDATE())");
+
+      // AI stats
+      const [aiAgg] = await pool.query("SELECT COALESCE(SUM(total_tokens),0) as total_tokens, COALESCE(SUM(cost),0) as total_cost, COALESCE(SUM(CASE WHEN DATE(created_at)=CURDATE() THEN 1 ELSE 0 END),0) as today_requests, COALESCE(SUM(error_count),0) as error_count FROM monitor_ai_logs");
+
+      // Errors
+      const [[{ total: errTotal }]] = await pool.query('SELECT COUNT(*) as total FROM monitor_errors');
+      const [[{ critical: errCritical }]] = await pool.query("SELECT COUNT(*) as critical FROM monitor_errors WHERE severity='critical'");
+      const [[{ warning: errWarning }]] = await pool.query("SELECT COUNT(*) as warning FROM monitor_errors WHERE severity='warning'");
+      const [[{ info: errInfo }]] = await pool.query("SELECT COUNT(*) as info FROM monitor_errors WHERE severity='info'");
+
+      // Latest errors
+      const [latestErrors] = await pool.query('SELECT id, source, severity, message, created_at FROM monitor_errors ORDER BY created_at DESC LIMIT 5');
+
+      // Recent notifications
+      const [recentNotifications] = await pool.query("SELECT type, message, created_at as time FROM monitoring_notifications ORDER BY created_at DESC LIMIT 10");
+
+      res.json({
+        websites: { total: Number(webTotal), online: Number(webOnline), offline: Number(webOffline) },
+        servers: { total: Number(srvTotal), online: Number(srvOnline), warning: Number(srvWarning), critical: Number(srvCritical) },
+        visitors: { today: Number(visToday), month: Number(visMonth), year: Number(visYear) },
+        ai: { total_tokens: Number(aiAgg[0].total_tokens), total_cost: Number(aiAgg[0].total_cost), today_requests: Number(aiAgg[0].today_requests), error_count: Number(aiAgg[0].error_count) },
+        errors: { total: Number(errTotal), critical: Number(errCritical), warning: Number(errWarning), info: Number(errInfo) },
+        latest_errors: latestErrors,
+        recent_notifications: recentNotifications.map(n => ({ type: n.type, message: n.message, time: n.time }))
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'get_monitor_websites') {
+    try {
+      const [rows] = await pool.query(`
+        SELECT w.*,
+          (SELECT status FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1) as latest_status,
+          (SELECT response_time_ms FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1) as latest_response_time,
+          (SELECT created_at FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1) as last_checked
+        FROM monitor_websites w ORDER BY w.category, w.name
+      `);
+      res.json(rows);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'get_monitor_website_detail') {
+    try {
+      const id = parseInt(req.query.id, 10);
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const [websites] = await pool.query('SELECT * FROM monitor_websites WHERE id = ?', [id]);
+      if (websites.length === 0) return res.status(404).json({ error: 'Website not found' });
+      const [logs] = await pool.query('SELECT * FROM monitor_website_logs WHERE website_id = ? ORDER BY created_at DESC LIMIT 50', [id]);
+      const [sslInfo] = await pool.query('SELECT * FROM monitor_ssl WHERE website_id = ? ORDER BY checked_at DESC LIMIT 1', [id]);
+      res.json({ website: websites[0], logs, ssl: sslInfo.length > 0 ? sslInfo[0] : null });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'get_monitor_servers') {
+    try {
+      const [rows] = await pool.query(`
+        SELECT s.*,
+          (SELECT status FROM monitor_server_logs WHERE server_id = s.id ORDER BY created_at DESC LIMIT 1) as latest_status,
+          (SELECT cpu_usage FROM monitor_server_logs WHERE server_id = s.id ORDER BY created_at DESC LIMIT 1) as latest_cpu,
+          (SELECT ram_percent FROM monitor_server_logs WHERE server_id = s.id ORDER BY created_at DESC LIMIT 1) as latest_ram,
+          (SELECT created_at FROM monitor_server_logs WHERE server_id = s.id ORDER BY created_at DESC LIMIT 1) as last_updated
+        FROM monitor_servers s ORDER BY s.name
+      `);
+      res.json(rows);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'get_monitor_server_detail') {
+    try {
+      const id = parseInt(req.query.id, 10);
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const [servers] = await pool.query('SELECT * FROM monitor_servers WHERE id = ?', [id]);
+      if (servers.length === 0) return res.status(404).json({ error: 'Server not found' });
+      const [logs] = await pool.query('SELECT * FROM monitor_server_logs WHERE server_id = ? ORDER BY created_at DESC LIMIT 50', [id]);
+      res.json({ server: servers[0], logs });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'get_monitor_agents') {
+    try {
+      const [rows] = await pool.query(`
+        SELECT a.*,
+          COALESCE((SELECT SUM(total_tokens) FROM monitor_ai_logs WHERE agent_id = a.id), 0) as total_tokens,
+          COALESCE((SELECT SUM(cost) FROM monitor_ai_logs WHERE agent_id = a.id), 0) as total_cost,
+          COALESCE((SELECT COUNT(*) FROM monitor_ai_logs WHERE agent_id = a.id AND DATE(created_at) = CURDATE()), 0) as today_requests,
+          (SELECT created_at FROM monitor_ai_logs WHERE agent_id = a.id ORDER BY created_at DESC LIMIT 1) as last_active
+        FROM monitor_ai_agents a ORDER BY a.name
+      `);
+      res.json(rows);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'get_monitor_agent_detail') {
+    try {
+      const id = parseInt(req.query.id, 10);
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const [agents] = await pool.query('SELECT * FROM monitor_ai_agents WHERE id = ?', [id]);
+      if (agents.length === 0) return res.status(404).json({ error: 'Agent not found' });
+      const [logs] = await pool.query('SELECT * FROM monitor_ai_logs WHERE agent_id = ? ORDER BY created_at DESC LIMIT 50', [id]);
+      res.json({ agent: agents[0], usage_history: logs });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'get_monitor_errors') {
+    try {
+      const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+      const offset = (page - 1) * limit;
+      let where = [];
+      let params = [];
+      if (req.query.source) { where.push('source = ?'); params.push(req.query.source); }
+      if (req.query.severity) { where.push('severity = ?'); params.push(req.query.severity); }
+      const whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
+      const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM monitor_errors ' + whereClause, params);
+      const [rows] = await pool.query('SELECT * FROM monitor_errors ' + whereClause + ' ORDER BY created_at DESC LIMIT ? OFFSET ?', [...params, limit, offset]);
+      res.json({ data: rows, total: Number(total), page, limit, pages: Math.ceil(Number(total) / limit) });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'get_monitor_audit_logs') {
+    try {
+      const [rows] = await pool.query('SELECT * FROM monitor_audit_logs ORDER BY created_at DESC LIMIT 50');
+      res.json(rows);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
   res.status(400).json({ error: 'Invalid action: ' + action });
 });
 
@@ -1269,6 +1443,177 @@ app.post('/api.php', async (req, res) => {
           unread_notifications: Number(unreadN),
           domains_expiring: domExp
         });
+        return;
+      }
+
+      // ════════════════════════════════════════════════════════════
+      // New Monitoring System API Endpoints (POST)
+      // ════════════════════════════════════════════════════════════
+
+      case 'add_monitor_website': {
+        try {
+          const { name, url, category = 'Umum', notes = '', status = 'unknown' } = input;
+          const [result] = await pool.query(
+            'INSERT INTO monitor_websites (name, url, category, notes, status) VALUES (?, ?, ?, ?, ?)',
+            [name, url, category, notes, status]
+          );
+          res.json({ success: true, id: result.insertId });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'add_monitor_server': {
+        try {
+          const { name, host, type = 'linux', status = 'unknown', notes = '' } = input;
+          const [result] = await pool.query(
+            'INSERT INTO monitor_servers (name, host, type, status, notes) VALUES (?, ?, ?, ?, ?)',
+            [name, host, type, status, notes]
+          );
+          res.json({ success: true, id: result.insertId });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'add_monitor_agent': {
+        try {
+          const { name, model, provider, notes = '' } = input;
+          const [result] = await pool.query(
+            'INSERT INTO monitor_ai_agents (name, model, provider, notes) VALUES (?, ?, ?, ?)',
+            [name, model, provider, notes]
+          );
+          res.json({ success: true, id: result.insertId });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'delete_monitor_website': {
+        try {
+          const id = parseInt(input.id, 10);
+          if (!id) return res.status(400).json({ error: 'id required' });
+          await pool.query('DELETE FROM monitor_website_logs WHERE website_id = ?', [id]);
+          await pool.query('DELETE FROM monitor_ssl WHERE website_id = ?', [id]);
+          await pool.query('DELETE FROM monitor_websites WHERE id = ?', [id]);
+          res.json({ success: true });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'delete_monitor_server': {
+        try {
+          const id = parseInt(input.id, 10);
+          if (!id) return res.status(400).json({ error: 'id required' });
+          await pool.query('DELETE FROM monitor_server_logs WHERE server_id = ?', [id]);
+          await pool.query('DELETE FROM monitor_servers WHERE id = ?', [id]);
+          res.json({ success: true });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'delete_monitor_agent': {
+        try {
+          const id = parseInt(input.id, 10);
+          if (!id) return res.status(400).json({ error: 'id required' });
+          await pool.query('DELETE FROM monitor_ai_logs WHERE agent_id = ?', [id]);
+          await pool.query('DELETE FROM monitor_ai_agents WHERE id = ?', [id]);
+          res.json({ success: true });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'record_server_log': {
+        try {
+          const { server_id, status, cpu_usage, ram_used, ram_total, disk_used, disk_total, network_in, network_out, ram_percent, disk_percent } = input;
+          const [result] = await pool.query(
+            'INSERT INTO monitor_server_logs (server_id, status, cpu_usage, ram_used, ram_total, ram_percent, disk_used, disk_total, disk_percent, network_in, network_out) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+              parseInt(server_id, 10), status || 'unknown',
+              cpu_usage || 0, ram_used || 0, ram_total || 0, ram_percent || 0,
+              disk_used || 0, disk_total || 0, disk_percent || 0,
+              network_in || 0, network_out || 0
+            ]
+          );
+          // Also update server status
+          await pool.query('UPDATE monitor_servers SET status=?, last_seen=NOW() WHERE id=?', [status || 'unknown', parseInt(server_id, 10)]);
+          res.json({ success: true, id: result.insertId });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'record_ai_log': {
+        try {
+          const { agent_id, total_tokens, cost, error_count, model, prompt, response } = input;
+          const [result] = await pool.query(
+            'INSERT INTO monitor_ai_logs (agent_id, total_tokens, cost, error_count, model, prompt, response) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [
+              agent_id ? parseInt(agent_id, 10) : null,
+              total_tokens || 0, cost || 0, error_count || 0,
+              model || '', prompt || '', response || ''
+            ]
+          );
+          res.json({ success: true, id: result.insertId });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'record_website_log': {
+        try {
+          const { website_id, status, response_time_ms, http_status, error_message } = input;
+          const [result] = await pool.query(
+            'INSERT INTO monitor_website_logs (website_id, status, response_time_ms, http_status, error_message) VALUES (?, ?, ?, ?, ?)',
+            [
+              parseInt(website_id, 10), status || 'unknown',
+              response_time_ms || 0, http_status || 0,
+              error_message || ''
+            ]
+          );
+          // Update website status
+          await pool.query('UPDATE monitor_websites SET status=?, last_checked=NOW() WHERE id=?', [status || 'unknown', parseInt(website_id, 10)]);
+          res.json({ success: true, id: result.insertId });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'log_error': {
+        try {
+          const { source, severity, message, details } = input;
+          const [result] = await pool.query(
+            'INSERT INTO monitor_errors (source, severity, message, details) VALUES (?, ?, ?, ?)',
+            [source || 'unknown', severity || 'info', message || '', details || '']
+          );
+          res.json({ success: true, id: result.insertId });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'resolve_monitor_error': {
+        try {
+          const id = parseInt(input.id, 10);
+          if (!id) return res.status(400).json({ error: 'id required' });
+          await pool.query("UPDATE monitor_errors SET resolved=1, resolved_at=NOW(), resolved_by=? WHERE id=?", [input.resolved_by || 'system', id]);
+          res.json({ success: true });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
         return;
       }
 
