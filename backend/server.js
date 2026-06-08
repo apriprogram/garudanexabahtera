@@ -441,11 +441,12 @@ app.get('/api.php', async (req, res) => {
     try {
       const [rows] = await pool.query(`
         SELECT s.*,
-          (SELECT status FROM monitor_server_logs WHERE server_id = s.id ORDER BY created_at DESC LIMIT 1) as latest_status,
-          (SELECT cpu_usage FROM monitor_server_logs WHERE server_id = s.id ORDER BY created_at DESC LIMIT 1) as latest_cpu,
-          (SELECT ram_percent FROM monitor_server_logs WHERE server_id = s.id ORDER BY created_at DESC LIMIT 1) as latest_ram,
-          (SELECT created_at FROM monitor_server_logs WHERE server_id = s.id ORDER BY created_at DESC LIMIT 1) as last_updated
-        FROM monitor_servers s ORDER BY s.name
+          COALESCE((SELECT status FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1), 'unknown') as status,
+          COALESCE((SELECT cpu_usage FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1), 0) as cpu_usage,
+          COALESCE((SELECT ram_usage FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1), 0) as ram_usage,
+          COALESCE((SELECT disk_usage FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1), 0) as disk_usage,
+          (SELECT checked_at FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1) as last_updated
+        FROM monitor_servers s WHERE s.is_active = 1 ORDER BY s.name
       `);
       res.json(rows);
     } catch (err) {
