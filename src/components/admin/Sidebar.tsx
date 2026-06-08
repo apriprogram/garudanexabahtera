@@ -15,7 +15,7 @@ import {
   GraduationCap,
   FolderOpen,
   History,
-  Activity,
+  GlobeLock,
 } from 'lucide-react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
