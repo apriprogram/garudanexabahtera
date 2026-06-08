@@ -2,11 +2,18 @@ import express from 'express';
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
 import cors from 'cors';
-import { writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync, statSync, readFileSync } from 'fs';
+// File I/O — used only for legacy compatibility, all uploads go to S3 now
 import { join, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
 import sharp from 'sharp';
 import OpenAI from 'openai';
+import {
+  uploadBase64ToS3,
+  uploadCompressedImageToS3,
+  deleteFromS3,
+  pathToKey,
+  S3_PUBLIC_URL,
+} from './s3-client.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -36,58 +43,16 @@ app.use(express.json({ limit: '256mb' }));
 const ASSETS_DIR = '/var/www/html/assets';
 
 function saveBase64Image(base64Data, section) {
-  if (typeof base64Data !== 'string' || !base64Data.includes('data:image')) {
-    return base64Data;
-  }
-  const folder = join(ASSETS_DIR, section);
-  if (!existsSync(folder)) mkdirSync(folder, { recursive: true });
-
-  const parts = base64Data.split(',');
-  const header = parts[0];
-  const content = Buffer.from(parts[1], 'base64');
-
-  let ext = 'jpg';
-  if (header.includes('png')) ext = 'png';
-  else if (header.includes('svg')) ext = 'svg';
-  else if (header.includes('webp')) ext = 'webp';
-  else if (header.includes('gif')) ext = 'gif';
-
-  const filename = `${section}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  writeFileSync(join(folder, filename), content);
-  return `/assets/${section}/${filename}`;
+  return uploadBase64ToS3(base64Data, section);
 }
 
 function saveBase64File(base64Data, section, originalName) {
-  const folder = join(ASSETS_DIR, section);
-  if (!existsSync(folder)) mkdirSync(folder, { recursive: true });
-
-  const parts = base64Data.split(',');
-  const content = Buffer.from(parts[1], 'base64');
-  const filename = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${originalName}`;
-  writeFileSync(join(folder, filename), content);
-  return filename;
+  return uploadBase64ToS3(base64Data, section, `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${originalName}`);
 }
 
 // Compress & convert image to webp (for list_products)
 async function saveAndCompressImage(base64Data, folderName) {
-  if (!base64Data || !base64Data.includes('data:image')) return base64Data;
-  const folder = join(ASSETS_DIR, folderName);
-  if (!existsSync(folder)) mkdirSync(folder, { recursive: true });
-  const parts = base64Data.split(',');
-  const content = Buffer.from(parts[1], 'base64');
-  const filename = `${folderName}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webp`;
-  try {
-    const compressed = await sharp(content)
-      .resize(640, undefined, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 70 })
-      .toBuffer();
-    writeFileSync(join(folder, filename), compressed);
-    return `/assets/${folderName}/${filename}`;
-  } catch {
-    // fallback: save as-is
-    writeFileSync(join(folder, filename.replace('.webp', '.jpg')), content);
-    return `/assets/${folderName}/${filename.replace('.webp', '.jpg')}`;
-  }
+  return await uploadCompressedImageToS3(base64Data, folderName);
 }
 
 // ── GET /api.php?action=get_settings ──
@@ -488,32 +453,14 @@ app.post('/api.php', async (req, res) => {
         if (settings.hero_images) {
           const images = JSON.parse(settings.hero_images);
           if (Array.isArray(images)) {
-            const bgFolder = join(ASSETS_DIR, 'bg');
-            if (!existsSync(bgFolder)) mkdirSync(bgFolder, { recursive: true });
             const finalPaths = [];
-            const keptFiles = [];
             for (let i = 0; i < images.length; i++) {
               const imgData = images[i];
               if (typeof imgData === 'string' && imgData.includes('data:image')) {
-                const data = imgData.split(',');
-                const content = Buffer.from(data[1], 'base64');
-                const filename = `hero_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${i}.jpg`;
-                writeFileSync(join(bgFolder, filename), content);
-                finalPaths.push('/assets/bg/' + filename);
-                keptFiles.push(filename);
+                const url = await uploadBase64ToS3(imgData, 'bg', `hero_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${i}.jpg`);
+                finalPaths.push(url);
               } else {
                 finalPaths.push(imgData);
-                keptFiles.push(imgData.split('/').pop());
-              }
-            }
-            // Clean up deleted images
-            if (existsSync(bgFolder)) {
-              const allFiles = readdirSync(bgFolder);
-              for (const file of allFiles) {
-                const fp = join(bgFolder, file);
-                if (statSync(fp).isFile() && !keptFiles.includes(file)) {
-                  try { unlinkSync(fp); } catch {}
-                }
               }
             }
             settings.hero_images = JSON.stringify(finalPaths);
@@ -524,33 +471,14 @@ app.post('/api.php', async (req, res) => {
         if (settings.hero_logos) {
           const logos = JSON.parse(settings.hero_logos);
           if (Array.isArray(logos)) {
-            const logoFolder = join(ASSETS_DIR, 'logo-product');
-            if (!existsSync(logoFolder)) mkdirSync(logoFolder, { recursive: true });
             const finalLogos = [];
-            const keptLogos = [];
             for (let i = 0; i < logos.length; i++) {
               const logo = logos[i];
               if (logo.src?.includes('data:image')) {
-                const data = logo.src.split(',');
-                const content = Buffer.from(data[1], 'base64');
-                const ext = data[0].includes('png') ? 'png' : 'jpg';
-                const filename = `logo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${i}.${ext}`;
-                writeFileSync(join(logoFolder, filename), content);
-                finalLogos.push({ name: logo.name, src: '/assets/logo-product/' + filename });
-                keptLogos.push(filename);
+                const url = await uploadBase64ToS3(logo.src, 'logo-product', `logo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${i}.png`);
+                finalLogos.push({ name: logo.name, src: url });
               } else {
                 finalLogos.push(logo);
-                keptLogos.push(logo.src?.split('/').pop() || '');
-              }
-            }
-            // Clean up deleted logos
-            if (existsSync(logoFolder)) {
-              const allFiles = readdirSync(logoFolder);
-              for (const file of allFiles) {
-                const fp = join(logoFolder, file);
-                if (statSync(fp).isFile() && !keptLogos.includes(file)) {
-                  try { unlinkSync(fp); } catch {}
-                }
               }
             }
             settings.hero_logos = JSON.stringify(finalLogos);
@@ -579,14 +507,7 @@ app.post('/api.php', async (req, res) => {
       case 'add_project': {
         let imagePath = '';
         if (input.image?.includes('data:image')) {
-          const logoFolder = join(ASSETS_DIR, 'dokumen-client', 'logo');
-          if (!existsSync(logoFolder)) mkdirSync(logoFolder, { recursive: true });
-          const data = input.image.split(',');
-          const content = Buffer.from(data[1], 'base64');
-          const ext = data[0].includes('png') ? 'png' : 'jpg';
-          const filename = `project_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-          writeFileSync(join(logoFolder, filename), content);
-          imagePath = '/assets/dokumen-client/logo/' + filename;
+          imagePath = await uploadBase64ToS3(input.image, 'dokumen-client/logo', `project_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.png`);
         } else {
           imagePath = input.image || '';
         }
@@ -595,15 +516,10 @@ app.post('/api.php', async (req, res) => {
         if (input.project_files) {
           const filesArray = typeof input.project_files === 'string' ? JSON.parse(input.project_files) : input.project_files;
           if (Array.isArray(filesArray)) {
-            const docFolder = join(ASSETS_DIR, 'dokumen-client', 'dokumen');
-            if (!existsSync(docFolder)) mkdirSync(docFolder, { recursive: true });
             for (const f of filesArray) {
               if (f.data?.includes('data:')) {
-                const data = f.data.split(',');
-                const content = Buffer.from(data[1], 'base64');
-                const filename = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`;
-                writeFileSync(join(docFolder, filename), content);
-                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: '/assets/dokumen-client/dokumen/' + filename });
+                const url = await uploadBase64ToS3(f.data, 'dokumen-client/dokumen', `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`);
+                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: url });
               } else {
                 finalFiles.push(f);
               }
@@ -630,14 +546,7 @@ app.post('/api.php', async (req, res) => {
 
         let imagePath = '';
         if (input.image?.includes('data:image')) {
-          const logoFolder = join(ASSETS_DIR, 'dokumen-client', 'logo');
-          if (!existsSync(logoFolder)) mkdirSync(logoFolder, { recursive: true });
-          const data = input.image.split(',');
-          const content = Buffer.from(data[1], 'base64');
-          const ext = data[0].includes('png') ? 'png' : 'jpg';
-          const filename = `project_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-          writeFileSync(join(logoFolder, filename), content);
-          imagePath = '/assets/dokumen-client/logo/' + filename;
+          imagePath = await uploadBase64ToS3(input.image, 'dokumen-client/logo', `project_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.png`);
         } else {
           imagePath = input.image || '';
         }
@@ -646,15 +555,10 @@ app.post('/api.php', async (req, res) => {
         if (input.project_files) {
           const filesArray = typeof input.project_files === 'string' ? JSON.parse(input.project_files) : input.project_files;
           if (Array.isArray(filesArray)) {
-            const docFolder = join(ASSETS_DIR, 'dokumen-client', 'dokumen');
-            if (!existsSync(docFolder)) mkdirSync(docFolder, { recursive: true });
             for (const f of filesArray) {
               if (f.data?.includes('data:')) {
-                const data = f.data.split(',');
-                const content = Buffer.from(data[1], 'base64');
-                const filename = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`;
-                writeFileSync(join(docFolder, filename), content);
-                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: '/assets/dokumen-client/dokumen/' + filename });
+                const url = await uploadBase64ToS3(f.data, 'dokumen-client/dokumen', `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`);
+                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: url });
               } else {
                 finalFiles.push(f);
               }
@@ -755,15 +659,10 @@ app.post('/api.php', async (req, res) => {
         if (input.project_files) {
           const filesArray = typeof input.project_files === 'string' ? JSON.parse(input.project_files) : input.project_files;
           if (Array.isArray(filesArray)) {
-            const docFolder = join(ASSETS_DIR, 'list-products', 'documents');
-            if (!existsSync(docFolder)) mkdirSync(docFolder, { recursive: true });
             for (const f of filesArray) {
               if (f.data?.includes('data:')) {
-                const data = f.data.split(',');
-                const content = Buffer.from(data[1], 'base64');
-                const filename = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`;
-                writeFileSync(join(docFolder, filename), content);
-                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: '/assets/list-products/documents/' + filename });
+                const url = await uploadBase64ToS3(f.data, 'list-products/documents', `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`);
+                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: url });
               } else {
                 finalFiles.push(f);
               }
@@ -789,15 +688,10 @@ app.post('/api.php', async (req, res) => {
         if (input.project_files) {
           const filesArray = typeof input.project_files === 'string' ? JSON.parse(input.project_files) : input.project_files;
           if (Array.isArray(filesArray)) {
-            const docFolder = join(ASSETS_DIR, 'list-products', 'documents');
-            if (!existsSync(docFolder)) mkdirSync(docFolder, { recursive: true });
             for (const f of filesArray) {
               if (f.data?.includes('data:')) {
-                const data = f.data.split(',');
-                const content = Buffer.from(data[1], 'base64');
-                const filename = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`;
-                writeFileSync(join(docFolder, filename), content);
-                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: '/assets/list-products/documents/' + filename });
+                const url = await uploadBase64ToS3(f.data, 'list-products/documents', `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`);
+                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: url });
               } else {
                 finalFiles.push(f);
               }
@@ -889,17 +783,9 @@ app.post('/api.php', async (req, res) => {
         
         // Handle file upload to physical storage if it's a file
         if (type === 'file' && path && path.includes('data:')) {
-          const docDir = '/var/www/html/assets/documents';
-          if (!existsSync(docDir)) mkdirSync(docDir, { recursive: true });
-          
-          const base64Data = path.split(',')[1];
-          const buffer = Buffer.from(base64Data, 'base64');
           const ext = name.split('.').pop();
           const fileName = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${ext}`;
-          const fullPath = join(docDir, fileName);
-          
-          writeFileSync(fullPath, buffer);
-          finalPath = `/assets/documents/${fileName}`;
+          finalPath = await uploadBase64ToS3(path, 'documents', fileName);
         }
 
         const [result] = await pool.query(
