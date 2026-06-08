@@ -1396,6 +1396,125 @@ app.post('/api.php', async (req, res) => {
       }
 
       // ── Settings ──
+      // ── NEW: Monitor Server CRUD + Check ──
+      case 'add_monitor_server': {
+        const { name, host, type = 'vps', username, port = 22, ssh_key } = input;
+        const [result] = await pool.query(
+          'INSERT INTO monitor_servers (name, host, type, is_active) VALUES (?, ?, ?, 1)',
+          [name, host, type]
+        );
+        res.json({ success: true, id: result.insertId });
+        return;
+      }
+
+      case 'update_monitor_server': {
+        const { id, name, host, type, is_active } = input;
+        await pool.query(
+          'UPDATE monitor_servers SET name=?, host=?, type=?, is_active=? WHERE id=?',
+          [name, host, type, is_active ?? 1, Number(id)]
+        );
+        res.json({ success: true });
+        return;
+      }
+
+      case 'delete_monitor_server': {
+        await pool.query('DELETE FROM monitor_server_logs WHERE server_id=?', [Number(input.id)]);
+        await pool.query('DELETE FROM monitor_servers WHERE id=?', [Number(input.id)]);
+        res.json({ success: true });
+        return;
+      }
+
+      case 'check_monitor_server': {
+        const id = Number(input.id);
+        const [servers] = await pool.query('SELECT * FROM monitor_servers WHERE id=?', [id]);
+        if (servers.length === 0) { res.json({ error: 'Server not found' }); return; }
+        const server = servers[0];
+
+        // Ping check
+        let pingMs = 0, pingOk = false;
+        try {
+          const start = Date.now();
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
+          // First try HTTP check on the host
+          const hostUrl = server.host.startsWith('http') ? server.host : `https://${server.host}`;
+          const resp = await fetch(hostUrl, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
+          clearTimeout(timeout);
+          pingMs = Date.now() - start;
+          pingOk = resp.ok || resp.status < 500;
+        } catch (e) {
+          try {
+            const start = Date.now();
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8000);
+            const hostUrl = server.host.startsWith('http') ? server.host : `http://${server.host}`;
+            const resp = await fetch(hostUrl, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
+            clearTimeout(timeout);
+            pingMs = Date.now() - start;
+            pingOk = resp.ok || resp.status < 500;
+          } catch (e2) {}
+        }
+
+        // Try SSH for real metrics (if this exact machine)
+        let cpu = 0, ram = 0, ramTotal = 0, disk = 0, diskTotal = 0, load1 = 0, load5 = 0, load15 = 0;
+        const isLocalhost = server.host === 'localhost' || server.host === '127.0.0.1' || server.host === 'garudanexa.com';
+
+        if (isLocalhost && server.type === 'vps') {
+          try {
+            const { execSync } = await import('child_process');
+            // CPU
+            const cpuOut = execSync("top -bn1 | grep 'Cpu(s)' | awk '{print $2+$4}'", { timeout: 5000, encoding: 'utf8' }).trim();
+            cpu = parseFloat(cpuOut) || 0;
+            // RAM
+            const ramOut = execSync("free | grep Mem | awk '{print $3, $2}'", { timeout: 5000, encoding: 'utf8' }).trim();
+            const [ramUsed, ramTotalStr] = ramOut.split(' ').map(Number);
+            ram = ramTotalStr > 0 ? Math.round((ramUsed / ramTotalStr) * 10000) / 100 : 0;
+            ramTotal = Math.round(ramTotalStr / 1024);
+            // Disk
+            const diskOut = execSync("df / | tail -1 | awk '{print $3, $2}'", { timeout: 5000, encoding: 'utf8' }).trim();
+            const [diskUsed, diskTotalStr] = diskOut.split(' ').map(Number);
+            disk = diskTotalStr > 0 ? Math.round((diskUsed / diskTotalStr) * 10000) / 100 : 0;
+            diskTotal = Math.round(diskTotalStr / 1024);
+            // Load
+            const loadOut = execSync("cat /proc/loadavg | awk '{print $1, $2, $3}'", { timeout: 5000, encoding: 'utf8' }).trim();
+            const loads = loadOut.split(' ').map(Number);
+            load1 = loads[0] || 0; load5 = loads[1] || 0; load15 = loads[2] || 0;
+          } catch (e) {}
+        }
+
+        const status = pingOk ? (cpu > 80 || ram > 80 ? 'critical' : cpu > 60 || ram > 60 ? 'warning' : 'online') : 'offline';
+
+        await pool.query(
+          `INSERT INTO monitor_server_logs (server_id, cpu_usage, ram_usage, ram_total, disk_usage, disk_total, load_1min, load_5min, load_15min, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [id, cpu, ram, ramTotal, disk, diskTotal, load1, load5, load15, status]
+        );
+
+        res.json({ success: true, status, cpu_usage: cpu, ram_usage: ram, disk_usage: disk, load_1min: load1, ping_ms: pingMs, last_updated: new Date().toISOString() });
+        return;
+      }
+
+      case 'monitor_push_metrics': {
+        const serverId = Number(input.server_id || 0);
+        if (!serverId) { res.json({ error: 'server_id required' }); return; }
+        const cpu = Number(input.cpu_usage || 0);
+        const ram = Number(input.ram_usage || 0);
+        const ramTotal = Number(input.ram_total || 0);
+        const disk = Number(input.disk_usage || 0);
+        const diskTotal = Number(input.disk_total || 0);
+        const load1 = Number(input.load_1min || 0);
+        const load5 = Number(input.load_5min || 0);
+        const load15 = Number(input.load_15min || 0);
+        const status = input.status || 'online';
+        await pool.query(
+          `INSERT INTO monitor_server_logs (server_id, cpu_usage, ram_usage, ram_total, disk_usage, disk_total, load_1min, load_5min, load_15min, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [serverId, cpu, ram, ramTotal, disk, diskTotal, load1, load5, load15, status]
+        );
+        res.json({ success: true });
+        return;
+      }
+
       case 'monitor_get_settings': {
         const [rows] = await pool.query('SELECT * FROM monitoring_settings WHERE id=1');
         res.json(rows[0] || {});
