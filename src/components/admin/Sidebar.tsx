@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Settings, 
-  LayoutDashboard, 
-  Users, 
+import {
+  Settings,
+  LayoutDashboard,
+  Users,
   LogOut,
   X,
   Package,
@@ -13,13 +13,9 @@ import {
   Mail,
   Building,
   GraduationCap,
-  Activity,
   FolderOpen,
   History,
-  BarChart3,
   Server,
-  Bot,
-  AlertTriangle,
 } from 'lucide-react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
