@@ -133,8 +133,7 @@ const NavCard = ({ to, icon: Icon, label, description, color }: NavCardProps) =>
         <div className="flex items-center justify-between">
           <h4 className="text-white font-semibold text-sm">{label}</h4>
           <ArrowRight
-            className="w-4 h-4"
-            className="text-slate-600 group-hover:text-primary transition-colors shrink-0"
+            className="w-4 h-4 text-slate-600 group-hover:text-primary transition-colors shrink-0"
           />
         </div>
         <p className="text-slate-500 text-xs mt-1">{description}</p>
@@ -279,7 +278,7 @@ const MonitoringIndex = () => {
           {/* CPU / RAM / Disk Averages */}
           <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <BarChart3 className="w-4.5 h-4.5" className="text-primary" />
+              <BarChart3 className="w-4.5 h-4.5 text-primary" />
               Server Resource Averages
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -311,7 +310,7 @@ const MonitoringIndex = () => {
           <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
             <div className="p-5 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <AlertTriangle className="w-4.5 h-4.5" className="text-rose-400" />
+                <AlertTriangle className="w-4.5 h-4.5 text-rose-400" />
                 Recent Errors
               </h3>
               <Link

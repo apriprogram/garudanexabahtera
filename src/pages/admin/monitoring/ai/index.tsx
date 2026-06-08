@@ -149,7 +149,7 @@ const AiMonitoring = () => {
         <div className="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="p-5 border-b border-slate-800">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Brain className="w-4.5 h-4.5" className="text-primary" /> Usage by Model
+              <Brain className="w-4.5 h-4.5 text-primary" /> Usage by Model
             </h3>
           </div>
           {usage.length > 0 ? (
@@ -198,7 +198,7 @@ const AiMonitoring = () => {
         <div className="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="p-5 border-b border-slate-800">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Activity className="w-4.5 h-4.5" className="text-primary" /> Usage by Website
+              <Activity className="w-4.5 h-4.5 text-primary" /> Usage by Website
             </h3>
           </div>
           {byWebsite.length > 0 ? (
@@ -243,7 +243,7 @@ const AiMonitoring = () => {
       <div className="bg-slate-900/30 border border-slate-800 rounded-2xl overflow-hidden">
         <div className="p-5 border-b border-slate-800 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Clock className="w-4.5 h-4.5" className="text-primary" /> Recent AI Logs
+            <Clock className="w-4.5 h-4.5 text-primary" /> Recent AI Logs
           </h3>
           {logs.length > 0 && (
             <span className="text-xs text-slate-500">{logs.length} entries</span>
