@@ -106,7 +106,7 @@ const ErrorCenter = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-          <AlertTriangle className="text-amber-400" className="w-6 h-6" /> Error Center
+          <AlertTriangle className="text-amber-400 w-6 h-6" /> Error Center
           {errors.filter(e => !e.is_resolved).length > 0 && (
             <span className="text-xs bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded-full">
               {errors.filter(e => !e.is_resolved).length} unresolved
@@ -122,7 +122,7 @@ const ErrorCenter = () => {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1.5 bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">
-          <Filter className="w-3 h-3" className="text-slate-500" />
+          <Filter className="w-3 h-3 text-slate-500" />
           <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
             className="bg-transparent text-slate-300 focus:outline-none">
             <option value="all">All Sources</option>
@@ -141,11 +141,11 @@ const ErrorCenter = () => {
           <option value="critical">Critical</option>
         </select>
         <div className="flex items-center gap-1.5 bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">
-          <Search className="w-3 h-3" className="text-slate-500" />
+          <Search className="w-3 h-3 text-slate-500" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search errors..."
             className="bg-transparent text-slate-300 placeholder:text-slate-600 focus:outline-none w-32" />
-          {search && <button onClick={() => setSearch('')}><X className="w-3 h-3" className="text-slate-500" /></button>}
+          {search && <button onClick={() => setSearch('')}><X className="w-3 h-3 text-slate-500" /></button>}
         </div>
         <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
           <input type="checkbox" checked={showResolved} onChange={e => setShowResolved(e.target.checked)}
@@ -157,7 +157,7 @@ const ErrorCenter = () => {
       {/* Error List */}
       {filtered.length === 0 ? (
         <div className="bg-slate-900/20 border border-dashed border-slate-800 rounded-2xl p-16 text-center">
-          <CheckCircle className="w-10 h-10" className="mx-auto text-emerald-500 mb-3" />
+          <CheckCircle className="w-10 h-10 mx-auto text-emerald-500 mb-3" />
           <p className="text-slate-500 text-sm">No errors detected. Everything is running smoothly.</p>
         </div>
       ) : (

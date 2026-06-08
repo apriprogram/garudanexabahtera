@@ -246,7 +246,7 @@ export default function WebsitesMonitor() {
       >
         <Shield className="w-3 h-3" />
         SSL {days}d
-        {isExpiring && <AlertTriangle className="w-3 h-3" className="text-amber-400" />}
+        {isExpiring && <AlertTriangle className="w-3 h-3 text-amber-400" />}
       </span>
     );
   };
@@ -323,9 +323,9 @@ export default function WebsitesMonitor() {
                     }`}
                   >
                     {w.status === 'online' || w.status === 'up' ? (
-                      <Wifi className="w-4.5 h-4.5" className="text-emerald-400" />
+                      <Wifi className="w-4.5 h-4.5 text-emerald-400" />
                     ) : (
-                      <WifiOff className="w-4.5 h-4.5" className="text-rose-400" />
+                      <WifiOff className="w-4.5 h-4.5 text-rose-400" />
                     )}
                   </div>
                   <div className="min-w-0">
@@ -337,7 +337,7 @@ export default function WebsitesMonitor() {
                       className="text-xs text-slate-500 hover:text-primary flex items-center gap-1 truncate"
                     >
                       {w.url.length > 30 ? w.url.slice(0, 30) + '…' : w.url}
-                      <ExternalLink className="w-2.5 h-2.5" className="shrink-0" />
+                      <ExternalLink className="w-2.5 h-2.5 shrink-0" />
                     </a>
                   </div>
                 </div>
