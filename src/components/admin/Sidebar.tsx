@@ -16,6 +16,10 @@ import {
   Activity,
   FolderOpen,
   History,
+  BarChart3,
+  Server,
+  Bot,
+  AlertTriangle,
 } from 'lucide-react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
@@ -32,10 +36,16 @@ const Sidebar: React.FC = () => {
   const [productsOpen, setProductsOpen] = useState(() => {
     return location.pathname.startsWith('/admin/products');
   });
+  const [monitoringOpen, setMonitoringOpen] = useState(() => {
+    return location.pathname.startsWith('/admin/monitoring');
+  });
 
   useEffect(() => {
     if (location.pathname.startsWith('/admin/products') && !productsOpen) {
       setProductsOpen(true);
+    }
+    if (location.pathname.startsWith('/admin/monitoring') && !monitoringOpen) {
+      setMonitoringOpen(true);
     }
   }, [location.pathname]);
 
@@ -60,7 +70,6 @@ const Sidebar: React.FC = () => {
   
   const allMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', adminOnly: false },
-    { icon: Activity, label: 'Monitoring Server', path: '/admin/monitoring-server', adminOnly: false },
     { icon: FolderOpen, label: 'Dokumen', path: '/admin/documents', adminOnly: false },
     { icon: History, label: 'Changelog', path: '/admin/changelog', adminOnly: true },
     { icon: Settings, label: 'Website Settings', path: '/admin/settings', adminOnly: false },
@@ -284,6 +293,140 @@ const Sidebar: React.FC = () => {
                         <span className="truncate">{sub.label}</span>
                       </NavLink>
                     ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Monitoring Center Submenu ── */}
+          <div>
+            <div className="flex">
+              <Link
+                to="/admin/monitoring"
+                onClick={() => toggleMobileSidebar(false)}
+                className={`
+                  flex-1 flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 rounded-xl transition-all group relative border
+                  ${monitoringOpen
+                    ? (theme === 'light'
+                        ? 'bg-blue-50/80 text-blue-600 border-blue-100'
+                        : 'bg-blue-600/10 text-blue-400 border-blue-600/20')
+                    : (theme === 'light'
+                        ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent')}
+                  ${isSidebarCollapsed ? 'justify-center' : ''}
+                `}
+              >
+                <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.2 }}>
+                  <Activity className="w-4 h-4 md:w-4.5 md:h-4.5 min-w-[16px] md:min-w-[18px]" />
+                </motion.div>
+
+                <AnimatePresence initial={false}>
+                  {!isSidebarCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0, x: -10 }}
+                      animate={{ opacity: 1, width: 'auto', x: 0 }}
+                      exit={{ opacity: 0, width: 0, x: -10 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                      className="text-[12.5px] md:text-sm font-medium whitespace-nowrap overflow-hidden flex-1 text-left"
+                    >
+                      Monitoring
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+
+                {!isSidebarCollapsed && (
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMonitoringOpen(!monitoringOpen); }}
+                    className="px-2 hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    <motion.div
+                      animate={{ rotate: monitoringOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown className="w-3 h-3 md:w-3.5 md:h-3.5 text-slate-400" />
+                    </motion.div>
+                  </button>
+                )}
+              </Link>
+            </div>
+
+            <AnimatePresence>
+              {monitoringOpen && !isSidebarCollapsed && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  className="overflow-hidden pl-6 md:pl-8"
+                >
+                  <div className="py-1 space-y-0.5">
+                    <NavLink
+                      to="/admin/monitoring"
+                      end
+                      onClick={() => toggleMobileSidebar(false)}
+                      className={({ isActive }) => `
+                        flex items-center gap-2.5 px-2.5 py-1.5 md:py-2 rounded-lg transition-all text-[11.5px] md:text-xs
+                        ${isActive
+                          ? (theme === 'light' ? 'bg-blue-50 text-blue-600 font-medium' : 'bg-blue-600/10 text-blue-400 font-medium')
+                          : (theme === 'light' ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50' : 'text-slate-500 hover:text-white hover:bg-white/5')}
+                      `}
+                    >
+                      <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Dashboard</span>
+                    </NavLink>
+                    <NavLink
+                      to="/admin/monitoring/websites"
+                      onClick={() => toggleMobileSidebar(false)}
+                      className={({ isActive }) => `
+                        flex items-center gap-2.5 px-2.5 py-1.5 md:py-2 rounded-lg transition-all text-[11.5px] md:text-xs
+                        ${isActive
+                          ? (theme === 'light' ? 'bg-blue-50 text-blue-600 font-medium' : 'bg-blue-600/10 text-blue-400 font-medium')
+                          : (theme === 'light' ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50' : 'text-slate-500 hover:text-white hover:bg-white/5')}
+                      `}
+                    >
+                      <Globe className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Websites</span>
+                    </NavLink>
+                    <NavLink
+                      to="/admin/monitoring-server"
+                      onClick={() => toggleMobileSidebar(false)}
+                      className={({ isActive }) => `
+                        flex items-center gap-2.5 px-2.5 py-1.5 md:py-2 rounded-lg transition-all text-[11.5px] md:text-xs
+                        ${isActive
+                          ? (theme === 'light' ? 'bg-blue-50 text-blue-600 font-medium' : 'bg-blue-600/10 text-blue-400 font-medium')
+                          : (theme === 'light' ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50' : 'text-slate-500 hover:text-white hover:bg-white/5')}
+                      `}
+                    >
+                      <Server className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Servers</span>
+                    </NavLink>
+                    <NavLink
+                      to="/admin/monitoring/ai"
+                      onClick={() => toggleMobileSidebar(false)}
+                      className={({ isActive }) => `
+                        flex items-center gap-2.5 px-2.5 py-1.5 md:py-2 rounded-lg transition-all text-[11.5px] md:text-xs
+                        ${isActive
+                          ? (theme === 'light' ? 'bg-blue-50 text-blue-600 font-medium' : 'bg-blue-600/10 text-blue-400 font-medium')
+                          : (theme === 'light' ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50' : 'text-slate-500 hover:text-white hover:bg-white/5')}
+                      `}
+                    >
+                      <Bot className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">AI Agent</span>
+                    </NavLink>
+                    <NavLink
+                      to="/admin/monitoring/errors"
+                      onClick={() => toggleMobileSidebar(false)}
+                      className={({ isActive }) => `
+                        flex items-center gap-2.5 px-2.5 py-1.5 md:py-2 rounded-lg transition-all text-[11.5px] md:text-xs
+                        ${isActive
+                          ? (theme === 'light' ? 'bg-blue-50 text-blue-600 font-medium' : 'bg-blue-600/10 text-blue-400 font-medium')
+                          : (theme === 'light' ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50' : 'text-slate-500 hover:text-white hover:bg-white/5')}
+                      `}
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">Errors</span>
+                    </NavLink>
                   </div>
                 </motion.div>
               )}

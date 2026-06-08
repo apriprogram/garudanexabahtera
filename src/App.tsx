@@ -27,6 +27,11 @@ import Documents from './pages/admin/Documents';
 import Changelog from './pages/admin/Changelog';
 import ProductsIndex from './pages/admin/products';
 import MonitoringServer from './pages/admin/monitoring-server';
+import MonitoringLayout from './pages/admin/monitoring/Layout';
+import MonitoringDashboard from './pages/admin/monitoring/index';
+import MonitoringWebsites from './pages/admin/monitoring/websites';
+import MonitoringAI from './pages/admin/monitoring/ai';
+import MonitoringErrors from './pages/admin/monitoring/errors';
 
 function App() {
   const { theme, isSearchActive, toggleSearch } = useStore();
@@ -154,6 +159,12 @@ function App() {
           <Route path="documents" element={<Documents />} />
           <Route path="changelog" element={<Changelog />} />
           <Route path="monitoring-server" element={<MonitoringServer />} />
+          <Route path="monitoring" element={<MonitoringLayout />}>
+            <Route index element={<MonitoringDashboard />} />
+            <Route path="websites" element={<MonitoringWebsites />} />
+            <Route path="ai" element={<MonitoringAI />} />
+            <Route path="errors" element={<MonitoringErrors />} />
+          </Route>
           <Route path="users" element={<UserManager />} />
           <Route path="settings" element={<SiteSettings />} />
           <Route path="profile" element={<ProfileSettings />} />
