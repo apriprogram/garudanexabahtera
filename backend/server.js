@@ -406,36 +406,36 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
-  if (action === 'get_monitor_websites') {
+  if (action === 'get_monitoring_dashboard') {
     try {
-      const [rows] = await pool.query(`
-        SELECT w.*,
-          (SELECT status FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1) as latest_status,
-          (SELECT response_time_ms FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1) as latest_response_time,
-          (SELECT created_at FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1) as last_checked
-        FROM monitor_websites w ORDER BY w.category, w.name
-      `);
-      res.json(rows);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
+      const [[webStats]] = await pool.query("SELECT COUNT(*) as total, SUM(CASE WHEN status='online' THEN 1 ELSE 0 END) as active, SUM(CASE WHEN status='offline' THEN 1 ELSE 0 END) as inactive FROM monitor_websites");
+      const [[srvStats]] = await pool.query("SELECT COUNT(*) as total, SUM(CASE WHEN status='online' THEN 1 ELSE 0 END) as online, SUM(CASE WHEN status='warning' THEN 1 ELSE 0 END) as warning, SUM(CASE WHEN status IN ('critical','offline') THEN 1 ELSE 0 END) as critical FROM monitor_servers");
+      const [[aiStats]] = await pool.query("SELECT COALESCE(SUM(total_tokens),0) as total_tokens, COALESCE(SUM(cost),0) as total_cost, COUNT(*) as total_requests, SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors FROM monitor_ai_usage WHERE created_at >= CURDATE()");
+      const [[visitStats]] = await pool.query("SELECT COALESCE(SUM(visitors),0) as visitors FROM visitor_stats_daily WHERE date = CURDATE()");
+      const [errors] = await pool.query("SELECT * FROM monitor_error_center WHERE is_resolved = 0 ORDER BY created_at DESC LIMIT 5");
+      res.json({
+        websites: webStats,
+        servers: srvStats,
+        ai: aiStats,
+        visitors: visitStats.visitors,
+        recent_errors: errors
+      });
+    } catch (err) { res.status(500).json({ error: err.message }); }
     return;
   }
 
-  if (action === 'get_monitoring_dashboard') {
+  if (action === 'get_monitor_websites') {
     try {
-      const [webStats] = await pool.query(`SELECT COUNT(*) as total, SUM(CASE WHEN status = 'online' THEN 1 ELSE 0 END) as active, SUM(CASE WHEN status = 'offline' THEN 1 ELSE 0 END) as inactive FROM monitor_websites`);
-      const [srvStats] = await pool.query(`SELECT COUNT(*) as total, SUM(CASE WHEN status = 'online' THEN 1 ELSE 0 END) as online, SUM(CASE WHEN status = 'warning' THEN 1 ELSE 0 END) as warning, SUM(CASE WHEN status IN ('critical', 'offline') THEN 1 ELSE 0 END) as critical FROM monitor_servers`);
-      const [aiStats] = await pool.query(`SELECT SUM(total_tokens) as total_tokens, SUM(cost) as total_cost, COUNT(*) as total_requests, SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors FROM monitor_ai_usage WHERE created_at >= CURDATE()`);
-      const [visitStats] = await pool.query(`SELECT SUM(visitors) as visitors FROM visitor_stats_daily WHERE date = CURDATE()`);
-      const [errors] = await pool.query(`SELECT * FROM monitor_error_center WHERE is_resolved = 0 ORDER BY created_at DESC LIMIT 5`);
-      res.json({
-        websites: webStats[0],
-        servers: srvStats[0],
-        ai: aiStats[0] || { total_tokens: 0, total_cost: 0, total_requests: 0, errors: 0 },
-        visitors: visitStats[0]?.visitors || 0,
-        recent_errors: errors
-      });
+      const [rows] = await pool.query(`
+        SELECT w.*, 
+          COALESCE((SELECT status FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1), 'unknown') as status,
+          COALESCE((SELECT response_time_ms FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1), 0) as response_time_ms,
+          (SELECT checked_at FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1) as last_checked,
+          COALESCE((SELECT ssl_valid FROM monitor_ssl WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1), 0) as ssl_valid,
+          (SELECT expires_at FROM monitor_ssl WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1) as ssl_expires
+        FROM monitor_websites w WHERE w.is_active = 1 ORDER BY w.name
+      `);
+      res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
     return;
   }
@@ -453,6 +453,14 @@ app.get('/api.php', async (req, res) => {
       const [usage] = await pool.query('SELECT model, SUM(total_tokens) as tokens, SUM(cost) as cost, COUNT(*) as count FROM monitor_ai_usage GROUP BY model');
       const [byWebsite] = await pool.query('SELECT w.name as website, SUM(u.total_tokens) as tokens FROM monitor_ai_usage u LEFT JOIN monitor_websites w ON u.website_id = w.id GROUP BY u.website_id');
       res.json({ usage, byWebsite });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    return;
+  }
+
+  if (action === 'get_security_checks') {
+    try {
+      const [rows] = await pool.query('SELECT * FROM monitoring_security_logs ORDER BY created_at DESC LIMIT 20');
+      res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
     return;
   }
