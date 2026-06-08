@@ -241,7 +241,7 @@ const ProductsMonitor: React.FC = () => {
                       )}
                     </div>
                   <div>
-                    <h3 className="text-sm md:text-base font-semibold">{product.name}</h3>
+                    <h3 className={`text-sm md:text-base font-semibold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{product.name}</h3>
                     <div className="flex items-center gap-1.5 mt-1">
                       <div className="relative flex items-center justify-center">
                         {product.status === 'online' && (
