@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Server, Activity, Cpu, Monitor, HardDrive, RefreshCw, Plus, Edit3, Trash2,
-  Clock, Wifi, WifiOff, AlertTriangle, X, Check, ChevronDown,
-  BarChart3, Terminal, ExternalLink
+  Clock, AlertTriangle, X, Check,
+  BarChart3, ExternalLink
 } from 'lucide-react';
 
 interface ServerData {
