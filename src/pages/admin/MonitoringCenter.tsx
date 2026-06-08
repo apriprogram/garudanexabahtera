@@ -44,9 +44,10 @@ const TABS = [
 // =============================================
 function fetchAPI(action, data = {}, method = 'POST') {
   const params = new URLSearchParams({ action }).toString();
+  const bodyData = method === 'POST' ? JSON.stringify({ ...data, action }) : undefined;
   return fetch(`${API}?${params}`, {
     method, headers: { 'Content-Type': 'application/json' },
-    body: method === 'POST' ? JSON.stringify(data) : undefined,
+    body: bodyData,
   }).then(r => r.json());
 }
 

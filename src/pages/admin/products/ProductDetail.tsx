@@ -197,7 +197,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
             <div>
               <h1 className="text-xl md:text-2xl font-bold">{product.name}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <p className={`text-sm ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                <p className={`text-sm ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
                   {product.description}
                 </p>
               </div>
@@ -311,7 +311,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
               Auto-refresh 30s
             </span>
           </div>
-          <div className={`flex items-center gap-1.5 text-[10px] ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>
+          <div className={`flex items-center gap-1.5 text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-500'}`}>
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Live
           </div>
@@ -330,14 +330,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
               <div className={`text-center ${theme === 'light' ? 'border-r border-slate-100 last:border-0' : ''}`}>
                 <div className="flex items-center justify-center gap-1.5 mb-1.5">
                   <Zap className={`w-3.5 h-3.5 ${statusColor}`} />
-                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
                     Response
                   </span>
                 </div>
                 <p className={`text-xl md:text-2xl font-bold ${statusColor}`}>
                   {siteCheck.responseTime ? `${siteCheck.responseTime}ms` : '—'}
                 </p>
-                <p className={`text-[9px] mt-0.5 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`text-[9px] mt-0.5 ${theme === 'light' ? 'text-slate-500' : 'text-slate-500'}`}>
                   Avg: {avgResponseTime ? `${avgResponseTime}ms` : '—'}
                 </p>
               </div>
@@ -346,7 +346,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
               <div className={`text-center ${theme === 'light' ? 'border-r border-slate-100 last:border-0' : ''}`}>
                 <div className="flex items-center justify-center gap-1.5 mb-1.5">
                   <Server className={`w-3.5 h-3.5 ${statusColor}`} />
-                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
                     HTTP
                   </span>
                 </div>
@@ -362,14 +362,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
               <div className={`text-center ${theme === 'light' ? 'border-r border-slate-100 last:border-0' : ''}`}>
                 <div className="flex items-center justify-center gap-1.5 mb-1.5">
                   <TrendingUp className="w-3.5 h-3.5 text-sky-400" />
-                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
                     Uptime
                   </span>
                 </div>
                 <p className="text-xl md:text-2xl font-bold text-sky-400">
                   {uptimePercent}%
                 </p>
-                <p className={`text-[9px] mt-0.5 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`text-[9px] mt-0.5 ${theme === 'light' ? 'text-slate-500' : 'text-slate-500'}`}>
                   Last {checkHistory.length} checks
                 </p>
               </div>
@@ -378,7 +378,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
               <div className={`text-center ${theme === 'light' ? 'border-r border-slate-100 last:border-0' : ''}`}>
                 <div className="flex items-center justify-center gap-1.5 mb-1.5">
                   <Shield className="w-3.5 h-3.5 text-purple-400" />
-                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
                     SSL
                   </span>
                 </div>
@@ -400,7 +400,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
               <h3 className={`text-xs font-semibold ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
                 Response Time History
               </h3>
-              <span className={`text-[10px] ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-500'}`}>
                 {checkHistory.length > 0 ? `${Math.min(...checkHistory.filter(c => c.responseTime).map(c => c.responseTime ?? 0))}ms – ${Math.max(...checkHistory.filter(c => c.responseTime).map(c => c.responseTime ?? 0))}ms` : 'No data'}
               </span>
             </div>
@@ -440,7 +440,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
             }`}>
               <div className="flex items-center gap-2 mb-2">
                 <Globe className="w-3.5 h-3.5 text-slate-400" />
-                <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
                   Target URL
                 </span>
               </div>
@@ -455,21 +455,21 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
             }`}>
               <div className="flex items-center gap-2 mb-2">
                 <Wifi className="w-3.5 h-3.5 text-slate-400" />
-                <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
                   Connection
                 </span>
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Method</span>
+                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Method</span>
                   <span className="text-[10px] font-mono text-sky-400">HEAD/GET</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Timeout</span>
+                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Timeout</span>
                   <span className="text-[10px] font-mono text-yellow-400">10-15s</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Interval</span>
+                  <span className={`text-[10px] ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Interval</span>
                   <span className="text-[10px] font-mono text-violet-400">30s</span>
                 </div>
               </div>
@@ -495,7 +495,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
               <TrendingUp className="w-4 h-4 text-emerald-500" />
               <h2 className="text-sm font-semibold">Platform Statistics</h2>
             </div>
-            <div className={`text-[10px] ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-500'}`}>
               Updated: {ischoolStats.data?.updated_at ? new Date(ischoolStats.data.updated_at).toLocaleString() : 'Just now'}
             </div>
           </div>
@@ -505,28 +505,28 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
               <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Building className="w-4 h-4 text-sky-400" />
-                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Total Yayasan</span>
+                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Total Yayasan</span>
                 </div>
                 <p className="text-2xl font-bold">{ischoolStats.data?.total_yayasans || 0}</p>
               </div>
               <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="w-4 h-4 text-emerald-400" />
-                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Total Siswa</span>
+                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Total Siswa</span>
                 </div>
                 <p className="text-2xl font-bold">{(ischoolStats.data?.total_students || 0).toLocaleString()}</p>
               </div>
               <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <GraduationCap className="w-4 h-4 text-violet-400" />
-                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Total Guru</span>
+                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Total Guru</span>
                 </div>
                 <p className="text-2xl font-bold">{ischoolStats.data?.total_teachers || 0}</p>
               </div>
               <div className={`p-4 rounded-xl border ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-white/5 border-white/5'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Database className="w-4 h-4 text-amber-400" />
-                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Active Users</span>
+                  <span className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Active Users</span>
                 </div>
                 <p className="text-2xl font-bold">{(ischoolStats.data?.active_users || 0).toLocaleString()}</p>
               </div>
@@ -537,12 +537,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
                 <div className="flex items-center gap-3">
                   <Network className="w-5 h-5 text-primary" />
                   <div>
-                    <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Bandwidth Used</p>
+                    <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Bandwidth Used</p>
                     <p className="text-sm font-bold">{ischoolStats.data?.bandwidth_used || '0 GB'}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                   <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Platform Health</p>
+                   <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Platform Health</p>
                    <p className="text-sm font-bold text-emerald-400">{ischoolStats.data?.system_health || 'Normal'}</p>
                 </div>
               </div>
@@ -550,7 +550,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product: initialProduct }
                 <div className="flex items-center gap-3">
                   <Server className="w-5 h-5 text-sky-400" />
                   <div>
-                    <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Total Schools</p>
+                    <p className={`text-[10px] font-medium ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Total Schools</p>
                     <p className="text-sm font-bold">{ischoolStats.data?.total_schools || 0} Units</p>
                   </div>
                 </div>
