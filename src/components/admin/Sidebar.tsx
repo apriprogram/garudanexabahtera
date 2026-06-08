@@ -13,6 +13,7 @@ import {
   Mail,
   Building,
   GraduationCap,
+  Activity,
   FolderOpen,
   History,
 } from 'lucide-react';
@@ -59,6 +60,7 @@ const Sidebar: React.FC = () => {
   
   const allMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', adminOnly: false },
+    { icon: Activity, label: 'Monitoring Center', path: '/admin/monitoring', adminOnly: false },
     { icon: FolderOpen, label: 'Dokumen', path: '/admin/documents', adminOnly: false },
     { icon: History, label: 'Changelog', path: '/admin/changelog', adminOnly: true },
     { icon: Settings, label: 'Website Settings', path: '/admin/settings', adminOnly: false },
