@@ -4,7 +4,8 @@ import {
   Globe, 
   Server, 
   Bot, 
-  Bug 
+  Bug,
+  Brain,
 } from 'lucide-react';
 
 const navItems = [
@@ -12,6 +13,7 @@ const navItems = [
   { to: 'websites', icon: Globe, label: 'Websites' },
   { to: 'servers', icon: Server, label: 'Servers' },
   { to: 'agents', icon: Bot, label: 'AI Agents' },
+  { to: 'ai', icon: Brain, label: 'AI Stats' },
   { to: 'errors', icon: Bug, label: 'Errors' },
 ];
 

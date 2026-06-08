@@ -422,6 +422,41 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
+  if (action === 'get_monitoring_dashboard') {
+    try {
+      const [webStats] = await pool.query(`SELECT COUNT(*) as total, SUM(CASE WHEN status = 'online' THEN 1 ELSE 0 END) as active, SUM(CASE WHEN status = 'offline' THEN 1 ELSE 0 END) as inactive FROM monitor_websites`);
+      const [srvStats] = await pool.query(`SELECT COUNT(*) as total, SUM(CASE WHEN status = 'online' THEN 1 ELSE 0 END) as online, SUM(CASE WHEN status = 'warning' THEN 1 ELSE 0 END) as warning, SUM(CASE WHEN status IN ('critical', 'offline') THEN 1 ELSE 0 END) as critical FROM monitor_servers`);
+      const [aiStats] = await pool.query(`SELECT SUM(total_tokens) as total_tokens, SUM(cost) as total_cost, COUNT(*) as total_requests, SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors FROM monitor_ai_usage WHERE created_at >= CURDATE()`);
+      const [visitStats] = await pool.query(`SELECT SUM(visitors) as visitors FROM visitor_stats_daily WHERE date = CURDATE()`);
+      const [errors] = await pool.query(`SELECT * FROM monitor_error_center WHERE is_resolved = 0 ORDER BY created_at DESC LIMIT 5`);
+      res.json({
+        websites: webStats[0],
+        servers: srvStats[0],
+        ai: aiStats[0] || { total_tokens: 0, total_cost: 0, total_requests: 0, errors: 0 },
+        visitors: visitStats[0]?.visitors || 0,
+        recent_errors: errors
+      });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    return;
+  }
+
+  if (action === 'get_error_center') {
+    try {
+      const [rows] = await pool.query('SELECT * FROM monitor_error_center ORDER BY created_at DESC');
+      res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    return;
+  }
+
+  if (action === 'get_monitor_ai_stats') {
+    try {
+      const [usage] = await pool.query('SELECT model, SUM(total_tokens) as tokens, SUM(cost) as cost, COUNT(*) as count FROM monitor_ai_usage GROUP BY model');
+      const [byWebsite] = await pool.query('SELECT w.name as website, SUM(u.total_tokens) as tokens FROM monitor_ai_usage u LEFT JOIN monitor_websites w ON u.website_id = w.id GROUP BY u.website_id');
+      res.json({ usage, byWebsite });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    return;
+  }
+
   if (action === 'get_monitor_website_detail') {
     try {
       const id = parseInt(req.query.id, 10);
@@ -1730,6 +1765,18 @@ app.post('/api.php', async (req, res) => {
           const id = parseInt(input.id, 10);
           if (!id) return res.status(400).json({ error: 'id required' });
           await pool.query("UPDATE monitor_errors SET resolved=1, resolved_at=NOW(), resolved_by=? WHERE id=?", [input.resolved_by || 'system', id]);
+          res.json({ success: true });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+        return;
+      }
+
+      case 'resolve_error': {
+        try {
+          const id = parseInt(input.id, 10);
+          if (!id) return res.status(400).json({ error: 'id required' });
+          await pool.query('UPDATE monitor_error_center SET is_resolved = 1 WHERE id = ?', [id]);
           res.json({ success: true });
         } catch (err) {
           res.status(500).json({ error: err.message });
