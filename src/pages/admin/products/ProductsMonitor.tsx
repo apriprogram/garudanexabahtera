@@ -176,7 +176,7 @@ const ProductsMonitor: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Products Monitoring</h1>
+          <h1 className={`text-xl md:text-2xl font-bold tracking-tight ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Products Monitoring</h1>
           <p className={`text-xs md:text-sm mt-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>
             Pantau status semua website Anda — {formatTime(currentTime)}
           </p>
