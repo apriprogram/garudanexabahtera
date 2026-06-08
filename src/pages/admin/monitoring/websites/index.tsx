@@ -349,8 +349,7 @@ export default function WebsitesMonitor() {
                   title="Check now"
                 >
                   <RefreshCw
-                    className="w-3.5 h-3.5"
-                    className={`text-slate-400 ${refreshingId === w.id ? 'animate-spin' : ''}`}
+                    className={`w-3.5 h-3.5 text-slate-400 ${refreshingId === w.id ? 'animate-spin' : ''}`}
                   />
                 </button>
               </div>
