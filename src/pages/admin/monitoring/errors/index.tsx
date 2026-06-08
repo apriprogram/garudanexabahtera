@@ -205,7 +205,7 @@ const ErrorCenter = () => {
                     <button onClick={() => handleResolve(e.id)} disabled={resolving === e.id}
                       className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-400 transition-all disabled:opacity-50"
                       title="Mark resolved">
-                      <CheckCircle className="w-3.5 h-3.5" className={resolving === e.id ? 'animate-spin' : ''} />
+                      <CheckCircle className={`w-3.5 h-3.5 ${resolving === e.id ? 'animate-spin' : ''}`} />
                     </button>
                   )}
                 </div>
