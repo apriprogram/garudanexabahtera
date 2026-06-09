@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Server, Globe, Cpu, Monitor, HardDrive, RefreshCw,
-  Clock, AlertTriangle, CheckCircle2, Shield, ShieldAlert, Zap,
-  ExternalLink, Wifi, BarChart3, Bug, Lock, Unlock,
-  Activity, ArrowUpRight, ArrowDownRight, History, MoreHorizontal,
-  ChevronRight, Play, Pause, AlertCircle
+ Clock, AlertTriangle, CheckCircle2, Shield, ShieldAlert, Zap,
+ ExternalLink, Wifi, BarChart3, Bug, Lock, Unlock,
+ Activity, ArrowUpRight, ArrowDownRight, History, MoreHorizontal,
+ ChevronRight, AlertCircle
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell
 } from 'recharts';
@@ -110,7 +110,7 @@ const MonitoringServer = () => {
     setRefreshing(true);
     try {
       // Parallel fetch for speed
-      const [overRes, apiRes, graphRes] = await Promise.all([
+      const [, apiRes, graphRes] = await Promise.all([
         fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_monitor_servers' }) }),
         fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_monitoring_api' }) }),
         fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_monitoring_graphs' }) })
