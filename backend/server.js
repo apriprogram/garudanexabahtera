@@ -431,8 +431,8 @@ app.get('/api.php', async (req, res) => {
           COALESCE((SELECT status FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1), 'unknown') as status,
           COALESCE((SELECT response_time_ms FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1), 0) as response_time_ms,
           (SELECT checked_at FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1) as last_checked,
-          COALESCE((SELECT ssl_valid FROM monitor_ssl WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1), 0) as ssl_valid,
-          (SELECT expires_at FROM monitor_ssl WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1) as ssl_expires
+          COALESCE((SELECT is_valid FROM monitor_ssl WHERE website_id = w.id ORDER BY last_checked DESC LIMIT 1), 0) as ssl_valid,
+          (SELECT valid_to FROM monitor_ssl WHERE website_id = w.id ORDER BY last_checked DESC LIMIT 1) as ssl_expires
         FROM monitor_websites w WHERE w.is_active = 1 ORDER BY w.name
       `);
       res.json(rows);
@@ -459,7 +459,7 @@ app.get('/api.php', async (req, res) => {
 
   if (action === 'get_security_checks') {
     try {
-      const [rows] = await pool.query('SELECT * FROM monitoring_security_logs ORDER BY created_at DESC LIMIT 20');
+      const [rows] = await pool.query("SELECT id, type as check_type, description as detail, severity as status, created_at as checked_at FROM monitoring_security_logs ORDER BY created_at DESC LIMIT 20");
       res.json(rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
     return;
