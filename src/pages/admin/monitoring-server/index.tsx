@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Server, Globe, Monitor, RefreshCw, Clock, Shield, Zap,
   Activity, History, AlertCircle, BarChart3, CheckCircle2,
-  TrendingUp, TrendingDown, Clock4, Router
+  TrendingUp, TrendingDown, Clock4
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import {
@@ -147,10 +147,10 @@ const MonitoringServer = () => {
 
       {/* ── SECTION 1: SERVER STATUS ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* GarudaNexa Server */}
-        <StatusCard title="GarudaNexa VPS" icon={<Server size={18} />} server={garudaServer} L={L} titleC={title} mC={muted} card={card} />
+        {/* GarudaNexa VPS */}
+        <StatusCard title="GarudaNexa VPS" icon={<Server size={18} />} server={garudaServer} L={L} titleC={title} card={card} />
         {/* iSchool Server */}
-        <StatusCard title="iSchool Office VPS" icon={<Server size={18} />} server={officeServer} L={L} titleC={title} mC={muted} card={card} />
+        <StatusCard title="iSchool Office VPS" icon={<Server size={18} />} server={officeServer} L={L} titleC={title} card={card} />
       </div>
 
       {/* ── SECTION 2: API MONITORING ── */}
@@ -161,8 +161,8 @@ const MonitoringServer = () => {
 
       {/* ── SECTION 3: WEBSITE PERFORMANCE CHARTS ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <WebsiteChartCard title="GarudaNexa — Performance" icon={<Globe size={18} />} graph={garudaGraph} site={garudaSite} card={card} L={L} titleC={title} mC={muted} />
-        <WebsiteChartCard title="Office iSchool — Performance" icon={<Globe size={18} />} graph={officeGraph} site={officeSite} card={card} L={L} titleC={title} mC={muted} />
+        <WebsiteChartCard title="GarudaNexa — Performance" icon={<Globe size={18} />} graph={garudaGraph} card={card} L={L} titleC={title} />
+        <WebsiteChartCard title="Office iSchool — Performance" icon={<Globe size={18} />} graph={officeGraph} card={card} L={L} titleC={title} />
       </div>
 
       {/* ── SECTION 4: ERRORS & SECURITY ── */}
@@ -221,7 +221,7 @@ const MonitoringServer = () => {
           Real-Time Uptime & Response Timeline (48 Checks)
         </h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {[garudaGraph, officeGraph].filter(Boolean).map((g, i) => g && (
+          {[garudaGraph, officeGraph].filter(Boolean).map((g) => g && (
             <div key={g.id}>
               <p className={`text-xs font-bold mb-2 ${title}`}>{g.name}</p>
               <div className="flex gap-[2px] flex-wrap">
@@ -305,7 +305,7 @@ const MonitoringServer = () => {
 
 // ── Sub-Components ──
 
-function StatusCard({ title: t, icon, server, L, titleC, mC, card }: any) {
+function StatusCard({ title: t, icon, server, L, titleC, card }: any) {
   return (
     <div className={`${card} p-5`}>
       <div className="flex items-center justify-between mb-4">
@@ -313,7 +313,7 @@ function StatusCard({ title: t, icon, server, L, titleC, mC, card }: any) {
           <div className={`p-2.5 rounded-xl ${L ? 'bg-slate-100 text-slate-700' : 'bg-slate-800 text-white'}`}>{icon}</div>
           <div>
             <h3 className={`font-bold text-sm ${titleC}`}>{t}</h3>
-            <p className={`text-[10px] ${mC}`}>{server?.host || '-'}</p>
+            <p className={`text-[10px] text-slate-500`}>{server?.host || '-'}</p>
           </div>
         </div>
         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -396,7 +396,7 @@ function APICard({ title: t, icon, api, L, titleC, mC, card }: any) {
   );
 }
 
-function WebsiteChartCard({ title: t, icon, graph, site, card, L, titleC, mC }: any) {
+function WebsiteChartCard({ title: t, icon, graph, card, L, titleC }: any) {
   const avg = graph?.history?.length
     ? Math.round(graph.history.reduce((a: number, b: any) => a + b.response_time_ms, 0) / graph.history.length)
     : 0;
