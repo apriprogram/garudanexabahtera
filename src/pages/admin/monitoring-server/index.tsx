@@ -57,7 +57,7 @@ const MonitoringServer = () => {
   const animRef = useRef<HTMLDivElement>(null);
 
   const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
