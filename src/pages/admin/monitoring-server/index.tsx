@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Server, Globe, Monitor, RefreshCw, Clock, Shield, Zap,
-  Activity, History, AlertCircle, BarChart3, CheckCircle2,
-  TrendingUp, TrendingDown, Clock4
+  Server, Globe, Monitor, RefreshCw, Shield, Zap,
+  Activity, History, AlertCircle, CheckCircle2, Clock4
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import {
@@ -104,8 +103,6 @@ const MonitoringServer = () => {
   const officeServer = data?.servers.find(s => s.name.toLowerCase().includes('ischool') || s.host.includes('ischool'));
   const garudaAPI = data?.apis.find(a => a.name.toLowerCase().includes('garudanexa'));
   const officeAPI = data?.apis.find(a => a.name.toLowerCase().includes('ischool'));
-  const garudaSite = data?.websites.find(w => w.url.includes('garudanexa'));
-  const officeSite = data?.websites.find(w => w.url.includes('office.ischool'));
   const garudaGraph = data?.website_graphs.find(g => g.name.toLowerCase().includes('garudanexa'));
   const officeGraph = data?.website_graphs.find(g => g.name.toLowerCase().includes('office') || g.name.toLowerCase().includes('ischool'));
 
