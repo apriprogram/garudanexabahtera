@@ -166,7 +166,8 @@ const MonitoringServer = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const api = async (action: string, body?: any) => {
-    const res = await fetch('/api.php', {
+    const url = body ? '/api.php' : `/api.php?action=${encodeURIComponent(action)}`;
+    const res = await fetch(url, {
       method: body ? 'POST' : 'GET',
       headers: { 'Content-Type': 'application/json' },
       ...(body ? { body: JSON.stringify({ action, ...body }) } : {}),
