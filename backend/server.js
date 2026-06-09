@@ -428,9 +428,9 @@ app.get('/api.php', async (req, res) => {
     try {
       const [rows] = await pool.query(`
         SELECT w.*, 
-          COALESCE((SELECT status FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1), 'unknown') as status,
-          COALESCE((SELECT response_time_ms FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1), 0) as response_time_ms,
-          (SELECT checked_at FROM monitor_website_logs WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1) as last_checked,
+          COALESCE((SELECT status FROM monitor_website_logs WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1), 'unknown') as status,
+          COALESCE((SELECT response_time_ms FROM monitor_website_logs WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1), 0) as response_time_ms,
+          (SELECT checked_at FROM monitor_website_logs WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1) as last_checked,
           COALESCE((SELECT is_valid FROM monitor_ssl WHERE website_id = w.id ORDER BY last_checked DESC LIMIT 1), 0) as ssl_valid,
           (SELECT valid_to FROM monitor_ssl WHERE website_id = w.id ORDER BY last_checked DESC LIMIT 1) as ssl_expires
         FROM monitor_websites w WHERE w.is_active = 1 ORDER BY w.name
