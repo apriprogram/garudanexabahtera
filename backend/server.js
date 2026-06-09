@@ -595,6 +595,51 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
+  if (action === 'get_monitoring_api') {
+    try {
+      const [apis] = await pool.query('SELECT * FROM monitoring_api ORDER BY name');
+      const [logs] = await pool.query(
+        'SELECT l.*, a.name as api_name FROM monitoring_api_logs l JOIN monitoring_api a ON a.id = l.api_id ORDER BY l.checked_at DESC LIMIT 100'
+      );
+      const result = apis.map(api => {
+        const apiLogs = logs.filter(l => l.api_id === api.id);
+        const lastLog = apiLogs[0] || {};
+        const history = apiLogs.reverse().slice(0, 24).map(l => ({
+          time: l.checked_at, response_time_ms: l.response_time_ms, status: l.status
+        }));
+        return {
+          ...api,
+          last_checked: lastLog.checked_at || api.last_checked,
+          response_time_ms: lastLog.response_time_ms || api.response_time_ms,
+          success_rate: api.success_count + api.fail_count > 0
+            ? ((api.success_count / (api.success_count + api.fail_count)) * 100).toFixed(1)
+            : 100,
+          history
+        };
+      });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'get_monitoring_graphs') {
+    try {
+      const [websites] = await pool.query('SELECT id, name, url FROM monitor_websites WHERE is_active = 1 ORDER BY name');
+      const websiteLogs = await Promise.all(websites.map(w =>
+        pool.query(
+          'SELECT status, response_time_ms, checked_at FROM monitor_website_logs WHERE website_id = ? ORDER BY checked_at ASC LIMIT 48',
+          [w.id]
+        ).then(([rows]) => ({ id: w.id, name: w.name, history: rows }))
+      ));
+      res.json(websiteLogs);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
   if (action === 'get_monitor_errors') {
     try {
       const page = Math.max(1, parseInt(req.query.page, 10) || 1);
