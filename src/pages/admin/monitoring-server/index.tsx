@@ -121,7 +121,7 @@ function StatCard({ title, value, sub, icon: Icon, color, bad, light }: {
 }) {
   return (
     <div className={`p-5 rounded-2xl relative overflow-hidden group border ${
-      light ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/50 border-slate-800'
+      light ? 'bg-white border-slate-200' : 'bg-slate-900/50 border-slate-800'
     }`}>
       <div className="absolute top-0 right-0 p-3 opacity-[0.06] group-hover:opacity-[0.12] transition-opacity">
         <Icon className="w-24 h-24" color={color} />
@@ -207,8 +207,8 @@ const MonitoringServer = () => {
   };
 
   // ── Shared style vars ──
-  const cardBg = L ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-900/30 border-slate-800';
-  const cardHover = L ? 'hover:shadow-md hover:border-slate-300' : 'hover:shadow-lg hover:shadow-primary/5';
+  const cardBg = L ? 'bg-white border-slate-200' : 'bg-slate-900/30 border-slate-800';
+  const cardHover = L ? 'hover:border-slate-300' : 'hover:border-slate-700';
   const sectionBorder = L ? 'border-slate-200' : 'border-slate-800';
   const headerText = L ? 'text-slate-900' : 'text-white';
   const subText = L ? 'text-slate-500' : 'text-slate-400';
