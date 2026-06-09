@@ -498,6 +498,58 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
+  if (action === 'get_navbar_menus') {
+    try {
+      const [rows] = await pool.query('SELECT * FROM navbar_menus WHERE is_active = 1 ORDER BY sort_order ASC');
+      res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    return;
+  }
+
+  if (action === 'save_navbar_menus_order') {
+    try {
+      const { menus } = req.body;
+      if (!menus || !Array.isArray(menus)) return res.status(400).json({ error: 'Invalid data' });
+      for (const menu of menus) {
+        await pool.query('UPDATE navbar_menus SET sort_order = ?, parent_id = ? WHERE id = ?', [menu.sort_order, menu.parent_id || null, menu.id]);
+      }
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    return;
+  }
+
+  if (action === 'add_navbar_menu') {
+    try {
+      const { parent_id, label_id, label_en, url, icon, description_id, description_en, sort_order } = req.body;
+      const [result] = await pool.query(
+        'INSERT INTO navbar_menus (parent_id, label_id, label_en, url, icon, description_id, description_en, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [parent_id || null, label_id, label_en, url, icon || 'Globe', description_id || '', description_en || '', sort_order || 99]
+      );
+      res.json({ success: true, id: result.insertId });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    return;
+  }
+
+  if (action === 'edit_navbar_menu') {
+    try {
+      const { id, label_id, label_en, url, icon, description_id, description_en, is_active } = req.body;
+      await pool.query('UPDATE navbar_menus SET label_id=?, label_en=?, url=?, icon=?, description_id=?, description_en=?, is_active=? WHERE id=?',
+        [label_id, label_en, url, icon, description_id || '', description_en || '', is_active ?? 1, id]);
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    return;
+  }
+
+  if (action === 'delete_navbar_menu') {
+    try {
+      const { id } = req.body;
+      await pool.query('DELETE FROM navbar_menus WHERE parent_id = ?', [id]);
+      await pool.query('DELETE FROM navbar_menus WHERE id = ?', [id]);
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+    return;
+  }
+
   if (action === 'get_monitor_server_detail') {
     try {
       const id = parseInt(req.query.id, 10);
