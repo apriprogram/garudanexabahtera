@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Menu as MenuIcon, Plus, GripVertical, Trash2, Edit2, Save, X, 
-  ChevronRight, ChevronDown, Globe, Link as LinkIcon, Info, Layout, 
-  RefreshCw, Check, AlertCircle, Search, Smartphone, Monitor
+  Globe, Link as LinkIcon, Info, Layout, 
+  RefreshCw, Check, AlertCircle, Smartphone, Monitor
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import {
@@ -12,8 +12,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
