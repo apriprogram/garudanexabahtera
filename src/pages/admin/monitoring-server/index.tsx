@@ -347,7 +347,7 @@ function StatBox({ label, val, L }: { label: string; val: number; L: boolean }) 
   );
 }
 
-function APICard({ title: t, icon, api, L, titleC, mC, card }: any) {
+function APICard({ title: t, icon, api, L, titleC, card }: any) {
   return (
     <div className={`${card} p-5 flex flex-col`}>
       <div className="flex items-center justify-between mb-3">
