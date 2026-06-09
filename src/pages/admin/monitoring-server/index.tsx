@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Server, Globe, Cpu, Monitor, HardDrive, RefreshCw,
-  Clock, AlertTriangle, CheckCircle2, Shield, ShieldAlert, Zap,
-  ExternalLink, BarChart3, Bug, Lock, Unlock,
+  Server, Globe, Monitor, RefreshCw,
+  Clock, CheckCircle2, Shield, Zap,
+  BarChart3, Bug, Lock, Unlock,
   Activity, History, AlertCircle
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
