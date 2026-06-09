@@ -945,14 +945,24 @@ app.post('/api.php', async (req, res) => {
       }
 
       case 'add_changelog': {
-        const { date, time, title, description, category } = input;
+        const { change_date, time, title, description, category } = input;
         // Auto set time if not provided
         const finalTime = time || new Date().toLocaleTimeString('it-IT', { hour12: false, hour: '2-digit', minute: '2-digit' });
         const [result] = await pool.query(
           'INSERT INTO changelogs (change_date, time, title, description, category) VALUES (?, ?, ?, ?, ?)',
-          [date, finalTime, title, description || '', category || 'fitur']
+          [change_date, finalTime, title, description || '', category || 'fitur']
         );
         res.json({ success: true, id: result.insertId });
+        return;
+      }
+
+      case 'update_changelog': {
+        const { id, change_date, time, title, description, category } = input;
+        await pool.query(
+          'UPDATE changelogs SET change_date=?, time=?, title=?, description=?, category=? WHERE id=?',
+          [change_date, time, title, description || '', category || 'fitur', id]
+        );
+        res.json({ success: true });
         return;
       }
 
