@@ -1,10 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Server, Globe, Cpu, Monitor, HardDrive, RefreshCw,
   Clock, AlertTriangle, CheckCircle2, Shield, ShieldAlert, Zap,
   ExternalLink, Wifi, BarChart3, Bug, Lock, Unlock,
+  Activity, ArrowUpRight, ArrowDownRight, History, MoreHorizontal,
+  ChevronRight, Play, Pause, AlertCircle
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
+import {
+  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  Cell
+} from 'recharts';
 
 // ── Types ──
 
@@ -18,6 +25,19 @@ interface WebsiteInfo {
   response_time_ms: number; last_checked: string | null; ssl_valid: number; ssl_expires: string | null;
 }
 
+interface APIInfo {
+  id: number; name: string; endpoint: string; method: string; status: string;
+  response_time_ms: number; success_count: number; fail_count: number;
+  last_checked: string | null; success_rate: string;
+  history: { time: string; response_time_ms: number; status: string }[];
+}
+
+interface WebsiteGraphData {
+  id: number;
+  name: string;
+  history: { status: string; response_time_ms: number; checked_at: string }[];
+}
+
 interface ErrorInfo {
   id: number; source: string; severity: string; message: string; created_at: string;
 }
@@ -27,484 +47,475 @@ interface SecurityInfo {
 }
 
 interface DashboardData {
-  servers: ServerInfo[]; websites: WebsiteInfo[]; errors: ErrorInfo[]; security_checks: SecurityInfo[];
+  servers: ServerInfo[];
+  websites: WebsiteInfo[];
+  apis: APIInfo[];
+  website_graphs: WebsiteGraphData[];
+  errors: ErrorInfo[];
+  security_checks: SecurityInfo[];
 }
 
-// ── Helpers ──
+// ── Components ──
 
-const timeAgo = (ts: string | null): string => {
-  if (!ts) return 'never';
-  const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-};
-
-const usageBarColor = (val: number): string => {
-  if (val > 80) return 'from-rose-500 to-rose-400';
-  if (val > 60) return 'from-amber-500 to-amber-400';
-  return 'from-emerald-500 to-emerald-400';
-};
-
-const usageTextColor = (val: number): string => {
-  if (val > 80) return 'text-rose-500';
-  if (val > 60) return 'text-amber-500';
-  return 'text-emerald-500';
-};
-
-const statusDot = (status: string): string => {
-  if (!status) return 'bg-slate-500';
-  const s = status.toLowerCase();
-  if (s === 'online' || s === 'healthy' || s === 'up' || s === 'active') return 'bg-emerald-500';
-  if (s === 'warning' || s === 'degraded') return 'bg-amber-500';
-  if (s === 'offline' || s === 'down' || s === 'critical' || s === 'error') return 'bg-rose-500';
-  return 'bg-slate-500';
-};
-
-const statusLabel = (status: string): string => {
-  if (!status) return 'Unknown';
-  const s = status.toLowerCase();
-  if (s === 'online' || s === 'healthy' || s === 'up') return 'Online';
-  if (s === 'warning' || s === 'degraded') return 'Warning';
-  if (s === 'offline' || s === 'down') return 'Offline';
-  if (s === 'critical') return 'Critical';
-  if (s === 'active') return 'Active';
-  if (s === 'error') return 'Error';
-  return status;
-};
-
-const severityBg = (sev: string, light: boolean): string => {
-  const s = sev.toLowerCase();
-  if (s === 'critical' || s === 'error') return light ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-  if (s === 'warning') return light ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-  return light ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-slate-500/10 text-slate-400 border-slate-500/20';
-};
-
-const formatNum = (n: number | undefined | null): string => {
-  if (n == null || isNaN(n)) return '0';
-  return n.toLocaleString('id-ID');
-};
-
-// ── Mini Components ──
-
-function UsageBar({ label, value, icon: Icon, color, light }: { label: string; value: number; icon: any; color: string; light: boolean }) {
-  return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-xs items-center">
-        <span className={`flex items-center gap-1.5 ${light ? 'text-slate-500' : 'text-slate-400'}`}><Icon size={13} color={color} /> {label}</span>
-        <span className={`font-mono text-sm font-semibold ${usageTextColor(value)}`}>
-          {Number(value || 0).toFixed(1)}%
-        </span>
-      </div>
-      <div className={`h-2 rounded-full overflow-hidden ${light ? 'bg-slate-200' : 'bg-slate-800'}`}>
-        <div
-          className={`h-full rounded-full bg-gradient-to-r ${usageBarColor(value)} transition-all duration-1000`}
-          style={{ width: `${Math.min(value || 0, 100)}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({ label, value, color, light }: { label: string; value: string | number; color: string; light: boolean }) {
-  return (
-    <div className={`rounded-xl p-3 text-center border ${light ? 'bg-slate-50 border-slate-200' : 'bg-slate-800/40 border-slate-700/50'}`}>
-      <p className={`text-[10px] uppercase tracking-wider mb-1 ${light ? 'text-slate-500' : 'text-slate-500'}`}>{label}</p>
-      <p className="text-sm font-bold" style={{ color }}>{value}</p>
-    </div>
-  );
-}
-
-function StatCard({ title, value, sub, icon: Icon, color, bad, light }: {
-  title: string; value: string; sub?: string; icon: any; color: string; bad?: boolean; light: boolean;
+function TabButton({ active, label, icon: Icon, onClick, light }: {
+  active: boolean; label: string; icon: any; onClick: () => void; light: boolean;
 }) {
   return (
-    <div className={`p-5 rounded-2xl relative overflow-hidden group border ${
-      light ? 'bg-white border-slate-200' : 'bg-slate-900/50 border-slate-800'
-    }`}>
-      <div className="absolute top-0 right-0 p-3 opacity-[0.06] group-hover:opacity-[0.12] transition-opacity">
-        <Icon className="w-24 h-24" color={color} />
-      </div>
-      <div className="relative z-10">
-        <p className={`text-xs font-medium ${light ? 'text-slate-500' : 'text-slate-400'}`}>{title}</p>
-        <p className={`text-3xl font-bold mt-1.5 ${bad ? 'text-rose-500' : (light ? 'text-slate-900' : 'text-white')}`}>{value}</p>
-        {sub && <p className={`text-xs mt-1 ${light ? 'text-slate-400' : 'text-slate-500'}`}>{sub}</p>}
-      </div>
-    </div>
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
+        active
+          ? 'bg-primary text-white shadow-lg shadow-primary/25'
+          : light
+            ? 'text-slate-500 hover:bg-slate-100'
+            : 'text-slate-400 hover:bg-slate-800'
+      }`}
+    >
+      <Icon size={18} />
+      <span>{label}</span>
+    </button>
   );
 }
 
-// ── Status badge (shared for both modes) ──
-function StatusBadge({ status }: { status: string }) {
-  const s = status.toLowerCase();
-  const cls =
-    s === 'online' || s === 'healthy' || s === 'up' ? 'text-emerald-600 border-emerald-200 bg-emerald-50' :
-    s === 'warning' || s === 'degraded' ? 'text-amber-600 border-amber-200 bg-amber-50' :
-    s === 'offline' || s === 'down' || s === 'critical' || s === 'error' ? 'text-rose-600 border-rose-200 bg-rose-50' :
-    'text-slate-600 border-slate-200 bg-slate-50';
-  return (
-    <span className={`text-[9px] px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider shrink-0 ${cls}`}>
-      {statusLabel(status)}
-    </span>
-  );
-}
+const CustomTooltip = ({ active, payload, label, light }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className={`p-3 border rounded-xl shadow-xl ${light ? 'bg-white border-slate-100' : 'bg-slate-900 border-slate-800'}`}>
+        <p className={`text-xs font-bold mb-1 ${light ? 'text-slate-400' : 'text-slate-500'}`}>
+          {new Date(label).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </p>
+        <p className="text-sm font-bold text-primary">
+          {payload[0].value} ms
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
-// ── Main Component ──
+// ── Main Page ──
 
 const MonitoringServer = () => {
   const { theme } = useStore();
   const L = theme === 'light';
 
+  const [activeTab, setActiveTab] = useState<'overview' | 'api' | 'websites'>('overview');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lastFetch, setLastFetch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
 
-  const api = async (action: string, body?: any) => {
-    const url = body ? '/api.php' : `/api.php?action=${encodeURIComponent(action)}`;
-    const res = await fetch(url, {
-      method: body ? 'POST' : 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      ...(body ? { body: JSON.stringify({ action, ...body }) } : {}),
-    });
-    return res.json();
-  };
-
-  const fetchAll = useCallback(async (showLoader = false) => {
-    if (showLoader) setLoading(true);
+  const fetchData = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
+    setRefreshing(true);
     try {
-      const [serverRes, webRes, errRes, secRes] = await Promise.all([
-        api('get_monitor_servers'),
-        api('get_monitor_websites'),
-        api('get_error_center'),
-        api('get_security_checks'),
+      // Parallel fetch for speed
+      const [overRes, apiRes, graphRes] = await Promise.all([
+        fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_monitor_servers' }) }),
+        fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_monitoring_api' }) }),
+        fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_monitoring_graphs' }) })
       ]);
+
+      const [servers, websites, errors, security] = await Promise.all([
+        fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_monitor_servers' }) }).then(r => r.json()),
+        fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_monitor_websites' }) }).then(r => r.json()),
+        fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_error_center' }) }).then(r => r.json()),
+        fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_security_checks' }) }).then(r => r.json()),
+      ]);
+
+      const apis = await apiRes.json();
+      const website_graphs = await graphRes.json();
+
       setData({
-        servers: serverRes.data || serverRes || [],
-        websites: webRes.data || webRes || [],
-        errors: errRes.data || errRes?.errors || errRes || [],
-        security_checks: secRes.data || secRes || [],
+        servers, websites, apis, website_graphs, errors, security_checks: security
       });
-      setLastFetch(new Date().toLocaleTimeString('id-ID'));
+      setLastUpdate(new Date());
     } catch (err) {
-      console.error(err);
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchAll(true);
-    const interval = setInterval(() => fetchAll(false), 15000);
+    fetchData();
+    const interval = setInterval(() => fetchData(true), 30000); // Auto refresh every 30s
     return () => clearInterval(interval);
-  }, [fetchAll]);
+  }, [fetchData]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchAll(false);
-    setRefreshing(false);
-  };
+  const cardBg = L ? 'bg-white border-slate-200' : 'bg-slate-900/40 border-slate-800';
+  const textTitle = L ? 'text-slate-900' : 'text-white';
+  const textMuted = L ? 'text-slate-500' : 'text-slate-400';
 
-  // ── Shared style vars ──
-  const cardBg = L ? 'bg-white border-slate-200' : 'bg-slate-900/30 border-slate-800';
-  const cardHover = L ? 'hover:border-slate-300' : 'hover:border-slate-700';
-  const sectionBorder = L ? 'border-slate-200' : 'border-slate-800';
-  const headerText = L ? 'text-slate-900' : 'text-white';
-  const subText = L ? 'text-slate-500' : 'text-slate-400';
-  const mutedText = L ? 'text-slate-400' : 'text-slate-500';
-  const faintText = L ? 'text-slate-300' : 'text-slate-600';
-  const hoverRow = L ? 'hover:bg-slate-50' : 'hover:bg-slate-800/30';
-  const divider = L ? 'divide-slate-100' : 'divide-slate-800/60';
-  const btnRefresh = L
-    ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200'
-    : 'bg-slate-800 hover:bg-slate-700 text-slate-300';
-
-  if (loading) {
+  if (loading && !data) {
     return (
-      <div className="flex items-center justify-center min-h-[500px]">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-3" />
-          <p className={`text-sm ${subText}`}>Loading monitoring data...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[500px] gap-4">
+        <RefreshCw className="w-10 h-10 text-primary animate-spin" />
+        <p className={`font-medium animate-pulse ${textMuted}`}>Menghubungkan ke server...</p>
       </div>
     );
   }
 
-  const servers = data?.servers || [];
-  const websites = data?.websites || [];
-  const errors = data?.errors || [];
-  const security = data?.security_checks || [];
-
-  const totalOnline = servers.filter(s => s.status === 'online' || s.status === 'healthy').length;
-  const totalWarning = servers.filter(s => s.status === 'warning').length;
-  const totalCritical = servers.filter(s => s.status === 'critical' || s.status === 'offline').length;
-  const avgCpu = servers.length ? servers.reduce((a, s) => a + (s.cpu_usage || 0), 0) / servers.length : 0;
-  const avgRam = servers.length ? servers.reduce((a, s) => a + (s.ram_usage || 0), 0) / servers.length : 0;
-  const avgDisk = servers.length ? servers.reduce((a, s) => a + (s.disk_usage || 0), 0) / servers.length : 0;
-
-  const criticalErrors = errors.filter(e => e.severity === 'critical' || e.severity === 'error');
-  const warningErrors = errors.filter(e => e.severity === 'warning');
-  const securityIssues = security.filter(s => s.status === 'critical' || s.status === 'warning' || s.status === 'high');
-  const websitesDown = websites.filter(w => w.status === 'offline' || w.status === 'down');
-
   return (
     <div className="space-y-6">
       {/* ── Header ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className={`text-2xl font-bold flex items-center gap-3 ${headerText}`}>
-            <Server className="text-blue-500" size={24} /> Monitoring Server
-          </h2>
-          <p className={`text-xs mt-1 ${mutedText}`}>
-            Real-time overview · {servers.length} server{servers.length !== 1 ? 's' : ''} · {websites.length} website{websites.length !== 1 ? 's' : ''} · Auto-refresh 15s
+          <h1 className={`text-2xl font-bold flex items-center gap-3 ${textTitle}`}>
+            <Monitor className="text-primary" /> Monitoring Server & Website
+          </h1>
+          <p className={`text-xs mt-1 flex items-center gap-2 ${textMuted}`}>
+            <Clock size={12} /> Terakhir diperbarui: {lastUpdate.toLocaleTimeString()}
+            {refreshing && <RefreshCw size={10} className="animate-spin text-primary" />}
           </p>
         </div>
-        <div className={`flex items-center gap-3 text-xs ${subText}`}>
-          <button onClick={handleRefresh} disabled={refreshing}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all disabled:opacity-50 ${btnRefresh}`}>
-            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
-            Refresh
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Live
-          </div>
-          <span className={faintText}>{lastFetch}</span>
+
+        <div className={`flex p-1 rounded-2xl border ${L ? 'bg-slate-50 border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
+          <TabButton active={activeTab === 'overview'} label="Overview" icon={Activity} onClick={() => setActiveTab('overview')} light={L} />
+          <TabButton active={activeTab === 'api'} label="API Monitoring" icon={Zap} onClick={() => setActiveTab('api')} light={L} />
+          <TabButton active={activeTab === 'websites'} label="Performance" icon={BarChart3} onClick={() => setActiveTab('websites')} light={L} />
         </div>
       </div>
 
-      {/* ── Summary Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard title="Server Status" value={`${totalOnline} / ${servers.length}`}
-          sub={`${totalCritical} critical · ${totalWarning} warning`}
-          icon={Server} color="#22c55e" bad={totalCritical > 0} light={L} />
-        <StatCard title="Websites" value={`${websites.length - websitesDown.length} / ${websites.length}`}
-          sub={`${websitesDown.length} down`}
-          icon={Globe} color="#3b82f6" bad={websitesDown.length > 0} light={L} />
-        <StatCard title="Errors" value={formatNum(errors.length)}
-          sub={`${criticalErrors.length} critical · ${warningErrors.length} warning`}
-          icon={Bug} color="#ef4444" bad={criticalErrors.length > 0} light={L} />
-        <StatCard title="Security" value={formatNum(security.length)}
-          sub={`${securityIssues.length} issue${securityIssues.length !== 1 ? 's' : ''}`}
-          icon={Shield} color="#a855f7" bad={securityIssues.length > 0} light={L} />
-      </div>
-
-      {/* ── Main Grid ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-
-        {/* ── LEFT COLUMN (3/5) ── */}
-        <div className="xl:col-span-3 space-y-6">
-
-          {/* ── Server Cards ── */}
-          <div className="space-y-3">
-            <h3 className={`text-sm font-semibold uppercase tracking-wider flex items-center gap-2 ${subText}`}>
-              <Server size={14} /> Servers
-            </h3>
-            {servers.length === 0 ? (
-              <div className={`rounded-2xl p-8 text-center border ${cardBg}`}>
-                <Server className={`mx-auto mb-2 ${faintText}`} size={32} />
-                <p className={`text-sm ${mutedText}`}>No servers configured</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {servers.map(s => (
-                  <div key={s.id} className={`rounded-2xl p-4 transition-all border ${cardBg} ${cardHover} ${
-                    s.status === 'critical' || s.status === 'offline' ? '!border-rose-300' :
-                    s.status === 'warning' ? '!border-amber-300' : ''
-                  }`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusDot(s.status)}`} />
-                        <div className="min-w-0">
-                          <h4 className={`font-semibold text-sm truncate ${headerText}`}>{s.name}</h4>
-                          <p className={`text-[10px] flex items-center gap-1 ${mutedText}`}>
-                            <Wifi size={9} /> {s.host}
-                          </p>
-                        </div>
+      {/* ── Tabs Content ── */}
+      <div className="transition-all duration-500">
+        
+        {/* ── OVERVIEW TAB ── */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* Server Status Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {data?.servers.map(server => (
+                <div key={server.id} className={`p-5 rounded-2xl border ${cardBg} transition-all hover:border-primary/30`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-xl ${L ? 'bg-slate-100 text-slate-700' : 'bg-slate-800 text-white'}`}>
+                        <Server size={20} />
                       </div>
-                      <StatusBadge status={s.status} />
-                    </div>
-                    <UsageBar label="CPU" value={s.cpu_usage || 0} icon={Cpu} color="#3b82f6" light={L} />
-                    <div className="mt-2.5" />
-                    <UsageBar label="RAM" value={s.ram_usage || 0} icon={Monitor} color="#22c55e" light={L} />
-                    <div className="mt-2.5" />
-                    <UsageBar label="Disk" value={s.disk_usage || 0} icon={HardDrive} color="#f59e0b" light={L} />
-                    <div className={`flex items-center justify-between mt-3 pt-2.5 border-t ${sectionBorder}`}>
-                      <span className={`text-[9px] flex items-center gap-1 ${faintText}`}>
-                        <Clock size={9} /> {timeAgo(s.last_updated)}
-                      </span>
-                      <span className={`text-[9px] ${faintText}`}>{s.type}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ── Security Checks ── */}
-          <div className={`rounded-2xl overflow-hidden border ${cardBg}`}>
-            <div className={`p-4 border-b flex items-center justify-between ${sectionBorder}`}>
-              <h3 className={`text-sm font-semibold flex items-center gap-2 ${headerText}`}>
-                <Shield size={15} className="text-violet-500" />
-                Security Checks
-                {securityIssues.length > 0 && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">
-                    {securityIssues.length} issue{securityIssues.length !== 1 ? 's' : ''}
-                  </span>
-                )}
-              </h3>
-            </div>
-            <div className="p-3 space-y-1.5 max-h-64 overflow-y-auto">
-              {security.length === 0 ? (
-                <p className={`text-sm text-center py-6 ${mutedText}`}>No security checks yet</p>
-              ) : (
-                security.slice(0, 10).map((s, i) => (
-                  <div key={s.id || i} className={`flex items-center gap-3 p-2.5 rounded-xl transition-colors ${hoverRow}`}>
-                    {s.status === 'critical' || s.status === 'error' || s.status === 'high' ? (
-                      <ShieldAlert size={16} className="text-rose-500 shrink-0" />
-                    ) : s.status === 'warning' || s.status === 'medium' ? (
-                      <AlertTriangle size={16} className="text-amber-500 shrink-0" />
-                    ) : (
-                      <Shield size={16} className="text-emerald-500 shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs truncate ${headerText}`}>{s.check_type}: {s.detail}</p>
-                      <p className={`text-[9px] ${mutedText}`}>{s.status} · {timeAgo(s.checked_at)}</p>
-                    </div>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full border uppercase font-bold shrink-0 ${
-                      s.status === 'critical' || s.status === 'high' ? 'text-rose-600 border-rose-200 bg-rose-50' :
-                      s.status === 'warning' || s.status === 'medium' ? 'text-amber-600 border-amber-200 bg-amber-50' :
-                      'text-emerald-600 border-emerald-200 bg-emerald-50'
-                    }`}>{s.status}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ── RIGHT COLUMN (2/5) ── */}
-        <div className="xl:col-span-2 space-y-6">
-
-          {/* ── Websites Monitoring ── */}
-          <div className={`rounded-2xl overflow-hidden border ${cardBg}`}>
-            <div className={`p-4 border-b ${sectionBorder}`}>
-              <h3 className={`text-sm font-semibold flex items-center gap-2 ${headerText}`}>
-                <Globe size={15} className="text-blue-500" />
-                Websites Monitoring
-                {websitesDown.length > 0 && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">
-                    {websitesDown.length} down
-                  </span>
-                )}
-              </h3>
-            </div>
-            <div className={`divide-y ${divider}`}>
-              {websites.length === 0 ? (
-                <p className={`text-sm text-center py-8 ${mutedText}`}>No websites monitored</p>
-              ) : (
-                websites.map(w => (
-                  <div key={w.id} className={`p-4 transition-colors ${hoverRow}`}>
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${statusDot(w.status)}`} />
-                        <div className="min-w-0">
-                          <p className={`text-sm font-medium truncate ${headerText}`}>{w.name}</p>
-                          <p className={`text-[10px] truncate flex items-center gap-1 ${mutedText}`}>
-                            <ExternalLink size={9} /> {w.url}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <StatusBadge status={w.status} />
+                      <div>
+                        <h3 className={`font-bold text-sm ${textTitle}`}>{server.name}</h3>
+                        <p className={`text-[10px] ${textMuted}`}>{server.host}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className={`text-[10px] flex items-center gap-1 ${mutedText}`}>
-                        <Zap size={10} className="text-amber-500" />
-                        {w.response_time_ms ? `${w.response_time_ms}ms` : '-'}
-                      </span>
-                      <span className={`text-[10px] flex items-center gap-1 ${mutedText}`}>
-                        {w.ssl_valid ? (
-                          <><Lock size={10} className="text-emerald-500" /> SSL Valid{w.ssl_expires ? ` until ${new Date(w.ssl_expires).toLocaleDateString('id-ID')}` : ''}</>
-                        ) : (
-                          <><Unlock size={10} className="text-rose-500" /> SSL Invalid</>
-                        )}
-                      </span>
+                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      server.status === 'online' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                    }`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${server.status === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                      {server.status}
                     </div>
-                    <p className={`text-[9px] mt-1.5 ${faintText}`}>Last checked: {timeAgo(w.last_checked)}</p>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
 
-          {/* ── Error Center ── */}
-          <div className={`rounded-2xl overflow-hidden border ${cardBg}`}>
-            <div className={`p-4 border-b flex items-center justify-between ${sectionBorder}`}>
-              <h3 className={`text-sm font-semibold flex items-center gap-2 ${headerText}`}>
-                <AlertTriangle size={15} className="text-rose-500" />
-                Recent Errors
-              </h3>
-              {criticalErrors.length > 0 && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">
-                  {criticalErrors.length} critical
-                </span>
-              )}
-            </div>
-            <div className="p-3 space-y-1.5 max-h-80 overflow-y-auto">
-              {errors.length === 0 ? (
-                <div className="text-center py-8">
-                  <CheckCircle2 size={28} className="text-emerald-500 mx-auto mb-2" />
-                  <p className={`text-sm ${subText}`}>No errors detected</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <UsageCircle label="CPU" val={server.cpu_usage} color="primary" light={L} />
+                    <UsageCircle label="RAM" val={server.ram_usage} color="emerald" light={L} />
+                    <UsageCircle label="Disk" val={server.disk_usage} color="amber" light={L} />
+                  </div>
                 </div>
-              ) : (
-                errors.slice(0, 15).map((e, i) => (
-                  <div key={e.id || i} className={`flex items-start gap-2.5 p-2.5 rounded-xl transition-colors ${hoverRow} ${
-                    e.severity === 'critical' ? 'border-l-2 border-rose-500' :
-                    e.severity === 'warning' ? 'border-l-2 border-amber-500' : 'border-l-2 border-transparent'
-                  }`}>
-                    <div className={`p-1 rounded-lg shrink-0 ${severityBg(e.severity, L)}`}>
-                      <AlertTriangle size={12} />
+              ))}
+            </div>
+
+            {/* Error & Security List */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Errors */}
+              <div className={`rounded-2xl border overflow-hidden ${cardBg}`}>
+                <div className="p-4 border-b border-slate-800/50 flex items-center justify-between">
+                  <h3 className={`text-sm font-bold flex items-center gap-2 ${textTitle}`}>
+                    <Bug size={16} className="text-rose-500" /> Error Center
+                  </h3>
+                  <span className="text-[10px] bg-rose-500/10 text-rose-500 px-2 py-0.5 rounded-full font-bold">Unresolved: {data?.errors.length}</span>
+                </div>
+                <div className="divide-y divide-slate-800/30">
+                  {data?.errors.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500 text-xs italic">Sistem bersih, tidak ada error.</div>
+                  ) : data?.errors.slice(0, 5).map(err => (
+                    <div key={err.id} className="p-3 hover:bg-rose-500/[0.02] transition-colors group">
+                      <div className="flex items-start gap-3">
+                        <div className={`mt-1 p-1 rounded bg-rose-500/10 text-rose-500`}>
+                          <AlertCircle size={12} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-rose-500 uppercase tracking-tighter">{err.source}</span>
+                            <span className="text-[9px] text-slate-500">{new Date(err.created_at).toLocaleString()}</span>
+                          </div>
+                          <p className={`text-xs mt-1 line-clamp-1 group-hover:line-clamp-none transition-all ${textTitle}`}>{err.message}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs truncate ${headerText}`}>{e.message}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-[9px] ${mutedText}`}>{e.source || 'N/A'}</span>
-                        <span className={`text-[9px] ${faintText}`}>·</span>
-                        <span className={`text-[9px] ${mutedText}`}>{timeAgo(e.created_at)}</span>
-                        <span className={`text-[8px] px-1 py-0.5 rounded uppercase font-bold ${
-                          e.severity === 'critical' ? 'text-rose-600 bg-rose-50' :
-                          e.severity === 'warning' ? 'text-amber-600 bg-amber-50' :
-                          'text-slate-500 bg-slate-100'
-                        }`}>{e.severity}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Security Checks */}
+              <div className={`rounded-2xl border overflow-hidden ${cardBg}`}>
+                <div className="p-4 border-b border-slate-800/50 flex items-center justify-between">
+                  <h3 className={`text-sm font-bold flex items-center gap-2 ${textTitle}`}>
+                    <Shield size={16} className="text-emerald-500" /> Security Logs
+                  </h3>
+                  <CheckCircle2 size={16} className="text-emerald-500" />
+                </div>
+                <div className="divide-y divide-slate-800/30">
+                  {data?.security_checks.slice(0, 5).map(check => (
+                    <div key={check.id} className="p-3 hover:bg-emerald-500/[0.02] transition-colors flex items-center gap-3">
+                      <div className={`p-2 rounded-xl ${L ? 'bg-slate-100 text-slate-700' : 'bg-slate-800 text-white'}`}>
+                        {check.status === 'safe' ? <Lock size={14} className="text-emerald-500" /> : <Unlock size={14} className="text-rose-500" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h4 className={`text-xs font-bold ${textTitle}`}>{check.check_type}</h4>
+                          <span className="text-[9px] text-slate-500">{new Date(check.checked_at).toLocaleString()}</span>
+                        </div>
+                        <p className={`text-[10px] truncate ${textMuted}`}>{check.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── API MONITORING TAB ── */}
+        {activeTab === 'api' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {data?.apis.map(api => (
+                <div key={api.id} className={`p-5 rounded-2xl border flex flex-col ${cardBg} hover:border-primary/40 group`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`p-2 rounded-xl ${L ? 'bg-slate-100 text-slate-700' : 'bg-slate-800 text-white'}`}>
+                        <Zap size={18} className={api.status === 'active' ? 'text-primary' : 'text-slate-500'} />
+                      </div>
+                      <div className="truncate">
+                        <h3 className={`font-bold text-sm truncate ${textTitle}`}>{api.name}</h3>
+                        <p className={`text-[9px] font-bold text-primary tracking-widest uppercase`}>{api.method}</p>
+                      </div>
+                    </div>
+                    <div className={`w-2 h-2 rounded-full ${api.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                  </div>
+
+                  <div className="flex-1 space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className={`p-2 rounded-xl ${L ? 'bg-slate-50' : 'bg-slate-800/40'}`}>
+                        <p className="text-[9px] text-slate-500 uppercase font-bold">Latency</p>
+                        <p className={`text-sm font-bold ${textTitle}`}>{api.response_time_ms} ms</p>
+                      </div>
+                      <div className={`p-2 rounded-xl ${L ? 'bg-slate-50' : 'bg-slate-800/40'}`}>
+                        <p className="text-[9px] text-slate-500 uppercase font-bold">Success Rate</p>
+                        <p className={`text-sm font-bold text-emerald-500`}>{api.success_rate}%</p>
+                      </div>
+                    </div>
+
+                    <div className="h-16 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={api.history}>
+                          <Bar dataKey="response_time_ms" radius={[2, 2, 0, 0]}>
+                            {api.history.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.status === 'active' ? '#3B82F6' : '#EF4444'} fillOpacity={0.6} />
+                            ))}
+                          </Bar>
+                          <Tooltip content={<CustomTooltip light={L} />} cursor={{fill: 'rgba(59, 130, 246, 0.1)'}} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className={textMuted}>{api.endpoint}</span>
+                      <span className="text-slate-500">24h history</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* API Usage Table */}
+            <div className={`rounded-2xl border overflow-hidden ${cardBg}`}>
+              <div className="p-4 border-b border-slate-800/50 flex items-center gap-2">
+                <History size={16} className="text-primary" />
+                <h3 className={`text-sm font-bold ${textTitle}`}>Riwayat Penggunaan Endpoint</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className={`border-b ${L ? 'bg-slate-50 border-slate-100 text-slate-500' : 'bg-slate-800/50 border-slate-800 text-slate-400'}`}>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider">Endpoint</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider text-center">Requests</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider text-center">Latency</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider text-center">Status</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider text-right">Last Check</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/20">
+                    {data?.apis.map(api => (
+                      <tr key={api.id} className="hover:bg-slate-500/5 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col">
+                            <span className={`font-bold ${textTitle}`}>{api.name}</span>
+                            <span className="text-[10px] text-slate-500">{api.endpoint}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="text-emerald-500 font-bold">{api.success_count} ✓</span>
+                            <span className="text-rose-500 font-bold">{api.fail_count} ✗</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`font-mono ${api.response_time_ms > 200 ? 'text-amber-500' : 'text-primary'}`}>
+                            {api.response_time_ms} ms
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                            api.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                          }`}>
+                            {api.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-slate-500">
+                          {api.last_checked ? new Date(api.last_checked).toLocaleString() : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── WEBSITE PERFORMANCE TAB ── */}
+        {activeTab === 'websites' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+            {data?.website_graphs.map(site => (
+              <div key={site.id} className={`p-6 rounded-3xl border ${cardBg} transition-all hover:border-primary/40`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-2xl ${L ? 'bg-slate-100 text-slate-700' : 'bg-slate-800 text-white'}`}>
+                      <Globe size={24} className="text-primary" />
+                    </div>
+                    <div>
+                      <h3 className={`text-lg font-bold ${textTitle}`}>{site.name}</h3>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs ${textMuted}`}>{data.websites.find(w => w.id === site.id)?.url}</span>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[9px] font-bold uppercase">
+                          <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                          Online
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* ── Bottom: Resource Averages ── */}
-      {servers.length > 0 && (
-        <div className={`rounded-2xl p-5 border ${cardBg}`}>
-          <h3 className={`text-sm font-semibold mb-4 flex items-center gap-2 ${headerText}`}>
-            <BarChart3 size={15} className="text-blue-500" />
-            Average Server Resources
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <MiniStat label="Avg CPU" value={`${avgCpu.toFixed(1)}%`} color={avgCpu > 70 ? '#ef4444' : avgCpu > 50 ? '#f59e0b' : '#22c55e'} light={L} />
-            <MiniStat label="Avg RAM" value={`${avgRam.toFixed(1)}%`} color={avgRam > 70 ? '#ef4444' : avgRam > 50 ? '#f59e0b' : '#22c55e'} light={L} />
-            <MiniStat label="Avg Disk" value={`${avgDisk.toFixed(1)}%`} color={avgDisk > 70 ? '#ef4444' : avgDisk > 50 ? '#f59e0b' : '#22c55e'} light={L} />
+                  <div className="flex gap-6">
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Avg Latency</p>
+                      <p className={`text-xl font-black ${textTitle}`}>
+                        {Math.round(site.history.reduce((a, b) => a + b.response_time_ms, 0) / site.history.length || 0)} <span className="text-xs font-normal text-slate-500">ms</span>
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Uptime 24h</p>
+                      <p className="text-xl font-black text-emerald-500">99.9<span className="text-xs font-normal text-emerald-500/60">%</span></p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-[250px] w-full mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={site.history}>
+                      <defs>
+                        <linearGradient id={`grad-${site.id}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={L ? '#E2E8F0' : '#1E293B'} />
+                      <XAxis 
+                        dataKey="checked_at" 
+                        tickFormatter={(t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        fontSize={10} 
+                        tick={{fill: L ? '#64748B' : '#475569'}}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis 
+                        fontSize={10} 
+                        tick={{fill: L ? '#64748B' : '#475569'}}
+                        axisLine={false}
+                        tickLine={false}
+                        unit="ms"
+                      />
+                      <Tooltip content={<CustomTooltip light={L} />} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="response_time_ms" 
+                        stroke="#3B82F6" 
+                        strokeWidth={2}
+                        fillOpacity={1} 
+                        fill={`url(#grad-${site.id})`}
+                        animationDuration={1500}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="mt-6">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase mb-2 tracking-widest">Uptime Timeline (Last 48 Checks)</p>
+                  <div className="flex gap-1">
+                    {site.history.map((h, i) => (
+                      <div 
+                        key={i} 
+                        title={`${new Date(h.checked_at).toLocaleString()}: ${h.status}`}
+                        className={`flex-1 h-6 rounded-sm transition-all hover:scale-110 ${
+                          h.status === 'online' ? 'bg-emerald-500/40 hover:bg-emerald-500' : 'bg-rose-500 hover:bg-rose-600'
+                        }`} 
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+
+      </div>
     </div>
   );
 };
+
+// ── Helper Components ──
+
+function UsageCircle({ label, val, color, light }: { label: string; val: number; color: string; light: boolean }) {
+  const getCol = (c: string) => {
+    if (c === 'primary') return 'text-primary';
+    if (c === 'emerald') return 'text-emerald-500';
+    if (c === 'amber') return 'text-amber-500';
+    return '';
+  };
+
+  const getBg = (c: string) => {
+    if (c === 'primary') return 'bg-primary/10';
+    if (c === 'emerald') return 'bg-emerald-500/10';
+    if (c === 'amber') return 'bg-amber-500/10';
+    return '';
+  };
+
+  return (
+    <div className={`p-3 rounded-2xl flex flex-col items-center justify-center ${getBg(color)}`}>
+      <div className="relative flex items-center justify-center">
+        <svg className="w-12 h-12 rotate-[-90deg]">
+          <circle className={light ? 'text-slate-200' : 'text-slate-800'} strokeWidth="4" stroke="currentColor" fill="transparent" r="20" cx="24" cy="24" />
+          <circle 
+            className={getCol(color)} strokeWidth="4" strokeDasharray={125.6} strokeDashoffset={125.6 - (val / 100) * 125.6}
+            strokeLinecap="round" stroke="currentColor" fill="transparent" r="20" cx="24" cy="24" 
+          />
+        </svg>
+        <span className={`absolute text-[10px] font-black ${light ? 'text-slate-900' : 'text-white'}`}>{val}%</span>
+      </div>
+      <span className="text-[9px] font-bold text-slate-500 uppercase mt-2 tracking-widest">{label}</span>
+    </div>
+  );
+}
 
 export default MonitoringServer;
