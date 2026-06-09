@@ -27,7 +27,9 @@ import NavbarManager from './pages/admin/navbar-manager';
 import Documents from './pages/admin/Documents';
 import Changelog from './pages/admin/Changelog';
 import ProductsIndex from './pages/admin/products';
-import MonitoringServer from './pages/admin/monitoring-server';
+import { Suspense, lazy } from 'react';
+
+const MonitoringServer = lazy(() => import('./pages/admin/monitoring-server'));
 
 function App() {
   const { theme, isSearchActive, toggleSearch } = useStore();
@@ -154,7 +156,11 @@ function App() {
           <Route path="product-manager" element={<ProductManager />} />
           <Route path="documents" element={<Documents />} />
           <Route path="changelog" element={<Changelog />} />
-          <Route path="monitoring-server" element={<MonitoringServer />} />
+          <Route path="monitoring-server" element={
+            <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading monitoring module...</div>}>
+              <MonitoringServer />
+            </Suspense>
+          } />
           <Route path="navbar-manager" element={<NavbarManager />} />
           <Route path="users" element={<UserManager />} />
           <Route path="settings" element={<SiteSettings />} />
