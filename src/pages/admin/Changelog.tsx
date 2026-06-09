@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   History, Plus, X, Edit2, Trash2, Save,
   Bug, Sparkles, Zap, ChevronDown, ChevronLeft, ChevronRight,
-  Calendar, Clock, Tag, AlertTriangle, Search, Filter, SlidersHorizontal,
+  Calendar, Clock, Tag, AlertTriangle, Search,
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
@@ -94,11 +94,6 @@ const Changelog: React.FC = () => {
       return true;
     });
   }, [logs, selectedDate, filterCategory, searchQuery]);
-
-  // Can add log on this date?
-  const canAddOnDate = (dateStr: string) => {
-    return datesWithData.has(dateStr);
-  };
 
   const openAdd = (date?: string) => {
     setEditing(null);
