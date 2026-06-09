@@ -106,7 +106,7 @@ const MonitoringServer = () => {
   const garudaGraph = data?.website_graphs.find(g => g.name.toLowerCase().includes('garudanexa'));
   const officeGraph = data?.website_graphs.find(g => g.name.toLowerCase().includes('office') || g.name.toLowerCase().includes('ischool'));
 
-  if (loading && !data) {
+  if (!data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[600px] gap-4">
         <RefreshCw className="w-10 h-10 text-primary animate-spin" />
