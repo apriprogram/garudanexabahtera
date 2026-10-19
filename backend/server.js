@@ -26,10 +26,15 @@ const openai = new OpenAI({
 });
 
 // ── MySQL Connection Pool ──
+// MYSQL_PASS has no fallback on purpose: it must come from the environment (.env via docker-compose)
+if (process.env.MYSQL_PASS === undefined) {
+  console.error('MYSQL_PASS is not set — set MYSQL_ROOT_PASSWORD in .env (see .env.example)');
+  process.exit(1);
+}
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || 'mysql',
   user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASS || '***REMOVED***',
+  password: process.env.MYSQL_PASS,
   database: process.env.MYSQL_DB || 'db_garudanexabahtera',
   waitForConnections: true,
   connectionLimit: 10,

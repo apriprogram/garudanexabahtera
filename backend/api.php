@@ -18,10 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db = "db_garudanexabahtera";
+// DB credentials come from the environment; defaults match a local XAMPP install
+$host = getenv("MYSQL_HOST") ?: "localhost";
+$user = getenv("MYSQL_USER") ?: "root";
+$pass = getenv("MYSQL_PASS") ?: "";
+$db = getenv("MYSQL_DB") ?: "db_garudanexabahtera";
 
 $conn = new mysqli($host, $user, $pass, $db);
 

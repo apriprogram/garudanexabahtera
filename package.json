@@ -9,7 +9,7 @@
     "backup": "bash ./backup.sh",
     "sync": "powershell -ExecutionPolicy Bypass -File ./sync-backend.ps1",
     "dev:full": "powershell -ExecutionPolicy Bypass -File ./sync-backend.ps1 && vite",
-    "build": "npm run backup && tsc -b && vite build && npm run sync-logos",
+    "build": "tsc -b && vite build && npm run sync-logos",
     "sync-logos": "mkdir -p dist/assets/logo-product && cp -r persistent_assets_logo/* dist/assets/logo-product/ 2>/dev/null || true",
     "lint": "eslint .",
     "preview": "vite preview"

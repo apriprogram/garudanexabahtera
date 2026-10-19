@@ -5,12 +5,17 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 
-const S3_ENDPOINT = 'https://is3.cloudhost.id';
-const S3_REGION = 'us-east-1';
-const S3_BUCKET = 'garudanexa';
-const S3_ACCESS_KEY = '***REMOVED***';
-const S3_SECRET_KEY = '***REMOVED***';
-const S3_PUBLIC_URL = 'https://is3.cloudhost.id/garudanexa';
+// Credentials come from the environment (docker-compose.yml passes them from .env)
+const S3_ENDPOINT = process.env.S3_ENDPOINT || 'https://is3.cloudhost.id';
+const S3_REGION = process.env.S3_REGION || 'us-east-1';
+const S3_BUCKET = process.env.S3_BUCKET || 'garudanexa';
+const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY;
+const S3_SECRET_KEY = process.env.S3_SECRET_KEY;
+const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL || `${S3_ENDPOINT}/${S3_BUCKET}`;
+
+if (!S3_ACCESS_KEY || !S3_SECRET_KEY) {
+  console.warn('[S3] S3_ACCESS_KEY / S3_SECRET_KEY not set — uploads will fail (see .env.example)');
+}
 
 const client = new S3Client({
   endpoint: S3_ENDPOINT,

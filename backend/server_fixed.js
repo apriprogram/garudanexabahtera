@@ -22,7 +22,7 @@ const openai = new OpenAI({
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || 'mysql',
   user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASS || '***REMOVED***',
+  password: process.env.MYSQL_PASS,
   database: process.env.MYSQL_DB || 'db_garudanexabahtera',
   waitForConnections: true,
   connectionLimit: 10,

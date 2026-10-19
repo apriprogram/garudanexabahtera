@@ -2,10 +2,11 @@
 // Script migrasi: Update path gambar lama ke path baru di database
 header("Content-Type: text/html; charset=utf-8");
 
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "db_garudanexabahtera";
+// DB credentials come from the environment; defaults match a local XAMPP install
+$host = getenv("MYSQL_HOST") ?: "localhost";
+$user = getenv("MYSQL_USER") ?: "root";
+$pass = getenv("MYSQL_PASS") ?: "";
+$db   = getenv("MYSQL_DB") ?: "db_garudanexabahtera";
 
 $conn = new mysqli($host, $user, $pass, $db);
 if ($conn->connect_error) {
