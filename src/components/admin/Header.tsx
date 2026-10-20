@@ -1,33 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Bell, ChevronRight, LogOut, HelpCircle, Eye, PanelLeft, User, Sun, Moon } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Bell, CalendarDays, ChevronDown, ChevronRight, Eye, HelpCircle, LogOut, Menu, Moon, Sun, User } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
+import { logout } from '../../lib/auth';
+import { getAdminCrumbs } from './nav';
 
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt';
+const iconBtn = `relative flex h-10 w-10 items-center justify-center rounded-xl text-adm-muted transition-colors hover:bg-adm-hover hover:text-adm-fg max-sm:h-9 max-sm:w-9 max-sm:after:absolute max-sm:after:-inset-1 ${focusRing}`;
+const menuItem = `flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors ${focusRing}`;
+
+const today = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+
+/** Label peran `users.role` (SPEC §2), sama dengan halaman Pengguna. */
+const ROLE_LABEL: Record<string, string> = { admin: 'Admin', user: 'Staf', customer: 'Pembeli' };
+
+/** Baris dari action get_users; currentUser di localStorage berbentuk sama. */
+interface AdminUser {
+  id: number | string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  status?: string;
+  avatar?: string;
+}
+
+const readStoredUser = (): AdminUser | null => {
+  const storedUser = localStorage.getItem('currentUser');
+  return storedUser ? JSON.parse(storedUser) : null;
+};
+
+/** Topbar tipis panel admin: breadcrumb kiri, tanggal + aksi + menu profil kanan. */
 const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toggleMobileSidebar, toggleSidebar, isSidebarCollapsed, theme, toggleTheme } = useStore();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const { toggleMobileSidebar, isMobileSidebarOpen, theme, toggleTheme } = useStore();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(readStoredUser);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { parent, label } = getAdminCrumbs(location.pathname);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      const userObj = JSON.parse(storedUser);
-      setCurrentUser(userObj);
-      
-      // Fetch latest user data from DB to sync avatar/name changes
-      const apiUrl = window.location.hostname === 'localhost' ? '/api.php' : '/api.php';
-      fetch(`${apiUrl}?action=get_users`)
+    const userObj = readStoredUser();
+    if (userObj) {
+      // Ambil data user terbaru dari DB agar avatar/nama ikut berubah
+      fetch('/api.php?action=get_users')
         .then(res => {
           if (!res.ok) throw new Error('API not available');
           return res.json();
         })
         .then(users => {
           if (Array.isArray(users)) {
-            const freshData = users.find((u: any) => u.id == userObj.id);
+            const freshData = users.find((u: AdminUser) => u.id == userObj.id);
             if (freshData) {
               setCurrentUser(freshData);
               localStorage.setItem('currentUser', JSON.stringify(freshData));
@@ -38,289 +63,158 @@ const Header: React.FC = () => {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    navigate('/login');
-  };
+  // Tutup menu profil setiap pindah halaman
+  const [menuPath, setMenuPath] = useState(location.pathname);
+  if (menuPath !== location.pathname) {
+    setMenuPath(location.pathname);
+    setIsMenuOpen(false);
+  }
 
-  const pathnames = location.pathname.split('/').filter((x) => x);
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+    const onDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setIsMenuOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isMenuOpen]);
+
+  // Hapus authToken + currentUser lalu ke /login (lihat src/lib/auth.ts)
+  const handleLogout = () => logout();
+
+  const name = currentUser?.name || 'Admin User';
+  const role = currentUser?.role || 'admin';
+  const roleLabel = ROLE_LABEL[role] ?? role.charAt(0).toUpperCase() + role.slice(1);
+
+  const avatar = (size: string) => (
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-cobalt text-[13px] font-semibold text-white ${size}`}>
+      {currentUser?.avatar ? (
+        <img src={currentUser.avatar} alt="" className="h-full w-full object-cover" />
+      ) : (
+        name.charAt(0).toUpperCase()
+      )}
+    </span>
+  );
 
   return (
-    <>
-    <header className={`sticky top-0 z-50 transition-colors duration-300 border-b h-14 flex items-center ${
-      theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#080808] border-white/5'
-    }`}>
-      <div className="w-full px-3 md:px-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 md:gap-4">
-          {/* Mobile Toggle */}
-          <button 
-            onClick={() => toggleMobileSidebar(true)}
-            className={`lg:hidden p-1.5 rounded-xl transition-all ${
-              theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
+    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-adm-line bg-adm-surface/95 px-3 backdrop-blur-xl sm:px-6 lg:top-2 lg:rounded-t-[20px]">
+      <div className="flex min-w-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={() => toggleMobileSidebar(true)}
+          aria-label="Buka menu"
+          aria-expanded={isMobileSidebarOpen}
+          className={`${iconBtn} lg:hidden`}
+        >
+          <Menu className="h-5 w-5" strokeWidth={1.75} />
+        </button>
+
+        <nav aria-label="Breadcrumb" className="min-w-0 text-[13px]">
+          <ol className="flex min-w-0 items-center gap-1.5">
+            <li className="hidden text-adm-muted sm:block">
+              <Link to="/admin" className={`rounded-md hover:text-adm-fg ${focusRing}`}>Admin</Link>
+            </li>
+            <li className="hidden text-adm-subtle sm:block" aria-hidden>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </li>
+            {parent && (
+              <>
+                <li className="hidden truncate text-adm-muted sm:block">
+                  <Link to={parent.path} className={`rounded-md hover:text-adm-fg ${focusRing}`}>{parent.label}</Link>
+                </li>
+                <li className="hidden text-adm-subtle sm:block" aria-hidden>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </li>
+              </>
+            )}
+            <li className="truncate font-medium text-adm-fg" aria-current="page">{label}</li>
+          </ol>
+        </nav>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="hidden items-center gap-1.5 text-[13px] text-adm-muted xl:inline-flex">
+          <CalendarDays className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          {today}
+        </span>
+        <span className="hidden h-4 w-px bg-adm-line xl:block" aria-hidden />
+
+        <div className="flex items-center gap-1">
+          <a href="/" target="_blank" rel="noopener noreferrer" aria-label="Lihat website" title="Lihat website" className={`${iconBtn} max-sm:hidden`}>
+            <Eye className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          </a>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === 'light' ? 'Ganti ke mode gelap' : 'Ganti ke mode terang'}
+            title={theme === 'light' ? 'Mode gelap' : 'Mode terang'}
+            className={iconBtn}
           >
-            <PanelLeft className="w-5 h-5 md:w-6 md:h-6" />
+            {theme === 'light' ? <Moon className="h-[18px] w-[18px]" strokeWidth={1.75} /> : <Sun className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+          </button>
+          <button type="button" aria-label="Notifikasi" title="Notifikasi" className={iconBtn}>
+            <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </button>
 
-          {/* Desktop Sidebar Toggle */}
-          <button 
-            onClick={toggleSidebar}
-            className={`hidden lg:flex p-1 md:p-1.5 rounded-xl transition-all ${
-              theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            <PanelLeft className={`w-5 h-5 transition-transform ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
-          </button>
-
-          <div className={`h-6 w-[1px] hidden md:block mx-1 transition-colors duration-300 ${
-            theme === 'light' ? 'bg-slate-200' : 'bg-white/5'
-          }`} />
-
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm hidden md:flex">
-            <span 
-              className={`transition-colors cursor-pointer ${
-                theme === 'light' ? 'text-slate-400 hover:text-slate-600' : 'text-slate-500 hover:text-slate-300'
-              }`} 
-              onClick={() => navigate('/admin')}
+          <div ref={menuRef} className="relative ml-1">
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen((o) => !o)}
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
+              aria-label="Menu profil"
+              className={`flex h-10 items-center gap-2 rounded-full p-1 ring-1 ring-inset ring-adm-line transition-colors hover:bg-adm-hover max-sm:h-9 sm:pr-3 ${focusRing}`}
             >
-              Admin
-            </span>
-            {pathnames.filter(name => name.toLowerCase() !== 'admin').map((name, index, filteredArr) => {
-              const isLast = index === filteredArr.length - 1;
-              return (
-                <React.Fragment key={name}>
-                  <ChevronRight className={`w-3 md:w-3.5 h-3 md:h-3.5 transition-colors duration-300 ${
-                    theme === 'light' ? 'text-slate-300' : 'text-slate-700'
-                  }`} />
-                  <span 
-                    className={`capitalize transition-colors duration-300 ${
-                      isLast 
-                        ? (theme === 'light' ? 'text-slate-900 font-semibold' : 'text-white font-medium') 
-                        : 'text-slate-500'
-                    }`}
-                  >
-                    {name.replace('-', ' ')}
-                  </span>
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1.5 md:gap-3">
-          {/* Desktop Search Bar (Persistent) */}
-          <div className="hidden lg:flex items-center w-60 xl:w-72 relative group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 transition-colors duration-200" />
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-1.5 md:py-2 text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500/50 transition-all duration-300"
-            />
-          </div>
-
-          {/* Mobile Search Toggle */}
-          <button 
-            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-            className={`lg:hidden p-1.5 md:p-2 rounded-xl transition-all ${
-              isMobileSearchOpen 
-                ? 'text-blue-400 bg-blue-400/10' 
-                : (theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-white/5')
-            }`}
-          >
-            <Search className="w-4 h-4 md:w-5 md:h-5" />
-          </button>
-
-          {/* Grouped Icons (Mata, Notifikasi & DarkMode) */}
-          <div className="flex items-center gap-0.5 md:gap-1">
-            {/* Preview Website */}
-            <button 
-              onClick={() => window.open('/', '_blank')}
-              className={`p-1 md:p-1.5 rounded-xl transition-all ${
-                theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-              title="View Live Website"
-            >
-              <Eye className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-
-            {/* Notifications */}
-            <button className={`p-1 md:p-1.5 rounded-xl transition-all relative ${
-              theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}>
-              <Bell className="w-4 h-4 md:w-5 md:h-5" />
-              <span className={`absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-blue-600 rounded-full border ${
-                theme === 'light' ? 'border-white' : 'border-[#080808]'
-              }`} />
-            </button>
-
-            {/* Dark Mode Toggle */}
-            <button 
-              onClick={toggleTheme}
-              className={`p-1 md:p-1.5 rounded-xl transition-all ${
-                theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-              title={theme === 'light' ? "Switch to Dark Mode" : "Switch to Light Mode"}
-            >
-              {theme === 'light' ? (
-                <Moon className="w-4 h-4 md:w-5 md:h-5" />
-              ) : (
-                <Sun className="w-4 h-4 md:w-5 md:h-5 text-amber-500 animate-spin-slow" />
-              )}
-            </button>
-          </div>
-
-          <div className={`h-6 w-[1px] mx-0.5 transition-colors duration-300 ${
-            theme === 'light' ? 'bg-slate-200' : 'bg-white/5'
-          }`} />
-
-          {/* User Profile */}
-          <div className="relative">
-            <button 
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`flex items-center gap-1.5 p-0.5 md:p-1 rounded-xl transition-all ${
-                theme === 'light' ? 'hover:bg-slate-100' : 'hover:bg-white/5'
-              }`}
-            >
-              <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg md:rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-[10px] md:text-sm font-bold shadow-lg shadow-blue-600/20 overflow-hidden">
-                {currentUser?.avatar ? (
-                  <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  currentUser?.name?.charAt(0) || 'A'
-                )}
-              </div>
-              <div className="hidden sm:block text-left">
-                <p className={`text-xs md:text-sm font-bold leading-none transition-colors duration-300 ${
-                  theme === 'light' ? 'text-slate-900' : 'text-white'
-                }`}>{currentUser?.name || 'Admin User'}</p>
-                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-medium">Administrator</p>
-              </div>
+              {avatar('h-8 w-8 max-sm:h-7 max-sm:w-7')}
+              <span className="hidden min-w-0 text-left sm:block">
+                <span className="block max-w-[150px] truncate text-[13px] font-semibold leading-tight text-adm-fg">{name}</span>
+                <span className="block text-[11px] leading-tight text-adm-subtle">{roleLabel}</span>
+              </span>
+              <ChevronDown className={`hidden h-4 w-4 text-adm-subtle transition-transform sm:block ${isMenuOpen ? 'rotate-180' : ''}`} strokeWidth={1.75} />
             </button>
 
             <AnimatePresence>
-              {isDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-[-1]" onClick={() => setIsDropdownOpen(false)} />
-                  <motion.div 
-                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className={`absolute right-0 mt-1 w-60 rounded-[20px] p-2 shadow-2xl z-[60] border profile-dropdown ${
-                      theme === 'light'
-                        ? 'bg-white border-slate-200 text-slate-900'
-                        : 'bg-[#0D0D0D] border-white/10 text-white'
-                    }`}
-                  >
-                    {/* Header Identity Block - Neat & Soft with Avatar */}
-                    <div className={`flex items-center gap-3 px-3 py-3 mb-2 rounded-[14px] border ${
-                      theme === 'light' 
-                        ? 'bg-slate-50/70 border-slate-100/50' 
-                        : 'bg-white/[0.02] border-white/5'
-                    }`}>
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
-                        {currentUser?.avatar ? (
-                          <img src={currentUser.avatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          currentUser?.name?.charAt(0) || 'A'
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className={`text-xs font-bold truncate mb-0.5 ${
-                          theme === 'light' ? 'text-slate-800' : 'text-white'
-                        }`}>{currentUser?.name || 'Admin User'}</p>
-                        <p className={`text-[10px] font-medium truncate ${
-                          theme === 'light' ? 'text-slate-400' : 'text-slate-500'
-                        }`}>{currentUser?.email || 'admin@garudanexa.com'}</p>
-                      </div>
+              {isMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  role="menu"
+                  className="profile-dropdown absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl bg-adm-surface p-2 shadow-float ring-1 ring-inset ring-adm-line"
+                >
+                  <div className="mb-1 flex items-center gap-3 rounded-xl bg-adm-hover px-3 py-2.5">
+                    {avatar('h-9 w-9')}
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-semibold text-adm-fg">{name}</p>
+                      <p className="truncate text-xs text-adm-subtle">{currentUser?.email || 'admin@garudanexa.com'}</p>
                     </div>
-                    
-                    <button 
-                      onClick={() => { navigate('/admin/profile'); setIsDropdownOpen(false); }}
-                      className={`w-full flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 group ${
-                        theme === 'light'
-                          ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-                          : 'text-slate-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      <User className={`w-5 h-5 transition-colors duration-200 ${
-                        theme === 'light' ? 'text-slate-400 group-hover:text-slate-900' : 'text-slate-500 group-hover:text-white'
-                      }`} />
-                      Edit Profil
-                    </button>
-                    <button 
-                      onClick={() => { navigate('/admin/help'); setIsDropdownOpen(false); }}
-                      className={`w-full flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 group ${
-                        theme === 'light'
-                          ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-                          : 'text-slate-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      <HelpCircle className={`w-5 h-5 transition-colors duration-200 ${
-                        theme === 'light' ? 'text-slate-400 group-hover:text-slate-900' : 'text-slate-500 group-hover:text-white'
-                      }`} />
-                      Catatan Perubahan
-                    </button>
-                    
-                    <div className={`h-[1px] my-1.5 mx-2 ${
-                      theme === 'light' ? 'bg-slate-100/70' : 'bg-white/5'
-                    }`} />
-                    
-                    <button 
-                      onClick={handleLogout}
-                      className={`w-full flex items-center gap-3.5 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 group ${
-                        theme === 'light'
-                          ? 'text-red-600 hover:text-red-700 hover:bg-red-50/70'
-                          : 'text-red-400 hover:text-red-300 hover:bg-red-400/10'
-                      }`}
-                    >
-                      <LogOut className={`w-5 h-5 transition-colors duration-200 ${
-                        theme === 'light' ? 'text-red-400 group-hover:text-red-700' : 'text-red-500 group-hover:text-red-300'
-                      }`} />
-                      Keluar
-                    </button>
-                  </motion.div>
-                </>
+                  </div>
+                  <button type="button" role="menuitem" onClick={() => { navigate('/admin/profile'); setIsMenuOpen(false); }} className={`${menuItem} text-adm-fg hover:bg-adm-hover`}>
+                    <User className="h-[18px] w-[18px] text-adm-subtle" strokeWidth={1.75} /> Edit profil
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => { navigate('/admin/help'); setIsMenuOpen(false); }} className={`${menuItem} text-adm-fg hover:bg-adm-hover`}>
+                    <HelpCircle className="h-[18px] w-[18px] text-adm-subtle" strokeWidth={1.75} /> Catatan perubahan
+                  </button>
+                  <a href="/" target="_blank" rel="noopener noreferrer" role="menuitem" className={`${menuItem} text-adm-fg hover:bg-adm-hover sm:hidden`}>
+                    <Eye className="h-[18px] w-[18px] text-adm-subtle" strokeWidth={1.75} /> Lihat website
+                  </a>
+                  <div className="my-1 h-px bg-adm-line" />
+                  <button type="button" role="menuitem" onClick={handleLogout} className={`${menuItem} text-adm-danger-fg hover:bg-adm-danger-soft`}>
+                    <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} /> Keluar
+                  </button>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
       </div>
     </header>
-
-    {/* Mobile Search Bar — below header, pushes content down */}
-    <AnimatePresence>
-      {isMobileSearchOpen && (
-        <motion.div 
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className={`overflow-hidden border-b ${
-            theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#0D0D0D]/50 border-white/5'
-          }`}
-        >
-          <div className="p-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-              <input 
-                type="text" 
-                autoFocus
-                placeholder="Search settings, users, or products..." 
-                className={`w-full border rounded-xl pl-9 pr-4 py-2 text-xs outline-none focus:border-blue-500/50 transition-all ${
-                  theme === 'light'
-                    ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
-                    : 'bg-white/5 border-white/10 text-white placeholder:text-slate-600'
-                }`}
-              />
-            </div>
-          </div>
-        </motion.div>
-      )}  
-    </AnimatePresence>
-    </>
   );
 };
 

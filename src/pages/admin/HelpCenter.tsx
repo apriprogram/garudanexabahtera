@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { History, Package, LayoutDashboard, Palette, Settings, Image, GripVertical, Zap, ChevronDown, Star, Bug, Sparkles } from 'lucide-react';
+import { Package, LayoutDashboard, Palette, Settings, Image, GripVertical, Zap, ChevronDown, Star, Bug, Sparkles } from 'lucide-react';
+import { IconBox, PageHeader, Panel, cn } from '../../components/admin/ui';
 
 const changelogData = [
   {
     version: '2.5.0',
     date: '4 Juni 2026',
     badge: 'Terbaru',
-    badgeColor: 'bg-blue-600',
+    badgeColor: 'bg-cobalt',
     changes: [
       { type: 'improvement', icon: GripVertical, text: 'Drag & Drop — Tambah icon handle di bawah card List Product, animasi smooth spring, auto-simpan urutan ke database.' },
       { type: 'fix', icon: Bug, text: 'Perbaiki urutan gagal simpan saat drag and drop List Product.' },
@@ -73,105 +74,88 @@ const HelpCenter: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 md:space-y-10 pb-10 md:pb-20">
+    <div className="mx-auto max-w-4xl pb-10">
       {/* Header */}
-      <div className="text-center space-y-2.5 md:space-y-4">
-        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto border border-blue-600/20 mb-1 md:mb-2">
-          <History className="w-6 h-6 md:w-8 md:h-8 text-blue-400" />
-        </div>
-        <h1 className="text-2xl md:text-4xl font-bold text-white tracking-tight">Catatan Perubahan</h1>
-        <p className="text-[10px] md:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
-          Riwayat pembaruan dan perbaikan pada platform Garuda Nexa.
-        </p>
-      </div>
+      <PageHeader title="Catatan perubahan" description="Riwayat pembaruan dan perbaikan pada platform Garuda Nexa." />
 
       {/* Timeline */}
-      <div className="relative space-y-4 md:space-y-6">
+      <div className="relative space-y-3 sm:space-y-4">
         {/* Timeline Line */}
-        <div className="absolute left-[18px] md:left-[23px] top-0 bottom-0 w-[2px] bg-gradient-to-b from-blue-500/50 via-purple-500/20 to-transparent" />
+        <div className="absolute bottom-3 left-[11px] top-3 w-px bg-adm-line sm:left-[15px]" aria-hidden />
 
         {changelogData.map((release) => {
           const isExpanded = expandedVersions.has(release.version);
           return (
-            <div key={release.version} className="relative pl-12 md:pl-14">
+            <div key={release.version} className="relative pl-9 sm:pl-12">
               {/* Timeline Dot */}
-              <div className={`absolute left-[10px] md:left-[15px] top-[18px] w-[18px] h-[18px] rounded-full border-[3px] z-10 transition-colors ${
-                release.badge 
-                  ? 'bg-blue-600 border-blue-900 shadow-lg shadow-blue-600/30' 
-                  : 'bg-[#0D0D0D] border-slate-600'
-              }`} />
+              <div
+                className={cn(
+                  'absolute left-1 top-5 z-10 h-4 w-4 rounded-full ring-4 ring-adm-surface sm:left-2 sm:top-[26px]',
+                  release.badge ? 'bg-cobalt' : 'border-2 border-adm-line-strong bg-adm-surface',
+                )}
+                aria-hidden
+              />
 
               {/* Card */}
-              <div className={`rounded-2xl border overflow-hidden transition-all duration-300 ${
-                release.badge
-                  ? 'border-blue-500/30 bg-blue-950/20'
-                  : 'border-white/5 bg-[#0D0D0D]'
-              }`}>
+              <Panel padding="none" className={cn('overflow-hidden', release.badge && 'ring-cobalt/40')}>
                 {/* Header */}
                 <button
+                  type="button"
                   onClick={() => toggleVersion(release.version)}
-                  className="w-full flex items-center justify-between p-4 md:p-6 text-left hover:bg-white/[0.02] transition-colors"
+                  aria-expanded={isExpanded}
+                  className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-adm-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cobalt sm:p-5"
                 >
-                  <div className="flex items-center gap-3 md:gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <span className="text-lg md:text-xl font-bold text-white tracking-tight">
-                          v{release.version}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-semibold tracking-tight text-adm-fg tabular-nums sm:text-lg">
+                        v{release.version}
+                      </span>
+                      {release.badge && (
+                        <span className={cn('inline-flex h-6 items-center rounded-full px-2.5 text-xs font-medium text-white', release.badgeColor)}>
+                          {release.badge}
                         </span>
-                        {release.badge && (
-                          <span className={`text-[9px] md:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-white ${release.badgeColor}`}>
-                            {release.badge}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] md:text-xs text-slate-500 mt-0.5">{release.date}</p>
+                      )}
                     </div>
+                    <p className="mt-0.5 text-xs text-adm-muted">{release.date}</p>
                   </div>
-                  <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform duration-300 ${
-                    isExpanded ? 'rotate-180' : ''
-                  }`} />
+                  <ChevronDown
+                    className={cn('h-5 w-5 shrink-0 text-adm-subtle transition-transform duration-300', isExpanded && 'rotate-180')}
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
                 </button>
 
                 {/* Body */}
                 {isExpanded && (
-                  <div className="px-4 md:px-6 pb-4 md:pb-6 space-y-2 md:space-y-3">
+                  <div className="space-y-2 px-4 pb-4 sm:px-5 sm:pb-5">
                     {release.changes.map((change, idx) => (
-                      <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl text-sm transition-colors ${
-                        change.type === 'fix'
-                          ? 'bg-red-500/5 border border-red-500/10'
-                          : 'bg-white/[0.02] border border-white/5'
-                      }`}>
-                        <div className={`p-1.5 rounded-lg flex-shrink-0 mt-0.5 ${
-                          change.type === 'fix'
-                            ? 'bg-red-500/10 text-red-400'
-                            : 'bg-blue-500/10 text-blue-400'
-                        }`}>
-                          <change.icon className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                              change.type === 'fix' ? 'text-red-400' : 'text-blue-400'
-                            }`}>
-                              {change.type === 'fix' ? 'Perbaikan' : 'Peningkatan'}
-                            </span>
-                          </div>
-                          <p className="text-[12px] md:text-sm text-slate-300 leading-relaxed">{change.text}</p>
+                      <div key={idx} className="flex items-start gap-3 rounded-xl bg-adm-ghost p-3">
+                        <IconBox icon={change.icon} tone={change.type === 'fix' ? 'danger' : 'cobalt'} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={cn(
+                              'text-[11px] font-semibold uppercase tracking-[0.08em]',
+                              change.type === 'fix' ? 'text-adm-danger-fg' : 'text-adm-cobalt-fg',
+                            )}
+                          >
+                            {change.type === 'fix' ? 'Perbaikan' : 'Peningkatan'}
+                          </p>
+                          <p className="mt-0.5 break-words text-[13px] leading-relaxed text-adm-fg sm:text-sm">{change.text}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
+              </Panel>
             </div>
           );
         })}
       </div>
 
       {/* Footer */}
-      <div className="text-center pt-4 md:pt-8">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/5 text-xs md:text-sm text-slate-500">
-          <Zap className="w-3.5 h-3.5" />
+      <div className="pt-6 text-center sm:pt-8">
+        <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-adm-ghost px-4 py-2 text-xs text-adm-muted sm:text-[13px]">
+          <Zap className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
           Ada saran fitur? Hubungi tim pengembang
         </div>
       </div>

@@ -1,3 +1,10 @@
+-- ############################################################
+-- DEPRECATED (2026-10-19) — JANGAN DIPAKAI. Skema resmi: database/schema.sql.
+-- docker-compose.yml sudah tidak me-mount file ini lagi (sekarang memakai
+-- database/schema.sql + database/seed.sql). Isinya hanya 6 tabel lama + admin
+-- dengan password bawaan "admin123". DB yang sudah ada: database/migrations/.
+-- File ini disimpan hanya sebagai arsip dan boleh dihapus.
+-- ############################################################
 -- Database for Garuda Nexa Bahtera
 CREATE DATABASE IF NOT EXISTS db_garudanexabahtera;
 USE db_garudanexabahtera;

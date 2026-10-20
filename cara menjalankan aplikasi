@@ -1,3 +1,73 @@
-npm run dev
+CARA MENJALANKAN APLIKASI DI LOKAL (DEV)
+=======================================
 
-php -S localhost:8000 -t backend
+Yang dibutuhkan
+- Node.js 20.19+ atau 22+ (Vite 8), lalu sekali saja: npm install
+- XAMPP: cukup MySQL yang ON (Apache tidak perlu). Database: db_garudanexabahtera
+- PHP dari XAMPP ada di PATH (cek dengan: php -v)
+- File .env di folder proyek (salin dari .env.example). Untuk login admin wajib isi
+  AUTH_SECRET (minimal 32 karakter acak), contoh: openssl rand -hex 32
+
+
+1) Jalankan API (PHP dari folder backend/ di repo ini) — terminal pertama:
+
+   php -d post_max_size=256M -d upload_max_filesize=256M -S 127.0.0.1:8000 -t backend
+
+2) Jalankan website — terminal kedua:
+
+   npm run dev
+
+   Buka http://localhost:5173 (website), http://localhost:5173/login (panel admin, akun staf)
+   dan http://localhost:5173/masuk atau /daftar (akun pembeli template, halaman /akun).
+   Akun pembeli yang membuka /admin otomatis diarahkan ke /akun.
+
+Di Claude desktop app kedua perintah ini ada di .claude/launch.json ("php-api" dan "vite-dev").
+
+
+Cara kerjanya
+- Vite meneruskan /api.php dan /api/ai-chat ke API di 127.0.0.1:8000 (lihat vite.config.ts).
+- Gambar/dokumen yang di-upload dari admin disimpan di public/assets/<folder>/ di proyek ini,
+  jadi langsung tampil di website lokal. File upload baru ini muncul sebagai file baru di git;
+  jangan ikut di-commit kalau hanya data uji.
+- Gambar yang di-upload di server produksi (S3 / URL /assets/... dari server) tidak ada di lokal,
+  jadi bisa tampil 404. Itu wajar.
+
+
+Pengaturan tambahan (opsional, di .env atau environment variable)
+- Database: MYSQL_HOST, MYSQL_USER, MYSQL_PASS, MYSQL_DB
+  (default sudah cocok untuk XAMPP: localhost / root / kosong / db_garudanexabahtera)
+- AI chat di admin: AI_BASE_URL (default http://127.0.0.1:11434/v1 = Ollama lokal),
+  AI_MODEL (default qwen2.5:3b), AI_API_KEY.
+  Tanpa Ollama, AI chat membalas pesan error yang jelas; fitur lain tetap jalan.
+- Pembayaran template (Midtrans Snap): MIDTRANS_SERVER_KEY, MIDTRANS_CLIENT_KEY,
+  MIDTRANS_IS_PRODUCTION (0/1), MIDTRANS_SIMULATOR (0/1), APP_URL (mis. http://localhost:5173).
+  Tanpa server key, order tetap dibuat tetapi belum bisa dibayar online. Untuk uji lokal isi
+  MIDTRANS_SIMULATOR=1 (dengan IS_PRODUCTION=0): halaman detail pesanan di /akun menampilkan
+  tombol simulasi bayar. Detail ada di docs/platform/SPEC.md bagian 5.
+
+
+Database untuk fitur template
+- Jalankan migrasi di database/migrations/ sesuai urutan nama file (lihat database/README.md),
+  termasuk 2026-10-19_004_template_marketplace.sql. Backup database dulu.
+- Contoh data template: database/seed.templates.sql (harga di dalamnya hanya contoh).
+- 2026-10-19_005_drop_monitoring_tables.sql menghapus tabel monitoring lama. JANGAN dijalankan
+  sebelum backup.
+
+
+Memakai backend Node (sama seperti produksi) — opsional
+   cd backend
+   npm install
+   (PowerShell)  $env:MYSQL_HOST='127.0.0.1'; $env:MYSQL_PASS=''; node server.js
+   -> API jalan di port 4000. Lalu di terminal lain (folder proyek):
+   (PowerShell)  $env:API_BACKEND='node'; npm run dev
+   Catatan: backend Node meng-upload ke S3 (butuh S3_* di .env, jadi upload masuk ke bucket
+   sungguhan) dan memanggil Ollama di AI_BASE_URL.
+
+
+Catatan penting
+- C:\xampp\htdocs\api.php adalah salinan LAMA (Mei 2026) dan TIDAK dipakai lagi.
+  sync-backend.ps1, deploy-api.ps1 dan "npm run dev:full" masih menyalin ke htdocs; tidak perlu dijalankan.
+- Server PHP bawaan hanya melayani satu request sekaligus. Request yang lama (mis. upload
+  gambar besar atau AI chat) membuat request lain ikut menunggu.
+- Produksi (docker-compose + nginx) menjalankan backend/server.js, bukan api.php.
+  Setiap action baru harus ditambahkan di KEDUA file: backend/server.js dan backend/api.php.

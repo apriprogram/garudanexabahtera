@@ -46,63 +46,166 @@ export async function uploadToS3(content, key, contentType) {
   return `${S3_PUBLIC_URL}/${key}`;
 }
 
+// ── Upload validation ──
+// Uploads arrive as base64 data URIs. The file type is taken from the content (magic bytes) and an
+// allowlist, never from the client's MIME header, and the stored name is generated server side.
+
+export class UploadError extends Error {
+  constructor(message) {
+    super(message);
+    this.status = 400;
+    this.expose = true;
+  }
+}
+
+const MB = 1024 * 1024;
+const MAX_IMAGE_BYTES = (Number(process.env.UPLOAD_MAX_IMAGE_MB) || 10) * MB;
+const MAX_FILE_BYTES = (Number(process.env.UPLOAD_MAX_FILE_MB) || 25) * MB;
+
+const IMAGE_TYPES = { png: 'image/png', jpg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', ico: 'image/x-icon' };
+const DOCUMENT_TYPES = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  odt: 'application/vnd.oasis.opendocument.text',
+  ods: 'application/vnd.oasis.opendocument.spreadsheet',
+  odp: 'application/vnd.oasis.opendocument.presentation',
+  txt: 'text/plain; charset=utf-8',
+  csv: 'text/csv; charset=utf-8',
+  rtf: 'application/rtf',
+  zip: 'application/zip',
+  rar: 'application/vnd.rar',
+  '7z': 'application/x-7z-compressed',
+};
+// Signatures checked for binary formats; text formats (txt, csv, rtf) have none
+const ZIP = [0x50, 0x4b, 0x03, 0x04];
+const OLE = [0xd0, 0xcf, 0x11, 0xe0];
+const DOCUMENT_MAGIC = {
+  pdf: [0x25, 0x50, 0x44, 0x46], doc: OLE, xls: OLE, ppt: OLE,
+  docx: ZIP, xlsx: ZIP, pptx: ZIP, odt: ZIP, ods: ZIP, odp: ZIP, zip: ZIP,
+  rar: [0x52, 0x61, 0x72, 0x21], '7z': [0x37, 0x7a, 0xbc, 0xaf],
+};
+
+const startsWithBytes = (buf, bytes, offset = 0) => bytes.every((b, i) => buf[offset + i] === b);
+
+function sniffImage(buf) {
+  if (startsWithBytes(buf, [0x89, 0x50, 0x4e, 0x47])) return 'png';
+  if (startsWithBytes(buf, [0xff, 0xd8, 0xff])) return 'jpg';
+  if (buf.subarray(0, 4).toString('latin1') === 'GIF8') return 'gif';
+  if (buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') return 'webp';
+  if (startsWithBytes(buf, [0x00, 0x00, 0x01, 0x00])) return 'ico';
+  const head = buf.subarray(0, 2048).toString('utf8').replace(/^﻿/, '').trimStart();
+  if (/^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/i.test(head)) return 'svg';
+  return null;
+}
+
+// SVG is served as an image but can carry script; reject anything active instead of trying to clean it
+function assertSafeSvg(buf) {
+  const text = buf.toString('utf8');
+  if (/<script|<foreignObject|<iframe|<embed|<object|\son[a-z]+\s*=|javascript:|<!ENTITY/i.test(text)) {
+    throw new UploadError('File SVG berisi script dan tidak diizinkan.');
+  }
+}
+
+// Keeps a readable, filesystem/URL-safe stem of the client's file name
+function safeStem(name) {
+  const base = String(name || '').split(/[\\/]/).pop().replace(/\.[^.]*$/, '');
+  return base.normalize('NFKD').replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'file';
+}
+
+const randomId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+/**
+ * Decodes and validates a base64 data URI.
+ * @param {string} dataUri
+ * @param {{ allowDocuments?: boolean, filename?: string }} options - documents need a file name with an allowed extension
+ * @returns {{ content: Buffer, ext: string, contentType: string, isImage: boolean }}
+ */
+export function parseUpload(dataUri, { allowDocuments = false, filename = '' } = {}) {
+  const m = /^data:([^,]*?)(;base64)?,/i.exec(dataUri);
+  if (!m || !m[2]) throw new UploadError('Format file tidak valid.');
+  const payload = dataUri.slice(m[0].length);
+  if (payload.length > Math.ceil((MAX_FILE_BYTES * 4) / 3) + 4) throw new UploadError('Ukuran file terlalu besar.');
+  const content = Buffer.from(payload, 'base64');
+  if (!content.length) throw new UploadError('File kosong.');
+
+  const imageExt = sniffImage(content);
+  if (imageExt) {
+    if (content.length > MAX_IMAGE_BYTES) throw new UploadError(`Ukuran gambar maksimal ${MAX_IMAGE_BYTES / MB} MB.`);
+    if (imageExt === 'svg') assertSafeSvg(content);
+    return { content, ext: imageExt, contentType: IMAGE_TYPES[imageExt], isImage: true };
+  }
+  if (!allowDocuments) throw new UploadError('Hanya file gambar (PNG, JPG, WEBP, GIF, SVG) yang diizinkan.');
+
+  const ext = (String(filename).split('.').pop() || '').toLowerCase();
+  if (!DOCUMENT_TYPES[ext] || ext === String(filename).toLowerCase()) {
+    throw new UploadError(`Tipe file tidak diizinkan. Gunakan: ${Object.keys(DOCUMENT_TYPES).join(', ')}, atau gambar.`);
+  }
+  if (DOCUMENT_MAGIC[ext] && !startsWithBytes(content, DOCUMENT_MAGIC[ext])) {
+    throw new UploadError(`Isi file tidak sesuai dengan ekstensi .${ext}.`);
+  }
+  if (content.length > MAX_FILE_BYTES) throw new UploadError(`Ukuran file maksimal ${MAX_FILE_BYTES / MB} MB.`);
+  return { content, ext, contentType: DOCUMENT_TYPES[ext], isImage: false };
+}
+
+// Non-upload values are stored as given (existing URLs/paths); script URLs are dropped
+function passThrough(value) {
+  if (typeof value !== 'string') return value;
+  return /^[\s\x00-\x1f]*(javascript|vbscript|data):/i.test(value) ? '' : value;
+}
+
+const DOCUMENT_SECTION = /dokumen|document/i;
+
 /**
  * Upload file dari base64 string
  * @param {string} base64Data - Base64 data URI (e.g. 'data:image/png;base64,...')
- * @param {string} section - Folder/subdirectory (e.g. 'product')
- * @param {string} filename - Nama file (optional, auto-generated if omitted)
+ * @param {string} section - Folder/subdirectory (e.g. 'product'); document folders also accept office/pdf/archive files
+ * @param {string} filename - Nama file asli (optional); only its stem is kept, the extension comes from the content
  * @returns {Promise<string>} Public S3 URL
  */
 export async function uploadBase64ToS3(base64Data, section, filename) {
-  if (!base64Data || !base64Data.includes('data:')) {
-    return base64Data; // Return as-is if not base64
+  if (typeof base64Data !== 'string' || !/^data:/i.test(base64Data.trimStart())) {
+    return passThrough(base64Data); // Return as-is if not base64
   }
-  const parts = base64Data.split(',');
-  const header = parts[0];
-  const content = Buffer.from(parts[1], 'base64');
-
-  let ext = 'jpg';
-  if (header.includes('png')) ext = 'png';
-  else if (header.includes('svg')) ext = 'svg';
-  else if (header.includes('webp')) ext = 'webp';
-  else if (header.includes('gif')) ext = 'gif';
-  else if (header.includes('pdf')) ext = 'pdf';
-
-  const name = filename || `${section}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const key = `assets/${section}/${name}`;
-
-  let contentType = 'application/octet-stream';
-  if (ext === 'png') contentType = 'image/png';
-  else if (ext === 'jpg' || ext === 'jpeg') contentType = 'image/jpeg';
-  else if (ext === 'svg') contentType = 'image/svg+xml';
-  else if (ext === 'webp') contentType = 'image/webp';
-  else if (ext === 'gif') contentType = 'image/gif';
-  else if (ext === 'pdf') contentType = 'application/pdf';
-
-  return await uploadToS3(content, key, contentType);
+  const safeSection = String(section).split('/').map(safeStem).join('/');
+  const { content, ext, contentType } = parseUpload(base64Data.trimStart(), {
+    allowDocuments: DOCUMENT_SECTION.test(safeSection),
+    filename: String(filename || '').replace(/^doc_\d+_[a-z0-9]+_/i, ''),
+  });
+  const name = filename ? `${safeStem(filename)}_${randomId()}.${ext}` : `${safeSection.split('/').pop()}_${randomId()}.${ext}`;
+  return await uploadToS3(content, `assets/${safeSection}/${name}`, contentType);
 }
 
 /**
  * Upload compressed WebP image (for list_products)
  */
 export async function uploadCompressedImageToS3(base64Data, section) {
-  if (!base64Data || !base64Data.includes('data:image')) return base64Data;
+  if (typeof base64Data !== 'string' || !/^data:/i.test(base64Data.trimStart())) return passThrough(base64Data);
 
-  const parts = base64Data.split(',');
-  const content = Buffer.from(parts[1], 'base64');
-  const filename = `${section}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webp`;
-  const key = `assets/${section}/${filename}`;
+  const { content, ext, contentType } = parseUpload(base64Data.trimStart());
+  const safeSection = String(section).split('/').map(safeStem).join('/');
+  const stem = `${safeSection.split('/').pop()}_${randomId()}`;
 
+  let sharp;
   try {
-    const sharp = (await import('sharp')).default;
+    sharp = (await import('sharp')).default;
+  } catch {
+    // sharp unavailable: store the validated original
+    return await uploadToS3(content, `assets/${safeSection}/${stem}.${ext}`, contentType);
+  }
+  if (ext === 'svg') return await uploadToS3(content, `assets/${safeSection}/${stem}.svg`, contentType);
+  try {
     const compressed = await sharp(content)
       .resize(640, undefined, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: 70 })
       .toBuffer();
-    return await uploadToS3(compressed, key, 'image/webp');
+    return await uploadToS3(compressed, `assets/${safeSection}/${stem}.webp`, 'image/webp');
   } catch {
-    // Fallback: save as original
-    return await uploadToS3(content, key, 'image/webp');
+    throw new UploadError('Gambar rusak atau tidak dapat diproses.');
   }
 }
 

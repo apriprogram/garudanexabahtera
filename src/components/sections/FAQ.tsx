@@ -1,95 +1,180 @@
-﻿import React, { useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+﻿import React, { useId, useState } from 'react';
+import { MessageCircle, Plus } from 'lucide-react';
 import { Reveal } from '../ui/Reveal';
+import { SectionHeading } from '../ui/SectionHeading';
+import { getWhatsappNumber, readList, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
 
-const FAQ: React.FC = () => {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+interface FaqItem {
+  question: string;
+  answer: string;
+}
 
-  const defaultFaqs = [
-    {
-      question: "Berapa lama proses pembuatan satu website?",
-      answer: "Waktu pengerjaan bervariasi tergantung paket. Paket Basic memakan waktu 4-7 hari, sedangkan Paket Profesional dan Premium berkisar antara 10-14 hari kerja."
-    },
-    {
-      question: "Apakah harga sudah termasuk hosting dan domain?",
-      answer: "Ya, untuk tahun pertama kami memberikan gratis Hosting Cloud kecepatan tinggi dan Domain (.com/.id/.net) untuk setiap paket yang Anda pilih."
-    },
-    {
-      question: "Apakah website yang dibuat bisa saya edit sendiri?",
-      answer: "Tentu. Kami menggunakan sistem CMS (Content Management System) yang memudahkan Anda untuk mengubah teks, gambar, atau menambahkan artikel blog tanpa harus mengerti bahasa pemrograman."
-    },
-    {
-      question: "Bagaimana dengan sistem keamanannya?",
-      answer: "Setiap website yang kami bangun dilengkapi dengan sertifikat SSL (HTTPS) gratis dan sistem keamanan standar industri untuk melindungi data Anda dan pengunjung."
-    },
-    {
-      question: "Siapa pemilik konten yang saya buat?",
-      answer: "Seluruh konten dan data yang ada pada website atau aplikasi Anda sepenuhnya adalah milik Anda. Kami hanya membantu dalam proses pengembangan dan pemeliharaan sistem."
-    }
-  ];
+/**
+ * FAQ marketplace template (pemesanan, Midtrans, domain, CMS). Selalu tampil di urutan teratas,
+ * diikuti FAQ dari admin (`faq_data`). Pertanyaan yang sama persis (abaikan huruf besar/spasi) tidak ditampilkan dua kali;
+ * versi di sini yang dipakai.
+ */
+const PLATFORM_FAQS: FaqItem[] = [
+  {
+    question: 'Bagaimana cara memesan template website?',
+    answer:
+      'Pilih template di bagian Template, klik Pesan, lalu masuk atau daftar akun. Isi data pemesan serta nama domain yang Anda inginkan, kemudian lanjutkan ke pembayaran. Status pesanan bisa Anda pantau kapan saja di halaman Akun Saya.',
+  },
+  {
+    question: 'Metode pembayaran apa saja yang bisa dipakai?',
+    answer:
+      'Pembayaran diproses dengan aman oleh Midtrans. Anda bisa membayar lewat virtual account bank, e-wallet, QRIS, atau kartu kredit, sesuai metode yang tersedia di halaman pembayaran. Setelah pembayaran berhasil, status pesanan berubah otomatis.',
+  },
+  {
+    question: 'Bagaimana dengan domain website saya?',
+    answer:
+      'Saat memesan, Anda mengisi nama domain utama dan satu domain alternatif. Setelah pembayaran dikonfirmasi dan pesanan disetujui, tim kami memproses domain tersebut sampai website Anda aktif. Bila domain utama tidak tersedia, kami memakai domain alternatif atau menghubungi Anda terlebih dahulu.',
+  },
+  {
+    question: 'Apakah website yang dibuat bisa saya edit sendiri?',
+    answer:
+      'Bisa. Setelah website aktif, buka Akun Saya lalu kelola situs Anda. Lewat CMS Anda dapat mengubah teks, gambar, layanan, galeri, testimoni, dan kontak dengan pratinjau langsung, tanpa perlu keahlian coding.',
+  },
+  {
+    question: 'Apa bedanya template dengan jasa custom?',
+    answer:
+      'Template memakai desain siap pakai sehingga website lebih cepat online dan harganya tertera jelas. Jasa custom dibuat khusus untuk kebutuhan Anda, baik website maupun aplikasi mobile; kebutuhan dan biayanya dibahas lewat konsultasi lalu kami kirimkan penawaran.',
+  },
+];
 
-  const [faqs, setFaqs] = useState<any[]>(defaultFaqs);
+/** FAQ umum bawaan, dipakai bila admin belum mengisi `faq_data`. */
+const DEFAULT_FAQS: FaqItem[] = [
+  {
+    question: 'Bagaimana cara memesan website atau aplikasi mobile custom?',
+    answer:
+      'Isi form Pesan Custom atau hubungi kami lewat WhatsApp. Tim kami akan menghubungi Anda untuk konsultasi gratis, lalu mengirimkan penawaran yang sesuai dengan kebutuhan Anda.',
+  },
+  {
+    question: 'Bagaimana dengan sistem keamanannya?',
+    answer:
+      'Setiap website yang kami bangun dilengkapi sertifikat SSL (HTTPS) dan sistem keamanan standar industri untuk melindungi data Anda dan pengunjung.',
+  },
+  {
+    question: 'Siapa pemilik konten yang saya buat?',
+    answer:
+      'Seluruh konten dan data pada website atau aplikasi Anda sepenuhnya milik Anda. Kami membantu proses pengembangan dan pemeliharaan sistemnya.',
+  },
+];
 
-  useEffect(() => {
-    const fetchDynamicData = async () => {
-      try {
-        const apiUrl = '/api.php';
-        const response = await fetch(`${apiUrl}?action=get_settings`);
-        const data = await response.json();
-        if (data.faq_data) {
-          setFaqs(JSON.parse(data.faq_data));
-        }
-      } catch (e) {
-        console.error('Error fetching dynamic FAQ:', e);
-      }
-    };
-    fetchDynamicData();
-  }, []);
+const normalizeQuestion = (question: string) => question.trim().toLowerCase().replace(/\s+/g, ' ');
+
+/** Section FAQ (#faq), gaya BELAJAR CPNS: judul sticky di kiri, accordion bernomor di kanan. */
+const FAQ: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '04' }) => {
+  const { settings } = useSiteSettings();
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const baseId = useId();
+  const adminFaqs = readList<FaqItem>(settings.faq_data, DEFAULT_FAQS).filter(
+    (faq) => faq && typeof faq.question === 'string' && faq.question.trim(),
+  );
+  const platformKeys = new Set(PLATFORM_FAQS.map((faq) => normalizeQuestion(faq.question)));
+  const faqs = [...PLATFORM_FAQS, ...adminFaqs.filter((faq) => !platformKeys.has(normalizeQuestion(faq.question)))];
+  const whatsapp = getWhatsappNumber(settings);
 
   return (
-    <section id="faq" className="py-12 lg:py-32 bg-bg-dark light-theme:bg-white transition-colors duration-500">
-      <div className="max-w-[1280px] mx-auto px-8">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
-          <div className="lg:w-1/3 text-left">
-            <Reveal>
-              <h2 className="text-xl md:text-3xl lg:text-5xl font-semibold text-white mb-4 lg:mb-8 leading-tight light-theme:text-slate-900">Answers to your top questions</h2>
-              <p className="text-xs md:text-base lg:text-lg mb-6 lg:mb-12 light-theme:text-slate-600 font-medium">Everything you need to know about working with Garuda Nexa.</p>
-              <button 
-                onClick={() => window.open('https://wa.me/6285188009152', '_blank')}
-                className="btn btn-secondary px-6 py-2 md:px-8 md:py-2.5 lg:py-3 text-xs md:text-sm lg:text-base light-theme:bg-slate-900 light-theme:text-white"
+    <section
+      id="faq"
+      aria-labelledby="faq-title"
+      className={`section-screen scroll-mt-12 sm:scroll-mt-4 ${alt ? 'bg-alt' : 'bg-canvas'}`}
+    >
+      <div className="container-site grid w-full gap-8 sm:gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+        {/* Kiri: judul (sticky di desktop) */}
+        <div className="relative z-10 lg:sticky lg:top-28 lg:self-start">
+          <SectionHeading
+            layout="stack"
+            index={number}
+            label="FAQ"
+            titleId="faq-title"
+            title="Pertanyaan yang"
+            accent="sering ditanyakan"
+            description="Seputar pemesanan template, pembayaran, domain, CMS, dan jasa custom. Belum menemukan jawabannya? Tim kami siap membantu."
+            action={
+              <a
+                href={whatsappUrl(whatsapp, 'Halo Admin, saya punya pertanyaan tentang layanan Garuda Nexa.')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
               >
-                Contact support
-              </button>
-            </Reveal>
-          </div>
+                <MessageCircle className="h-4 w-4" aria-hidden />
+                Tanya tim kami
+              </a>
+            }
+          />
+        </div>
 
-          <div className="lg:w-2/3">
-            <div className="space-y-2 lg:space-y-4">
-              {faqs.map((faq, index) => (
-                <Reveal key={index} delay={0.2 + (index * 0.1)}>
-                  <div 
-                    className="glass-panel overflow-hidden light-theme:bg-white light-theme:border-slate-200 light-theme:shadow-none transition-all duration-300"
+        {/* Kanan: accordion bernomor (satu terbuka sekaligus) */}
+        <ul className="space-y-2.5">
+          {faqs.map((faq, index) => {
+            const open = openIndex === index;
+            const buttonId = `${baseId}-q${index}`;
+            const panelId = `${baseId}-a${index}`;
+            return (
+              <li key={`${index}-${faq.question}`}>
+                <Reveal delay={Math.min(index, 6) * 0.06}>
+                  <div
+                    className={`rounded-[20px] ring-1 ring-inset transition-colors duration-300 ${
+                      open
+                        ? 'bg-surface ring-line'
+                        : alt
+                          ? 'bg-surface/60 ring-transparent hover:bg-surface'
+                          : 'bg-alt/80 ring-transparent hover:bg-alt'
+                    }`}
                   >
-                    <button 
-                      onClick={() => setActiveIndex(activeIndex === index ? null : index)}
-                      className="w-full flex items-center justify-between p-4 lg:p-6 text-left hover:bg-white/5 light-theme:hover:bg-slate-50 transition-colors"
+                    <h3>
+                      <button
+                        id={buttonId}
+                        type="button"
+                        onClick={() => setOpenIndex(open ? null : index)}
+                        aria-expanded={open}
+                        aria-controls={panelId}
+                        className="flex min-h-12 w-full items-center gap-3 rounded-[20px] px-4 py-3 text-left sm:gap-4 sm:px-6 sm:py-5"
+                      >
+                        <span
+                          className={`w-5 shrink-0 font-mono text-xs font-semibold tabular-nums transition-colors sm:w-6 ${
+                            open ? 'text-primary' : 'text-subtle'
+                          }`}
+                        >
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <span className="flex-1 text-[14px] font-semibold leading-snug text-fg sm:text-base">{faq.question}</span>
+                        <span
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 sm:h-8 sm:w-8 ${
+                            open ? 'rotate-45 bg-fg text-white' : 'bg-surface text-fg ring-1 ring-inset ring-line'
+                          }`}
+                          aria-hidden
+                        >
+                          <Plus className="h-4 w-4" />
+                        </span>
+                      </button>
+                    </h3>
+                    <div
+                      id={panelId}
+                      role="region"
+                      aria-labelledby={buttonId}
+                      className="grid transition-[grid-template-rows] duration-500 ease-calm"
+                      style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
                     >
-                      <span className="text-sm md:text-base lg:text-lg font-medium text-white light-theme:text-slate-900 leading-tight">{faq.question}</span>
-                      <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 flex-shrink-0 ${activeIndex === index ? 'rotate-180' : ''}`} />
-                    </button>
-                    <div 
-                      className={`transition-all duration-300 ease-in-out ${activeIndex === index ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}
-                    >
-                      <div className="p-4 lg:p-6 pt-4 lg:pt-4 text-xs md:text-sm lg:text-base text-slate-400 leading-relaxed border-t border-white/5 light-theme:text-slate-600 light-theme:border-slate-100 text-left font-medium">
-                        {faq.answer}
+                      <div className="overflow-hidden" inert={!open}>
+                        {/* Rata dengan teks pertanyaan: padding tombol + lebar nomor + gap */}
+                        <p
+                          className={`pb-5 pl-12 pr-4 text-sm leading-relaxed text-muted transition-opacity duration-500 sm:pb-6 sm:pl-[64px] sm:pr-16 sm:text-[15px] ${
+                            open ? 'opacity-100' : 'opacity-0'
+                          }`}
+                        >
+                          {faq.answer}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </Reveal>
-              ))}
-            </div>
-          </div>
-        </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </section>
   );

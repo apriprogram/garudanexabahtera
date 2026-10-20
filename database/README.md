@@ -1,0 +1,203 @@
+# Database — Garuda Nexa Bahtera
+
+Semua yang menyangkut struktur database `db_garudanexabahtera` ada di folder ini.
+Backend: `backend/server.js` (produksi, MySQL 8 di docker) dan `backend/api.php` (lokal, MariaDB XAMPP).
+
+```
+database/
+├── schema.sql          # SKEMA KANONIK: satu-satunya sumber kebenaran struktur tabel
+├── seed.sql            # data awal minimal untuk DB baru (idempoten, tanpa akun admin)
+├── seed.templates.sql  # CONTOH katalog: 2 template Company Profile (harga contoh, idempoten)
+├── seed.local.sql      # KHUSUS LOKAL, di-gitignore (database/*.local.sql): akun uji XAMPP
+├── migrations/         # perubahan untuk DB yang SUDAH ada, dijalankan berurutan
+│   ├── 2026-10-19_001_align_schema_with_backend.sql
+│   ├── 2026-10-19_002_navbar_anchor_urls.sql
+│   ├── 2026-10-19_003_navbar_top_level_links.sql
+│   ├── 2026-10-19_004_template_marketplace.sql
+│   └── 2026-10-19_005_drop_monitoring_tables.sql   # BELUM DISETUJUI, jangan dijalankan (lihat bawah)
+└── legacy/
+    └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
+```
+
+File SQL lama di root (`database.sql`, `init.sql`, `monitoring_migration.sql`) dan
+`backend/update_schema.sql` sudah **DEPRECATED** dan tidak dipakai di mana pun lagi.
+Jangan dijalankan; boleh dihapus kapan saja (isinya tetap ada di riwayat git).
+
+## Instalasi baru (DB kosong)
+
+```bash
+mysql -u root -e "CREATE DATABASE db_garudanexabahtera CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+mysql -u root db_garudanexabahtera < database/schema.sql
+mysql -u root db_garudanexabahtera < database/seed.sql
+# opsional: contoh katalog template (harga contoh, ubah dari panel admin)
+mysql -u root db_garudanexabahtera < database/seed.templates.sql
+```
+
+Di XAMPP, `mysql` ada di `C:/xampp/mysql/bin/mysql.exe`. Lewat phpMyAdmin: pilih
+database dulu, lalu Import `schema.sql`, kemudian `seed.sql`.
+
+`schema.sql` sudah mencakup semua migrasi sampai versi terakhir yang tercatat di
+tabel `schema_migrations`, jadi DB baru tidak perlu menjalankan folder `migrations/`.
+
+### Membuat akun admin pertama
+
+`seed.sql` sengaja tidak membuat admin (password bawaan di file yang di-commit = celah).
+Buat hash bcrypt dari folder `backend/` (memakai bcryptjs yang juga dipakai server):
+
+```bash
+node -e "console.log(require('bcryptjs').hashSync(process.argv[1], 10))" "PasswordYangKuat"
+```
+
+Lalu:
+
+```sql
+INSERT INTO users (name, email, password, role, status)
+VALUES ('Administrator', 'admin@garudanexa.com', '<hash dari perintah di atas>', 'admin', 'active');
+```
+
+### Akun uji lokal (XAMPP saja)
+
+`database/seed.local.sql` berisi akun uji (role admin & user) untuk pengembangan lokal.
+File ini di-gitignore (`database/*.local.sql`) dan **tidak boleh** dijalankan di produksi:
+
+```bash
+C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/seed.local.sql
+```
+
+## Menerapkan migrasi ke DB yang sudah ada
+
+Aturan: **selalu backup dulu**, jalankan file di `migrations/` urut berdasarkan nama.
+Setiap migrasi idempoten (aman dijalankan ulang) dan mencatat dirinya di `schema_migrations`.
+Cek yang sudah terpasang: `SELECT * FROM schema_migrations;` (kalau tabelnya belum ada, belum ada migrasi yang dijalankan).
+
+### Lokal (XAMPP)
+
+```bash
+C:/xampp/mysql/bin/mysqldump.exe -u root --single-transaction --routines --triggers db_garudanexabahtera > backups/db_local_<tanggal>.sql
+C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-19_001_align_schema_with_backend.sql
+C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-19_002_navbar_anchor_urls.sql
+C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-19_003_navbar_top_level_links.sql
+C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-19_004_template_marketplace.sql
+C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/seed.templates.sql   # opsional, contoh katalog
+```
+
+DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
+
+Koneksi DB lokal di `.env` (root XAMPP tanpa password), dibaca `api.php` di setiap request dan oleh
+`node --env-file=../.env server.js`:
+
+```env
+MYSQL_HOST=localhost
+MYSQL_PASS=
+```
+
+`MYSQL_PASS=` harus ada walau kosong (server.js berhenti kalau variabelnya tidak ada) dan jangan diisi
+password asli: `.env` lokal dipakai bersama, `api.php` di :8000 langsung gagal (500, "Access denied") kalau
+password-nya tidak cocok dengan XAMPP. Password produksi diambil docker-compose dari `MYSQL_ROOT_PASSWORD`
+di `.env` server, bukan dari baris ini.
+
+### Migrasi 004 — marketplace template (ringkas)
+
+- Tabel baru `templates`, `template_orders`, `template_sites`, `template_order_logs` (detail: `docs/platform/SPEC.md` §3–§6).
+- `users.role` menerima `customer` (akun pembeli dari `/daftar`).
+- `project_client` + `show_on_website` (tampil di section Projects) dan `source` (`admin` / `website` = dari form pesanan custom).
+- Data (hanya sekali, selama 004 belum tercatat): navbar menjadi Template · Projects · Proses · FAQ. Baris "Produk" dipakai
+  ulang jadi Template, "Portofolio" jadi Projects; Harga, Perusahaan, dan semua sub-menu hanya **dinonaktifkan**
+  (`is_active = 0`, bisa diaktifkan lagi dari Kelola navbar). Jawaban `faq_data` yang menyebut harga/paket jasa custom
+  ditulis ulang netral.
+- Rollback: restore backup. Kode backend lama tidak memakai tabel baru, jadi 004 aman dipasang sebelum deploy kode baru.
+  Sebaliknya, kode baru **butuh** 004 (deploy kode setelah migrasi).
+
+### Migrasi 005 — hapus tabel monitoring (BELUM DISETUJUI)
+
+`2026-10-19_005_drop_monitoring_tables.sql` menghapus permanen 25 tabel fitur Monitoring Server yang sudah dihapus
+dari kode. **Jangan dijalankan sebelum pemilik proyek menyetujui dan backup dibuat.** Tabelnya:
+
+- `monitor_*` (13): monitor_ai_agents, monitor_ai_logs, monitor_ai_usage, monitor_audit_logs, monitor_error_center,
+  monitor_errors, monitor_notifications, monitor_pings, monitor_server_logs, monitor_servers, monitor_ssl,
+  monitor_website_logs, monitor_websites
+- `monitoring_*` (12): monitoring_api, monitoring_api_logs, monitoring_categories, monitoring_database, monitoring_domains,
+  monitoring_notifications, monitoring_security_logs, monitoring_server_metrics, monitoring_server_status,
+  monitoring_settings, monitoring_website_checks, monitoring_websites
+
+Setelah 005 dijalankan: hapus bagian "DEPRECATED, akan dihapus oleh migrasi 005" di `schema.sql` dan tambahkan baris
+baseline `2026-10-19_005` di sana.
+
+### Produksi (VPS, docker-compose)
+
+Urutan penting untuk migrasi 001: **deploy frontend dulu**, karena migrasi mengganti
+gambar produk "absensi" di `hero_settings.products_data` menjadi `/assets/product/absensi.jpg`,
+dan file itu baru ada di `dist/` setelah build terbaru ter-deploy.
+
+```bash
+# 1. Pastikan build terbaru (berisi public/assets/product/absensi.jpg) sudah live
+curl -sI https://garudanexa.com/assets/product/absensi.jpg | head -1   # harus 200
+
+# 2. Backup (dari folder proyek di VPS; password diambil dari env container)
+mkdir -p backups
+docker exec garudanexabahtera-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysqldump -u root --single-transaction --routines --triggers "$MYSQL_DATABASE"' > backups/db_prod_$(date +%F_%H-%M)_pre-001.sql
+tail -1 backups/db_prod_*_pre-001.sql   # harus "-- Dump completed ..."
+
+# 3. Jalankan migrasi (berurutan)
+docker exec -i garudanexabahtera-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -u root "$MYSQL_DATABASE"' < database/migrations/2026-10-19_001_align_schema_with_backend.sql
+docker exec -i garudanexabahtera-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -u root "$MYSQL_DATABASE"' < database/migrations/2026-10-19_002_navbar_anchor_urls.sql
+docker exec -i garudanexabahtera-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -u root "$MYSQL_DATABASE"' < database/migrations/2026-10-19_003_navbar_top_level_links.sql
+docker exec -i garudanexabahtera-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -u root "$MYSQL_DATABASE"' < database/migrations/2026-10-19_004_template_marketplace.sql
+# opsional, contoh katalog (harga contoh):
+docker exec -i garudanexabahtera-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -u root "$MYSQL_DATABASE"' < database/seed.templates.sql
+
+# 4. Cek
+docker exec garudanexabahtera-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql -u root "$MYSQL_DATABASE" -e "SELECT * FROM schema_migrations; SELECT LENGTH(setting_value) FROM hero_settings WHERE setting_key=\"products_data\""'
+```
+
+Kalau output migrasi berisi baris `NOTICE: ...`, langkah itu dilewati karena data yang ada
+akan melanggar constraint (mis. dokumen yatim). Tidak ada data yang dihapus; perbaiki datanya
+lalu jalankan ulang file migrasi yang sama.
+
+**Rollback**: restore backup dari langkah 2
+(`docker exec -i ... mysql -u root "$MYSQL_DATABASE" < backups/db_prod_..._pre-001.sql`).
+Migrasi 001 hanya menambah kolom/index/FK dan melebarkan tipe, jadi kode backend lama
+tetap jalan setelah migrasi. Rollback hanya diperlukan kalau ada masalah tak terduga.
+
+### Docker: instalasi baru
+
+`docker-compose.yml` me-mount `database/schema.sql` (01) dan `database/seed.sql` (02) ke
+`/docker-entrypoint-initdb.d/`. Init script hanya jalan saat volume `mysql_data` masih
+kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin pertama
+(lihat di atas).
+
+## Mengubah skema
+
+1. Tulis migrasi baru `database/migrations/YYYY-MM-DD_NNN_<nama>.sql`: idempoten (cek
+   `information_schema` sebelum ALTER), tanpa DROP/DELETE kecuali benar-benar perlu dan
+   dijelaskan, dan diakhiri dengan `INSERT IGNORE INTO schema_migrations ...`.
+   Ingat: MySQL 8 tidak mendukung `ADD COLUMN IF NOT EXISTS` (itu hanya MariaDB); contoh
+   prosedur pembantunya ada di migrasi 001.
+2. Perbarui `schema.sql` supaya sama persis dengan hasil migrasi, termasuk baris baseline `schema_migrations`.
+3. Uji: restore backup ke DB sementara, jalankan migrasi dua kali, lalu bandingkan
+   `mysqldump --no-data` hasilnya dengan DB baru dari `schema.sql`.
+
+## Konvensi
+
+- InnoDB, `utf8mb4` / `utf8mb4_unicode_ci` (DB produksi lama memakai `utf8mb4_0900_ai_ci`;
+  keduanya utf8mb4, tidak perlu dikonversi).
+- `hero_settings.setting_key` UNIQUE, karena backend menulis dengan `ON DUPLICATE KEY UPDATE`.
+- Gambar/file disimpan sebagai **path** (`/assets/...`) atau URL S3, bukan base64 di kolom DB.
+- Baris tunggal `id = 1`: `visitor_stats` (backend hanya meng-UPDATE baris ini; `seed.sql` membuatnya).
+- Tabel `monitor_*` dan `monitoring_*` **tidak dipakai kode lagi** (fitur Monitoring Server dihapus) dan
+  ditandai DEPRECATED di `schema.sql`; penghapusannya menunggu persetujuan (migrasi 005).
+- Status pesanan template diubah hanya dengan `UPDATE ... WHERE id = ? AND status = ?` dan setiap perubahan
+  dicatat di `template_order_logs` (lihat SPEC §4). Gambar konten situs pembeli disimpan di
+  `public/assets/sites/<site_id>/`, gambar template di `public/assets/templates/`.
+- Tabel di DB yang tidak dikelola repo ini: `products`, `services` (lihat `legacy/unused_tables.sql`)
+  dan `saas_*` (hanya di XAMPP lokal, milik aplikasi website desa).
+
+## Riwayat migrasi
+
+| Versi | Isi |
+|---|---|
+| 2026-10-19_001 | Menyamakan skema dengan query backend: kolom yang dipakai kode tapi belum ada (monitor_websites/servers/logs, monitor_ai_logs, monitor_errors, list_products.position), tipe status ENUM→VARCHAR, FK documents/navbar/monitoring_api_logs, index dashboard, kolom byte DECIMAL(20,2), baris tunggal, dan gambar base64 produk "absensi" dipindah ke `/assets/product/absensi.jpg`. |
+| 2026-10-19_002 | Data saja: URL `navbar_menus` yang menuju route yang tidak ada (`/web`, `/about`, `/careers`, `#company`, …) diganti ke anchor landing page (`#products`, `#process`, `#kontak`). Baris yang sudah diubah admin tidak disentuh. |
+| 2026-10-19_003 | Data saja: menu utama Harga (`#pricing`), Proses (`#process`), FAQ (`#faq`) ditambahkan; Perusahaan pindah ke urutan 6. Tidak menambah apa pun bila navbar kosong atau menu itu sudah ada. |
+| 2026-10-19_004 | Marketplace template: tabel `templates`, `template_orders`, `template_sites`, `template_order_logs`; `users.role` + `customer`; `project_client.show_on_website` + `source`. Data sekali jalan: navbar Template/Projects/Proses/FAQ (menu lain dinonaktifkan, tidak dihapus) dan `faq_data` tanpa harga/paket jasa custom. |
+| 2026-10-19_005 | **Belum dijalankan / menunggu persetujuan.** `DROP TABLE IF EXISTS` 25 tabel `monitor_*` / `monitoring_*`. |

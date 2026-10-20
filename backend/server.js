@@ -1,3 +1,12 @@
+// Imported first: also loads .env for local runs before other modules read process.env
+import {
+  createAuthActions,
+  createAuthGate,
+  corsOptions,
+  securityHeaders,
+  maskServerErrors,
+  errorHandler,
+} from './security.js';
 import express from 'express';
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
@@ -14,15 +23,18 @@ import {
   pathToKey,
   S3_PUBLIC_URL,
 } from './s3-client.js';
+// Template marketplace, customer accounts, Midtrans and custom orders (docs/platform/SPEC.md §6)
+import { handlePlatformAction } from './modules/templates.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = 4000;
 
-// ── AI Setup ──
+// ── AI Setup ── (OpenAI-compatible API; Ollama on the docker host by default)
+const AI_MODEL = process.env.AI_MODEL || 'qwen2.5:3b';
 const openai = new OpenAI({
-  apiKey: 'ollama', // Not needed for Ollama
-  baseURL: 'http://172.24.0.1:11434/v1',
+  apiKey: process.env.AI_API_KEY || 'ollama', // Not needed for Ollama
+  baseURL: process.env.AI_BASE_URL || 'http://172.24.0.1:11434/v1',
 });
 
 // ── MySQL Connection Pool ──
@@ -41,8 +53,17 @@ const pool = mysql.createPool({
 });
 
 // ── Middleware ──
-app.use(cors());
-app.use(express.json({ limit: '256mb' }));
+// Behind nginx: req.ip comes from X-Forwarded-For set by the proxy (TRUST_PROXY = number of proxy hops)
+app.set('trust proxy', /^\d+$/.test(process.env.TRUST_PROXY || '') ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY || 1);
+app.disable('x-powered-by');
+app.use(cors(corsOptions()));
+app.use(securityHeaders);
+// verify keeps the raw bytes: platform actions decode them the way PHP reads php://input (modules/templates.js)
+app.use(express.json({ limit: process.env.API_BODY_LIMIT || '64mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
+app.use(maskServerErrors);
+// Login/register, then token + role check for every non-public action (see security.js)
+app.use('/api.php', createAuthActions(pool));
+app.use(['/api.php', '/api'], createAuthGate(pool));
 
 // ── Helpers ──
 const ASSETS_DIR = '/var/www/html/assets';
@@ -60,9 +81,62 @@ async function saveAndCompressImage(base64Data, folderName) {
   return await uploadCompressedImageToS3(base64Data, folderName);
 }
 
+// 0/1 flag from JSON input, like in_flag() in api.php: true, 1, '1' and 'true' mean 1
+const inFlag = (v) => (v === true || v === 1 || v === '1' || v === 'true' ? 1 : 0);
+
+// Text column value from JSON input, like in_str() in api.php
+const textOf = (v) => (v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : typeof v === 'boolean' ? (v ? '1' : '0') : String(v));
+
+// Navbar menu rows; inactive ones only when asked (admin Navbar Manager)
+async function getNavbarMenus(includeInactive) {
+  const all = Boolean(includeInactive) && includeInactive !== '0' && includeInactive !== 'false';
+  const [rows] = await pool.query(
+    `SELECT * FROM navbar_menus ${all ? '' : 'WHERE is_active = 1'} ORDER BY sort_order ASC, id ASC`
+  );
+  return rows;
+}
+
+// Counts a visit and logs device/browser/OS for the dashboard charts (GET and POST track_visit)
+async function trackVisit(req, input) {
+  await pool.query('UPDATE visitor_stats SET total_visits = total_visits + 1 WHERE id = 1');
+
+  const ua = input.user_agent || req.headers['user-agent'] || '';
+  let device = 'Desktop', browser = 'Unknown', os = 'Unknown';
+
+  if (/Mobile|Android|iPhone|iPad|iPod/i.test(ua)) device = 'Mobile';
+  if (/Tablet|iPad/i.test(ua)) device = 'Tablet';
+
+  if (/Chrome/i.test(ua) && !/Edg/i.test(ua)) browser = 'Chrome';
+  else if (/Firefox/i.test(ua)) browser = 'Firefox';
+  else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+  else if (/Edg/i.test(ua)) browser = 'Edge';
+  else if (/MSIE|Trident/i.test(ua)) browser = 'Internet Explorer';
+
+  if (/Windows/i.test(ua) || /Win64/i.test(ua)) os = 'Windows';
+  else if (/Mac/i.test(ua) && !/iPhone|iPad|iPod/i.test(ua)) os = 'macOS';
+  else if (/Android/i.test(ua)) os = 'Android';
+  else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
+  else if (/Linux/i.test(ua)) os = 'Linux';
+
+  // req.ip honours the 'trust proxy' setting, so a client can't spoof it via X-Forwarded-For
+  const ip = req.ip || req.socket?.remoteAddress || '';
+
+  // Basic country from IP (using a simple offline lookup or default)
+  let country = 'Unknown';
+
+  await pool.query(
+    `INSERT INTO visitor_logs (ip_address, user_agent, device, browser, os, country, visited_at)
+     VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+    [ip, ua, device, browser, os, country]
+  );
+}
+
 // ── GET /api.php?action=get_settings ──
 app.get('/api.php', async (req, res) => {
   const action = req.query.action;
+
+  // Template marketplace / customer / custom-order actions (backend/modules/templates.js)
+  if (await handlePlatformAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -173,7 +247,8 @@ app.get('/api.php', async (req, res) => {
   if (action === 'get_projects') {
     try {
       const [rows] = await pool.query('SELECT * FROM project_client ORDER BY id DESC');
-      res.json(rows);
+      // show_on_website (0/1) and source ('admin' | 'website' = public custom-order form) as in SPEC §6
+      res.json(rows.map((row) => ({ ...row, show_on_website: Number(row.show_on_website ?? 0), source: row.source ?? 'admin' })));
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -183,7 +258,8 @@ app.get('/api.php', async (req, res) => {
   if (action === 'get_list_products') {
     try {
       // Lightweight query for grid performance
-      const [rows] = await pool.query('SELECT id, title, description, link_button, image, logo FROM list_products ORDER BY id DESC');
+      // position is set by update_product_order (0 = not ordered yet, newest first)
+      const [rows] = await pool.query('SELECT id, title, description, link_button, image, logo FROM list_products ORDER BY position ASC, id DESC');
       res.json(rows);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -250,6 +326,27 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
+  // The public site calls track_visit with GET (App.tsx), the dashboard resets with GET
+  if (action === 'track_visit') {
+    try {
+      await trackVisit(req, req.query);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  if (action === 'reset_visitor_stats') {
+    try {
+      await pool.query('UPDATE visitor_stats SET total_visits = 0');
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+    return;
+  }
+
   if (action === 'delete_user') {
     const id = parseInt(req.query.id, 10);
     if (!id) return res.status(400).json({ error: 'Invalid id' });
@@ -274,403 +371,11 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
-  // ── iSchool Stats Proxy ──
-  if (action === 'get_ischool_stats') {
-    return res.json({
-      success: true,
-      data: {
-        total_yayasans: 15,
-        total_schools: 42,
-        total_students: 4850,
-        total_teachers: 320,
-        active_users: 1240,
-        bandwidth_used: "450 GB",
-        system_health: "Optimal"
-      }
-    });
-  }
-
-  // ── Website Monitoring ──
-  if (action === 'check_website') {
-    const url = req.query.url;
-    if (!url) return res.status(400).json({ error: 'url required' });
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-
-      const start = Date.now();
-      const resp = await fetch(url, {
-        method: 'HEAD',
-        signal: controller.signal,
-        redirect: 'follow',
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GarudaMonitor/1.0)' }
-      });
-      clearTimeout(timeout);
-      const responseTime = Date.now() - start;
-
-      res.json({
-        status: resp.ok ? 'online' : 'offline',
-        responseTime,
-        httpStatus: resp.status,
-        redirect: resp.redirected ? resp.url : null,
-      });
-    } catch (err) {
-      // Try GET fallback if HEAD fails
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-
-        const start = Date.now();
-        const resp = await fetch(url, {
-          method: 'GET',
-          signal: controller.signal,
-          redirect: 'follow',
-          headers: { 'User-Agent': 'Mozilla/5.0 (GarudaMonitor/1.0)' }
-        });
-        clearTimeout(timeout);
-        const responseTime = Date.now() - start;
-
-        res.json({
-          status: resp.ok ? 'online' : 'offline',
-          responseTime,
-          httpStatus: resp.status,
-          redirect: resp.redirected ? resp.url : null,
-        });
-      } catch (err2) {
-        res.json({
-          status: 'offline',
-          responseTime: null,
-          httpStatus: null,
-          error: 'Connection timeout'
-        });
-      }
-    }
-    return;
-  }
-
-  // ── Get Products Data ──
-  if (action === 'get_products') {
-    try {
-      const [rows] = await pool.query('SELECT id, logo FROM list_products');
-      return res.json(rows);
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-
-  // ════════════════════════════════════════════════════════════
-  // New Monitoring System API Endpoints (GET)
-  // ════════════════════════════════════════════════════════════
-
-  if (action === 'get_monitor_dashboard') {
-    try {
-      // Websites stats
-      const [[{ total: webTotal }]] = await pool.query('SELECT COUNT(*) as total FROM monitor_websites');
-      const [[{ online: webOnline }]] = await pool.query("SELECT COUNT(*) as online FROM monitor_websites WHERE status='online'");
-      const [[{ offline: webOffline }]] = await pool.query("SELECT COUNT(*) as offline FROM monitor_websites WHERE status='offline'");
-
-      // Servers stats
-      const [[{ total: srvTotal }]] = await pool.query('SELECT COUNT(*) as total FROM monitor_servers');
-      const [[{ online: srvOnline }]] = await pool.query("SELECT COUNT(*) as online FROM monitor_servers WHERE status='online'");
-      const [[{ warning: srvWarning }]] = await pool.query("SELECT COUNT(*) as warning FROM monitor_servers WHERE status='warning'");
-      const [[{ critical: srvCritical }]] = await pool.query("SELECT COUNT(*) as critical FROM monitor_servers WHERE status='critical'");
-
-      // Visitors
-      const [[{ today: visToday }]] = await pool.query("SELECT COUNT(*) as today FROM visitor_logs WHERE DATE(visited_at)=CURDATE()");
-      const [[{ month: visMonth }]] = await pool.query("SELECT COUNT(*) as month FROM visitor_logs WHERE DATE_FORMAT(visited_at,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')");
-      const [[{ year: visYear }]] = await pool.query("SELECT COUNT(*) as year FROM visitor_logs WHERE YEAR(visited_at)=YEAR(CURDATE())");
-
-      // AI stats
-      const [aiAgg] = await pool.query("SELECT COALESCE(SUM(total_tokens),0) as total_tokens, COALESCE(SUM(cost),0) as total_cost, COALESCE(SUM(CASE WHEN DATE(created_at)=CURDATE() THEN 1 ELSE 0 END),0) as today_requests, COALESCE(SUM(error_count),0) as error_count FROM monitor_ai_logs");
-
-      // Errors
-      const [[{ total: errTotal }]] = await pool.query('SELECT COUNT(*) as total FROM monitor_errors');
-      const [[{ critical: errCritical }]] = await pool.query("SELECT COUNT(*) as critical FROM monitor_errors WHERE severity='critical'");
-      const [[{ warning: errWarning }]] = await pool.query("SELECT COUNT(*) as warning FROM monitor_errors WHERE severity='warning'");
-      const [[{ info: errInfo }]] = await pool.query("SELECT COUNT(*) as info FROM monitor_errors WHERE severity='info'");
-
-      // Latest errors
-      const [latestErrors] = await pool.query('SELECT id, source, severity, message, created_at FROM monitor_errors ORDER BY created_at DESC LIMIT 5');
-
-      // Recent notifications
-      const [recentNotifications] = await pool.query("SELECT type, message, created_at as time FROM monitoring_notifications ORDER BY created_at DESC LIMIT 10");
-
-      res.json({
-        websites: { total: Number(webTotal), online: Number(webOnline), offline: Number(webOffline) },
-        servers: { total: Number(srvTotal), online: Number(srvOnline), warning: Number(srvWarning), critical: Number(srvCritical) },
-        visitors: { today: Number(visToday), month: Number(visMonth), year: Number(visYear) },
-        ai: { total_tokens: Number(aiAgg[0].total_tokens), total_cost: Number(aiAgg[0].total_cost), today_requests: Number(aiAgg[0].today_requests), error_count: Number(aiAgg[0].error_count) },
-        errors: { total: Number(errTotal), critical: Number(errCritical), warning: Number(errWarning), info: Number(errInfo) },
-        latest_errors: latestErrors,
-        recent_notifications: recentNotifications.map(n => ({ type: n.type, message: n.message, time: n.time }))
-      });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  if (action === 'get_monitoring_dashboard') {
-    try {
-      const [[webStats]] = await pool.query("SELECT COUNT(*) as total, SUM(CASE WHEN status='online' THEN 1 ELSE 0 END) as active, SUM(CASE WHEN status='offline' THEN 1 ELSE 0 END) as inactive FROM monitor_websites");
-      const [[srvStats]] = await pool.query("SELECT COUNT(*) as total, SUM(CASE WHEN status='online' THEN 1 ELSE 0 END) as online, SUM(CASE WHEN status='warning' THEN 1 ELSE 0 END) as warning, SUM(CASE WHEN status IN ('critical','offline') THEN 1 ELSE 0 END) as critical FROM monitor_servers");
-      const [[aiStats]] = await pool.query("SELECT COALESCE(SUM(total_tokens),0) as total_tokens, COALESCE(SUM(cost),0) as total_cost, COUNT(*) as total_requests, SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors FROM monitor_ai_usage WHERE created_at >= CURDATE()");
-      const [[visitStats]] = await pool.query("SELECT COALESCE(SUM(visitors),0) as visitors FROM visitor_stats_daily WHERE date = CURDATE()");
-      const [errors] = await pool.query("SELECT * FROM monitor_error_center WHERE is_resolved = 0 ORDER BY created_at DESC LIMIT 5");
-      res.json({
-        websites: webStats,
-        servers: srvStats,
-        ai: aiStats,
-        visitors: visitStats.visitors,
-        recent_errors: errors
-      });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'get_monitor_websites') {
-    try {
-      const [rows] = await pool.query(`
-        SELECT w.*, 
-          COALESCE((SELECT status FROM monitor_website_logs WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1), 'unknown') as status,
-          COALESCE((SELECT response_time_ms FROM monitor_website_logs WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1), 0) as response_time_ms,
-          (SELECT checked_at FROM monitor_website_logs WHERE website_id = w.id ORDER BY checked_at DESC LIMIT 1) as last_checked,
-          COALESCE((SELECT is_valid FROM monitor_ssl WHERE website_id = w.id ORDER BY last_checked DESC LIMIT 1), 0) as ssl_valid,
-          (SELECT valid_to FROM monitor_ssl WHERE website_id = w.id ORDER BY last_checked DESC LIMIT 1) as ssl_expires
-        FROM monitor_websites w WHERE w.is_active = 1 ORDER BY w.name
-      `);
-      res.json(rows);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'get_error_center') {
-    try {
-      const [rows] = await pool.query('SELECT * FROM monitor_error_center ORDER BY created_at DESC');
-      res.json(rows);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'get_monitor_ai_stats') {
-    try {
-      const [usage] = await pool.query('SELECT model, SUM(total_tokens) as tokens, SUM(cost) as cost, COUNT(*) as count FROM monitor_ai_usage GROUP BY model');
-      const [byWebsite] = await pool.query('SELECT w.name as website, SUM(u.total_tokens) as tokens FROM monitor_ai_usage u LEFT JOIN monitor_websites w ON u.website_id = w.id GROUP BY u.website_id');
-      res.json({ usage, byWebsite });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'get_security_checks') {
-    try {
-      const [rows] = await pool.query("SELECT id, type as check_type, description as detail, severity as status, created_at as checked_at FROM monitoring_security_logs ORDER BY created_at DESC LIMIT 20");
-      res.json(rows);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'get_monitor_website_detail') {
-    try {
-      const id = parseInt(req.query.id, 10);
-      if (!id) return res.status(400).json({ error: 'id required' });
-      const [websites] = await pool.query('SELECT * FROM monitor_websites WHERE id = ?', [id]);
-      if (websites.length === 0) return res.status(404).json({ error: 'Website not found' });
-      const [logs] = await pool.query('SELECT * FROM monitor_website_logs WHERE website_id = ? ORDER BY created_at DESC LIMIT 50', [id]);
-      const [sslInfo] = await pool.query('SELECT * FROM monitor_ssl WHERE website_id = ? ORDER BY checked_at DESC LIMIT 1', [id]);
-      res.json({ website: websites[0], logs, ssl: sslInfo.length > 0 ? sslInfo[0] : null });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  if (action === 'get_monitor_servers') {
-    try {
-      const [rows] = await pool.query(`
-        SELECT s.*,
-          COALESCE((SELECT status FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1), 'unknown') as status,
-          COALESCE((SELECT cpu_usage FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1), 0) as cpu_usage,
-          COALESCE((SELECT ram_usage FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1), 0) as ram_usage,
-          COALESCE((SELECT disk_usage FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1), 0) as disk_usage,
-          (SELECT checked_at FROM monitor_server_logs WHERE server_id = s.id ORDER BY checked_at DESC LIMIT 1) as last_updated
-        FROM monitor_servers s WHERE s.is_active = 1 ORDER BY s.name
-      `);
-      res.json(rows);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
+  // Public navbar reads with GET; the admin Navbar Manager uses POST (see the POST switch)
   if (action === 'get_navbar_menus') {
     try {
-      const [rows] = await pool.query('SELECT * FROM navbar_menus WHERE is_active = 1 ORDER BY sort_order ASC');
-      res.json(rows);
+      res.json(await getNavbarMenus(req.query.include_inactive));
     } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'save_navbar_menus_order') {
-    try {
-      const { menus } = req.body;
-      if (!menus || !Array.isArray(menus)) return res.status(400).json({ error: 'Invalid data' });
-      for (const menu of menus) {
-        await pool.query('UPDATE navbar_menus SET sort_order = ?, parent_id = ? WHERE id = ?', [menu.sort_order, menu.parent_id || null, menu.id]);
-      }
-      res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'add_navbar_menu') {
-    try {
-      const { parent_id, label_id, label_en, url, icon, description_id, description_en, sort_order } = req.body;
-      const [result] = await pool.query(
-        'INSERT INTO navbar_menus (parent_id, label_id, label_en, url, icon, description_id, description_en, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [parent_id || null, label_id, label_en, url, icon || 'Globe', description_id || '', description_en || '', sort_order || 99]
-      );
-      res.json({ success: true, id: result.insertId });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'edit_navbar_menu') {
-    try {
-      const { id, label_id, label_en, url, icon, description_id, description_en, is_active } = req.body;
-      await pool.query('UPDATE navbar_menus SET label_id=?, label_en=?, url=?, icon=?, description_id=?, description_en=?, is_active=? WHERE id=?',
-        [label_id, label_en, url, icon, description_id || '', description_en || '', is_active ?? 1, id]);
-      res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'delete_navbar_menu') {
-    try {
-      const { id } = req.body;
-      await pool.query('DELETE FROM navbar_menus WHERE parent_id = ?', [id]);
-      await pool.query('DELETE FROM navbar_menus WHERE id = ?', [id]);
-      res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-    return;
-  }
-
-  if (action === 'get_monitor_server_detail') {
-    try {
-      const id = parseInt(req.query.id, 10);
-      if (!id) return res.status(400).json({ error: 'id required' });
-      const [servers] = await pool.query('SELECT * FROM monitor_servers WHERE id = ?', [id]);
-      if (servers.length === 0) return res.status(404).json({ error: 'Server not found' });
-      const [logs] = await pool.query('SELECT * FROM monitor_server_logs WHERE server_id = ? ORDER BY created_at DESC LIMIT 50', [id]);
-      res.json({ server: servers[0], logs });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  if (action === 'get_monitor_agents') {
-    try {
-      const [rows] = await pool.query(`
-        SELECT a.*,
-          COALESCE((SELECT SUM(total_tokens) FROM monitor_ai_logs WHERE agent_id = a.id), 0) as total_tokens,
-          COALESCE((SELECT SUM(cost) FROM monitor_ai_logs WHERE agent_id = a.id), 0) as total_cost,
-          COALESCE((SELECT COUNT(*) FROM monitor_ai_logs WHERE agent_id = a.id AND DATE(created_at) = CURDATE()), 0) as today_requests,
-          (SELECT created_at FROM monitor_ai_logs WHERE agent_id = a.id ORDER BY created_at DESC LIMIT 1) as last_active
-        FROM monitor_ai_agents a ORDER BY a.name
-      `);
-      res.json(rows);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  if (action === 'get_monitor_agent_detail') {
-    try {
-      const id = parseInt(req.query.id, 10);
-      if (!id) return res.status(400).json({ error: 'id required' });
-      const [agents] = await pool.query('SELECT * FROM monitor_ai_agents WHERE id = ?', [id]);
-      if (agents.length === 0) return res.status(404).json({ error: 'Agent not found' });
-      const [logs] = await pool.query('SELECT * FROM monitor_ai_logs WHERE agent_id = ? ORDER BY created_at DESC LIMIT 50', [id]);
-      res.json({ agent: agents[0], usage_history: logs });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  if (action === 'get_monitoring_api') {
-    try {
-      const [apis] = await pool.query('SELECT * FROM monitoring_api ORDER BY name');
-      const [logs] = await pool.query(
-        'SELECT l.*, a.name as api_name FROM monitoring_api_logs l JOIN monitoring_api a ON a.id = l.api_id ORDER BY l.checked_at DESC LIMIT 100'
-      );
-      const result = apis.map(api => {
-        const apiLogs = logs.filter(l => l.api_id === api.id);
-        const lastLog = apiLogs[0] || {};
-        const history = apiLogs.reverse().slice(0, 24).map(l => ({
-          time: l.checked_at, response_time_ms: l.response_time_ms, status: l.status
-        }));
-        return {
-          ...api,
-          last_checked: lastLog.checked_at || api.last_checked,
-          response_time_ms: lastLog.response_time_ms || api.response_time_ms,
-          success_rate: api.success_count + api.fail_count > 0
-            ? ((api.success_count / (api.success_count + api.fail_count)) * 100).toFixed(1)
-            : 100,
-          history
-        };
-      });
-      res.json(result);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  if (action === 'get_monitoring_graphs') {
-    try {
-      const [websites] = await pool.query('SELECT id, name, url FROM monitor_websites WHERE is_active = 1 ORDER BY name');
-      const websiteLogs = await Promise.all(websites.map(w =>
-        pool.query(
-          'SELECT status, response_time_ms, checked_at FROM monitor_website_logs WHERE website_id = ? ORDER BY checked_at ASC LIMIT 48',
-          [w.id]
-        ).then(([rows]) => ({ id: w.id, name: w.name, history: rows }))
-      ));
-      res.json(websiteLogs);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  if (action === 'get_monitor_errors') {
-    try {
-      const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
-      const offset = (page - 1) * limit;
-      let where = [];
-      let params = [];
-      if (req.query.source) { where.push('source = ?'); params.push(req.query.source); }
-      if (req.query.severity) { where.push('severity = ?'); params.push(req.query.severity); }
-      const whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
-      const [[{ total }]] = await pool.query('SELECT COUNT(*) as total FROM monitor_errors ' + whereClause, params);
-      const [rows] = await pool.query('SELECT * FROM monitor_errors ' + whereClause + ' ORDER BY created_at DESC LIMIT ? OFFSET ?', [...params, limit, offset]);
-      res.json({ data: rows, total: Number(total), page, limit, pages: Math.ceil(Number(total) / limit) });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  if (action === 'get_monitor_audit_logs') {
-    try {
-      const [rows] = await pool.query('SELECT * FROM monitor_audit_logs ORDER BY created_at DESC LIMIT 50');
-      res.json(rows);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
     return;
   }
 
@@ -684,22 +389,15 @@ app.post('/api.php', async (req, res) => {
   if (!action && req.query && req.query.action) {
     action = req.query.action;
   }
+  // Template marketplace / customer / custom-order actions (backend/modules/templates.js).
+  // midtrans_notification arrives here too: Midtrans posts its JSON to /api.php?action=midtrans_notification
+  if (await handlePlatformAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {
     switch (action) {
 
-      case 'login': {
-        const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [input.email]);
-        if (rows.length === 0) return res.json({ error: 'Email tidak ditemukan' });
-        const user = rows[0];
-        if (user.status === 'inactive') return res.json({ error: 'Akun Anda tidak aktif. Hubungi administrator.' });
-        const valid = bcrypt.compareSync(input.password, user.password);
-        if (!valid) return res.json({ error: 'Password salah' });
-        const { password, ...safeUser } = user;
-        res.json({ success: true, user: safeUser });
-        return;
-      }
+      // 'login' and 'register' are handled by createAuthActions in security.js (token + rate limit)
 
       case 'add_user': {
         const hash = bcrypt.hashSync(input.password, 10);
@@ -763,8 +461,9 @@ app.post('/api.php', async (req, res) => {
         if (settings.services_data) {
           const items = JSON.parse(settings.services_data);
           for (const item of items) {
-            if (item.image) item.image = saveBase64Image(item.image, 'services');
-            if (item.icon) item.icon = saveBase64Image(item.icon, 'services');
+            // Upload returns a promise; without await the stored value was "{}"
+            if (item.image) item.image = await saveBase64Image(item.image, 'services');
+            if (item.icon) item.icon = await saveBase64Image(item.icon, 'services');
           }
           settings.services_data = JSON.stringify(items);
         }
@@ -851,28 +550,45 @@ app.post('/api.php', async (req, res) => {
         const startDateSql = input.start_date || null;
         const endDateSql = input.end_date || null;
 
+        // show_on_website: shown in the public Projects section; source is always 'admin' here
+        // ('website' = created by the public custom-order form, submit_custom_order)
         const [result] = await pool.query(
-          `INSERT INTO project_client (name, client_name, client_email, client_phone, service_type, status, assigned_user, price, start_date, end_date, image, project_files, description)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO project_client (name, client_name, client_email, client_phone, service_type, status, assigned_user, price, start_date, end_date, image, project_files, description, show_on_website, source)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'admin')`,
           [input.name, input.client_name, input.client_email || '', input.client_phone || '', input.service_type, input.status,
-           input.assigned_user || '', input.price || 0, startDateSql, endDateSql, imagePath, projectFilesJson, input.description || '']
+           input.assigned_user || '', input.price || 0, startDateSql, endDateSql, imagePath, projectFilesJson, input.description || '',
+           inFlag(input.show_on_website)]
         );
         res.json({ success: true, id: result.insertId });
         return;
       }
 
       case 'update_project': {
+        // Only the fields that were sent change (same as api.php), so a quick toggle ({id, show_on_website})
+        // keeps the rest. Column names come from these fixed lists, values are bound. `source` never changes here.
         const id = parseInt(input.id, 10);
-
-        let imagePath = '';
-        if (input.image?.includes('data:image')) {
-          imagePath = await uploadBase64ToS3(input.image, 'dokumen-client/logo', `project_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.png`);
-        } else {
-          imagePath = input.image || '';
+        const has = (f) => Object.prototype.hasOwnProperty.call(input, f);
+        const sets = [];
+        const params = [];
+        for (const f of ['name', 'client_name', 'client_email', 'client_phone', 'service_type', 'status', 'assigned_user', 'description']) {
+          if (has(f)) { sets.push(`${f}=?`); params.push(textOf(input[f])); }
         }
-
-        let finalFiles = [];
-        if (input.project_files) {
+        if (has('price')) { sets.push('price=?'); params.push(Number(input.price) || 0); }
+        for (const f of ['start_date', 'end_date']) {
+          if (has(f)) { sets.push(`${f}=?`); params.push(textOf(input[f]) !== '' ? textOf(input[f]) : null); }
+        }
+        if (has('image')) {
+          let imagePath = '';
+          if (input.image?.includes?.('data:image')) {
+            imagePath = await uploadBase64ToS3(input.image, 'dokumen-client/logo', `project_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.png`);
+          } else {
+            imagePath = input.image || '';
+          }
+          sets.push('image=?');
+          params.push(imagePath);
+        }
+        if (has('project_files')) {
+          const finalFiles = [];
           const filesArray = typeof input.project_files === 'string' ? JSON.parse(input.project_files) : input.project_files;
           if (Array.isArray(filesArray)) {
             for (const f of filesArray) {
@@ -884,54 +600,18 @@ app.post('/api.php', async (req, res) => {
               }
             }
           }
+          sets.push('project_files=?');
+          params.push(JSON.stringify(finalFiles));
         }
-        const projectFilesJson = JSON.stringify(finalFiles);
-
-        const startDateSql = input.start_date || null;
-        const endDateSql = input.end_date || null;
-
-        await pool.query(
-          `UPDATE project_client SET name=?, client_name=?, client_email=?, client_phone=?, service_type=?, status=?, assigned_user=?, price=?, start_date=?, end_date=?, image=?, project_files=?, description=? WHERE id=?`,
-          [input.name, input.client_name, input.client_email || '', input.client_phone || '', input.service_type, input.status,
-           input.assigned_user || '', input.price || 0, startDateSql, endDateSql, imagePath, projectFilesJson, input.description || '', id]
-        );
+        if (has('show_on_website')) { sets.push('show_on_website=?'); params.push(inFlag(input.show_on_website)); }
+        if (!id || sets.length === 0) return res.status(400).json({ error: 'Tidak ada data untuk diperbarui' });
+        await pool.query(`UPDATE project_client SET ${sets.join(', ')} WHERE id=?`, [...params, id]);
         res.json({ success: true });
         return;
       }
 
       case 'track_visit': {
-        await pool.query('UPDATE visitor_stats SET total_visits = total_visits + 1 WHERE id = 1');
-
-        const ua = input.user_agent || req.headers['user-agent'] || '';
-        let device = 'Desktop', browser = 'Unknown', os = 'Unknown';
-
-        if (/Mobile|Android|iPhone|iPad|iPod/i.test(ua)) device = 'Mobile';
-        if (/Tablet|iPad/i.test(ua)) device = 'Tablet';
-
-        if (/Chrome/i.test(ua) && !/Edg/i.test(ua)) browser = 'Chrome';
-        else if (/Firefox/i.test(ua)) browser = 'Firefox';
-        else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
-        else if (/Edg/i.test(ua)) browser = 'Edge';
-        else if (/MSIE|Trident/i.test(ua)) browser = 'Internet Explorer';
-
-        if (/Windows/i.test(ua) || /Win64/i.test(ua)) os = 'Windows';
-        else if (/Mac/i.test(ua) && !/iPhone|iPad|iPod/i.test(ua)) os = 'macOS';
-        else if (/Android/i.test(ua)) os = 'Android';
-        else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
-        else if (/Linux/i.test(ua)) os = 'Linux';
-
-        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
-
-        // Basic country from IP (using a simple offline lookup or default)
-        let country = 'Unknown';
-
-        // Query with 1-second dedup per IP to prevent spam
-        await pool.query(
-          `INSERT IGNORE INTO visitor_logs (ip_address, user_agent, device, browser, os, country, visited_at)
-           VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-          [ip, ua, device, browser, os, country]
-        );
-
+        await trackVisit(req, input);
         res.json({ success: true });
         return;
       }
@@ -1000,12 +680,25 @@ app.post('/api.php', async (req, res) => {
       }
 
       case 'update_list_product': {
+        // Only the fields that were sent are changed, so a logo-only update (ProductDetail) keeps the rest
         const id = parseInt(input.id, 10);
-        const imagePath = await saveAndCompressImage(input.image, 'list-products');
-        const logoPath = await saveAndCompressImage(input.logo, 'list-products');
+        const sets = [];
+        const params = [];
+        for (const f of ['title', 'description', 'link_button', 'users', 'notes']) {
+          if (input[f] !== undefined && input[f] !== null) {
+            sets.push(`${f}=?`);
+            params.push(typeof input[f] === 'string' ? input[f] : JSON.stringify(input[f]));
+          }
+        }
+        for (const f of ['image', 'logo']) {
+          if (input[f]) {
+            sets.push(`${f}=?`);
+            params.push(await saveAndCompressImage(input[f], 'list-products'));
+          }
+        }
 
-        let finalFiles = [];
-        if (input.project_files) {
+        if (input.project_files !== undefined && input.project_files !== null) {
+          let finalFiles = [];
           const filesArray = typeof input.project_files === 'string' ? JSON.parse(input.project_files) : input.project_files;
           if (Array.isArray(filesArray)) {
             for (const f of filesArray) {
@@ -1017,13 +710,12 @@ app.post('/api.php', async (req, res) => {
               }
             }
           }
+          sets.push('project_files=?');
+          params.push(JSON.stringify(finalFiles));
         }
-        const projectFilesJson = JSON.stringify(finalFiles);
 
-        await pool.query(
-          'UPDATE list_products SET title=?, description=?, link_button=?, image=?, logo=?, users=?, project_files=?, notes=? WHERE id=?',
-          [input.title, input.description || '', input.link_button || '', imagePath, logoPath, input.users || '[]', projectFilesJson, input.notes || '', id]
-        );
+        if (!id || sets.length === 0) return res.status(400).json({ error: 'Tidak ada data untuk diperbarui' });
+        await pool.query(`UPDATE list_products SET ${sets.join(', ')} WHERE id=?`, [...params, id]);
         res.json({ success: true });
         return;
       }
@@ -1093,14 +785,6 @@ app.post('/api.php', async (req, res) => {
         return;
       }
 
-      case 'update_product_logo': {
-        const id = parseInt(input.id, 10);
-        const logoPath = await saveAndCompressImage(input.logo, 'list-products');
-        await pool.query('UPDATE list_products SET logo=? WHERE id=?', [logoPath, id]);
-        res.json({ success: true, path: logoPath });
-        return;
-      }
-
       case 'get_documents': {
         const [rows] = await pool.query('SELECT * FROM documents ORDER BY type DESC, name ASC');
         res.json({ success: true, data: rows });
@@ -1127,780 +811,73 @@ app.post('/api.php', async (req, res) => {
       }
 
       case 'delete_document': {
+        // The item plus everything nested under it (folders can be nested more than one level)
+        const ids = [parseInt(input.id, 10)];
+        if (!ids[0]) return res.status(400).json({ error: 'Invalid id' });
+        for (let i = 0; i < ids.length; i++) {
+          const [children] = await pool.query('SELECT id FROM documents WHERE parent_id = ?', [ids[i]]);
+          for (const c of children) if (!ids.includes(c.id)) ids.push(c.id);
+        }
+        await pool.query('DELETE FROM documents WHERE id IN (?)', [ids]);
+        res.json({ success: true });
+        return;
+      }
+
+      // ── Admin actions the frontend sends with POST (UserManager, Dashboard, Navbar Manager) ──
+      case 'delete_user': {
         const id = parseInt(input.id, 10);
-        // Recursive delete for folders (simplified)
-        await pool.query('DELETE FROM documents WHERE id = ? OR parent_id = ?', [id, id]);
+        if (!id) return res.status(400).json({ error: 'Invalid id' });
+        await pool.query('DELETE FROM users WHERE id = ?', [id]);
         res.json({ success: true });
         return;
       }
 
-      // ═══════════════════════════════════════════════
-      // Monitoring Center API Endpoints
-      // ═══════════════════════════════════════════════
-
-      // ── Website Monitoring ──
-      case 'monitor_get_websites': {
-        const [rows] = await pool.query('SELECT * FROM monitoring_websites ORDER BY category, name');
-        const data = rows.map(r => ({ ...r, id: Number(r.id), is_active: Boolean(r.is_active), uptime_total: Number(r.uptime_total) }));
-        res.json(data);
+      case 'delete_project': {
+        const id = parseInt(input.id, 10);
+        if (!id) return res.status(400).json({ error: 'Invalid id' });
+        await pool.query('DELETE FROM project_client WHERE id = ?', [id]);
+        res.json({ success: true });
         return;
       }
 
-      case 'monitor_add_website': {
-        const { name, url, category = 'Umum', notes = '', is_active = 1 } = input;
+      case 'get_navbar_menus': {
+        res.json(await getNavbarMenus(input.include_inactive));
+        return;
+      }
+
+      case 'save_navbar_menus_order': {
+        const { menus } = input;
+        if (!Array.isArray(menus)) return res.status(400).json({ error: 'Invalid data' });
+        for (const menu of menus) {
+          await pool.query('UPDATE navbar_menus SET sort_order = ?, parent_id = ? WHERE id = ?', [Number(menu.sort_order) || 0, menu.parent_id || null, Number(menu.id)]);
+        }
+        res.json({ success: true });
+        return;
+      }
+
+      case 'add_navbar_menu': {
+        const { parent_id, label_id, label_en, url, icon, description_id, description_en, sort_order, is_active } = input;
         const [result] = await pool.query(
-          'INSERT INTO monitoring_websites (name, url, category, is_active, notes) VALUES (?, ?, ?, ?, ?)',
-          [name, url, category, Number(is_active), notes]
+          'INSERT INTO navbar_menus (parent_id, label_id, label_en, url, icon, description_id, description_en, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [parent_id || null, label_id || '', label_en || '', url || '#', icon || 'Globe', description_id || '', description_en || '', sort_order ?? 99, Number(is_active ?? 1)]
         );
         res.json({ success: true, id: result.insertId });
         return;
       }
 
-      case 'monitor_update_website': {
-        const { id, name, url, category = 'Umum', notes = '', is_active = 1 } = input;
-        await pool.query(
-          'UPDATE monitoring_websites SET name=?, url=?, category=?, is_active=?, notes=? WHERE id=?',
-          [name, url, category, Number(is_active), notes, Number(id)]
-        );
+      case 'edit_navbar_menu': {
+        const { id, label_id, label_en, url, icon, description_id, description_en, is_active } = input;
+        await pool.query('UPDATE navbar_menus SET label_id=?, label_en=?, url=?, icon=?, description_id=?, description_en=?, is_active=? WHERE id=?',
+          [label_id || '', label_en || '', url || '#', icon || 'Globe', description_id || '', description_en || '', Number(is_active ?? 1), Number(id)]);
         res.json({ success: true });
         return;
       }
 
-      case 'monitor_delete_website': {
+      case 'delete_navbar_menu': {
         const id = Number(input.id);
-        await pool.query('DELETE FROM monitoring_website_checks WHERE website_id=?', [id]);
-        await pool.query('DELETE FROM monitoring_websites WHERE id=?', [id]);
+        await pool.query('DELETE FROM navbar_menus WHERE parent_id = ?', [id]);
+        await pool.query('DELETE FROM navbar_menus WHERE id = ?', [id]);
         res.json({ success: true });
-        return;
-      }
-
-      case 'monitor_check_website': {
-        const id = Number(input.id);
-        const [rows] = await pool.query('SELECT url FROM monitoring_websites WHERE id=?', [id]);
-        if (rows.length === 0) { res.json({ error: 'Website not found' }); return; }
-        const url = rows[0].url;
-        const start = Date.now();
-        let httpCode = 0, err = '';
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 15000);
-          const resp = await fetch(url, { method: 'HEAD', signal: controller.signal, redirect: 'follow', headers: { 'User-Agent': 'GarudaMonitor/1.0' } });
-          clearTimeout(timeout);
-          httpCode = resp.status;
-        } catch (e) {
-          err = e.message;
-          // Try GET fallback
-          try {
-            const controller2 = new AbortController();
-            const timeout2 = setTimeout(() => controller2.abort(), 15000);
-            const resp2 = await fetch(url, { method: 'GET', signal: controller2.signal, redirect: 'follow', headers: { 'User-Agent': 'GarudaMonitor/1.0' } });
-            clearTimeout(timeout2);
-            httpCode = resp2.status;
-            err = '';
-          } catch (e2) { err = e2.message; }
-        }
-        const elapsed = Date.now() - start;
-        const isOnline = (httpCode >= 200 && httpCode < 500) && !err;
-        const status = isOnline ? 'online' : 'offline';
-
-        await pool.query("UPDATE monitoring_websites SET status=?, last_checked=NOW() WHERE id=?", [status, id]);
-        await pool.query(
-          'INSERT INTO monitoring_website_checks (website_id, status, response_time_ms, http_status, error_message) VALUES (?, ?, ?, ?, ?)',
-          [id, status, elapsed, httpCode, err]
-        );
-        res.json({ status, response_time_ms: elapsed, http_status: httpCode, error: err });
-        return;
-      }
-
-      case 'monitor_check_all_websites': {
-        const [sites] = await pool.query('SELECT id, url FROM monitoring_websites WHERE is_active=1');
-        const results = [];
-        for (const site of sites) {
-          const wid = Number(site.id);
-          const start = Date.now();
-          let httpCode = 0, err = '';
-          try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-            const resp = await fetch(site.url, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
-            clearTimeout(timeout);
-            httpCode = resp.status;
-          } catch (e) {
-            err = e.message;
-            try {
-              const controller2 = new AbortController();
-              const timeout2 = setTimeout(() => controller2.abort(), 10000);
-              const resp2 = await fetch(site.url, { method: 'GET', signal: controller2.signal, redirect: 'follow' });
-              clearTimeout(timeout2);
-              httpCode = resp2.status;
-              err = '';
-            } catch (e2) { err = e2.message; }
-          }
-          const elapsed = Date.now() - start;
-          const status = (httpCode >= 200 && httpCode < 500) && !err ? 'online' : 'offline';
-          await pool.query("UPDATE monitoring_websites SET status=?, last_checked=NOW() WHERE id=?", [status, wid]);
-          await pool.query(
-            'INSERT INTO monitoring_website_checks (website_id, status, response_time_ms, http_status, error_message) VALUES (?, ?, ?, ?, ?)',
-            [wid, status, elapsed, httpCode, err]
-          );
-          results.push({ id: wid, status, response_time_ms: elapsed });
-        }
-        res.json({ success: true, results });
-        return;
-      }
-
-      case 'monitor_get_websites_stats': {
-        const [[{ c: total }]] = await pool.query('SELECT COUNT(*) as c FROM monitoring_websites');
-        const [[{ c: online }]] = await pool.query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='online'");
-        const [[{ c: offline }]] = await pool.query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='offline'");
-        res.json({ total: Number(total), online: Number(online), offline: Number(offline) });
-        return;
-      }
-
-      case 'monitor_get_website_checks': {
-        const id = Number(input.id);
-        const limit = Number(input.limit || 60);
-        const [rows] = await pool.query(
-          'SELECT * FROM monitoring_website_checks WHERE website_id=? ORDER BY checked_at DESC LIMIT ?',
-          [id, limit]
-        );
-        const data = rows.reverse().map(r => ({
-          ...r, id: Number(r.id), response_time_ms: Number(r.response_time_ms), http_status: Number(r.http_status)
-        }));
-        res.json(data);
-        return;
-      }
-
-      // ── Server Monitoring ──
-      case 'monitor_get_server_status': {
-        const [rows] = await pool.query('SELECT * FROM monitoring_server_status WHERE id=1');
-        if (rows.length > 0) {
-          const r = rows[0];
-          r.ram_used = Number(r.ram_used);
-          r.ram_total = Number(r.ram_total);
-          r.disk_used = Number(r.disk_used);
-          r.disk_total = Number(r.disk_total);
-          res.json(r);
-        } else {
-          res.json({ error: 'No server data' });
-        }
-        return;
-      }
-
-      case 'monitor_update_server': {
-        const cpu = Number(input.cpu_usage || 0);
-        const ramUsed = Number(input.ram_used || 0);
-        const ramTotal = Number(input.ram_total || 1);
-        const diskUsed = Number(input.disk_used || 0);
-        const diskTotal = Number(input.disk_total || 1);
-        const netIn = Number(input.network_in || 0);
-        const netOut = Number(input.network_out || 0);
-        const uptime = Number(input.uptime_seconds || 0);
-        const ramPct = Math.round((ramUsed / ramTotal) * 100 * 100) / 100;
-        const diskPct = Math.round((diskUsed / diskTotal) * 100 * 100) / 100;
-        let status = 'healthy';
-        if (cpu > 80 || ramPct > 80 || diskPct > 90) status = 'critical';
-        else if (cpu > 60 || ramPct > 60 || diskPct > 75) status = 'warning';
-        await pool.query(
-          `UPDATE monitoring_server_status SET cpu_usage=?, ram_used=?, ram_total=?, ram_percent=?, disk_used=?, disk_total=?, disk_percent=?,
-           network_in=?, network_out=?, uptime_seconds=?, status=?, last_updated=NOW() WHERE id=1`,
-          [cpu, ramUsed, ramTotal, ramPct, diskUsed, diskTotal, diskPct, netIn, netOut, uptime, status]
-        );
-        await pool.query(
-          'INSERT INTO monitoring_server_metrics (cpu_usage, ram_used, ram_total, disk_used, disk_total, network_in, network_out) VALUES (?,?,?,?,?,?,?)',
-          [cpu, ramUsed, ramTotal, diskUsed, diskTotal, netIn, netOut]
-        );
-        res.json({ success: true, status });
-        return;
-      }
-
-      case 'monitor_get_server_metrics': {
-        const limit = Number(input.limit || 60);
-        const [rows] = await pool.query('SELECT * FROM monitoring_server_metrics ORDER BY recorded_at DESC LIMIT ?', [limit]);
-        const data = rows.reverse().map(r => ({
-          ...r, cpu_usage: Number(r.cpu_usage), ram_used: Number(r.ram_used), ram_total: Number(r.ram_total),
-          disk_used: Number(r.disk_used), disk_total: Number(r.disk_total)
-        }));
-        res.json(data);
-        return;
-      }
-
-      // ── Visitor Stats ──
-      case 'monitor_get_visitor_stats': {
-        const [[{ c: total }]] = await pool.query('SELECT COALESCE(SUM(total_visits),0) as c FROM visitor_stats WHERE id=1');
-        const [[{ c: todayCount }]] = await pool.query("SELECT COUNT(*) as c FROM visitor_logs WHERE DATE(visited_at)=CURDATE()");
-        const [[{ c: active }]] = await pool.query("SELECT COUNT(*) as c FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)");
-
-        const [daily] = await pool.query("SELECT DATE(visited_at) as date, COUNT(*) as count FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY DATE(visited_at) ORDER BY date ASC");
-        const [weekly] = await pool.query("SELECT YEARWEEK(visited_at) as week, COUNT(*) as count FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 12 WEEK) GROUP BY YEARWEEK(visited_at) ORDER BY week ASC");
-        const [monthly] = await pool.query("SELECT DATE_FORMAT(visited_at, '%Y-%m') as month, COUNT(*) as count FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH) GROUP BY DATE_FORMAT(visited_at, '%Y-%m') ORDER BY month ASC");
-
-        const [devices] = await pool.query("SELECT COALESCE(device,'Unknown') as label, COUNT(*) as value FROM visitor_logs GROUP BY device ORDER BY value DESC");
-        const [browsers] = await pool.query("SELECT COALESCE(browser,'Unknown') as label, COUNT(*) as value FROM visitor_logs GROUP BY browser ORDER BY value DESC");
-        const [countries] = await pool.query("SELECT COALESCE(country,'Unknown') as label, COUNT(*) as value FROM visitor_logs GROUP BY country ORDER BY value DESC");
-
-        res.json({
-          total: Number(total), today: Number(todayCount), active: Number(active),
-          daily: daily.map(r => ({ date: r.date, count: Number(r.count) })),
-          weekly: weekly.map(r => ({ week: r.week, count: Number(r.count) })),
-          monthly: monthly.map(r => ({ month: r.month, count: Number(r.count) })),
-          devices: devices.map(r => ({ label: r.label, value: Number(r.value) })),
-          browsers: browsers.map(r => ({ label: r.label, value: Number(r.value) })),
-          countries: countries.map(r => ({ label: r.label, value: Number(r.value) }))
-        });
-        return;
-      }
-
-      // ── Database Monitoring ──
-      case 'monitor_get_database_status': {
-        const [rows] = await pool.query('SELECT * FROM monitoring_database WHERE id=1');
-        let row = rows[0] || { db_name: 'db_garudanexabahtera', status: 'connected', size_mb: 0, active_connections: 0, last_backup: null, backup_status: 'No backup yet' };
-        // Calculate actual DB size
-        const [[sizeRow]] = await pool.query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size_mb FROM information_schema.tables WHERE table_schema=?", [process.env.MYSQL_DB || 'db_garudanexabahtera']);
-        if (sizeRow && sizeRow.size_mb) row.size_mb = Number(sizeRow.size_mb);
-        // Active connections
-        const [[connRow]] = await pool.query("SELECT COUNT(*) as c FROM information_schema.processlist WHERE db=?", [process.env.MYSQL_DB || 'db_garudanexabahtera']);
-        if (connRow) row.active_connections = Number(connRow.c);
-        row.size_mb = row.size_mb || 0;
-        row.active_connections = row.active_connections || 0;
-        res.json(row);
-        return;
-      }
-
-      // ── Domain Monitoring ──
-      case 'monitor_get_domains': {
-        const [rows] = await pool.query(
-          'SELECT md.*, mw.name as website_name FROM monitoring_domains md LEFT JOIN monitoring_websites mw ON md.website_id = mw.id ORDER BY md.expiry_date ASC'
-        );
-        const data = rows.map(r => ({
-          ...r, id: Number(r.id), days_until_expiry: Number(r.days_until_expiry), ssl_days_until_expiry: Number(r.ssl_days_until_expiry)
-        }));
-        res.json(data);
-        return;
-      }
-
-      case 'monitor_add_domain': {
-        const { domain, website_id = 0, registrar = '', expiry_date = '', ssl_expiry_date = '' } = input;
-        const days = expiry_date ? Math.round((new Date(expiry_date).getTime() - Date.now()) / 86400000) : 0;
-        const ssl_days = ssl_expiry_date ? Math.round((new Date(ssl_expiry_date).getTime() - Date.now()) / 86400000) : 0;
-        const status = days < 0 ? 'expired' : (days < 30 ? 'expiring_soon' : 'valid');
-        const wid = Number(website_id) > 0 ? Number(website_id) : null;
-        const [result] = await pool.query(
-          `INSERT INTO monitoring_domains (domain, website_id, registrar, expiry_date, days_until_expiry, ssl_expiry_date, ssl_days_until_expiry, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [domain, wid, registrar, expiry_date || null, days, ssl_expiry_date || null, ssl_days, status]
-        );
-        res.json({ success: true, id: result.insertId });
-        return;
-      }
-
-      case 'monitor_delete_domain': {
-        const id = Number(input.id);
-        await pool.query('DELETE FROM monitoring_domains WHERE id=?', [id]);
-        res.json({ success: true });
-        return;
-      }
-
-      // ── API Monitoring ──
-      case 'monitor_get_apis': {
-        const [rows] = await pool.query('SELECT * FROM monitoring_api ORDER BY name');
-        const data = rows.map(r => ({
-          ...r, id: Number(r.id), response_time_ms: Number(r.response_time_ms),
-          success_count: Number(r.success_count), fail_count: Number(r.fail_count)
-        }));
-        res.json(data);
-        return;
-      }
-
-      case 'monitor_add_api': {
-        const { name, endpoint, method = 'GET' } = input;
-        const [result] = await pool.query(
-          'INSERT INTO monitoring_api (name, endpoint, method) VALUES (?, ?, ?)',
-          [name, endpoint, method]
-        );
-        res.json({ success: true, id: result.insertId });
-        return;
-      }
-
-      case 'monitor_check_api': {
-        const id = Number(input.id);
-        const [rows] = await pool.query('SELECT * FROM monitoring_api WHERE id=?', [id]);
-        if (rows.length === 0) { res.json({ error: 'API not found' }); return; }
-        const api = rows[0];
-        const start = Date.now();
-        let httpCode = 0, err = '';
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 10000);
-          const resp = await fetch(api.endpoint, { method: api.method || 'GET', signal: controller.signal });
-          clearTimeout(timeout);
-          httpCode = resp.status;
-        } catch (e) { err = e.message; }
-        const elapsed = Date.now() - start;
-        const success = (httpCode >= 200 && httpCode < 500 && !err);
-        if (success) {
-          await pool.query('UPDATE monitoring_api SET status=?, response_time_ms=?, success_count=success_count+1, last_checked=NOW() WHERE id=?', ['active', elapsed, id]);
-        } else {
-          await pool.query('UPDATE monitoring_api SET status=?, response_time_ms=?, fail_count=fail_count+1, last_checked=NOW() WHERE id=?', ['down', elapsed, id]);
-        }
-        res.json({ success, response_time_ms: elapsed, http_status: httpCode });
-        return;
-      }
-
-      case 'monitor_delete_api': {
-        const id = Number(input.id);
-        await pool.query('DELETE FROM monitoring_api WHERE id=?', [id]);
-        res.json({ success: true });
-        return;
-      }
-
-      // ── Security Logs ──
-      case 'monitor_get_security_logs': {
-        const limit = Number(input.limit || 50);
-        const [rows] = await pool.query('SELECT * FROM monitoring_security_logs ORDER BY created_at DESC LIMIT ?', [limit]);
-        const data = rows.map(r => ({ ...r, id: Number(r.id) }));
-        res.json(data);
-        return;
-      }
-
-      case 'monitor_security_summary': {
-        const [[{ c: total }]] = await pool.query('SELECT COUNT(*) as c FROM monitoring_security_logs');
-        const [[{ c: newCount }]] = await pool.query("SELECT COUNT(*) as c FROM monitoring_security_logs WHERE status='new'");
-        const [[{ c: high }]] = await pool.query("SELECT COUNT(*) as c FROM monitoring_security_logs WHERE severity IN ('high','critical')");
-        const [[{ c: blocked }]] = await pool.query("SELECT COUNT(*) as c FROM monitoring_security_logs WHERE type='blocked_ip'");
-        res.json({ total: Number(total), new: Number(newCount), high_severity: Number(high), blocked_ips: Number(blocked) });
-        return;
-      }
-
-      case 'monitor_update_security_status': {
-        const id = Number(input.id);
-        const status = input.status || 'reviewed';
-        await pool.query('UPDATE monitoring_security_logs SET status=? WHERE id=?', [status, id]);
-        res.json({ success: true });
-        return;
-      }
-
-      // ── Notifications ──
-      case 'monitor_get_notifications': {
-        const limit = Number(input.limit || 20);
-        const type = input.type || '';
-        let query = 'SELECT * FROM monitoring_notifications';
-        const params = [];
-        if (type) { query += ' WHERE type=?'; params.push(type); }
-        query += ' ORDER BY created_at DESC LIMIT ?';
-        params.push(limit);
-        const [rows] = await pool.query(query, params);
-        const data = rows.map(r => ({
-          ...r, id: Number(r.id), is_read: Boolean(r.is_read), sent_wa: Boolean(r.sent_wa)
-        }));
-        res.json(data);
-        return;
-      }
-
-      case 'monitor_mark_notification_read': {
-        const id = Number(input.id);
-        await pool.query('UPDATE monitoring_notifications SET is_read=1 WHERE id=?', [id]);
-        res.json({ success: true });
-        return;
-      }
-
-      case 'monitor_mark_all_read': {
-        await pool.query('UPDATE monitoring_notifications SET is_read=1 WHERE is_read=0');
-        res.json({ success: true });
-        return;
-      }
-
-      case 'monitor_add_notification': {
-        const { type = 'info', title, message, severity = 'info', sent_wa = 0 } = input;
-        const [result] = await pool.query(
-          'INSERT INTO monitoring_notifications (type, title, message, severity, sent_wa) VALUES (?, ?, ?, ?, ?)',
-          [type, title, message, severity, Number(sent_wa)]
-        );
-        res.json({ success: true, id: result.insertId });
-        return;
-      }
-
-      case 'monitor_get_unread_count': {
-        const [[{ c }]] = await pool.query('SELECT COUNT(*) as c FROM monitoring_notifications WHERE is_read=0');
-        res.json({ unread: Number(c) });
-        return;
-      }
-
-      // ── Categories ──
-      case 'monitor_get_categories': {
-        const [rows] = await pool.query('SELECT * FROM monitoring_categories ORDER BY sort_order');
-        res.json(rows);
-        return;
-      }
-
-      case 'monitor_add_category': {
-        const { name, icon = 'Globe', sort_order = 0 } = input;
-        const [result] = await pool.query(
-          'INSERT INTO monitoring_categories (name, icon, sort_order) VALUES (?, ?, ?)',
-          [name, icon, Number(sort_order)]
-        );
-        res.json({ success: true, id: result.insertId });
-        return;
-      }
-
-      case 'monitor_delete_category': {
-        const id = Number(input.id);
-        await pool.query('DELETE FROM monitoring_categories WHERE id=?', [id]);
-        res.json({ success: true });
-        return;
-      }
-
-      // ── Settings ──
-      // ── NEW: Monitor Server CRUD + Check ──
-      case 'add_monitor_server': {
-        const { name, host, type = 'vps', username, port = 22, ssh_key } = input;
-        const [result] = await pool.query(
-          'INSERT INTO monitor_servers (name, host, type, is_active) VALUES (?, ?, ?, 1)',
-          [name, host, type]
-        );
-        res.json({ success: true, id: result.insertId });
-        return;
-      }
-
-      case 'update_monitor_server': {
-        const { id, name, host, type, is_active } = input;
-        await pool.query(
-          'UPDATE monitor_servers SET name=?, host=?, type=?, is_active=? WHERE id=?',
-          [name, host, type, is_active ?? 1, Number(id)]
-        );
-        res.json({ success: true });
-        return;
-      }
-
-      case 'delete_monitor_server': {
-        await pool.query('DELETE FROM monitor_server_logs WHERE server_id=?', [Number(input.id)]);
-        await pool.query('DELETE FROM monitor_servers WHERE id=?', [Number(input.id)]);
-        res.json({ success: true });
-        return;
-      }
-
-      case 'check_monitor_server': {
-        const id = Number(input.id);
-        const [servers] = await pool.query('SELECT * FROM monitor_servers WHERE id=?', [id]);
-        if (servers.length === 0) { res.json({ error: 'Server not found' }); return; }
-        const server = servers[0];
-
-        // Ping check
-        let pingMs = 0, pingOk = false;
-        try {
-          const start = Date.now();
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
-          // First try HTTP check on the host
-          const hostUrl = server.host.startsWith('http') ? server.host : `https://${server.host}`;
-          const resp = await fetch(hostUrl, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
-          clearTimeout(timeout);
-          pingMs = Date.now() - start;
-          pingOk = resp.ok || resp.status < 500;
-        } catch (e) {
-          try {
-            const start = Date.now();
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 8000);
-            const hostUrl = server.host.startsWith('http') ? server.host : `http://${server.host}`;
-            const resp = await fetch(hostUrl, { method: 'HEAD', signal: controller.signal, redirect: 'follow' });
-            clearTimeout(timeout);
-            pingMs = Date.now() - start;
-            pingOk = resp.ok || resp.status < 500;
-          } catch (e2) {}
-        }
-
-        // Try SSH for real metrics (if this exact machine)
-        let cpu = 0, ram = 0, ramTotal = 0, disk = 0, diskTotal = 0, load1 = 0, load5 = 0, load15 = 0;
-        const isLocalhost = server.host === 'localhost' || server.host === '127.0.0.1' || server.host === 'garudanexa.com';
-
-        if (isLocalhost && server.type === 'vps') {
-          try {
-            const { execSync } = await import('child_process');
-            // CPU
-            const cpuOut = execSync("top -bn1 | grep 'Cpu(s)' | awk '{print $2+$4}'", { timeout: 5000, encoding: 'utf8' }).trim();
-            cpu = parseFloat(cpuOut) || 0;
-            // RAM
-            const ramOut = execSync("free | grep Mem | awk '{print $3, $2}'", { timeout: 5000, encoding: 'utf8' }).trim();
-            const [ramUsed, ramTotalStr] = ramOut.split(' ').map(Number);
-            ram = ramTotalStr > 0 ? Math.round((ramUsed / ramTotalStr) * 10000) / 100 : 0;
-            ramTotal = Math.round(ramTotalStr / 1024);
-            // Disk
-            const diskOut = execSync("df / | tail -1 | awk '{print $3, $2}'", { timeout: 5000, encoding: 'utf8' }).trim();
-            const [diskUsed, diskTotalStr] = diskOut.split(' ').map(Number);
-            disk = diskTotalStr > 0 ? Math.round((diskUsed / diskTotalStr) * 10000) / 100 : 0;
-            diskTotal = Math.round(diskTotalStr / 1024);
-            // Load
-            const loadOut = execSync("cat /proc/loadavg | awk '{print $1, $2, $3}'", { timeout: 5000, encoding: 'utf8' }).trim();
-            const loads = loadOut.split(' ').map(Number);
-            load1 = loads[0] || 0; load5 = loads[1] || 0; load15 = loads[2] || 0;
-          } catch (e) {}
-        }
-
-        const status = pingOk ? (cpu > 80 || ram > 80 ? 'critical' : cpu > 60 || ram > 60 ? 'warning' : 'online') : 'offline';
-
-        await pool.query(
-          `INSERT INTO monitor_server_logs (server_id, cpu_usage, ram_usage, ram_total, disk_usage, disk_total, load_1min, load_5min, load_15min, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [id, cpu, ram, ramTotal, disk, diskTotal, load1, load5, load15, status]
-        );
-
-        res.json({ success: true, status, cpu_usage: cpu, ram_usage: ram, disk_usage: disk, load_1min: load1, ping_ms: pingMs, last_updated: new Date().toISOString() });
-        return;
-      }
-
-      case 'monitor_push_metrics': {
-        const serverId = Number(input.server_id || 0);
-        if (!serverId) { res.json({ error: 'server_id required' }); return; }
-        const cpu = Number(input.cpu_usage || 0);
-        const ram = Number(input.ram_usage || 0);
-        const ramTotal = Number(input.ram_total || 0);
-        const disk = Number(input.disk_usage || 0);
-        const diskTotal = Number(input.disk_total || 0);
-        const load1 = Number(input.load_1min || 0);
-        const load5 = Number(input.load_5min || 0);
-        const load15 = Number(input.load_15min || 0);
-        const status = input.status || 'online';
-        await pool.query(
-          `INSERT INTO monitor_server_logs (server_id, cpu_usage, ram_usage, ram_total, disk_usage, disk_total, load_1min, load_5min, load_15min, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [serverId, cpu, ram, ramTotal, disk, diskTotal, load1, load5, load15, status]
-        );
-        res.json({ success: true });
-        return;
-      }
-
-      case 'monitor_get_settings': {
-        const [rows] = await pool.query('SELECT * FROM monitoring_settings WHERE id=1');
-        res.json(rows[0] || {});
-        return;
-      }
-
-      case 'monitor_update_settings': {
-        const fields = ['check_interval', 'wa_notifications', 'notify_website_down', 'notify_high_resource', 'notify_ssl_expiry', 'notify_domain_expiry'];
-        const sets = [];
-        const params = [];
-        for (const f of fields) {
-          if (input[f] !== undefined) { sets.push(`${f}=?`); params.push(Number(input[f])); }
-        }
-        if (input.wa_phone !== undefined) { sets.push('wa_phone=?'); params.push(input.wa_phone); }
-        if (input.wa_group !== undefined) { sets.push('wa_group=?'); params.push(input.wa_group); }
-        if (sets.length > 0) {
-          params.push(1);
-          await pool.query('UPDATE monitoring_settings SET ' + sets.join(',') + ' WHERE id=?', params);
-        }
-        res.json({ success: true });
-        return;
-      }
-
-      // ── Dashboard Summary ──
-      case 'monitor_dashboard_summary': {
-        const [[{ c: totalWeb }]] = await pool.query('SELECT COUNT(*) as c FROM monitoring_websites');
-        const [[{ c: onlineWeb }]] = await pool.query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='online'");
-        const [[{ c: offlineWeb }]] = await pool.query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='offline'");
-
-        const [serverRows] = await pool.query('SELECT * FROM monitoring_server_status WHERE id=1');
-        const server = serverRows[0] || null;
-
-        const [[{ c: visitors }]] = await pool.query('SELECT COALESCE(total_visits,0) as c FROM visitor_stats WHERE id=1');
-
-        const [[{ s: dbSize }]] = await pool.query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as s FROM information_schema.tables WHERE table_schema=?", [process.env.MYSQL_DB || 'db_garudanexabahtera']);
-
-        const [[{ c: unreadN }]] = await pool.query('SELECT COUNT(*) as c FROM monitoring_notifications WHERE is_read=0');
-
-        const [domExp] = await pool.query("SELECT domain, days_until_expiry, ssl_days_until_expiry FROM monitoring_domains WHERE (days_until_expiry BETWEEN 0 AND 30) OR (ssl_days_until_expiry BETWEEN 0 AND 30)");
-
-        res.json({
-          websites: { total: Number(totalWeb), online: Number(onlineWeb), offline: Number(offlineWeb) },
-          server,
-          visitors: Number(visitors),
-          database_size_mb: Number(dbSize || 0),
-          unread_notifications: Number(unreadN),
-          domains_expiring: domExp
-        });
-        return;
-      }
-
-      // ════════════════════════════════════════════════════════════
-      // New Monitoring System API Endpoints (POST)
-      // ════════════════════════════════════════════════════════════
-
-      case 'add_monitor_website': {
-        try {
-          const { name, url, category = 'Umum', notes = '', status = 'unknown' } = input;
-          const [result] = await pool.query(
-            'INSERT INTO monitor_websites (name, url, category, notes, status) VALUES (?, ?, ?, ?, ?)',
-            [name, url, category, notes, status]
-          );
-          res.json({ success: true, id: result.insertId });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'add_monitor_server': {
-        try {
-          const { name, host, type = 'linux', status = 'unknown', notes = '' } = input;
-          const [result] = await pool.query(
-            'INSERT INTO monitor_servers (name, host, type, status, notes) VALUES (?, ?, ?, ?, ?)',
-            [name, host, type, status, notes]
-          );
-          res.json({ success: true, id: result.insertId });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'add_monitor_agent': {
-        try {
-          const { name, model, provider, notes = '' } = input;
-          const [result] = await pool.query(
-            'INSERT INTO monitor_ai_agents (name, model, provider, notes) VALUES (?, ?, ?, ?)',
-            [name, model, provider, notes]
-          );
-          res.json({ success: true, id: result.insertId });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'delete_monitor_website': {
-        try {
-          const id = parseInt(input.id, 10);
-          if (!id) return res.status(400).json({ error: 'id required' });
-          await pool.query('DELETE FROM monitor_website_logs WHERE website_id = ?', [id]);
-          await pool.query('DELETE FROM monitor_ssl WHERE website_id = ?', [id]);
-          await pool.query('DELETE FROM monitor_websites WHERE id = ?', [id]);
-          res.json({ success: true });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'delete_monitor_server': {
-        try {
-          const id = parseInt(input.id, 10);
-          if (!id) return res.status(400).json({ error: 'id required' });
-          await pool.query('DELETE FROM monitor_server_logs WHERE server_id = ?', [id]);
-          await pool.query('DELETE FROM monitor_servers WHERE id = ?', [id]);
-          res.json({ success: true });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'delete_monitor_agent': {
-        try {
-          const id = parseInt(input.id, 10);
-          if (!id) return res.status(400).json({ error: 'id required' });
-          await pool.query('DELETE FROM monitor_ai_logs WHERE agent_id = ?', [id]);
-          await pool.query('DELETE FROM monitor_ai_agents WHERE id = ?', [id]);
-          res.json({ success: true });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'record_server_log': {
-        try {
-          const { server_id, status, cpu_usage, ram_used, ram_total, disk_used, disk_total, network_in, network_out, ram_percent, disk_percent } = input;
-          const [result] = await pool.query(
-            'INSERT INTO monitor_server_logs (server_id, status, cpu_usage, ram_used, ram_total, ram_percent, disk_used, disk_total, disk_percent, network_in, network_out) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [
-              parseInt(server_id, 10), status || 'unknown',
-              cpu_usage || 0, ram_used || 0, ram_total || 0, ram_percent || 0,
-              disk_used || 0, disk_total || 0, disk_percent || 0,
-              network_in || 0, network_out || 0
-            ]
-          );
-          // Also update server status
-          await pool.query('UPDATE monitor_servers SET status=?, last_seen=NOW() WHERE id=?', [status || 'unknown', parseInt(server_id, 10)]);
-          res.json({ success: true, id: result.insertId });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'record_ai_log': {
-        try {
-          const { agent_id, total_tokens, cost, error_count, model, prompt, response } = input;
-          const [result] = await pool.query(
-            'INSERT INTO monitor_ai_logs (agent_id, total_tokens, cost, error_count, model, prompt, response) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [
-              agent_id ? parseInt(agent_id, 10) : null,
-              total_tokens || 0, cost || 0, error_count || 0,
-              model || '', prompt || '', response || ''
-            ]
-          );
-          res.json({ success: true, id: result.insertId });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'record_website_log': {
-        try {
-          const { website_id, status, response_time_ms, http_status, error_message } = input;
-          const [result] = await pool.query(
-            'INSERT INTO monitor_website_logs (website_id, status, response_time_ms, http_status, error_message) VALUES (?, ?, ?, ?, ?)',
-            [
-              parseInt(website_id, 10), status || 'unknown',
-              response_time_ms || 0, http_status || 0,
-              error_message || ''
-            ]
-          );
-          // Update website status
-          await pool.query('UPDATE monitor_websites SET status=?, last_checked=NOW() WHERE id=?', [status || 'unknown', parseInt(website_id, 10)]);
-          res.json({ success: true, id: result.insertId });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'log_error': {
-        try {
-          const { source, severity, message, details } = input;
-          const [result] = await pool.query(
-            'INSERT INTO monitor_errors (source, severity, message, details) VALUES (?, ?, ?, ?)',
-            [source || 'unknown', severity || 'info', message || '', details || '']
-          );
-          res.json({ success: true, id: result.insertId });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'resolve_monitor_error': {
-        try {
-          const id = parseInt(input.id, 10);
-          if (!id) return res.status(400).json({ error: 'id required' });
-          await pool.query("UPDATE monitor_errors SET resolved=1, resolved_at=NOW(), resolved_by=? WHERE id=?", [input.resolved_by || 'system', id]);
-          res.json({ success: true });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-        return;
-      }
-
-      case 'resolve_error': {
-        try {
-          const id = parseInt(input.id, 10);
-          if (!id) return res.status(400).json({ error: 'id required' });
-          await pool.query('UPDATE monitor_error_center SET is_resolved = 1 WHERE id = ?', [id]);
-          res.json({ success: true });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
         return;
       }
 
@@ -1908,8 +885,9 @@ app.post('/api.php', async (req, res) => {
         res.status(400).json({ error: 'Invalid action: ' + action });
     }
   } catch (err) {
-    console.error('API Error:', err);
-    res.status(500).json({ error: err.message });
+    // Validation errors (e.g. UploadError) carry a safe message; anything else is masked by maskServerErrors
+    if (!err.expose) console.error('API Error:', err);
+    res.status(err.expose ? err.status : 500).json({ error: err.message });
   } finally {
     conn.release();
   }
@@ -1923,7 +901,7 @@ app.post('/api/ai-chat', async (req, res) => {
   }
 
   try {
-    // Build system prompt with Garuda Nexa context
+    // System prompt with Garuda Nexa context; kept identical to ai_chat_reply() in api.php
     const [settingsRows] = await pool.query('SELECT setting_key, setting_value FROM hero_settings');
     const settings = {};
     for (const row of settingsRows) {
@@ -1931,84 +909,76 @@ app.post('/api/ai-chat', async (req, res) => {
     }
 
     const [[visitorRow]] = await pool.query('SELECT total_visits FROM visitor_stats WHERE id = 1');
-    const totalVisits = visitorRow ? visitorRow.total_visits : 0;
+    const totalVisits = Number(visitorRow?.total_visits ?? 0) || 0;
+    const [productRows] = await pool.query('SELECT title, description, link_button FROM list_products ORDER BY id');
+    const products = productRows.map(p => `- **${p.title}**: ${p.description || '(no description)'} — Link: ${p.link_button || 'N/A'}`);
+    const [[projectRow]] = await pool.query('SELECT COUNT(*) as c FROM project_client');
+    const [[userRow]] = await pool.query('SELECT COUNT(*) as c FROM users');
+    let portfolio = [];
+    try {
+      const parsed = JSON.parse(settings.portfolio_data ?? '[]');
+      if (parsed && typeof parsed === 'object') portfolio = Object.values(parsed);
+    } catch { /* invalid JSON counts as no portfolio, like json_decode() ?: [] */ }
 
-    const [productRows] = await pool.query('SELECT id, title, description, link_button FROM list_products ORDER BY id');
-    const [projectCount] = await pool.query('SELECT COUNT(*) as count FROM project_client');
-    const [userCount] = await pool.query('SELECT COUNT(*) as count FROM users');
+    // number_format($visits, 0, ',', '.'): 12345 -> 12.345
+    const visitsText = String(Math.trunc(totalVisits)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-    const productsData = settings.products_data ? JSON.parse(settings.products_data) : [];
-    const portfolioData = settings.portfolio_data ? JSON.parse(settings.portfolio_data) : [];
+    const systemPrompt = 'Kamu adalah AI Assistant untuk website Garuda Nexa Bahtera — perusahaan software house & digital agency asal Indonesia.\n\n'
+      + 'Informasi website:\n'
+      + `- Tagline: ${settings.hero_title ?? 'Solusi Digital Terpercaya'}\n`
+      + `- Deskripsi: ${settings.hero_subtitle ?? 'Membangun software custom untuk bisnis Anda'}\n`
+      + `- Total pengunjung website: ${visitsText} kali\n`
+      + `- Total produk: ${products.length} produk\n`
+      + `- Total user admin: ${Number(userRow?.c ?? 0)}\n`
+      + `- Total project client: ${Number(projectRow?.c ?? 0)}\n`
+      + `- Portfolio: ${portfolio.length} project\n\n`
+      + `Produk:\n${products.length > 0 ? products.join('\n') : 'Belum ada produk terdaftar.'}\n\n`
+      + 'Kontak: WA 6285188009152 | Email: info@garudanexa.com\n\n'
+      + 'Jawab pertanyaan admin tentang website, data pengunjung, produk, layanan, dan teknis dalam bahasa Indonesia yang ramah dan profesional. '
+      + 'Arahkan pertanyaan di luar konteks kembali ke topik Garuda Nexa. Gunakan Markdown yang rapi dan jawab ringkas.';
 
-    const productList = productRows.map(p => `- **${p.title}**: ${p.description || '(no description)'} — Link: ${p.link_button || 'N/A'}`).join('\n');
+    // Only user/assistant turns from the client; the system prompt is ours
+    const history = messages.slice(-20) // last 20 messages max
+      .filter(m => (m?.role === 'user' || m?.role === 'assistant') && typeof m.content === 'string')
+      .map(m => ({ role: m.role, content: m.content }));
+    let reply = null;
+    let aiError = '';
+    try {
+      const completion = await openai.chat.completions.create({
+        model: AI_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...history,
+        ],
+        temperature: 0.7,
+        max_tokens: 1500,
+      }, { timeout: 120_000, maxRetries: 0 }); // one attempt, 120 s cap, like the curl call in api.php
+      reply = completion?.choices?.[0]?.message?.content ?? null;
+    } catch (err) {
+      aiError = String(err?.message || 'unknown error').replace(/\.+$/, '');
+    }
+    // Same 502 + message as api.php when the AI server does not answer
+    if (reply === null) {
+      console.error('AI Chat Error:', aiError || 'empty reply');
+      const baseUrl = String(openai.baseURL || '').replace(/\/+$/, '');
+      res.locals.safeError = true; // staff-only route; the hint is meant to be shown in the admin chat widget
+      return res.status(502).json({
+        error: `AI server di ${baseUrl} tidak merespons${aiError ? `: ${aiError}` : ''}. Jalankan Ollama atau set AI_BASE_URL/AI_MODEL.`,
+      });
+    }
 
-    const systemPrompt = `Kamu adalah AI Assistant untuk website Garuda Nexa Bahtera — perusahaan software house & digital agency asal Indonesia.
-
-Informasi website:
-- Nama: Garuda Nexa Bahtera
-- Tagline: ${settings.hero_title || 'Solusi Digital Terpercaya'}
-- Deskripsi: ${settings.hero_subtitle || 'Membangun software custom untuk bisnis Anda'}
-- Total pengunjung website: ${totalVisits.toLocaleString()} kali
-- Total produk: ${productRows.length} produk
-- Total user admin: ${userCount[0].count}
-- Total project client: ${projectCount[0].count}
-
-Produk/Layanan:
-${productsData.length > 0 ? productsData.map(p => `- **${p.title}**: ${p.description || ''}`).join('\n') : '- Web Development\n- POS System\n- I-School (Manajemen Sekolah)\n- Absensi Digital (Face Recognition & GPS)\n- I-Santri (Sistem Pesantren)\n- Enterprise Software'}
-
-Portfolio: ${portfolioData.length} project.
-
-Produk Detail di List Products:
-${productList || 'Belum ada produk terdaftar.'}
-
-Pricing:
-- Basic: Rp 2.000.000
-- Professional: Rp 5.000.000
-- Enterprise: Rp 8.500.000
-
-Process/Flow: Konsultasi → Desain UI/UX → Development → Testing & Launch
-
-Kontak: WA 6285188009152 | Email: info@garudanexa.com
-
-Web: https://garudanexabahtera.com
-
-Tugasmu:
-1. Jawab pertanyaan admin tentang website Garuda Nexa, data pengunjung, produk, layanan, pricing, dan teknis.
-2. Bantu admin troubleshooting dan analisis data website.
-3. Gunakan bahasa Indonesia yang ramah dan profesional.
-4. Jika ditanya hal di luar konteks website ini, arahkan kembali ke topik Garuda Nexa.
-5. Sebutkan angka/data spesifik dari sistem kalau relevan.
-
-FORMAT JAWABAN: Gunakan Markdown yang rapi dan menarik:
-- **Bold** untuk angka penting, nama produk, atau kata kunci
-- *Italic* untuk penekanan atau catatan tambahan
-- ### Heading untuk section/judul (ukuran kecil saja)
-- Tabel (\`| Kolom 1 | Kolom 2 |\`) untuk data berkolom (produk, pricing, statistik)
-- \`kode\` untuk teknis (endpoint, command, nama file)
-- List bullet/number untuk daftar item
-- Beri spasi antar section biar enak dibaca
-- Jangan kirim plain text mentah — selalu format pakai markdown yang rapi
-- Untuk angka statistik besar, tulis dengan bold dan tambah emoji relevan (📊 👥 🛒 💻)
-- Jawab ringkas + padat, maksimal 3-4 paragraf atau 1 tabel + penjelasan`;
-
-    const completion = await openai.chat.completions.create({
-      model: 'qwen2.5:3b',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages.slice(-20), // last 20 messages max
-      ],
-      temperature: 0.7,
-      max_tokens: 1500,
-    });
-
-    res.json({
-      reply: completion.choices[0].message.content,
-    });
+    res.json({ reply });
   } catch (err) {
     console.error('AI Chat Error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Terjadi kesalahan pada server. Silakan coba lagi.' });
   }
 });
+
+// Malformed JSON, oversized bodies and errors passed to next(): JSON response without internals
+app.use(errorHandler);
+
+// A rejected promise nobody awaited must not take the whole API down
+process.on('unhandledRejection', (err) => console.error('[api] Unhandled rejection:', err));
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[API] Server running on port ${PORT}`);

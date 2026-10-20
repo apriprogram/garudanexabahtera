@@ -1,20 +1,86 @@
 <?php
-// Prevent PHP from outputting HTML errors that break JSON
-error_reporting(0);
-ini_set('display_errors', 0);
-ini_set('memory_limit', '256M');
-ini_set('upload_max_filesize', '64M');
-ini_set('post_max_size', '64M');
-ini_set('max_execution_time', '300');
+// PHP API for local development (php -S / XAMPP) and PHP hosting. Production behind nginx runs
+// backend/server.js; the security rules below mirror backend/security.js — keep the action lists in sync.
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+// Errors are logged, never printed: a printed warning breaks the JSON and leaks internals
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+ini_set('memory_limit', '256M');
+ini_set('max_execution_time', '300');
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+// An error whose message is safe to show to the client (validation, auth, rate limit).
+// $fieldErrors (field => message) is sent as `errors` so forms can show messages under each field.
+class ApiError extends Exception {
+    public $status;
+    public $errorCode;
+    public $fieldErrors;
+    public function __construct($message, $status = 400, $errorCode = null, $fieldErrors = null) {
+        parent::__construct($message);
+        $this->status = $status;
+        $this->errorCode = $errorCode;
+        $this->fieldErrors = $fieldErrors;
+    }
+}
+
+const GENERIC_ERROR = 'Terjadi kesalahan pada server. Silakan coba lagi.';
+
+// ── Access policy (same lists as backend/security.js, docs/platform/SPEC.md §2) ──
+// Default deny: an action that is not public needs a valid token. Customer tokens may only call
+// CUSTOMER_ACTIONS; everything else is a staff action (role admin or user), ADMIN_ACTIONS admin only.
+const PUBLIC_ACTIONS = [
+    'get_settings', 'track_visit', 'login', 'register', 'get_list_products', 'get_navbar_menus',
+    'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
+    'customer_register', 'midtrans_notification', 'get_payment_config',
+];
+const CUSTOMER_ACTIONS = [
+    'customer_create_order', 'customer_pay_order', 'customer_get_orders', 'customer_get_order',
+    'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment',
+];
+const ADMIN_ACTIONS = [
+    'add_user', 'delete_user',
+    'migrate_paths', 'reset_product_portfolio', 'reset_visitor_stats',
+    'add_navbar_menu', 'edit_navbar_menu', 'delete_navbar_menu', 'save_navbar_menus_order',
+    'add_changelog', 'update_changelog', 'delete_changelog',
+    'admin_delete_template',
+];
+const STAFF_ROLES = ['admin', 'user'];
+const USER_ROLES = ['admin', 'user', 'customer'];
+
+// ── Upload allowlist ──
+const UPLOAD_DOCUMENT_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'txt', 'csv', 'rtf', 'zip', 'rar', '7z'];
+// Signatures checked for binary formats; text formats (txt, csv, rtf) have none
+const UPLOAD_MAGIC = [
+    'pdf' => '25504446', 'doc' => 'd0cf11e0', 'xls' => 'd0cf11e0', 'ppt' => 'd0cf11e0',
+    'docx' => '504b0304', 'xlsx' => '504b0304', 'pptx' => '504b0304', 'odt' => '504b0304', 'ods' => '504b0304', 'odp' => '504b0304',
+    'zip' => '504b0304', 'rar' => '52617221', '7z' => '377abcaf',
+];
+
+set_exception_handler(function ($e) {
+    $safe = $e instanceof ApiError;
+    if (!$safe) error_log('[api.php] ' . $e);
+    if (!headers_sent()) http_response_code($safe ? $e->status : 500);
+    $body = ["error" => $safe ? $e->getMessage() : GENERIC_ERROR];
+    if ($safe && $e->errorCode) $body["code"] = $e->errorCode;
+    if ($safe && $e->fieldErrors) $body["errors"] = $e->fieldErrors;
+    echo json_encode($body);
+});
+
+// Template marketplace + custom orders (handle_platform_action)
+require_once __DIR__ . '/modules/templates.php';
+
+load_env_file();
+
 header("Content-Type: application/json");
+header("X-Content-Type-Options: nosniff");
+header("Cache-Control: no-store");
+header("Referrer-Policy: strict-origin-when-cross-origin");
+send_cors_headers();
 
 // Handle browser preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
+    http_response_code(204);
     exit();
 }
 
@@ -25,40 +91,48 @@ $pass = getenv("MYSQL_PASS") ?: "";
 $db = getenv("MYSQL_DB") ?: "db_garudanexabahtera";
 
 $conn = new mysqli($host, $user, $pass, $db);
-
-if ($conn->connect_error) {
-    die(json_encode(["error" => "Connection failed: " . $conn->connect_error]));
-}
+// Server hosting default-nya latin1: tanpa ini teks seperti "©" rusak dan json_encode mengembalikan false
+$conn->set_charset('utf8mb4');
 
 $method = $_SERVER['REQUEST_METHOD'];
-$request = explode('/', trim($_SERVER['PATH_INFO'] ?? '', '/'));
 $input = json_decode(file_get_contents('php://input'), true);
+if (!is_array($input)) $input = [];
+// Read actions may be called with a query string (GET); the body wins over the query
+if ($method === 'GET') $input = $input + $_GET;
 
-$action = trim($input['action'] ?? $_GET['action'] ?? '');
-file_put_contents('debug.log', "[" . date('Y-m-d H:i:s') . "] Action: '" . $action . "'\n", FILE_APPEND);
-$error = null;
-$success = true;
+$action = $input['action'] ?? $_GET['action'] ?? '';
+$action = is_string($action) ? trim($action) : '';
+
+if ($action === 'login' || $action === 'register') {
+    handle_auth_action($conn, $action, $input);
+    exit();
+}
+// Token + role check for everything that is not public; may adjust $input (see authorize_request)
+$authUser = authorize_request($conn, $action, $input);
+
+// Template marketplace, customer account and custom-order actions (backend/modules/templates.php)
+if (handle_platform_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
 
 switch ($action) {
     case 'migrate_paths':
         // Update path lama ke path baru di semua setting yang menyimpan JSON gambar
-        $keys = ['products_data', 'portfolio_data'];
         $results = [];
-        foreach ($keys as $key) {
-            $res = $conn->query("SELECT setting_value FROM hero_settings WHERE setting_key = '$key'");
-            if ($res && $row = $res->fetch_assoc()) {
-                $val = $row['setting_value'];
-                $newVal = str_replace('/assets/products/', '/assets/product/', $val);
-                $newVal = str_replace('/assets/portfolio/', '/assets/portofolio/', $newVal);
-                if ($newVal !== $val) {
-                    $escaped = $conn->real_escape_string($newVal);
-                    $conn->query("UPDATE hero_settings SET setting_value = '$escaped' WHERE setting_key = '$key'");
-                    $results[] = "$key: updated";
-                } else {
-                    $results[] = "$key: no change needed";
-                }
-            } else {
+        foreach (['products_data', 'portfolio_data'] as $key) {
+            $row = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = ?", [$key]);
+            if (!$row) {
                 $results[] = "$key: not found";
+                continue;
+            }
+            $val = $row['setting_value'];
+            $newVal = str_replace(['/assets/products/', '/assets/portfolio/'], ['/assets/product/', '/assets/portofolio/'], $val);
+            if ($newVal !== $val) {
+                db_run($conn, "UPDATE hero_settings SET setting_value = ? WHERE setting_key = ?", [$newVal, $key]);
+                $results[] = "$key: updated";
+            } else {
+                $results[] = "$key: no change needed";
             }
         }
         echo json_encode(["success" => true, "results" => $results]);
@@ -66,219 +140,114 @@ switch ($action) {
 
     case 'reset_product_portfolio':
         // Reset products & portfolio ke default agar gambar statis bawaan tampil
-        $conn->query("DELETE FROM hero_settings WHERE setting_key IN ('products_data', 'portfolio_data')");
+        db_run($conn, "DELETE FROM hero_settings WHERE setting_key IN ('products_data', 'portfolio_data')");
         echo json_encode(["success" => true, "message" => "Reset berhasil, data kembali ke default."]);
         break;
 
     case 'get_users':
-        $result = $conn->query("SELECT id, name, email, phone, role, status, avatar FROM users ORDER BY id DESC");
-        $users = [];
-        while ($row = $result->fetch_assoc()) {
-            $users[] = $row;
-        }
-        echo json_encode($users);
+        echo json_encode(db_all($conn, "SELECT id, name, email, phone, role, status, avatar FROM users ORDER BY id DESC"));
         break;
 
     case 'add_user':
-        $name = $conn->real_escape_string($input['name']);
-        $email = $conn->real_escape_string($input['email']);
-        $password = password_hash($input['password'], PASSWORD_DEFAULT);
-        $phone = $conn->real_escape_string($input['phone']);
-        $role = $conn->real_escape_string($input['role']);
-        $status = $conn->real_escape_string($input['status']);
-        $avatar = $conn->real_escape_string($input['avatar'] ?? '');
-
-        $sql = "INSERT INTO users (name, email, password, phone, role, status, avatar) 
-                VALUES ('$name', '$email', '$password', '$phone', '$role', '$status', '$avatar')";
-        
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true, "id" => $conn->insert_id]);
-        } else {
-            echo json_encode(["error" => $conn->error]);
-        }
+        db_run($conn, "INSERT INTO users (name, email, password, phone, role, status, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+            in_str($input, 'name'), in_str($input, 'email'), password_hash(in_str($input, 'password'), PASSWORD_DEFAULT),
+            in_str($input, 'phone'), in_str($input, 'role', 'user'), in_str($input, 'status', 'active'), in_str($input, 'avatar'),
+        ]);
+        echo json_encode(["success" => true, "id" => $conn->insert_id]);
         break;
 
     case 'update_user':
-        $id = (int)$input['id'];
-        $name = $conn->real_escape_string($input['name']);
-        $email = $conn->real_escape_string($input['email']);
-        $phone = $conn->real_escape_string($input['phone']);
-        $role = $conn->real_escape_string($input['role']);
-        $status = $conn->real_escape_string($input['status']);
-        $avatar = $conn->real_escape_string($input['avatar'] ?? '');
-        
-        $sql = "UPDATE users SET name='$name', email='$email', phone='$phone', role='$role', status='$status', avatar='$avatar'";
-        
+        $sql = "UPDATE users SET name = ?, email = ?, phone = ?, role = ?, status = ?, avatar = ?";
+        $params = [in_str($input, 'name'), in_str($input, 'email'), in_str($input, 'phone'), in_str($input, 'role'), in_str($input, 'status'), in_str($input, 'avatar')];
         if (!empty($input['password'])) {
-            $password = password_hash($input['password'], PASSWORD_DEFAULT);
-            $sql .= ", password='$password'";
+            $sql .= ", password = ?";
+            $params[] = password_hash(in_str($input, 'password'), PASSWORD_DEFAULT);
         }
-        
-        $sql .= " WHERE id=$id";
-
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true, "message" => "User updated successfully"]);
-        } else {
-            echo json_encode(["error" => "Database error: " . $conn->error]);
-        }
+        $sql .= " WHERE id = ?";
+        $params[] = in_int($input, 'id');
+        db_run($conn, $sql, $params);
+        echo json_encode(["success" => true, "message" => "User updated successfully"]);
         break;
 
     case 'delete_user':
-        $id = (int)($input['id'] ?? $_GET['id']);
-        $sql = "DELETE FROM users WHERE id=$id";
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true]);
-        } else {
-            echo json_encode(["error" => $conn->error]);
-        }
-        break;
-
-    case 'login':
-        $email = $conn->real_escape_string($input['email']);
-        $password = $input['password'];
-        
-        $result = $conn->query("SELECT * FROM users WHERE email='$email'");
-        if ($row = $result->fetch_assoc()) {
-            if ($row['status'] === 'inactive') {
-                echo json_encode(["error" => "Akun Anda tidak aktif. Hubungi administrator."]);
-            } elseif (password_verify($password, $row['password'])) {
-                unset($row['password']);
-                echo json_encode(["success" => true, "user" => $row]);
-            } else {
-                echo json_encode(["error" => "Password salah"]);
-            }
-        } else {
-            echo json_encode(["error" => "Email tidak ditemukan"]);
-        }
+        db_run($conn, "DELETE FROM users WHERE id = ?", [in_int($input, 'id')]);
+        echo json_encode(["success" => true]);
         break;
 
     case 'get_settings':
-        $result = $conn->query("SELECT setting_key, setting_value FROM hero_settings");
         $settings = [];
-        while ($row = $result->fetch_assoc()) {
+        foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings") as $row) {
             $settings[$row['setting_key']] = $row['setting_value'];
         }
         echo json_encode($settings);
         break;
 
     case 'update_settings':
-        $settings = $input['settings'] ?? [];
-        $success = true;
-
-        if (!function_exists('save_base64_setting_image')) {
-            function save_base64_setting_image($base64_data, $section) {
-                if (strpos($base64_data, 'data:image') === false) {
-                    return $base64_data;
-                }
-                $folder = __DIR__ . "/../public/assets/" . $section . "/";
-                if (!is_dir($folder)) mkdir($folder, 0777, true);
-                
-                $parts = explode(',', $base64_data);
-                $header = $parts[0];
-                $content = base64_decode($parts[1]);
-                
-                $ext = 'jpg';
-                if (strpos($header, 'png') !== false) $ext = 'png';
-                else if (strpos($header, 'svg') !== false) $ext = 'svg';
-                else if (strpos($header, 'webp') !== false) $ext = 'webp';
-                else if (strpos($header, 'gif') !== false) $ext = 'gif';
-                
-                $filename = $section . "_" . uniqid() . "." . $ext;
-                file_put_contents($folder . $filename, $content);
-                return "/assets/" . $section . "/" . $filename;
-            }
-        }
+        $settings = is_array($input['settings'] ?? null) ? $input['settings'] : [];
 
         // Special handling for products_data
         // Gambar disimpan sebagai base64 langsung di DB (tidak ke disk)
         // agar tidak bergantung pada path file server yang berbeda-beda
         if (isset($settings['products_data'])) {
-            $newItems = json_decode($settings['products_data'], true);
+            $newItems = json_decode((string)$settings['products_data'], true);
             if (is_array($newItems)) {
                 // Ambil data existing untuk preserve gambar yang sudah ada
-                $existingRes = $conn->query("SELECT setting_value FROM hero_settings WHERE setting_key = 'products_data'");
+                $existingRow = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = 'products_data'");
                 $existingByID = [];
-                if ($existingRes && $existingRow = $existingRes->fetch_assoc()) {
-                    $existingParsed = json_decode($existingRow['setting_value'], true);
-                    if (is_array($existingParsed)) {
-                        foreach ($existingParsed as $ep) {
-                            if (!empty($ep['id'])) $existingByID[$ep['id']] = $ep;
-                        }
+                $existingParsed = $existingRow ? json_decode($existingRow['setting_value'], true) : null;
+                if (is_array($existingParsed)) {
+                    foreach ($existingParsed as $ep) {
+                        if (!empty($ep['id'])) $existingByID[$ep['id']] = $ep;
                     }
                 }
                 foreach ($newItems as &$item) {
                     $existID = $item['id'] ?? '';
-                    // Jika image kosong, gunakan image yang sudah ada
-                    if (empty($item['image']) && !empty($existingByID[$existID]['image'])) {
-                        $item['image'] = $existingByID[$existID]['image'];
-                    }
-                    // Jika logo kosong, gunakan logo yang sudah ada
-                    if (empty($item['logo']) && !empty($existingByID[$existID]['logo'])) {
-                        $item['logo'] = $existingByID[$existID]['logo'];
-                    }
-                    // Base64 images disimpan langsung (tidak perlu save ke disk)
-                    // File path images (/assets/...) juga disimpan langsung
+                    // Jika image/logo kosong, gunakan yang sudah ada
+                    if (empty($item['image']) && !empty($existingByID[$existID]['image'])) $item['image'] = $existingByID[$existID]['image'];
+                    if (empty($item['logo']) && !empty($existingByID[$existID]['logo'])) $item['logo'] = $existingByID[$existID]['logo'];
                 }
+                unset($item);
                 $settings['products_data'] = json_encode($newItems);
             }
         }
 
         // Special handling for portfolio_data - sama seperti products
         if (isset($settings['portfolio_data'])) {
-            $newItems = json_decode($settings['portfolio_data'], true);
+            $newItems = json_decode((string)$settings['portfolio_data'], true);
             if (is_array($newItems)) {
-                // Ambil data existing untuk preserve gambar yang sudah ada
-                $existingRes = $conn->query("SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data'");
-                $existingArr = [];
-                if ($existingRes && $existingRow = $existingRes->fetch_assoc()) {
-                    $existingArr = json_decode($existingRow['setting_value'], true) ?: [];
-                }
+                $existingRow = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data'");
+                $existingArr = $existingRow ? (json_decode($existingRow['setting_value'], true) ?: []) : [];
                 foreach ($newItems as $idx => &$item) {
                     // Jika image kosong, gunakan image yang sudah ada berdasarkan posisi
-                    if (empty($item['image']) && !empty($existingArr[$idx]['image'])) {
-                        $item['image'] = $existingArr[$idx]['image'];
-                    }
+                    if (empty($item['image']) && !empty($existingArr[$idx]['image'])) $item['image'] = $existingArr[$idx]['image'];
                 }
+                unset($item);
                 $settings['portfolio_data'] = json_encode($newItems);
             }
         }
 
         // Special handling for services_data
         if (isset($settings['services_data'])) {
-            $items = json_decode($settings['services_data'], true);
+            $items = json_decode((string)$settings['services_data'], true);
             if (is_array($items)) {
                 foreach ($items as &$item) {
-                    if (isset($item['image'])) {
-                        $item['image'] = save_base64_setting_image($item['image'], 'services');
-                    }
-                    if (isset($item['icon'])) {
-                        $item['icon'] = save_base64_setting_image($item['icon'], 'services');
-                    }
+                    if (isset($item['image'])) $item['image'] = save_base64_asset($item['image'], 'services');
+                    if (isset($item['icon'])) $item['icon'] = save_base64_asset($item['icon'], 'services');
                 }
+                unset($item);
                 $settings['services_data'] = json_encode($items);
             }
         }
-        
+
         // Special handling for hero_images
         if (isset($settings['hero_images'])) {
-            $images = json_decode($settings['hero_images'], true);
+            $images = json_decode((string)$settings['hero_images'], true);
             if (is_array($images)) {
-                $bg_folder = __DIR__ . "/../public/assets/bg/";
-                if (!is_dir($bg_folder)) mkdir($bg_folder, 0777, true);
-                $final_paths = []; $kept_files = [];
-                foreach ($images as $index => $imgData) {
-                    if (strpos($imgData, 'data:image') !== false) {
-                        $data = explode(',', $imgData); $content = base64_decode($data[1]);
-                        $filename = "hero_" . uniqid() . "_" . $index . ".jpg";
-                        file_put_contents($bg_folder . $filename, $content);
-                        $final_paths[] = "/assets/bg/" . $filename; $kept_files[] = $filename;
-                    } else {
-                        $final_paths[] = $imgData; $kept_files[] = basename($imgData);
-                    }
-                }
-                $all_files = glob($bg_folder . "*");
-                foreach ($all_files as $file) {
-                    if (is_file($file) && !in_array(basename($file), $kept_files)) unlink($file);
+                // Removed images are not deleted from disk (same as server.js): the folder also holds
+                // files committed to the repo, and every settings save resends this list
+                $final_paths = [];
+                foreach ($images as $imgData) {
+                    if (is_string($imgData)) $final_paths[] = save_base64_asset($imgData, 'bg', 'hero');
                 }
                 $settings['hero_images'] = json_encode($final_paths);
             }
@@ -286,327 +255,135 @@ switch ($action) {
 
         // Special handling for hero_logos
         if (isset($settings['hero_logos'])) {
-            $logos = json_decode($settings['hero_logos'], true);
+            $logos = json_decode((string)$settings['hero_logos'], true);
             if (is_array($logos)) {
-                $logo_folder = __DIR__ . "/../public/assets/logo-product/";
-                if (!is_dir($logo_folder)) mkdir($logo_folder, 0777, true);
-                $final_logos = []; $kept_logos = [];
-                foreach ($logos as $index => $logo) {
-                    if (strpos($logo['src'], 'data:image') !== false) {
-                        $data = explode(',', $logo['src']); $content = base64_decode($data[1]);
-                        $ext = strpos($data[0], 'png') !== false ? 'png' : 'jpg';
-                        $filename = "logo_" . uniqid() . "_" . $index . "." . $ext;
-                        file_put_contents($logo_folder . $filename, $content);
-                        $final_logos[] = ["name" => $logo['name'], "src" => "/assets/logo-product/" . $filename];
-                        $kept_logos[] = $filename;
-                    } else {
-                        $final_logos[] = $logo; $kept_logos[] = basename($logo['src']);
-                    }
-                }
-                $all_files = glob($logo_folder . "*");
-                foreach ($all_files as $file) {
-                    if (is_file($file) && !in_array(basename($file), $kept_logos)) unlink($file);
+                // Like hero_images: removed logos stay on disk
+                $final_logos = [];
+                foreach ($logos as $logo) {
+                    if (is_array($logo)) $final_logos[] = array_merge($logo, ["src" => save_base64_asset($logo['src'] ?? '', 'logo-product', 'logo')]);
                 }
                 $settings['hero_logos'] = json_encode($final_logos);
             }
         }
 
         foreach ($settings as $key => $value) {
-            $key = $conn->real_escape_string($key);
-            $value = $conn->real_escape_string($value);
-            $sql = "INSERT INTO hero_settings (setting_key, setting_value) 
-                    VALUES ('$key', '$value') 
-                    ON DUPLICATE KEY UPDATE setting_value = '$value'";
-            if (!$conn->query($sql)) {
-                $success = false;
-                $error = $conn->error;
-                break;
-            }
+            if (!preg_match('/^[A-Za-z0-9_]{1,100}$/', (string)$key)) throw new ApiError("Nama setting tidak valid: $key");
+            $value = is_string($value) ? $value : json_encode($value);
+            db_run($conn, "INSERT INTO hero_settings (setting_key, setting_value) VALUES (?, ?)
+                           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [(string)$key, $value]);
         }
-        echo json_encode(["success" => $success, "error" => $error]);
+        echo json_encode(["success" => true, "error" => null]);
         break;
 
     case 'get_projects':
-        $result = $conn->query("SELECT * FROM project_client ORDER BY id DESC");
-        $projects = [];
-        while ($row = $result->fetch_assoc()) {
-            $projects[] = $row;
-        }
-        echo json_encode($projects);
+        // show_on_website (0/1) and source ('admin' | 'website' = public custom-order form) as in SPEC §6
+        echo json_encode(array_map(function ($row) {
+            $row['show_on_website'] = (int)($row['show_on_website'] ?? 0);
+            $row['source'] = $row['source'] ?? 'admin';
+            return $row;
+        }, db_all($conn, "SELECT * FROM project_client ORDER BY id DESC")));
         break;
 
     case 'add_project':
-        $name = $conn->real_escape_string($input['name']);
-        $client_name = $conn->real_escape_string($input['client_name']);
-        $client_email = $conn->real_escape_string($input['client_email'] ?? '');
-        $client_phone = $conn->real_escape_string($input['client_phone'] ?? '');
-        $service_type = $conn->real_escape_string($input['service_type']);
-        $status = $conn->real_escape_string($input['status']);
-        $price = (float)$input['price'];
-        $start_date = $conn->real_escape_string($input['start_date']);
-        $end_date = $conn->real_escape_string($input['end_date'] ?? '');
-        $description = $conn->real_escape_string($input['description'] ?? '');
-        $assigned_user = $conn->real_escape_string($input['assigned_user'] ?? '');
-
-        // Handle Main Project Image
-        $image_path = '';
-        if (isset($input['image']) && strpos($input['image'], 'data:image') !== false) {
-            $logo_folder = __DIR__ . "/../public/assets/dokumen-client/logo/";
-            if (!is_dir($logo_folder)) mkdir($logo_folder, 0777, true);
-            $data = explode(',', $input['image']);
-            $content = base64_decode($data[1]);
-            $ext = strpos($data[0], 'png') !== false ? 'png' : 'jpg';
-            $filename = "project_" . uniqid() . "." . $ext;
-            file_put_contents($logo_folder . $filename, $content);
-            $image_path = "/assets/dokumen-client/logo/" . $filename;
-        } else {
-            $image_path = $conn->real_escape_string($input['image'] ?? '');
-        }
-
-        // Handle Project Materials (Files)
-        $final_files = [];
-        if (isset($input['project_files'])) {
-            $files_array = json_decode($input['project_files'], true);
-            if (is_array($files_array)) {
-                $doc_folder = __DIR__ . "/../public/assets/dokumen-client/dokumen/";
-                if (!is_dir($doc_folder)) mkdir($doc_folder, 0777, true);
-                foreach ($files_array as $f) {
-                    if (isset($f['data']) && strpos($f['data'], 'data:') !== false) {
-                        $data = explode(',', $f['data']);
-                        $content = base64_decode($data[1]);
-                        $filename = "doc_" . uniqid() . "_" . $f['name'];
-                        file_put_contents($doc_folder . $filename, $content);
-                        $final_files[] = [
-                            "name" => $f['name'],
-                            "type" => $f['type'],
-                            "size" => $f['size'],
-                            "path" => "/assets/dokumen-client/dokumen/" . $filename
-                        ];
-                    } else {
-                        $final_files[] = $f;
-                    }
-                }
-            }
-        }
-        $project_files_json = $conn->real_escape_string(json_encode($final_files));
-
-        // Fix empty dates - use NULL for MySQL DATE columns
-        $start_date_sql = !empty($start_date) ? "'$start_date'" : "NULL";
-        $end_date_sql = !empty($end_date) ? "'$end_date'" : "NULL";
-
-        $sql = "INSERT INTO project_client (name, client_name, client_email, client_phone, service_type, status, assigned_user, price, start_date, end_date, image, project_files, description) 
-                VALUES ('$name', '$client_name', '$client_email', '$client_phone', '$service_type', '$status', '$assigned_user', $price, $start_date_sql, $end_date_sql, '$image_path', '$project_files_json', '$description')";
-        
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true, "id" => $conn->insert_id]);
-        } else {
-            echo json_encode(["error" => $conn->error]);
-        }
+        // Main project image and project materials (files) are stored under public/assets/dokumen-client/
+        $image_path = save_base64_asset($input['image'] ?? '', 'dokumen-client/logo', 'project');
+        $project_files_json = json_encode(isset($input['project_files']) ? save_base64_files($input['project_files'], 'dokumen-client/dokumen') : []);
+        // Empty dates are stored as NULL (MySQL DATE columns)
+        $start_date = in_str($input, 'start_date') !== '' ? in_str($input, 'start_date') : null;
+        $end_date = in_str($input, 'end_date') !== '' ? in_str($input, 'end_date') : null;
+        db_run($conn, "INSERT INTO project_client (name, client_name, client_email, client_phone, service_type, status, assigned_user, price,
+                           start_date, end_date, image, project_files, description, show_on_website, source)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'admin')", [
+            in_str($input, 'name'), in_str($input, 'client_name'), in_str($input, 'client_email'), in_str($input, 'client_phone'),
+            in_str($input, 'service_type'), in_str($input, 'status'), in_str($input, 'assigned_user'), (float)($input['price'] ?? 0),
+            $start_date, $end_date, (string)$image_path, $project_files_json, in_str($input, 'description'), in_flag($input, 'show_on_website'),
+        ]);
+        echo json_encode(["success" => true, "id" => $conn->insert_id]);
         break;
 
     case 'update_project':
-        $id = (int)$input['id'];
-        $name = $conn->real_escape_string($input['name']);
-        $client_name = $conn->real_escape_string($input['client_name']);
-        $client_email = $conn->real_escape_string($input['client_email'] ?? '');
-        $client_phone = $conn->real_escape_string($input['client_phone'] ?? '');
-        $service_type = $conn->real_escape_string($input['service_type']);
-        $status = $conn->real_escape_string($input['status']);
-        $price = (float)$input['price'];
-        $start_date = $conn->real_escape_string($input['start_date']);
-        $end_date = $conn->real_escape_string($input['end_date'] ?? '');
-        $description = $conn->real_escape_string($input['description'] ?? '');
-        $assigned_user = $conn->real_escape_string($input['assigned_user'] ?? '');
-
-        // Handle Main Project Image
-        $image_path = '';
-        if (isset($input['image']) && strpos($input['image'], 'data:image') !== false) {
-            $logo_folder = __DIR__ . "/../public/assets/dokumen-client/logo/";
-            if (!is_dir($logo_folder)) mkdir($logo_folder, 0777, true);
-            $data = explode(',', $input['image']);
-            $content = base64_decode($data[1]);
-            $ext = strpos($data[0], 'png') !== false ? 'png' : 'jpg';
-            $filename = "project_" . uniqid() . "." . $ext;
-            file_put_contents($logo_folder . $filename, $content);
-            $image_path = "/assets/dokumen-client/logo/" . $filename;
-        } else {
-            $image_path = $conn->real_escape_string($input['image'] ?? '');
+        // Only the fields that were sent change, so a quick toggle ({id, show_on_website}) keeps the rest.
+        // Column names come from these fixed lists, values are bound. `source` is never changed here.
+        $id = in_int($input, 'id');
+        $sets = []; $params = [];
+        foreach (['name', 'client_name', 'client_email', 'client_phone', 'service_type', 'status', 'assigned_user', 'description'] as $f) {
+            if (array_key_exists($f, $input)) { $sets[] = "$f = ?"; $params[] = in_str($input, $f); }
         }
-
-        // Handle Project Materials (Files)
-        $final_files = [];
-        if (isset($input['project_files'])) {
-            $files_array = json_decode($input['project_files'], true);
-            if (is_array($files_array)) {
-                $doc_folder = __DIR__ . "/../public/assets/dokumen-client/dokumen/";
-                if (!is_dir($doc_folder)) mkdir($doc_folder, 0777, true);
-                foreach ($files_array as $f) {
-                    if (isset($f['data']) && strpos($f['data'], 'data:') !== false) {
-                        $data = explode(',', $f['data']);
-                        $content = base64_decode($data[1]);
-                        $filename = "doc_" . uniqid() . "_" . $f['name'];
-                        file_put_contents($doc_folder . $filename, $content);
-                        $final_files[] = [
-                            "name" => $f['name'],
-                            "type" => $f['type'],
-                            "size" => $f['size'],
-                            "path" => "/assets/dokumen-client/dokumen/" . $filename
-                        ];
-                    } else {
-                        $final_files[] = $f;
-                    }
-                }
-            }
+        if (array_key_exists('price', $input)) { $sets[] = "price = ?"; $params[] = (float)($input['price'] ?? 0); }
+        foreach (['start_date', 'end_date'] as $f) {
+            if (array_key_exists($f, $input)) { $sets[] = "$f = ?"; $params[] = in_str($input, $f) !== '' ? in_str($input, $f) : null; }
         }
-        $project_files_json = $conn->real_escape_string(json_encode($final_files));
-
-        // Fix empty dates - use NULL for MySQL DATE columns
-        $start_date_sql = !empty($start_date) ? "'$start_date'" : "NULL";
-        $end_date_sql = !empty($end_date) ? "'$end_date'" : "NULL";
-
-        $sql = "UPDATE project_client SET 
-                name='$name', client_name='$client_name', client_email='$client_email', client_phone='$client_phone', 
-                service_type='$service_type', status='$status', assigned_user='$assigned_user', price=$price, 
-                start_date=$start_date_sql, end_date=$end_date_sql, image='$image_path', 
-                project_files='$project_files_json', description='$description' 
-                WHERE id=$id";
-
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true]);
-        } else {
-            echo json_encode(["error" => $conn->error]);
+        if (array_key_exists('image', $input)) {
+            $sets[] = "image = ?";
+            $params[] = (string)save_base64_asset($input['image'] ?? '', 'dokumen-client/logo', 'project');
         }
+        if (array_key_exists('project_files', $input)) {
+            $sets[] = "project_files = ?";
+            $params[] = json_encode(save_base64_files($input['project_files'], 'dokumen-client/dokumen'));
+        }
+        if (array_key_exists('show_on_website', $input)) { $sets[] = "show_on_website = ?"; $params[] = in_flag($input, 'show_on_website'); }
+        if ($id <= 0 || !$sets) throw new ApiError("Tidak ada data untuk diperbarui");
+        $params[] = $id;
+        db_run($conn, "UPDATE project_client SET " . implode(', ', $sets) . " WHERE id = ?", $params);
+        echo json_encode(["success" => true]);
         break;
 
     case 'delete_project':
-        $id = (int)($input['id'] ?? $_GET['id']);
-        $sql = "DELETE FROM project_client WHERE id=$id";
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true]);
-        } else {
-            echo json_encode(["error" => $conn->error]);
-        }
+        db_run($conn, "DELETE FROM project_client WHERE id = ?", [in_int($input, 'id')]);
+        echo json_encode(["success" => true]);
         break;
 
     case 'track_visit':
-        $sql = "UPDATE visitor_stats SET total_visits = total_visits + 1 WHERE id = 1";
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true]);
-        } else {
-            echo json_encode(["error" => $conn->error]);
-        }
+        db_run($conn, "UPDATE visitor_stats SET total_visits = total_visits + 1 WHERE id = 1");
+        // Per-visit row for the device/browser/OS charts, like server.js
+        $ua = substr(in_str($input, 'user_agent', $_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 500);
+        [$device, $browser, $os] = parse_user_agent($ua);
+        db_run($conn, "INSERT INTO visitor_logs (ip_address, user_agent, device, browser, os, country, visited_at)
+                       VALUES (?, ?, ?, ?, ?, 'Unknown', NOW())", [client_ip(), $ua, $device, $browser, $os]);
+        echo json_encode(["success" => true]);
         break;
 
     case 'reset_visitor_stats':
         // Update all rows just in case id is not 1
-        $sql = "UPDATE visitor_stats SET total_visits = 0";
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true]);
-        } else {
-            http_response_code(500);
-            echo json_encode(["success" => false, "error" => $conn->error]);
-        }
+        db_run($conn, "UPDATE visitor_stats SET total_visits = 0");
+        echo json_encode(["success" => true]);
         break;
 
     case 'get_visitor_stats':
-        $result = $conn->query("SELECT total_visits FROM visitor_stats WHERE id = 1");
-        if ($row = $result->fetch_assoc()) {
-            echo json_encode(["total_visits" => (int)$row['total_visits']]);
-        } else {
-            echo json_encode(["total_visits" => 0]);
-        }
+        $row = db_one($conn, "SELECT total_visits FROM visitor_stats WHERE id = 1");
+        echo json_encode(["total_visits" => $row ? (int)$row['total_visits'] : 0]);
         break;
 
     case 'get_visitor_details':
-        $conn->query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
-        $total = 0;
-        $result = $conn->query("SELECT total_visits FROM visitor_stats WHERE id = 1");
-        if ($row = $result->fetch_assoc()) {
-            $total = (int)$row['total_visits'];
-        }
+        db_run($conn, "SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+        $row = db_one($conn, "SELECT total_visits FROM visitor_stats WHERE id = 1");
+        $total = $row ? (int)$row['total_visits'] : 0;
 
-        // Devices breakdown
-        $devices = [];
-        $devRes = $conn->query("SELECT device, COUNT(*) as cnt FROM visitor_logs GROUP BY device ORDER BY cnt DESC");
-        if ($devRes) {
-            while ($r = $devRes->fetch_assoc()) {
-                $devices[] = ["label" => $r['device'] ?: 'Unknown', "value" => (int)$r['cnt']];
+        // Breakdown per column; estimated split when there are no visit rows yet
+        $breakdown = function ($column, array $fallback) use ($conn, $total) {
+            $items = [];
+            foreach (db_all($conn, "SELECT $column AS label, COUNT(*) AS cnt FROM visitor_logs GROUP BY $column ORDER BY cnt DESC") as $r) {
+                $items[] = ["label" => $r['label'] ?: 'Unknown', "value" => (int)$r['cnt']];
             }
-        }
-        if (empty($devices)) {
-            $devices = [
-                ["label" => "Desktop", "value" => (int)($total * 0.55)],
-                ["label" => "Mobile", "value" => (int)($total * 0.40)],
-                ["label" => "Tablet", "value" => (int)($total * 0.05)]
-            ];
-        }
-
-        // Browsers breakdown
-        $browsers = [];
-        $brRes = $conn->query("SELECT browser, COUNT(*) as cnt FROM visitor_logs GROUP BY browser ORDER BY cnt DESC");
-        if ($brRes) {
-            while ($r = $brRes->fetch_assoc()) {
-                $browsers[] = ["label" => $r['browser'] ?: 'Unknown', "value" => (int)$r['cnt']];
+            if (!$items) {
+                foreach ($fallback as $label => $share) $items[] = ["label" => $label, "value" => (int)($total * $share)];
             }
-        }
-        if (empty($browsers)) {
-            $browsers = [
-                ["label" => "Chrome", "value" => (int)($total * 0.62)],
-                ["label" => "Firefox", "value" => (int)($total * 0.18)],
-                ["label" => "Safari", "value" => (int)($total * 0.15)],
-                ["label" => "Edge", "value" => max(1, (int)($total * 0.05))]
-            ];
-        }
-
-        // OS breakdown
-        $os = [];
-        $osRes = $conn->query("SELECT os, COUNT(*) as cnt FROM visitor_logs GROUP BY os ORDER BY cnt DESC");
-        if ($osRes) {
-            while ($r = $osRes->fetch_assoc()) {
-                $os[] = ["label" => $r['os'] ?: 'Unknown', "value" => (int)$r['cnt']];
-            }
-        }
-        if (empty($os)) {
-            $os = [
-                ["label" => "Windows", "value" => (int)($total * 0.50)],
-                ["label" => "macOS", "value" => (int)($total * 0.25)],
-                ["label" => "Android", "value" => (int)($total * 0.15)],
-                ["label" => "iOS", "value" => (int)($total * 0.10)]
-            ];
-        }
-
-        // Countries breakdown
-        $countries = [];
-        $coRes = $conn->query("SELECT country, COUNT(*) as cnt FROM visitor_logs GROUP BY country ORDER BY cnt DESC");
-        if ($coRes) {
-            while ($r = $coRes->fetch_assoc()) {
-                $countries[] = ["label" => $r['country'] ?: 'Unknown', "value" => (int)$r['cnt']];
-            }
-        }
-        if (empty($countries)) {
-            $countries = [
-                ["label" => "Indonesia", "value" => (int)($total * 0.70)],
-                ["label" => "United States", "value" => (int)($total * 0.10)],
-                ["label" => "Singapore", "value" => (int)($total * 0.08)],
-                ["label" => "Malaysia", "value" => (int)($total * 0.05)]
-            ];
-        }
+            return $items;
+        };
+        $devices = $breakdown('device', ["Desktop" => 0.55, "Mobile" => 0.40, "Tablet" => 0.05]);
+        $browsers = $breakdown('browser', ["Chrome" => 0.62, "Firefox" => 0.18, "Safari" => 0.15, "Edge" => 0.05]);
+        $os = $breakdown('os', ["Windows" => 0.50, "macOS" => 0.25, "Android" => 0.15, "iOS" => 0.10]);
+        $countries = $breakdown('country', ["Indonesia" => 0.70, "United States" => 0.10, "Singapore" => 0.08, "Malaysia" => 0.05]);
+        if (end($browsers)['label'] === 'Edge' && end($browsers)['value'] === 0 && count($browsers) === 4) $browsers[3]['value'] = 1;
 
         // Daily breakdown (last 30 days)
         $daily = [];
-        $dailyRes = $conn->query("SELECT DATE(visited_at) as date, COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY date ORDER BY date ASC");
-        if ($dailyRes) {
-            while ($r = $dailyRes->fetch_assoc()) {
-                $daily[] = ["date" => $r['date'], "count" => (int)$r['cnt']];
-            }
+        foreach (db_all($conn, "SELECT DATE(visited_at) as date, COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY date ORDER BY date ASC") as $r) {
+            $daily[] = ["date" => $r['date'], "count" => (int)$r['cnt']];
         }
 
         // Today visits
-        $today = 0;
-        $todayRes = $conn->query("SELECT COUNT(*) as cnt FROM visitor_logs WHERE DATE(visited_at) = CURDATE()");
-        if ($row2 = $todayRes->fetch_assoc()) {
-            $today = (int)$row2['cnt'];
-        }
+        $today = (int)(db_one($conn, "SELECT COUNT(*) as cnt FROM visitor_logs WHERE DATE(visited_at) = CURDATE()")['cnt'] ?? 0);
 
         echo json_encode([
             "total" => $total,
@@ -621,9 +398,18 @@ switch ($action) {
 
     // ── Changelog ──
     case 'get_changelogs':
-        $result = $conn->query("SELECT * FROM changelogs ORDER BY change_date DESC, time DESC");
+        // Same response shape and optional filters as server.js: {success, data}
+        $sql = "SELECT * FROM changelogs";
+        $params = [];
+        if (!empty($input['date'])) {
+            $sql .= " WHERE change_date = ?";
+            $params[] = in_str($input, 'date');
+        } elseif (!empty($input['month']) && !empty($input['year'])) {
+            $sql .= " WHERE MONTH(change_date) = ? AND YEAR(change_date) = ?";
+            array_push($params, in_int($input, 'month'), in_int($input, 'year'));
+        }
         $data = [];
-        while ($row = $result->fetch_assoc()) {
+        foreach (db_all($conn, $sql . " ORDER BY change_date DESC, time DESC", $params) as $row) {
             $data[] = [
                 'id' => (int)$row['id'],
                 'change_date' => $row['change_date'],
@@ -634,544 +420,691 @@ switch ($action) {
                 'created_at' => $row['created_at']
             ];
         }
-        echo json_encode($data);
+        echo json_encode(["success" => true, "data" => $data]);
         break;
 
     case 'add_changelog':
-        $title = $conn->real_escape_string($input['title'] ?? '');
-        $description = $conn->real_escape_string($input['description'] ?? '');
-        $category = $conn->real_escape_string($input['category'] ?? 'fitur');
-        $change_date = $conn->real_escape_string($input['change_date'] ?? date('Y-m-d'));
-        $time = $conn->real_escape_string($input['time'] ?? date('H:i:s'));
-
-        $sql = "INSERT INTO changelogs (change_date, time, title, description, category) VALUES ('$change_date', '$time', '$title', '$description', '$category')";
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true, "id" => $conn->insert_id]);
-        } else {
-            http_response_code(500);
-            echo json_encode(["success" => false, "error" => $conn->error]);
-        }
+        db_run($conn, "INSERT INTO changelogs (change_date, time, title, description, category) VALUES (?, ?, ?, ?, ?)", [
+            in_str($input, 'change_date', date('Y-m-d')), in_str($input, 'time', date('H:i:s')),
+            in_str($input, 'title'), in_str($input, 'description'), in_str($input, 'category', 'fitur'),
+        ]);
+        echo json_encode(["success" => true, "id" => $conn->insert_id]);
         break;
 
     case 'update_changelog':
-        $id = (int)($input['id'] ?? 0);
-        $title = $conn->real_escape_string($input['title'] ?? '');
-        $description = $conn->real_escape_string($input['description'] ?? '');
-        $category = $conn->real_escape_string($input['category'] ?? 'fitur');
-        $change_date = $conn->real_escape_string($input['change_date'] ?? date('Y-m-d'));
-        $time = $conn->real_escape_string($input['time'] ?? date('H:i:s'));
-
-        $sql = "UPDATE changelogs SET change_date='$change_date', time='$time', title='$title', description='$description', category='$category' WHERE id=$id";
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true]);
-        } else {
-            http_response_code(500);
-            echo json_encode(["success" => false, "error" => $conn->error]);
-        }
+        db_run($conn, "UPDATE changelogs SET change_date = ?, time = ?, title = ?, description = ?, category = ? WHERE id = ?", [
+            in_str($input, 'change_date', date('Y-m-d')), in_str($input, 'time', date('H:i:s')),
+            in_str($input, 'title'), in_str($input, 'description'), in_str($input, 'category', 'fitur'), in_int($input, 'id'),
+        ]);
+        echo json_encode(["success" => true]);
         break;
 
     case 'delete_changelog':
-        $id = (int)($input['id'] ?? 0);
-        $sql = "DELETE FROM changelogs WHERE id=$id";
-        if ($conn->query($sql)) {
-            echo json_encode(["success" => true]);
-        } else {
-            http_response_code(500);
-            echo json_encode(["success" => false, "error" => $conn->error]);
-        }
+        db_run($conn, "DELETE FROM changelogs WHERE id = ?", [in_int($input, 'id')]);
+        echo json_encode(["success" => true]);
         break;
 
     // ═══════════════════════════════════════════════
-    // Monitoring Center API Endpoints
+    // Actions that production serves from backend/server.js.
+    // Mirrored here so every admin page also works against the local PHP API.
+    // Uploads go to public/assets/<section>/ instead of S3.
     // ═══════════════════════════════════════════════
 
-    // ── Website Monitoring ──
-    case 'monitor_get_websites':
-        $result = $conn->query("SELECT * FROM monitoring_websites ORDER BY category, name");
+    // ── Documents ──
+    case 'get_documents':
         $data = [];
-        while ($row = $result->fetch_assoc()) {
+        foreach (db_all($conn, "SELECT * FROM documents ORDER BY type DESC, name ASC") as $row) {
             $row['id'] = (int)$row['id'];
-            $row['is_active'] = (bool)$row['is_active'];
-            $row['uptime_total'] = (float)$row['uptime_total'];
+            $row['size'] = (int)$row['size'];
+            $row['parent_id'] = $row['parent_id'] === null ? null : (int)$row['parent_id'];
+            $data[] = $row;
+        }
+        echo json_encode(["success" => true, "data" => $data]);
+        break;
+
+    case 'add_document':
+        $type = in_str($input, 'type') === 'folder' ? 'folder' : 'file';
+        $name = in_str($input, 'name');
+        // Uploaded file: type and extension are checked against the allowlist in save_base64_asset
+        $path = $type === 'file' ? (string)save_base64_asset(in_str($input, 'path'), 'documents', $name) : '';
+        $parent = in_int($input, 'parent_id');
+        db_run($conn, "INSERT INTO documents (name, type, size, mime_type, path, parent_id) VALUES (?, ?, ?, ?, ?, ?)",
+            [$name, $type, in_int($input, 'size'), in_str($input, 'mime_type'), $path, $parent > 0 ? $parent : null]);
+        echo json_encode(["success" => true, "id" => $conn->insert_id, "path" => $path]);
+        break;
+
+    case 'delete_document':
+        // The item plus everything nested under it
+        $ids = [in_int($input, 'id')];
+        for ($i = 0; $i < count($ids); $i++) {
+            foreach (db_all($conn, "SELECT id FROM documents WHERE parent_id = ?", [$ids[$i]]) as $r) {
+                if (!in_array((int)$r['id'], $ids, true)) $ids[] = (int)$r['id'];
+            }
+        }
+        $marks = implode(',', array_fill(0, count($ids), '?'));
+        foreach (db_all($conn, "SELECT path FROM documents WHERE type = 'file' AND id IN ($marks)", $ids) as $r) {
+            delete_local_asset($r['path'], 'documents');
+        }
+        db_run($conn, "DELETE FROM documents WHERE id IN ($marks)", $ids);
+        echo json_encode(["success" => true]);
+        break;
+
+    // ── Navbar Manager ──
+    case 'get_navbar_menus':
+        // Active items only, unless include_inactive is set (admin Navbar Manager)
+        $all = !empty($input['include_inactive']) || !empty($_GET['include_inactive']);
+        $data = [];
+        foreach (db_all($conn, "SELECT * FROM navbar_menus" . ($all ? "" : " WHERE is_active = 1") . " ORDER BY sort_order ASC, id ASC") as $row) {
+            $row['id'] = (int)$row['id'];
+            $row['parent_id'] = $row['parent_id'] === null ? null : (int)$row['parent_id'];
+            $row['sort_order'] = (int)$row['sort_order'];
+            $row['is_active'] = (int)$row['is_active'];
             $data[] = $row;
         }
         echo json_encode($data);
         break;
 
-    case 'monitor_add_website':
-        $name = $conn->real_escape_string($input['name'] ?? '');
-        $url = $conn->real_escape_string($input['url'] ?? '');
-        $category = $conn->real_escape_string($input['category'] ?? 'Umum');
-        $notes = $conn->real_escape_string($input['notes'] ?? '');
-        $is_active = (int)($input['is_active'] ?? 1);
-        $sql = "INSERT INTO monitoring_websites (name, url, category, is_active, notes) VALUES ('$name', '$url', '$category', $is_active, '$notes')";
-        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
-        else echo json_encode(["error" => $conn->error]);
-        break;
-
-    case 'monitor_update_website':
-        $id = (int)($input['id'] ?? 0);
-        $name = $conn->real_escape_string($input['name'] ?? '');
-        $url = $conn->real_escape_string($input['url'] ?? '');
-        $category = $conn->real_escape_string($input['category'] ?? 'Umum');
-        $notes = $conn->real_escape_string($input['notes'] ?? '');
-        $is_active = (int)($input['is_active'] ?? 1);
-        $sql = "UPDATE monitoring_websites SET name='$name', url='$url', category='$category', is_active=$is_active, notes='$notes' WHERE id=$id";
-        if ($conn->query($sql)) echo json_encode(["success" => true]);
-        else echo json_encode(["error" => $conn->error]);
-        break;
-
-    case 'monitor_delete_website':
-        $id = (int)($input['id'] ?? 0);
-        $conn->query("DELETE FROM monitoring_website_checks WHERE website_id=$id");
-        $conn->query("DELETE FROM monitoring_websites WHERE id=$id");
+    case 'save_navbar_menus_order':
+        $menus = $input['menus'] ?? null;
+        if (!is_array($menus)) throw new ApiError("Invalid data");
+        foreach ($menus as $m) {
+            if (!is_array($m)) continue;
+            $parent = in_int($m, 'parent_id');
+            db_run($conn, "UPDATE navbar_menus SET sort_order = ?, parent_id = ? WHERE id = ?",
+                [in_int($m, 'sort_order'), $parent > 0 ? $parent : null, in_int($m, 'id')]);
+        }
         echo json_encode(["success" => true]);
         break;
 
-    case 'monitor_check_website':
-        $id = (int)($input['id'] ?? 0);
-        $res = $conn->query("SELECT url FROM monitoring_websites WHERE id=$id");
-        $row = $res->fetch_assoc();
-        if (!$row) { echo json_encode(["error" => "Website not found"]); break; }
-        $url = $row['url'];
-        $start = microtime(true);
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 3,
-            CURLOPT_NOBODY => true,
-            CURLOPT_SSL_VERIFYPEER => false,
+    case 'add_navbar_menu':
+        $parent = in_int($input, 'parent_id');
+        db_run($conn, "INSERT INTO navbar_menus (parent_id, label_id, label_en, url, icon, description_id, description_en, sort_order, is_active)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+            $parent > 0 ? $parent : null, in_str($input, 'label_id'), in_str($input, 'label_en'), in_str($input, 'url', '#'),
+            in_str($input, 'icon') ?: 'Globe', in_str($input, 'description_id'), in_str($input, 'description_en'),
+            in_int($input, 'sort_order', 99), in_int($input, 'is_active', 1),
         ]);
-        curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err = curl_error($ch);
-        curl_close($ch);
-        $elapsed = round((microtime(true) - $start) * 1000);
-        $isOnline = ($httpCode >= 200 && $httpCode < 500) && empty($err);
-        $status = $isOnline ? 'online' : 'offline';
-
-        $conn->query("UPDATE monitoring_websites SET status='$status', last_checked=NOW() WHERE id=$id");
-        $errEsc = $conn->real_escape_string($err);
-        $conn->query("INSERT INTO monitoring_website_checks (website_id, status, response_time_ms, http_status, error_message) VALUES ($id, '$status', $elapsed, $httpCode, '$errEsc')");
-        echo json_encode(["status" => $status, "response_time_ms" => $elapsed, "http_status" => $httpCode, "error" => $err]);
+        echo json_encode(["success" => true, "id" => $conn->insert_id]);
         break;
 
-    case 'monitor_check_all_websites':
-        $res = $conn->query("SELECT id, url FROM monitoring_websites WHERE is_active=1");
-        $results = [];
-        while ($row = $res->fetch_assoc()) {
-            $wid = (int)$row['id'];
-            $url = $row['url'];
-            $start = microtime(true);
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10,
-                CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 2,
-                CURLOPT_NOBODY => true, CURLOPT_SSL_VERIFYPEER => false,
-            ]);
-            curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $err = curl_error($ch);
-            curl_close($ch);
-            $elapsed = round((microtime(true) - $start) * 1000);
-            $status = ($httpCode >= 200 && $httpCode < 500) && empty($err) ? 'online' : 'offline';
-            $conn->query("UPDATE monitoring_websites SET status='$status', last_checked=NOW() WHERE id=$wid");
-            $errEsc = $conn->real_escape_string($err);
-            $conn->query("INSERT INTO monitoring_website_checks (website_id, status, response_time_ms, http_status, error_message) VALUES ($wid, '$status', $elapsed, $httpCode, '$errEsc')");
-            $results[] = ["id" => $wid, "status" => $status, "response_time_ms" => $elapsed];
-        }
-        echo json_encode(["success" => true, "results" => $results]);
-        break;
-
-    case 'monitor_get_websites_stats':
-        $total = 0; $online = 0; $offline = 0;
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites");
-        if ($r) { $total = (int)$r->fetch_assoc()['c']; }
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='online'");
-        if ($r) { $online = (int)$r->fetch_assoc()['c']; }
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='offline'");
-        if ($r) { $offline = (int)$r->fetch_assoc()['c']; }
-        echo json_encode(["total" => $total, "online" => $online, "offline" => $offline]);
-        break;
-
-    case 'monitor_get_website_checks':
-        $id = (int)($input['id'] ?? $_GET['id'] ?? 0);
-        $limit = (int)($input['limit'] ?? $_GET['limit'] ?? 60);
-        $result = $conn->query("SELECT * FROM monitoring_website_checks WHERE website_id=$id ORDER BY checked_at DESC LIMIT $limit");
-        $data = [];
-        while ($row = $result->fetch_assoc()) {
-            $row['id'] = (int)$row['id'];
-            $row['response_time_ms'] = (int)$row['response_time_ms'];
-            $row['http_status'] = (int)$row['http_status'];
-            $data[] = $row;
-        }
-        echo json_encode(array_reverse($data));
-        break;
-
-    // ── Server Monitoring ──
-    case 'monitor_get_server_status':
-        $result = $conn->query("SELECT * FROM monitoring_server_status WHERE id=1");
-        if ($row = $result->fetch_assoc()) {
-            $row['ram_used'] = (float)$row['ram_used'];
-            $row['ram_total'] = (float)$row['ram_total'];
-            $row['disk_used'] = (float)$row['disk_used'];
-            $row['disk_total'] = (float)$row['disk_total'];
-            echo json_encode($row);
-        } else echo json_encode(["error" => "No server data"]);
-        break;
-
-    case 'monitor_update_server':
-        $cpu = (float)($input['cpu_usage'] ?? 0);
-        $ramUsed = (float)($input['ram_used'] ?? 0);
-        $ramTotal = (float)($input['ram_total'] ?? 1);
-        $diskUsed = (float)($input['disk_used'] ?? 0);
-        $diskTotal = (float)($input['disk_total'] ?? 1);
-        $netIn = (float)($input['network_in'] ?? 0);
-        $netOut = (float)($input['network_out'] ?? 0);
-        $uptime = (int)($input['uptime_seconds'] ?? 0);
-        $ramPct = round(($ramUsed / $ramTotal) * 100, 2);
-        $diskPct = round(($diskUsed / $diskTotal) * 100, 2);
-        $status = 'healthy';
-        if ($cpu > 80 || $ramPct > 80 || $diskPct > 90) $status = 'critical';
-        elseif ($cpu > 60 || $ramPct > 60 || $diskPct > 75) $status = 'warning';
-        $conn->query("UPDATE monitoring_server_status SET cpu_usage=$cpu, ram_used=$ramUsed, ram_total=$ramTotal, ram_percent=$ramPct, disk_used=$diskUsed, disk_total=$diskTotal, disk_percent=$diskPct, network_in=$netIn, network_out=$netOut, uptime_seconds=$uptime, status='$status', last_updated=NOW() WHERE id=1");
-        $conn->query("INSERT INTO monitoring_server_metrics (cpu_usage, ram_used, ram_total, disk_used, disk_total, network_in, network_out) VALUES ($cpu, $ramUsed, $ramTotal, $diskUsed, $diskTotal, $netIn, $netOut)");
-        echo json_encode(["success" => true, "status" => $status]);
-        break;
-
-    case 'monitor_get_server_metrics':
-        $limit = (int)($input['limit'] ?? $_GET['limit'] ?? 60);
-        $result = $conn->query("SELECT * FROM monitoring_server_metrics ORDER BY recorded_at DESC LIMIT $limit");
-        $data = [];
-        while ($row = $result->fetch_assoc()) {
-            $row['cpu_usage'] = (float)$row['cpu_usage'];
-            $row['ram_used'] = (float)$row['ram_used'];
-            $row['ram_total'] = (float)$row['ram_total'];
-            $row['disk_used'] = (float)$row['disk_used'];
-            $row['disk_total'] = (float)$row['disk_total'];
-            $data[] = $row;
-        }
-        echo json_encode(array_reverse($data));
-        break;
-
-    // ── Visitor Stats ──
-    case 'monitor_get_visitor_stats':
-        // Reuse existing get_visitor_details data + add summary
-        $total = 0;
-        $r = $conn->query("SELECT total_visits FROM visitor_stats WHERE id=1");
-        if ($row = $r->fetch_assoc()) $total = (int)$row['total_visits'];
-        $today = 0;
-        $tr = $conn->query("SELECT COUNT(*) as cnt FROM visitor_logs WHERE DATE(visited_at)=CURDATE()");
-        if ($rw = $tr->fetch_assoc()) $today = (int)$rw['cnt'];
-        $active = 0;
-        $ar = $conn->query("SELECT COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)");
-        if ($aw = $ar->fetch_assoc()) $active = (int)$aw['cnt'];
-
-        $daily = []; $weekly = []; $monthly = [];
-        $dr = $conn->query("SELECT DATE(visited_at) as d, COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY d ORDER BY d ASC");
-        if ($dr) { while ($w = $dr->fetch_assoc()) $daily[] = ["date" => $w['d'], "count" => (int)$w['cnt']]; }
-        $wr = $conn->query("SELECT YEARWEEK(visited_at) as w, COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 12 WEEK) GROUP BY w ORDER BY w ASC");
-        if ($wr) { while ($w = $wr->fetch_assoc()) $weekly[] = ["week" => $w['w'], "count" => (int)$w['cnt']]; }
-        $mr = $conn->query("SELECT DATE_FORMAT(visited_at, '%Y-%m') as m, COUNT(*) as cnt FROM visitor_logs WHERE visited_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH) GROUP BY m ORDER BY m ASC");
-        if ($mr) { while ($w = $mr->fetch_assoc()) $monthly[] = ["month" => $w['m'], "count" => (int)$w['cnt']]; }
-
-        // Devices
-        $devices = [];
-        $dvr = $conn->query("SELECT device, COUNT(*) as cnt FROM visitor_logs GROUP BY device ORDER BY cnt DESC");
-        if ($dvr) { while ($w = $dvr->fetch_assoc()) $devices[] = ["label" => $w['device'] ?: 'Unknown', "value" => (int)$w['cnt']]; }
-        // Browsers
-        $browsers = [];
-        $brr = $conn->query("SELECT browser, COUNT(*) as cnt FROM visitor_logs GROUP BY browser ORDER BY cnt DESC");
-        if ($brr) { while ($w = $brr->fetch_assoc()) $browsers[] = ["label" => $w['browser'] ?: 'Unknown', "value" => (int)$w['cnt']]; }
-        // Countries
-        $countries = [];
-        $crr = $conn->query("SELECT country, COUNT(*) as cnt FROM visitor_logs GROUP BY country ORDER BY cnt DESC");
-        if ($crr) { while ($w = $crr->fetch_assoc()) $countries[] = ["label" => $w['country'] ?: 'Unknown', "value" => (int)$w['cnt']]; }
-
-        echo json_encode([
-            "total" => $total, "today" => $today, "active" => $active,
-            "daily" => $daily, "weekly" => $weekly, "monthly" => $monthly,
-            "devices" => $devices, "browsers" => $browsers, "countries" => $countries
+    case 'edit_navbar_menu':
+        db_run($conn, "UPDATE navbar_menus SET label_id = ?, label_en = ?, url = ?, icon = ?, description_id = ?, description_en = ?, is_active = ? WHERE id = ?", [
+            in_str($input, 'label_id'), in_str($input, 'label_en'), in_str($input, 'url', '#'), in_str($input, 'icon') ?: 'Globe',
+            in_str($input, 'description_id'), in_str($input, 'description_en'), in_int($input, 'is_active', 1), in_int($input, 'id'),
         ]);
-        break;
-
-    // ── Database Monitoring ──
-    case 'monitor_get_database_status':
-        $result = $conn->query("SELECT * FROM monitoring_database WHERE id=1");
-        if (!$result || !($row = $result->fetch_assoc())) {
-            $row = ["db_name" => "db_garudanexabahtera", "status" => "connected", "size_mb" => 0, "active_connections" => 0, "last_backup" => null, "backup_status" => "No backup yet"];
-        }
-        // Calculate actual DB size
-        $sizeRes = $conn->query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size_mb FROM information_schema.tables WHERE table_schema='$db'");
-        if ($sizeRes && $s = $sizeRes->fetch_assoc()) {
-            $row['size_mb'] = (float)$s['size_mb'];
-        }
-        // Active connections
-        $connRes = $conn->query("SELECT COUNT(*) as c FROM information_schema.processlist WHERE db='$db'");
-        if ($connRes && $c = $connRes->fetch_assoc()) {
-            $row['active_connections'] = (int)$c['c'];
-        }
-        $row['size_mb'] = $row['size_mb'] ?? 0;
-        $row['active_connections'] = $row['active_connections'] ?? 0;
-        echo json_encode($row);
-        break;
-
-    // ── Domain Monitoring ──
-    case 'monitor_get_domains':
-        $result = $conn->query("SELECT md.*, mw.name as website_name FROM monitoring_domains md LEFT JOIN monitoring_websites mw ON md.website_id = mw.id ORDER BY md.expiry_date ASC");
-        $data = [];
-        while ($row = $result->fetch_assoc()) {
-            $row['id'] = (int)$row['id'];
-            $row['days_until_expiry'] = (int)$row['days_until_expiry'];
-            $row['ssl_days_until_expiry'] = (int)$row['ssl_days_until_expiry'];
-            $data[] = $row;
-        }
-        echo json_encode($data);
-        break;
-
-    case 'monitor_add_domain':
-        $domain = $conn->real_escape_string($input['domain'] ?? '');
-        $website_id = (int)($input['website_id'] ?? 0);
-        $registrar = $conn->real_escape_string($input['registrar'] ?? '');
-        $expiry = $conn->real_escape_string($input['expiry_date'] ?? '');
-        $ssl_expiry = $conn->real_escape_string($input['ssl_expiry_date'] ?? '');
-        $days = $expiry ? round((strtotime($expiry) - time()) / 86400) : 0;
-        $ssl_days = $ssl_expiry ? round((strtotime($ssl_expiry) - time()) / 86400) : 0;
-        $status = $days < 0 ? 'expired' : ($days < 30 ? 'expiring_soon' : 'valid');
-        $wid = $website_id > 0 ? $website_id : "NULL";
-        $sql = "INSERT INTO monitoring_domains (domain, website_id, registrar, expiry_date, days_until_expiry, ssl_expiry_date, ssl_days_until_expiry, status) VALUES ('$domain', $wid, '$registrar', " . ($expiry ? "'$expiry'" : "NULL") . ", $days, " . ($ssl_expiry ? "'$ssl_expiry'" : "NULL") . ", $ssl_days, '$status')";
-        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
-        else echo json_encode(["error" => $conn->error]);
-        break;
-
-    case 'monitor_delete_domain':
-        $id = (int)($input['id'] ?? 0);
-        $conn->query("DELETE FROM monitoring_domains WHERE id=$id");
         echo json_encode(["success" => true]);
         break;
 
-    // ── API Monitoring ──
-    case 'monitor_get_apis':
-        $result = $conn->query("SELECT * FROM monitoring_api ORDER BY name");
-        $data = [];
-        while ($row = $result->fetch_assoc()) {
-            $row['id'] = (int)$row['id'];
-            $row['response_time_ms'] = (int)$row['response_time_ms'];
-            $row['success_count'] = (int)$row['success_count'];
-            $row['fail_count'] = (int)$row['fail_count'];
-            $data[] = $row;
-        }
-        echo json_encode($data);
-        break;
-
-    case 'monitor_add_api':
-        $name = $conn->real_escape_string($input['name'] ?? '');
-        $endpoint = $conn->real_escape_string($input['endpoint'] ?? '');
-        $method = $conn->real_escape_string($input['method'] ?? 'GET');
-        $sql = "INSERT INTO monitoring_api (name, endpoint, method) VALUES ('$name', '$endpoint', '$method')";
-        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
-        else echo json_encode(["error" => $conn->error]);
-        break;
-
-    case 'monitor_check_api':
-        $id = (int)($input['id'] ?? 0);
-        $res = $conn->query("SELECT * FROM monitoring_api WHERE id=$id");
-        $api = $res->fetch_assoc();
-        if (!$api) { echo json_encode(["error" => "API not found"]); break; }
-        $start = microtime(true);
-        $ch = curl_init($api['endpoint']);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_SSL_VERIFYPEER => false]);
-        curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err = curl_error($ch);
-        curl_close($ch);
-        $elapsed = round((microtime(true) - $start) * 1000);
-        $success = ($httpCode >= 200 && $httpCode < 500 && empty($err));
-        if ($success) $conn->query("UPDATE monitoring_api SET status='active', response_time_ms=$elapsed, success_count=success_count+1, last_checked=NOW() WHERE id=$id");
-        else $conn->query("UPDATE monitoring_api SET status='down', response_time_ms=$elapsed, fail_count=fail_count+1, last_checked=NOW() WHERE id=$id");
-        echo json_encode(["success" => $success, "response_time_ms" => $elapsed, "http_status" => $httpCode]);
-        break;
-
-    case 'monitor_delete_api':
-        $id = (int)($input['id'] ?? 0);
-        $conn->query("DELETE FROM monitoring_api WHERE id=$id");
+    case 'delete_navbar_menu':
+        $id = in_int($input, 'id');
+        db_run($conn, "DELETE FROM navbar_menus WHERE parent_id = ?", [$id]);
+        db_run($conn, "DELETE FROM navbar_menus WHERE id = ?", [$id]);
         echo json_encode(["success" => true]);
         break;
 
-    // ── Security Logs ──
-    case 'monitor_get_security_logs':
-        $limit = (int)($input['limit'] ?? $_GET['limit'] ?? 50);
-        $result = $conn->query("SELECT * FROM monitoring_security_logs ORDER BY created_at DESC LIMIT $limit");
+    // ── Company products (list_products), public list; same query as server.js ──
+    case 'get_list_products':
+        // position is set by update_product_order (0 = not ordered yet, newest first)
         $data = [];
-        while ($row = $result->fetch_assoc()) {
+        foreach (db_all($conn, "SELECT id, title, description, link_button, image, logo FROM list_products ORDER BY position ASC, id DESC") as $row) {
             $row['id'] = (int)$row['id'];
             $data[] = $row;
         }
         echo json_encode($data);
         break;
 
-    case 'monitor_security_summary':
-        $total = 0; $new = 0; $high = 0; $blocked = 0;
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_security_logs");
-        if ($r) $total = (int)$r->fetch_assoc()['c'];
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_security_logs WHERE status='new'");
-        if ($r) $new = (int)$r->fetch_assoc()['c'];
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_security_logs WHERE severity IN ('high','critical')");
-        if ($r) $high = (int)$r->fetch_assoc()['c'];
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_security_logs WHERE type='blocked_ip'");
-        if ($r) $blocked = (int)$r->fetch_assoc()['c'];
-        echo json_encode(["total" => $total, "new" => $new, "high_severity" => $high, "blocked_ips" => $blocked]);
-        break;
-
-    case 'monitor_update_security_status':
-        $id = (int)($input['id'] ?? 0);
-        $status = $conn->real_escape_string($input['status'] ?? 'reviewed');
-        $conn->query("UPDATE monitoring_security_logs SET status='$status' WHERE id=$id");
-        echo json_encode(["success" => true]);
-        break;
-
-    // ── Notifications ──
-    case 'monitor_get_notifications':
-        $limit = (int)($input['limit'] ?? $_GET['limit'] ?? 20);
-        $type = $conn->real_escape_string($input['type'] ?? '');
-        $sql = "SELECT * FROM monitoring_notifications";
-        if ($type) $sql .= " WHERE type='$type'";
-        $sql .= " ORDER BY created_at DESC LIMIT $limit";
-        $result = $conn->query($sql);
-        $data = [];
-        while ($row = $result->fetch_assoc()) {
-            $row['id'] = (int)$row['id'];
-            $row['is_read'] = (bool)$row['is_read'];
-            $row['sent_wa'] = (bool)$row['sent_wa'];
-            $data[] = $row;
-        }
-        echo json_encode($data);
-        break;
-
-    case 'monitor_mark_notification_read':
-        $id = (int)($input['id'] ?? 0);
-        $conn->query("UPDATE monitoring_notifications SET is_read=1 WHERE id=$id");
-        echo json_encode(["success" => true]);
-        break;
-
-    case 'monitor_mark_all_read':
-        $conn->query("UPDATE monitoring_notifications SET is_read=1 WHERE is_read=0");
-        echo json_encode(["success" => true]);
-        break;
-
-    case 'monitor_add_notification':
-        $type = $conn->real_escape_string($input['type'] ?? 'info');
-        $title = $conn->real_escape_string($input['title'] ?? '');
-        $message = $conn->real_escape_string($input['message'] ?? '');
-        $severity = $conn->real_escape_string($input['severity'] ?? 'info');
-        $sent_wa = (int)($input['sent_wa'] ?? 0);
-        $sql = "INSERT INTO monitoring_notifications (type, title, message, severity, sent_wa) VALUES ('$type', '$title', '$message', '$severity', $sent_wa)";
-        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
-        else echo json_encode(["error" => $conn->error]);
-        break;
-
-    case 'monitor_get_unread_count':
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_notifications WHERE is_read=0");
-        $count = $r ? (int)$r->fetch_assoc()['c'] : 0;
-        echo json_encode(["unread" => $count]);
-        break;
-
-    // ── Categories ──
-    case 'monitor_get_categories':
-        $result = $conn->query("SELECT * FROM monitoring_categories ORDER BY sort_order");
-        $data = [];
-        while ($row = $result->fetch_assoc()) $data[] = $row;
-        echo json_encode($data);
-        break;
-
-    case 'monitor_add_category':
-        $name = $conn->real_escape_string($input['name'] ?? '');
-        $icon = $conn->real_escape_string($input['icon'] ?? 'Globe');
-        $sort = (int)($input['sort_order'] ?? 0);
-        $sql = "INSERT INTO monitoring_categories (name, icon, sort_order) VALUES ('$name', '$icon', $sort)";
-        if ($conn->query($sql)) echo json_encode(["success" => true, "id" => $conn->insert_id]);
-        else echo json_encode(["error" => $conn->error]);
-        break;
-
-    case 'monitor_delete_category':
-        $id = (int)($input['id'] ?? 0);
-        $conn->query("DELETE FROM monitoring_categories WHERE id=$id");
-        echo json_encode(["success" => true]);
-        break;
-
-    // ── Settings ──
-    case 'monitor_get_settings':
-        $result = $conn->query("SELECT * FROM monitoring_settings WHERE id=1");
-        if ($row = $result->fetch_assoc()) echo json_encode($row);
-        else echo json_encode([]);
-        break;
-
-    case 'monitor_update_settings':
-        $fields = ['check_interval', 'wa_notifications', 'notify_website_down', 'notify_high_resource', 'notify_ssl_expiry', 'notify_domain_expiry'];
-        $sets = [];
-        foreach ($fields as $f) {
-            if (isset($input[$f])) $sets[] = "$f=" . (int)$input[$f];
-        }
-        if (isset($input['wa_phone'])) $sets[] = "wa_phone='" . $conn->real_escape_string($input['wa_phone']) . "'";
-        if (isset($input['wa_group'])) $sets[] = "wa_group='" . $conn->real_escape_string($input['wa_group']) . "'";
-        if (!empty($sets)) {
-            $conn->query("UPDATE monitoring_settings SET " . implode(',', $sets) . " WHERE id=1");
-        }
-        echo json_encode(["success" => true]);
-        break;
-
-    // ── Dashboard Summary ──
-    case 'monitor_dashboard_summary':
-        // Websites
-        $totalWeb = 0; $onlineWeb = 0; $offlineWeb = 0;
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites");
-        if ($r) $totalWeb = (int)$r->fetch_assoc()['c'];
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='online'");
-        if ($r) $onlineWeb = (int)$r->fetch_assoc()['c'];
-        $r = $conn->query("SELECT COUNT(*) as c FROM monitoring_websites WHERE status='offline'");
-        if ($r) $offlineWeb = (int)$r->fetch_assoc()['c'];
-
-        // Server
-        $server = null;
-        $sr = $conn->query("SELECT * FROM monitoring_server_status WHERE id=1");
-        if ($sr) $server = $sr->fetch_assoc();
-
-        // Visitors
-        $visitors = 0;
-        $vr = $conn->query("SELECT total_visits FROM visitor_stats WHERE id=1");
-        if ($vr) $visitors = (int)$vr->fetch_assoc()['total_visits'];
-
-        // Database
-        $dbSize = 0;
-        $dr = $conn->query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as s FROM information_schema.tables WHERE table_schema='$db'");
-        if ($dr && $d = $dr->fetch_assoc()) $dbSize = (float)$d['s'];
-
-        // Notifications unread
-        $unreadN = 0;
-        $nr = $conn->query("SELECT COUNT(*) as c FROM monitoring_notifications WHERE is_read=0");
-        if ($nr) $unreadN = (int)$nr->fetch_assoc()['c'];
-
-        // Domains expiring soon
-        $domainsExpiring = [];
-        $der = $conn->query("SELECT domain, days_until_expiry, ssl_days_until_expiry FROM monitoring_domains WHERE (days_until_expiry BETWEEN 0 AND 30) OR (ssl_days_until_expiry BETWEEN 0 AND 30)");
-        if ($der) { while ($d = $der->fetch_assoc()) $domainsExpiring[] = $d; }
-
-        echo json_encode([
-            "websites" => ["total" => $totalWeb, "online" => $onlineWeb, "offline" => $offlineWeb],
-            "server" => $server,
-            "visitors" => $visitors,
-            "database_size_mb" => $dbSize,
-            "unread_notifications" => $unreadN,
-            "domains_expiring" => $domainsExpiring
-        ]);
+    // ── AI Chat (Node serves it at /api/ai-chat; the Vite dev proxy rewrites that path to this action) ──
+    case 'ai_chat':
+        $messages = $input['messages'] ?? null;
+        if (!is_array($messages)) throw new ApiError("messages array required");
+        $result = ai_chat_reply($conn, $messages);
+        if (isset($result['error'])) http_response_code(502);
+        echo json_encode($result);
         break;
 
     default:
+        http_response_code(400);
         echo json_encode(["error" => "Invalid action: " . $action]);
         break;
 }
 
 $conn->close();
+
+// ── Helpers (top-level functions, so the cases above can call them) ──
+
+// ── Request input ──
+
+function in_str(array $input, $key, $default = '') {
+    $v = $input[$key] ?? null;
+    if ($v === null) return (string)$default;
+    if (is_array($v)) return json_encode($v);
+    if (is_bool($v)) return $v ? '1' : '0';
+    return (string)$v;
+}
+
+function in_int(array $input, $key, $default = 0) {
+    $v = $input[$key] ?? $_GET[$key] ?? null;
+    return is_numeric($v) ? (int)$v : (int)$default;
+}
+
+// Checkbox-like value: true / 1 / "1" / "true" -> 1, anything else -> 0
+function in_flag(array $input, $key) {
+    $v = $input[$key] ?? null;
+    return ($v === true || $v === 1 || $v === '1' || $v === 'true') ? 1 : 0;
+}
+
+// ── Database: every value goes through a prepared statement ──
+
+function db_run(mysqli $conn, $sql, array $params = []) {
+    try {
+        if (!$params) {
+            $result = $conn->query($sql);
+            $GLOBALS['db_last_affected_rows'] = $conn->affected_rows;
+            return $result;
+        }
+        $stmt = $conn->prepare($sql);
+        $types = '';
+        foreach ($params as $p) $types .= is_int($p) || is_bool($p) ? 'i' : (is_float($p) ? 'd' : 's');
+        $values = array_values($params);
+        $stmt->bind_param($types, ...$values);
+        $stmt->execute();
+        // $conn->affected_rows is reset to -1 once $stmt is freed, so keep the count here (see db_affected_rows)
+        $GLOBALS['db_last_affected_rows'] = $stmt->affected_rows;
+        $result = $stmt->get_result();
+        return $result === false ? true : $result;
+    } catch (mysqli_sql_exception $e) {
+        if ($e->getCode() === 1062) throw new ApiError('Data yang sama sudah ada (duplikat).', 409);
+        throw $e;
+    }
+}
+
+// Rows changed by the last INSERT/UPDATE/DELETE that went through db_run
+function db_affected_rows() {
+    return (int)($GLOBALS['db_last_affected_rows'] ?? 0);
+}
+
+function db_all(mysqli $conn, $sql, array $params = []) {
+    $result = db_run($conn, $sql, $params);
+    $rows = [];
+    while ($row = $result->fetch_assoc()) $rows[] = $row;
+    return $rows;
+}
+
+function db_one(mysqli $conn, $sql, array $params = []) {
+    $row = db_run($conn, $sql, $params)->fetch_assoc();
+    return $row ?: null;
+}
+
+// ── Environment and CORS ──
+
+// Local runs read .env (backend/ or the repository root); variables already set in the environment win
+function load_env_file() {
+    foreach ([__DIR__ . '/.env', dirname(__DIR__) . '/.env'] as $file) {
+        if (!is_file($file)) continue;
+        foreach (file($file, FILE_IGNORE_NEW_LINES) as $line) {
+            if (!preg_match('/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/', $line, $m) || getenv($m[1]) !== false) continue;
+            $value = preg_replace('/^([\'"])(.*)\1$/', '$2', $m[2]);
+            putenv("{$m[1]}=$value");
+            $_ENV[$m[1]] = $value;
+        }
+        break;
+    }
+}
+
+function env_value($key, $default = '') {
+    $v = getenv($key);
+    return ($v === false || $v === '') ? $default : $v;
+}
+
+// Only origins listed in CORS_ORIGINS (comma separated); the site itself is same-origin and needs none
+function send_cors_headers() {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowed = array_filter(array_map('trim', explode(',', env_value('CORS_ORIGINS'))));
+    if ($origin === '' || !in_array($origin, $allowed, true)) return;
+    header("Access-Control-Allow-Origin: $origin");
+    header("Vary: Origin");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    header("Access-Control-Max-Age: 600");
+}
+
+function client_ip() {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    // TRUST_PROXY = number of reverse proxies in front of PHP; 0 (default) ignores X-Forwarded-For
+    $hops = (int)env_value('TRUST_PROXY', '0');
+    if ($hops > 0 && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $chain = array_map('trim', explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
+        $chain[] = $ip;
+        $ip = $chain[max(0, count($chain) - 1 - $hops)];
+    }
+    return $ip;
+}
+
+// ── Auth: same token format and rules as backend/security.js ──
+
+function b64url_encode($bin) {
+    return rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
+}
+
+function b64url_decode($str) {
+    $bin = base64_decode(strtr($str, '-_', '+/') . str_repeat('=', (4 - strlen($str) % 4) % 4), true);
+    return $bin === false ? null : $bin;
+}
+
+function auth_secret() {
+    $secret = env_value('AUTH_SECRET');
+    if (strlen($secret) >= 32) return $secret;
+    // Hosting tanpa AUTH_SECRET di .env (cPanel): pakai kunci acak yang dibuat sekali dan disimpan di luar web root
+    $file = dirname(public_dir()) . '/.garudanexa_auth_secret';
+    if (is_file($file)) {
+        $saved = trim((string)file_get_contents($file));
+        if (strlen($saved) >= 32) return $saved;
+    }
+    if (!is_file(__DIR__ . '/index.html')) return null; // dev lokal (api.php di backend/): wajib lewat .env
+    $generated = bin2hex(random_bytes(32));
+    if (@file_put_contents($file, $generated . "\n", LOCK_EX) === false) return null;
+    @chmod($file, 0600);
+    return $generated;
+}
+
+// Folder web publik tempat index.html & assets/. cPanel: api.php berada di public_html itu sendiri;
+// repo/dev lokal: api.php di backend/, web root = ../public. PUBLIC_DIR di .env bisa menimpanya.
+function public_dir() {
+    static $dir = null;
+    if ($dir !== null) return $dir;
+    $env = env_value('PUBLIC_DIR');
+    $dir = rtrim($env !== '' ? $env : (is_file(__DIR__ . '/index.html') ? __DIR__ : dirname(__DIR__) . '/public'), '/\\');
+    return $dir;
+}
+
+// Changes whenever the password changes, so a password reset invalidates older tokens
+function password_version($hash) {
+    return substr(hash('sha256', (string)$hash), 0, 16);
+}
+
+function issue_token(array $user) {
+    $now = time();
+    $ttl = (int)env_value('AUTH_TOKEN_TTL', '28800');
+    $exp = $now + ($ttl > 0 ? $ttl : 28800);
+    $header = b64url_encode(json_encode(["alg" => "HS256", "typ" => "JWT"]));
+    $payload = b64url_encode(json_encode(["sub" => (int)$user['id'], "role" => $user['role'], "pv" => password_version($user['password']), "iat" => $now, "exp" => $exp]));
+    $signature = b64url_encode(hash_hmac('sha256', "$header.$payload", auth_secret(), true));
+    return ["$header.$payload.$signature", $exp];
+}
+
+function verify_token($token) {
+    $secret = auth_secret();
+    if (!$secret || !is_string($token)) return null;
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) return null;
+    [$header, $payload, $signature] = $parts;
+    $given = b64url_decode($signature);
+    if ($given === null || !hash_equals(hash_hmac('sha256', "$header.$payload", $secret, true), $given)) return null;
+    if ((json_decode((string)b64url_decode($header), true)['alg'] ?? '') !== 'HS256') return null;
+    $claims = json_decode((string)b64url_decode($payload), true);
+    if (!is_array($claims) || !is_int($claims['exp'] ?? null) || $claims['exp'] <= time()) return null;
+    return $claims;
+}
+
+function bearer_token() {
+    $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+    // Apache with mod_php does not always pass Authorization into $_SERVER
+    if ($header === '' && function_exists('getallheaders')) {
+        foreach (getallheaders() as $name => $value) {
+            if (strcasecmp($name, 'Authorization') === 0) $header = $value;
+        }
+    }
+    return preg_match('/^Bearer\s+(\S+)$/i', trim($header), $m) ? $m[1] : '';
+}
+
+// Re-reads the user on every request so deactivation, role changes and password resets apply immediately
+function authenticate(mysqli $conn) {
+    $claims = verify_token(bearer_token());
+    if (!$claims) return null;
+    $user = db_one($conn, "SELECT id, name, email, phone, role, status, avatar, password FROM users WHERE id = ? LIMIT 1", [(int)($claims['sub'] ?? 0)]);
+    if (!$user || $user['status'] !== 'active' || !hash_equals(password_version($user['password']), (string)($claims['pv'] ?? ''))) return null;
+    unset($user['password']);
+    $user['id'] = (int)$user['id'];
+    return $user;
+}
+
+// Links saved by the admin panel end up in href/src attributes; a javascript: URL there is stored XSS.
+// Also catches them inside JSON-encoded settings strings (e.g. products_data).
+function contains_script_url($value, $depth = 0) {
+    if (is_string($value)) return (bool)preg_match('/(^|["\'])[\s\x00-\x1f]*(javascript|vbscript)\s*:/i', $value);
+    if (!is_array($value) || $depth > 8) return false;
+    foreach ($value as $v) {
+        if (contains_script_url($v, $depth + 1)) return true;
+    }
+    return false;
+}
+
+// Rejects protected actions without a valid token and enforces roles. Returns the user (null for public calls).
+function authorize_request(mysqli $conn, $action, array &$input) {
+    if (in_array($action, PUBLIC_ACTIONS, true)) return null;
+
+    $user = authenticate($conn);
+    if (!$user) throw new ApiError('Sesi tidak valid atau sudah berakhir. Silakan login kembali.', 401, 'UNAUTHORIZED');
+    // Customers (template buyers) only reach their own customer_* actions; staff never use those
+    if (in_array($action, CUSTOMER_ACTIONS, true)) {
+        if ($user['role'] !== 'customer') throw new ApiError('Akses ditolak: aksi ini khusus akun pembeli.', 403, 'FORBIDDEN');
+    } elseif (!in_array($user['role'], STAFF_ROLES, true)) {
+        throw new ApiError('Akses ditolak.', 403, 'FORBIDDEN');
+    }
+    $isAdmin = $user['role'] === 'admin';
+    if (in_array($action, ADMIN_ACTIONS, true) && !$isAdmin) throw new ApiError('Akses ditolak: hanya admin.', 403, 'FORBIDDEN');
+
+    // Non-admins only see their own account (the admin header uses get_users to refresh the profile)
+    if ($action === 'get_users' && !$isAdmin) {
+        echo json_encode([$user]);
+        exit();
+    }
+    if ($action === 'update_user' && !$isAdmin) {
+        if (in_int($input, 'id') !== $user['id']) throw new ApiError('Akses ditolak: Anda hanya bisa mengubah profil sendiri.', 403, 'FORBIDDEN');
+        $input['role'] = $user['role'];
+        $input['status'] = $user['status'];
+    }
+    if ($action === 'add_user' || $action === 'update_user') {
+        if (isset($input['role']) && !in_array($input['role'], USER_ROLES, true)) throw new ApiError('Role tidak valid.');
+        if (isset($input['status']) && !in_array($input['status'], ['active', 'inactive'], true)) throw new ApiError('Status tidak valid.');
+        $password = $input['password'] ?? '';
+        if ($action === 'add_user' && (!is_string($password) || strlen($password) < 8)) throw new ApiError('Password minimal 8 karakter.');
+        if ($action === 'update_user' && !empty($password) && strlen((string)$password) < 8) throw new ApiError('Password minimal 8 karakter.');
+    }
+    if ($action === 'delete_user' && in_int($input, 'id') === $user['id']) throw new ApiError('Tidak bisa menghapus akun yang sedang dipakai.');
+    if (contains_script_url($input)) throw new ApiError('Tautan javascript:/vbscript: tidak diizinkan.');
+    return $user;
+}
+
+// ── Login rate limit: small JSON files in the system temp folder (PHP has no shared memory) ──
+
+function rate_limit_file($key) {
+    $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'garudanexa-rate-limit';
+    if (!is_dir($dir)) @mkdir($dir, 0700, true);
+    return $dir . DIRECTORY_SEPARATOR . hash('sha256', $key) . '.json';
+}
+
+// Seconds until the key may try again, or 0 when it is not blocked
+function rate_limit_wait($key, $max) {
+    $file = rate_limit_file($key);
+    $entry = is_file($file) ? json_decode((string)@file_get_contents($file), true) : null;
+    if (!is_array($entry) || $entry['reset'] <= time() || $entry['count'] < $max) return 0;
+    return $entry['reset'] - time();
+}
+
+function rate_limit_hit($key, $windowSeconds) {
+    $fp = @fopen(rate_limit_file($key), 'c+');
+    if (!$fp) return;
+    flock($fp, LOCK_EX);
+    $entry = json_decode((string)stream_get_contents($fp), true);
+    if (!is_array($entry) || $entry['reset'] <= time()) $entry = ["count" => 0, "reset" => time() + $windowSeconds];
+    $entry['count']++;
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($entry));
+    flock($fp, LOCK_UN);
+    fclose($fp);
+}
+
+function rate_limit_clear($key) {
+    @unlink(rate_limit_file($key));
+}
+
+function too_many_attempts($seconds) {
+    header('Retry-After: ' . $seconds);
+    throw new ApiError('Terlalu banyak percobaan. Coba lagi dalam ' . max(1, (int)ceil($seconds / 60)) . ' menit.', 429);
+}
+
+// login (returns a token) and public registration (always a regular user that an admin must activate first)
+function handle_auth_action(mysqli $conn, $action, array $input) {
+    if (!auth_secret()) throw new ApiError('Login belum dikonfigurasi di server.', 503);
+    $email = trim(in_str($input, 'email'));
+    $password = is_string($input['password'] ?? null) ? $input['password'] : '';
+    $ip = client_ip();
+
+    if ($action === 'login') {
+        $accountKey = "login|$ip|" . strtolower($email);
+        $ipKey = "login-ip|$ip";
+        $wait = max(rate_limit_wait($accountKey, 5), rate_limit_wait($ipKey, 30));
+        if ($wait) too_many_attempts($wait);
+        $user = $email !== '' ? db_one($conn, "SELECT * FROM users WHERE email = ? LIMIT 1", [$email]) : null;
+        // Unknown emails still pay for one bcrypt check, so response time does not reveal which emails exist
+        $valid = password_verify($password, $user['password'] ?? password_hash(random_bytes(16), PASSWORD_BCRYPT));
+        if (!$user || !$valid) {
+            rate_limit_hit($accountKey, 900);
+            rate_limit_hit($ipKey, 900);
+            throw new ApiError('Email atau password salah', 401);
+        }
+        if ($user['status'] !== 'active') throw new ApiError('Akun Anda belum aktif. Hubungi administrator.', 403);
+        rate_limit_clear($accountKey);
+        [$token, $expiresAt] = issue_token($user);
+        unset($user['password']);
+        echo json_encode(["success" => true, "user" => $user, "token" => $token, "expires_at" => $expiresAt]);
+        return;
+    }
+
+    $registerKey = "register|$ip";
+    $wait = rate_limit_wait($registerKey, 5);
+    if ($wait) too_many_attempts($wait);
+    $name = mb_substr(trim(in_str($input, 'name')), 0, 100);
+    $phone = mb_substr(trim(in_str($input, 'phone')), 0, 30);
+    if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 150) throw new ApiError('Nama dan email yang valid wajib diisi.');
+    if (strlen($password) < 8) throw new ApiError('Password minimal 8 karakter.');
+    rate_limit_hit($registerKey, 3600);
+    if (db_one($conn, "SELECT id FROM users WHERE email = ? LIMIT 1", [$email])) throw new ApiError('Email sudah terdaftar.', 409);
+    db_run($conn, "INSERT INTO users (name, email, password, phone, role, status, avatar) VALUES (?, ?, ?, ?, 'user', 'inactive', '')",
+        [$name, $email, password_hash($password, PASSWORD_DEFAULT), $phone]);
+    echo json_encode(["success" => true, "pending" => true, "message" => "Registrasi berhasil. Akun Anda aktif setelah disetujui admin."]);
+}
+
+// ── Uploads: type from the content (magic bytes) and an allowlist, never from the client; names generated here ──
+
+function sniff_image($bin) {
+    $hex = bin2hex(substr($bin, 0, 12));
+    if (strpos($hex, '89504e47') === 0) return 'png';
+    if (strpos($hex, 'ffd8ff') === 0) return 'jpg';
+    if (strpos($bin, 'GIF8') === 0) return 'gif';
+    if (substr($bin, 0, 4) === 'RIFF' && substr($bin, 8, 4) === 'WEBP') return 'webp';
+    if (strpos($hex, '00000100') === 0) return 'ico';
+    $head = ltrim(preg_replace('/^\xEF\xBB\xBF/', '', substr($bin, 0, 2048)));
+    if (preg_match('/^(<\?xml[^>]*>\s*)?(<!--.*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/is', $head)) return 'svg';
+    return null;
+}
+
+// Keeps a readable, filesystem/URL-safe stem of the client's file name
+function safe_stem($name) {
+    $base = preg_replace('/\.[^.]*$/', '', basename(str_replace('\\', '/', (string)$name)));
+    $stem = trim(preg_replace('/[^A-Za-z0-9_-]+/', '_', $base), '_');
+    return substr($stem, 0, 80) ?: 'file';
+}
+
+function upload_limit_bytes($key, $defaultMb) {
+    $mb = (float)env_value($key, (string)$defaultMb);
+    return (int)(($mb > 0 ? $mb : $defaultMb) * 1024 * 1024);
+}
+
+// SVG is served as an image but can carry script; anything active is rejected instead of cleaned.
+// Checked on the raw text and again after decoding character references (xlink:href="&#106;avascript:..."),
+// with whitespace/control characters removed because browsers ignore them inside a URL scheme.
+function svg_has_active_content($svg) {
+    $tags = '/<script|<foreignObject|<iframe|<embed|<object|<handler|<listener|\son[a-z]+\s*=|<!ENTITY|<!DOCTYPE[^>]*\[/i';
+    if (preg_match($tags, $svg)) return true;
+    // Only UTF-8/ASCII/Latin-1: another declared encoding could hide markup from these byte checks
+    if (preg_match('/<\?xml[^>]*\bencoding\s*=\s*["\']\s*(?!(utf-?8|us-ascii|iso-8859-1)\s*["\'])/i', $svg)) return true;
+    $decoded = $svg;
+    for ($i = 0; $i < 3; $i++) { // nested references such as &amp;#106; decode one level per pass
+        $next = preg_replace_callback('/&#(x[0-9a-f]+|[0-9]+);?/i', function ($m) {
+            $code = ($m[1][0] === 'x' || $m[1][0] === 'X') ? hexdec(substr($m[1], 1)) : (int)$m[1];
+            return ($code > 0 && $code <= 0x10FFFF) ? mb_chr($code, 'UTF-8') : '';
+        }, $decoded);
+        $next = html_entity_decode((string)$next, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($next === $decoded) break;
+        $decoded = $next;
+    }
+    if (preg_match($tags, $decoded)) return true;
+    $compact = preg_replace('/[\x00-\x20]+/', '', $decoded);
+    return (bool)preg_match('/(javascript|vbscript|livescript):|data:(text\/html|application\/xhtml)/i', (string)$compact);
+}
+
+// Decodes and validates a base64 data URI; returns [content, extension]
+function parse_upload($dataUri, $allowDocuments, $filename = '') {
+    if (!preg_match('/^data:[^,]*?;base64,/i', $dataUri, $m)) throw new ApiError('Format file tidak valid.');
+    $maxImage = upload_limit_bytes('UPLOAD_MAX_IMAGE_MB', 10);
+    $maxFile = upload_limit_bytes('UPLOAD_MAX_FILE_MB', 25);
+    $payload = substr($dataUri, strlen($m[0]));
+    if (strlen($payload) > ceil($maxFile * 4 / 3) + 4) throw new ApiError('Ukuran file terlalu besar.');
+    $content = base64_decode($payload);
+    if ($content === false || $content === '') throw new ApiError('File kosong atau rusak.');
+
+    $imageExt = sniff_image($content);
+    if ($imageExt) {
+        if (strlen($content) > $maxImage) throw new ApiError('Ukuran gambar maksimal ' . ($maxImage / 1048576) . ' MB.');
+        if ($imageExt === 'svg' && svg_has_active_content($content)) {
+            throw new ApiError('File SVG berisi script dan tidak diizinkan.');
+        }
+        return [$content, $imageExt];
+    }
+    if (!$allowDocuments) throw new ApiError('Hanya file gambar (PNG, JPG, WEBP, GIF, SVG) yang diizinkan.');
+
+    $ext = strtolower(pathinfo((string)$filename, PATHINFO_EXTENSION));
+    if (!in_array($ext, UPLOAD_DOCUMENT_EXTS, true)) {
+        throw new ApiError('Tipe file tidak diizinkan. Gunakan: ' . implode(', ', UPLOAD_DOCUMENT_EXTS) . ', atau gambar.');
+    }
+    if (isset(UPLOAD_MAGIC[$ext]) && strpos(bin2hex(substr($content, 0, 4)), UPLOAD_MAGIC[$ext]) !== 0) {
+        throw new ApiError("Isi file tidak sesuai dengan ekstensi .$ext.");
+    }
+    if (strlen($content) > $maxFile) throw new ApiError('Ukuran file maksimal ' . ($maxFile / 1048576) . ' MB.');
+    return [$content, $ext];
+}
+
+// Non-upload values are stored as given (existing paths/URLs); script URLs are dropped
+function safe_link($value) {
+    if (!is_string($value)) return $value;
+    return preg_match('/^[\s\x00-\x1f]*(javascript|vbscript|data):/i', $value) ? '' : $value;
+}
+
+// Saves a base64 data URI to public/assets/<section>/ and returns its public path.
+// Anything that is not a data URI (an existing path or URL) is returned unchanged.
+// $filename: the client's file name (documents need its extension) or a name prefix such as 'hero'.
+// Document folders (dokumen/documents) also accept office/pdf/archive files; elsewhere only images.
+function save_base64_asset($data, $section, $filename = null) {
+    if (!is_string($data) || !preg_match('/^\s*data:/i', $data)) return safe_link($data);
+    $section = implode('/', array_map('safe_stem', explode('/', (string)$section)));
+    [$content, $ext] = parse_upload(trim($data), (bool)preg_match('/dokumen|document/i', $section), (string)$filename);
+    $name = ($filename ? safe_stem($filename) : basename($section)) . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+    $folder = public_dir() . '/assets/' . $section . '/';
+    if (!is_dir($folder) && !mkdir($folder, 0755, true)) throw new RuntimeException("Cannot create upload folder $folder");
+    if (file_put_contents($folder . $name, $content) === false) throw new RuntimeException("Cannot write upload $folder$name");
+    return '/assets/' . $section . '/' . $name;
+}
+
+// Deletes a file this backend saved under public/assets/<section>/; URLs (S3) and other paths are left alone
+function delete_local_asset($path, $section) {
+    $prefix = '/assets/' . $section . '/';
+    if (!is_string($path) || strpos($path, $prefix) !== 0) return;
+    $folder = realpath(public_dir() . $prefix);
+    $file = $folder ? realpath($folder . DIRECTORY_SEPARATOR . basename($path)) : false;
+    // basename() already strips ../; realpath() also refuses links that point outside the folder
+    if ($file && strpos($file, $folder . DIRECTORY_SEPARATOR) === 0 && is_file($file)) unlink($file);
+}
+
+// Saves the base64 entries of a project_files list ([{name, type, size, data}]) and returns the stored list
+function save_base64_files($files, $section) {
+    if (is_string($files)) $files = json_decode($files, true);
+    if (!is_array($files)) return [];
+    $saved = [];
+    foreach ($files as $f) {
+        if (!is_array($f)) continue;
+        if (isset($f['data']) && is_string($f['data']) && preg_match('/^\s*data:/i', $f['data'])) {
+            $path = save_base64_asset($f['data'], $section, (string)($f['name'] ?? 'file'));
+            $saved[] = ["name" => $f['name'] ?? '', "type" => $f['type'] ?? '', "size" => $f['size'] ?? 0, "path" => $path];
+        } else {
+            if (isset($f['path'])) $f['path'] = safe_link($f['path']);
+            unset($f['data']);
+            $saved[] = $f;
+        }
+    }
+    return $saved;
+}
+
+// Device / browser / OS from a user agent, same rules as track_visit in server.js
+function parse_user_agent($ua) {
+    $device = 'Desktop'; $browser = 'Unknown'; $os = 'Unknown';
+    if (preg_match('/Mobile|Android|iPhone|iPad|iPod/i', $ua)) $device = 'Mobile';
+    if (preg_match('/Tablet|iPad/i', $ua)) $device = 'Tablet';
+
+    if (preg_match('/Chrome/i', $ua) && !preg_match('/Edg/i', $ua)) $browser = 'Chrome';
+    elseif (preg_match('/Firefox/i', $ua)) $browser = 'Firefox';
+    elseif (preg_match('/Safari/i', $ua) && !preg_match('/Chrome/i', $ua)) $browser = 'Safari';
+    elseif (preg_match('/Edg/i', $ua)) $browser = 'Edge';
+    elseif (preg_match('/MSIE|Trident/i', $ua)) $browser = 'Internet Explorer';
+
+    if (preg_match('/Windows|Win64/i', $ua)) $os = 'Windows';
+    elseif (preg_match('/Mac/i', $ua) && !preg_match('/iPhone|iPad|iPod/i', $ua)) $os = 'macOS';
+    elseif (preg_match('/Android/i', $ua)) $os = 'Android';
+    elseif (preg_match('/iPhone|iPad|iPod/i', $ua)) $os = 'iOS';
+    elseif (preg_match('/Linux/i', $ua)) $os = 'Linux';
+    return [$device, $browser, $os];
+}
+
+// Admin AI assistant: OpenAI-compatible chat API (Ollama by default), same context as /api/ai-chat in server.js.
+// AI_BASE_URL, AI_MODEL and AI_API_KEY come from the environment.
+function ai_chat_reply($conn, $messages) {
+    $baseUrl = rtrim(getenv('AI_BASE_URL') ?: 'http://127.0.0.1:11434/v1', '/');
+    $model = getenv('AI_MODEL') ?: 'qwen2.5:3b';
+    $apiKey = getenv('AI_API_KEY') ?: 'ollama';
+
+    $settings = [];
+    foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings") as $row) $settings[$row['setting_key']] = $row['setting_value'];
+    $visits = (int)(db_one($conn, "SELECT total_visits FROM visitor_stats WHERE id = 1")['total_visits'] ?? 0);
+    $products = [];
+    foreach (db_all($conn, "SELECT title, description, link_button FROM list_products ORDER BY id") as $row) {
+        $products[] = "- **{$row['title']}**: " . ($row['description'] ?: '(no description)') . " — Link: " . ($row['link_button'] ?: 'N/A');
+    }
+    $projectCount = (int)(db_one($conn, "SELECT COUNT(*) as c FROM project_client")['c'] ?? 0);
+    $userCount = (int)(db_one($conn, "SELECT COUNT(*) as c FROM users")['c'] ?? 0);
+    $portfolio = json_decode($settings['portfolio_data'] ?? '[]', true) ?: [];
+
+    $system = "Kamu adalah AI Assistant untuk website Garuda Nexa Bahtera — perusahaan software house & digital agency asal Indonesia.\n\n"
+        . "Informasi website:\n"
+        . "- Tagline: " . ($settings['hero_title'] ?? 'Solusi Digital Terpercaya') . "\n"
+        . "- Deskripsi: " . ($settings['hero_subtitle'] ?? 'Membangun software custom untuk bisnis Anda') . "\n"
+        . "- Total pengunjung website: " . number_format($visits, 0, ',', '.') . " kali\n"
+        . "- Total produk: " . count($products) . " produk\n"
+        . "- Total user admin: $userCount\n"
+        . "- Total project client: $projectCount\n"
+        . "- Portfolio: " . count($portfolio) . " project\n\n"
+        . "Produk:\n" . ($products ? implode("\n", $products) : 'Belum ada produk terdaftar.') . "\n\n"
+        . "Kontak: WA 6285188009152 | Email: info@garudanexa.com\n\n"
+        . "Jawab pertanyaan admin tentang website, data pengunjung, produk, layanan, dan teknis dalam bahasa Indonesia yang ramah dan profesional. "
+        . "Arahkan pertanyaan di luar konteks kembali ke topik Garuda Nexa. Gunakan Markdown yang rapi dan jawab ringkas.";
+
+    // Only user/assistant turns from the client; the system prompt is ours
+    $chat = [["role" => "system", "content" => $system]];
+    foreach (array_slice($messages, -20) as $m) {
+        if (in_array($m['role'] ?? '', ['user', 'assistant'], true) && is_string($m['content'] ?? null)) {
+            $chat[] = ["role" => $m['role'], "content" => $m['content']];
+        }
+    }
+
+    $ch = curl_init($baseUrl . '/chat/completions');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey],
+        CURLOPT_POSTFIELDS => json_encode(["model" => $model, "messages" => $chat, "temperature" => 0.7, "max_tokens" => 1500]),
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 120,
+    ]);
+    $body = curl_exec($ch);
+    $err = curl_error($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $reply = json_decode((string)$body, true)['choices'][0]['message']['content'] ?? null;
+    if ($err || $code >= 400 || $reply === null) {
+        return ["error" => "AI server di $baseUrl tidak merespons" . ($err ? ": $err" : " (HTTP $code)") . ". Jalankan Ollama atau set AI_BASE_URL/AI_MODEL."];
+    }
+    return ["reply" => $reply];
+}
 ?>

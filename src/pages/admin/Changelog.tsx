@@ -1,11 +1,32 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  History, Plus, X, Edit2, Trash2, Save,
+  History, Plus, Edit2, Trash2, Save,
   Bug, Sparkles, Zap, ChevronDown, ChevronLeft, ChevronRight,
-  Calendar, Clock, Tag, AlertTriangle, Search,
+  Calendar, Clock, Tag, AlertTriangle,
+  type LucideIcon,
 } from 'lucide-react';
-import { useStore } from '../../store/useStore';
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Field,
+  IconBox,
+  IconButton,
+  Input,
+  LoadingState,
+  Modal,
+  PageHeader,
+  Panel,
+  SearchInput,
+  Select,
+  Tabs,
+  Textarea,
+  cn,
+  FOCUS_INSET,
+  type Tone,
+} from '../../components/admin/ui';
 
 interface ChangelogItem {
   id: number;
@@ -30,9 +51,6 @@ const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate()
 const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
 
 const Changelog: React.FC = () => {
-  const { theme } = useStore();
-  const isLight = theme === 'light';
-
   const [logs, setLogs] = useState<ChangelogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -58,7 +76,7 @@ const Changelog: React.FC = () => {
     time: new Date().toTimeString().slice(0, 8),
   });
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const res = await fetch(API, {
         method: 'POST',
@@ -72,9 +90,13 @@ const Changelog: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchLogs(); }, []);
+  useEffect(() => {
+    // fetchLogs baru memanggil setState setelah await; aturan ini tidak membedakan fungsi async.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchLogs();
+  }, [fetchLogs]);
 
   // ── build calendar data ──
   const datesWithData = useMemo(() => {
@@ -135,10 +157,10 @@ const Changelog: React.FC = () => {
         setModalOpen(false);
         fetchLogs();
       } else {
-        alert('Gagal simpan: ' + (data.error || 'unknown'));
+        alert('Gagal menyimpan changelog: ' + (data.error || 'kesalahan tidak diketahui'));
       }
-    } catch (e) {
-      alert('Gagal simpan');
+    } catch {
+      alert('Gagal menyimpan changelog.');
     }
   };
 
@@ -154,17 +176,18 @@ const Changelog: React.FC = () => {
         setDeleteConfirm(null);
         fetchLogs();
       } else {
-        alert('Gagal hapus: ' + (data.error || 'unknown'));
+        alert('Gagal menghapus changelog: ' + (data.error || 'kesalahan tidak diketahui'));
       }
-    } catch (e) {
-      alert('Gagal hapus');
+    } catch {
+      alert('Gagal menghapus changelog.');
     }
   };
 
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const toggleExpand = (id: number) => {
     const s = new Set(expanded);
-    s.has(id) ? s.delete(id) : s.add(id);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
     setExpanded(s);
   };
 
@@ -192,14 +215,11 @@ const Changelog: React.FC = () => {
   const catLabel: Record<string, string> = {
     fitur: 'Fitur', perbaikan: 'Perbaikan', peningkatan: 'Peningkatan', keamanan: 'Keamanan', lainnya: 'Lainnya',
   };
-  const catColor: Record<string, { bg: string; text: string; border: string; bgLight: string; textLight: string; borderLight: string }> = {
-    fitur:     { bg: 'bg-blue-600/10', text: 'text-blue-400', border: 'border-blue-600/20', bgLight: 'bg-blue-50', textLight: 'text-blue-600', borderLight: 'border-blue-200' },
-    perbaikan: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/20', bgLight: 'bg-red-50', textLight: 'text-red-600', borderLight: 'border-red-200' },
-    peningkatan:{ bg: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/20', bgLight: 'bg-green-50', textLight: 'text-green-600', borderLight: 'border-green-200' },
-    keamanan:  { bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/20', bgLight: 'bg-yellow-50', textLight: 'text-yellow-600', borderLight: 'border-yellow-200' },
-    lainnya:   { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/20', bgLight: 'bg-slate-100', textLight: 'text-slate-600', borderLight: 'border-slate-300' },
+  // Warna kategori → tone token adm-* (ikut tema otomatis)
+  const catTone: Record<string, Tone> = {
+    fitur: 'cobalt', perbaikan: 'danger', peningkatan: 'mint', keamanan: 'warning', lainnya: 'mist',
   };
-  const catIcon: Record<string, any> = {
+  const catIcon: Record<string, LucideIcon> = {
     fitur: Sparkles, perbaikan: Bug, peningkatan: Zap, keamanan: AlertTriangle, lainnya: Tag,
   };
 
@@ -238,59 +258,40 @@ const Changelog: React.FC = () => {
   // ── all categories for filter ──
   const categories = ['all', 'fitur', 'perbaikan', 'peningkatan', 'keamanan', 'lainnya'];
 
-  // ── Shared class helpers ──
-  const cardBg = isLight ? 'bg-white border-slate-200' : 'bg-[#0D0D0D] border-white/5';
-  const cardHover = isLight ? 'hover:border-slate-300 hover:shadow-sm' : 'hover:border-white/10';
-  const inputBg = isLight
-    ? 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-500'
-    : 'bg-white/5 border-white/10 text-white placeholder:text-slate-600 focus:border-blue-500/50';
-  const modalBg = isLight ? 'bg-white border-slate-200' : 'bg-[#1A1A1A] border-white/10';
-  const overlayBg = isLight ? 'bg-slate-900/40 backdrop-blur-sm' : 'bg-black/60 backdrop-blur-sm';
+  // Ikon kategori: tone 'mist' tidak ada di IconBox → pakai 'ghost'
+  const catBoxTone = (cat: string) => {
+    const t = catTone[cat] || 'mist';
+    return t === 'mist' ? 'ghost' : t;
+  };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20">
+    <div className="pb-20">
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center border ${
-            isLight ? 'bg-blue-50 border-blue-200' : 'bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-blue-600/20'
-          }`}>
-            <History className={`w-5 h-5 md:w-6 md:h-6 ${isLight ? 'text-blue-600' : 'text-blue-400'}`} />
-          </div>
-          <div>
-            <h1 className={`text-xl md:text-2xl font-bold tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>Changelog</h1>
-            <p className={`text-[11px] md:text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Riwayat perubahan platform</p>
-          </div>
-        </div>
-        <button
-          onClick={() => openAdd()}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-            isLight ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
-          }`}
-        >
-          <Plus className="w-4 h-4" /> Tambah
-        </button>
-      </div>
+      <PageHeader
+        title="Changelog"
+        description="Catat riwayat perubahan platform Garuda Nexa di sini."
+        actions={
+          <Button icon={<Plus />} onClick={() => openAdd()}>
+            Tambah
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
         {/* ── LEFT: Calendar ── */}
-        <div className={`lg:col-span-1 rounded-2xl border p-4 md:p-5 ${cardBg}`}>
+        <Panel className="lg:col-span-1 lg:self-start">
           {/* Month nav */}
-          <div className="flex items-center justify-between mb-4">
-            <button onClick={prevMonth} className={`p-1.5 rounded-lg transition-colors ${isLight ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/5 text-slate-400'}`}>
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <h3 className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <IconButton icon={<ChevronLeft />} label="Bulan sebelumnya" size="sm" variant="secondary" onClick={prevMonth} />
+            <h3 className="text-[14px] font-semibold tabular-nums text-adm-fg sm:text-[15px]">
               {MONTHS_ID[calMonth]} {calYear}
             </h3>
-            <button onClick={nextMonth} className={`p-1.5 rounded-lg transition-colors ${isLight ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/5 text-slate-400'}`}>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <IconButton icon={<ChevronRight />} label="Bulan berikutnya" size="sm" variant="secondary" onClick={nextMonth} />
           </div>
           {/* Day headers */}
-          <div className="grid grid-cols-7 mb-1">
+          <div className="mb-1 grid grid-cols-7">
             {DAYS_SHORT.map(d => (
-              <div key={d} className={`text-center text-[10px] font-bold uppercase py-1 ${isLight ? 'text-slate-400' : 'text-slate-600'}`}>{d}</div>
+              <div key={d} className="py-1 text-center text-[11px] font-semibold uppercase tracking-[0.06em] text-adm-subtle">{d}</div>
             ))}
           </div>
           {/* Day cells */}
@@ -315,135 +316,111 @@ const Changelog: React.FC = () => {
                       }, 100);
                     }
                   }}
-                  className={`relative h-9 rounded-lg text-xs font-medium transition-all ${
+                  type="button"
+                  aria-pressed={active}
+                  className={cn(
+                    'relative h-10 rounded-lg text-[13px] font-medium tabular-nums transition-colors sm:h-9',
+                    FOCUS_INSET,
                     active
-                      ? (isLight ? 'bg-blue-600 text-white shadow-md' : 'bg-blue-600 text-white shadow-lg shadow-blue-600/20')
+                      ? 'bg-cobalt text-white'
                       : today
-                        ? (isLight ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : 'bg-blue-600/20 text-blue-300')
-                        : (isLight ? 'text-slate-700 hover:bg-slate-100' : 'text-slate-300 hover:bg-white/5')
-                  }`}
+                        ? 'bg-adm-cobalt-soft text-adm-cobalt-fg ring-1 ring-inset ring-cobalt/30'
+                        : 'text-adm-fg hover:bg-adm-hover',
+                  )}
                 >
                   {day}
                   {hasEntry && (
-                    <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${
-                      active ? 'bg-white' : (isLight ? 'bg-blue-500' : 'bg-blue-400')
-                    }`} />
+                    <span className={cn('absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full', active ? 'bg-white' : 'bg-cobalt')} />
                   )}
                 </button>
               );
             })}
           </div>
           {/* Quick actions */}
-          <div className="mt-4 space-y-2">
-            <button
-              onClick={goToday}
-              className={`w-full text-xs font-medium py-2 rounded-lg transition-colors ${
-                isLight ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-400 hover:bg-white/5'
-              }`}
-            >
+          <div className="mt-4 space-y-2 border-t border-adm-line pt-4">
+            <Button variant="ghost" size="sm" fullWidth onClick={goToday}>
               ← Hari ini
-            </button>
+            </Button>
             {selectedDate && (
               <>
-                <div className={`text-xs text-center py-1.5 rounded-lg font-medium ${
-                  isLight ? 'bg-slate-100 text-slate-600' : 'bg-white/5 text-slate-400'
-                }`}>
+                <div className="rounded-lg bg-adm-ghost py-1.5 text-center text-xs font-medium text-adm-muted">
                   {fmtDateShort(selectedDate)}
                 </div>
-                <button
+                <Button
+                  variant="soft"
+                  size="sm"
+                  fullWidth
+                  icon={<Plus />}
                   onClick={() => openAdd(selectedDate)}
-                  className={`w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-lg transition-all ${
-                    isLight ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' : 'bg-blue-600/10 text-blue-400 hover:bg-blue-600/20'
-                  }`}
+                  className="bg-adm-cobalt-soft text-adm-cobalt-fg hover:bg-cobalt/20"
                 >
-                  <Plus className="w-3 h-3" /> Tambah di tanggal ini
-                </button>
+                  Tambah di tanggal ini
+                </Button>
               </>
             )}
             {selectedDate && (
-              <button
-                onClick={() => setSelectedDate(null)}
-                className={`w-full text-xs py-1.5 rounded-lg transition-colors ${
-                  isLight ? 'text-slate-400 hover:text-slate-600' : 'text-slate-500 hover:text-slate-300'
-                }`}
-              >
+              <Button variant="ghost" size="sm" fullWidth onClick={() => setSelectedDate(null)} className="text-adm-subtle">
                 Hapus filter tanggal
-              </button>
+              </Button>
             )}
           </div>
-        </div>
+        </Panel>
 
         {/* ── RIGHT: Content ── */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="min-w-0 space-y-4 lg:col-span-2">
           {/* Filter bar */}
-          <div className={`flex flex-col sm:flex-row gap-3 rounded-xl border p-3 ${cardBg}`}>
-            <div className="relative flex-1">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Cari changelog..."
-                className={`w-full pl-9 pr-4 py-2 rounded-lg text-sm border focus:outline-none transition-colors ${inputBg}`}
+          <Panel padding="none" className="flex flex-col gap-3 p-3 xl:flex-row xl:items-center">
+            <SearchInput
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery('')}
+              placeholder="Cari changelog..."
+              controlSize="sm"
+              wrapperClassName="w-full xl:max-w-xs"
+            />
+            <div className="min-w-0">
+              <Tabs
+                items={categories.map(cat => ({ value: cat, label: cat === 'all' ? 'Semua' : catLabel[cat] }))}
+                value={filterCategory}
+                onChange={setFilterCategory}
+                size="sm"
+                ariaLabel="Kategori"
               />
             </div>
-            <div className="flex gap-2 flex-wrap">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setFilterCategory(cat)}
-                  className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border transition-all ${
-                    filterCategory === cat
-                      ? (isLight ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-600/20 text-blue-400 border-blue-600/30')
-                      : (isLight ? 'text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700' : 'text-slate-500 border-white/5 hover:border-white/10 hover:text-slate-300')
-                  }`}
-                >
-                  {cat === 'all' ? 'Semua' : catLabel[cat]}
-                </button>
-              ))}
-            </div>
-          </div>
+          </Panel>
 
           {/* Loading */}
-          {loading && (
-            <div className={`text-center py-20 text-sm ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Memuat...</div>
-          )}
+          {loading && <LoadingState label="Memuat..." />}
 
           {/* Empty */}
           {!loading && filteredLogs.length === 0 && (
-            <div className={`text-center py-16 rounded-2xl border ${cardBg}`}>
-              <History className={`w-10 h-10 mx-auto mb-3 ${isLight ? 'text-slate-300' : 'text-slate-600'}`} />
-              <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                {selectedDate ? 'Tidak ada changelog di tanggal ini' : 'Belum ada changelog'}
-              </p>
-              <button
-                onClick={() => openAdd(selectedDate || undefined)}
-                className={`mt-3 text-sm font-medium ${isLight ? 'text-blue-600 hover:text-blue-700' : 'text-blue-400 hover:text-blue-300'}`}
-              >
-                {selectedDate ? 'Tambah di tanggal ini' : 'Tambah changelog pertama'}
-              </button>
-            </div>
+            <EmptyState
+              variant="card"
+              icon={<History />}
+              title={selectedDate ? 'Tidak ada changelog di tanggal ini' : 'Belum ada changelog'}
+              action={
+                <Button variant="secondary" size="sm" icon={<Plus />} onClick={() => openAdd(selectedDate || undefined)}>
+                  {selectedDate ? 'Tambah di tanggal ini' : 'Tambah changelog pertama'}
+                </Button>
+              }
+            />
           )}
 
           {/* ── Timeline ── */}
           {!loading && filteredLogs.length > 0 && (
             <div className="relative space-y-6">
-              <div className={`absolute left-[18px] md:left-[23px] top-0 bottom-0 w-[2px] ${
-                isLight ? 'bg-gradient-to-b from-blue-300 via-slate-200 to-transparent' : 'bg-gradient-to-b from-blue-500/50 via-purple-500/20 to-transparent'
-              }`} />
+              <div className="absolute bottom-0 left-[10px] top-0 w-[2px] rounded-full bg-adm-line sm:left-[22px]" aria-hidden />
 
               {dates.map(date => (
-                <div key={date} id={`date-section-${date}`}>
+                <div key={date} id={`date-section-${date}`} className="scroll-mt-20">
                   {/* Date header */}
-                  <div className="relative pl-12 md:pl-14 mb-3">
-                    <div className={`absolute left-[10px] md:left-[15px] top-[6px] w-[18px] h-[18px] rounded-full border-[3px] shadow-lg ${
-                      isLight ? 'bg-blue-500 border-blue-100 shadow-blue-200' : 'bg-blue-600 border-blue-900 shadow-blue-600/30'
-                    }`} />
-                    <div className={`flex items-center gap-2 text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span className={`font-medium ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>{fmtDate(date)}</span>
-                      <span className={isLight ? 'text-slate-300' : 'text-slate-600'}>·</span>
-                      <span className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>{grouped[date].length} perubahan</span>
+                  <div className="relative mb-3 pl-9 sm:pl-14">
+                    <div className="absolute left-[2px] top-[1px] h-[18px] w-[18px] rounded-full border-[3px] border-adm-canvas bg-cobalt sm:left-[14px]" aria-hidden />
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-adm-muted">
+                      <Calendar className="h-4 w-4 shrink-0 text-adm-subtle" strokeWidth={1.75} aria-hidden />
+                      <span className="font-medium text-adm-fg">{fmtDate(date)}</span>
+                      <span className="text-adm-subtle" aria-hidden>·</span>
+                      <span className="text-xs tabular-nums text-adm-muted">{grouped[date].length} perubahan</span>
                     </div>
                   </div>
 
@@ -452,55 +429,58 @@ const Changelog: React.FC = () => {
                     {grouped[date].map(item => {
                       const Icon = catIcon[item.category] || Tag;
                       const isOpen = expanded.has(item.id);
-                      const c = catColor[item.category] || catColor.lainnya;
                       return (
-                        <div key={item.id} className="relative pl-12 md:pl-14">
-                          <div className={`absolute left-[15px] md:left-[20px] top-5 w-[8px] h-[8px] rounded-full border-2 ${
-                            isLight ? 'bg-slate-300 border-white' : 'bg-slate-600 border-[#0D0D0D]'
-                          }`} />
+                        <div key={item.id} className="relative pl-9 sm:pl-14">
+                          <div className="absolute left-[7px] top-[30px] h-2 w-2 rounded-full bg-adm-subtle ring-2 ring-adm-canvas sm:left-[19px] sm:top-[34px]" aria-hidden />
 
-                          <div className={`rounded-xl border overflow-hidden transition-all duration-200 ${cardBg} ${cardHover}`}>
-                            <button
-                              onClick={() => toggleExpand(item.id)}
-                              className={`w-full flex items-center justify-between p-3 md:p-4 text-left transition-colors ${isLight ? 'hover:bg-slate-50' : 'hover:bg-white/[0.02]'}`}
-                            >
-                              <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <div className={`p-1.5 rounded-lg shrink-0 border ${
-                                  isLight ? `${c.bgLight} ${c.textLight} ${c.borderLight}` : `${c.bg} ${c.text} ${c.border}`
-                                }`}>
-                                  <Icon className="w-3.5 h-3.5" />
-                                </div>
+                          <Panel padding="none" className="overflow-hidden transition-colors duration-150 hover:ring-adm-line-strong">
+                            <div className="flex items-center gap-2 p-3 transition-colors hover:bg-adm-hover/60 sm:gap-3 sm:p-4">
+                              <button
+                                type="button"
+                                onClick={() => toggleExpand(item.id)}
+                                aria-expanded={isOpen}
+                                className={cn('flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left', FOCUS_INSET)}
+                              >
+                                <IconBox icon={<Icon />} tone={catBoxTone(item.category)} size="sm" className="max-sm:hidden" />
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className={`text-sm font-semibold truncate ${isLight ? 'text-slate-800' : 'text-white'}`}>{item.title}</span>
-                                    <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border shrink-0 ${
-                                      isLight ? `${c.bgLight} ${c.textLight} ${c.borderLight}` : `${c.bg} ${c.text} ${c.border}`
-                                    }`}>
+                                  <p className="truncate text-sm font-semibold text-adm-fg">{item.title}</p>
+                                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <Badge tone={catTone[item.category] || 'mist'} size="sm" dot={false} icon={<Icon />} className="sm:hidden">
                                       {catLabel[item.category] || item.category}
+                                    </Badge>
+                                    <Badge tone={catTone[item.category] || 'mist'} size="sm" dot={false} className="max-sm:hidden">
+                                      {catLabel[item.category] || item.category}
+                                    </Badge>
+                                    <span className="inline-flex items-center gap-1 text-xs tabular-nums text-adm-muted">
+                                      <Clock className="h-3.5 w-3.5 text-adm-subtle" strokeWidth={1.75} aria-hidden />
+                                      {fmtTime(item.time)}
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    <Clock className={`w-3 h-3 ${isLight ? 'text-slate-400' : 'text-slate-600'}`} />
-                                    <span className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>{fmtTime(item.time)}</span>
-                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0 ml-2">
-                                <button
+                              </button>
+                              <div className="flex shrink-0 items-center gap-1">
+                                <IconButton
+                                  icon={<Edit2 />}
+                                  label={`Edit ${item.title}`}
+                                  size="sm"
                                   onClick={e => { e.stopPropagation(); openEdit(item); }}
-                                  className={`p-1.5 rounded-lg transition-colors ${isLight ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50' : 'text-slate-500 hover:text-blue-400 hover:bg-white/5'}`}
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
+                                />
+                                <IconButton
+                                  icon={<Trash2 />}
+                                  label={`Hapus ${item.title}`}
+                                  size="sm"
+                                  variant="danger-ghost"
                                   onClick={e => { e.stopPropagation(); setDeleteConfirm(item.id); }}
-                                  className={`p-1.5 rounded-lg transition-colors ${isLight ? 'text-slate-400 hover:text-red-600 hover:bg-red-50' : 'text-slate-500 hover:text-red-400 hover:bg-white/5'}`}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${isLight ? 'text-slate-400' : 'text-slate-600'}`} />
+                                />
+                                <IconButton
+                                  icon={<ChevronDown className={cn('transition-transform duration-200', isOpen && 'rotate-180')} />}
+                                  label={isOpen ? 'Tutup detail' : 'Buka detail'}
+                                  size="sm"
+                                  aria-expanded={isOpen}
+                                  onClick={() => toggleExpand(item.id)}
+                                />
                               </div>
-                            </button>
+                            </div>
 
                             <AnimatePresence>
                               {isOpen && (
@@ -511,13 +491,12 @@ const Changelog: React.FC = () => {
                                   transition={{ duration: 0.2 }}
                                   className="overflow-hidden"
                                 >
-                                  <div className="px-3 md:px-4 pb-3 md:pb-4 pt-0">
-                                    <div className={`p-3 rounded-lg text-sm leading-relaxed ${
-                                      item.category === 'perbaikan'
-                                        ? (isLight ? 'bg-red-50 border border-red-100' : 'bg-red-500/5 border border-red-500/10')
-                                        : (isLight ? 'bg-slate-50 border border-slate-100' : 'bg-white/[0.02] border border-white/5')
-                                    }`}>
-                                      <p className={`text-[12px] md:text-sm whitespace-pre-wrap ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                                  <div className="px-3 pb-3 pt-0 sm:px-4 sm:pb-4">
+                                    <div className={cn(
+                                      'rounded-xl p-3 sm:p-4',
+                                      item.category === 'perbaikan' ? 'bg-adm-danger-soft' : 'bg-adm-ghost',
+                                    )}>
+                                      <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-adm-muted sm:text-sm">
                                         {item.description || 'Tidak ada deskripsi'}
                                       </p>
                                     </div>
@@ -525,7 +504,7 @@ const Changelog: React.FC = () => {
                                 </motion.div>
                               )}
                             </AnimatePresence>
-                          </div>
+                          </Panel>
                         </div>
                       );
                     })}
@@ -537,165 +516,86 @@ const Changelog: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Modal Add/Edit (whitemode supported) ── */}
-      <AnimatePresence>
-        {modalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-[200] flex items-center justify-center p-4 ${overlayBg}`}
-            onClick={() => setModalOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`w-full max-w-lg rounded-2xl border p-6 space-y-5 ${modalBg}`}
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between">
-                <h2 className={`text-lg font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                  {editing ? 'Edit Changelog' : 'Tambah Changelog'}
-                </h2>
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className={`p-1.5 rounded-lg transition-colors ${isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-700' : 'hover:bg-white/5 text-slate-500 hover:text-white'}`}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      {/* ── Modal Add/Edit ── */}
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editing ? 'Edit changelog' : 'Tambah changelog'}
+        icon={<History />}
+        size="md"
+        bodyClassName="space-y-4"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setModalOpen(false)}>
+              Batal
+            </Button>
+            <Button icon={<Save />} onClick={handleSave} disabled={!form.title.trim()}>
+              {editing ? 'Simpan' : 'Tambah'}
+            </Button>
+          </>
+        }
+      >
+        {/* Title */}
+        <Field label="Judul">
+          <Input
+            type="text"
+            value={form.title}
+            onChange={e => setForm({ ...form, title: e.target.value })}
+            placeholder="Judul perubahan..."
+          />
+        </Field>
 
-              <div className="space-y-4">
-                {/* Title */}
-                <div>
-                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Judul</label>
-                  <input
-                    type="text"
-                    value={form.title}
-                    onChange={e => setForm({ ...form, title: e.target.value })}
-                    placeholder="Judul perubahan..."
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors ${inputBg}`}
-                  />
-                </div>
+        {/* Description */}
+        <Field label="Deskripsi">
+          <Textarea
+            value={form.description}
+            onChange={e => setForm({ ...form, description: e.target.value })}
+            placeholder="Deskripsi perubahan..."
+            rows={4}
+            className="resize-none"
+          />
+        </Field>
 
-                {/* Description */}
-                <div>
-                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Deskripsi</label>
-                  <textarea
-                    value={form.description}
-                    onChange={e => setForm({ ...form, description: e.target.value })}
-                    placeholder="Deskripsi perubahan..."
-                    rows={4}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors resize-none ${inputBg}`}
-                  />
-                </div>
+        {/* Category + Date */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Kategori">
+            <Select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+              {categories.filter(c => c !== 'all').map(c => (
+                <option key={c} value={c}>{catLabel[c]}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Tanggal">
+            <Input
+              type="date"
+              value={form.change_date}
+              onChange={e => setForm({ ...form, change_date: e.target.value })}
+            />
+          </Field>
+        </div>
 
-                {/* Category + Date */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Kategori</label>
-                    <select
-                      value={form.category}
-                      onChange={e => setForm({ ...form, category: e.target.value })}
-                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors ${inputBg}`}
-                    >
-                      {categories.filter(c => c !== 'all').map(c => (
-                        <option key={c} value={c}>{catLabel[c]}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Tanggal</label>
-                    <input
-                      type="date"
-                      value={form.change_date}
-                      onChange={e => setForm({ ...form, change_date: e.target.value })}
-                      className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors ${inputBg}`}
-                    />
-                  </div>
-                </div>
+        {/* Time */}
+        <Field label="Waktu">
+          <Input
+            type="time"
+            value={form.time}
+            onChange={e => setForm({ ...form, time: e.target.value })}
+          />
+        </Field>
+      </Modal>
 
-                {/* Time */}
-                <div>
-                  <label className={`block text-[11px] font-bold uppercase tracking-wider mb-1.5 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Waktu</label>
-                  <input
-                    type="time"
-                    value={form.time}
-                    onChange={e => setForm({ ...form, time: e.target.value })}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors ${inputBg}`}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
-                    isLight
-                      ? 'border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-50'
-                      : 'border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={!form.title.trim()}
-                  className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                    isLight ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-500'
-                  }`}
-                >
-                  <Save className="w-4 h-4" />
-                  {editing ? 'Simpan' : 'Tambah'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Delete Modal (whitemode supported) ── */}
-      <AnimatePresence>
-        {deleteConfirm !== null && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-[200] flex items-center justify-center p-4 ${overlayBg}`}
-            onClick={() => setDeleteConfirm(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className={`w-full max-w-sm rounded-2xl border p-6 text-center space-y-4 ${modalBg}`}
-              onClick={e => e.stopPropagation()}
-            >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto ${isLight ? 'bg-red-50' : 'bg-red-500/10'}`}>
-                <AlertTriangle className={`w-6 h-6 ${isLight ? 'text-red-500' : 'text-red-400'}`} />
-              </div>
-              <div>
-                <h3 className={`text-lg font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Hapus Changelog?</h3>
-                <p className={`text-sm mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Tindakan ini tidak bisa dibatalkan.</p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
-                    isLight
-                      ? 'border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-50'
-                      : 'border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={() => handleDelete(deleteConfirm)}
-                  className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all ${
-                    isLight ? 'bg-red-600 hover:bg-red-700' : 'bg-red-600 hover:bg-red-500'
-                  }`}
-                >
-                  Hapus
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ── Delete Modal ── */}
+      <ConfirmDialog
+        open={deleteConfirm !== null}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={() => deleteConfirm !== null && handleDelete(deleteConfirm)}
+        tone="danger"
+        icon={<AlertTriangle />}
+        title="Hapus changelog?"
+        description="Tindakan ini tidak bisa dibatalkan."
+        confirmText="Ya, hapus"
+        cancelText="Batal"
+      />
     </div>
   );
 };

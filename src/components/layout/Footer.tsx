@@ -1,219 +1,280 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Phone, Globe, Instagram, MessageCircle, Facebook, Linkedin, Youtube } from 'lucide-react';
-import { useStore } from '../../store/useStore';
+﻿import React from 'react';
+import { ArrowRight, Facebook, Instagram, Linkedin, Mail, MessageCircle, Phone, Youtube } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BrandLogo } from '../ui/LogoMark';
+import { Reveal } from '../ui/Reveal';
+import { SplitText } from '../ui/SplitText';
+import { SmartLink } from './SmartLink';
+import { getHiddenSections, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
 
-const Footer: React.FC = () => {
-  const { language, setLanguage } = useStore();
-  const [settings, setSettings] = useState<any>({
-    footer_address: 'Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis.',
-    footer_phone: '085188009152',
-    footer_email: 'info@garudanexa.co.id',
-    footer_whatsapp: '6285188009152',
-    footer_copyright: '© 2026 PT. Garuda Nexa Bahtera. Semua hak dilindungi.',
-    footer_instagram: '#',
-    footer_facebook: '#',
-    footer_linkedin: '#',
-    footer_youtube: '#',
-    cta_title: 'Siap Membangun Sistem Digital?\nKonsultasikan Sekarang Juga!',
-    cta_button: 'Hubungi WhatsApp',
-    cta_link: '',
-    cta_phone: '085188009152',
-    cta_note: 'Konsultasi GRATIS'
+const DEFAULTS = {
+  footer_address: 'Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis.',
+  footer_phone: '085188009152',
+  footer_email: 'info@garudanexa.co.id',
+  footer_copyright: `© ${new Date().getFullYear()} PT. Garuda Nexa Bahtera. Semua hak dilindungi.`,
+  cta_title: 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!',
+  cta_button: 'Hubungi WhatsApp',
+  cta_note: 'Konsultasi GRATIS',
+};
+
+const CONTACT_MESSAGE = 'Halo Admin, saya tertarik dengan template website atau jasa pembuatan website/aplikasi Garuda Nexa.';
+
+interface FooterLink {
+  label: string;
+  href: string;
+  /** id section beranda; tautan disembunyikan bila section itu dimatikan admin */
+  section?: string;
+}
+
+const SERVICE_LINKS: FooterLink[] = [
+  { label: 'Template website', href: '#templates', section: 'templates' },
+  { label: 'Website custom', href: '/pesan-custom' },
+  { label: 'Aplikasi mobile custom', href: '/pesan-custom' },
+  { label: 'Konsultasi gratis', href: '#kontak' },
+];
+
+const EXPLORE_LINKS: FooterLink[] = [
+  { label: 'Template', href: '#templates', section: 'templates' },
+  { label: 'Projects', href: '#projects', section: 'projects' },
+  { label: 'Proses', href: '#process', section: 'process' },
+  { label: 'FAQ', href: '#faq', section: 'faq' },
+];
+
+const ACCOUNT_LINKS: FooterLink[] = [
+  { label: 'Masuk', href: '/masuk' },
+  { label: 'Daftar akun', href: '/daftar' },
+  { label: 'Akun saya', href: '/akun' },
+];
+
+const TikTok: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.6 2.6 0 0 1-2.6-2.6 2.6 2.6 0 0 1 3.37-2.48V9.66a5.73 5.73 0 0 0-.77-.05A5.7 5.7 0 0 0 4.16 15.3 5.7 5.7 0 0 0 9.86 21a5.7 5.7 0 0 0 5.7-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.3 4.3 0 0 1-3.26-1.48Z" />
+  </svg>
+);
+
+const SOCIALS = [
+  { key: 'footer_instagram', label: 'Instagram', Icon: Instagram },
+  { key: 'footer_facebook', label: 'Facebook', Icon: Facebook },
+  { key: 'footer_linkedin', label: 'LinkedIn', Icon: Linkedin },
+  { key: 'footer_youtube', label: 'YouTube', Icon: Youtube },
+  { key: 'footer_tiktok', label: 'TikTok', Icon: TikTok },
+] as const;
+
+/** Judul CTA dua bagian: baris kedua (atau kalimat setelah "?") diberi warna lebih lembut. */
+const splitCtaTitle = (title: string): [string, string] => {
+  const newline = title.indexOf('\n');
+  if (newline > 0) return [title.slice(0, newline).trim(), title.slice(newline + 1).trim()];
+  const question = title.indexOf('? ');
+  return question > 0 ? [title.slice(0, question + 1), title.slice(question + 2)] : [title, ''];
+};
+
+/**
+ * Alamat email yang boleh terpotong baris HANYA setelah "@", jadi di kolom sempit (HP) menjadi "info@" /
+ * "garudanexa.co.id" dengan domain utuh, bukan menyisakan satu huruf. `overflow-wrap:anywhere` hanya cadangan untuk
+ * domain yang tetap lebih lebar dari kolomnya.
+ */
+const EmailText: React.FC<{ email: string }> = ({ email }) => {
+  const at = email.lastIndexOf('@');
+  return (
+    <span className="min-w-0 [overflow-wrap:anywhere]">
+      {at > 0 ? (
+        <>
+          {email.slice(0, at + 1)}
+          <wbr />
+          {email.slice(at + 1)}
+        </>
+      ) : (
+        email
+      )}
+    </span>
+  );
+};
+
+const linkClass =
+  'inline-flex min-h-10 items-center gap-2.5 text-[13px] text-muted transition-colors hover:text-fg sm:min-h-0 sm:text-sm';
+
+const socialClass =
+  'relative flex h-9 w-9 items-center justify-center rounded-full text-muted ring-1 ring-inset ring-line transition-colors after:absolute after:-inset-1 hover:bg-brand-50 hover:text-primary hover:ring-brand-200';
+
+/** Kolom tautan (judul eyebrow). Di HP tiap tautan setinggi 40px. */
+const LinkColumn: React.FC<{ title: string; links: FooterLink[]; className?: string }> = ({ title, links, className = '' }) => (
+  <nav aria-label={title} className={className}>
+    <h3 className="eyebrow">{title}</h3>
+    <ul className="mt-2 sm:mt-4 sm:space-y-3">
+      {links.map((link) => (
+        <li key={`${link.label}-${link.href}`}>
+          <SmartLink href={link.href} className={linkClass}>
+            {link.label}
+          </SmartLink>
+        </li>
+      ))}
+    </ul>
+  </nav>
+);
+
+interface FooterProps {
+  /** Latar abu lembut di area CTA (halaman lain; selang-seling dengan section terakhir). */
+  alt?: boolean;
+  /** Beranda: area CTA transparan agar latar crossfade SectionChrome terlihat. */
+  chrome?: boolean;
+}
+
+/**
+ * Footer publik gaya BELAJAR CPNS (terang): blok CTA biru brand `#kontak` (pola titik + cahaya lembut, bukan
+ * blok gelap), lalu footer putih bergaris rambut: logo + deskripsi, kolom tautan, hak cipta & media sosial.
+ */
+const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
+  const { settings } = useSiteSettings();
+  const pick = (key: keyof typeof DEFAULTS) => settings[key]?.trim() || DEFAULTS[key];
+
+  const hidden = getHiddenSections(settings);
+  const whatsapp = getWhatsappNumber(settings);
+  const phone = pick('footer_phone');
+  const email = pick('footer_email');
+  const ctaPhone = (settings.cta_phone || '').trim() || phone;
+  const [ctaLead, ctaAccent] = splitCtaTitle(pick('cta_title'));
+
+  // cta_link dari admin bisa berupa URL lengkap atau nomor WhatsApp
+  const ctaLink = (settings.cta_link || '').trim();
+  const ctaHref = /^https?:\/\//i.test(ctaLink)
+    ? ctaLink
+    : whatsappUrl(ctaLink.replace(/\D/g, '') || whatsapp, CONTACT_MESSAGE);
+
+  const socials = SOCIALS.filter(({ key }) => {
+    const url = (settings[key] || '').trim();
+    return url && url !== '#';
   });
-
-  useEffect(() => {
-    const fetchDynamicData = async () => {
-      try {
-        const apiUrl = '/api.php';
-        const response = await fetch(`${apiUrl}?action=get_settings`);
-        const data = await response.json();
-        const merged = { ...settings };
-        if (data.footer_address) merged.footer_address = data.footer_address;
-        if (data.footer_phone) merged.footer_phone = data.footer_phone;
-        if (data.footer_email) merged.footer_email = data.footer_email;
-        if (data.footer_whatsapp) merged.footer_whatsapp = data.footer_whatsapp;
-        if (data.footer_copyright) merged.footer_copyright = data.footer_copyright;
-        if (data.footer_instagram) merged.footer_instagram = data.footer_instagram;
-        if (data.footer_facebook) merged.footer_facebook = data.footer_facebook;
-        if (data.footer_linkedin) merged.footer_linkedin = data.footer_linkedin;
-        if (data.footer_youtube) merged.footer_youtube = data.footer_youtube;
-        if (data.cta_title) merged.cta_title = data.cta_title;
-        if (data.cta_button) merged.cta_button = data.cta_button;
-        if (data.cta_link) merged.cta_link = data.cta_link;
-        if (data.cta_phone) merged.cta_phone = data.cta_phone;
-        if (data.cta_note) merged.cta_note = data.cta_note;
-        setSettings(merged);
-      } catch (e) {
-        console.error('Error fetching dynamic footer settings:', e);
-      }
-    };
-    fetchDynamicData();
-  }, []);
-
-  const toggleLanguage = () => {
-    const newLang = language === 'id' ? 'en' : 'id';
-    setLanguage(newLang);
-    
-    // Google Translate cookie-based logic
-    const gtValue = `/id/${newLang}`;
-    document.cookie = `googtrans=${gtValue}; path=/`;
-    document.cookie = `googtrans=${gtValue}; path=/; domain=${window.location.hostname}`;
-    
-    // Reload to apply translation
-    window.location.reload();
-  };
-
-  const cleanWhatsappNumber = settings.footer_whatsapp.replace(/\D/g, '');
-
-  const getCtaWhatsappUrl = () => {
-    if (settings.cta_link) {
-      const link = settings.cta_link.trim();
-      if (link.startsWith('http://') || link.startsWith('https://')) {
-        return link;
-      }
-      const cleanNum = link.replace(/\D/g, '');
-      if (cleanNum.length > 0) {
-        return `https://wa.me/${cleanNum}?text=Halo%20Admin%2C%20saya%20tertarik%20untuk%20membeli%20produk%20atau%20memesan%20jasa%20digital%20Anda.`;
-      }
-    }
-    return `https://wa.me/${cleanWhatsappNumber}?text=Halo%20Admin%2C%20saya%20tertarik%20untuk%20membeli%20produk%20atau%20memesan%20jasa%20digital%20Anda.`;
-  };
+  const shown = (links: FooterLink[]) => links.filter((link) => !link.section || !hidden.has(link.section));
 
   return (
-    <footer className="bg-bg-dark border-t border-white/5 pt-12 lg:pt-20 pb-10 light-theme:bg-slate-50 light-theme:border-slate-200 transition-colors duration-500 text-left">
-      <div className="max-w-[1280px] mx-auto px-8">
-        {/* CTA Section */}
-        <div className="text-center mb-20 sm:mb-32 px-4">
-          <h2 className="whitespace-pre-line text-lg sm:text-5xl lg:text-6xl font-bold text-[#FFD700] leading-[1.1] mb-6 sm:mb-12 tracking-tight transition-all duration-500 hover:drop-shadow-[0_0_20px_rgba(255,215,0,0.6)] cursor-default">
-            {settings.cta_title || "Siap Membangun Sistem Digital?\nKonsultasikan Sekarang Juga!"}
-          </h2>
-          <div className="flex flex-col items-center gap-6">
-            <a 
-              href={getCtaWhatsappUrl()}
-              target="_blank" 
-              className="btn btn-primary px-5 py-2.5 sm:px-10 sm:py-4 text-sm sm:text-lg flex items-center gap-3 shadow-[0_20px_50px_rgba(59,130,246,0.3)] hover:shadow-[0_20px_50px_rgba(59,130,246,0.5)] transition-all duration-300 active:scale-95"
-            >
-              <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
-              {settings.cta_button || "Hubungi WhatsApp"}
-            </a>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-slate-400 text-xs sm:text-sm px-6 py-3 rounded-2xl bg-white/5 border border-white/5 light-theme:bg-slate-100 light-theme:border-slate-200">
-              <div className="flex items-center gap-2 text-white/80 light-theme:text-slate-700">
-                <Phone className="w-4 h-4 text-primary" />
-                <span className="font-bold tracking-wider">{settings.cta_phone || settings.footer_phone}</span>
-              </div>
-              <span className="hidden sm:inline text-white/20">—</span>
-              <span className="text-center font-medium">
-                {settings.cta_note ? (
-                  settings.cta_note.includes("GRATIS") ? (
-                    <>
-                      {settings.cta_note.replace("GRATIS", "")}
-                      <span className="text-[#FFD700] light-theme:text-primary font-bold">GRATIS</span>
-                    </>
-                  ) : (
-                    settings.cta_note
-                  )
-                ) : (
-                  <>
-                    Konsultasi <span className="text-[#FFD700] light-theme:text-primary font-bold">GRATIS</span>
-                  </>
-                )}
+    <footer>
+      {/* ---------- CTA biru brand ---------- */}
+      <div className={`pb-12 pt-12 sm:pb-20 sm:pt-20 lg:pb-24 lg:pt-24 ${chrome ? '' : alt ? 'bg-alt' : 'bg-canvas'}`}>
+        {/*
+          Anchor #kontak sengaja di pembungkus polos: kartu di dalamnya overflow-hidden (jadi scroll container, sehingga
+          scroll-margin diabaikan Chrome) dan ikut transform animasi Reveal (posisi visualnya bergeser saat diukur).
+        */}
+        <div id="kontak" className="container-site scroll-mt-20 lg:scroll-mt-24">
+          <Reveal variant="scale">
+            <div className="relative isolate overflow-hidden rounded-[24px] bg-primary px-5 py-12 text-center text-white sm:rounded-[28px] sm:px-12 sm:py-20 lg:py-24">
+              {/* Dekorasi: cahaya bergerak pelan + pola titik putih yang memudar ke tepi */}
+              <span className="cta-orb cta-orb--a -z-10" aria-hidden />
+              <span className="cta-orb cta-orb--b -z-10" aria-hidden />
+              <div
+                className="grid-dots-light pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(70%_70%_at_50%_50%,#000,transparent)]"
+                aria-hidden
+              />
+
+              <span className="inline-flex h-7 items-center gap-2 rounded-full bg-white/15 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-white ring-1 ring-inset ring-white/25 sm:h-8 sm:px-4 sm:text-xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden />
+                {pick('cta_note')}
               </span>
+
+              <SplitText
+                as="h2"
+                delay={80}
+                className="mx-auto mt-5 block max-w-4xl text-2xl font-semibold leading-[1.2] tracking-[-0.025em] text-white sm:mt-6 sm:text-5xl sm:leading-[1.04] sm:tracking-[-0.035em] xl:text-6xl"
+                parts={[{ text: ctaLead }, ...(ctaAccent ? [{ text: ctaAccent, className: 'text-brand-200' }] : [])]}
+              />
+
+              <Reveal delay={0.25}>
+                <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-white/80 sm:mt-5 sm:text-lg">
+                  Ceritakan kebutuhan Anda. Tim kami bantu memilih template yang pas atau menyusun solusi website dan aplikasi
+                  mobile custom, gratis tanpa komitmen.
+                </p>
+              </Reveal>
+
+              <Reveal delay={0.35}>
+                <div className="mt-8 flex flex-col items-stretch justify-center gap-2.5 sm:mt-10 sm:flex-row sm:items-center sm:gap-3">
+                  <a href={ctaHref} target="_blank" rel="noopener noreferrer" className="btn btn-light btn-xl group">
+                    <MessageCircle className="h-5 w-5 max-sm:h-4 max-sm:w-4" aria-hidden />
+                    {pick('cta_button')}
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5 max-sm:h-4 max-sm:w-4" aria-hidden />
+                  </a>
+                  <Link to="/pesan-custom" className="btn btn-on-brand btn-xl">
+                    Isi form pesanan custom
+                  </Link>
+                </div>
+                <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-1 sm:mt-8">
+                  <a
+                    href={`tel:${ctaPhone.replace(/[^\d+]/g, '')}`}
+                    className="inline-flex min-h-10 items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
+                  >
+                    <Phone className="h-4 w-4" aria-hidden />
+                    <span className="font-medium tabular-nums tracking-wide">{ctaPhone}</span>
+                  </a>
+                  <a
+                    href={`mailto:${email}`}
+                    className="inline-flex min-h-10 min-w-0 max-w-full items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
+                  >
+                    <Mail className="h-4 w-4 shrink-0" aria-hidden />
+                    <EmailText email={email} />
+                  </a>
+                </div>
+              </Reveal>
             </div>
-          </div>
+          </Reveal>
         </div>
+      </div>
 
-        {/* Footer Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-20">
-          <div className="lg:col-span-1">
-            <div className="flex items-center gap-3 mb-6">
-              <img src="/assets/logo/logogarudanexa.png" alt="Logo" className="h-10 w-auto brightness-0 invert light-theme:brightness-100 light-theme:invert-0" />
-              <div className="font-semibold text-xl text-white light-theme:text-slate-900 leading-tight">PT. Garuda Nexa Bahtera</div>
-            </div>
-            <p className="text-slate-400 text-sm leading-relaxed mb-8 light-theme:text-slate-600">
-              {settings.footer_address}
-            </p>
-            <button 
-              onClick={toggleLanguage}
-              className="btn btn-secondary px-4 py-2 text-xs flex items-center gap-2"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              {language === 'id' ? 'English' : 'Bahasa Indonesia'}
-            </button>
+      {/* ---------- Footer putih ---------- */}
+      <div className="border-t border-line bg-canvas">
+        <div className="container-site grid grid-cols-2 gap-x-4 gap-y-8 py-12 sm:grid-cols-4 sm:gap-x-6 sm:gap-y-10 sm:py-16 lg:grid-cols-12 lg:gap-8">
+          <div className="col-span-2 sm:col-span-4 lg:col-span-4">
+            <Link to="/" className="inline-flex rounded-full" aria-label="Garuda Nexa Bahtera, ke beranda">
+              <BrandLogo />
+            </Link>
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">{pick('footer_address')}</p>
           </div>
 
-          <div>
-            <h4 className="text-white font-semibold mb-6 light-theme:text-slate-900">Produk</h4>
-            <ul className="space-y-4 text-slate-400 text-sm">
-              <li><a href="#products" className="hover:text-white transition-colors">Jasa Pembuatan Website</a></li>
-              <li><a href="#products" className="hover:text-white transition-colors">Aplikasi I-Santri</a></li>
-              <li><a href="#products" className="hover:text-white transition-colors">Aplikasi I-School</a></li>
-              <li><a href="#products" className="hover:text-white transition-colors">Aplikasi Kasir (POS)</a></li>
-              <li><a href="#products" className="hover:text-white transition-colors">Aplikasi Absensi</a></li>
-            </ul>
-          </div>
+          <LinkColumn title="Layanan" links={shown(SERVICE_LINKS)} className="lg:col-span-2" />
+          <LinkColumn title="Jelajahi" links={shown(EXPLORE_LINKS)} className="lg:col-span-2" />
+          <LinkColumn title="Akun" links={ACCOUNT_LINKS} className="lg:col-span-2" />
 
-          <div>
-            <h4 className="text-white font-semibold mb-6 light-theme:text-slate-900">Mulai</h4>
-            <ul className="space-y-4 text-slate-400 text-sm">
-              <li><a href={`https://wa.me/${cleanWhatsappNumber}`} target="_blank" className="hover:text-white transition-colors">Konsultasi Gratis</a></li>
-              <li><a href="#portfolio" className="hover:text-white transition-colors">Portofolio</a></li>
-              <li><a href="#pricing" className="hover:text-white transition-colors">Pricelist</a></li>
-              <li><a href="#process" className="hover:text-white transition-colors">Proses Kerja</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-6 light-theme:text-slate-900">Perusahaan</h4>
-            <ul className="space-y-4 text-slate-400 text-sm">
-              <li><a href="#process" className="hover:text-white transition-colors">Tentang Kami</a></li>
-              <li><a href="#process" className="hover:text-white transition-colors">Tim Kami</a></li>
-              <li><a href="#pricing" className="hover:text-white transition-colors">Karir</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-6 light-theme:text-slate-900">Hubungi Kami</h4>
-            <ul className="space-y-4 text-slate-400 text-sm">
-              {settings.footer_instagram && settings.footer_instagram !== '#' && (
-                <li>
-                  <a href={settings.footer_instagram} target="_blank" className="flex items-center gap-2 hover:text-white transition-colors">
-                    <Instagram className="w-4 h-4 text-pink-500" /> Instagram
-                  </a>
-                </li>
-              )}
-              {settings.footer_facebook && settings.footer_facebook !== '#' && (
-                <li>
-                  <a href={settings.footer_facebook} target="_blank" className="flex items-center gap-2 hover:text-white transition-colors">
-                    <Facebook className="w-4 h-4 text-blue-600" /> Facebook
-                  </a>
-                </li>
-              )}
-              {settings.footer_linkedin && settings.footer_linkedin !== '#' && (
-                <li>
-                  <a href={settings.footer_linkedin} target="_blank" className="flex items-center gap-2 hover:text-white transition-colors">
-                    <Linkedin className="w-4 h-4 text-sky-700" /> LinkedIn
-                  </a>
-                </li>
-              )}
-              {settings.footer_youtube && settings.footer_youtube !== '#' && (
-                <li>
-                  <a href={settings.footer_youtube} target="_blank" className="flex items-center gap-2 hover:text-white transition-colors">
-                    <Youtube className="w-4 h-4 text-red-600" /> YouTube
-                  </a>
-                </li>
-              )}
+          <div className="lg:col-span-2">
+            <h3 className="eyebrow">Hubungi kami</h3>
+            <ul className="mt-2 sm:mt-4 sm:space-y-3">
               <li>
-                <a href={`https://wa.me/${cleanWhatsappNumber}`} target="_blank" className="flex items-center gap-2 hover:text-white transition-colors">
-                  <MessageCircle className="w-4 h-4 text-[#25D366]" /> WhatsApp
+                <a href={whatsappUrl(whatsapp, CONTACT_MESSAGE)} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                  <MessageCircle className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                  WhatsApp
+                </a>
+              </li>
+              <li>
+                <a href={`tel:${phone.replace(/[^\d+]/g, '')}`} className={linkClass}>
+                  <Phone className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                  <span className="tabular-nums">{phone}</span>
+                </a>
+              </li>
+              <li>
+                <a href={`mailto:${email}`} className={`${linkClass} min-w-0 max-w-full`}>
+                  <Mail className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                  <EmailText email={email} />
                 </a>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="pt-10 border-t border-white/5 text-center text-slate-500 text-xs">
-          {settings.footer_copyright}
+        {/* Bar bawah: ruang bawah/kanan untuk tombol WhatsApp melayang agar tidak menutupi teks & ikon */}
+        <div className="border-t border-line">
+          <div className="container-site flex flex-col-reverse items-start gap-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-6 sm:flex-row sm:items-center sm:justify-between sm:pb-24 lg:pb-6">
+            <p className="text-xs text-muted sm:text-[13px]">{pick('footer_copyright')}</p>
+            <ul className="flex items-center gap-2 lg:mr-20" aria-label="Media sosial">
+              {socials.map(({ key, label, Icon }) => (
+                <li key={key}>
+                  <a href={settings[key]} target="_blank" rel="noopener noreferrer" aria-label={label} className={socialClass}>
+                    <Icon className="h-4 w-4" />
+                  </a>
+                </li>
+              ))}
+              <li>
+                <a href={whatsappUrl(whatsapp, CONTACT_MESSAGE)} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className={socialClass}>
+                  <MessageCircle className="h-4 w-4" />
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </footer>

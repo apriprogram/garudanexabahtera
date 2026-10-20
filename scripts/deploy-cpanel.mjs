@@ -1,0 +1,89 @@
+#!/usr/bin/env node
+// Build the site and publish it to the `cpanel-deploy` branch, which cPanel "Git Version Control" pulls
+// and deploys into public_html with .cpanel.yml. See deploy/cpanel/README.md.
+//
+//   node scripts/deploy-cpanel.mjs            build + commit to cpanel-deploy (no push)
+//   node scripts/deploy-cpanel.mjs --push     ...and push it to origin
+//
+// The branch holds only the built site + the PHP API; source code stays on main.
+
+import { execSync } from 'node:child_process';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { build } from 'vite';
+
+const ROOT = resolve(import.meta.dirname, '..');
+// Di luar folder proyek: server dev Vite mengawasi seluruh proyek dan mengunci file di Windows
+const DEPLOY_DIR = process.env.DEPLOY_DIR || join(ROOT, '..', '.garudanexa-deploy');
+const OUT = join(DEPLOY_DIR, 'build');
+const WORKTREE = join(DEPLOY_DIR, 'cpanel-branch');
+const BRANCH = 'cpanel-deploy';
+const CPANEL_HOME = process.env.CPANEL_HOME || '/home/garudanexa';
+const push = process.argv.includes('--push');
+
+// Upload folders that hold user content: never published from git (they live only on the server)
+const EXCLUDE = ['assets/sites', 'assets/documents', 'assets/list-products'];
+
+const run = (cmd, cwd = ROOT) => execSync(cmd, { cwd, stdio: 'inherit' });
+const out = (cmd, cwd = ROOT) => execSync(cmd, { cwd, encoding: 'utf8' }).trim();
+// Git di drive tanpa info kepemilikan (exFAT) butuh safe.directory per worktree
+const SAFE = `-c "safe.directory=${WORKTREE.split('\\').join('/')}"`;
+const gitw = (args) => run(`git ${SAFE} ${args}`, WORKTREE);
+const gitwOut = (args) => out(`git ${SAFE} ${args}`, WORKTREE);
+
+// 1. Build the frontend. public/ is copied by hand so user-upload folders never enter the build.
+rmSync(OUT, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+run('npx tsc -b');
+await build({ root: ROOT, publicDir: false, logLevel: 'warn', build: { outDir: OUT, emptyOutDir: true } });
+const excluded = new Set(EXCLUDE.map((rel) => join(ROOT, 'public', rel)));
+cpSync(join(ROOT, 'public'), OUT, { recursive: true, filter: (src) => !excluded.has(src) });
+
+// 2. PHP API next to index.html (api.php finds its .env one level up, outside public_html)
+cpSync(join(ROOT, 'backend', 'api.php'), join(OUT, 'api.php'));
+mkdirSync(join(OUT, 'modules'), { recursive: true });
+for (const file of readdirSync(join(ROOT, 'backend', 'modules')).filter((f) => f.endsWith('.php'))) {
+  cpSync(join(ROOT, 'backend', 'modules', file), join(OUT, 'modules', file));
+}
+writeFileSync(join(OUT, 'modules', '.htaccess'), 'Require all denied\n');
+cpSync(join(ROOT, 'deploy', 'cpanel', 'htaccess'), join(OUT, '.htaccess'));
+
+// 3. cPanel: repo ini di-clone langsung ke public_html dan branch cpanel-deploy yang di-checkout,
+//    jadi "Update from Remote" sudah cukup. Deploy task hanya mencatat waktu (tidak menyalin apa pun).
+writeFileSync(
+  join(OUT, '.cpanel.yml'),
+  `---
+deployment:
+  tasks:
+    - /bin/date > ${CPANEL_HOME}/.garudanexa_last_deploy
+`,
+);
+writeFileSync(
+  join(OUT, 'README.md'),
+  `Branch ini dibuat otomatis oleh scripts/deploy-cpanel.mjs dari branch main.\nJangan diedit manual. Panduan: deploy/cpanel/README.md di branch main.\n`,
+);
+
+// 4. Commit the build to the deploy branch through a separate worktree
+const sourceSha = out('git rev-parse --short HEAD');
+const dirty = out('git status --porcelain') ? ' (+ perubahan lokal belum di-commit)' : '';
+if (!existsSync(WORKTREE)) {
+  const remoteHasBranch = out(`git ls-remote --heads origin ${BRANCH}`) !== '';
+  const localHasBranch = out(`git branch --list ${BRANCH}`) !== '';
+  if (localHasBranch) run(`git worktree add "${WORKTREE}" ${BRANCH}`);
+  else if (remoteHasBranch) run(`git worktree add -b ${BRANCH} "${WORKTREE}" origin/${BRANCH}`);
+  else {
+    run(`git worktree add --detach "${WORKTREE}"`);
+    gitw(`checkout --orphan ${BRANCH}`);
+  }
+}
+for (const entry of readdirSync(WORKTREE)) {
+  if (entry !== '.git') rmSync(join(WORKTREE, entry), { recursive: true, force: true });
+}
+cpSync(OUT, WORKTREE, { recursive: true });
+gitw('add -A');
+if (gitwOut('status --porcelain')) {
+  gitw(`commit -m "deploy: build dari main ${sourceSha}${dirty}"`);
+} else {
+  console.log('Tidak ada perubahan build; branch tidak diubah.');
+}
+if (push) gitw(`push -u origin ${BRANCH}`);
+console.log(push ? `\nSelesai: ${BRANCH} sudah di-push. Di cPanel: Git Version Control → Manage → Pull or Deploy.` : `\nBuild ada di branch ${BRANCH} (lokal). Jalankan lagi dengan --push untuk mengirim.`);

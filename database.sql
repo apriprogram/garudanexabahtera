@@ -1,3 +1,11 @@
+-- ############################################################
+-- DEPRECATED (2026-10-19) — JANGAN DIPAKAI UNTUK SETUP BARU.
+-- Hanya membuat 6 dari ~34 tabel yang dipakai backend, dan seed admin-nya
+-- memakai hash password yang dikenal publik.
+-- Skema resmi : database/schema.sql (+ database/seed.sql)
+-- DB yang sudah ada: database/migrations/*.sql  — lihat database/README.md
+-- File ini disimpan hanya sebagai arsip.
+-- ############################################################
 -- ============================================================
 -- DATABASE: Garuda Nexa Bahtera
 -- Setup: Import file ini di phpMyAdmin atau jalankan via MySQL CLI

@@ -31,3 +31,12 @@ dist-ssr
 # Database dumps from backup.sh — they contain production data
 backups/
 db_backup_*.sql
+
+# Local-only seed files (test accounts with plaintext passwords) — never commit
+database/*.local.sql
+
+# Build & worktree untuk deploy cPanel (scripts/deploy-cpanel.mjs)
+.deploy/
+
+# Upload konten situs pembeli (CMS) dari dev lokal: hanya ada di server, jangan di-commit
+public/assets/sites/

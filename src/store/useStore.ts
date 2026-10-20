@@ -13,11 +13,17 @@ interface AppState {
   toggleMobileSidebar: (open?: boolean) => void;
 }
 
+const initialTheme: 'light' | 'dark' =
+  (localStorage.getItem('theme') as 'light' | 'dark') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+
+// Pasang kelas tema sebelum render pertama agar tidak berkedip gelap → terang
+document.body.classList.toggle('light-theme', initialTheme === 'light');
+
 export const useStore = create<AppState>((set) => ({
-  theme: (localStorage.getItem('theme') as 'light' | 'dark') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
+  theme: initialTheme,
   language: (localStorage.getItem('language') as 'id' | 'en') || 'id',
   isSearchActive: false,
-  isSidebarCollapsed: false,
+  isSidebarCollapsed: localStorage.getItem('adminSidebarCollapsed') === '1',
   isMobileSidebarOpen: false,
   
   toggleTheme: () => set((state) => {
@@ -40,9 +46,11 @@ export const useStore = create<AppState>((set) => ({
     isSearchActive: active !== undefined ? active : !state.isSearchActive
   })),
 
-  toggleSidebar: () => set((state) => ({
-    isSidebarCollapsed: !state.isSidebarCollapsed
-  })),
+  toggleSidebar: () => set((state) => {
+    const collapsed = !state.isSidebarCollapsed;
+    localStorage.setItem('adminSidebarCollapsed', collapsed ? '1' : '0');
+    return { isSidebarCollapsed: collapsed };
+  }),
 
   toggleMobileSidebar: (open) => set((state) => ({
     isMobileSidebarOpen: open !== undefined ? open : !state.isMobileSidebarOpen

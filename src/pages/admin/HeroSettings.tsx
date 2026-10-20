@@ -1,9 +1,27 @@
 import React, { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Chip, Field, Input, Notice, PanelHeader, Textarea, cn, FOCUS } from '../../components/admin/ui';
+
+/* Tombol hapus kecil di atas gambar pratinjau (latar solid danger). Selalu tampak di HP, muncul saat hover di desktop. */
+const REMOVE_BTN = cn(
+  'absolute right-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-danger text-white transition-opacity hover:bg-danger-700',
+  'max-sm:before:absolute max-sm:before:-inset-2 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100',
+  FOCUS,
+);
+
+/* Kotak unggah (label) bergaris putus-putus; status seret-lepas → cobalt. */
+const dropZoneClass = (active: boolean, shape: string) =>
+  cn(
+    'group flex cursor-pointer flex-col items-center justify-center gap-1.5 border-2 border-dashed transition-colors duration-150',
+    'focus-within:ring-2 focus-within:ring-cobalt',
+    shape,
+    active ? 'border-cobalt bg-adm-cobalt-soft' : 'border-adm-line-strong hover:border-cobalt hover:bg-adm-hover',
+  );
 
 interface HeroSettingsProps {
-  settings: any;
+  /** Respons get_settings (setting_key → setting_value). */
+  settings: Record<string, string>;
   heroImages: string[];
   setHeroImages: React.Dispatch<React.SetStateAction<string[]>>;
   heroLogos: {name: string, src: string}[];
@@ -122,90 +140,89 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   };
 
   return (
-    <div className="space-y-5 md:space-y-10">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 md:gap-10">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-8">
         {/* Left Column: Text Content */}
-        <div className="space-y-3.5 md:space-y-6">
-          <div>
-            <label className="block text-[11px] md:text-sm font-normal text-blue-400 mb-1.5 md:mb-3">Badge Text</label>
-            <input 
+        <div className="min-w-0 space-y-4 sm:space-y-5">
+          <Field label="Teks badge" htmlFor="hero_badge">
+            <Input
               id="hero_badge"
               type="text"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 transition-all text-[11px] md:text-sm"
-              placeholder="e.g. JASA PEMBUATAN WEBSITE & APLIKASI"
+              placeholder="mis. JASA PEMBUATAN WEBSITE & APLIKASI"
               defaultValue={settings.hero_badge || ""}
             />
-          </div>
-          <div>
-            <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Main Heading</label>
-            <textarea 
+          </Field>
+          <Field label="Judul utama" htmlFor="hero_title">
+            <Textarea
               id="hero_title"
-              className="w-full bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-4 py-3 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all overflow-hidden min-h-[80px] resize-y text-sm md:text-lg font-semibold"
-              placeholder="Enter main hero title..."
+              className="min-h-[80px] resize-y font-semibold sm:text-lg"
+              placeholder="Tulis judul utama hero..."
               defaultValue={settings.hero_title || ""}
             />
-          </div>
-          <div>
-            <label className="block text-[11px] md:text-sm font-normal text-slate-400 mb-1.5 md:mb-3">Sub-heading Description</label>
-            <textarea 
+          </Field>
+          <Field label="Subjudul" htmlFor="hero_subtitle">
+            <Textarea
               id="hero_subtitle"
-              className="w-full bg-white/5 border border-white/10 rounded-lg md:rounded-2xl px-3 py-2.5 md:px-5 md:py-4 text-white outline-none focus:border-blue-500/50 transition-all overflow-hidden min-h-[100px] resize-y text-[10px] md:text-sm text-slate-400"
-              placeholder="Enter supporting description..."
+              className="min-h-[100px] resize-y"
+              placeholder="Tulis deskripsi pendukung..."
               defaultValue={settings.hero_subtitle || ""}
             />
-          </div>
-          <div className="grid grid-cols-2 gap-2.5 md:gap-4 pt-0.5 md:pt-2">
-            <div>
-              <label className="block text-[11px] md:text-sm font-normal text-orange-400 mb-1.5 md:mb-3">Primary Button</label>
-              <input id="hero_primary_btn" className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 transition-all text-[10px] md:text-sm" defaultValue={settings.hero_primary_btn || "Lihat Produk Kami"} />
-            </div>
-            <div>
-              <label className="block text-[11px] md:text-sm font-normal text-orange-400 mb-1.5 md:mb-3">Secondary Button</label>
-              <input id="hero_secondary_btn" className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 md:px-5 md:py-3 text-white outline-none focus:border-blue-500/50 transition-all text-[10px] md:text-sm" defaultValue={settings.hero_secondary_btn || "Hubungi Kami"} />
-            </div>
+          </Field>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Tombol utama" htmlFor="hero_primary_btn">
+              <Input id="hero_primary_btn" defaultValue={settings.hero_primary_btn || "Lihat Produk Kami"} />
+            </Field>
+            <Field label="Tombol kedua" htmlFor="hero_secondary_btn">
+              <Input id="hero_secondary_btn" defaultValue={settings.hero_secondary_btn || "Hubungi Kami"} />
+            </Field>
           </div>
         </div>
 
         {/* Right Column: Multiple Image Slider Settings */}
-        <div className="space-y-3.5 md:space-y-6">
-          <div className="flex items-center justify-between">
-            <label className="block text-[11px] md:text-sm font-normal text-slate-400">Slider Images</label>
-            <span className="text-[8px] md:text-[10px] text-slate-500 font-bold">{heroImages.length} IMAGES</span>
+        <div className="min-w-0 space-y-4 sm:space-y-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[13px] font-medium text-adm-fg">Gambar slider</p>
+            <Chip className="tabular-nums">{heroImages.length} gambar</Chip>
           </div>
 
           {/* Image Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 md:gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             <AnimatePresence>
               {heroImages.map((src, index) => (
-                <motion.div 
+                <motion.div
                   key={index}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                 >
-                  <div 
-                    className={`aspect-video rounded-lg bg-white/5 border border-white/10 overflow-hidden relative group cursor-move transition-all ${draggedIndex === index ? 'opacity-30 scale-95' : 'opacity-100'}`}
+                  <div
+                    className={cn(
+                      'group relative aspect-video cursor-move overflow-hidden rounded-xl bg-adm-ghost ring-1 ring-inset ring-adm-line transition-opacity duration-150',
+                      draggedIndex === index ? 'opacity-30' : 'opacity-100',
+                    )}
                     draggable
                     onDragStart={() => handleDragStart(index)}
                     onDragOver={handleDragOver}
                     onDrop={() => handleDrop(index)}
                   >
-                    <img src={src} alt={`Slide ${index + 1}`} className="w-full h-full object-cover" />
-                    <button 
+                    <img src={src} alt={`Slide ${index + 1}`} className="h-full w-full object-cover" />
+                    <button
+                      type="button"
                       onClick={() => setHeroImages(prev => prev.filter((_, i) => i !== index))}
-                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      aria-label={`Hapus slide ${index + 1}`}
+                      className={REMOVE_BTN}
                     >
-                      <X size={10} />
+                      <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
                     </button>
-                    <div className="absolute bottom-1 left-1 px-1 py-0.5 bg-black/50 backdrop-blur-md rounded text-[7px] text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute bottom-1.5 left-1.5 rounded-md bg-obsidian/70 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-white transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                       #{index + 1}
                     </div>
                   </div>
                 </motion.div>
               ))}
             </AnimatePresence>
-            
-            <label 
+
+            <label
               onDragOver={(e) => { e.preventDefault(); setIsHeroDragging(true); }}
               onDragLeave={() => setIsHeroDragging(false)}
               onDrop={(e) => {
@@ -213,40 +230,38 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                 setIsHeroDragging(false);
                 handleImageUpload(e.dataTransfer.files);
               }}
-              className={`aspect-video rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1.5 md:gap-3 cursor-pointer group transition-all ${isHeroDragging ? 'border-blue-500 bg-blue-500/10 scale-105' : 'border-white/10 bg-white/5 hover:border-blue-500/50'}`}
+              className={dropZoneClass(isHeroDragging, 'aspect-video rounded-xl')}
             >
-              <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e.target.files)} />
-              <div className={`p-1.5 md:p-3 rounded-full transition-all ${isHeroDragging ? 'bg-blue-500/20' : 'bg-white/5 group-hover:bg-blue-500/20'}`}>
-                <Plus className={`w-3.5 h-3.5 md:w-6 md:h-6 transition-colors ${isHeroDragging ? 'text-blue-400' : 'text-slate-400 group-hover:text-blue-400'}`} />
-              </div>
-              <span className={`text-[7px] md:text-[10px] font-bold uppercase tracking-widest transition-colors ${isHeroDragging ? 'text-blue-400' : 'text-slate-500 group-hover:text-blue-400'}`}>
-                {isHeroDragging ? 'Drop!' : 'Add'}
+              <input type="file" multiple accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e.target.files)} />
+              <span
+                className={cn(
+                  'flex h-9 w-9 items-center justify-center rounded-full transition-colors',
+                  isHeroDragging ? 'bg-cobalt text-white' : 'bg-adm-ghost text-adm-muted group-hover:bg-adm-cobalt-soft group-hover:text-adm-cobalt-fg',
+                )}
+              >
+                <Plus className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+              </span>
+              <span className={cn('text-xs font-medium transition-colors', isHeroDragging ? 'text-adm-cobalt-fg' : 'text-adm-muted group-hover:text-adm-cobalt-fg')}>
+                {isHeroDragging ? 'Lepaskan!' : 'Tambah'}
               </span>
             </label>
           </div>
 
-          <div className="p-3 md:p-5 rounded-xl bg-blue-500/5 border border-blue-500/10 flex gap-2.5 md:gap-4">
-            <div className="p-1.5 md:p-2 rounded-lg bg-blue-500/20 h-fit">
-              <HelpCircle size={12} className="text-blue-400 md:size-[18px]" />
-            </div>
-            <p className="text-[9px] md:text-xs text-slate-400 leading-relaxed font-medium">
-              Images rotate automatically. Recommended: 1920×1080px.
-            </p>
-          </div>
+          <Notice tone="cobalt">Gambar berganti otomatis. Disarankan 1920×1080 px.</Notice>
         </div>
       </div>
 
       {/* NEW: Logo Gallery Section */}
-      <div className="space-y-3.5 md:space-y-6 pt-6 md:pt-10 border-t border-white/5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm md:text-lg font-normal text-white">Partner Logos</h3>
-            <p className="text-[9px] md:text-xs text-slate-500 mt-0.5 md:mt-1 font-medium">Manage logos appearing in "Trusted By" section.</p>
-          </div>
-          <span className="text-[7px] md:text-[10px] text-slate-400 font-black uppercase tracking-tighter bg-white/5 px-2 py-1 md:px-3 md:py-1.5 rounded-lg">{heroLogos.length} ITEMS</span>
-        </div>
+      <div className="space-y-4 border-t border-adm-line pt-6 sm:pt-8">
+        <PanelHeader
+          titleAs="h3"
+          title="Logo partner"
+          subtitle="Atur logo yang tampil di deretan logo partner (logo ticker) website."
+          action={<Chip className="tabular-nums">{heroLogos.length} logo</Chip>}
+          className="mb-0"
+        />
 
-        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2.5 md:gap-6">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 sm:gap-4 md:grid-cols-6">
 
           <AnimatePresence>
             {heroLogos.map((logo, index) => (
@@ -255,39 +270,46 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="group relative"
+                className="group relative min-w-0"
               >
-                <div 
-                  className={`aspect-square rounded-2xl bg-white/5 border border-white/10 p-4 flex items-center justify-center relative overflow-hidden transition-all cursor-move ${logoDraggedIndex === index ? 'opacity-30 scale-95' : 'opacity-100'} group-hover:border-blue-500/50`}
+                <div
+                  className={cn(
+                    'relative flex aspect-square cursor-move items-center justify-center overflow-hidden rounded-2xl bg-adm-ghost p-3 ring-1 ring-inset ring-adm-line transition-[opacity,box-shadow] duration-150 group-hover:ring-adm-line-strong sm:p-4',
+                    logoDraggedIndex === index ? 'opacity-30' : 'opacity-100',
+                  )}
                   draggable
                   onDragStart={() => setLogoDraggedIndex(index)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleLogoDropReorder(index)}
                 >
-                  <img src={logo.src} alt={logo.name} className="max-w-full max-h-full object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all pointer-events-none" />
-                  <button 
+                  <img src={logo.src} alt={logo.name} className="pointer-events-none max-h-full max-w-full object-contain opacity-60 grayscale transition-all group-hover:opacity-100 group-hover:grayscale-0" />
+                  <button
+                    type="button"
                     onClick={() => setHeroLogos(prev => prev.filter((_, i) => i !== index))}
-                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:scale-110 z-10"
+                    aria-label={`Hapus ${logo.name || 'logo'}`}
+                    className={REMOVE_BTN}
                   >
-                    <X size={12} />
+                    <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
                   </button>
                 </div>
-                <input 
-                  type="text" 
+                <Input
+                  type="text"
+                  controlSize="sm"
                   value={logo.name}
                   onChange={(e) => {
                     const newLogos = [...heroLogos];
                     newLogos[index].name = e.target.value;
                     setHeroLogos(newLogos);
                   }}
-                  className="w-full mt-3 bg-white/5 border border-white/10 rounded-lg py-1.5 px-2 text-[10px] text-center text-slate-300 focus:text-white focus:border-blue-500/50 outline-none font-medium uppercase tracking-wider transition-all"
-                  placeholder="Nama Logo..."
+                  wrapperClassName="mt-2"
+                  className="px-2 text-center text-xs font-medium"
+                  placeholder="Nama logo..."
                 />
               </motion.div>
             ))}
           </AnimatePresence>
 
-          <label 
+          <label
             onDragOver={(e) => { e.preventDefault(); setIsLogoDragging(true); }}
             onDragLeave={() => setIsLogoDragging(false)}
             onDrop={(e) => {
@@ -295,12 +317,16 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
               setIsLogoDragging(false);
               handleLogoUpload(e.dataTransfer.files);
             }}
-            className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer group transition-all ${isLogoDragging ? 'border-blue-500 bg-blue-500/10 scale-105' : 'border-white/10 bg-white/5 hover:border-blue-500/50'}`}
+            className={dropZoneClass(isLogoDragging, 'aspect-square rounded-2xl px-2 text-center')}
           >
-            <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleLogoUpload(e.target.files)} />
-            <Plus className={`w-5 h-5 transition-colors ${isLogoDragging ? 'text-blue-400' : 'text-slate-500 group-hover:text-blue-400'}`} />
-            <span className={`text-[10px] font-bold uppercase transition-colors ${isLogoDragging ? 'text-blue-400' : 'text-slate-500 group-hover:text-blue-400'}`}>
-              {isLogoDragging ? 'Drop Now!' : 'Add Logo'}
+            <input type="file" multiple accept="image/*" className="sr-only" onChange={(e) => handleLogoUpload(e.target.files)} />
+            <Plus
+              className={cn('h-5 w-5 transition-colors', isLogoDragging ? 'text-adm-cobalt-fg' : 'text-adm-subtle group-hover:text-adm-cobalt-fg')}
+              strokeWidth={1.75}
+              aria-hidden
+            />
+            <span className={cn('text-xs font-medium transition-colors', isLogoDragging ? 'text-adm-cobalt-fg' : 'text-adm-muted group-hover:text-adm-cobalt-fg')}>
+              {isLogoDragging ? 'Lepaskan sekarang!' : 'Tambah logo'}
             </span>
           </label>
         </div>
@@ -308,12 +334,5 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
     </div>
   );
 };
-
-// HelpCircle was missing from imports
-const HelpCircle = ({ size, className }: { size: number, className: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-  </svg>
-);
 
 export default HeroSettings;

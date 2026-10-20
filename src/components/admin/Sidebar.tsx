@@ -1,314 +1,280 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Settings,
-  LayoutDashboard,
-  Users,
-  LogOut,
-  X,
-  Package,
-  ChevronDown,
-  Globe,
-  BookOpen,
-  Mail,
-  Building,
-  GraduationCap,
-  FolderOpen,
-  History,
-  Server,
-  Menu,
-} from 'lucide-react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDown, LogOut, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
+import { logout } from '../../lib/auth';
+import { ADMIN_NAV, isNavActive, type AdminNavItem } from './nav';
 
-const Sidebar: React.FC = () => {
-  const { isSidebarCollapsed, isMobileSidebarOpen, toggleMobileSidebar, theme } = useStore();
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt';
+
+const itemClass = (active: boolean, collapsed: boolean) =>
+  [
+    'flex h-10 items-center gap-3 rounded-xl text-sm transition-colors',
+    collapsed ? 'justify-center' : 'px-3',
+    active ? 'bg-adm-hover font-semibold text-adm-fg' : 'font-medium text-adm-muted hover:bg-adm-hover/70 hover:text-adm-fg',
+    focusRing,
+  ].join(' ');
+
+interface SidebarContentProps {
+  collapsed?: boolean;
+  onToggle?: () => void;
+  onClose?: () => void;
+  onNavigate?: () => void;
+}
+
+const SidebarContent: React.FC<SidebarContentProps> = ({ collapsed = false, onToggle, onClose, onNavigate }) => {
   const location = useLocation();
-
-  // Get current user role from localStorage
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
   const isAdmin = currentUser?.role === 'admin';
+  const items = ADMIN_NAV.filter((item) => !item.adminOnly || isAdmin);
+  const groups = [...new Set(items.map((item) => item.group))];
 
-  const [productsOpen, setProductsOpen] = useState(() => {
-    return location.pathname.startsWith('/admin/products');
-  });
+  // Hapus authToken + currentUser lalu ke /login (lihat src/lib/auth.ts)
+  const handleLogout = () => {
+    onNavigate?.();
+    logout();
+  };
+
+  return (
+    <div className="flex h-full flex-col rounded-[20px] bg-adm-surface px-3 py-4 ring-1 ring-inset ring-adm-line">
+      {/* Logo + ciutkan */}
+      <div className={collapsed ? 'flex flex-col items-center gap-3' : 'flex items-center justify-between gap-2 pl-1.5'}>
+        <Link to="/admin" onClick={onNavigate} aria-label="Dashboard admin" className={`flex min-w-0 items-center gap-2.5 rounded-xl py-1 ${focusRing}`}>
+          {/* Logo mark brand: kotak biru brand + sayap putih (sama dengan website & akun pembeli) */}
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-brand-600 ring-1 ring-inset ring-white/10">
+            <img src="/assets/logo/logognbputih.png" alt="" className="h-4 w-auto object-contain" />
+          </span>
+          {!collapsed && (
+            <span className="min-w-0 leading-tight">
+              <span className="block truncate text-[15px] font-semibold tracking-tight text-adm-fg">Garuda Nexa</span>
+              <span className="block truncate text-[11px] font-medium text-adm-subtle">Panel Admin</span>
+            </span>
+          )}
+        </Link>
+        <button
+          type="button"
+          onClick={onClose ?? onToggle}
+          aria-label={onClose ? 'Tutup menu' : collapsed ? 'Lebarkan sidebar' : 'Ciutkan sidebar'}
+          aria-expanded={onClose ? undefined : !collapsed}
+          title={onClose ? undefined : collapsed ? 'Lebarkan sidebar' : 'Ciutkan sidebar'}
+          className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-adm-muted transition-colors hover:bg-adm-hover hover:text-adm-fg ${focusRing}`}
+        >
+          {onClose ? (
+            <X className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          ) : collapsed ? (
+            <PanelLeftOpen className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          ) : (
+            <PanelLeftClose className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          )}
+        </button>
+      </div>
+
+      {/* Navigasi */}
+      <nav aria-label="Navigasi admin" className="no-scrollbar mt-5 min-h-0 flex-1 overflow-y-auto">
+        {groups.map((group, gi) => (
+          <div key={group} className={gi > 0 ? 'mt-4 border-t border-adm-line pt-4' : ''}>
+            {!collapsed && (
+              <p className="mb-1.5 px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-adm-subtle">{group}</p>
+            )}
+            <ul className="space-y-0.5">
+              {items
+                .filter((item) => item.group === group)
+                .map((item) =>
+                  item.children ? (
+                    <NavGroupItem key={item.path} item={item} collapsed={collapsed} onNavigate={onNavigate} pathname={location.pathname} />
+                  ) : (
+                    <li key={item.path}>
+                      <NavLink
+                        to={item.path}
+                        end={item.end}
+                        onClick={onNavigate}
+                        title={collapsed ? item.label : undefined}
+                        className={({ isActive }) => itemClass(isActive, collapsed)}
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <item.icon
+                              className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-cobalt' : 'text-adm-subtle'}`}
+                              strokeWidth={1.75}
+                              aria-hidden
+                            />
+                            <span className={collapsed ? 'sr-only' : 'truncate'}>{item.label}</span>
+                          </>
+                        )}
+                      </NavLink>
+                    </li>
+                  ),
+                )}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      {/* Keluar */}
+      <div className="mt-3 border-t border-adm-line pt-3">
+        <button
+          type="button"
+          onClick={handleLogout}
+          title={collapsed ? 'Keluar' : undefined}
+          className={`flex h-10 w-full items-center gap-3 rounded-xl text-sm font-medium text-adm-danger-fg transition-colors hover:bg-adm-danger-soft ${
+            collapsed ? 'justify-center' : 'px-3'
+          } ${focusRing}`}
+        >
+          <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
+          <span className={collapsed ? 'sr-only' : ''}>Keluar</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const NavGroupItem: React.FC<{
+  item: AdminNavItem;
+  collapsed: boolean;
+  pathname: string;
+  onNavigate?: () => void;
+}> = ({ item, collapsed, pathname, onNavigate }) => {
+  const active = isNavActive(pathname, item);
+  const [open, setOpen] = useState(active);
+  // Bila path induk sama dengan salah satu anak (Pesanan Template = Order Masuk), aria-current cukup di anak
+  const pageIsChild = item.children?.some((c) => c.path === item.path) ?? false;
+
+  // Buka submenu otomatis saat pindah ke salah satu halamannya (penyesuaian state saat render, tanpa effect)
+  const [wasActive, setWasActive] = useState(active);
+  if (active !== wasActive) {
+    setWasActive(active);
+    if (active) setOpen(true);
+  }
+
+  return (
+    <li>
+      <div className="flex items-center gap-1">
+        <Link
+          to={item.path}
+          onClick={onNavigate}
+          title={collapsed ? item.label : undefined}
+          aria-current={!pageIsChild && isNavActive(pathname, { path: item.path, end: true }) ? 'page' : undefined}
+          className={`${itemClass(active, collapsed)} min-w-0 flex-1`}
+        >
+          <item.icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-cobalt' : 'text-adm-subtle'}`} strokeWidth={1.75} aria-hidden />
+          <span className={collapsed ? 'sr-only' : 'truncate'}>{item.label}</span>
+        </Link>
+        {!collapsed && (
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? `Tutup submenu ${item.label}` : `Buka submenu ${item.label}`}
+            aria-expanded={open}
+            className={`flex h-10 w-8 shrink-0 items-center justify-center rounded-xl text-adm-subtle transition-colors hover:bg-adm-hover hover:text-adm-fg ${focusRing}`}
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+          </button>
+        )}
+      </div>
+
+      <AnimatePresence initial={false}>
+        {open && !collapsed && (
+          <motion.ul
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="ml-[21px] overflow-hidden border-l border-adm-line pl-3"
+          >
+            {item.children!.map((child) => (
+              <li key={child.path} className="pt-0.5">
+                <NavLink
+                  to={child.path}
+                  end={child.end}
+                  onClick={onNavigate}
+                  className={({ isActive }) =>
+                    `flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] transition-colors ${focusRing} ${
+                      isActive ? 'bg-adm-hover font-semibold text-adm-fg' : 'font-medium text-adm-muted hover:bg-adm-hover/70 hover:text-adm-fg'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <child.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-cobalt' : 'text-adm-subtle'}`} strokeWidth={1.75} aria-hidden />
+                      <span className="truncate">{child.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </li>
+  );
+};
+
+/**
+ * Sidebar admin gaya "kanvas dalam kanvas": kartu putih rounded terpisah, bisa diciutkan jadi rail ikon
+ * (tersimpan di localStorage). Di layar < lg menjadi drawer.
+ */
+const Sidebar: React.FC = () => {
+  const { isSidebarCollapsed, toggleSidebar, isMobileSidebarOpen, toggleMobileSidebar } = useStore();
+  const location = useLocation();
+  const close = () => toggleMobileSidebar(false);
+
   useEffect(() => {
-    if (location.pathname.startsWith('/admin/products') && !productsOpen) {
-      setProductsOpen(true);
-    }
-  }, [location.pathname]);
-
-  const productSubmenus = [
-    { icon: GraduationCap, label: 'i-School', path: '/admin/products/ischool' },
-    { icon: BookOpen, label: 'i-Santri', path: '/admin/products/isantri' },
-    { icon: Mail, label: 'Digital Invitation', path: '/admin/products/digital-invitation' },
-    { icon: Building, label: 'Website Desa', path: '/admin/products/website-desa' },
-    { icon: Globe, label: 'Garuda Nexa', path: '/admin/products/garuda-nexa' },
-  ];
+    toggleMobileSidebar(false);
+  }, [location.pathname, toggleMobileSidebar]);
 
   useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-      if (window.innerWidth >= 1024 && isMobileSidebarOpen) {
-        toggleMobileSidebar(false);
-      }
+    if (!isMobileSidebarOpen) return undefined;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && toggleMobileSidebar(false);
+    const onResize = () => window.innerWidth >= 1024 && toggleMobileSidebar(false);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+      document.body.style.overflow = prev;
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, [isMobileSidebarOpen, toggleMobileSidebar]);
-  
-  const allMenuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin', adminOnly: false },
-    { icon: Server, label: 'Monitoring Server', path: '/admin/monitoring-server', adminOnly: false },
-    { icon: Menu, label: 'Navbar Manager', path: '/admin/navbar-manager', adminOnly: true },
-    { icon: FolderOpen, label: 'Dokumen', path: '/admin/documents', adminOnly: false },
-    { icon: History, label: 'Changelog', path: '/admin/changelog', adminOnly: true },
-    { icon: Settings, label: 'Website Settings', path: '/admin/settings', adminOnly: false },
-    { icon: Users, label: 'Users', path: '/admin/users', adminOnly: true },
-  ];
-
-  // Filter menu berdasarkan role
-  const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
-
-  const isDesktop = windowWidth >= 1024;
-
-  const isProductsActive = location.pathname.startsWith('/admin/products');
 
   return (
     <>
-      {/* Mobile Overlay */}
+      <aside
+        className={`sticky top-2 z-30 hidden h-[calc(100vh-16px)] shrink-0 transition-[width] duration-200 ease-out lg:block ${
+          isSidebarCollapsed ? 'w-[68px]' : 'w-[248px]'
+        }`}
+      >
+        <SidebarContent collapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
+      </aside>
+
       <AnimatePresence>
         {isMobileSidebarOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] lg:hidden"
-            onClick={() => toggleMobileSidebar(false)}
-          />
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-obsidian/30"
+              onClick={close}
+              aria-hidden
+            />
+            <motion.div
+              initial={{ x: -24, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -24, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu admin"
+              className="absolute bottom-[max(8px,env(safe-area-inset-bottom))] left-[max(8px,env(safe-area-inset-left))] top-[max(8px,env(safe-area-inset-top))] w-[272px] max-w-[85vw] rounded-[20px] shadow-float"
+            >
+              <SidebarContent onClose={close} onNavigate={close} />
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
-
-      <motion.aside 
-        initial={false}
-        animate={{ 
-          width: !isDesktop ? 224 : (isSidebarCollapsed ? 70 : 232),
-          x: isDesktop ? 0 : (isMobileSidebarOpen ? 0 : -240)
-        }}
-        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }} 
-        className={`
-          flex flex-col z-[101] lg:z-10 fixed inset-y-0 left-0 lg:relative transition-colors duration-300
-          ${theme === 'light' ? 'bg-white border-r border-slate-200' : 'bg-[#0D0D0D] border-r border-white/5'}
-          ${isMobileSidebarOpen ? 'w-56 md:w-64' : ''}
-        `}
-      >
-        {/* Header / Logo */}
-        <div className={`px-3 md:px-4 flex items-center justify-center h-14 relative border-b transition-colors duration-300 ${
-          theme === 'light' ? 'border-slate-200' : 'border-white/5'
-        }`}>
-          <Link to="/" className="flex items-center justify-center gap-2 md:gap-2.5 overflow-hidden">
-            <motion.img 
-              src="/assets/logo/logognbputih.png" 
-              alt="Logo" 
-              className={`h-5 w-auto object-contain min-w-[20px] transition-all duration-300 ${
-                theme === 'light' ? 'brightness-0' : ''
-              }`}
-              animate={{ scale: isSidebarCollapsed ? 0.9 : 1 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            />
-            <AnimatePresence mode="wait">
-              {!isSidebarCollapsed && (
-                <motion.span 
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.3 }}
-                  className={`font-bold text-sm md:text-base tracking-tight whitespace-nowrap transition-colors duration-300 ${
-                    theme === 'light' ? 'text-slate-900' : 'text-white'
-                  }`}
-                >
-                  Garuda Nexa
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </Link>
-
-          {/* Close Button (Mobile) */}
-          <button 
-            onClick={() => toggleMobileSidebar(false)}
-            className={`lg:hidden absolute right-3 p-1.5 rounded-lg transition-all ${
-              theme === 'light' ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-500 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Menu */}
-        <nav className="flex-1 px-3 md:px-4 mt-2 md:mt-3 space-y-0.5 md:space-y-1 overflow-y-auto">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end
-              onClick={() => toggleMobileSidebar(false)}
-              className={({ isActive }) => `
-                flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 rounded-xl transition-all group relative border
-                ${isActive 
-                  ? (theme === 'light'
-                      ? 'bg-blue-50/80 text-blue-600 border-blue-100 shadow-[inset_0_0_10px_rgba(37,99,235,0.03)]'
-                      : 'bg-blue-600/10 text-blue-400 border-blue-600/20 shadow-[inset_0_0_10px_rgba(37,99,235,0.1)]')
-                  : (theme === 'light' 
-                      ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent' 
-                      : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent')}
-                ${isSidebarCollapsed ? 'justify-center' : ''}
-              `}
-            >
-              {({ isActive }) => (
-                <>
-                  <motion.div
-                    animate={{ scale: isActive ? 1.05 : 1 }}
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <item.icon className="w-4 h-4 md:w-4.5 md:h-4.5 min-w-[16px] md:min-w-[18px]" />
-                  </motion.div>
-
-                  <AnimatePresence initial={false}>
-                    {!isSidebarCollapsed && (
-                      <motion.span 
-                        initial={{ opacity: 0, width: 0, x: -10 }}
-                        animate={{ opacity: 1, width: 'auto', x: 0 }}
-                        exit={{ opacity: 0, width: 0, x: -10 }}
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                        className="text-[12.5px] md:text-sm font-medium whitespace-nowrap overflow-hidden"
-                      >
-                        {item.label}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                  
-                  {/* Tooltip for collapsed mode */}
-                  {isSidebarCollapsed && (
-                    <div className={`absolute left-full ml-4 px-3 py-2 text-xs font-bold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md ${
-                      theme === 'light' ? 'bg-slate-900 text-white' : 'bg-white text-black'
-                    }`}>
-                      {item.label}
-                    </div>
-                  )}
-                </>
-              )}
-            </NavLink>
-          ))}
-
-          {/* ── Products Submenu ── */}
-          <div>
-            <div className="flex">
-              <Link
-                to="/admin/products"
-                onClick={() => toggleMobileSidebar(false)}
-                className={`
-                  flex-1 flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 rounded-xl transition-all group relative border
-                  ${isProductsActive
-                    ? (theme === 'light'
-                        ? 'bg-blue-50/80 text-blue-600 border-blue-100'
-                        : 'bg-blue-600/10 text-blue-400 border-blue-600/20')
-                    : (theme === 'light'
-                        ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border-transparent'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent')}
-                  ${isSidebarCollapsed ? 'justify-center' : ''}
-                `}
-              >
-                <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.2 }}>
-                  <Package className="w-4 h-4 md:w-4.5 md:h-4.5 min-w-[16px] md:min-w-[18px]" />
-                </motion.div>
-
-                <AnimatePresence initial={false}>
-                  {!isSidebarCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0, x: -10 }}
-                      animate={{ opacity: 1, width: 'auto', x: 0 }}
-                      exit={{ opacity: 0, width: 0, x: -10 }}
-                      transition={{ duration: 0.3, ease: 'easeOut' }}
-                      className="text-[12.5px] md:text-sm font-medium whitespace-nowrap overflow-hidden flex-1 text-left"
-                    >
-                      Monitor Products
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </Link>
-
-              {!isSidebarCollapsed && (
-                <button
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setProductsOpen(!productsOpen); }}
-                  className="px-2 hover:bg-white/5 rounded-lg transition-colors"
-                >
-                  <motion.div
-                    animate={{ rotate: productsOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronDown className="w-3 h-3 md:w-3.5 md:h-3.5 text-slate-400" />
-                  </motion.div>
-                </button>
-              )}
-            </div>
-
-            <AnimatePresence>
-              {productsOpen && !isSidebarCollapsed && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  className="overflow-hidden pl-6 md:pl-8"
-                >
-                  <div className="py-1 space-y-0.5">
-                    {productSubmenus.map((sub) => (
-                      <NavLink
-                        key={sub.path}
-                        to={sub.path}
-                        onClick={() => toggleMobileSidebar(false)}
-                        className={({ isActive }) => `
-                          flex items-center gap-2.5 px-2.5 py-1.5 md:py-2 rounded-lg transition-all text-[11.5px] md:text-xs
-                          ${isActive
-                            ? (theme === 'light'
-                                ? 'bg-blue-50 text-blue-600 font-medium'
-                                : 'bg-blue-600/10 text-blue-400 font-medium')
-                            : (theme === 'light'
-                                ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-                                : 'text-slate-500 hover:text-white hover:bg-white/5')}
-                        `}
-                      >
-                        <sub.icon className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{sub.label}</span>
-                      </NavLink>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-
-        </nav>
-
-        {/* Footer Actions */}
-        <div className={`px-3 py-2.5 md:px-4 md:py-3 border-t transition-colors duration-300 ${
-          theme === 'light' ? 'border-slate-200' : 'border-white/5'
-        }`}>
-          <Link 
-            to="/login" 
-            className={`w-full flex items-center gap-2 md:gap-2.5 px-2.5 py-2 md:px-3 md:py-2.5 text-red-400 hover:text-red-300 hover:bg-red-400/5 rounded-xl transition-all ${
-              isSidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <LogOut className="w-4 h-4 md:w-4.5 md:h-4.5 min-w-[16px] md:min-w-[18px]" />
-            {!isSidebarCollapsed && <span className="text-[12.5px] md:text-sm font-medium whitespace-nowrap">Logout</span>}
-          </Link>
-        </div>
-      </motion.aside>
     </>
   );
 };
