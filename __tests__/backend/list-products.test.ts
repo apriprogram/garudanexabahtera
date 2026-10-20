@@ -13,6 +13,8 @@ const { fakeUpload } = vi.hoisted(() => ({
   fakeUpload: (value: unknown, section: string) =>
     typeof value === 'string' && /^\s*data:/i.test(value)
       ? `/assets/${section}/upload`
+      // Control characters are intentional: same check as safeLink in backend/modules/list_products.js
+      // eslint-disable-next-line no-control-regex
       : typeof value === 'string' && /^[\s\x00-\x1f]*(javascript|vbscript|data):/i.test(value) ? '' : value,
 }));
 
