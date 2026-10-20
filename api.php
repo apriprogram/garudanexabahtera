@@ -72,6 +72,8 @@ set_exception_handler(function ($e) {
 require_once __DIR__ . '/modules/templates.php';
 // Company products, users column (product login accounts) encrypted at rest (handle_list_product_action)
 require_once __DIR__ . '/modules/list_products.php';
+// Client project files: staff-only download, the folder itself is closed to the web (handle_project_file_action)
+require_once __DIR__ . '/modules/project_files.php';
 
 load_env_file();
 
@@ -120,6 +122,11 @@ if (handle_platform_action($conn, $action, $input, $authUser)) {
 }
 // Company products: public list + staff actions (backend/modules/list_products.php)
 if (handle_list_product_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Client project files (dokumen-client/dokumen): staff download (backend/modules/project_files.php)
+if (handle_project_file_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }

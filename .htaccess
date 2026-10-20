@@ -25,6 +25,10 @@ DirectoryIndex index.html
   RewriteRule \.(sql|sh|log|ya?ml|md|lock|ini)$ - [F,L]
   RewriteRule ^modules/ - [F,L]
 
+  # Dokumen proyek klien hanya lewat api.php?action=download_project_file (staf yang login).
+  # Gambar proyek di assets/dokumen-client/logo/ tetap publik (beranda).
+  RewriteRule ^/*assets/+dokumen-client/+dokumen(/|$) - [F,L,NC]
+
   # Frontend memanggil /api/ai-chat (jalur Node); di PHP itu action=ai_chat
   RewriteRule ^api/ai-chat/?$ api.php?action=ai_chat [QSA,L]
 
