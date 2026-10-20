@@ -14,7 +14,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Readable, Writable } from 'node:stream';
 
-const { s3Get, s3Send, TEST_ENV } = vi.hoisted(() => {
+const { s3Get, s3Send, fakeS3Sdk, TEST_ENV } = vi.hoisted(() => {
   const env = {
     AUTH_SECRET: 'x'.repeat(16) + Math.random().toString(36).slice(2).padEnd(24, 'y'),
     S3_ACCESS_KEY: 'test-access',
@@ -23,28 +23,33 @@ const { s3Get, s3Send, TEST_ENV } = vi.hoisted(() => {
   };
   // security.js and s3-client.js read these when they are imported
   Object.assign(process.env, env);
-  return { s3Get: vi.fn(), s3Send: vi.fn(), TEST_ENV: env };
+  const s3Send = vi.fn();
+  const fakeS3Sdk = () => {
+    class Command {
+      input: Record<string, unknown>;
+      constructor(input: Record<string, unknown>) {
+        this.input = input;
+      }
+    }
+    return {
+      S3Client: class {
+        send = s3Send;
+      },
+      PutObjectCommand: class PutObjectCommand extends Command {},
+      GetObjectCommand: class GetObjectCommand extends Command {},
+      DeleteObjectCommand: class DeleteObjectCommand extends Command {},
+      ListObjectsV2Command: class ListObjectsV2Command extends Command {},
+    };
+  };
+  return { s3Get: vi.fn(), s3Send, fakeS3Sdk, TEST_ENV: env };
 });
 
 // project_files.js reads private objects through s3-client; the real s3-client is tested below with a fake SDK
 vi.mock('../../backend/s3-client.js', () => ({ getFromS3: s3Get, S3_PUBLIC_URL: 'https://s3.test/bucket' }));
-vi.mock('@aws-sdk/client-s3', () => {
-  class Command {
-    input: Record<string, unknown>;
-    constructor(input: Record<string, unknown>) {
-      this.input = input;
-    }
-  }
-  return {
-    S3Client: class {
-      send = s3Send;
-    },
-    PutObjectCommand: class PutObjectCommand extends Command {},
-    GetObjectCommand: class GetObjectCommand extends Command {},
-    DeleteObjectCommand: class DeleteObjectCommand extends Command {},
-    ListObjectsV2Command: class ListObjectsV2Command extends Command {},
-  };
-});
+// s3-client.js loads the SDK from backend/node_modules when that folder is installed, otherwise by its bare name.
+// Mock both ids, or a checkout with backend/node_modules sends these tests to the real S3.
+vi.mock('@aws-sdk/client-s3', () => fakeS3Sdk());
+vi.mock('../../backend/node_modules/@aws-sdk/client-s3', () => fakeS3Sdk());
 // Only backend/node_modules has bcryptjs; the auth gate never needs a real hash here
 vi.mock('bcryptjs', () => ({ default: { hashSync: () => 'dummy', compare: async () => false, hash: async () => 'dummy' } }));
 
