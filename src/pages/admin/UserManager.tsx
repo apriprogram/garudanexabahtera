@@ -1,28 +1,48 @@
-﻿import React, { useState, useEffect } from 'react';
-import { 
-  UserPlus,
-  Search, 
-  Edit2, 
-  Trash2, 
-  Mail, 
-  Shield, 
-  Eye,
-  EyeOff,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  Camera,
-  Upload,
-  Phone
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useCallback } from 'react';
+import { UserPlus, Edit2, Trash2, Mail, Shield, ShieldCheck, ShoppingBag, Camera, Upload, Phone, Users, type LucideIcon } from 'lucide-react';
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Field,
+  FilterBar,
+  IconButton,
+  Input,
+  LoadingState,
+  MobileCard,
+  MobileList,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  PageHeader,
+  Panel,
+  PanelFooter,
+  Pagination,
+  PasswordInput,
+  SearchInput,
+  Segmented,
+  Select,
+  Table,
+  TableContainer,
+  TBody,
+  Td,
+  Th,
+  THead,
+  Tr,
+} from '../../components/admin/ui';
+import { getCurrentUser } from '../../lib/auth';
+
+/** Peran `users.role` (SPEC §2): admin & user = staf panel admin, customer = pembeli template. */
+type Role = 'admin' | 'user' | 'customer';
+type RoleFilter = 'all' | 'staff' | 'customer';
 
 interface User {
   id: number;
   name: string;
   email: string;
   phone: string;
-  role: 'admin' | 'user';
+  role: Role;
   status: 'active' | 'inactive';
   password?: string;
   avatar?: string;
@@ -30,14 +50,46 @@ interface User {
 
 const API_URL = '/api.php';
 
+const ROLES: Role[] = ['admin', 'user', 'customer'];
+const STAFF_ROLES: Role[] = ['admin', 'user'];
+
+const ROLE_META: Record<Role, { label: string; icon: LucideIcon; hint: string }> = {
+  admin: { label: 'Admin', icon: ShieldCheck, hint: 'Akses penuh panel admin, termasuk kelola pengguna.' },
+  user: { label: 'Staf', icon: Shield, hint: 'Masuk panel admin tanpa menu khusus admin seperti kelola pengguna.' },
+  customer: { label: 'Pembeli', icon: ShoppingBag, hint: 'Pembeli template: hanya halaman Akun Saya (/akun), tidak bisa membuka panel admin.' },
+};
+
+const ROLE_FILTERS: { value: RoleFilter; label: string }[] = [
+  { value: 'all', label: 'Semua' },
+  { value: 'staff', label: 'Staf' },
+  { value: 'customer', label: 'Pembeli' },
+];
+
+const isRole = (value: unknown): value is Role => typeof value === 'string' && (ROLES as string[]).includes(value);
+
+/** Filter "Staf" mencakup admin + staf; "Pembeli" hanya customer. */
+const matchesRoleFilter = (role: Role, filter: RoleFilter) =>
+  filter === 'all' || (filter === 'customer' ? role === 'customer' : STAFF_ROLES.includes(role));
+
+/** Peran di tabel & kartu HP: ikon + label (Admin / Staf / Pembeli). */
+const RoleLabel: React.FC<{ role: string }> = ({ role }) => {
+  if (!isRole(role)) return <span className="text-[13px] text-adm-subtle">{role || '—'}</span>;
+  const { label, icon: Icon } = ROLE_META[role];
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-adm-muted">
+      <Icon className={`h-4 w-4 ${role === 'admin' ? 'text-cobalt' : 'text-adm-subtle'}`} strokeWidth={1.75} aria-hidden />
+      {label}
+    </span>
+  );
+};
+
 const UserManager: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState<string | null>(null);
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
+  // setState di sini hanya terjadi setelah respons API
+  const loadUsers = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}?action=get_users`);
       if (!response.ok) throw new Error('Network response was not ok');
@@ -49,31 +101,56 @@ const UserManager: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching users:', error);
-      setError('Gagal terhubung ke Database. Pastikan XAMPP (Apache & MySQL) sudah ON dan file api.php ada di htdocs.');
+      setError("Gagal terhubung ke API. Pastikan server API berjalan (lihat 'cara menjalankan aplikasi').");
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchUsers = () => {
+    setLoading(true);
+    setError(null);
+    loadUsers();
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    // loading=true dan error=null sudah menjadi state awal; loadUsers baru memanggil setState setelah await,
+    // tetapi aturan ini tidak membedakan fungsi async.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadUsers();
+  }, [loadUsers]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [showPassword, setShowPassword] = useState(false);
+
+  // Akun yang sedang login (peran dari token). Halaman ini khusus admin (lihat Layout), tetapi UI tetap
+  // mengikuti aturan server: non-admin hanya bisa mengubah profil sendiri tanpa mengubah peran/status,
+  // dan tidak bisa menambah/menghapus akun.
+  const [viewer] = useState(getCurrentUser);
+  const viewerIsAdmin = viewer?.role === 'admin';
+  const isSelf = (user: User) => viewer != null && Number(user.id) === Number(viewer.id);
 
   // Form State
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    role: 'user' as 'admin' | 'user',
+    role: 'user' as Role,
     status: 'active' as 'active' | 'inactive',
     password: '',
     avatar: ''
   });
+
+  // Peran & status dikunci untuk non-admin (server memaksa nilai lamanya) dan untuk akun sendiri
+  // (mencegah admin mengunci dirinya keluar dari panel).
+  const editingSelf = editingUser != null && isSelf(editingUser);
+  const accessLocked = !viewerIsAdmin || editingSelf;
+  const accessLockedHint = viewerIsAdmin
+    ? 'Peran dan status akun yang sedang kamu pakai tidak bisa diubah di sini.'
+    : 'Hanya admin yang bisa mengubah peran dan status akun.';
 
   const handleOpenModal = (user?: User) => {
     if (user) {
@@ -82,7 +159,7 @@ const UserManager: React.FC = () => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role,
+        role: isRole(user.role) ? user.role : 'user',
         status: user.status,
         password: '', // Keep blank for edit unless changing
         avatar: user.avatar || ''
@@ -123,7 +200,7 @@ const UserManager: React.FC = () => {
         fetchUsers();
         handleCloseModal();
       } else {
-        alert('Error: ' + (data.error || 'Unknown error'));
+        alert('Gagal menyimpan pengguna: ' + (data.error || 'kesalahan tidak diketahui'));
       }
     } catch (error) {
       console.error('Error saving user:', error);
@@ -189,352 +266,285 @@ const UserManager: React.FC = () => {
         fetchUsers();
         setIsDeleteModalOpen(false);
         setUserToDelete(null);
+      } else {
+        alert('Gagal menghapus pengguna: ' + (data.error || 'kesalahan tidak diketahui'));
       }
     } catch (error) {
       console.error('Error deleting user:', error);
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const roleCounts: Record<RoleFilter, number> = {
+    all: users.length,
+    staff: users.filter((u) => matchesRoleFilter(u.role, 'staff')).length,
+    customer: users.filter((u) => matchesRoleFilter(u.role, 'customer')).length,
+  };
+
+  const query = searchTerm.trim().toLowerCase();
+  const filteredUsers = users.filter(
+    (u) =>
+      matchesRoleFilter(u.role, roleFilter) &&
+      (!query || (u.name || '').toLowerCase().includes(query) || (u.email || '').toLowerCase().includes(query)),
+  );
+
+  const emptyTitle = query ? 'Pengguna tidak ditemukan.' : roleFilter === 'customer' ? 'Belum ada pembeli.' : roleFilter === 'staff' ? 'Belum ada staf.' : 'Belum ada pengguna.';
+  const emptyDescription = query
+    ? 'Coba kata kunci lain atau pilih filter peran lain.'
+    : roleFilter === 'customer'
+      ? 'Akun pembeli muncul di sini setelah pembeli mendaftar di website.'
+      : undefined;
+
+  const avatar = (user: User, size = 'h-9 w-9') => (
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-adm-cobalt-soft text-[13px] font-semibold text-adm-cobalt-fg ${size}`}>
+      {user.avatar ? <img src={user.avatar} alt="" className="h-full w-full object-cover" /> : user.name.charAt(0)}
+    </span>
+  );
+
+  const rowActions = (user: User) => (
+    <>
+      <IconButton icon={<Edit2 />} label={`Edit ${user.name}`} size="sm" onClick={() => handleOpenModal(user)} />
+      {/* Tambah/hapus akun khusus admin; server juga menolak menghapus akun yang sedang dipakai */}
+      {viewerIsAdmin &&
+        (isSelf(user) ? (
+          <span title="Akun yang sedang dipakai tidak bisa dihapus" className="inline-flex">
+            <IconButton icon={<Trash2 />} label="Akun yang sedang dipakai tidak bisa dihapus" size="sm" variant="danger-ghost" disabled />
+          </span>
+        ) : (
+          <IconButton icon={<Trash2 />} label={`Hapus ${user.name}`} size="sm" variant="danger-ghost" onClick={() => confirmDelete(user)} />
+        ))}
+    </>
   );
 
   return (
-    <div className="space-y-5 md:space-y-8 pb-10">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl md:text-3xl font-bold text-white tracking-tight">User Management</h1>
-          <p className="text-[10px] md:text-sm text-slate-400 mt-0.5 md:mt-1">Manage administrators and clients.</p>
-        </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 md:px-5 md:py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white rounded-full font-bold transition-all border border-blue-400/40 active:scale-95 text-[10px] md:text-xs"
-        >
-          <UserPlus className="w-4 h-4 md:w-5 md:h-5" />
-          Add New User
-        </button>
-      </div>
+    <div className="pb-10">
+      <PageHeader
+        title="Pengguna"
+        description="Kelola akun staf panel admin dan pembeli template di sini."
+        actions={
+          viewerIsAdmin ? (
+            <Button icon={<UserPlus />} onClick={() => handleOpenModal()}>
+              Tambah pengguna
+            </Button>
+          ) : undefined
+        }
+      />
 
-      {/* Filters & Search */}
-      <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-center justify-between bg-[#0D0D0D] border border-white/5 p-3 md:p-4 rounded-2xl">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-          <input 
-            type="text" 
-            placeholder="Search by name or email..." 
-            className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 md:py-2.5 text-xs md:text-sm text-white outline-none focus:border-blue-500/50 transition-all"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-4 text-[10px] md:text-sm text-slate-500">
-          <span>{filteredUsers.length} Users found</span>
-        </div>
-      </div>
+      <Panel padding="none" className="overflow-hidden">
+        <FilterBar
+          left={
+            <Segmented
+              size="sm"
+              ariaLabel="Filter peran"
+              value={roleFilter}
+              onChange={setRoleFilter}
+              items={ROLE_FILTERS.map((f) => ({ ...f, count: loading ? undefined : roleCounts[f.value] }))}
+            />
+          }
+          right={
+            <SearchInput
+              placeholder="Cari nama atau email..."
+              aria-label="Cari pengguna"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
+              controlSize="sm"
+              wrapperClassName="w-full sm:w-80"
+            />
+          }
+        />
 
-      {/* Users Table */}
-      <div className="bg-[#0D0D0D] border border-white/5 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-white/[0.02]">
-                <th className="px-5 md:px-8 py-3 md:py-5 text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
-                <th className="px-5 md:px-8 py-3 md:py-5 text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">Role</th>
-                <th className="px-5 md:px-8 py-3 md:py-5 text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="px-5 md:px-8 py-3 md:py-5 text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Contact</th>
-                <th className="px-5 md:px-8 py-3 md:py-5 text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-8 py-10 text-center text-slate-500">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-6 h-6 md:w-8 md:h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-xs md:text-sm">Connecting...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-8 py-10 text-center text-slate-500 text-xs md:text-sm">
-                    No users found.
-                  </td>
-                </tr>
-              ) : filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-white/[0.01] transition-colors group">
-                  <td className="px-5 md:px-8 py-3 md:py-5">
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center border border-white/10 text-white text-xs font-bold overflow-hidden">
-                        {user.avatar ? (
-                          <img src={user.avatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          user.name.charAt(0)
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-[11px] md:text-sm font-semibold text-white group-hover:text-blue-400 transition-colors leading-tight">{user.name}</p>
-                        <p className="text-[9px] md:text-xs text-slate-500 leading-tight">{user.email}</p>
-                        <div className="md:hidden mt-1 flex items-center gap-1.5">
-                           <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-md ${user.role === 'admin' ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-500/10 text-slate-400'}`}>
-                             {user.role}
-                           </span>
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5 hidden md:table-cell">
-                    <div className="flex items-center gap-2">
-                      <Shield className={`w-3.5 h-3.5 ${user.role === 'admin' ? 'text-amber-400' : 'text-slate-500'}`} />
-                      <span className={`text-xs font-medium capitalize ${user.role === 'admin' ? 'text-amber-400' : 'text-slate-400'}`}>
-                        {user.role}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-5 md:px-8 py-3 md:py-5">
-                    <span className={`
-                      inline-flex items-center px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-bold uppercase tracking-wide
-                      ${user.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-500/10 text-slate-500'}
-                    `}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-8 py-5 hidden sm:table-cell">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <Mail className="w-3 h-3" />
-                        {user.email}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <Phone className="w-3 h-3" />
-                        {user.phone}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 md:px-8 py-3 md:py-5 text-right">
-                    <div className="flex justify-end gap-1 md:gap-2">
-                      <button 
-                        onClick={() => handleOpenModal(user)}
-                        className="p-1.5 md:p-2 text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      </button>
-                      <button 
-                        onClick={() => confirmDelete(user)}
-                        className="p-1.5 md:p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/5 rounded-lg transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+        {loading ? (
+          <LoadingState label="Memuat pengguna..." />
+        ) : filteredUsers.length === 0 ? (
+          <EmptyState icon={<Users />} title={emptyTitle} description={emptyDescription} size="sm" />
+        ) : (
+          <>
+            {/* HP: kartu bertumpuk */}
+            <MobileList className="md:hidden">
+              {filteredUsers.map((user) => (
+                <MobileCard
+                  key={user.id}
+                  leading={avatar(user)}
+                  title={user.name}
+                  subtitle={user.email}
+                  trailing={<Badge status={user.status} />}
+                  meta={[
+                    { label: 'Peran', value: <RoleLabel role={user.role} /> },
+                    { label: 'Nomor HP', value: user.phone || '—' },
+                  ]}
+                  actions={rowActions(user)}
+                />
               ))}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Pagination Placeholder */}
-        <div className="px-5 md:px-8 py-3 md:py-4 bg-white/[0.01] border-t border-white/5 flex items-center justify-between text-[10px] md:text-xs text-slate-500">
-          <span>{filteredUsers.length} results</span>
-          <div className="flex items-center gap-1.5 md:gap-2">
-            <button className="p-1 md:p-1.5 hover:bg-white/5 rounded-md disabled:opacity-30" disabled><ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4" /></button>
-            <button className="w-6 h-6 md:w-8 md:h-8 bg-blue-600 text-white rounded-md font-bold text-[10px] md:text-xs">1</button>
-            <button className="p-1 md:p-1.5 hover:bg-white/5 rounded-md"><ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4" /></button>
-          </div>
-        </div>
-      </div>
+            </MobileList>
 
-      {/* Modal for Add/Edit */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handleCloseModal}
-              className="absolute inset-0 bg-black/80"
-            />
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#121212] border border-white/10 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl m-4 flex flex-col max-h-[90vh] relative z-10"
-            >
-              {/* Modal Header */}
-              <div className="p-4 md:p-6 border-b border-white/5 bg-white/[0.01]">
-                <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">
-                  {editingUser ? 'Edit User' : 'Add New User'}
-                </h2>
-                <p className="text-[9px] md:text-xs text-slate-500 mt-0.5">
-                  {editingUser ? 'Update user information and permissions.' : 'Create a new administrative account.'}
-                </p>
-              </div>
- 
-              <form onSubmit={handleUserSubmit} className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="p-4 md:p-6 space-y-4 md:space-y-5">
-                  {/* Avatar Upload */}
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="relative group">
-                      <div className="w-14 h-14 md:w-20 md:h-20 rounded-full bg-white/5 border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-blue-500/50">
-                        {formData.avatar ? (
-                          <img src={formData.avatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <Camera className="w-5 h-5 md:w-6 md:h-6 text-slate-600" />
-                        )}
-                      </div>
-                      <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                        <Upload className="w-4 h-4 md:w-5 md:h-5 text-white" />
-                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                      </label>
-                    </div>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Profile Photo</span>
-                  </div>
- 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 md:gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] md:text-[11px] font-medium text-slate-500 ml-1">Full Name</label>
-                      <input 
-                        type="text" 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-4 md:py-2.5 text-[11px] md:text-xs text-white outline-none focus:border-blue-500/50 transition-all"
-                        placeholder="Enter full name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] md:text-[11px] font-medium text-slate-500 ml-1">Email Address</label>
-                      <input 
-                        type="email" 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-4 md:py-2.5 text-[11px] md:text-xs text-white outline-none focus:border-blue-500/50 transition-all"
-                        placeholder="email@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] md:text-[11px] font-medium text-slate-500 ml-1">Phone Number</label>
-                      <input 
-                        type="tel" 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-4 md:py-2.5 text-[11px] md:text-xs text-white outline-none focus:border-blue-500/50 transition-all"
-                        placeholder="0812..."
-                        value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] md:text-[11px] font-medium text-slate-500 ml-1">User Role</label>
-                      <select 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-4 md:py-2.5 text-[11px] md:text-xs text-white outline-none focus:border-blue-500/50 transition-all appearance-none cursor-pointer"
-                        value={formData.role}
-                        onChange={(e) => setFormData({...formData, role: e.target.value as 'admin' | 'user'})}
-                      >
-                        <option value="user" className="bg-[#121212]">User / Client</option>
-                        <option value="admin" className="bg-[#121212]">Administrator</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] md:text-[11px] font-medium text-slate-500 ml-1">Account Status</label>
-                      <select 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-4 md:py-2.5 text-[11px] md:text-xs text-white outline-none focus:border-blue-500/50 transition-all appearance-none cursor-pointer"
-                        value={formData.status}
-                        onChange={(e) => setFormData({...formData, status: e.target.value as 'active' | 'inactive'})}
-                      >
-                        <option value="active" className="bg-[#121212]">Active</option>
-                        <option value="inactive" className="bg-[#121212]">Inactive</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] md:text-[11px] font-medium text-slate-500 ml-1">Password {editingUser && '(optional)'}</label>
-                      <div className="relative">
-                        <input 
-                          type={showPassword ? "text" : "password"} 
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 md:px-4 md:py-2.5 text-[11px] md:text-xs text-white outline-none focus:border-blue-500/50 transition-all"
-                          placeholder="Enter password"
-                          value={formData.password}
-                          onChange={(e) => setFormData({...formData, password: e.target.value})}
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
-                        >
-                          {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
- 
-                {/* Modal Footer */}
-                <div className="p-4 md:p-6 border-t border-white/5 flex gap-3 bg-white/[0.01]">
-                  <button 
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="flex-1 px-4 py-2 md:py-3 bg-white/5 hover:bg-white/10 text-white rounded-full font-bold transition-all text-[11px] md:text-xs"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="flex-1 px-4 py-2 md:py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95 text-[11px] md:text-xs"
-                  >
-                    {editingUser ? 'Save' : 'Create'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
+            {/* Desktop: tabel */}
+            <TableContainer className="hidden md:block">
+              <Table>
+                <THead>
+                  <tr>
+                    <Th>Pengguna</Th>
+                    <Th>Peran</Th>
+                    <Th>Status</Th>
+                    <Th>Kontak</Th>
+                    <Th align="right">Aksi</Th>
+                  </tr>
+                </THead>
+                <TBody>
+                  {filteredUsers.map((user) => (
+                    <Tr key={user.id}>
+                      <Td>
+                        <div className="flex items-center gap-3">
+                          {avatar(user)}
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-adm-fg">{user.name}</p>
+                            <p className="truncate text-xs text-adm-muted">{user.email}</p>
+                          </div>
+                        </div>
+                      </Td>
+                      <Td>
+                        <RoleLabel role={user.role} />
+                      </Td>
+                      <Td>
+                        <Badge status={user.status} />
+                      </Td>
+                      <Td muted>
+                        <div className="flex flex-col gap-1 text-xs">
+                          <span className="inline-flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 text-adm-subtle" strokeWidth={1.75} aria-hidden />
+                            {user.email}
+                          </span>
+                          <span className="inline-flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 text-adm-subtle" strokeWidth={1.75} aria-hidden />
+                            {user.phone}
+                          </span>
+                        </div>
+                      </Td>
+                      <Td align="right">
+                        <div className="flex justify-end gap-1">{rowActions(user)}</div>
+                      </Td>
+                    </Tr>
+                  ))}
+                </TBody>
+              </Table>
+            </TableContainer>
+          </>
         )}
-      </AnimatePresence>
 
-      {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {isDeleteModalOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="absolute inset-0 bg-black/80"
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-[#121212] border border-white/10 w-[calc(100%-2rem)] max-w-sm rounded-3xl overflow-hidden shadow-2xl relative z-10 p-5 md:p-8"
-            >
-              <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 md:w-20 md:h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-4 md:mb-6">
-                  <AlertTriangle className="w-6 h-6 md:w-10 md:h-10 text-red-500" />
+        <PanelFooter>
+          <Pagination page={1} totalPages={1} summary={`${filteredUsers.length} hasil`} />
+        </PanelFooter>
+      </Panel>
+
+      {/* Modal tambah/edit */}
+      <Modal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        title={editingUser ? 'Edit pengguna' : 'Tambah pengguna'}
+        description={editingUser ? 'Perbarui data dan hak akses pengguna ini.' : 'Buat akun baru untuk staf atau pembeli.'}
+        icon={<UserPlus />}
+        size="md"
+        customBody
+      >
+        <form onSubmit={handleUserSubmit} className="flex min-h-0 flex-1 flex-col">
+          <ModalBody className="space-y-5">
+            {/* Foto profil */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="group relative">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-adm-line-strong bg-adm-ghost transition-colors group-hover:border-cobalt">
+                  {formData.avatar ? (
+                    <img src={formData.avatar} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Camera className="h-6 w-6 text-adm-subtle" strokeWidth={1.75} />
+                  )}
                 </div>
-                <h3 className="text-lg md:text-2xl font-bold text-white mb-1.5 md:mb-2">Delete User?</h3>
-                <p className="text-[11px] md:text-sm text-slate-400 mb-6 md:mb-8 leading-relaxed">
-                  Are you sure you want to delete <span className="text-white font-semibold">"{userToDelete?.name}"</span>? This action is permanent and cannot be undone.
-                </p>
-                
-                <div className="flex gap-2.5 md:gap-3 w-full">
-                  <button 
-                    onClick={() => setIsDeleteModalOpen(false)}
-                    className="flex-1 py-2.5 md:py-3.5 px-4 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all text-[11px] md:text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={handleExecuteDelete}
-                    className="flex-1 py-2.5 md:py-3.5 px-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-600/20 active:scale-95 text-[11px] md:text-sm"
-                  >
-                    Delete Now
-                  </button>
-                </div>
+                <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-obsidian/60 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Upload className="h-5 w-5 text-white" strokeWidth={1.75} />
+                  <span className="sr-only">Unggah foto profil</span>
+                  <input type="file" className="sr-only" accept="image/*" onChange={handleImageUpload} />
+                </label>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              <span className="text-xs font-medium text-adm-muted">Foto profil</span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Nama lengkap">
+                <Input type="text" autoComplete="name" placeholder="Masukkan nama lengkap" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              </Field>
+              <Field label="Email">
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  placeholder="nama@contoh.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </Field>
+              <Field label="Nomor HP">
+                <Input type="tel" inputMode="tel" autoComplete="tel" placeholder="0812..." value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+              </Field>
+              <Field label="Peran" hint={accessLocked ? accessLockedHint : ROLE_META[formData.role].hint}>
+                <Select
+                  aria-label="Peran"
+                  value={formData.role}
+                  disabled={accessLocked}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as Role })}
+                >
+                  {ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {ROLE_META[role].label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Status akun">
+                <Select
+                  aria-label="Status akun"
+                  value={formData.status}
+                  disabled={accessLocked}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
+                >
+                  <option value="active">Aktif</option>
+                  <option value="inactive">Nonaktif</option>
+                </Select>
+              </Field>
+              <Field label="Kata sandi" optional={editingUser ? '(opsional)' : undefined}>
+                <PasswordInput
+                  show={showPassword}
+                  onShowChange={setShowPassword}
+                  autoComplete="new-password"
+                  placeholder="Masukkan kata sandi"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+              </Field>
+            </div>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="secondary" onClick={handleCloseModal}>
+              Batal
+            </Button>
+            <Button type="submit">{editingUser ? 'Simpan' : 'Tambah pengguna'}</Button>
+          </ModalFooter>
+        </form>
+      </Modal>
+
+      {/* Konfirmasi hapus */}
+      <ConfirmDialog
+        open={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleExecuteDelete}
+        tone="danger"
+        title="Hapus pengguna?"
+        description={
+          <>
+            Akun <span className="font-semibold text-adm-fg">"{userToDelete?.name}"</span> akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.
+          </>
+        }
+        confirmText="Ya, hapus"
+        cancelText="Batal"
+      />
     </div>
   );
 };

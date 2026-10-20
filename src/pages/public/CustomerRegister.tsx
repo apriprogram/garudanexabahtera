@@ -1,0 +1,265 @@
+// Pendaftaran pembeli (/daftar): action `customer_register`, akun langsung aktif dan langsung masuk (setSession),
+// lalu ke ?next (path relatif saja) atau /akun. Tampilan: kerangka auth terang bersama (src/components/auth).
+// Lihat docs/platform/SPEC.md §2 & §6.
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { Lock, LockKeyhole, Mail, Phone, User } from 'lucide-react';
+import { ApiError, apiPost, errorMessage } from '../../lib/api';
+import { getRole, setSession } from '../../lib/auth';
+import { AuthLayout, AuthSwitch } from '../../components/auth/AuthLayout';
+import { AuthTabs } from '../../components/auth/AuthTabs';
+import { AuthField } from '../../components/auth/AuthField';
+import { AuthAlert, AuthSubmit } from '../../components/auth/AuthFeedback';
+import {
+  pathAfterLogin,
+  useAuthTitle,
+  type AuthNavState,
+  type SessionResponse,
+} from '../../components/auth/authForm';
+import {
+  checkEmail,
+  checkPassword,
+  checkPhone,
+  checkText,
+  focusFirstError,
+  hasErrors,
+  normalizePhone,
+  type FieldErrors,
+} from '../account/components/validation';
+
+type RegisterField = 'name' | 'email' | 'phone' | 'password' | 'password_confirm';
+const FIELD_ORDER: RegisterField[] = ['name', 'email', 'phone', 'password', 'password_confirm'];
+/** Field yang langsung dicek saat ditinggalkan (bila sudah diisi) */
+const CHECK_ON_BLUR: RegisterField[] = ['name', 'email', 'phone', 'password_confirm'];
+
+export default function CustomerRegister() {
+  useAuthTitle('Daftar');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [params] = useSearchParams();
+  const next = params.get('next');
+  const nextPath = pathAfterLogin('customer', next);
+  const fromOrder = nextPath.startsWith('/pesan/');
+  const navState = (location.state ?? null) as AuthNavState | null;
+
+  const [values, setValues] = useState<Record<RegisterField, string>>({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    password_confirm: '',
+  });
+  const [errors, setErrors] = useState<FieldErrors<RegisterField>>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [emailTaken, setEmailTaken] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Muat halaman masuk lebih dulu agar pindah tab tidak menampilkan layar memuat
+  useEffect(() => {
+    void import('./CustomerLogin');
+  }, []);
+
+  const role = getRole();
+  if (role && !submitting) return <Navigate to={pathAfterLogin(role, next)} replace />;
+
+  const check = (key: RegisterField): string | undefined => {
+    switch (key) {
+      case 'name':
+        return checkText(values.name, 'Nama lengkap', { min: 2, max: 100 });
+      case 'email':
+        return checkEmail(values.email);
+      case 'phone':
+        return checkPhone(values.phone, 'Nomor HP/WhatsApp');
+      case 'password':
+        return checkPassword(values.password);
+      case 'password_confirm':
+        if (!values.password_confirm) return 'Ulangi kata sandi Anda.';
+        return values.password_confirm !== values.password ? 'Kata sandi tidak sama.' : undefined;
+    }
+  };
+
+  const field = (key: RegisterField) => ({
+    id: key,
+    value: values[key],
+    error: errors[key],
+    disabled: submitting,
+    onChange: (e: ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setValues((prev) => ({ ...prev, [key]: value }));
+      if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
+      if (key === 'email') setEmailTaken(false);
+      // Kata sandi diperbaiki hingga sama dengan ulangannya: hapus pesan "tidak sama"
+      if (key === 'password' && errors.password_confirm && values.password_confirm === value) {
+        setErrors((prev) => ({ ...prev, password_confirm: undefined }));
+      }
+    },
+    onBlur: CHECK_ON_BLUR.includes(key)
+      ? () => {
+          if (values[key].trim()) setErrors((prev) => ({ ...prev, [key]: check(key) }));
+        }
+      : undefined,
+  });
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (submitting) return;
+    setFormError(null);
+    setEmailTaken(false);
+    const found: FieldErrors<RegisterField> = {};
+    for (const key of FIELD_ORDER) found[key] = check(key);
+    setErrors(found);
+    if (hasErrors(found)) {
+      focusFirstError(FIELD_ORDER, found);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await apiPost<SessionResponse>('customer_register', {
+        name: values.name.trim(),
+        email: values.email.trim(),
+        phone: normalizePhone(values.phone),
+        password: values.password,
+      });
+      // Akun langsung aktif: simpan sesi (auto-login) lalu lanjut ke tujuan
+      setSession(res.token, res.user);
+      navigate(pathAfterLogin(res.user.role, next), { replace: true });
+    } catch (err) {
+      setSubmitting(false);
+      if (err instanceof ApiError && err.fieldErrors) {
+        const serverErrors: FieldErrors<RegisterField> = {};
+        for (const key of FIELD_ORDER) {
+          if (err.fieldErrors[key]) serverErrors[key] = err.fieldErrors[key];
+        }
+        if (hasErrors(serverErrors)) {
+          setErrors(serverErrors);
+          setEmailTaken(err.code === 'EMAIL_TAKEN');
+          focusFirstError(FIELD_ORDER, serverErrors);
+          return;
+        }
+      }
+      setFormError(errorMessage(err, 'Gagal mendaftar. Silakan coba lagi.'));
+    }
+  };
+
+  const withNext = (path: string) => (next ? `${path}?next=${encodeURIComponent(nextPath)}` : path);
+
+  return (
+    <AuthLayout
+      title="Buat akun pembeli"
+      subtitle={
+        fromOrder
+          ? 'Daftar gratis untuk melanjutkan pemesanan template Anda.'
+          : 'Daftar gratis untuk memesan template dan mengelola situs Anda.'
+      }
+      entrance={navState?.authTab ? 'tab' : 'page'}
+      tabs={
+        <AuthTabs
+          label="Masuk atau daftar akun pembeli"
+          items={[
+            { key: 'login', label: 'Masuk', to: withNext('/masuk') },
+            { key: 'register', label: 'Daftar', to: withNext('/daftar') },
+          ]}
+          active="register"
+          from={navState?.authTab}
+        />
+      }
+      footer={
+        <AuthSwitch
+          text="Sudah punya akun?"
+          to={withNext('/masuk')}
+          state={{ authTab: 'register' } satisfies AuthNavState}
+          replace
+        >
+          Masuk di sini
+        </AuthSwitch>
+      }
+    >
+      <AnimatePresence initial={false}>
+        {formError && (
+          <AuthAlert key={formError} tone="danger" onClose={() => setFormError(null)}>
+            {formError}
+          </AuthAlert>
+        )}
+      </AnimatePresence>
+
+      <form onSubmit={onSubmit} noValidate aria-busy={submitting || undefined} className="space-y-4 sm:space-y-5">
+        <AuthField
+          {...field('name')}
+          label="Nama lengkap"
+          icon={User}
+          type="text"
+          autoComplete="name"
+          enterKeyHint="next"
+          placeholder="mis. Budi Santoso"
+        />
+
+        <div>
+          <AuthField
+            {...field('email')}
+            label="Email"
+            icon={Mail}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="next"
+            placeholder="nama@email.com"
+          />
+          {emailTaken && (
+            <p className="mt-1.5 text-xs text-muted">
+              Sudah pernah mendaftar?{' '}
+              <Link
+                to={withNext('/masuk')}
+                state={{ authTab: 'register', email: values.email.trim() } satisfies AuthNavState}
+                replace
+                className="font-semibold text-primary underline-offset-4 hover:text-primary-hover hover:underline"
+              >
+                Masuk dengan email ini
+              </Link>
+            </p>
+          )}
+        </div>
+
+        <AuthField
+          {...field('phone')}
+          label="Nomor HP/WhatsApp"
+          icon={Phone}
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          enterKeyHint="next"
+          placeholder="mis. 081234567890"
+          help="Dipakai tim kami untuk konfirmasi pesanan."
+        />
+
+        <AuthField
+          {...field('password')}
+          password
+          label="Kata sandi"
+          icon={Lock}
+          autoComplete="new-password"
+          enterKeyHint="next"
+          placeholder="Buat kata sandi"
+          help="Minimal 8 karakter."
+        />
+
+        <AuthField
+          {...field('password_confirm')}
+          password
+          label="Ulangi kata sandi"
+          icon={LockKeyhole}
+          autoComplete="new-password"
+          enterKeyHint="go"
+          placeholder="Ketik ulang kata sandi"
+        />
+
+        <AuthSubmit loading={submitting} loadingText="Membuat akun...">
+          Buat akun
+        </AuthSubmit>
+      </form>
+    </AuthLayout>
+  );
+}

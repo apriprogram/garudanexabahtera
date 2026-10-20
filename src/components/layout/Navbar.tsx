@@ -1,322 +1,508 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, Sun, Moon, Menu, X, ChevronDown, Globe2,
-  ShoppingCart, GraduationCap, Users2, ShieldCheck, HeartHandshake,
-  Briefcase, MessageSquare, Info
+import {
+  Menu, X, ChevronDown, Globe, Globe2, ArrowRight, UserRound,
+  ShoppingCart, GraduationCap, Users2, ShieldCheck, HeartHandshake, Moon,
+  Briefcase, MessageSquare, Info, BookOpen, Layout, Link as LinkIcon, Smartphone, Monitor, Zap,
+  type LucideIcon,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { getHiddenSections, useSiteSettings } from '../../hooks/useSiteSettings';
+import { useNavbarMenus, type NavbarMenuRow } from '../../hooks/useNavbarMenus';
+import { useSectionSpy } from '../../hooks/useSectionSpy';
+import { getToken } from '../../lib/auth';
+import { BrandLogo } from '../ui/LogoMark';
+import { SmartLink } from './SmartLink';
 
+interface MenuEntry {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  href: string;
+}
+
+/** Item menu utama: tautan biasa, atau dropdown bila punya submenu */
+interface NavItem {
+  key: string;
+  label: string;
+  href: string;
+  children: MenuEntry[];
+}
+
+// Nama ikon dari admin "Navbar Manager" (teks bebas) → komponen; nama lain memakai Globe2
+const ICONS: Record<string, LucideIcon> = {
+  Globe, Globe2, Layout, Info, Link: LinkIcon, MessageSquare, Briefcase, Users2, ShieldCheck,
+  GraduationCap, ShoppingCart, Smartphone, Monitor, Zap, Moon, HeartHandshake, BookOpen,
+};
+
+// Anchor section lama → section baru (menu lama di database tetap mengarah ke tempat yang benar)
+const ANCHOR_ALIAS: Record<string, string> = { '#products': '#templates', '#portfolio': '#projects' };
+// Section yang sudah dihapus dari beranda: tautannya disembunyikan
+const REMOVED_SECTIONS = new Set(['pricing']);
+
+const normalizeHref = (raw: string | null | undefined): string => {
+  const href = (raw || '').trim() || '#';
+  const hash = href.startsWith('/#') ? href.slice(1) : href;
+  return ANCHOR_ALIAS[hash.toLowerCase()] ?? hash;
+};
+
+const bySortOrder = (a: NavbarMenuRow, b: NavbarMenuRow) => a.sort_order - b.sort_order || a.id - b.id;
+
+/** Baris datar navbar_menus → menu utama + submenu (1 level), teks sesuai bahasa aktif */
+const toNavItems = (rows: NavbarMenuRow[], en: boolean): NavItem[] => {
+  const label = (row: NavbarMenuRow) => (en && row.label_en) || row.label_id;
+  return rows
+    .filter((row) => row.parent_id === null)
+    .sort(bySortOrder)
+    .map((parent) => ({
+      key: `menu-${parent.id}`,
+      label: label(parent),
+      href: normalizeHref(parent.url),
+      children: rows
+        .filter((row) => row.parent_id === parent.id)
+        .sort(bySortOrder)
+        .map((child) => {
+          const Icon = ICONS[child.icon] ?? Globe2;
+          return {
+            icon: <Icon />,
+            title: label(child),
+            desc: (en && child.description_en) || child.description_id || '',
+            href: normalizeHref(child.url),
+          };
+        }),
+    }));
+};
+
+/** Peran akun yang sedang login (dari sesi di localStorage), atau null bila belum login / sesi habis. */
+const readSessionRole = (): string | null => {
+  try {
+    if (!getToken()) return null;
+    const user = JSON.parse(localStorage.getItem('currentUser') || 'null') as { role?: unknown } | null;
+    return typeof user?.role === 'string' ? user.role : null;
+  } catch {
+    return null;
+  }
+};
+
+const subscribeSession = (onChange: () => void) => {
+  window.addEventListener('storage', onChange);
+  return () => window.removeEventListener('storage', onChange);
+};
+
+/** id section dari href `#templates` (null untuk tautan lain). */
+const anchorId = (href: string) => (href.startsWith('#') && href.length > 1 ? href.slice(1) : null);
+
+interface Pill {
+  left: number;
+  width: number;
+  visible: boolean;
+}
+
+/**
+ * Navbar publik gaya BELAJAR CPNS: transparan di puncak halaman, jadi putih kaca dengan garis rambut saat digulir
+ * (tanpa shadow). Menu di tengah dengan sorotan pill yang meluncur mengikuti hover, titik biru menandai section aktif
+ * di beranda, bar progres baca tipis di bawah. Tinggi 64px (HP) / 72px (≥ 1024px): halaman lain memberi
+ * `pt-16 lg:pt-[72px]` pada konten pertamanya.
+ */
 const Navbar: React.FC = () => {
-  const { theme, toggleTheme, language, setLanguage, isSearchActive, toggleSearch } = useStore();
+  const { language, setLanguage } = useStore();
   const { t } = useTranslation();
+  // Berlangganan perubahan rute: navbar dirender ulang saat pindah halaman (tombol akun ikut diperbarui)
+  const { pathname } = useLocation();
+  const { settings } = useSiteSettings();
+  const { menus, loaded: menusLoaded } = useNavbarMenus();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [scrolled, setScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
+  const [pill, setPill] = useState<Pill>({ left: 0, width: 0, visible: false });
+  const barRef = useRef<HTMLSpanElement>(null);
+  // Dibaca ulang tiap render (mis. setelah pindah halaman) dan saat login/logout di tab lain
+  const role = useSyncExternalStore(subscribeSession, readSessionRole, () => null);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+  // Latar & bar progres mengikuti posisi gulir (rAF agar ringan)
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      setScrolled(window.scrollY > 8);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (barRef.current) barRef.current.style.transform = `scaleX(${max > 0 ? Math.min(1, window.scrollY / max) : 0})`;
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    raf = requestAnimationFrame(update);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // Menu dari admin (Navbar Manager); bila kosong/gagal dimuat, pakai menu bawaan
+  const en = language === 'en';
+  const defaultItems: NavItem[] = [
+    { key: 'templates', label: t('nav-templates'), href: '#templates', children: [] },
+    { key: 'projects', label: t('nav-projects'), href: '#projects', children: [] },
+    { key: 'process', label: t('nav-process'), href: '#process', children: [] },
+    { key: 'faq', label: 'FAQ', href: '#faq', children: [] },
+  ];
+  const source = !menusLoaded ? [] : menus.length > 0 ? toNavItems(menus, en) : defaultItems;
+
+  // Tautan ke section yang disembunyikan admin (setting disabled_sections) atau sudah dihapus ikut disembunyikan
+  const hidden = getHiddenSections(settings);
+  const visible = (href: string) => {
+    if (!href.startsWith('#')) return true;
+    const id = href.slice(1).toLowerCase();
+    return !REMOVED_SECTIONS.has(id) && !hidden.has(id);
   };
+  const navItems = source
+    .map((item) => ({ ...item, children: item.children.filter((entry) => visible(entry.href)) }))
+    .filter((item) => item.children.length > 0 || visible(item.href));
+
+  // Scroll-spy hanya di beranda: titik biru di bawah menu section yang sedang dibaca
+  const onHome = pathname === '/';
+  const spyIds = navItems.map((item) => anchorId(item.href)).filter((id): id is string => Boolean(id));
+  const { activeId } = useSectionSpy(spyIds, { enabled: onHome });
+
+  // Menu ringkas (≤ 5 item) sudah muat di layar 1024px; menu panjang baru tampil penuh di ≥ 1280px
+  const compact = navItems.length <= 5;
+  const desktopNav = compact ? 'lg:flex' : 'xl:flex';
+  const mobileOnly = compact ? 'lg:hidden' : 'xl:hidden';
+
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setIsMenuOpen(false);
+    const onResize = () => window.innerWidth >= (compact ? 1024 : 1280) && setIsMenuOpen(false);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [isMenuOpen, compact]);
 
   const toggleLanguage = () => {
     const newLang = language === 'id' ? 'en' : 'id';
     setLanguage(newLang);
-    
-    // Google Translate cookie-based logic
-    // Format: /source_lang/target_lang
+
+    // Google Translate memakai cookie googtrans berformat /bahasa_asal/bahasa_tujuan
     const gtValue = `/id/${newLang}`;
     document.cookie = `googtrans=${gtValue}; path=/`;
     document.cookie = `googtrans=${gtValue}; path=/; domain=${window.location.hostname}`;
-    
-    // Reload to apply translation
+
+    // Muat ulang agar terjemahan diterapkan
     window.location.reload();
   };
 
+  const account =
+    role === 'customer'
+      ? { to: '/akun', label: t('nav-account') }
+      : role === 'admin' || role === 'user'
+        ? { to: '/admin', label: t('nav-admin') }
+        : { to: '/masuk', label: t('nav-login') };
+
+  // Sorotan hover meluncur: diukur dari <li> saat hover/fokus (tanpa efek tata letak)
+  const showPill = (el: HTMLElement | null) => {
+    const li = el?.closest('li');
+    if (li) setPill({ left: li.offsetLeft, width: li.offsetWidth, visible: true });
+  };
+  const hidePill = () => setPill((p) => ({ ...p, visible: false }));
+
+  const closeMenu = () => setIsMenuOpen(false);
+  const langLabel = language === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia';
+
   return (
-    <motion.nav 
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed top-0 w-full z-[1000] bg-bg-dark/60 backdrop-blur-xl border-b border-white/5 transition-all duration-500 light-theme:bg-slate-50/80 light-theme:border-slate-300"
+    <header
+      className={`fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow] duration-300 ${
+        isMenuOpen
+          ? 'bg-canvas shadow-[0_1px_0_var(--site-line)]'
+          : scrolled
+            ? 'bg-canvas/80 shadow-[0_1px_0_var(--site-line)] backdrop-blur-xl backdrop-saturate-150'
+            : 'bg-transparent'
+      }`}
     >
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-8 flex justify-between items-center h-[72px]">
-        {/* Left Side: Menu & Logo */}
-        <div className="flex items-center gap-2 sm:gap-6">
-          <button 
-            className="lg:hidden p-2 text-white/70 hover:text-white transition-colors light-theme:text-slate-600 light-theme:hover:text-slate-900"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+      <nav aria-label="Navigasi utama" className="container-site flex h-16 items-center gap-3 lg:h-[72px]">
+        {/* Kiri: logo */}
+        <Link
+          to="/"
+          onClick={closeMenu}
+          className="flex min-w-0 shrink items-center rounded-full"
+          aria-label="Garuda Nexa Bahtera, ke beranda"
+        >
+          <BrandLogo fullFrom="xl" />
+        </Link>
 
-          <a href="/" className="flex items-center gap-2 sm:gap-3 no-underline group">
-            <img 
-              src="/assets/logo/logogarudanexa.png" 
-              alt="Logo" 
-              className="h-9 sm:h-10 w-auto transition-all duration-300 brightness-0 invert light-theme:brightness-100 light-theme:invert-0" 
-            />
-            <div className="hidden sm:block font-semibold text-lg sm:text-xl text-white light-theme:text-slate-900 tracking-tight group-hover:text-[#FFD700] light-theme:group-hover:text-primary transition-colors duration-300">Garuda Nexa Bahtera</div>
-          </a>
-        </div>
-
-        {/* Center: Desktop Navigation */}
-        <ul className="hidden lg:flex gap-8 items-center">
-          <li 
-            className="relative"
-            onMouseEnter={() => setActiveDropdown('products')}
-            onMouseLeave={() => setActiveDropdown(null)}
-          >
-            <button className="flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-white transition-all light-theme:text-slate-600 light-theme:hover:text-primary cursor-pointer py-6">
-              {t('nav-products')}
-              <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${activeDropdown === 'products' ? 'rotate-180' : ''}`} />
-            </button>
-            
-            <AnimatePresence>
-              {activeDropdown === 'products' && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute top-full left-0 pt-0 pointer-events-auto"
+        {/* Tengah: navigasi desktop + sorotan hover */}
+        <ul className={`relative hidden flex-1 items-center justify-center gap-1 ${desktopNav}`} onMouseLeave={hidePill}>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 h-9 -translate-y-1/2 rounded-full bg-fg/[0.06] transition-[left,width,opacity] duration-300 ease-calm"
+            style={{ left: pill.left, width: pill.width, opacity: pill.visible ? 1 : 0 }}
+          />
+          {navItems.map((item) => {
+            const id = anchorId(item.href);
+            const current = Boolean(id) && id === activeId;
+            return item.children.length > 0 ? (
+              <DropdownItem
+                key={item.key}
+                id={item.key}
+                label={item.label}
+                entries={item.children}
+                wide={item.children.length > 4}
+                active={activeDropdown}
+                setActive={setActiveDropdown}
+                onHover={showPill}
+                onLeave={hidePill}
+              />
+            ) : (
+              <li key={item.key} className="relative">
+                <SmartLink
+                  href={item.href}
+                  onMouseEnter={(e) => showPill(e.currentTarget)}
+                  onFocus={(e) => showPill(e.currentTarget)}
+                  onBlur={hidePill}
+                  aria-current={current ? 'location' : undefined}
+                  className={`relative z-10 inline-flex h-9 items-center rounded-full px-3.5 text-[14px] font-medium transition-colors duration-200 ${
+                    current ? 'text-fg' : 'text-muted hover:text-fg'
+                  }`}
                 >
-                  <div className="bg-[#121214] rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden border border-white/5 light-theme:bg-white light-theme:border-slate-200 min-w-[640px]">
-                    <div className="grid grid-cols-12">
-                      <div className="col-span-12 p-6 grid grid-cols-2 gap-2">
-                        <MenuItem icon={<Globe2 className="w-5 h-5" />} title="Web Development" desc="High-performance websites" />
-                        <MenuItem icon={<ShoppingCart className="w-5 h-5" />} title="POS System" desc="Modern retail solutions" />
-                        <MenuItem icon={<GraduationCap className="w-5 h-5" />} title="I-School" desc="Complete school management" />
-                        <MenuItem icon={<Users2 className="w-5 h-5" />} title="Attendance" desc="Face-recog & GPS systems" />
-                        <MenuItem icon={<Moon className="w-5 h-5" />} title="I-Santri" desc="Islamic boarding system" />
-                        <MenuItem icon={<ShieldCheck className="w-5 h-5" />} title="Enterprise" desc="Custom business software" />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </li>
-
-
-          <li><a href="#portfolio" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors light-theme:text-slate-600 light-theme:hover:text-primary py-6 inline-block">{t('nav-portfolio')}</a></li>
-          
-          <li 
-            className="relative"
-            onMouseEnter={() => setActiveDropdown('company')}
-            onMouseLeave={() => setActiveDropdown(null)}
-          >
-            <button className="flex items-center gap-1.5 text-sm font-semibold text-slate-400 hover:text-white transition-all light-theme:text-slate-600 light-theme:hover:text-primary cursor-pointer py-6">
-              Company
-              <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${activeDropdown === 'company' ? 'rotate-180' : ''}`} />
-            </button>
-            
-            <AnimatePresence>
-              {activeDropdown === 'company' && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute top-full right-0 pt-0 pointer-events-auto"
-                >
-                  <div className="bg-[#121214] rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden border border-white/5 light-theme:bg-white light-theme:border-slate-200 min-w-[280px]">
-                    <div className="p-4 grid grid-cols-1 gap-1">
-                      <MenuItem icon={<Info className="w-4 h-4" />} title="About Us" desc="Our story & mission" />
-                      <MenuItem icon={<Briefcase className="w-4 h-4" />} title="Careers" desc="Join our talent team" />
-                      <MenuItem icon={<MessageSquare className="w-4 h-4" />} title="Contact" desc="Get in touch with us" />
-                      <MenuItem icon={<HeartHandshake className="w-4 h-4" />} title="Partnership" desc="Let's grow together" />
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </li>
+                  {item.label}
+                </SmartLink>
+                {/* Titik penanda section aktif */}
+                <span
+                  aria-hidden
+                  className={`pointer-events-none absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary transition-all duration-300 ${
+                    current ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+                  }`}
+                />
+              </li>
+            );
+          })}
         </ul>
 
-        {/* Right Side: Actions */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className="hidden lg:flex items-center border border-white/10 rounded-xl px-4 py-2 gap-3 transition-all duration-300 group bg-white/5 focus-within:bg-white/10 w-52 light-theme:bg-transparent light-theme:border-slate-500 light-theme:hover:border-slate-800 light-theme:focus-within:border-slate-800">
-            <Search className="w-4 h-4 text-white/50 group-focus-within:text-white light-theme:text-slate-500 light-theme:group-focus-within:text-slate-900" />
-            <input 
-              type="text" 
-              placeholder="Search" 
-              className="bg-transparent border-none text-white text-sm outline-none w-full placeholder:text-white/40 light-theme:text-slate-900 light-theme:placeholder:text-slate-600"
-              value={searchQuery}
-              onChange={handleSearch}
-            />
-          </div>
-
-          <button 
-            className="lg:hidden p-2 text-white/70 hover:text-white transition-all light-theme:text-slate-600 light-theme:hover:text-slate-900"
-            onClick={() => { toggleSearch(); setIsMenuOpen(false); }}
-          >
-            <Search className="w-5 h-5" />
-          </button>
-
-          <button 
+        {/* Kanan: bahasa, akun, CTA, tombol menu HP */}
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
             onClick={toggleLanguage}
-            className="p-2 sm:p-2.5 rounded-xl bg-transparent sm:bg-white/5 border border-transparent sm:border-white/10 text-white/70 hover:text-white transition-all light-theme:bg-transparent light-theme:border-transparent sm:light-theme:border-slate-500 light-theme:hover:border-slate-800 light-theme:text-slate-700 light-theme:hover:text-slate-900 light-theme:hover:bg-transparent flex items-center gap-1"
+            className="hidden h-10 items-center gap-1.5 rounded-full px-3 text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:inline-flex"
+            aria-label={langLabel}
+            title={langLabel}
           >
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <path
-                  d="M12.913 17H20.087M12.913 17L11 21M12.913 17L15.7783 11.009C16.0092 10.5263 16.1246 10.2849 16.2826 10.2086C16.4199 10.1423 16.5801 10.1423 16.7174 10.2086C16.8754 10.2849 16.9908 10.5263 17.2217 11.009L20.087 17M20.087 17L22 21M2 5H8M8 5H11.5M8 5V3M11.5 5H14M11.5 5C11.0039 7.95729 9.85259 10.6362 8.16555 12.8844M10 14C9.38747 13.7248 8.76265 13.3421 8.16555 12.8844M8.16555 12.8844C6.81302 11.8478 5.60276 10.4266 5 9M8.16555 12.8844C6.56086 15.0229 4.47143 16.7718 2 18"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-              />
-            </svg>
-            <span className="text-[10px] font-bold uppercase">{language}</span>
+            <Globe2 className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+            <span className="text-xs font-semibold uppercase">{language}</span>
           </button>
 
-          <button 
-            onClick={toggleTheme}
-            className="p-2 sm:p-2.5 rounded-xl bg-transparent sm:bg-white/5 border border-transparent sm:border-white/10 text-white/70 hover:text-white transition-all light-theme:bg-transparent light-theme:border-transparent sm:light-theme:border-slate-500 light-theme:hover:border-slate-800 light-theme:text-slate-700 light-theme:hover:text-slate-900 light-theme:hover:bg-transparent"
+          <Link
+            to={account.to}
+            className="hidden h-10 items-center gap-2 rounded-full px-4 text-[14px] font-medium text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:inline-flex"
           >
-            {theme === 'dark' ? <Sun className="w-5 h-5 sm:w-4.5 sm:h-4.5" /> : <Moon className="w-5 h-5 sm:w-4.5 sm:h-4.5" />}
-          </button>
+            {role && <UserRound className="h-4 w-4 text-primary" strokeWidth={2} aria-hidden />}
+            {account.label}
+          </Link>
 
-          <Link to="/auth?type=login" className="text-sm font-semibold text-white hover:text-[#FFD700] light-theme:hover:text-primary transition-colors light-theme:text-slate-900 whitespace-nowrap ml-2 sm:ml-4">Log in</Link>
-          <button className="btn btn-primary hidden lg:inline-flex px-6 py-2.5 ml-2">{t('nav-consult')}</button>
+          <SmartLink href="#kontak" className="btn btn-primary btn-sm group sm:h-11 sm:px-5 sm:text-sm">
+            <span className="sm:hidden">{t('nav-consult-short')}</span>
+            <span className="max-sm:hidden">{t('nav-consult')}</span>
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 max-lg:hidden" aria-hidden />
+          </SmartLink>
+
+          <button
+            type="button"
+            className={`relative -mr-1.5 flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors after:absolute after:-inset-1 hover:bg-fg/[0.06] sm:mr-0 sm:h-10 sm:w-10 sm:after:hidden ${mobileOnly}`}
+            onClick={() => setIsMenuOpen((open) => !open)}
+            aria-label={isMenuOpen ? 'Tutup menu' : 'Buka menu'}
+            aria-expanded={isMenuOpen}
+            aria-controls="menu-hp"
+          >
+            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+      </nav>
+
+      {/* Menu HP: lapisan di bawah navbar (tidak menggeser tata letak), membuka dengan animasi tinggi */}
+      <div
+        id="menu-hp"
+        className={`absolute inset-x-0 top-full grid transition-[grid-template-rows] duration-300 ease-out ${mobileOnly} ${
+          isMenuOpen ? 'grid-rows-[1fr] border-b border-line bg-canvas' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="overflow-hidden" inert={!isMenuOpen}>
+          <ul className="container-site max-h-[calc(100svh-4rem)] space-y-1 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pt-1">
+            {navItems.map((item, index) => {
+              const id = anchorId(item.href);
+              const current = Boolean(id) && id === activeId;
+              return (
+                <li
+                  key={item.key}
+                  className={`transition-all duration-300 ${isMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
+                  style={{ transitionDelay: isMenuOpen ? `${index * 40}ms` : '0ms' }}
+                >
+                  {item.children.length > 0 ? (
+                    <MobileGroup id={item.key} label={item.label} entries={item.children} open={mobileSubmenu} setOpen={setMobileSubmenu} onNavigate={closeMenu} />
+                  ) : (
+                    <SmartLink
+                      href={item.href}
+                      onClick={closeMenu}
+                      aria-current={current ? 'location' : undefined}
+                      className={`flex min-h-11 items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-fg transition-colors hover:bg-alt ${current ? 'bg-alt' : ''}`}
+                    >
+                      {item.label}
+                      <ArrowRight className="h-4 w-4 text-subtle" aria-hidden />
+                    </SmartLink>
+                  )}
+                </li>
+              );
+            })}
+            <li className="sm:hidden">
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                className="flex min-h-11 w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left text-sm font-medium text-fg transition-colors hover:bg-alt"
+              >
+                <Globe2 className="h-4 w-4 text-subtle" aria-hidden />
+                {language === 'id' ? 'English' : 'Bahasa Indonesia'}
+                <span className="ml-auto rounded-full bg-alt px-2 py-0.5 text-[11px] font-semibold uppercase text-muted">{language}</span>
+              </button>
+            </li>
+            <li className="grid grid-cols-2 gap-2 border-t border-line pt-3 sm:hidden">
+              <Link to={account.to} onClick={closeMenu} className="btn btn-outline">
+                {role && <UserRound className="h-4 w-4 text-primary" aria-hidden />}
+                {account.label}
+              </Link>
+              <SmartLink href="#kontak" onClick={closeMenu} className="btn btn-primary">
+                {t('nav-consult')}
+              </SmartLink>
+            </li>
+          </ul>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Bar progres baca (hanya saat digulir) */}
+      <span
+        ref={barRef}
+        aria-hidden
+        className={`pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-primary transition-opacity duration-300 ${
+          scrolled && !isMenuOpen ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+    </header>
+  );
+};
+
+const DropdownItem: React.FC<{
+  id: string;
+  label: string;
+  entries: MenuEntry[];
+  wide?: boolean;
+  active: string | null;
+  setActive: (id: string | null) => void;
+  onHover: (el: HTMLElement) => void;
+  onLeave: () => void;
+}> = ({ id, label, entries, wide, active, setActive, onHover, onLeave }) => {
+  const open = active === id;
+  return (
+    <li
+      className="relative"
+      onMouseEnter={(e) => {
+        setActive(id);
+        onHover(e.currentTarget);
+      }}
+      onMouseLeave={() => setActive(null)}
+    >
+      <button
+        type="button"
+        onClick={() => setActive(open ? null : id)}
+        onFocus={(e) => onHover(e.currentTarget)}
+        onBlur={onLeave}
+        aria-expanded={open}
+        className={`relative z-10 inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-[14px] font-medium transition-colors hover:text-fg ${open ? 'text-fg' : 'text-muted'}`}
+      >
+        {label}
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+      </button>
+
       <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="lg:hidden bg-bg-dark border-b border-white/5 overflow-hidden light-theme:bg-slate-50 light-theme:border-slate-300"
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className={`absolute top-full z-20 pt-3 ${wide ? 'left-0' : 'left-1/2 -translate-x-1/2'}`}
           >
-            <ul className="flex flex-col p-6 gap-2">
-              <li>
-                <button 
-                  onClick={() => setMobileSubmenu(mobileSubmenu === 'products' ? null : 'products')}
-                  className="w-full flex items-center justify-between py-4 text-base font-semibold text-slate-400 hover:text-white light-theme:text-slate-600 light-theme:hover:text-slate-900 border-b border-white/5 light-theme:border-slate-100"
+            {/* Lapisan melayang: satu-satunya tempat shadow-float di navbar */}
+            <div className={`rounded-[20px] bg-surface p-2 shadow-float ring-1 ring-inset ring-line ${wide ? 'grid w-[600px] grid-cols-2 gap-1' : 'grid w-[300px] gap-1'}`}>
+              {entries.map((entry, index) => (
+                <SmartLink
+                  key={`${index}-${entry.title}`}
+                  href={entry.href}
+                  onClick={() => setActive(null)}
+                  className="group/item flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-alt"
                 >
-                  {t('nav-products')}
-                  <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${mobileSubmenu === 'products' ? 'rotate-180' : ''}`} />
-                </button>
-                <AnimatePresence>
-                  {mobileSubmenu === 'products' && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden bg-white/5 rounded-xl mt-2 light-theme:bg-slate-50"
-                    >
-                      <div className="p-2 grid grid-cols-1 gap-1">
-                        <MobileMenuItem icon={<Globe2 className="w-4 h-4" />} title="Web Development" onClick={() => setIsMenuOpen(false)} />
-                        <MobileMenuItem icon={<ShoppingCart className="w-4 h-4" />} title="POS System" onClick={() => setIsMenuOpen(false)} />
-                        <MobileMenuItem icon={<GraduationCap className="w-4 h-4" />} title="I-School" onClick={() => setIsMenuOpen(false)} />
-                        <MobileMenuItem icon={<Users2 className="w-4 h-4" />} title="Absensi Digital" onClick={() => setIsMenuOpen(false)} />
-                        <MobileMenuItem icon={<Moon className="w-4 h-4" />} title="I-Santri" onClick={() => setIsMenuOpen(false)} />
-                        <MobileMenuItem icon={<ShieldCheck className="w-4 h-4" />} title="Enterprise Software" onClick={() => setIsMenuOpen(false)} />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </li>
-
-
-              <li><a href="#portfolio" onClick={() => setIsMenuOpen(false)} className="block py-4 text-base font-semibold text-slate-400 hover:text-white light-theme:text-slate-600 light-theme:hover:text-slate-900 border-b border-white/5 light-theme:border-slate-100">{t('nav-portfolio')}</a></li>
-              
-              <li>
-                <button 
-                  onClick={() => setMobileSubmenu(mobileSubmenu === 'company' ? null : 'company')}
-                  className="w-full flex items-center justify-between py-4 text-base font-semibold text-slate-400 hover:text-white light-theme:text-slate-600 light-theme:hover:text-slate-900 border-b border-white/5 light-theme:border-slate-100"
-                >
-                  Company
-                  <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${mobileSubmenu === 'company' ? 'rotate-180' : ''}`} />
-                </button>
-                <AnimatePresence>
-                  {mobileSubmenu === 'company' && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden bg-white/5 rounded-xl mt-2 light-theme:bg-slate-50"
-                    >
-                      <div className="p-2 grid grid-cols-1 gap-1">
-                        <MobileMenuItem icon={<Info className="w-4 h-4" />} title="About Us" onClick={() => setIsMenuOpen(false)} />
-                        <MobileMenuItem icon={<Briefcase className="w-4 h-4" />} title="Careers" onClick={() => setIsMenuOpen(false)} />
-                        <MobileMenuItem icon={<MessageSquare className="w-4 h-4" />} title="Contact" onClick={() => setIsMenuOpen(false)} />
-                        <MobileMenuItem icon={<HeartHandshake className="w-4 h-4" />} title="Partnership" onClick={() => setIsMenuOpen(false)} />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </li>
-
-              <li className="mt-4 px-2">
-                <button className="btn btn-primary w-full py-2.5 text-sm">{t('nav-consult')}</button>
-              </li>
-            </ul>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Mobile Search Bar — slides down below navbar */}
-      <AnimatePresence>
-        {isSearchActive && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="lg:hidden bg-bg-dark border-b border-white/5 overflow-hidden light-theme:bg-slate-50 light-theme:border-slate-300"
-          >
-            <div className="px-4 pb-4">
-              <div className="flex items-center border border-white/10 rounded-xl px-4 py-2.5 gap-3 bg-white/5 light-theme:border-slate-500 light-theme:bg-transparent">
-                <Search className="w-4 h-4 text-white/50 light-theme:text-slate-500" />
-                <input 
-                  type="text" 
-                  placeholder="Search" 
-                  className="bg-transparent border-none text-white text-sm outline-none w-full placeholder:text-white/40 light-theme:text-slate-900 light-theme:placeholder:text-slate-600"
-                  value={searchQuery}
-                  onChange={handleSearch}
-                  autoFocus
-                />
-              </div>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-primary transition-colors group-hover/item:bg-primary group-hover/item:text-white [&>svg]:h-[18px] [&>svg]:w-[18px]">
+                    {entry.icon}
+                  </span>
+                  <span className="pt-0.5">
+                    <span className="block text-[13px] font-semibold text-fg">{entry.title}</span>
+                    <span className="block text-xs leading-snug text-subtle">{entry.desc}</span>
+                  </span>
+                </SmartLink>
+              ))}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-    </motion.nav>
+    </li>
   );
 };
 
-const MenuItem: React.FC<{ icon: React.ReactNode, title: string, desc: string }> = ({ icon, title, desc }) => {
+const MobileGroup: React.FC<{
+  id: string;
+  label: string;
+  entries: MenuEntry[];
+  open: string | null;
+  setOpen: (id: string | null) => void;
+  onNavigate: () => void;
+}> = ({ id, label, entries, open, setOpen, onNavigate }) => {
+  const isOpen = open === id;
   return (
-    <a href="#products" className="flex items-start gap-4 p-4 rounded-xl hover:bg-white/5 transition-all duration-300 light-theme:hover:bg-slate-100 group/item">
-      <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 transition-all duration-300 light-theme:bg-slate-100 light-theme:text-slate-500 group-hover/item:text-[#FFD700] light-theme:group-hover/item:text-primary group-hover/item:bg-[#FFD700]/10 light-theme:group-hover/item:bg-primary/10`}>
-        {icon}
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen(isOpen ? null : id)}
+        aria-expanded={isOpen}
+        className="flex min-h-11 w-full items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-fg transition-colors hover:bg-alt"
+      >
+        {label}
+        <ChevronDown className={`h-4 w-4 text-subtle transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <div className="overflow-hidden" inert={!isOpen}>
+          <div className="ml-4 grid gap-0.5 border-l border-line py-1 pl-3">
+            {entries.map((entry, index) => (
+              <SmartLink
+                key={`${index}-${entry.title}`}
+                href={entry.href}
+                onClick={onNavigate}
+                className="flex min-h-11 items-center gap-3 rounded-lg px-2 text-[13px] font-medium text-muted hover:bg-alt hover:text-fg [&>span>svg]:h-4 [&>span>svg]:w-4"
+              >
+                <span className="text-primary">{entry.icon}</span>
+                {entry.title}
+                <ArrowRight className="ml-auto h-3.5 w-3.5 text-subtle" />
+              </SmartLink>
+            ))}
+          </div>
+        </div>
       </div>
-      <div className="pt-0.5">
-        <div className="text-[13px] font-bold text-white group-hover/item:text-[#FFD700] transition-colors light-theme:text-slate-900 light-theme:group-hover/item:text-primary">{title}</div>
-        <div className="text-[11px] text-slate-500 group-hover/item:text-slate-400 transition-colors leading-snug light-theme:text-slate-400">{desc}</div>
-      </div>
-    </a>
+    </div>
   );
 };
-
-const MobileMenuItem: React.FC<{ icon: React.ReactNode, title: string, onClick: () => void }> = ({ icon, title, onClick }) => (
-  <a 
-    href="#products" 
-    onClick={onClick}
-    className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors light-theme:hover:bg-slate-200 group"
-  >
-    <div className="text-slate-500 group-hover:text-[#FFD700] light-theme:group-hover:text-primary transition-colors">
-      {icon}
-    </div>
-    <span className="text-sm font-medium text-slate-400 group-hover:text-[#FFD700] light-theme:text-slate-600 light-theme:group-hover:text-primary transition-colors">{title}</span>
-  </a>
-);
 
 export default Navbar;

@@ -1,4 +1,10 @@
 <?php
+// One-off maintenance script: run it from a shell (php migrate_paths.php), never over the web
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
 // Script migrasi: Update path gambar lama ke path baru di database
 header("Content-Type: text/html; charset=utf-8");
 

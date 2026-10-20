@@ -1,0 +1,354 @@
+/* Gaya panel admin (gaya "Calm Workspace" BELAJAR CPNS).
+   Diimpor dari src/index.css. Token website ada di index.css. */
+
+/* Palet panel admin. Aksen `cobalt` = skala brand Garuda Nexa (SPEC §1, #211FFE) supaya panel admin,
+   website publik, dan akun pembeli memakai satu warna brand:
+   cobalt = brand-600 (aksi/fokus), cobalt-600 = brand-700 (hover), cobalt-700 = brand-800 (aktif/teks di tint).
+   Mode gelap menaikkan nada cobalt sedikit (lihat .admin-panel) agar ikon & cincin fokus tetap ≥ 3:1. */
+@theme static {
+  --color-ghost: #F2F3F6;
+  --color-obsidian: #181D25;
+  --color-obsidian-800: #252B35;
+  --color-obsidian-600: #4A5260;
+  --color-cobalt: #211FFE;
+  --color-cobalt-50: #EEEEFF;
+  --color-cobalt-100: #DFDEFF;
+  --color-cobalt-600: #1A18D4;
+  --color-cobalt-700: #1614A8;
+  --color-mist: #C3CED7;
+  --color-mist-50: #F5F7F9;
+  --color-mist-100: #E7ECF0;
+  --color-mist-500: #8A99A6;
+  --color-mist-700: #5B6875;
+  --color-mint: #70FC8E;
+  --color-mint-50: #ECFFF0;
+  --color-mint-700: #14833A;
+  /* Status bersama (SPEC §1), dipakai juga oleh halaman publik & akun */
+  --color-danger: #F04438;
+  --color-danger-50: #FEF3F2;
+  --color-danger-700: #B42318;
+  --color-warning: #F79009;
+  --color-warning-50: #FFFAEB;
+  --color-warning-700: #B54708;
+
+  --shadow-float: 0 12px 32px -8px rgba(24, 29, 37, 0.12), 0 2px 6px rgba(24, 29, 37, 0.04);
+}
+
+/* Token peran admin: nilainya berganti mengikuti tema (lihat .admin-panel di bawah) */
+@theme inline {
+  --color-adm-canvas: var(--adm-canvas);
+  --color-adm-surface: var(--adm-surface);
+  --color-adm-hover: var(--adm-hover);
+  --color-adm-line: var(--adm-line);
+  --color-adm-fg: var(--adm-fg);
+  --color-adm-muted: var(--adm-muted);
+  --color-adm-subtle: var(--adm-subtle);
+  /* Permukaan tambahan: ghost = latar lembut (segmented, tombol soft), raised = item aktif di atas ghost */
+  --color-adm-ghost: var(--adm-ghost);
+  --color-adm-ghost-hover: var(--adm-ghost-hover);
+  --color-adm-raised: var(--adm-raised);
+  --color-adm-line-strong: var(--adm-line-strong);
+  --color-adm-overlay: var(--adm-overlay);
+  --color-adm-link: var(--adm-link);
+  /* Tint status (pill, ikon, banner): -soft = latar, -fg = teks/ikon */
+  --color-adm-cobalt-soft: var(--adm-cobalt-soft);
+  --color-adm-cobalt-fg: var(--adm-cobalt-fg);
+  --color-adm-mint-soft: var(--adm-mint-soft);
+  --color-adm-mint-fg: var(--adm-mint-fg);
+  --color-adm-warning-soft: var(--adm-warning-soft);
+  --color-adm-warning-fg: var(--adm-warning-fg);
+  --color-adm-danger-soft: var(--adm-danger-soft);
+  --color-adm-danger-fg: var(--adm-danger-fg);
+  --color-adm-mist-soft: var(--adm-mist-soft);
+  --color-adm-mist-fg: var(--adm-mist-fg);
+}
+
+/* Panel admin: tema gelap (default) */
+.admin-panel {
+  --adm-canvas: #08090b;
+  --adm-surface: #101217;
+  --adm-hover: #181b22;
+  --adm-line: rgba(255, 255, 255, 0.07);
+  --adm-fg: #eef1f5;
+  --adm-muted: #a3afba;
+  --adm-subtle: #7a8794;
+  --adm-ghost: #181b22;
+  --adm-ghost-hover: #20242d;
+  --adm-raised: #252a34;
+  --adm-line-strong: rgba(255, 255, 255, 0.16);
+  --adm-overlay: rgba(0, 0, 0, 0.6);
+  --adm-link: #9c9aff; /* brand-300: 7.5:1 di atas surface gelap */
+  --adm-cobalt-soft: rgba(85, 83, 255, 0.18);
+  --adm-cobalt-fg: #9c9aff;
+  --adm-mint-soft: rgba(112, 252, 142, 0.1);
+  --adm-mint-fg: #7ee69a;
+  --adm-warning-soft: rgba(247, 144, 9, 0.14);
+  --adm-warning-fg: #fdb022;
+  --adm-danger-soft: rgba(240, 68, 56, 0.15);
+  --adm-danger-fg: #fda29b;
+  --adm-mist-soft: rgba(255, 255, 255, 0.06);
+  --adm-mist-fg: #a3afba;
+
+  /* Aksen brand versi gelap: #211FFE hanya 2.2:1 di atas #181b22, jadi naikkan nadanya (antara brand-500 & 400).
+     Teks putih di atasnya tetap 5.2:1; ikon/cincin fokus di atas surface gelap ≥ 3.3:1. */
+  --color-cobalt: #5553ff;
+  --color-cobalt-600: #3e3cff; /* brand-500 (hover) */
+  --color-cobalt-700: #211ffe; /* brand-600 (aktif) */
+
+  /* Petakan palet bawaan halaman admin (slate, blue, primary) ke palet admin; biru = skala brand */
+  --color-slate-50: #f5f7f9;
+  --color-slate-100: #eef1f4;
+  --color-slate-200: #e7ecf0;
+  --color-slate-300: #c3ced7;
+  --color-slate-400: #8a99a6;
+  --color-slate-500: #6b7884;
+  --color-slate-600: #4a5260;
+  --color-slate-700: #353c47;
+  --color-slate-800: #252b35;
+  --color-slate-900: #181d25;
+  --color-slate-950: #0f1217;
+  --color-blue-50: #eeeeff;
+  --color-blue-100: #dfdeff;
+  --color-blue-200: #c2c1ff;
+  --color-blue-300: #9c9aff;
+  --color-blue-400: #6c6aff;
+  --color-blue-500: var(--color-cobalt);
+  --color-blue-600: var(--color-cobalt);
+  --color-blue-700: var(--color-cobalt-600);
+  --color-blue-800: var(--color-cobalt-700);
+  --color-indigo-500: var(--color-cobalt);
+  --color-indigo-600: var(--color-cobalt-600);
+  --color-primary: var(--color-cobalt);
+  --color-primary-hover: var(--color-cobalt-600);
+}
+
+.light-theme .admin-panel {
+  /* Mode terang: aksen persis skala brand */
+  --color-cobalt: #211ffe;
+  --color-cobalt-600: #1a18d4;
+  --color-cobalt-700: #1614a8;
+
+  --adm-canvas: #f2f3f6;
+  --adm-surface: #ffffff;
+  --adm-hover: #f2f3f6;
+  --adm-line: #e7ecf0;
+  --adm-fg: #181d25;
+  --adm-muted: #5b6875;
+  --adm-subtle: #6b7884;
+  --adm-ghost: #f2f3f6;
+  --adm-ghost-hover: #e7ecf0;
+  --adm-raised: #ffffff;
+  --adm-line-strong: #c3ced7;
+  --adm-overlay: rgba(24, 29, 37, 0.3);
+  --adm-link: #211ffe;
+  --adm-cobalt-soft: #eeeeff;
+  --adm-cobalt-fg: #1a18d4; /* brand-700 di atas brand-50: 8.6:1 */
+  --adm-mint-soft: #ecfff0;
+  --adm-mint-fg: #14833a;
+  --adm-warning-soft: #fffaeb;
+  --adm-warning-fg: #b54708;
+  --adm-danger-soft: #fef3f2;
+  --adm-danger-fg: #b42318;
+  --adm-mist-soft: #f5f7f9;
+  --adm-mist-fg: #5b6875;
+}
+
+/* Scrollbar panel admin (Dashboard memakai .admin-dashboard-container) — ikut token tema */
+.admin-dashboard-container ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.admin-dashboard-container ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-dashboard-container ::-webkit-scrollbar-thumb {
+  background: var(--adm-line-strong);
+  border-radius: 10px;
+}
+
+.admin-dashboard-container ::-webkit-scrollbar-thumb:hover {
+  background: var(--adm-subtle);
+}
+
+/* Semua halaman admin sudah memakai primitif src/components/admin/ui + token adm-* (ikut tema),
+   jadi override !important untuk kelas warna lama (bg-[#0D0D0D], text-white, input, tabel, dll.) dihapus.
+   Pemetaan slate/blue/primary di .admin-panel (atas) tetap ada sebagai pengaman untuk sisa kelas lama. */
+
+/* Teks tetap putih di atas latar gelap/gambar di mode terang (dipakai SiteSettings) */
+.adm-keep-white,
+.adm-keep-white * {
+  color: #ffffff;
+}
+
+/* Judul halaman admin seragam: 20px di HP, 28px di desktop, semibold */
+.admin-panel main h1 {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 640px) {
+  .admin-panel main h1 {
+    font-size: 28px;
+  }
+}
+
+/* ── AI Chat Markdown Styling (token adm-*, ikut tema) ── */
+.prose-aichat {
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-word;
+  color: var(--adm-fg);
+}
+@media (min-width: 640px) {
+  .prose-aichat { font-size: 14px; }
+}
+
+.prose-aichat p {
+  margin: 0 0 8px 0;
+}
+.prose-aichat p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-aichat strong {
+  font-weight: 600;
+  color: var(--adm-fg);
+}
+
+.prose-aichat em {
+  font-style: italic;
+  color: var(--adm-muted);
+}
+
+.prose-aichat h1,
+.prose-aichat h2,
+.prose-aichat h3,
+.prose-aichat h4 {
+  font-weight: 600;
+  margin: 12px 0 6px 0;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--adm-fg);
+}
+.prose-aichat h1 { font-size: 15px; border-bottom: 1px solid var(--adm-line); padding-bottom: 4px; }
+.prose-aichat h2 { font-size: 14px; }
+.prose-aichat h3 { font-size: 13px; }
+.prose-aichat h4 { font-size: 13px; }
+
+.prose-aichat ul,
+.prose-aichat ol {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.prose-aichat ul { list-style: disc; }
+.prose-aichat ol { list-style: decimal; }
+.prose-aichat li {
+  margin-bottom: 3px;
+}
+.prose-aichat li::marker {
+  color: var(--color-cobalt);
+}
+
+.prose-aichat code {
+  background: var(--adm-cobalt-soft);
+  padding: 1px 5px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--adm-cobalt-fg);
+}
+
+.prose-aichat pre {
+  background: var(--adm-ghost);
+  border: 1px solid var(--adm-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+.prose-aichat pre code {
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--adm-fg);
+}
+
+.prose-aichat table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 8px 0;
+  font-size: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--adm-line);
+}
+.prose-aichat thead {
+  background: var(--adm-ghost);
+}
+.prose-aichat th {
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--adm-subtle);
+  border-bottom: 1px solid var(--adm-line);
+}
+.prose-aichat td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--adm-line);
+  color: var(--adm-fg);
+}
+.prose-aichat tbody tr:last-child td {
+  border-bottom: none;
+}
+.prose-aichat tbody tr:hover td {
+  background: var(--adm-hover);
+}
+.prose-aichat blockquote {
+  border-left: 3px solid var(--color-cobalt);
+  padding-left: 12px;
+  margin: 8px 0;
+  color: var(--adm-muted);
+}
+.prose-aichat hr {
+  border: none;
+  border-top: 1px solid var(--adm-line);
+  margin: 12px 0;
+}
+.prose-aichat a {
+  color: var(--adm-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-aichat a:hover {
+  opacity: 0.8;
+}
+
+/* ── Chat Widget Scrollbar ── */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--adm-line-strong) transparent;
+}
+.chat-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--adm-line-strong);
+  border-radius: 99px;
+}
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--adm-subtle);
+}

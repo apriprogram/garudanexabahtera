@@ -9,72 +9,67 @@ import {
   MoreVertical,
   ChevronRight
 } from 'lucide-react';
+import { Button, Eyebrow, IconBox, IconButton, PageHeader, Panel, cn } from '../../components/admin/ui';
 
 const ServicesManager: React.FC = () => {
   const services = [
-    { id: 1, title: 'Web Development', description: 'Custom websites built with modern technologies.', icon: Globe, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { id: 2, title: 'UI/UX Design', description: 'Beautiful and intuitive user interfaces.', icon: Palette, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { id: 3, title: 'Mobile Apps', description: 'Cross-platform mobile applications.', icon: Smartphone, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { id: 4, title: 'Digital Marketing', description: 'Grow your brand presence online.', icon: Megaphone, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+    { id: 1, title: 'Pengembangan web', description: 'Website kustom yang dibangun dengan teknologi modern.', icon: Globe, color: 'text-adm-cobalt-fg', bg: 'bg-adm-cobalt-soft' },
+    { id: 2, title: 'Desain UI/UX', description: 'Tampilan yang menarik dan mudah dipakai.', icon: Palette, color: 'text-adm-fg', bg: 'bg-adm-ghost' },
+    { id: 3, title: 'Aplikasi mobile', description: 'Aplikasi mobile lintas platform (Android & iOS).', icon: Smartphone, color: 'text-adm-mint-fg', bg: 'bg-adm-mint-soft' },
+    { id: 4, title: 'Pemasaran digital', description: 'Bantu brand kamu makin dikenal secara online.', icon: Megaphone, color: 'text-adm-warning-fg', bg: 'bg-adm-warning-soft' },
   ];
 
   return (
-    <div className="space-y-8 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Services Manager</h1>
-          <p className="text-slate-400 text-sm mt-1">Configure the services you offer on the landing page.</p>
-        </div>
-        <button className="flex items-center justify-center gap-1.5 px-4 py-2 md:px-5 md:py-2 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white rounded-full font-bold transition-all border border-blue-400/40 active:scale-95 text-[10px] md:text-xs">
-          <Plus className="w-5 h-5" />
-          Add New Service
-        </button>
-      </div>
+    <div className="pb-10">
+      <PageHeader
+        title="Layanan"
+        description="Atur layanan yang kamu tawarkan di halaman utama website."
+        actions={
+          <Button icon={<Plus />}>
+            Tambah layanan
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
         {services.map((service) => (
-          <div key={service.id} className="bg-[#0D0D0D] border border-white/5 p-6 rounded-3xl hover:border-blue-500/30 transition-all group">
-            <div className="flex items-start justify-between mb-6">
-              <div className={`p-4 rounded-2xl ${service.bg} ${service.color}`}>
-                <service.icon className="w-6 h-6" />
-              </div>
-              <button className="p-2 text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-all">
-                <MoreVertical className="w-5 h-5" />
-              </button>
+          <Panel key={service.id} padding="lg" className="group transition-colors duration-150 hover:ring-adm-line-strong">
+            <div className="mb-4 flex items-start justify-between gap-3 sm:mb-5">
+              <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', service.bg, service.color)}>
+                <service.icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+              </span>
+              <IconButton icon={<MoreVertical />} label={`Opsi ${service.title}`} size="sm" />
             </div>
-            
-            <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">{service.title}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+
+            <h3 className="mb-1.5 text-base font-semibold tracking-[-0.01em] text-adm-fg sm:text-lg">{service.title}</h3>
+            <p className="mb-4 text-sm leading-relaxed text-adm-muted sm:mb-5">
               {service.description}
             </p>
 
-            <div className="flex items-center justify-between pt-6 border-t border-white/5">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-widest">Active Status</span>
-              <button className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm font-semibold transition-colors group/btn">
-                Edit Details
-                <ChevronRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-              </button>
+            <div className="flex items-center justify-between gap-3 border-t border-adm-line pt-4">
+              <Eyebrow>Status aktif</Eyebrow>
+              <Button variant="link" size="sm" iconRight={<ChevronRight />}>
+                Edit detail
+              </Button>
             </div>
-          </div>
+          </Panel>
         ))}
       </div>
 
       {/* Stats / Help Card */}
-      <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-white/10 p-8 rounded-3xl flex flex-col md:flex-row items-center gap-8">
-        <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-xl border border-white/20">
-          <Code className="w-10 h-10 text-white" />
-        </div>
-        <div className="flex-1 text-center md:text-left">
-          <h4 className="text-xl font-bold text-white mb-2">Want to add custom logic?</h4>
-          <p className="text-slate-300 text-sm">
-            You can integrate these services with your backend API to dynamically update the front-end homepage. 
-            All icons used here are from the Lucide React library.
+      <Panel tone="cobalt" padding="lg" className="mt-4 flex flex-col items-center gap-4 sm:mt-6 md:flex-row md:gap-6">
+        <IconBox icon={<Code />} tone="solid" size="lg" />
+        <div className="min-w-0 flex-1 text-center md:text-left">
+          <h4 className="mb-1.5 text-base font-semibold tracking-[-0.01em] text-adm-fg sm:text-lg">Mau menambah logika kustom?</h4>
+          <p className="text-sm leading-relaxed text-adm-muted">
+            Kamu bisa menghubungkan layanan ini ke API backend supaya halaman utama website ikut diperbarui otomatis.
+            Semua ikon di sini berasal dari library Lucide React.
           </p>
         </div>
-        <button className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">
-          Documentation
-        </button>
-      </div>
+        <Button variant="dark" className="w-full md:w-auto">
+          Dokumentasi
+        </Button>
+      </Panel>
     </div>
   );
 };

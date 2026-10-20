@@ -1,0 +1,37 @@
+# Build context of the Node API image (docker-compose: context ./backend, dockerfile ../Dockerfile.node).
+# Dockerfile.node runs `npm install` in the image and then `COPY . .`, so anything listed here stays out of the image.
+
+# Dependencies are installed inside the image (host node_modules may hold Windows/macOS binaries, e.g. sharp)
+node_modules/
+**/node_modules/
+
+# Logs
+*.log
+**/*.log
+debug.log
+
+# Secrets: configuration comes from the container environment, never from a baked-in file
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Tests and ad-hoc test scripts
+__tests__/
+**/__tests__/
+test/
+tests/
+coverage/
+**/*.test.js
+**/*.spec.js
+test_*.js
+**/test_*.js
+
+# Local tooling
+.git/
+.gitignore
+.dockerignore
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

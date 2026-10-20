@@ -1,3 +1,10 @@
+-- ############################################################
+-- DEPRECATED (2026-10-19) — JANGAN DIJALANKAN.
+-- Definisi monitor_websites / monitor_website_logs di sini BERTENTANGAN dengan
+-- monitoring_migration.sql dan dengan DB yang sebenarnya (kolom berbeda).
+-- Tabel monitor_ai_usage, visitor_stats_daily, monitor_error_center sudah ada.
+-- Skema resmi: database/schema.sql; perubahan: database/migrations/.
+-- ############################################################
 -- 1. Website Monitoring
 CREATE TABLE IF NOT EXISTS monitor_websites (
     id INT AUTO_INCREMENT PRIMARY KEY,

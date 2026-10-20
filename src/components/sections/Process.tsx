@@ -1,188 +1,286 @@
-﻿import React from 'react';
-import { MessageSquare, Palette, Code2, Rocket, CheckCircle2 } from 'lucide-react';
+﻿import React, { useId, useRef, useState } from 'react';
+import { ArrowRight, LayoutTemplate, MessageCircle, Smartphone } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Reveal } from '../ui/Reveal';
-import { motion } from 'framer-motion';
+import { LogoBadge } from '../ui/LogoMark';
+import { SectionHeading } from '../ui/SectionHeading';
+import { SmartLink } from '../layout/SmartLink';
+import { getHiddenSections, useSiteSettings } from '../../hooks/useSiteSettings';
+import {
+  AfterPaymentArt, BuildArt, ConsultArt, OrderFormArt, PaymentArt, PickTemplateArt, ProposalArt, ReleaseArt,
+} from './process/ProcessVisuals';
 
-const Process: React.FC = () => {
-  const [activeStep, setActiveStep] = React.useState<string | null>(null);
+const FLOWS = [
+  { key: 'template', icon: LayoutTemplate, tab: 'Template siap pakai', short: 'Template', note: '6 langkah, dari memilih desain sampai kelola sendiri.' },
+  { key: 'custom', icon: Smartphone, tab: 'Website & aplikasi custom', short: 'Custom', note: '4 langkah, dari konsultasi sampai rilis.' },
+] as const;
 
-  const defaultSteps = [
-    {
-      step: '01',
-      title: 'Consultation',
-      desc: 'Needs Analysis & Planning',
-      detail: 'Kami memulai dengan mendalami visi bisnis Anda. Sesi brainstorming intensif untuk menentukan fitur utama, target pasar, dan strategi teknologi yang paling efektif untuk mencapai tujuan Anda.'
-    },
-    {
-      step: '02',
-      title: 'Desain UI/UX',
-      desc: 'Wireframing & Prototyping',
-      detail: 'Fokus pada pengalaman pengguna yang intuitif dan estetika modern. Kami membuat purwarupa interaktif sehingga Anda dapat merasakan alur navigasi aplikasi sebelum proses coding dimulai.'
-    },
-    {
-      step: '03',
-      title: 'Development',
-      desc: 'Coding & System Testing',
-      detail: 'Tim engineer kami membangun sistem menggunakan teknologi terkini yang skalabel. Kami menerapkan standar keamanan tinggi dan pengujian menyeluruh (QA) untuk memastikan performa yang stabil.'
-    },
-    {
-      step: '04',
-      title: 'Launching',
-      desc: 'Deployment & Maintenance',
-      detail: 'Membantu proses rilis ke App Store/Play Store atau hosting cloud. Kami tidak berhenti di sana; kami menyediakan dukungan teknis berkelanjutan dan pemeliharaan untuk menjaga sistem tetap prima.'
-    }
-  ];
+/** Kepala kartu langkah: judul besar + nomor mono + deskripsi singkat (pola StepsBento CPNS). */
+const StepHead: React.FC<{ n: string; title: string; children: React.ReactNode }> = ({ n, title, children }) => (
+  <div className="px-5 pt-5 sm:px-7 sm:pt-7 xl:px-8 xl:pt-8">
+    <div className="flex items-start justify-between gap-4">
+      <h3 className="text-xl font-semibold leading-tight tracking-[-0.025em] text-fg sm:text-[28px] sm:tracking-[-0.03em] xl:text-[32px]">
+        {title}
+      </h3>
+      <span className="mt-1 font-mono text-sm font-semibold text-subtle sm:mt-2">{n}</span>
+    </div>
+    <p className="mt-2 max-w-[320px] text-sm leading-relaxed text-muted sm:text-[15px]">{children}</p>
+  </div>
+);
 
-  const [steps, setSteps] = React.useState<any[]>(defaultSteps);
+/** Kepala kartu tinggi: bilah alamat + chip "Langkah n" + judul di tengah. */
+const TallHead: React.FC<{ n: number; path: string; title: string; children: React.ReactNode }> = ({ n, path, title, children }) => (
+  <>
+    <div className="mx-3 mt-3 flex h-10 items-center justify-between rounded-full bg-alt pl-1.5 pr-4 sm:h-11 sm:pl-2" aria-hidden>
+      <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-fg sm:text-sm">
+        <LogoBadge className="h-7 w-7" />
+        <span className="truncate">
+          garudanexa.com<span className="font-medium text-subtle">{path}</span>
+        </span>
+      </span>
+      <span className="flex shrink-0 gap-1">
+        <span className="h-2 w-2 rounded-full bg-line-strong" />
+        <span className="h-2 w-2 rounded-full bg-line-strong" />
+        <span className="h-2 w-2 rounded-full bg-line-strong" />
+      </span>
+    </div>
+    <div className="relative z-10 flex flex-col items-center px-6 pt-6 text-center sm:px-7 sm:pt-7">
+      <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-surface px-3 text-xs font-medium text-fg ring-1 ring-inset ring-line">
+        Langkah
+        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-fg px-1 font-mono text-[10px] text-white">{n}</span>
+      </span>
+      <h3 className="mt-4 text-xl font-semibold leading-tight tracking-[-0.025em] text-fg sm:text-[28px] sm:tracking-[-0.03em] xl:text-[32px]">
+        {title}
+      </h3>
+      <p className="mt-2 max-w-[320px] text-sm leading-relaxed text-muted sm:text-[15px]">{children}</p>
+    </div>
+  </>
+);
 
-  React.useEffect(() => {
-    const fetchDynamicData = async () => {
-      try {
-        const apiUrl = '/api.php';
-        const response = await fetch(`${apiUrl}?action=get_settings`);
-        const data = await response.json();
-        if (data.process_data) {
-          setSteps(JSON.parse(data.process_data));
+// after: = garis tepi di ATAS ilustrasi (ilustrasi berlatar menutupi ring bawaan kartu)
+const CARD =
+  'card-flat relative flex h-full flex-col overflow-hidden after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:ring-1 after:ring-inset after:ring-line';
+
+/** Kartu lebar penutup alur (latar biru muda + glow lembut, terang). */
+const WideCard: React.FC<{ eyebrow: string; title: string; text: string; actions: React.ReactNode; art: React.ReactNode }> = ({
+  eyebrow,
+  title,
+  text,
+  actions,
+  art,
+}) => (
+  <div className="glow-brand relative flex h-full flex-col gap-6 overflow-hidden rounded-[24px] bg-brand-50/50 p-5 ring-1 ring-inset ring-brand-100 sm:p-8 lg:flex-row lg:items-center lg:gap-8 xl:p-10">
+    <div className="lg:w-1/2 lg:shrink-0">
+      <span className="font-mono text-xs font-semibold text-primary">{eyebrow}</span>
+      <h3 className="mt-3 text-xl font-semibold leading-[1.2] tracking-[-0.025em] text-fg sm:text-[30px] sm:leading-[1.1] sm:tracking-[-0.03em] xl:text-[34px]">
+        {title}
+      </h3>
+      <p className="mt-3 max-w-[380px] text-sm leading-relaxed text-muted sm:text-[15px]">{text}</p>
+      <div className="mt-6 flex flex-wrap gap-2">{actions}</div>
+    </div>
+    <div className="min-w-0 flex-1">{art}</div>
+  </div>
+);
+
+const TemplateBento: React.FC<{ templatesHidden: boolean }> = ({ templatesHidden }) => (
+  <>
+    <Reveal className="lg:col-span-4" height="100%">
+      <article className={`${CARD} min-h-[320px] lg:min-h-0`}>
+        <StepHead n="01" title="Pilih template">
+          Lihat demonya dulu, lalu pilih desain yang paling cocok untuk bisnis Anda.
+        </StepHead>
+        <PickTemplateArt />
+      </article>
+    </Reveal>
+
+    <Reveal delay={0.1} className="lg:col-span-4" height="100%">
+      <article className={`${CARD} min-h-[320px] lg:min-h-0`}>
+        <StepHead n="02" title="Isi form & domain">
+          Lengkapi data pemesan dan nama domain yang Anda inginkan.
+        </StepHead>
+        <OrderFormArt />
+      </article>
+    </Reveal>
+
+    <Reveal delay={0.2} className="md:col-span-2 lg:col-span-4 lg:row-span-2" height="100%">
+      <article className={`${CARD} min-h-[560px] lg:min-h-0`}>
+        <TallHead n={3} path="/pesan" title="Bayar via Midtrans">
+          Virtual account, e-wallet, QRIS, atau kartu. Status pesanan berubah otomatis.
+        </TallHead>
+        <PaymentArt />
+      </article>
+    </Reveal>
+
+    <Reveal delay={0.15} className="md:col-span-2 lg:col-span-8" height="100%">
+      <WideCard
+        eyebrow="Lalu · 04 – 06"
+        title="Approval, domain aktif, lalu kelola sendiri."
+        text="Setelah pembayaran dikonfirmasi, tim kami menyetujui pesanan dan menyiapkan domain. Begitu online, Anda mengubah isinya sendiri lewat CMS."
+        actions={
+          // Katalog #templates disembunyikan admin → arahkan ke konsultasi, bukan ke anchor yang tidak ada
+          templatesHidden ? (
+            <SmartLink href="#kontak" className="btn btn-primary group">
+              <MessageCircle className="h-4 w-4" aria-hidden />
+              Konsultasi Gratis
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </SmartLink>
+          ) : (
+            <SmartLink href="#templates" className="btn btn-primary group">
+              Pilih Template
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </SmartLink>
+          )
         }
-      } catch (e) {
-        console.error('Error fetching dynamic process steps:', e);
-      }
-    };
-    fetchDynamicData();
-  }, []);
+        art={<AfterPaymentArt />}
+      />
+    </Reveal>
+  </>
+);
 
-  const getStepIcon = (stepNum: string) => {
-    switch (stepNum) {
-      case '01': return <MessageSquare />;
-      case '02': return <Palette />;
-      case '03': return <Code2 />;
-      case '04': return <Rocket />;
-      default: return <MessageSquare />;
-    }
+const CustomBento: React.FC = () => (
+  <>
+    <Reveal className="lg:col-span-4" height="100%">
+      <article className={`${CARD} min-h-[320px] lg:min-h-0`}>
+        <StepHead n="01" title="Konsultasi">
+          Ceritakan kebutuhan Anda lewat form pesanan atau WhatsApp, gratis.
+        </StepHead>
+        <ConsultArt />
+      </article>
+    </Reveal>
+
+    <Reveal delay={0.1} className="lg:col-span-4" height="100%">
+      <article className={`${CARD} min-h-[320px] lg:min-h-0`}>
+        <StepHead n="02" title="Penawaran">
+          Kami kirim rancangan solusi, perkiraan waktu, dan penawaran biaya.
+        </StepHead>
+        <ProposalArt />
+      </article>
+    </Reveal>
+
+    <Reveal delay={0.2} className="md:col-span-2 lg:col-span-4 lg:row-span-2" height="100%">
+      <article className={`${CARD} min-h-[560px] lg:min-h-0`}>
+        <TallHead n={3} path="/proyek-anda" title="Pengerjaan">
+          Desain dan pengembangan bertahap, dengan kabar progres berkala.
+        </TallHead>
+        <BuildArt />
+      </article>
+    </Reveal>
+
+    <Reveal delay={0.15} className="md:col-span-2 lg:col-span-8" height="100%">
+      <WideCard
+        eyebrow="Lalu · 04"
+        title="Rilis, lalu tetap kami dampingi."
+        text="Website atau aplikasi Android/iOS Anda siap dipakai, lengkap dengan pendampingan setelah rilis."
+        actions={
+          <>
+            <Link to="/pesan-custom" className="btn btn-primary group">
+              Pesan Custom
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            </Link>
+            <SmartLink href="#kontak" className="btn btn-outline">
+              <MessageCircle className="h-4 w-4" aria-hidden />
+              Konsultasi Gratis
+            </SmartLink>
+          </>
+        }
+        art={<ReleaseArt />}
+      />
+    </Reveal>
+  </>
+);
+
+/**
+ * Section "Proses" (#process) gaya StepsBento BELAJAR CPNS: dua alur (Template & Custom) yang dipilih lewat
+ * kontrol segmen, masing-masing tampil sebagai bento: dua kartu langkah, satu kartu tinggi, satu kartu lebar.
+ */
+const Process: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '03' }) => {
+  const [flow, setFlow] = useState(0);
+  const { settings } = useSiteSettings();
+  const templatesHidden = getHiddenSections(settings).has('templates');
+  const baseId = useId();
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const current = FLOWS[flow];
+
+  const onTabKey = (event: React.KeyboardEvent) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? FLOWS.length - 1 : flow === 0 ? 1 : 0;
+    setFlow(next);
+    tabRefs.current[next]?.focus();
   };
 
-  const profits = [
-    'Bug Warranty',
-    'Free Consultation',
-    'Responsive Support',
-    'Free Hosting & Domain',
-    'Usage Training'
-  ];
-
   return (
-    <section id="process" className="py-12 lg:py-32 bg-[#0a0a0b] light-theme:bg-slate-50 relative overflow-hidden transition-colors duration-500">
-      <div className="max-w-[1280px] mx-auto px-8 relative z-10">
-        <Reveal>
-          <div className="text-center mb-8 lg:mb-12 px-4">
-            <h2 className="text-xl md:text-3xl lg:text-5xl font-semibold text-white mb-4 light-theme:text-slate-900 tracking-tight">Proses Pengembangan</h2>
-            <p className="text-slate-400 text-xs md:text-sm lg:text-lg light-theme:text-slate-600 max-w-2xl mx-auto">
-              Membangun Sistem Digital yang Bekerja Maksimal untuk Bisnis Anda. Klik setiap kartu untuk detail lebih lanjut.
+    <section
+      id="process"
+      aria-labelledby="process-title"
+      className={`section-screen scroll-mt-12 sm:scroll-mt-4 ${alt ? 'bg-alt' : 'bg-canvas'}`}
+    >
+      <div className="container-site w-full">
+        <SectionHeading
+          index={number}
+          label="Proses"
+          titleId="process-title"
+          title="Cara kerja"
+          accent="kami"
+          description="Pilih jalurnya: template siap pakai agar cepat online, atau dibuat custom dari nol."
+        />
+
+        {/* Kontrol segmen alur */}
+        <Reveal delay={0.1} className="mt-6 sm:mt-8">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <div
+              role="tablist"
+              aria-label="Pilih alur"
+              onKeyDown={onTabKey}
+              className="relative inline-grid grid-cols-2 rounded-full bg-surface p-1 ring-1 ring-inset ring-line"
+            >
+              <span
+                aria-hidden
+                className="absolute inset-y-1 left-1 rounded-full bg-primary transition-transform duration-500 ease-calm"
+                style={{ width: 'calc((100% - 8px) / 2)', transform: `translateX(${flow * 100}%)` }}
+              />
+              {FLOWS.map((item, index) => {
+                const selected = flow === index;
+                return (
+                  <button
+                    key={item.key}
+                    ref={(el) => {
+                      tabRefs.current[index] = el;
+                    }}
+                    id={`${baseId}-tab-${item.key}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    aria-controls={`${baseId}-panel`}
+                    tabIndex={selected ? 0 : -1}
+                    onClick={() => setFlow(index)}
+                    className={`relative z-10 inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-xs font-semibold transition-colors duration-300 after:absolute after:inset-x-0 after:-inset-y-1.5 sm:h-10 sm:px-5 sm:text-sm sm:after:hidden ${
+                      selected ? 'text-white' : 'text-muted hover:text-fg'
+                    }`}
+                  >
+                    <item.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
+                    <span className="sm:hidden">{item.short}</span>
+                    <span className="hidden sm:inline">{item.tab}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[13px] text-muted sm:text-sm" aria-live="polite">
+              {current.note}
             </p>
           </div>
         </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-          {steps.map((step, index) => (
-            <Reveal key={step.step} delay={0.2 + (index * 0.1)}>
-              <div 
-                className="group perspective-1000 h-[280px] lg:h-[350px] cursor-pointer my-2 lg:my-4 mx-2"
-                onClick={() => setActiveStep(activeStep === step.step ? null : step.step)}
-              >
-                <motion.div 
-                  initial={false}
-                  animate={{ rotateY: activeStep === step.step ? 180 : 0 }}
-                  transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
-                  className="relative w-full h-full preserve-3d"
-                >
-                  {/* Front Side */}
-                  <div className={`absolute inset-0 backface-hidden p-6 lg:p-10 rounded-[30px] bg-white/5 border transition-all duration-500 flex flex-col items-start overflow-hidden ${
-                    activeStep === step.step 
-                      ? 'border-primary' 
-                      : 'border-white/10 group-hover:border-primary/50 light-theme:bg-white light-theme:border-slate-200 light-theme:group-hover:border-primary/50'
-                  }`}>
-                    {/* Bottom Gradient on Hover */}
-                    <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                    
-                    <div className="flex items-center mb-6 lg:mb-8 w-full">
-                      <div className={`${
-                        step.step === '01' ? 'text-blue-500' : 
-                        step.step === '02' ? 'text-purple-500' : 
-                        step.step === '03' ? 'text-indigo-500' : 
-                        'text-orange-500'
-                      }`}>
-                        {React.cloneElement(getStepIcon(step.step) as React.ReactElement<any>, { className: "w-10 h-10 lg:w-14 lg:h-14" })}
-                      </div>
-                    </div>
-                    
-                    <div className="absolute top-6 lg:top-10 right-6 lg:right-10 text-xs lg:text-sm font-black opacity-40 text-slate-500">
-                      {step.step}
-                    </div>
-                    
-                    <h3 className="text-lg lg:text-2xl font-bold text-white mb-2 lg:mb-3 light-theme:text-slate-900 tracking-tight">{step.title}</h3>
-                    <p className="text-slate-400 text-xs lg:text-sm leading-relaxed light-theme:text-slate-600">
-                      {step.desc}
-                    </p>
-                    
-                    <div className="mt-auto w-full pt-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">Detail Langkah</span>
-                      <div className="w-6 h-px bg-slate-500/30" />
-                    </div>
-                  </div>
-
-                  {/* Back Side */}
-                  <div className={`absolute inset-0 backface-hidden rotate-y-180 p-6 lg:p-10 rounded-[30px] bg-[#121214] border flex flex-col items-start text-left transition-all duration-500 ${
-                    activeStep === step.step 
-                      ? 'border-primary' 
-                      : 'border-white/10 light-theme:bg-slate-50 light-theme:border-slate-200'
-                  } light-theme:bg-slate-50`}>
-                    <div className="flex items-center gap-4 mb-6 w-full">
-                      <div className={`${
-                        step.step === '01' ? 'text-blue-500' : 
-                        step.step === '02' ? 'text-purple-500' : 
-                        step.step === '03' ? 'text-indigo-500' : 
-                        'text-orange-500'
-                      }`}>
-                        {React.cloneElement(getStepIcon(step.step) as React.ReactElement<any>, { className: "w-8 h-8 lg:w-8 lg:h-8" })}
-                      </div>
-                      <h4 className="text-sm lg:text-sm font-bold text-white light-theme:text-slate-900 uppercase tracking-[1.5px]">{step.back_title || `DETAIL ${step.title}`.toUpperCase()}</h4>
-                    </div>
-                    
-                    <p className="text-slate-300 text-[11px] lg:text-xs leading-relaxed light-theme:text-slate-700 font-medium mb-auto transition-colors duration-500">
-                      {step.detail || step.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              </div>
-            </Reveal>
-          ))}
+        <div
+          // Kunci per alur: kartu dipasang ulang dan muncul lagi dengan animasi saat alur berganti
+          key={current.key}
+          id={`${baseId}-panel`}
+          role="tabpanel"
+          aria-labelledby={`${baseId}-tab-${current.key}`}
+          className="mt-6 grid gap-4 sm:mt-8 sm:gap-5 md:grid-cols-2 lg:grid-cols-12 lg:grid-rows-[minmax(300px,auto)_minmax(300px,auto)] xl:gap-6"
+        >
+          {current.key === 'template' ? <TemplateBento templatesHidden={templatesHidden} /> : <CustomBento />}
         </div>
-
-        <Reveal delay={0.6}>
-          <div className="mt-4 lg:mt-6 p-6 sm:p-8 lg:p-12 rounded-2xl lg:rounded-3xl bg-[#0f0f12] border border-white/5 hover:border-primary/50 transition-all duration-500 light-theme:bg-white light-theme:border-slate-200 light-theme:hover:border-primary/50 relative overflow-hidden w-full text-left group/benefits">
-            {/* Bottom Gradient on Hover */}
-            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-primary/10 to-transparent opacity-0 group-hover/benefits:opacity-100 transition-opacity duration-500 pointer-events-none" />
-            
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-12 w-full relative z-10">
-              <div className="lg:w-1/4 text-left w-full">
-                <div className="h-1 bg-primary w-12 mb-4 rounded-full" />
-                <h4 className="text-base lg:text-xl font-semibold text-white tracking-tight uppercase leading-tight light-theme:text-slate-900">
-                  Keuntungan<br />Termasuk:
-                </h4>
-              </div>
-              
-              <div className="lg:w-3/4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-3 lg:gap-y-6 gap-x-8 w-full">
-                {profits.map((profit, index) => (
-                  <div key={index} className="flex items-center justify-start gap-3 group text-left">
-                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 shrink-0" />
-                    <span className="text-slate-300 text-[11px] sm:text-sm font-semibold light-theme:text-slate-600 group-hover:text-white light-theme:group-hover:text-primary transition-colors">
-                      {profit}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Reveal>
       </div>
     </section>
   );

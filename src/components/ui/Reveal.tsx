@@ -1,50 +1,44 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { useInView } from '../../hooks/useInView';
 
 interface RevealProps {
   children: React.ReactNode;
-  width?: "fit-content" | "100%";
-  height?: "fit-content" | "100%";
+  width?: 'fit-content' | '100%';
+  height?: 'fit-content' | '100%';
+  /** Jeda sebelum muncul, dalam DETIK (mis. 0.1). */
   delay?: number;
-  direction?: "up" | "down" | "left" | "right";
+  /** Arah datang: up = dari bawah (default), down = dari atas, left = bergeser ke kiri, right = bergeser ke kanan. */
+  direction?: 'up' | 'down' | 'left' | 'right';
+  /** scale = sedikit membesar, fade = hanya memudar. Menimpa `direction`. */
+  variant?: 'scale' | 'fade';
+  /** Tidak berpengaruh lagi (isi tidak pernah dipotong); tetap ada agar pemanggil lama tetap valid. */
   overflowVisible?: boolean;
+  className?: string;
 }
 
-export const Reveal: React.FC<RevealProps> = ({ 
-  children, 
-  width = "100%", 
-  height = "fit-content",
-  delay = 0.2,
-  direction = "up",
-  overflowVisible = false
+/**
+ * Animasi muncul saat digulir, gaya BELAJAR CPNS: memudar + naik + blur halus (HP: tanpa blur, geser 16px;
+ * reduced motion: langsung tampil). Murni CSS (`.reveal` di src/index.css) + IntersectionObserver.
+ */
+export const Reveal: React.FC<RevealProps> = ({
+  children,
+  width = '100%',
+  height = 'fit-content',
+  delay = 0,
+  direction = 'up',
+  variant,
+  className = '',
 }) => {
-  const directions = {
-    up: { y: 40, x: 0 },
-    down: { y: -40, x: 0 },
-    left: { y: 0, x: 40 },
-    right: { y: 0, x: -40 },
-  };
+  const [ref, inView] = useInView<HTMLDivElement>();
 
   return (
-    <div style={{ 
-      position: "relative", 
-      width, 
-      height, 
-      overflow: overflowVisible ? "visible" : "hidden" 
-    }}>
-      <motion.div
-        variants={{
-          hidden: { opacity: 0, ...directions[direction] },
-          visible: { opacity: 1, y: 0, x: 0 },
-        }}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
-        style={{ height: height === "100%" ? "100%" : "auto" }}
-      >
-        {children}
-      </motion.div>
+    <div
+      ref={ref}
+      data-variant={variant ?? direction}
+      className={`reveal ${inView ? 'is-in' : ''} ${className}`}
+      style={{ width, height, '--d': `${Math.round(delay * 1000)}ms` } as React.CSSProperties}
+    >
+      {children}
     </div>
   );
 };

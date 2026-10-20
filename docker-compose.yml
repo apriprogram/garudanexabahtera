@@ -31,6 +31,23 @@ services:
       - S3_BUCKET=${S3_BUCKET:-garudanexa}
       - S3_REGION=${S3_REGION:-us-east-1}
       - S3_PUBLIC_URL=${S3_PUBLIC_URL:-https://is3.cloudhost.id/garudanexa}
+      # Login tokens are signed with AUTH_SECRET; changing it logs everyone out
+      - AUTH_SECRET=${AUTH_SECRET:?set AUTH_SECRET in .env (openssl rand -hex 32)}
+      - AUTH_TOKEN_TTL=${AUTH_TOKEN_TTL:-28800}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - TRUST_PROXY=${TRUST_PROXY:-1}
+      - UPLOAD_MAX_IMAGE_MB=${UPLOAD_MAX_IMAGE_MB:-10}
+      - UPLOAD_MAX_FILE_MB=${UPLOAD_MAX_FILE_MB:-25}
+      - AI_BASE_URL=${AI_BASE_URL:-}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-}
+      # Midtrans Snap for template orders; empty server key = orders without online payment (see .env.example)
+      - MIDTRANS_SERVER_KEY=${MIDTRANS_SERVER_KEY:-}
+      - MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY:-}
+      - MIDTRANS_IS_PRODUCTION=${MIDTRANS_IS_PRODUCTION:-0}
+      - MIDTRANS_SIMULATOR=${MIDTRANS_SIMULATOR:-0}
+      - APP_URL=${APP_URL:-}
+      - NODE_ENV=production
     depends_on:
       - mysql
     restart: unless-stopped
@@ -45,7 +62,9 @@ services:
       - MYSQL_DATABASE=${MYSQL_DB:-db_garudanexabahtera}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      # Only used when the mysql_data volume is created; no admin account is seeded (see database/README.md)
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
     ports:
       - "127.0.0.1:3309:3306"
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci

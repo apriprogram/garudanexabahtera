@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vite-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "php-api",
+      "runtimeExecutable": "php",
+      "runtimeArgs": [
+        "-d", "post_max_size=256M",
+        "-d", "upload_max_filesize=256M",
+        "-d", "memory_limit=512M",
+        "-S", "127.0.0.1:8000",
+        "-t", "backend"
+      ],
+      "port": 8000
+    }
+  ]
+}

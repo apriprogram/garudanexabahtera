@@ -1,4 +1,10 @@
 <?php
+// One-off maintenance script: run it from a shell (php update_process_data.php), never over the web
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
 // DB credentials come from the environment; defaults match a local XAMPP install
 $host = getenv("MYSQL_HOST") ?: "localhost";
 $user = getenv("MYSQL_USER") ?: "root";
