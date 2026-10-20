@@ -123,6 +123,40 @@ dari kode. **Jangan dijalankan sebelum pemilik proyek menyetujui dan backup dibu
 Setelah 005 dijalankan: hapus bagian "DEPRECATED, akan dihapus oleh migrasi 005" di `schema.sql` dan tambahkan baris
 baseline `2026-10-19_005` di sana.
 
+### Migrasi 006 — enkripsi akun produk (`list_products.users`, data, lewat API)
+
+Kolom `list_products.users` berisi akun login produk klien (`[{username, password, keterangan}]`). Kolom ini sekarang
+disimpan terenkripsi AES-256-GCM (`enc:v1:...`, format di `backend/modules/list_products.js` / `.php`) dengan kunci
+`LIST_PRODUCTS_KEY` dari `.env`. Kuncinya ada di server, bukan di DB, jadi migrasi ini bukan file SQL: baris lama
+dienkripsi oleh aksi admin `encrypt_list_products` (sama di api.php dan server.js, aman dijalankan ulang).
+
+- Publik (`get_list_products`) hanya mengirim `id, title, description, link_button, image, logo`, tidak pernah `users`.
+- Akun hanya dibaca lewat `get_list_product_detail` (login staf, sudah didekripsi). `add_list_product` /
+  `update_list_product` selalu mengenkripsi `users` sebelum disimpan. Baris lama yang belum dienkripsi tetap terbaca.
+- Tanpa `LIST_PRODUCTS_KEY`: daftar publik tetap jalan; membaca akun terenkripsi atau menyimpan `users` → HTTP 503
+  `NOT_CONFIGURED`. Kunci salah → HTTP 500 `DECRYPT_FAILED`.
+
+Langkah (produksi cPanel: `.env` di `/home/garudanexa/.env`; docker: `.env` di samping `docker-compose.yml`):
+
+1. Backup DB (phpMyAdmin Export atau `mysqldump`).
+2. Buat kunci `openssl rand -hex 32`, tambahkan `LIST_PRODUCTS_KEY=<64 hex>` ke `.env` server, dan simpan salinannya
+   di password manager. Kunci yang hilang = akun tidak bisa dibuka lagi; jangan menggantinya setelah data terenkripsi.
+   Docker: `docker compose up -d api` supaya variabel baru terbaca.
+3. Deploy kode baru (api.php + `modules/list_products.php`, atau image api).
+4. Login ke `/admin` sebagai **admin**, buka DevTools → Console, jalankan (token dilampirkan otomatis):
+
+   ```js
+   await (await fetch('/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'encrypt_list_products' }) })).json()
+   ```
+
+   Hasil: `{success: true, encrypted: N, already_encrypted: 0, unreadable: 0, total: N}`. Dijalankan lagi:
+   `encrypted: 0`. `unreadable > 0` berarti ada baris terenkripsi dengan kunci lain.
+5. Cek: `SELECT id, LEFT(users, 7) FROM list_products;` → semua `enc:v1:` (atau NULL).
+
+Rollback: restore backup dari langkah 1. Kode lama tidak bisa mendekripsi, jadi kembali ke kode lama setelah langkah 4
+berarti akun tampil sebagai teks `enc:v1:...` (tetap tidak bocor ke publik). Backup dan dump DB yang dibuat sebelum
+langkah 4 masih berisi akun dalam teks biasa: simpan di tempat aman atau hapus.
+
 ### Produksi (VPS, docker-compose)
 
 Urutan penting untuk migrasi 001: **deploy frontend dulu**, karena migrasi mengganti
@@ -201,3 +235,4 @@ kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin per
 | 2026-10-19_003 | Data saja: menu utama Harga (`#pricing`), Proses (`#process`), FAQ (`#faq`) ditambahkan; Perusahaan pindah ke urutan 6. Tidak menambah apa pun bila navbar kosong atau menu itu sudah ada. |
 | 2026-10-19_004 | Marketplace template: tabel `templates`, `template_orders`, `template_sites`, `template_order_logs`; `users.role` + `customer`; `project_client.show_on_website` + `source`. Data sekali jalan: navbar Template/Projects/Proses/FAQ (menu lain dinonaktifkan, tidak dihapus) dan `faq_data` tanpa harga/paket jasa custom. |
 | 2026-10-19_005 | **Belum dijalankan / menunggu persetujuan.** `DROP TABLE IF EXISTS` 25 tabel `monitor_*` / `monitoring_*`. |
+| 2026-10-20_006 | Data saja, lewat aksi admin `encrypt_list_products` (bukan file SQL, tidak tercatat di `schema_migrations`): `list_products.users` dienkripsi AES-256-GCM dengan `LIST_PRODUCTS_KEY`. Lihat "Migrasi 006" di atas. |

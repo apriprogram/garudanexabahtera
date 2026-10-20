@@ -48,6 +48,7 @@ export const ADMIN_ACTIONS = new Set([
   'add_navbar_menu', 'edit_navbar_menu', 'delete_navbar_menu', 'save_navbar_menus_order',
   'add_changelog', 'update_changelog', 'delete_changelog',
   'admin_delete_template',
+  'encrypt_list_products',
 ]);
 
 const STAFF_ROLES = new Set(['admin', 'user']);

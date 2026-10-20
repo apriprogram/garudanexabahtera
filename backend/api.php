@@ -44,6 +44,7 @@ const ADMIN_ACTIONS = [
     'add_navbar_menu', 'edit_navbar_menu', 'delete_navbar_menu', 'save_navbar_menus_order',
     'add_changelog', 'update_changelog', 'delete_changelog',
     'admin_delete_template',
+    'encrypt_list_products',
 ];
 const STAFF_ROLES = ['admin', 'user'];
 const USER_ROLES = ['admin', 'user', 'customer'];
@@ -69,6 +70,8 @@ set_exception_handler(function ($e) {
 
 // Template marketplace + custom orders (handle_platform_action)
 require_once __DIR__ . '/modules/templates.php';
+// Company products, users column (product login accounts) encrypted at rest (handle_list_product_action)
+require_once __DIR__ . '/modules/list_products.php';
 
 load_env_file();
 
@@ -112,6 +115,11 @@ $authUser = authorize_request($conn, $action, $input);
 
 // Template marketplace, customer account and custom-order actions (backend/modules/templates.php)
 if (handle_platform_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Company products: public list + staff actions (backend/modules/list_products.php)
+if (handle_list_product_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }
@@ -540,17 +548,6 @@ switch ($action) {
         db_run($conn, "DELETE FROM navbar_menus WHERE parent_id = ?", [$id]);
         db_run($conn, "DELETE FROM navbar_menus WHERE id = ?", [$id]);
         echo json_encode(["success" => true]);
-        break;
-
-    // ── Company products (list_products), public list; same query as server.js ──
-    case 'get_list_products':
-        // position is set by update_product_order (0 = not ordered yet, newest first)
-        $data = [];
-        foreach (db_all($conn, "SELECT id, title, description, link_button, image, logo FROM list_products ORDER BY position ASC, id DESC") as $row) {
-            $row['id'] = (int)$row['id'];
-            $data[] = $row;
-        }
-        echo json_encode($data);
         break;
 
     // ── AI Chat (Node serves it at /api/ai-chat; the Vite dev proxy rewrites that path to this action) ──

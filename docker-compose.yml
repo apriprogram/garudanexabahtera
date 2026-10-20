@@ -34,6 +34,8 @@ services:
       # Login tokens are signed with AUTH_SECRET; changing it logs everyone out
       - AUTH_SECRET=${AUTH_SECRET:?set AUTH_SECRET in .env (openssl rand -hex 32)}
       - AUTH_TOKEN_TTL=${AUTH_TOKEN_TTL:-28800}
+      # Encrypts list_products.users (product login accounts); empty = those accounts cannot be read or saved
+      - LIST_PRODUCTS_KEY=${LIST_PRODUCTS_KEY:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-}
       - TRUST_PROXY=${TRUST_PROXY:-1}
       - UPLOAD_MAX_IMAGE_MB=${UPLOAD_MAX_IMAGE_MB:-10}

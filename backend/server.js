@@ -18,13 +18,14 @@ import sharp from 'sharp';
 import OpenAI from 'openai';
 import {
   uploadBase64ToS3,
-  uploadCompressedImageToS3,
   deleteFromS3,
   pathToKey,
   S3_PUBLIC_URL,
 } from './s3-client.js';
 // Template marketplace, customer accounts, Midtrans and custom orders (docs/platform/SPEC.md §6)
 import { handlePlatformAction } from './modules/templates.js';
+// Company products (list_products); the users column (product login accounts) is encrypted at rest
+import { handleListProductAction } from './modules/list_products.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -74,11 +75,6 @@ function saveBase64Image(base64Data, section) {
 
 function saveBase64File(base64Data, section, originalName) {
   return uploadBase64ToS3(base64Data, section, `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${originalName}`);
-}
-
-// Compress & convert image to webp (for list_products)
-async function saveAndCompressImage(base64Data, folderName) {
-  return await uploadCompressedImageToS3(base64Data, folderName);
 }
 
 // 0/1 flag from JSON input, like in_flag() in api.php: true, 1, '1' and 'true' mean 1
@@ -137,6 +133,7 @@ app.get('/api.php', async (req, res) => {
 
   // Template marketplace / customer / custom-order actions (backend/modules/templates.js)
   if (await handlePlatformAction(action, req.query, req, res, pool)) return;
+  if (await handleListProductAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -255,31 +252,6 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
-  if (action === 'get_list_products') {
-    try {
-      // Lightweight query for grid performance
-      // position is set by update_product_order (0 = not ordered yet, newest first)
-      const [rows] = await pool.query('SELECT id, title, description, link_button, image, logo FROM list_products ORDER BY position ASC, id DESC');
-      res.json(rows);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  if (action === 'get_list_product_detail') {
-    try {
-      const id = parseInt(req.query.id, 10);
-      if (!id) return res.status(400).json({ error: 'id required' });
-      const [rows] = await pool.query('SELECT * FROM list_products WHERE id = ?', [id]);
-      if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });
-      res.json(rows[0]);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
   if (action === 'get_visitor_stats') {
     try {
       const [rows] = await pool.query('SELECT total_visits FROM visitor_stats WHERE id = 1');
@@ -392,6 +364,7 @@ app.post('/api.php', async (req, res) => {
   // Template marketplace / customer / custom-order actions (backend/modules/templates.js).
   // midtrans_notification arrives here too: Midtrans posts its JSON to /api.php?action=midtrans_notification
   if (await handlePlatformAction(action, req.body, req, res, pool)) return;
+  if (await handleListProductAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {
@@ -651,75 +624,6 @@ app.post('/api.php', async (req, res) => {
         return;
       }
 
-      case 'add_list_product': {
-        const imagePath = await saveAndCompressImage(input.image, 'list-products');
-        const logoPath = await saveAndCompressImage(input.logo, 'list-products');
-
-        let finalFiles = [];
-        if (input.project_files) {
-          const filesArray = typeof input.project_files === 'string' ? JSON.parse(input.project_files) : input.project_files;
-          if (Array.isArray(filesArray)) {
-            for (const f of filesArray) {
-              if (f.data?.includes('data:')) {
-                const url = await uploadBase64ToS3(f.data, 'list-products/documents', `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`);
-                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: url });
-              } else {
-                finalFiles.push(f);
-              }
-            }
-          }
-        }
-        const projectFilesJson = JSON.stringify(finalFiles);
-
-        const [result] = await pool.query(
-          'INSERT INTO list_products (title, description, link_button, image, logo, users, project_files, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [input.title, input.description || '', input.link_button || '', imagePath, logoPath, input.users || '[]', projectFilesJson, input.notes || '']
-        );
-        res.json({ success: true, id: result.insertId });
-        return;
-      }
-
-      case 'update_list_product': {
-        // Only the fields that were sent are changed, so a logo-only update (ProductDetail) keeps the rest
-        const id = parseInt(input.id, 10);
-        const sets = [];
-        const params = [];
-        for (const f of ['title', 'description', 'link_button', 'users', 'notes']) {
-          if (input[f] !== undefined && input[f] !== null) {
-            sets.push(`${f}=?`);
-            params.push(typeof input[f] === 'string' ? input[f] : JSON.stringify(input[f]));
-          }
-        }
-        for (const f of ['image', 'logo']) {
-          if (input[f]) {
-            sets.push(`${f}=?`);
-            params.push(await saveAndCompressImage(input[f], 'list-products'));
-          }
-        }
-
-        if (input.project_files !== undefined && input.project_files !== null) {
-          let finalFiles = [];
-          const filesArray = typeof input.project_files === 'string' ? JSON.parse(input.project_files) : input.project_files;
-          if (Array.isArray(filesArray)) {
-            for (const f of filesArray) {
-              if (f.data?.includes('data:')) {
-                const url = await uploadBase64ToS3(f.data, 'list-products/documents', `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${f.name}`);
-                finalFiles.push({ name: f.name, type: f.type, size: f.size, path: url });
-              } else {
-                finalFiles.push(f);
-              }
-            }
-          }
-          sets.push('project_files=?');
-          params.push(JSON.stringify(finalFiles));
-        }
-
-        if (!id || sets.length === 0) return res.status(400).json({ error: 'Tidak ada data untuk diperbarui' });
-        await pool.query(`UPDATE list_products SET ${sets.join(', ')} WHERE id=?`, [...params, id]);
-        res.json({ success: true });
-        return;
-      }
-
       case 'get_changelogs': {
         const { date, month, year } = input;
         let query = 'SELECT * FROM changelogs';
@@ -763,24 +667,6 @@ app.post('/api.php', async (req, res) => {
       case 'delete_changelog': {
         const id = parseInt(input.id, 10);
         await pool.query('DELETE FROM changelogs WHERE id = ?', [id]);
-        res.json({ success: true });
-        return;
-      }
-
-      case 'delete_list_product': {
-        const id = parseInt(input.id, 10);
-        await pool.query('DELETE FROM list_products WHERE id = ?', [id]);
-        res.json({ success: true });
-        return;
-      }
-
-      case 'update_product_order': {
-        const { order } = input;
-        if (!Array.isArray(order)) return res.status(400).json({ error: 'Order must be an array' });
-        
-        for (const item of order) {
-          await pool.query('UPDATE list_products SET position = ? WHERE id = ?', [item.position, item.id]);
-        }
         res.json({ success: true });
         return;
       }
