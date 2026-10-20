@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" role="img">
+<defs>
+  <linearGradient id="page" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F5F0FE"/><stop offset="1" stop-color="#F7F8FB"/></linearGradient>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EBE1FD"/><stop offset="1" stop-color="#F5F0FE"/></linearGradient>
+  <linearGradient id="heroBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F5F0FE"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient>
+  <pattern id="win" width="22" height="24" patternUnits="userSpaceOnUse"><rect x="8" y="8" width="10" height="11" rx="2" fill="#FFFFFF" fill-opacity="0.55"/></pattern>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#121620" flood-opacity="0.10"/></filter>
+  <filter id="soft" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#121620" flood-opacity="0.12"/></filter>
+  <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="60"/></filter>
+  <clipPath id="win-clip"><rect x="80" y="60" width="1440" height="880" rx="24"/></clipPath>
+  
+</defs>
+<rect width="1600" height="1000" fill="url(#page)"/>
+<rect x="80" y="60" width="1440" height="880" rx="24" fill="#FFFFFF" filter="url(#shadow)"/>
+<g clip-path="url(#win-clip)">
+  <rect x="80" y="60" width="1440" height="48" fill="#F7F8FB"/>
+  <line x1="80" y1="108" x2="1520" y2="108" stroke="#E3E6EE"/>
+  <circle cx="112" cy="84" r="7" fill="#CBD0DB"/><circle cx="136" cy="84" r="7" fill="#CBD0DB"/><circle cx="160" cy="84" r="7" fill="#CBD0DB"/>
+  <rect x="560" y="72" width="480" height="24" rx="12" fill="#FFFFFF" stroke="#E3E6EE"/>
+  <text x="800" y="89" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="500" fill="#98A0AF" text-anchor="middle" >kiranalabs.id/#kontak</text>
+<rect x="80" y="108" width="1440" height="832" fill="#F7F8FB"/>
+  <rect x="740" y="140" width="120" height="30" rx="15" fill="#F5F0FE" stroke="#EBE1FD"/>
+  <text x="800" y="160" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#6D28D9" text-anchor="middle" >Kontak</text>
+  <text x="800" y="226" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="44" font-weight="700" fill="#121620" text-anchor="middle" letter-spacing="-1.4">Ada pertanyaan? Kami siap membantu</text>
+  <rect x="540" y="252" width="520" height="11" rx="5.5" fill="#CBD0DB"/>
+  <rect x="200" y="300" width="360" height="236" rx="24" fill="#7C3AED" />
+  <rect x="226" y="334" width="308" height="11" rx="5.5" fill="#FFFFFF" fill-opacity="0.55"/><rect x="226" y="356" width="248" height="11" rx="5.5" fill="#FFFFFF" fill-opacity="0.55"/><rect x="226" y="378" width="308" height="11" rx="5.5" fill="#FFFFFF" fill-opacity="0.55"/><rect x="226" y="400" width="248" height="11" rx="5.5" fill="#FFFFFF" fill-opacity="0.55"/>
+  <circle cx="248" cy="492" r="22" fill="#EBE1FD"/>
+  <text x="248" y="498" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#6D28D9" text-anchor="middle" >SR</text>
+  <text x="282" y="488" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="start" >Sari Rahmawati</text>
+  <text x="282" y="508" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#FFFFFF" text-anchor="start" fill-opacity="0.85">Kedai Kopi Senja</text><rect x="200" y="556" width="360" height="200" rx="24" fill="#FFFFFF" stroke="#E3E6EE"/>
+  <rect x="226" y="590" width="308" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/><rect x="226" y="612" width="248" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/><rect x="226" y="634" width="308" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/>
+  <circle cx="248" cy="712" r="22" fill="#EBE1FD"/>
+  <text x="248" y="718" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#6D28D9" text-anchor="middle" >AP</text>
+  <text x="282" y="708" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#121620" text-anchor="start" >Agus Prasetyo</text>
+  <text x="282" y="728" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#4B5262" text-anchor="start" >Toko Berkah Jaya</text><rect x="580" y="300" width="300" height="200" rx="24" fill="#FFFFFF" stroke="#E3E6EE"/>
+  <rect x="606" y="334" width="248" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/><rect x="606" y="356" width="188" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/><rect x="606" y="378" width="248" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/>
+  <circle cx="628" cy="456" r="22" fill="#EBE1FD"/>
+  <text x="628" y="462" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#6D28D9" text-anchor="middle" >DL</text>
+  <text x="662" y="452" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#121620" text-anchor="start" >Dewi Lestari</text>
+  <text x="662" y="472" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#4B5262" text-anchor="start" >Butik Lestari</text><rect x="580" y="520" width="300" height="236" rx="24" fill="#FFFFFF" stroke="#E3E6EE"/>
+  <rect x="606" y="554" width="248" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/><rect x="606" y="576" width="188" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/><rect x="606" y="598" width="248" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/><rect x="606" y="620" width="188" height="11" rx="5.5" fill="#E3E6EE" fill-opacity="1"/>
+  <circle cx="628" cy="712" r="22" fill="#EBE1FD"/>
+  <text x="628" y="718" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#6D28D9" text-anchor="middle" >RH</text>
+  <text x="662" y="708" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#121620" text-anchor="start" >Rudi Hartono</text>
+  <text x="662" y="728" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#4B5262" text-anchor="start" >Warung Makan Sedap</text>
+  <g filter="url(#soft)"><rect x="912" y="300" width="488" height="456" rx="28" fill="#FFFFFF"/></g>
+  <text x="944" y="348" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#121620" text-anchor="start" >Kirim pesan</text>
+  <rect x="944" y="364" width="300" height="10" rx="5.0" fill="#E3E6EE"/>
+  <text x="944" y="412" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="500" fill="#121620" text-anchor="start" >Nama</text><rect x="944" y="422" width="204" height="48" rx="12" fill="#FFFFFF" stroke="#CBD0DB"/><text x="1164" y="412" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="500" fill="#121620" text-anchor="start" >Email / nomor HP</text><rect x="1164" y="422" width="204" height="48" rx="12" fill="#FFFFFF" stroke="#CBD0DB"/>
+  <text x="944" y="500" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="500" fill="#121620" text-anchor="start" >Pesan</text><rect x="944" y="510" width="424" height="118" rx="12" fill="#FFFFFF" stroke="#CBD0DB"/>
+  <rect x="944" y="650" width="424" height="52" rx="26" fill="#7C3AED"/>
+  <text x="1156" y="682" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle" >Kirim lewat WhatsApp</text>
+  <rect x="200" y="780" width="560" height="112" rx="24" fill="#FFFFFF" stroke="#E3E6EE"/>
+  <rect x="224" y="806" width="40" height="40" rx="12" fill="#F5F0FE"/>
+  <circle cx="244" cy="826" r="10" fill="none" stroke="#7C3AED" stroke-width="2.5"/><path d="M238 834 l-2 5 l5 -2" fill="none" stroke="#7C3AED" stroke-width="2.5" stroke-linejoin="round"/>
+  <text x="280" y="822" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="500" fill="#98A0AF" text-anchor="start" >WhatsApp</text><text x="280" y="844" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#121620" text-anchor="start" >0812-3456-7890</text>
+  <rect x="500" y="806" width="40" height="40" rx="12" fill="#F5F0FE"/>
+  <rect x="509" y="817" width="22" height="16" rx="3" fill="none" stroke="#7C3AED" stroke-width="2.5"/><path d="M510 819 l10 7 l10 -7" fill="none" stroke="#7C3AED" stroke-width="2.5" stroke-linejoin="round"/>
+  <text x="556" y="822" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="500" fill="#98A0AF" text-anchor="start" >Email</text><text x="556" y="844" font-family="Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#121620" text-anchor="start" >halo@kiranalabs.id</text>
+  <rect x="780" y="780" width="620" height="112" rx="24" fill="#E8EEF3"/>
+  <path d="M780 850 C 950 820, 1100 900, 1400 860" stroke="#FFFFFF" stroke-width="10" fill="none"/>
+  <path d="M1060 780 L 1100 892" stroke="#FFFFFF" stroke-width="7" fill="none"/>
+  <path d="M1090 842 c-12 -14 -19 -22 -19 -31 a19 19 0 0 1 38 0 c0 9 -7 17 -19 31z" fill="#7C3AED"/>
+  <circle cx="1090" cy="811" r="7" fill="#FFFFFF"/>
+</g>
+</svg>

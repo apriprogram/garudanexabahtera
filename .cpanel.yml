@@ -1,0 +1,4 @@
+---
+deployment:
+  tasks:
+    - /bin/date > /home/garudanexa/.garudanexa_last_deploy
