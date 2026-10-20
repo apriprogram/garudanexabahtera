@@ -1,6 +1,7 @@
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
@@ -32,18 +33,35 @@ const client = new S3Client({
  * @param {Buffer|string} content - File content
  * @param {string} key - S3 object key (e.g. 'assets/product/image.webp')
  * @param {string} contentType - MIME type (optional)
+ * @param {'public-read'|'private'} acl - private objects are only read through getFromS3
  * @returns {Promise<string>} Public URL
  */
-export async function uploadToS3(content, key, contentType) {
+export async function uploadToS3(content, key, contentType, acl = 'public-read') {
   const command = new PutObjectCommand({
     Bucket: S3_BUCKET,
     Key: key,
     Body: content,
     ContentType: contentType || 'application/octet-stream',
-    ACL: 'public-read',
+    ACL: acl,
   });
   await client.send(command);
   return `${S3_PUBLIC_URL}/${key}`;
+}
+
+/**
+ * Reads an object (e.g. a private client project file); null when it does not exist or S3 is not configured
+ * @param {string} key - S3 object key (e.g. 'assets/dokumen-client/dokumen/file.pdf')
+ * @returns {Promise<{ body: import('node:stream').Readable, size: number } | null>}
+ */
+export async function getFromS3(key) {
+  if (!S3_ACCESS_KEY || !S3_SECRET_KEY) return null;
+  try {
+    const out = await client.send(new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }));
+    return { body: out.Body, size: Number(out.ContentLength) || 0 };
+  } catch (err) {
+    if (err?.name === 'NoSuchKey' || err?.$metadata?.httpStatusCode === 404) return null;
+    throw err;
+  }
 }
 
 // ── Upload validation ──
@@ -159,13 +177,15 @@ function passThrough(value) {
 }
 
 const DOCUMENT_SECTION = /dokumen|document/i;
+// Client project files: private objects, downloaded by staff through download_project_file (modules/project_files.js)
+const PRIVATE_SECTION = /^dokumen-client\/dokumen$/;
 
 /**
  * Upload file dari base64 string
  * @param {string} base64Data - Base64 data URI (e.g. 'data:image/png;base64,...')
  * @param {string} section - Folder/subdirectory (e.g. 'product'); document folders also accept office/pdf/archive files
  * @param {string} filename - Nama file asli (optional); only its stem is kept, the extension comes from the content
- * @returns {Promise<string>} Public S3 URL
+ * @returns {Promise<string>} Public S3 URL; for dokumen-client/dokumen the site path /assets/... of a private object
  */
 export async function uploadBase64ToS3(base64Data, section, filename) {
   if (typeof base64Data !== 'string' || !/^data:/i.test(base64Data.trimStart())) {
@@ -177,7 +197,13 @@ export async function uploadBase64ToS3(base64Data, section, filename) {
     filename: String(filename || '').replace(/^doc_\d+_[a-z0-9]+_/i, ''),
   });
   const name = filename ? `${safeStem(filename)}_${randomId()}.${ext}` : `${safeSection.split('/').pop()}_${randomId()}.${ext}`;
-  return await uploadToS3(content, `assets/${safeSection}/${name}`, contentType);
+  const key = `assets/${safeSection}/${name}`;
+  if (PRIVATE_SECTION.test(safeSection)) {
+    // Stored as the site path, like api.php does; there is no public URL to hand out
+    await uploadToS3(content, key, contentType, 'private');
+    return `/${key}`;
+  }
+  return await uploadToS3(content, key, contentType);
 }
 
 /**

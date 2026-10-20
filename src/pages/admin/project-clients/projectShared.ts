@@ -1,4 +1,5 @@
 // Tipe & helper proyek klien (tabel project_client), dipakai halaman Project Clients dan Dashboard.
+import { apiPostBlob } from '../../../lib/api';
 
 export type ProjectStatus = 'active' | 'pending' | 'completed' | 'canceled';
 export type ServiceType = 'website' | 'mobile_app' | 'ui_ux' | 'other';
@@ -70,6 +71,36 @@ export function parseProjectFiles(json: string | null | undefined): ProjectFile[
   } catch {
     return [];
   }
+}
+
+// Folder dokumen klien ditutup untuk akses langsung (htaccess/nginx); staf mengambilnya lewat download_project_file.
+const PRIVATE_FILE_PATH = '/assets/dokumen-client/dokumen/';
+
+/** File tersimpan di folder dokumen klien: hanya bisa diambil dengan token staf. */
+export const isPrivateProjectFile = (file: ProjectFile) => !file.data && !!file.path?.includes(PRIVATE_FILE_PATH);
+
+/** Isi file tersimpan sebagai Blob (download_project_file, token dilampirkan oleh src/lib/auth.ts). */
+export const fetchProjectFile = (file: ProjectFile) => apiPostBlob('download_project_file', { path: file.path });
+
+function saveUrl(url: string, name: string) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name || 'file';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+/** Unduh file proyek dengan nama aslinya: file baru dari data URI-nya, file tersimpan lewat API, sisanya (path lama di luar folder dokumen) langsung. */
+export async function downloadProjectFile(file: ProjectFile): Promise<void> {
+  if (!isPrivateProjectFile(file)) {
+    saveUrl(file.data || file.path || '', file.name);
+    return;
+  }
+  const url = URL.createObjectURL(await fetchProjectFile(file));
+  saveUrl(url, file.name);
+  // Beri waktu browser memulai unduhan sebelum URL dilepas
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 /** Pengguna untuk pilihan penanggung jawab (get_users). */

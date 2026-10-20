@@ -26,6 +26,8 @@ import {
 import { handlePlatformAction } from './modules/templates.js';
 // Company products (list_products); the users column (product login accounts) is encrypted at rest
 import { handleListProductAction } from './modules/list_products.js';
+// Client project files (dokumen-client/dokumen): staff-only download, the folder itself is closed to the web
+import { handleProjectFileAction } from './modules/project_files.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -134,6 +136,7 @@ app.get('/api.php', async (req, res) => {
   // Template marketplace / customer / custom-order actions (backend/modules/templates.js)
   if (await handlePlatformAction(action, req.query, req, res, pool)) return;
   if (await handleListProductAction(action, req.query, req, res, pool)) return;
+  if (await handleProjectFileAction(action, req.query, req, res)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -365,6 +368,7 @@ app.post('/api.php', async (req, res) => {
   // midtrans_notification arrives here too: Midtrans posts its JSON to /api.php?action=midtrans_notification
   if (await handlePlatformAction(action, req.body, req, res, pool)) return;
   if (await handleListProductAction(action, req.body, req, res, pool)) return;
+  if (await handleProjectFileAction(action, req.body, req, res)) return;
   const conn = await pool.getConnection();
 
   try {

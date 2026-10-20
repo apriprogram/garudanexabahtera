@@ -1,5 +1,5 @@
 // Drawer detail proyek (hanya baca) + pratinjau dokumen, dipindah dari Dashboard.
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Camera,
   DollarSign,
@@ -19,17 +19,61 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { Badge, Button, Drawer, Eyebrow, FOCUS, IconBox, IconButton, Modal, ModalBody, ModalFooter, Panel, cn } from '../../../components/admin/ui';
+import { Badge, Button, Drawer, ErrorState, Eyebrow, IconBox, IconButton, LoadingState, Modal, ModalBody, ModalFooter, Notice, Panel, cn } from '../../../components/admin/ui';
+import { errorMessage } from '../../../lib/api';
 import { formatTanggal } from '../../../types/platform';
-import { formatProjectPrice, parseProjectFiles, serviceLabel, type Project, type ProjectFile, type UserLite } from './projectShared';
+import {
+  downloadProjectFile,
+  fetchProjectFile,
+  formatProjectPrice,
+  isPrivateProjectFile,
+  parseProjectFiles,
+  serviceLabel,
+  type Project,
+  type ProjectFile,
+  type UserLite,
+} from './projectShared';
 import { Avatar, ProjectStatusBadge, SectionTitle, SourceBadge } from './ProjectUi';
 
-// Tautan ikon (<a download>) setara IconButton ghost sm.
-const ICON_LINK = cn(
-  'relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-adm-muted transition-colors duration-150 hover:bg-adm-hover hover:text-adm-fg',
-  'max-sm:before:absolute max-sm:before:-inset-1.5',
-  FOCUS,
-);
+/**
+ * Alamat pratinjau file: file baru/lama di luar folder dokumen langsung dari data/path-nya, file tersimpan di folder
+ * dokumen (tertutup untuk publik) diambil dengan token lalu ditampilkan sebagai blob URL yang dilepas saat ditutup.
+ */
+function usePreviewUrl(file: ProjectFile | null) {
+  const [loaded, setLoaded] = useState<{ file: ProjectFile; url?: string; error?: string } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (!file || !isPrivateProjectFile(file)) return;
+    let cancelled = false;
+    let url = '';
+    fetchProjectFile(file).then(
+      (blob) => {
+        if (cancelled) return;
+        url = URL.createObjectURL(blob);
+        setLoaded({ file, url });
+      },
+      (err) => {
+        if (!cancelled) setLoaded({ file, error: errorMessage(err) });
+      },
+    );
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [file, attempt]);
+
+  if (!file) return { src: undefined, error: undefined, retry: () => {} };
+  if (!isPrivateProjectFile(file)) return { src: file.path || file.data, error: undefined, retry: () => {} };
+  const current = loaded?.file === file ? loaded : null;
+  return {
+    src: current?.url,
+    error: current?.error,
+    retry: () => {
+      setLoaded(null);
+      setAttempt((n) => n + 1);
+    },
+  };
+}
 
 const IMAGE_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 const isImage = (name: string) => IMAGE_EXT.some((ext) => name.toLowerCase().endsWith(ext));
@@ -56,11 +100,15 @@ export function ProjectViewDrawer({
   const [isGrabMode, setIsGrabMode] = useState(false);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const startPinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+  const [downloading, setDownloading] = useState<ProjectFile | null>(null);
+  const [downloadError, setDownloadError] = useState('');
 
   // Reset pratinjau saat file berganti/ditutup, dan saat drawer ditutup
   const [prevPreviewFile, setPrevPreviewFile] = useState(previewFile);
   if (previewFile !== prevPreviewFile) {
     setPrevPreviewFile(previewFile);
+    // Pesan gagal unduh milik daftar file tidak ikut ke pratinjau (dan sebaliknya)
+    setDownloadError('');
     if (!previewFile) {
       setPanOffset({ x: 0, y: 0 });
       setPdfZoom(100);
@@ -70,19 +118,27 @@ export function ProjectViewDrawer({
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (!open) setPreviewFile(null);
+    if (!open) {
+      setPreviewFile(null);
+      setDownloadError('');
+    }
   }
 
-  const downloadFile = (file: ProjectFile) => {
-    const link = document.createElement('a');
-    link.href = file.path || file.data || '';
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const preview = usePreviewUrl(open ? previewFile : null);
+  const downloadFile = async (file: ProjectFile) => {
+    setDownloading(file);
+    setDownloadError('');
+    try {
+      await downloadProjectFile(file);
+    } catch (err) {
+      setDownloadError(`Gagal mengunduh ${file.name}: ${errorMessage(err)}`);
+    } finally {
+      setDownloading(null);
+    }
   };
 
-  const files = project ? parseProjectFiles(project.project_files) : [];
+  // Objek yang sama di setiap render, agar `downloading === file` tetap cocok selama unduhan berjalan
+  const files = useMemo(() => (project ? parseProjectFiles(project.project_files) : []), [project]);
   const price = project ? formatProjectPrice(project) : null;
 
   return (
@@ -214,6 +270,11 @@ export function ProjectViewDrawer({
               {files.length > 0 && (
                 <section>
                   <SectionTitle icon={Paperclip}>Materi proyek</SectionTitle>
+                  {downloadError && (
+                    <Notice tone="danger" onClose={() => setDownloadError('')} className="mb-3">
+                      {downloadError}
+                    </Notice>
+                  )}
                   <div className="space-y-2">
                     {files.map((file, i) => (
                       <div key={i} className="flex items-center justify-between gap-3 rounded-xl p-3 ring-1 ring-inset ring-adm-line transition-colors hover:ring-adm-line-strong">
@@ -226,9 +287,7 @@ export function ProjectViewDrawer({
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
                           {isPreviewable(file.name) && <IconButton icon={<Eye />} label="Pratinjau dokumen" size="sm" onClick={() => setPreviewFile(file)} />}
-                          <a href={file.path || file.data} download={file.name} aria-label="Unduh file" title="Unduh file" className={ICON_LINK}>
-                            <Download className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-                          </a>
+                          <IconButton icon={<Download />} label="Unduh file" size="sm" loading={downloading === file} onClick={() => downloadFile(file)} />
                         </div>
                       </div>
                     ))}
@@ -278,13 +337,19 @@ export function ProjectViewDrawer({
               <IconButton
                 icon={<ExternalLink />}
                 label="Buka di tab baru untuk fitur lengkap"
-                href={previewFile.path || previewFile.data}
+                href={preview.src}
                 target="_blank"
                 rel="noopener noreferrer"
+                disabled={!preview.src}
               />
               <IconButton icon={<Printer />} label="Cetak dokumen" onClick={() => window.print()} />
-              <IconButton icon={<Download />} label="Unduh file" onClick={() => downloadFile(previewFile)} />
+              <IconButton icon={<Download />} label="Unduh file" loading={downloading === previewFile} onClick={() => downloadFile(previewFile)} />
             </div>
+            {downloadError && (
+              <Notice tone="danger" onClose={() => setDownloadError('')} className="mx-5 mt-3 shrink-0 sm:mx-6">
+                {downloadError}
+              </Notice>
+            )}
 
             <div className={cn('custom-scrollbar relative min-h-0 flex-1 overflow-hidden bg-adm-ghost', isGrabMode && 'cursor-grab select-none active:cursor-grabbing')}>
               {isGrabMode && (
@@ -353,10 +418,14 @@ export function ProjectViewDrawer({
                   width: '100%',
                 }}
               >
-                {isImage(previewFile.name) ? (
-                  <img src={previewFile.path || previewFile.data} alt={previewFile.name} className="h-auto max-w-full object-contain" />
+                {preview.error ? (
+                  <ErrorState title="Gagal memuat dokumen" error={preview.error} onRetry={preview.retry} />
+                ) : !preview.src ? (
+                  <LoadingState label="Memuat dokumen…" />
+                ) : isImage(previewFile.name) ? (
+                  <img src={preview.src} alt={previewFile.name} className="h-auto max-w-full object-contain" />
                 ) : (
-                  <iframe src={previewFile.path || previewFile.data} className="h-[80vh] w-full border-none bg-adm-surface" title="Pratinjau dokumen" />
+                  <iframe src={preview.src} className="h-[80vh] w-full border-none bg-adm-surface" title="Pratinjau dokumen" />
                 )}
               </div>
             </div>

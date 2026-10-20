@@ -61,6 +61,23 @@ export async function apiPost<T>(action: string, body: Record<string, unknown> =
   return parse<T>(res);
 }
 
+/** POST JSON yang membalas file (mis. download_project_file): Blob dengan Content-Type dari server. */
+export async function apiPostBlob(action: string, body: Record<string, unknown> = {}): Promise<Blob> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}?action=${encodeURIComponent(action)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, action }),
+    });
+  } catch {
+    throw new ApiError(NETWORK_ERROR, 0, 'NETWORK');
+  }
+  // Gagal: server membalas JSON {error, code}; parse() melempar ApiError dengan pesannya
+  if (!res.ok) await parse<never>(res);
+  return res.blob();
+}
+
 /** Pesan error yang aman ditampilkan ke pengguna. */
 export const errorMessage = (err: unknown, fallback = 'Terjadi kesalahan. Silakan coba lagi.') =>
   err instanceof ApiError ? err.message : err instanceof Error && err.message ? err.message : fallback;

@@ -43,7 +43,7 @@ import {
   controlClass,
 } from '../../../components/admin/ui';
 import { ApiError, apiPost, errorMessage, readImageAsDataUrl } from '../../../lib/api';
-import { parseProjectFiles, toDateInput, type Project, type ProjectFile, type ProjectStatus, type UserLite } from './projectShared';
+import { downloadProjectFile, parseProjectFiles, toDateInput, type Project, type ProjectFile, type ProjectStatus, type UserLite } from './projectShared';
 import { Avatar, SectionTitle } from './ProjectUi';
 
 // Input tanggal: ikon kalender bawaan dibuat transparan menutupi seluruh field.
@@ -225,13 +225,16 @@ export function ProjectFormDrawer({
     setFormData((f) => ({ ...f, project_files: JSON.stringify(next) }));
   };
 
-  const downloadFile = (file: ProjectFile) => {
-    const link = document.createElement('a');
-    link.href = file.path || file.data || '';
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const downloadFile = async (file: ProjectFile & { id: string }) => {
+    setDownloadingId(file.id);
+    try {
+      await downloadProjectFile(file);
+    } catch (err) {
+      setErrors((x) => ({ ...x, files: `Gagal mengunduh ${file.name}: ${errorMessage(err)}` }));
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -643,7 +646,7 @@ export function ProjectFormDrawer({
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1 transition-opacity sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
-                    <IconButton icon={<Download />} label="Unduh file" size="sm" onClick={() => downloadFile(file)} />
+                    <IconButton icon={<Download />} label="Unduh file" size="sm" loading={downloadingId === file.id} onClick={() => downloadFile(file)} />
                     <IconButton icon={<Trash />} label="Hapus file" size="sm" variant="danger-ghost" onClick={() => removeFile(index)} />
                   </div>
                 </Reorder.Item>
