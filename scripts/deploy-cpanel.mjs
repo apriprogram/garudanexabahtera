@@ -21,8 +21,9 @@ const BRANCH = 'cpanel-deploy';
 const CPANEL_HOME = process.env.CPANEL_HOME || '/home/garudanexa';
 const push = process.argv.includes('--push');
 
-// Upload folders that hold user content: never published from git (they live only on the server)
-const EXCLUDE = ['assets/sites', 'assets/documents', 'assets/list-products'];
+// Upload folders that hold user content: never published from git (they live only on the server).
+// assets/dokumen-client = client documents and project logos uploaded from the admin; the deploy branch is public.
+const EXCLUDE = ['assets/sites', 'assets/documents', 'assets/list-products', 'assets/dokumen-client'];
 
 const run = (cmd, cwd = ROOT) => execSync(cmd, { cwd, stdio: 'inherit' });
 const out = (cmd, cwd = ROOT) => execSync(cmd, { cwd, encoding: 'utf8' }).trim();
@@ -37,6 +38,8 @@ run('npx tsc -b');
 await build({ root: ROOT, publicDir: false, logLevel: 'warn', build: { outDir: OUT, emptyOutDir: true } });
 const excluded = new Set(EXCLUDE.map((rel) => join(ROOT, 'public', rel)));
 cpSync(join(ROOT, 'public'), OUT, { recursive: true, filter: (src) => !excluded.has(src) });
+const leaked = EXCLUDE.filter((rel) => existsSync(join(OUT, rel)));
+if (leaked.length) throw new Error(`Folder upload ikut ter-build (harus dikecualikan): ${leaked.join(', ')}`);
 
 // 2. PHP API next to index.html (api.php finds its .env one level up, outside public_html)
 cpSync(join(ROOT, 'backend', 'api.php'), join(OUT, 'api.php'));
@@ -61,6 +64,9 @@ writeFileSync(
   join(OUT, 'README.md'),
   `Branch ini dibuat otomatis oleh scripts/deploy-cpanel.mjs dari branch main.\nJangan diedit manual. Panduan: deploy/cpanel/README.md di branch main.\n`,
 );
+// public_html adalah checkout branch ini: upload di folder EXCLUDE tetap file untracked di server.
+// Di-ignore agar working tree cPanel tetap bersih dan `git clean -fd` tidak menghapusnya.
+writeFileSync(join(OUT, '.gitignore'), EXCLUDE.map((rel) => `/${rel}/`).join('\n') + '\n');
 
 // 4. Commit the build to the deploy branch through a separate worktree
 const sourceSha = out('git rev-parse --short HEAD');
