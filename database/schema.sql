@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS list_products (
   image         TEXT DEFAULT NULL,
   logo          TEXT DEFAULT NULL,
   created_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  users         TEXT DEFAULT NULL,            -- JSON array of demo accounts
+  users         TEXT DEFAULT NULL,            -- login accounts, AES-256-GCM "enc:v1:..." (backend/modules/list_products.js)
   project_files LONGTEXT DEFAULT NULL,        -- JSON array
   notes         TEXT DEFAULT NULL,
   position      INT NOT NULL DEFAULT 0,       -- display order (update_product_order)
