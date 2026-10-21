@@ -71,7 +71,7 @@ export default function CustomOrder() {
   return (
     <>
       <Navbar />
-      <main className="bg-canvas pt-16 lg:pt-[72px]">
+      <main className="bg-canvas pt-nav">
         <div className="relative overflow-hidden">
           {/* Aksen lembut biru brand di latar (tema terang) */}
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-linear-to-b from-brand-50/80 to-transparent" />
@@ -107,7 +107,7 @@ export default function CustomOrder() {
               </div>
 
               {/* Formulir / layar sukses */}
-              <div ref={panelRef} id="formulir" className="scroll-mt-24 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+              <div ref={panelRef} id="formulir" className="scroll-mt-[calc(var(--nav-h)+2rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1">
                 <div className="card-site p-5 sm:p-8">
                   {result ? (
                     <SuccessPanel

@@ -1,5 +1,5 @@
 ﻿import React, { useId, useRef, useState } from 'react';
-import { ArrowRight, LayoutTemplate, MessageCircle, Smartphone } from 'lucide-react';
+import { LayoutTemplate, MessageCircle, Smartphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Reveal } from '../ui/Reveal';
 import { LogoBadge } from '../ui/LogoMark';
@@ -119,15 +119,13 @@ const TemplateBento: React.FC<{ templatesHidden: boolean }> = ({ templatesHidden
         actions={
           // Katalog #templates disembunyikan admin → arahkan ke konsultasi, bukan ke anchor yang tidak ada
           templatesHidden ? (
-            <SmartLink href="#kontak" className="btn btn-primary group">
+            <SmartLink href="#kontak" className="btn btn-primary">
               <MessageCircle className="h-4 w-4" aria-hidden />
               Konsultasi Gratis
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </SmartLink>
           ) : (
-            <SmartLink href="#templates" className="btn btn-primary group">
+            <SmartLink href="#templates" className="btn btn-primary">
               Pilih Template
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </SmartLink>
           )
         }
@@ -173,9 +171,8 @@ const CustomBento: React.FC = () => (
         text="Website atau aplikasi Android/iOS Anda siap dipakai, lengkap dengan pendampingan setelah rilis."
         actions={
           <>
-            <Link to="/pesan-custom" className="btn btn-primary group">
+            <Link to="/pesan-custom" className="btn btn-primary">
               Pesan Custom
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </Link>
             <SmartLink href="#kontak" className="btn btn-outline">
               <MessageCircle className="h-4 w-4" aria-hidden />
@@ -213,7 +210,7 @@ const Process: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '
     <section
       id="process"
       aria-labelledby="process-title"
-      className={`section-screen scroll-mt-12 sm:scroll-mt-4 ${alt ? 'bg-alt' : 'bg-canvas'}`}
+      className={`section-screen ${alt ? 'bg-alt' : 'bg-canvas'}`}
     >
       <div className="container-site w-full">
         <SectionHeading

@@ -1,5 +1,5 @@
 import React, { useId, useRef } from 'react';
-import { ArrowRight, ArrowUpRight, Check, LayoutTemplate, MessageCircle, Play } from 'lucide-react';
+import { Check, LayoutTemplate, MessageCircle, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation, type TranslationKey } from '../../../hooks/useTranslation';
 import { SplitText } from '../../ui/SplitText';
@@ -158,7 +158,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
               </ul>
 
               <div
-                className={`mt-7 flex flex-wrap items-center gap-x-6 gap-y-3 sm:mt-11 ${active ? 'animate-fade-up motion-reduce:animate-none' : ''}`}
+                className={`mt-7 flex flex-wrap items-center gap-3 sm:mt-11 ${active ? 'animate-fade-up motion-reduce:animate-none' : ''}`}
                 style={{ animationDelay: '750ms' }}
               >
                 {item.key === 'template' ? (
@@ -170,15 +170,12 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
                   <>
                     <Link
                       to="/pesan-custom"
-                      className="btn btn-primary btn-xl group max-sm:h-auto max-sm:min-h-10 max-sm:w-full max-sm:whitespace-normal max-sm:py-2 max-sm:text-center max-sm:leading-snug"
+                      className="btn btn-primary btn-xl max-sm:h-auto max-sm:min-h-10 sm:px-6 max-sm:w-full max-sm:whitespace-normal max-sm:py-2 max-sm:text-center max-sm:leading-snug"
                     >
                       {t('home-hero-btn-custom')}
-                      <ArrowRight className="h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5 max-sm:h-4 max-sm:w-4" aria-hidden />
                     </Link>
-                    <SmartLink href="#kontak" className={TEXT_LINK}>
-                      <span className={TEXT_LINK_ICON}>
-                        <MessageCircle className="h-4 w-4" aria-hidden />
-                      </span>
+                    <SmartLink href="#kontak" className={SECONDARY_BTN}>
+                      <MessageCircle className={SECONDARY_ICON} aria-hidden />
                       {t('nav-consult')}
                     </SmartLink>
                   </>
@@ -192,10 +189,15 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
   );
 };
 
-const TEXT_LINK =
-  'group/link relative inline-flex min-h-11 items-center gap-2.5 rounded-full text-[14px] font-semibold text-fg transition-colors hover:text-primary sm:text-[15px]';
-const TEXT_LINK_ICON =
-  'flex h-9 w-9 items-center justify-center rounded-full bg-surface text-fg ring-1 ring-inset ring-line transition-colors group-hover/link:bg-brand-50 group-hover/link:text-primary group-hover/link:ring-brand-200 sm:h-10 sm:w-10';
+/**
+ * Tombol hero tanpa panah: utama biru solid, kedua garis saja tanpa latar (ikon polos 16px); tinggi sama (btn-xl: 56px,
+ * HP 40px), padding 24px agar pasangan mode Custom tetap satu baris di 1366px. HP: berbagi satu baris sama lebar, turun
+ * ke baris baru (selebar kolom) bila tidak muat.
+ */
+const PRIMARY_BTN = 'btn btn-primary btn-xl max-sm:flex-1 sm:px-6';
+const SECONDARY_BTN = 'btn btn-outline-clear btn-xl max-sm:flex-1 sm:px-6';
+const ICON = 'h-5 w-5 max-sm:h-4 max-sm:w-4';
+const SECONDARY_ICON = 'h-4 w-4';
 
 /**
  * Tombol utama mode Template: "Pilih Template" → katalog #templates. Bila katalog disembunyikan admin, ke halaman
@@ -203,28 +205,28 @@ const TEXT_LINK_ICON =
  */
 const TemplateCta: React.FC<{ current: ShowcaseItem | null; templatesHidden: boolean }> = ({ current, templatesHidden }) => {
   const { t } = useTranslation();
-  const icon = 'h-5 w-5 max-sm:h-4 max-sm:w-4';
 
   if (templatesHidden && !current?.slug) {
     return (
-      <SmartLink href="#kontak" className="btn btn-primary btn-xl group">
-        <MessageCircle className={icon} aria-hidden />
+      <SmartLink href="#kontak" className={PRIMARY_BTN}>
+        <MessageCircle className={ICON} aria-hidden />
         {t('nav-consult')}
-        <ArrowRight className={`${icon} transition-transform group-hover:translate-x-0.5`} aria-hidden />
       </SmartLink>
     );
   }
   const href = templatesHidden && current?.slug ? `/template/${encodeURIComponent(current.slug)}` : '#templates';
   return (
-    <SmartLink href={href} className="btn btn-primary btn-xl group">
-      <LayoutTemplate className={icon} aria-hidden />
+    <SmartLink href={href} className={PRIMARY_BTN}>
+      <LayoutTemplate className={ICON} aria-hidden />
       {t('home-hero-btn-templates')}
-      <ArrowRight className={`${icon} transition-transform group-hover:translate-x-0.5`} aria-hidden />
     </SmartLink>
   );
 };
 
-/** "Lihat demo" untuk template yang sedang tampil di visual; tanpa template → ke katalog (tidak tampil bila katalog disembunyikan). */
+/**
+ * "Lihat demo" (tombol garis tanpa latar, ikon play polos) untuk template yang sedang tampil di visual; tanpa template →
+ * ke katalog (tidak tampil bila katalog disembunyikan). Tab baru hanya diumumkan ke pembaca layar.
+ */
 const DemoLink: React.FC<{ current: ShowcaseItem | null; label: string; templatesHidden: boolean }> = ({
   current,
   label,
@@ -232,34 +234,31 @@ const DemoLink: React.FC<{ current: ShowcaseItem | null; label: string; template
 }) => {
   const content = (
     <>
-      <span className={TEXT_LINK_ICON}>
-        <Play className="h-3.5 w-3.5 translate-x-px" fill="currentColor" aria-hidden />
-      </span>
+      <Play className={`${SECONDARY_ICON} max-sm:h-3.5 max-sm:w-3.5`} fill="currentColor" aria-hidden />
       <span>
         {label}
         {current?.demoHref && <span className="sr-only"> template {current.name} (tab baru)</span>}
       </span>
-      {current?.demoHref && <ArrowUpRight className="h-4 w-4 text-subtle transition-colors group-hover/link:text-primary" aria-hidden />}
     </>
   );
 
   if (!current?.demoHref) {
     if (templatesHidden) return null;
     return (
-      <SmartLink href="#templates" className={TEXT_LINK}>
+      <SmartLink href="#templates" className={SECONDARY_BTN}>
         {content}
       </SmartLink>
     );
   }
   if (current.demoExternal) {
     return (
-      <a href={current.demoHref} target="_blank" rel="noopener noreferrer" className={TEXT_LINK}>
+      <a href={current.demoHref} target="_blank" rel="noopener noreferrer" className={SECONDARY_BTN}>
         {content}
       </a>
     );
   }
   return (
-    <Link to={current.demoHref} target="_blank" rel="noopener" className={TEXT_LINK}>
+    <Link to={current.demoHref} target="_blank" rel="noopener" className={SECONDARY_BTN}>
       {content}
     </Link>
   );

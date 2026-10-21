@@ -22,7 +22,7 @@ ilustrasi di dalam kartu/mockup dan halaman masuk/daftar.
 |---|---|---|
 | `public/favicon.svg` | Favicon: sayap biru brand tanpa latar di kotak transparan (tab gelap: brand-400) | `<link rel="icon">` di `index.html` |
 | `public/brand/logo-wings.svg` | Sayap saja, `fill="currentColor"` | `<LogoMark className="h-5 text-primary" />` (warna lewat kelas teks) |
-| (komponen) | Sayap `h-5`/`sm:h-6` + "Garuda Nexa Bahtera" | `<BrandLogo />` (navbar, footer) |
+| (komponen) | Sayap `h-5`/`sm:h-6` + "Garuda Nexa Bahtera"; `size="sm"` = sayap 18/22px + nama 15/16px | `<BrandLogo />` (footer); `<BrandLogo size="sm" />` (navbar) |
 | (sidebar admin) | Sayap `text-adm-link` (biru brand di tema terang, brand-300 di tema gelap) | `<LogoMark className="h-5 text-adm-link" />` |
 | `public/brand/logo-mark.svg` | Kotak rounded biru brand + sayap putih | `<LogoBadge className="h-8 w-8" />` (ilustrasi, halaman auth) |
 
@@ -30,7 +30,7 @@ ilustrasi di dalam kartu/mockup dan halaman masuk/daftar.
 
 | File | Isi | Pemilik |
 |---|---|---|
-| `src/index.css` | Token brand & peran website, skala font HP, `container-site`, `section-y`, `section-screen`, `.btn*`, `.card-flat`/`.card-site`, `.lift`, `.eyebrow`, `grid-dots`, `glow-brand`, `.reveal`/`.split-word`, form `*-site`, `.chip-site`, `.badge-site`, `.link-site` | Website |
+| `src/index.css` | Token brand & peran website, skala font HP, tinggi navbar `--nav-h` (`h-nav`/`pt-nav`), `container-site`, `section-y`, `section-screen`, `.btn*`, `.card-flat`/`.card-site`, `.lift`, `.eyebrow`, `grid-dots`, `glow-brand`, `.reveal`/`.split-word`, form `*-site`, `.chip-site`, `.badge-site`, `.link-site` | Website |
 | `src/styles/admin.css` | Palet & token `adm-*` panel admin, pemetaan `slate/blue/primary` di `.admin-panel`, mode gelap/terang admin | Panel admin |
 
 ## Website publik & akun pembeli (TEMA TERANG SAJA)
@@ -70,7 +70,8 @@ mode terang panel admin) tidak mengubah apa pun di halaman publik. Jangan memaka
 - Radius: kontrol/input 12px (`rounded-xl`), kartu 24px (`card-flat`/`card-site`; gambar di dalam kartu `p-1.5` → 19px),
   accordion 20px, bingkai visual hero 20 → 28px, tombol/chip/tab pill (`rounded-full`).
 - **Container** `container-site`: maks 1680px, gutter 20/32/48/64px. **Section**: `section-y` (48 → 80 → 96px) atau
-  `section-screen` (beranda: ≈ satu layar di ≥ 1024px, isi di tengah; di HP tinggi mengikuti isi).
+  `section-screen` (beranda: ≈ satu layar di ≥ 1024px, isi di tengah; di HP tinggi mengikuti isi; `scroll-margin-top`
+  bawaan dari `--nav-h`, jadi judulnya mendarat 32px / 40px di bawah navbar, tanpa kelas `scroll-mt-*` tambahan).
 - Tipografi Inter + **JetBrains Mono** (`font-mono`: nomor section, nomor langkah, penghitung). Angka `tabular-nums`.
 - Skala (HP → desktop): H1 hero `text-[26px] → sm:text-[52px] lg:text-[48px] xl:text-[60px] 2xl:text-[72px]`;
   H2 section `text-2xl → sm:text-5xl xl:text-[56px]` (lewat `SectionHeading`); judul kartu besar `text-xl → sm:text-[28-34px]`;
@@ -82,7 +83,8 @@ mode terang panel admin) tidak mengubah apa pun di halaman publik. Jangan memaka
 | Kelas | Tampilan | Kapan |
 |---|---|---|
 | `btn` + `btn-primary` | Biru brand solid | Satu aksi utama per area (Pesan, Bayar, Simpan) |
-| `btn` + `btn-outline` | Putih + garis tipis (CPNS secondary) | Aksi netral: Batal, Kembali, Lihat Demo |
+| `btn` + `btn-outline` | Putih + garis tipis (CPNS secondary) | Aksi netral: Batal, Kembali, Lihat Demo (halaman template) |
+| `btn` + `btn-outline-clear` | Transparan, garis `line-strong` → hover `muted`, tanpa latar | Aksi kedua di atas visual: "Lihat demo" & "Konsultasi Gratis" di hero (tinggi sama dengan tombol utama) |
 | `btn` + `btn-outline-primary` | Putih, garis & teks biru | Aksi kedua yang tetap menonjol |
 | `btn` + `btn-secondary` | Latar biru muda, teks biru | Aksi tonal |
 | `btn` + `btn-soft` | Latar abu lembut tanpa garis | Aksi tersier di kartu |
@@ -98,6 +100,11 @@ mode terang panel admin) tidak mengubah apa pun di halaman publik. Jangan memaka
 | `chip-site` | Pill filter; aktif = `aria-pressed`/`aria-selected` (biru solid) | Filter kategori |
 | `badge-site` / `link-site` | Pill kecil biru muda / teks biru bergaris bawah saat hover | |
 
+**Tombol CTA tanpa panah.** "Pilih Template", "Konsultasi Gratis" (navbar, hero, proses), tombol utama mode Custom
+("Pesan Website / Aplikasi Mobile Custom", "Pesan Custom") dan tombol WhatsApp CTA `#kontak` tidak memakai ikon
+`ArrowRight`/`ArrowUpRight`. Ikon depan (mis. `LayoutTemplate`, `MessageCircle`, `Play`) tetap boleh, polos tanpa
+lingkaran/garis. Tab baru cukup diumumkan lewat `sr-only` ("(tab baru)"), bukan ikon panah.
+
 State wajib: default, hover, focus (outline biru global `:focus-visible`), disabled (`disabled` / `aria-disabled` = pudar),
 loading (ikon `Loader2 animate-spin` + `disabled`, atau skeleton `animate-pulse bg-alt`), error, empty.
 
@@ -111,9 +118,14 @@ loading (ikon `Loader2 animate-spin` + `disabled`, atau skeleton `animate-pulse 
 
 ### Layout publik (`src/components/layout`, `src/components/ui`)
 
-- `Navbar` (fixed, tinggi 64px HP / 72px ≥ 1024px; **halaman lain memberi `pt-16 lg:pt-[72px]`**): transparan di puncak,
-  putih kaca + garis rambut saat digulir (tanpa shadow), menu tengah dengan sorotan pill yang meluncur saat hover, titik
-  biru = section aktif di beranda, bar progres baca 2px. Menu dari "Navbar Manager" (`useNavbarMenus`); bawaan Template
+- `Navbar` (fixed, tinggi **`--nav-h` = 56px HP & tablet / 64px ≥ 1024px**, di `src/index.css`): transparan di puncak,
+  putih kaca (`bg-canvas/85` + blur) saat digulir, **tanpa garis bawah, shadow, atau bar progres di semua state** (juga saat
+  menu HP terbuka). Menu tengah dengan sorotan pill yang meluncur saat hover (36px), titik biru = section aktif di beranda.
+  Logo `BrandLogo size="sm"`, tombol bahasa/akun 36px, CTA "Konsultasi Gratis" 40px (HP 32px, "Konsultasi").
+  **Offset navbar selalu lewat variabel**, jangan menulis angka: konten pertama halaman lain `pt-nav`, tinggi `h-nav`,
+  anchor `scroll-mt-[calc(var(--nav-h)+1rem)]`, kolom sticky
+  `lg:top-[calc(var(--nav-h)+1.5rem)]`, section beranda lewat `section-screen`. `scroll.ts` membaca `scroll-margin-top`
+  elemen, jadi ikut otomatis. Menu dari "Navbar Manager" (`useNavbarMenus`); bawaan Template
   `#templates`, Projects `#projects`, Proses `#process`, FAQ `#faq`. Kanan: bahasa, "Masuk" → `/masuk` (customer: "Akun Saya"
   → `/akun`; staf: "Panel Admin" → `/admin`), CTA pill "Konsultasi Gratis" → `#kontak`. HP: logo + CTA ringkas + hamburger;
   menu HP berupa lapisan di bawah navbar (item 44px, bahasa, akun, CTA).
@@ -134,8 +146,9 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
 
 - **Hero**: kanvas medan titik interaktif + cahaya biru mengikuti kursor (berkelana saat diam, berhenti saat tak terlihat,
   ±30 fps di HP). Kiri: toggle mode [Template siap pakai | Website & Aplikasi Custom] berindikator meluncur → judul dua warna,
-  3 poin, tombol (Template: "Pilih Template" → `#templates` + "Lihat demo" template yang sedang tampil; Custom: "Pesan Website /
-  Aplikasi Mobile Custom" → `/pesan-custom` + "Konsultasi Gratis"). Kanan (HP: di bawah): bingkai browser datar yang menayangkan
+  3 poin, tombol tanpa panah setinggi `btn-xl` (Template: "Pilih Template" → `#templates` + "Lihat demo" template yang
+  sedang tampil; Custom: "Pesan Website / Aplikasi Mobile Custom" → `/pesan-custom` + "Konsultasi Gratis"; tombol kedua =
+  `btn-outline-clear` dengan ikon polos, HP: sama lebar dalam satu baris). Kanan (HP: di bawah): bingkai browser datar yang menayangkan
   pratinjau template dari `get_templates` (cadangan `/assets/templates/*-preview.svg`) + rail langkah Pilih template → Bayar via
   Midtrans → Domain aktif → Kelola lewat CMS (bisa diklik & dijeda).
 - **Projects**: kartu sorotan lebar (≥ 3 proyek) + grid kartu datar bergambar.

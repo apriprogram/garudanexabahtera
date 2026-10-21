@@ -79,6 +79,8 @@
   --color-line: var(--site-line);
   --color-line-strong: var(--site-line-strong);
 
+  /* Tinggi navbar publik (nilai di --nav-h): h-nav, pt-nav (konten pertama halaman lain), top-nav, scroll-mt-nav */
+  --spacing-nav: var(--nav-h);
 
   /* Skala font: desktop = default Tailwind, HP (< 640px) lebih ringkas */
   --text-sm: var(--fs-sm);
@@ -105,6 +107,15 @@
   --fs-2xl: 1.5rem;    --lh-2xl: 2rem;
   --fs-3xl: 1.875rem;  --lh-3xl: 2.25rem;
   --fs-4xl: 2.25rem;   --lh-4xl: 2.5rem;
+
+  /* Navbar publik (fixed): 56px HP & tablet, 64px ≥ 1024px. Satu sumber untuk offset halaman, anchor & kolom sticky */
+  --nav-h: 3.5rem;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --nav-h: 4rem;
+  }
 }
 
 /*
@@ -146,9 +157,19 @@
   @apply py-12 sm:py-20 lg:py-24;
 }
 
-/* Section beranda ≈ satu layar desktop (isi di tengah); di HP & tablet tinggi mengikuti isi */
+/*
+ * Section beranda ≈ satu layar desktop (isi di tengah); di HP & tablet tinggi mengikuti isi.
+ * Anchor (#templates dst.): sebagian padding atas tertutup navbar, judul mendarat 32px (≥ 1024px: 40px) di bawahnya.
+ */
 @utility section-screen {
   @apply relative flex flex-col justify-center py-12 sm:py-20 lg:min-h-[100svh] lg:pb-16 lg:pt-24;
+  scroll-margin-top: calc(var(--nav-h) + 2rem - 3rem);
+  @media (min-width: 640px) {
+    scroll-margin-top: calc(var(--nav-h) + 2rem - 5rem);
+  }
+  @media (min-width: 1024px) {
+    scroll-margin-top: calc(var(--nav-h) + 2.5rem - 6rem);
+  }
 }
 
 @utility no-scrollbar {
@@ -254,6 +275,11 @@
   /* Netral bergaris (Batal, Kembali, Lihat Demo) = CPNS "secondary": putih + garis tipis */
   .btn-outline {
     @apply bg-surface text-fg ring-1 ring-inset ring-line hover:bg-alt hover:ring-line-strong active:bg-line disabled:hover:bg-surface;
+  }
+
+  /* Garis saja, TANPA latar (di atas hero/visual): aksi kedua di samping tombol utama, mis. "Lihat demo" di hero */
+  .btn-outline-clear {
+    @apply bg-transparent text-fg ring-1 ring-inset ring-line-strong hover:ring-muted active:ring-fg;
   }
 
   /* Netral tanpa garis (latar abu lembut), mis. aksi tersier di kartu = CPNS "soft" */

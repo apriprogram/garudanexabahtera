@@ -79,7 +79,7 @@ const FAQ: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '04' 
     <section
       id="faq"
       aria-labelledby="faq-title"
-      className={`section-screen scroll-mt-12 sm:scroll-mt-4 ${alt ? 'bg-alt' : 'bg-canvas'}`}
+      className={`section-screen ${alt ? 'bg-alt' : 'bg-canvas'}`}
     >
       <div className="container-site grid w-full gap-8 sm:gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
         {/* Kiri: judul (sticky di desktop) */}

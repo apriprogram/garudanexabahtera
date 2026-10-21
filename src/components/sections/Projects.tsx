@@ -112,7 +112,7 @@ const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = 
     <section
       id="projects"
       aria-labelledby="projects-title"
-      className={`section-screen scroll-mt-12 sm:scroll-mt-4 ${alt ? 'bg-alt' : 'bg-canvas'}`}
+      className={`section-screen ${alt ? 'bg-alt' : 'bg-canvas'}`}
     >
       <div className="container-site w-full">
         <SectionHeading

@@ -26,21 +26,32 @@ export const LogoBadge: React.FC<{ className?: string }> = ({ className = '' }) 
   </svg>
 );
 
+const BRAND_SIZES = {
+  // Footer, akun: sayap 20px & nama 15px di HP, 24px & 17px di desktop
+  md: { gap: 'gap-2.5', mark: 'h-5 sm:h-6', name: 'text-[15px] sm:text-[17px]' },
+  // Navbar 56/64px: sayap 18px & nama 15px di HP, 22px & 16px di desktop
+  sm: { gap: 'gap-2 sm:gap-2.5', mark: 'h-[18px] sm:h-[22px]', name: 'text-[15px] sm:text-[16px]' },
+};
+
 /**
- * Logo + nama perusahaan untuk navbar/footer: sayap biru brand tanpa latar (tinggi 20px & nama 15px di HP,
- * 24px & 17px di desktop). "Bahtera" tampil mulai `sm`; `compact` = tanpa "Bahtera"; `fullFrom="xl"` = "Bahtera"
- * baru tampil mulai 1280px (navbar: memberi ruang menu di 1024px).
+ * Logo + nama perusahaan untuk navbar/footer: sayap biru brand tanpa latar, ukuran `md` (bawaan) atau `sm` (navbar).
+ * "Bahtera" tampil mulai `sm`; `compact` = tanpa "Bahtera"; `fullFrom="xl"` = "Bahtera" baru tampil mulai 1280px
+ * (navbar: memberi ruang menu di 1024px).
  */
-export const BrandLogo: React.FC<{ className?: string; compact?: boolean; fullFrom?: 'sm' | 'xl' }> = ({
+export const BrandLogo: React.FC<{ className?: string; compact?: boolean; fullFrom?: 'sm' | 'xl'; size?: 'md' | 'sm' }> = ({
   className = '',
   compact = false,
   fullFrom = 'sm',
-}) => (
-  <span className={`inline-flex min-w-0 items-center gap-2.5 ${className}`}>
-    <LogoMark className="h-5 text-primary sm:h-6" />
-    <span className="min-w-0 truncate text-[15px] font-bold tracking-[-0.03em] text-fg sm:text-[17px]">
-      Garuda Nexa
-      {!compact && <span className={`hidden font-semibold text-subtle ${fullFrom === 'xl' ? 'xl:inline' : 'sm:inline'}`}> Bahtera</span>}
+  size = 'md',
+}) => {
+  const s = BRAND_SIZES[size];
+  return (
+    <span className={`inline-flex min-w-0 items-center ${s.gap} ${className}`}>
+      <LogoMark className={`text-primary ${s.mark}`} />
+      <span className={`min-w-0 truncate font-bold tracking-[-0.03em] text-fg ${s.name}`}>
+        Garuda Nexa
+        {!compact && <span className={`hidden font-semibold text-subtle ${fullFrom === 'xl' ? 'xl:inline' : 'sm:inline'}`}> Bahtera</span>}
+      </span>
     </span>
-  </span>
-);
+  );
+};

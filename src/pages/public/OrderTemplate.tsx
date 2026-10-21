@@ -115,7 +115,7 @@ export default function OrderTemplate() {
   return (
     <>
       <Navbar />
-      <main className="min-h-dvh bg-alt pt-16 lg:pt-[72px]">
+      <main className="min-h-dvh bg-alt pt-nav">
         <div className="mx-auto w-full max-w-6xl px-5 pb-16 pt-6 sm:px-8 sm:pb-20 sm:pt-10">
           <Breadcrumb
             items={[
@@ -173,7 +173,7 @@ export default function OrderTemplate() {
                     <LoginPrompt orderPath={orderPath} expired={sessionExpired} />
                   )}
                 </div>
-                <div className="order-first lg:order-none lg:sticky lg:top-24">
+                <div className="order-first lg:order-none lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)]">
                   <OrderSummary template={state.template} />
                 </div>
               </div>

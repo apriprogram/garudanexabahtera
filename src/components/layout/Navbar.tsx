@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, X, ChevronDown, Globe, Globe2, ArrowRight, UserRound,
@@ -101,10 +101,10 @@ interface Pill {
 }
 
 /**
- * Navbar publik gaya BELAJAR CPNS: transparan di puncak halaman, jadi putih kaca dengan garis rambut saat digulir
- * (tanpa shadow). Menu di tengah dengan sorotan pill yang meluncur mengikuti hover, titik biru menandai section aktif
- * di beranda, bar progres baca tipis di bawah. Tinggi 64px (HP) / 72px (≥ 1024px): halaman lain memberi
- * `pt-16 lg:pt-[72px]` pada konten pertamanya.
+ * Navbar publik gaya BELAJAR CPNS: transparan di puncak halaman, jadi putih kaca saat digulir, tanpa garis bawah
+ * maupun shadow di semua state. Menu di tengah dengan sorotan pill yang meluncur mengikuti hover, titik biru menandai
+ * section aktif di beranda. Tinggi = `--nav-h` (56px HP / 64px ≥ 1024px, di index.css): halaman lain memberi `pt-nav`
+ * pada konten pertamanya.
  */
 const Navbar: React.FC = () => {
   const { language, setLanguage } = useStore();
@@ -118,28 +118,23 @@ const Navbar: React.FC = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [pill, setPill] = useState<Pill>({ left: 0, width: 0, visible: false });
-  const barRef = useRef<HTMLSpanElement>(null);
   // Dibaca ulang tiap render (mis. setelah pindah halaman) dan saat login/logout di tab lain
   const role = useSyncExternalStore(subscribeSession, readSessionRole, () => null);
 
-  // Latar & bar progres mengikuti posisi gulir (rAF agar ringan)
+  // Latar mengikuti posisi gulir (rAF agar ringan)
   useEffect(() => {
     let raf = 0;
     const update = () => {
       raf = 0;
       setScrolled(window.scrollY > 8);
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      if (barRef.current) barRef.current.style.transform = `scaleX(${max > 0 ? Math.min(1, window.scrollY / max) : 0})`;
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
     };
     raf = requestAnimationFrame(update);
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
     return () => {
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);
@@ -219,15 +214,11 @@ const Navbar: React.FC = () => {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow] duration-300 ${
-        isMenuOpen
-          ? 'bg-canvas shadow-[0_1px_0_var(--site-line)]'
-          : scrolled
-            ? 'bg-canvas/80 shadow-[0_1px_0_var(--site-line)] backdrop-blur-xl backdrop-saturate-150'
-            : 'bg-transparent'
+      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
+        isMenuOpen ? 'bg-canvas' : scrolled ? 'bg-canvas/85 backdrop-blur-xl backdrop-saturate-150' : 'bg-transparent'
       }`}
     >
-      <nav aria-label="Navigasi utama" className="container-site flex h-16 items-center gap-3 lg:h-[72px]">
+      <nav aria-label="Navigasi utama" className="container-site flex h-nav items-center gap-3">
         {/* Kiri: logo */}
         <Link
           to="/"
@@ -235,7 +226,7 @@ const Navbar: React.FC = () => {
           className="flex min-w-0 shrink items-center rounded-full"
           aria-label="Garuda Nexa Bahtera, ke beranda"
         >
-          <BrandLogo fullFrom="xl" />
+          <BrandLogo size="sm" fullFrom="xl" />
         </Link>
 
         {/* Tengah: navigasi desktop + sorotan hover */}
@@ -291,7 +282,7 @@ const Navbar: React.FC = () => {
           <button
             type="button"
             onClick={toggleLanguage}
-            className="hidden h-10 items-center gap-1.5 rounded-full px-3 text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:inline-flex"
+            className="hidden h-9 items-center gap-1.5 rounded-full px-3 text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:inline-flex"
             aria-label={langLabel}
             title={langLabel}
           >
@@ -301,21 +292,20 @@ const Navbar: React.FC = () => {
 
           <Link
             to={account.to}
-            className="hidden h-10 items-center gap-2 rounded-full px-4 text-[14px] font-medium text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:inline-flex"
+            className="hidden h-9 items-center gap-2 rounded-full px-3.5 text-[14px] font-medium text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:inline-flex"
           >
             {role && <UserRound className="h-4 w-4 text-primary" strokeWidth={2} aria-hidden />}
             {account.label}
           </Link>
 
-          <SmartLink href="#kontak" className="btn btn-primary btn-sm group sm:h-11 sm:px-5 sm:text-sm">
+          <SmartLink href="#kontak" className="btn btn-primary btn-sm sm:h-10 sm:px-5 sm:text-sm">
             <span className="sm:hidden">{t('nav-consult-short')}</span>
             <span className="max-sm:hidden">{t('nav-consult')}</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 max-lg:hidden" aria-hidden />
           </SmartLink>
 
           <button
             type="button"
-            className={`relative -mr-1.5 flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors after:absolute after:-inset-1 hover:bg-fg/[0.06] sm:mr-0 sm:h-10 sm:w-10 sm:after:hidden ${mobileOnly}`}
+            className={`relative -mr-1.5 flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors after:absolute after:-inset-1 hover:bg-fg/[0.06] sm:mr-0 ${mobileOnly}`}
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-label={isMenuOpen ? 'Tutup menu' : 'Buka menu'}
             aria-expanded={isMenuOpen}
@@ -334,7 +324,7 @@ const Navbar: React.FC = () => {
         }`}
       >
         <div className="overflow-hidden" inert={!isMenuOpen}>
-          <ul className="container-site max-h-[calc(100svh-4rem)] space-y-1 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pt-1">
+          <ul className="container-site max-h-[calc(100svh-var(--nav-h))] space-y-1 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pt-1">
             {navItems.map((item, index) => {
               const id = anchorId(item.href);
               const current = Boolean(id) && id === activeId;
@@ -383,15 +373,6 @@ const Navbar: React.FC = () => {
           </ul>
         </div>
       </div>
-
-      {/* Bar progres baca (hanya saat digulir) */}
-      <span
-        ref={barRef}
-        aria-hidden
-        className={`pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-primary transition-opacity duration-300 ${
-          scrolled && !isMenuOpen ? 'opacity-100' : 'opacity-0'
-        }`}
-      />
     </header>
   );
 };

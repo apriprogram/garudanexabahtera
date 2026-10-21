@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { ArrowRight, Facebook, Instagram, Linkedin, Mail, MessageCircle, Phone, Youtube } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Mail, MessageCircle, Phone, Youtube } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '../ui/LogoMark';
 import { Reveal } from '../ui/Reveal';
@@ -154,7 +154,7 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
           Anchor #kontak sengaja di pembungkus polos: kartu di dalamnya overflow-hidden (jadi scroll container, sehingga
           scroll-margin diabaikan Chrome) dan ikut transform animasi Reveal (posisi visualnya bergeser saat diukur).
         */}
-        <div id="kontak" className="container-site scroll-mt-20 lg:scroll-mt-24">
+        <div id="kontak" className="container-site scroll-mt-[calc(var(--nav-h)+1rem)] lg:scroll-mt-[calc(var(--nav-h)+1.5rem)]">
           <Reveal variant="scale">
             <div className="relative isolate overflow-hidden rounded-[24px] bg-primary px-5 py-12 text-center text-white sm:rounded-[28px] sm:px-12 sm:py-20 lg:py-24">
               {/* Dekorasi: cahaya bergerak pelan + pola titik putih yang memudar ke tepi */}
@@ -186,10 +186,9 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
 
               <Reveal delay={0.35}>
                 <div className="mt-8 flex flex-col items-stretch justify-center gap-2.5 sm:mt-10 sm:flex-row sm:items-center sm:gap-3">
-                  <a href={ctaHref} target="_blank" rel="noopener noreferrer" className="btn btn-light btn-xl group">
+                  <a href={ctaHref} target="_blank" rel="noopener noreferrer" className="btn btn-light btn-xl">
                     <MessageCircle className="h-5 w-5 max-sm:h-4 max-sm:w-4" aria-hidden />
                     {pick('cta_button')}
-                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5 max-sm:h-4 max-sm:w-4" aria-hidden />
                   </a>
                   <Link to="/pesan-custom" className="btn btn-on-brand btn-xl">
                     Isi form pesanan custom
