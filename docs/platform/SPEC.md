@@ -268,7 +268,10 @@ Juga: `update_project` & `add_project` (lama) menerima `show_on_website` (0/1); 
 Setting `hero_settings` (semua string): `hero_bg_mode` (`default`, `image` atau `video`; selain itu disimpan `default`),
 `hero_images` (JSON array URL, urutan slide; data URI gambar baru disimpan jadi `assets/bg/hero_<12 hex>.<ext>`),
 `hero_bg_video` (URL dari `upload_hero_video`, `""` = tidak ada; data URI ditolak 400), `hero_bg_video_poster` (URL;
-data URI gambar baru disimpan jadi `assets/bg/hero_poster_<12 hex>.<jpg|png|webp>`).
+data URI gambar baru disimpan jadi `assets/bg/hero_poster_<12 hex>.<jpg|png|webp>`). `get_settings` (publik) selalu
+menjawab objek JSON `{ <setting_key>: <setting_value> }`, juga `{}` (bukan `[]`) bila tabel kosong, di kedua backend.
+Node memakai `S3_PUBLIC_URL` (atau `S3_ENDPOINT/S3_BUCKET`) tanpa garis miring di akhir, jadi URL upload baru tidak
+pernah berisi `//`.
 
 `update_settings` untuk kunci hero:
 - Body boleh berisi `hero_media_base: { video, poster }` di **tingkat atas** (bukan di dalam `settings`, jadi tidak
@@ -276,18 +279,24 @@ data URI gambar baru disimpan jadi `assets/bg/hero_poster_<12 hex>.<jpg|png|webp
   `settings` berisi `hero_bg_video` dan `hero_media_base.video` berupa string yang berbeda dari nilai tersimpan (tidak
   ada = `""`) → **409** `{ error: "Latar hero sudah diubah di tab atau perangkat lain. Muat ulang halaman, lalu simpan lagi." }`
   sebelum apa pun disimpan atau diunggah. Sama untuk `hero_bg_video_poster` dengan `hero_media_base.poster` (poster
-  data URI baru juga: yang dibandingkan base-nya). Tanpa `hero_media_base` pemeriksaan ini dilewati.
+  data URI baru juga: yang dibandingkan base-nya). Tanpa `hero_media_base` pemeriksaan ini dilewati. Kunci yang
+  dikirim dengan nilai yang sama dengan nilai tersimpan (simpan ulang tanpa perubahan, mis. setelah jawaban
+  sebelumnya hilang) tidak dibandingkan; poster data URI baru tidak pernah sama, jadi selalu dibandingkan.
 - Bila `hero_bg_video` (atau `hero_bg_video_poster` yang bukan data URI) berubah dan berupa nama buatan modul
-  (`hero_video_<12 hex>.<mp4|webm>` / `hero_poster_<12 hex>.<jpg|png|webp>` di `/assets/bg/`, Node di
-  `S3_PUBLIC_URL/assets/bg/`), file-nya harus ada (PHP di `public/assets/bg`, Node `HeadObject` S3); bila tidak → 409
-  dengan pesan yang sama. `""` (hapus) selalu boleh.
+  (`hero_video_<12 hex>.<mp4|webm>` / `hero_poster_<12 hex>.<jpg|png|webp>` di `/assets/bg/`; Node: URL http(s) di
+  host mana pun yang path-nya, dengan garis miring ganda digabung dan query/fragment diabaikan, berakhir
+  `/assets/bg/<nama>`, karena `S3_PUBLIC_URL` bisa sudah berubah sejak upload), file-nya harus ada (PHP di
+  `public/assets/bg`, Node `HeadObject` S3 key `assets/bg/<nama>`); bila tidak → 409 dengan pesan yang sama. `""`
+  (hapus) selalu boleh.
 - Poster dan gambar `hero_images` baru hanya gambar raster: JPG, PNG, WEBP (slide juga GIF); SVG, ICO dan lainnya →
   400 `{ error: "Gambar latar dan sampul harus JPG, PNG, atau WEBP." }`. Semua gambar baru diperiksa dulu sebelum file
   pertama ditulis; bila request gagal setelah file ditulis (setting lain, database), file dari request itu dihapus
   kecuali yang dirujuk setting yang sempat tersimpan.
 - File video/poster lama **tidak** dihapus saat menyimpan. Setelah setiap `update_settings` dan `upload_hero_video`
-  yang berhasil, sapu bersih: hapus file di `assets/bg` yang namanya persis pola buatan modul di atas, bukan
-  `hero_bg_video` / `hero_bg_video_poster` yang tersimpan (dibaca setelah simpan), dan berumur lebih dari 24 jam (PHP
+  yang berhasil, sapu bersih: hapus file di `assets/bg` yang namanya persis pola buatan modul di atas, namanya bukan
+  nama file `hero_bg_video` / `hero_bg_video_poster` yang tersimpan (dibaca setelah simpan; segmen terakhir path tanpa
+  query, fragment dan garis miring di akhir, dibandingkan per nama saja, jadi host lain, URL lengkap, `//` atau query
+  di link tersimpan tidak membuat file yang dipakai terhapus), dan berumur lebih dari 24 jam (PHP
   `filemtime`, Node `LastModified` dari `ListObjectsV2` prefix `assets/bg/hero_video_` dan `assets/bg/hero_poster_`).
   PHP juga menghapus file sementaranya (`.hero_video_<12 hex>.part`) yang lebih dari 1 jam. File lain tidak pernah
   disentuh; error saat menyapu hanya dicatat di log dan tidak menggagalkan request.

@@ -24,8 +24,9 @@
 // request is over: after a successful save it runs the garbage-collect sweep, after a failure it removes the files
 // this request stored. Saving never deletes the file it replaces right away: another tab may still show (and save)
 // it. The sweep deletes only names this module generates (hero_video_<hex>, hero_poster_<hex> directly in
-// public/assets/bg/) that the stored settings do not use and that are older than a day; seed images, slides and
-// other uploads in that folder stay.
+// public/assets/bg/) that are older than a day and that are not the file name of the stored video or poster (compared
+// by name, so a full URL, another host or a query string in the stored link never makes the live files look unused);
+// seed images, slides and other uploads in that folder stay.
 // Helpers used from api.php: ApiError, db_all, env_value, upload_limit_bytes, public_dir, parse_upload, sniff_image,
 // safe_link, delete_local_asset.
 
@@ -173,6 +174,17 @@ function hm_generated_name($path, string $pattern): ?string {
     return preg_match($pattern, $name) ? $name : null;
 }
 
+// The file name a stored link points to: its last path segment, without query, fragment and trailing slashes ('' for
+// none or not a string), like basename(parse_url($value, PHP_URL_PATH)) but also for links parse_url() refuses. The
+// sweep keeps every file with this name, whatever host or folder the link has (same as linkName() in hero_media.js).
+function hm_link_name($value): string {
+    if (!is_string($value)) return '';
+    // Trimmed like the browser does with a src attribute, so a stored link with stray whitespace still protects its file
+    $path = rtrim(preg_split('/[?#]/', trim($value), 2)[0], '/');
+    $slash = strrpos($path, '/');
+    return $slash === false ? $path : substr($path, $slash + 1);
+}
+
 // A new poster or slide (data URI) → [content, ext]. The type comes from the first bytes and must be one of $exts,
 // so SVG, ICO and anything that is not an image get the same message; parse_upload() then checks the rest
 // (size limit, empty file). Nothing is written here.
@@ -207,13 +219,14 @@ function hm_stored(mysqli $conn): array {
 
 // 409 before anything is written when the save would undo or break another save:
 // - stale tab: $base is the hero_media_base the admin page sent, the video/poster it loaded; a changed key whose
-//   loaded value is no longer the stored one was changed elsewhere in the meantime
+//   loaded value is no longer the stored one was changed elsewhere in the meantime. A key sent with the stored value
+//   undoes nothing and is not compared (a retry after a lost answer); a new data: poster never equals the stored one
 // - a changed link to a generated file that no longer exists (the sweep removed an old upload)
 function hm_check_media(mysqli $conn, array $settings, bool $newPoster, $base): void {
     $stored = hm_stored($conn);
     $base = is_array($base) ? $base : [];
     foreach (['hero_bg_video' => 'video', 'hero_bg_video_poster' => 'poster'] as $key => $loaded) {
-        if (array_key_exists($key, $settings) && is_string($base[$loaded] ?? null) && $base[$loaded] !== $stored[$key]) {
+        if (array_key_exists($key, $settings) && $settings[$key] !== $stored[$key] && is_string($base[$loaded] ?? null) && $base[$loaded] !== $stored[$key]) {
             throw new ApiError(HM_STALE_ERROR, 409);
         }
     }
@@ -299,13 +312,14 @@ function hm_discard(mysqli $conn, array $written): void {
 }
 
 // Garbage-collect sweep, after every successful update_settings and upload_hero_video: deletes the generated videos
-// and posters in public/assets/bg/ that the stored settings do not use and that are older than HM_UNUSED_SECONDS
-// (uploaded but never saved, or replaced by a later save), and temp files of broken uploads older than
-// HM_TEMP_SECONDS. Never any other file. Errors are logged and never fail the request.
+// and posters in public/assets/bg/ that are older than HM_UNUSED_SECONDS (uploaded but never saved, or replaced by a
+// later save) and whose name is not the hm_link_name() of the stored video or poster, and temp files of broken
+// uploads older than HM_TEMP_SECONDS. By name only, so a stored full URL, "//" or query string still keeps its file.
+// Never any other file. Errors are logged and never fail the request.
 function hm_sweep(mysqli $conn): void {
     try {
         $stored = hm_stored($conn);
-        $used = [hm_generated_name($stored['hero_bg_video'], HM_GENERATED_VIDEO), hm_generated_name($stored['hero_bg_video_poster'], HM_GENERATED_POSTER)];
+        $used = [hm_link_name($stored['hero_bg_video']), hm_link_name($stored['hero_bg_video_poster'])];
         $folder = public_dir() . '/assets/' . HM_FOLDER;
         $now = time();
         foreach ((is_dir($folder) ? scandir($folder) : false) ?: [] as $name) {

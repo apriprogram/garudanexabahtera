@@ -287,54 +287,86 @@ describe('uploadHeroVideo (XHR)', () => {
 
 // ─── HeroSettings ─────────────────────────────────────────────────────────────
 
+/**
+ * Halaman tiruan seperti SiteSettings: menyimpan state latar dan jumlah gambar yang diproses (imagesPending), dengan
+ * tombol untuk menutup/membuka tampilan Hero (= pindah tab) dan menambah gambar dari luar tampilan itu.
+ */
 function Harness({
   initialMode = 'default',
   initialImages = [],
+  initialLogos = [],
   initialVideo = '',
   initialPoster = '',
   saving,
   onBusyChange,
   onImagesProcessing,
+  onImageNotice,
 }: {
   initialMode?: HeroBgMode;
   initialImages?: string[];
+  initialLogos?: { name: string; src: string }[];
   initialVideo?: string;
   initialPoster?: string;
   saving?: boolean;
   onBusyChange?: (busy: boolean) => void;
   onImagesProcessing?: (delta: number) => void;
+  onImageNotice?: (message: string) => void;
 }) {
   const [mode, setMode] = useState<HeroBgMode>(initialMode);
   const [images, setImages] = useState<string[]>(initialImages);
-  const [logos, setLogos] = useState<{ name: string; src: string }[]>([]);
+  const [logos, setLogos] = useState<{ name: string; src: string }[]>(initialLogos);
   const [video, setVideo] = useState(initialVideo);
   const [poster, setPoster] = useState(initialPoster);
+  const [pending, setPending] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [shown, setShown] = useState(true);
   return (
     <>
-      <HeroSettings
-        settings={{}}
-        heroImages={images}
-        setHeroImages={setImages}
-        heroLogos={logos}
-        setHeroLogos={setLogos}
-        heroBgMode={mode}
-        setHeroBgMode={setMode}
-        heroVideo={video}
-        setHeroVideo={setVideo}
-        heroVideoPoster={poster}
-        setHeroVideoPoster={setPoster}
-        saving={saving}
-        onBusyChange={onBusyChange}
-        onImagesProcessing={onImagesProcessing}
-      />
+      {shown && (
+        <HeroSettings
+          settings={{}}
+          heroImages={images}
+          setHeroImages={setImages}
+          heroLogos={logos}
+          setHeroLogos={setLogos}
+          heroBgMode={mode}
+          setHeroBgMode={setMode}
+          heroVideo={video}
+          setHeroVideo={setVideo}
+          heroVideoPoster={poster}
+          setHeroVideoPoster={setPoster}
+          saving={saving}
+          videoUploading={busy}
+          onBusyChange={(value) => {
+            setBusy(value);
+            onBusyChange?.(value);
+          }}
+          imagesPending={pending}
+          onImagesProcessing={(delta) => {
+            setPending((n) => n + delta);
+            onImagesProcessing?.(delta);
+          }}
+          onImageNotice={onImageNotice}
+        />
+      )}
+      <button type="button" onClick={() => setShown((s) => !s)}>
+        Tutup atau buka tab Hero
+      </button>
+      <button type="button" onClick={() => setImages((prev) => [...prev, `/assets/bg/luar_${prev.length + 1}.jpg`])}>
+        Tambah gambar dari luar
+      </button>
       <output data-testid="state">{JSON.stringify({ mode, video, poster })}</output>
       <output data-testid="images">{JSON.stringify(images)}</output>
+      <output data-testid="logos">{JSON.stringify(logos)}</output>
     </>
   );
 }
 
 const state = () => JSON.parse(screen.getByTestId('state').textContent || '{}') as { mode: string; video: string; poster: string };
 const images = () => JSON.parse(screen.getByTestId('images').textContent || '[]') as string[];
+const logos = () => JSON.parse(screen.getByTestId('logos').textContent || '[]') as { name: string; src: string }[];
+/** Input file gambar latar (teks kotaknya "Tambah", atau "Memproses..." selama ada gambar yang diproses). */
+const addImageInput = () => screen.getByLabelText(/^(Tambah|Memproses\.\.\.)$/);
 /** Input file tersembunyi untuk "Ganti video" (hanya ada bila video sudah terpasang). */
 const replaceInput = () => document.querySelector<HTMLInputElement>('input[type="file"][accept="video/mp4,video/webm"][tabindex="-1"]')!;
 /** Baris status aria-live pengunggah video. */
@@ -486,6 +518,75 @@ describe('HeroSettings: maks. 12 gambar latar (ADM-6)', () => {
     expect(screen.getByText('14/12 gambar')).toBeInTheDocument();
     expect(screen.getByText(/hanya 12 gambar pertama yang tampil di website/)).toBeInTheDocument();
   });
+
+  it('gambar yang masih diproses dari tampilan Hero sebelumnya ikut dihitung (ADM-A2)', async () => {
+    const pending = deferred<string>();
+    vi.mocked(resizeHeroImage).mockImplementationOnce(() => pending.promise);
+    render(<Harness initialMode="image" initialImages={storedImages(11)} />);
+    fireEvent.change(addImageInput(), { target: { files: [imageFile('a.jpg')] } });
+    await waitFor(() => expect(resizeHeroImage).toHaveBeenCalledTimes(1));
+
+    // Pindah tab lalu kembali: tampilan baru tetap tahu ada gambar yang diproses
+    fireEvent.click(screen.getByRole('button', { name: 'Tutup atau buka tab Hero' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tutup atau buka tab Hero' }));
+    fireEvent.change(addImageInput(), { target: { files: [imageFile('b.jpg')] } });
+    expect(await screen.findByText('Maksimal 12 gambar latar. Hapus salah satu dulu.')).toBeInTheDocument();
+    expect(resizeHeroImage).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Memproses...')).toBeInTheDocument();
+
+    await act(async () => pending.resolve('data:image/jpeg;base64,a.jpg'));
+    expect(images()).toEqual([...storedImages(11), 'data:image/jpeg;base64,a.jpg']);
+  });
+
+  it('gambar yang terpotong saat masuk daftar dilaporkan di tempat (ADM-A2)', async () => {
+    const pending = deferred<string>();
+    vi.mocked(resizeHeroImage).mockImplementationOnce(() => pending.promise);
+    const onImageNotice = vi.fn();
+    render(<Harness initialMode="image" initialImages={storedImages(11)} onImageNotice={onImageNotice} />);
+    fireEvent.change(addImageInput(), { target: { files: [imageFile('a.jpg')] } });
+    await waitFor(() => expect(resizeHeroImage).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    // Daftar penuh dari tempat lain selama gambar diproses
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah gambar dari luar' }));
+    await act(async () => pending.resolve('data:image/jpeg;base64,a.jpg'));
+    expect(images()).toHaveLength(12);
+    expect(images()).not.toContain('data:image/jpeg;base64,a.jpg');
+    expect(screen.getByRole('alert')).toHaveTextContent('Maksimal 12 gambar latar. Hapus salah satu dulu.');
+    expect(onImageNotice).not.toHaveBeenCalled();
+  });
+
+  it('mode sudah bukan Gambar: gambar yang terpotong tetap dilaporkan lewat halaman', async () => {
+    const pending = deferred<string>();
+    vi.mocked(resizeHeroImage).mockImplementationOnce(() => pending.promise);
+    const onImageNotice = vi.fn();
+    render(<Harness initialMode="image" initialImages={storedImages(11)} onImageNotice={onImageNotice} />);
+    fireEvent.change(addImageInput(), { target: { files: [imageFile('a.jpg')] } });
+    await waitFor(() => expect(resizeHeroImage).toHaveBeenCalledTimes(1));
+
+    // Pesan inline hanya tampil di mode Gambar, jadi setelah pindah ke Bawaan pesannya lewat halaman
+    fireEvent.click(screen.getByRole('tab', { name: /Bawaan/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah gambar dari luar' }));
+    await act(async () => pending.resolve('data:image/jpeg;base64,a.jpg'));
+    await waitFor(() => expect(onImageNotice).toHaveBeenCalledTimes(1));
+    expect(onImageNotice).toHaveBeenCalledWith('Maksimal 12 gambar latar. Hapus salah satu dulu.');
+  });
+
+  it('tampilan Hero sudah ditutup: gambar yang terpotong dilaporkan lewat halaman (ADM-A2)', async () => {
+    const pending = deferred<string>();
+    vi.mocked(resizeHeroImage).mockImplementationOnce(() => pending.promise);
+    const onImageNotice = vi.fn();
+    render(<Harness initialMode="image" initialImages={storedImages(10)} onImageNotice={onImageNotice} />);
+    fireEvent.change(addImageInput(), { target: { files: [imageFile('a.jpg'), imageFile('b.jpg')] } });
+    await waitFor(() => expect(resizeHeroImage).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah gambar dari luar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tutup atau buka tab Hero' }));
+    await act(async () => pending.resolve('data:image/jpeg;base64,a.jpg'));
+    await waitFor(() => expect(onImageNotice).toHaveBeenCalledTimes(1));
+    expect(onImageNotice).toHaveBeenCalledWith('Maksimal 12 gambar latar, jadi 1 file terakhir tidak ditambahkan.');
+    expect(images()).toEqual([...storedImages(10), '/assets/bg/luar_11.jpg', 'data:image/jpeg;base64,a.jpg']);
+  });
 });
 
 describe('HeroSettings: terkunci selama menyimpan (ADM-2)', () => {
@@ -512,6 +613,32 @@ describe('HeroSettings: terkunci selama menyimpan (ADM-2)', () => {
     expect(replaceInput()).toBeDisabled();
     fireEvent.drop(screen.getByLabelText('Pratinjau video latar'), { dataTransfer: { files: [videoFile()] } });
     expect(MockXHR.last).toBeNull();
+  });
+
+  it('logo partner: hapus, ganti nama, dan geser urutan nonaktif (ADM-A5)', () => {
+    const partnerLogos = [
+      { name: 'Alpha', src: '/assets/logos/alpha.png' },
+      { name: 'Beta', src: '/assets/logos/beta.png' },
+    ];
+    const { rerender } = render(<Harness initialLogos={partnerLogos} saving />);
+    const tile = (name: string) => screen.getByAltText(name).parentElement!;
+    expect(screen.getByRole('button', { name: 'Hapus Alpha' })).toBeDisabled();
+    expect(screen.getByDisplayValue('Alpha')).toBeDisabled();
+    expect(tile('Alpha')).toHaveAttribute('draggable', 'false');
+    expect(tile('Alpha')).not.toHaveClass('cursor-move');
+
+    fireEvent.dragStart(tile('Alpha'));
+    fireEvent.drop(tile('Beta'));
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Alpha' }));
+    expect(logos()).toEqual(partnerLogos);
+
+    rerender(<Harness initialLogos={partnerLogos} />);
+    expect(screen.getByRole('button', { name: 'Hapus Alpha' })).toBeEnabled();
+    expect(screen.getByDisplayValue('Alpha')).toBeEnabled();
+    expect(tile('Alpha')).toHaveAttribute('draggable', 'true');
+    fireEvent.dragStart(tile('Alpha'));
+    fireEvent.drop(tile('Beta'));
+    expect(logos().map((logo) => logo.name)).toEqual(['Beta', 'Alpha']);
   });
 
   it('melaporkan gambar yang sedang diproses ke halaman (+n lalu −n)', async () => {
@@ -675,6 +802,48 @@ describe('HeroVideoField: status unggahan', () => {
     await act(async () => poster.resolve({ poster: POSTER, duration: 12 }));
     expect(state().poster).toBe(POSTER);
     await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(false));
+  });
+
+  it('tampilan ditutup saat sampul dibuat: tetap sibuk sampai sampul terpasang ke halaman (ADM-A3)', async () => {
+    const poster = deferred<PosterResult>();
+    vi.mocked(captureVideoPoster).mockImplementationOnce(() => poster.promise);
+    const onBusyChange = vi.fn();
+    render(<Harness initialMode="video" initialVideo="/assets/bg/hero_video_aaaaaaaaaaaa.mp4" initialPoster={POSTER_URL} onBusyChange={onBusyChange} />);
+    fireEvent.change(replaceInput(), { target: { files: [videoFile()] } });
+    await waitFor(() => expect(MockXHR.last).not.toBeNull());
+    const xhr = MockXHR.last!;
+    await act(async () => xhr.respond(200, JSON.stringify({ success: true, url: VIDEO_URL })));
+    expect(onBusyChange).toHaveBeenLastCalledWith(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tutup atau buka tab Hero' }));
+    expect(onBusyChange).not.toHaveBeenCalledWith(false);
+
+    // Dibuka lagi sebelum sampul siap: pilihan latar dan bidang video terkunci, sampul ditunggu
+    fireEvent.click(screen.getByRole('button', { name: 'Tutup atau buka tab Hero' }));
+    expect(screen.getByRole('tab', { name: 'Gambar' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Ganti video/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Hapus video/ })).toBeDisabled();
+    expect(screen.getByText('Gambar sampul sedang dibuat dari video.')).toBeInTheDocument();
+    fireEvent.drop(screen.getByLabelText('Pratinjau video latar'), { dataTransfer: { files: [videoFile('lain.mp4')] } });
+    expect(MockXHR.last).toBe(xhr);
+
+    await act(async () => poster.resolve({ poster: POSTER, duration: 12 }));
+    expect(state()).toEqual({ mode: 'video', video: VIDEO_URL, poster: POSTER });
+    expect(onBusyChange).toHaveBeenLastCalledWith(false);
+    expect(onBusyChange.mock.calls.filter(([busy]) => busy === false)).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /Ganti video/ })).toBeEnabled();
+    expect(screen.getByRole('tab', { name: 'Gambar' })).toBeEnabled();
+  });
+
+  it('tampilan ditutup saat file masih dikirim: unggahan dibatalkan dan tidak sibuk lagi (ADM-A3)', async () => {
+    const onBusyChange = vi.fn();
+    render(<Harness initialMode="video" onBusyChange={onBusyChange} />);
+    fireEvent.change(screen.getByLabelText(/Unggah video/), { target: { files: [videoFile()] } });
+    await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(true));
+    fireEvent.click(screen.getByRole('button', { name: 'Tutup atau buka tab Hero' }));
+    expect(MockXHR.last!.aborted).toBe(true);
+    await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(false));
+    expect(state().video).toBe('');
   });
 
   it('sampul tidak bisa dibuat (mis. lewat batas waktu) → poster kosong', async () => {
@@ -846,6 +1015,108 @@ describe('SiteSettings: setting latar hero', () => {
     expect(saveButton()).toBeDisabled();
     fireEvent.click(saveButton());
     expect(posts).toHaveLength(0);
+  });
+
+  it('get_settings [] (tabel kosong) = pengaturan kosong yang bisa disimpan (ADM-A1)', async () => {
+    const { posts } = mockSiteApi({ get: async () => json([]) });
+    renderSite();
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(screen.queryByText('Gagal memuat pengaturan')).not.toBeInTheDocument();
+    expect(posts[0].hero_media_base).toEqual({ video: '', poster: '' });
+    expect(posts[0].settings).toHaveProperty('hero_title');
+  });
+
+  it('array berisi, bukan objek, atau {error} dari get_settings tetap gagal muat (ADM-A1)', async () => {
+    for (const body of [[{ setting_key: 'hero_title', setting_value: 'x' }], ['x'], 'teks', 5, null, { error: 'Database error' }]) {
+      const { posts } = mockSiteApi({ get: async () => json(body) });
+      const view = renderSite();
+      expect(await screen.findByText('Gagal memuat pengaturan')).toBeInTheDocument();
+      expect(saveButton()).toBeDisabled();
+      fireEvent.click(saveButton());
+      expect(posts).toHaveLength(0);
+      view.unmount();
+    }
+  });
+
+  it('gambar dari tab Hero sebelumnya ikut dihitung batas 12 (ADM-A2)', async () => {
+    const pending = deferred<string>();
+    vi.mocked(resizeHeroImage).mockImplementationOnce(() => pending.promise);
+    const { posts } = mockSiteApi({ stored: { ...STORED_VIDEO, hero_bg_mode: 'image', hero_images: JSON.stringify(storedImages(11)) } });
+    renderSite();
+    await readySave();
+    fireEvent.change(addImageInput(), { target: { files: [imageFile('a.jpg')] } });
+    expect(await screen.findByRole('button', { name: 'Memproses gambar...' })).toBeDisabled();
+
+    fireEvent.click(screen.getAllByRole('tab', { name: 'FAQ' })[0]);
+    fireEvent.click(screen.getAllByRole('tab', { name: 'Hero' })[0]);
+    fireEvent.change(addImageInput(), { target: { files: [imageFile('b.jpg')] } });
+    expect(await screen.findByText('Maksimal 12 gambar latar. Hapus salah satu dulu.')).toBeInTheDocument();
+    expect(resizeHeroImage).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Memproses...')).toBeInTheDocument();
+
+    await act(async () => pending.resolve('data:image/jpeg;base64,a.jpg'));
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(JSON.parse(posts[0].settings.hero_images)).toEqual([...storedImages(11), 'data:image/jpeg;base64,a.jpg']);
+  });
+
+  it('pesan gambar yang selesai diproses setelah tab Hero ditutup tampil sebagai pemberitahuan (ADM-A2)', async () => {
+    let fail!: (error: Error) => void;
+    vi.mocked(resizeHeroImage).mockImplementationOnce(
+      () =>
+        new Promise<string>((_, reject) => {
+          fail = reject;
+        }),
+    );
+    mockSiteApi({ stored: { ...STORED_VIDEO, hero_bg_mode: 'image' } });
+    renderSite();
+    await readySave();
+    fireEvent.change(addImageInput(), { target: { files: [imageFile('rusak.jpg')] } });
+    await waitFor(() => expect(resizeHeroImage).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getAllByRole('tab', { name: 'FAQ' })[0]);
+    await act(async () => fail(new Error('decode')));
+    expect(await screen.findByText('"rusak.jpg" tidak ditambahkan karena tidak bisa dibaca.')).toBeInTheDocument();
+    expect(screen.getByText('Gambar latar tidak ditambahkan')).toBeInTheDocument();
+    await readySave();
+  });
+
+  it('pindah tab saat sampul dibuat: simpan ditahan sampai sampul terpasang, lalu sampul ikut tersimpan (ADM-A3)', async () => {
+    const poster = deferred<PosterResult>();
+    vi.mocked(captureVideoPoster).mockImplementationOnce(() => poster.promise);
+    const { posts } = mockSiteApi({ stored: { ...STORED_VIDEO } });
+    renderSite();
+    await readySave();
+    const NEW_URL = '/assets/bg/hero_video_ba9876543210.mp4';
+    fireEvent.change(replaceInput(), { target: { files: [videoFile()] } });
+    await waitFor(() => expect(MockXHR.last).not.toBeNull());
+    await act(async () => MockXHR.last!.respond(200, JSON.stringify({ success: true, url: NEW_URL })));
+    expect(screen.getByText(/Menyiapkan gambar sampul/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('tab', { name: 'FAQ' })[0]);
+    await act(async () => {});
+    expect(saveButton()).toBeDisabled();
+    expect(saveButton()).toHaveTextContent('Menunggu unggahan video...');
+    fireEvent.click(saveButton());
+    expect(posts).toHaveLength(0);
+
+    await act(async () => poster.resolve({ poster: POSTER, duration: 12 }));
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0].settings).toMatchObject({ hero_bg_video: NEW_URL, hero_bg_video_poster: POSTER });
+  });
+
+  it('pindah tab saat file masih dikirim: unggahan dibatalkan dan simpan tidak tertahan (ADM-A3)', async () => {
+    const { posts } = mockSiteApi({ stored: { ...STORED_VIDEO } });
+    renderSite();
+    await readySave();
+    fireEvent.change(replaceInput(), { target: { files: [videoFile()] } });
+    expect(await screen.findByRole('button', { name: 'Menunggu unggahan video...' })).toBeDisabled();
+    fireEvent.click(screen.getAllByRole('tab', { name: 'FAQ' })[0]);
+    expect(MockXHR.last!.aborted).toBe(true);
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    for (const key of HERO_MEDIA_KEYS) expect(posts[0].settings).not.toHaveProperty(key);
   });
 
   it('tombol simpan menunggu gambar yang sedang diproses (ADM-2)', async () => {

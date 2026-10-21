@@ -645,6 +645,10 @@ describe('update_settings hero keys (Node)', () => {
       // A new poster: its base is compared, not the new value
       [{ hero_bg_video_poster: PNG_URI, hero_images: JSON.stringify([PNG_URI]) }, { video: OLD_VIDEO, poster: '' }],
       [{ hero_bg_video: NEW_VIDEO, hero_bg_video_poster: '' }, { video: OLD_VIDEO, poster: `${S3}/assets/bg/hero_poster_111111111111.jpg` }],
+      // An unchanged video does not excuse a changed poster whose base is stale
+      [{ hero_bg_video: OLD_VIDEO, hero_bg_video_poster: '' }, { video: OLD_VIDEO, poster: `${S3}/assets/bg/hero_poster_111111111111.jpg` }],
+      // A data: poster never equals the stored one, so it is always compared
+      [{ hero_bg_video: OLD_VIDEO, hero_bg_video_poster: PNG_URI }, { video: `${S3}/assets/bg/hero_video_111111111111.mp4`, poster: '' }],
     ];
     for (const [settings, base] of stale) {
       s3Send.mockClear();
@@ -669,6 +673,11 @@ describe('update_settings hero keys (Node)', () => {
       [{ hero_bg_video: NEW_VIDEO }, stored, 'x'],
       [{ hero_bg_video: NEW_VIDEO }, stored, [OLD_VIDEO]],
       [{ hero_bg_mode: 'image' }, stored, { video: 'other', poster: 'other' }],
+      // A retry that changes nothing (the first save went through, its answer was lost): the stale base is not compared
+      [{ hero_bg_video: OLD_VIDEO, hero_bg_video_poster: OLD_POSTER }, stored, { video: `${S3}/assets/bg/hero_video_111111111111.mp4`, poster: '' }],
+      [{ hero_bg_video: '' }, {}, { video: OLD_VIDEO, poster: OLD_POSTER }],
+      // Unchanged video with a stale base, changed poster with the current one
+      [{ hero_bg_video: OLD_VIDEO, hero_bg_video_poster: '' }, stored, { video: `${S3}/assets/bg/hero_video_111111111111.mp4`, poster: OLD_POSTER }],
     ];
     for (const [settings, previous, base] of fine) {
       expect(await outcomeOf(hm.prepareHeroMediaSettings(settings, fakePool(previous), base)), JSON.stringify([settings, base])).toEqual({ status: 200 });
@@ -759,6 +768,72 @@ describe('update_settings hero keys (Node)', () => {
     expect(bgNames()).toEqual(['hero_video_0123456789ab.mp4', 'hero_video_ba9876543210.webm']);
   });
 
+  it('the sweep keeps the stored video and poster by file name, whatever host, slashes or query their link has', async () => {
+    // S3_PUBLIC_URL changed since the upload (CDN, custom domain, http → https) or had a trailing slash then
+    const cases: [string, string, string, string][] = [
+      ['https://cdn.garudanexa.test/assets/bg/hero_video_111111111111.mp4', 'http://s3.test/bucket/assets/bg/hero_poster_111111111111.jpg', 'hero_video_111111111111.mp4', 'hero_poster_111111111111.jpg'],
+      [`${S3}//assets/bg/hero_video_222222222222.webm`, `${S3}//assets/bg/hero_poster_222222222222.png`, 'hero_video_222222222222.webm', 'hero_poster_222222222222.png'],
+      [`${S3}/assets/bg/hero_video_333333333333.mp4?v=2`, `${S3}/assets/bg/hero_poster_333333333333.webp#top`, 'hero_video_333333333333.mp4', 'hero_poster_333333333333.webp'],
+      ['/assets/bg/hero_video_444444444444.mp4', `${S3}/assets/bg/hero_poster_444444444444.jpg/`, 'hero_video_444444444444.mp4', 'hero_poster_444444444444.jpg'],
+    ];
+    for (const [video, poster, ...live] of cases) {
+      bucket.clear();
+      s3Send.mockClear();
+      // Unreferenced old uploads still go
+      for (const file of [...live, 'hero_video_999999999999.mp4', 'hero_poster_999999999999.jpg']) putObject(file, 2 * DAY);
+      await saveNode({ hero_bg_mode: 'video' }, { hero_bg_video: video, hero_bg_video_poster: poster });
+      expect(bgNames(), video).toEqual([...live].sort());
+      expect(deletes().sort(), video).toEqual(['assets/bg/hero_poster_999999999999.jpg', 'assets/bg/hero_video_999999999999.mp4']);
+    }
+  });
+
+  it('checks that a changed link to a generated file exists also with "//", another host or a query', async () => {
+    const stored = { hero_bg_video: OLD_VIDEO, hero_bg_video_poster: OLD_POSTER };
+    const links = [`${S3}//assets/bg/hero_video_ba9876543210.webm`, 'https://cdn.garudanexa.test/assets/bg/hero_video_ba9876543210.webm', `${NEW_VIDEO}?v=2`];
+    for (const video of links) {
+      bucket.clear();
+      expect(await outcomeOf(hm.prepareHeroMediaSettings({ hero_bg_video: video }, fakePool(stored))), video).toEqual({ status: 409, error: STALE_ERROR });
+      putObject('hero_video_ba9876543210.webm', HOUR);
+      expect(await outcomeOf(hm.prepareHeroMediaSettings({ hero_bg_video: video }, fakePool(stored))), video).toEqual({ status: 200 });
+    }
+    expect(sent().filter((c) => c.type === 'HeadObjectCommand').map((c) => c.Key)).toEqual(Array(6).fill('assets/bg/hero_video_ba9876543210.webm'));
+  });
+
+  it('a trailing slash on S3_PUBLIC_URL (or S3_ENDPOINT) never puts "//" in a new upload URL', async () => {
+    const before = { url: process.env.S3_PUBLIC_URL, endpoint: process.env.S3_ENDPOINT };
+    const restore = (name: 'S3_PUBLIC_URL' | 'S3_ENDPOINT', value: string | undefined) => {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    };
+    try {
+      // s3-client.js reads both when it is imported
+      process.env.S3_PUBLIC_URL = `${S3}//`;
+      vi.resetModules();
+      const s3 = await import('../../backend/s3-client.js');
+      const fresh = await import('../../backend/modules/hero_media.js');
+      expect(s3.S3_PUBLIC_URL).toBe(S3);
+      expect(await s3.uploadToS3(PNG, 'assets/bg/hero.png', 'image/png')).toBe(`${S3}/assets/bg/hero.png`);
+      const settings: Settings = { hero_bg_video_poster: PNG_URI };
+      await fresh.prepareHeroMediaSettings(settings, fakePool());
+      expect(settings.hero_bg_video_poster).toMatch(/^https:\/\/s3\.test\/bucket\/assets\/bg\/hero_poster_[0-9a-f]{12}\.png$/);
+      const video = mp4('isom');
+      const res = new FakeRes();
+      await fresh.handleHeroMediaAction('upload_hero_video', new FakeReq([video], rawHeaders(video)), res, fakePool());
+      expect(res.body).toEqual({ success: true, url: expect.stringMatching(/^https:\/\/s3\.test\/bucket\/assets\/bg\/hero_video_[0-9a-f]{12}\.mp4$/) });
+
+      // Default public URL: S3_ENDPOINT/S3_BUCKET
+      delete process.env.S3_PUBLIC_URL;
+      process.env.S3_ENDPOINT = 'https://s3.test/';
+      vi.resetModules();
+      const byEndpoint = await import('../../backend/s3-client.js');
+      expect(await byEndpoint.uploadToS3(PNG, 'assets/bg/hero.png', 'image/png')).toBe('https://s3.test/garudanexa/assets/bg/hero.png');
+    } finally {
+      restore('S3_PUBLIC_URL', before.url);
+      restore('S3_ENDPOINT', before.endpoint);
+      vi.resetModules();
+    }
+  });
+
   it('a failed request removes the files it stored, except one a saved setting points to', async () => {
     const settings = () => ({ hero_images: JSON.stringify([PNG_URI, '/assets/bg/hero.png']), hero_bg_video_poster: dataUri(JPEG) });
     const first = await saveNode(settings(), {}, { fail: true });
@@ -785,18 +860,36 @@ describe('update_settings hero keys (Node)', () => {
     expect(bgNames()).toEqual([]);
   });
 
-  it('generatedKey only accepts generated names directly under S3_PUBLIC_URL/assets/bg/', () => {
+  it('generatedKey only accepts generated names directly in /assets/bg/ of an http(s) URL', () => {
     expect(hm.generatedKey(OLD_VIDEO, hm.GENERATED_VIDEO)).toBe('assets/bg/hero_video_0123456789ab.mp4');
     expect(hm.generatedKey(`${S3}/assets/bg/hero_video_0123456789ab.webm`, hm.GENERATED_VIDEO)).toBe('assets/bg/hero_video_0123456789ab.webm');
     expect(hm.generatedKey(OLD_POSTER, hm.GENERATED_POSTER)).toBe('assets/bg/hero_poster_0123456789ab.jpg');
     expect(hm.generatedKey(OLD_POSTER, hm.GENERATED_VIDEO)).toBeNull();
     expect(hm.generatedKey(OLD_VIDEO, hm.GENERATED_POSTER)).toBeNull();
     for (const ext of ['gif', 'svg', 'ico']) expect(hm.generatedKey(`${S3}/assets/bg/hero_poster_0123456789ab.${ext}`, hm.GENERATED_POSTER)).toBeNull();
+    // Any host (S3_PUBLIC_URL may have changed: CDN, custom domain, http → https), repeated slashes, query, fragment
+    const same = [
+      `${S3}//assets/bg/hero_video_0123456789ab.mp4`, `${S3}/assets//bg///hero_video_0123456789ab.mp4`, `${OLD_VIDEO}?x=1`, `${OLD_VIDEO}#t=2`,
+      'https://evil.test/assets/bg/hero_video_0123456789ab.mp4', `${S3}2/assets/bg/hero_video_0123456789ab.mp4`, 'HTTP://cdn.test/assets/bg/hero_video_0123456789ab.mp4',
+      '//cdn.test/bucket/assets/bg/hero_video_0123456789ab.mp4',
+    ];
+    for (const value of same) expect(hm.generatedKey(value, hm.GENERATED_VIDEO), value).toBe('assets/bg/hero_video_0123456789ab.mp4');
     const other = [
-      undefined, null, 5, '', `${OLD_VIDEO}\n`, `${OLD_VIDEO}?x=1`, '/assets/bg/hero_video_0123456789ab.mp4', `${S3}/assets/bg/sub/hero_video_0123456789ab.mp4`,
-      `${S3}/assets/product/hero_video_0123456789ab.mp4`, 'https://evil.test/assets/bg/hero_video_0123456789ab.mp4', `${S3}2/assets/bg/hero_video_0123456789ab.mp4`,
+      undefined, null, 5, '', `${OLD_VIDEO}\n`, ` ${OLD_VIDEO}`, '/assets/bg/hero_video_0123456789ab.mp4', 'assets/bg/hero_video_0123456789ab.mp4',
+      `${S3}/assets/bg/sub/hero_video_0123456789ab.mp4`, `${S3}/assets/product/hero_video_0123456789ab.mp4`, `${S3}/assets/bg/hero_video_0123456789ab.mp4/`,
+      `${S3}/x?/assets/bg/hero_video_0123456789ab.mp4`, 'ftp://cdn.test/assets/bg/hero_video_0123456789ab.mp4', 'https://cdn.test',
     ];
     for (const value of other) expect(hm.generatedKey(value, hm.GENERATED_VIDEO), String(value)).toBeNull();
+  });
+
+  it('linkName is the last path segment of a link, without query or fragment', () => {
+    const cases: [unknown, string][] = [
+      [OLD_VIDEO, 'hero_video_0123456789ab.mp4'], [`${S3}//assets/bg/a.mp4?v=1#t`, 'a.mp4'], ['/assets/bg/a.mp4#x?y', 'a.mp4'], ['a.mp4', 'a.mp4'],
+      ['https://cdn.test/a.mp4/', 'a.mp4'], ['', ''], ['?x=/a.mp4', ''], [null, ''], [5, ''],
+      // A stored link with stray whitespace still names (and so protects) its file
+      [' /assets/bg/hero_video_0123456789ab.mp4\n', 'hero_video_0123456789ab.mp4'], ['\t/assets/bg/b.webm  ', 'b.webm'],
+    ];
+    for (const [value, name] of cases) expect(hm.linkName(value), String(value)).toBe(name);
   });
 });
 
@@ -901,18 +994,26 @@ const GATE_HELPERS = [
   ...['in_int', 'contains_script_url', 'authorize_request'].map((name) => apiPhpBlock(`function ${name}\\(`)),
 ].join('\n');
 
-// hero_settings in memory ($GLOBALS['__store']): answers the module's SELECT ... WHERE setting_key IN ('a', 'b')
+// hero_settings in memory ($GLOBALS['__store']): answers the module's SELECT ... WHERE setting_key IN ('a', 'b'), and
+// a SELECT without keys (get_settings) with every row
 const DB_STUB = String.raw`
 function db_all($conn, $sql, array $params = []) {
     $GLOBALS['__queries'][] = $sql;
     preg_match_all("/'([a-z_]+)'/", $sql, $m);
     $rows = [];
-    foreach ($m[1] as $key) {
+    foreach ($m[1] ?: array_keys($GLOBALS['__store']) as $key) {
         if (array_key_exists($key, $GLOBALS['__store'])) $rows[] = ['setting_key' => $key, 'setting_value' => $GLOBALS['__store'][$key]];
     }
     return $rows;
 }
 `;
+
+// case 'get_settings' of api.php as it is, up to its break
+const GET_SETTINGS_CASE = (() => {
+  const match = API_PHP.match(/^[ \t]*case 'get_settings':[\s\S]*?^[ \t]*break;\r?$/m);
+  if (!match) throw new Error("case 'get_settings' not found in backend/api.php");
+  return match[0];
+})();
 
 const CLI_HARNESS = String.raw`<?php
 ${API_HELPERS}
@@ -935,6 +1036,17 @@ switch ($req['op']) {
         break;
     case 'mode':
         $out = array_map('hm_bg_mode', $req['inputs']);
+        break;
+    case 'link_names':
+        $out = array_map('hm_link_name', $req['inputs']);
+        break;
+    case 'get_settings':
+        $conn = mysqli_init();
+        ob_start();
+        switch ('get_settings') {
+${GET_SETTINGS_CASE}
+        }
+        $out = ['raw' => ob_get_clean()];
         break;
     case 'svg':
         $out = array_map('svg_has_active_content', $req['inputs']);
@@ -1201,6 +1313,11 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
     { name: 'unchanged, even if the file is gone', stored: { hero_bg_video: V1, hero_bg_video_poster: P1 }, settings: { hero_bg_video: V1, hero_bg_video_poster: P1 }, files: [], status: 200 },
     { name: 'removal', stored: { hero_bg_video: V1, hero_bg_video_poster: P1 }, settings: { hero_bg_video: '', hero_bg_video_poster: '' }, base: { video: V1, poster: P1 }, files: [], status: 200 },
     { name: 'not generated names are not looked up', stored: {}, settings: { hero_bg_video: '@hero_video_custom.mp4', hero_bg_video_poster: '@hero_poster_111111111111.svg' }, files: [], status: 200 },
+    // A retry that changes nothing undoes nothing: the stale base of an unchanged key is not compared
+    { name: 'retry that changes nothing, stale base', stored: { hero_bg_video: V2, hero_bg_video_poster: P1 }, settings: { hero_bg_video: V2, hero_bg_video_poster: P1 }, base: { video: V1, poster: P2 }, files: [V2, P1], status: 200 },
+    { name: 'unchanged video with a stale base, changed poster with a current base', stored: { hero_bg_video: V2, hero_bg_video_poster: P1 }, settings: { hero_bg_video: V2, hero_bg_video_poster: '' }, base: { video: V1, poster: P1 }, files: [V2, P1], status: 200 },
+    { name: 'unchanged video does not excuse a stale poster base', stored: { hero_bg_video: V2, hero_bg_video_poster: P1 }, settings: { hero_bg_video: V2, hero_bg_video_poster: '' }, base: { video: V2, poster: P2 }, files: [V2, P1], status: 409 },
+    { name: 'a data: poster is always compared', stored: { hero_bg_video_poster: P1 }, settings: { hero_bg_video_poster: PNG_URI }, base: { video: '', poster: P2 }, files: [P1], status: 409 },
   ];
 
   it.each(MEDIA_CASES.map((c) => [c.name, c] as const))('%s answers like Node', async (_name, c) => {
@@ -1257,6 +1374,48 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
     expect(phpLeft.filter((file) => !file.startsWith('.'))).toEqual(bgNames());
     expect(bgNames()).toEqual(files.map(([file]) => file).filter((file) => !['hero_video_222222222222.webm', 'hero_poster_222222222222.webp'].includes(file)).sort());
     expect(phpLeft.filter((file) => file.startsWith('.'))).toEqual(['.hero_video_777777777777.part', '.hero_video_custom.part', '.htaccess']);
+  });
+
+  it('sweeps by file name like Node: the stored video and poster stay whatever host, slashes or query their link has', async () => {
+    // Full URL of the site (moved to another domain), query/fragment, repeated or trailing slashes, an S3 URL
+    const cases: [string, string, string, string][] = [
+      ['https://garudanexa.test/assets/bg/hero_video_111111111111.mp4', 'http://old.garudanexa.test/assets/bg/hero_poster_111111111111.jpg', 'hero_video_111111111111.mp4', 'hero_poster_111111111111.jpg'],
+      ['/assets/bg/hero_video_222222222222.webm?v=2', '/assets/bg/hero_poster_222222222222.png#top', 'hero_video_222222222222.webm', 'hero_poster_222222222222.png'],
+      ['/assets//bg//hero_video_333333333333.mp4', '//cdn.garudanexa.test/assets/bg/hero_poster_333333333333.webp/', 'hero_video_333333333333.mp4', 'hero_poster_333333333333.webp'],
+      [`${S3}/assets/bg/hero_video_444444444444.mp4`, `${S3}//assets/bg/hero_poster_444444444444.jpg`, 'hero_video_444444444444.mp4', 'hero_poster_444444444444.jpg'],
+    ];
+    for (const [video, poster, ...live] of cases) {
+      const files: [string, number][] = [...live, 'hero_video_999999999999.mp4', 'hero_poster_999999999999.jpg'].map((file) => [file, 2 * DAY]);
+      const dir = webRootWith(files);
+      const store = { hero_bg_video: video, hero_bg_video_poster: poster };
+      expect(savePhp({ hero_bg_mode: 'video' }, store, { publicDir: dir }).status).toBe(200);
+      bucket.clear();
+      for (const [file, age] of files) putObject(file, age);
+      await saveNode({ hero_bg_mode: 'video' }, store);
+      expect(bgFiles(join(dir, 'assets', 'bg')), video).toEqual([...live].sort());
+      expect(bgNames(), video).toEqual([...live].sort());
+    }
+  });
+
+  it('reads the same file name from a link', () => {
+    const values = [
+      '/assets/bg/hero_video_0123456789ab.mp4', `${S3}//assets/bg/a.mp4?v=1#t`, '/assets/bg/a.mp4#x?y', 'a.mp4', 'https://cdn.test/a.mp4/', '//cdn.test//a.mp4//',
+      '', '?x=/a.mp4', '#/a.mp4', '/', 'https://cdn.test/assets/bg/hero_poster_0123456789ab.jpg?name=/x.jpg', null, 5,
+      ' /assets/bg/hero_video_0123456789ab.mp4\n', '\t/assets/bg/b.webm  ',
+    ];
+    expect(runCli({ op: 'link_names', inputs: values })).toEqual(values.map((value) => hm.linkName(value)));
+  });
+
+  it('get_settings answers a JSON object like Node, also for an empty table', () => {
+    // server.js: res.json of an object filled row by row, {} when nothing is stored
+    const nodeCase = SERVER_JS.slice(SERVER_JS.indexOf("if (action === 'get_settings')"), SERVER_JS.indexOf("if (action === 'get_users')"));
+    expect(nodeCase).toContain('const settings = {};');
+    expect(nodeCase).toContain('res.json(settings);');
+    expect(runCli({ op: 'get_settings', store: {} }).raw).toBe('{}');
+    const store = { hero_title: 'Judul', hero_bg_mode: 'video' };
+    expect(JSON.parse(runCli({ op: 'get_settings', store }).raw)).toEqual(store);
+    // Keys that look like list indexes stay an object too
+    expect(JSON.parse(runCli({ op: 'get_settings', store: { 0: 'a', 1: 'b' } }).raw)).toEqual({ 0: 'a', 1: 'b' });
   });
 
   it('removes the files of a failed request like Node, except one a saved setting points to', async () => {

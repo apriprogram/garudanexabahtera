@@ -22,8 +22,9 @@
 // request is over: after a successful save it runs the garbage-collect sweep, after a failure it removes the files
 // this request stored. Saving never deletes the file it replaces right away: another tab may still show (and save)
 // it. The sweep deletes only names this module generates (hero_video_<hex>, hero_poster_<hex> directly under
-// assets/bg/) that the stored settings do not use and that are older than a day; seed images, slides and other
-// uploads in that folder stay.
+// assets/bg/) that are older than a day and that are not the file name of the stored video or poster (compared by
+// name, so a changed S3_PUBLIC_URL never makes the live files look unused); seed images, slides and other uploads in
+// that folder stay.
 import { randomBytes } from 'node:crypto';
 import {
   deleteFromS3,
@@ -226,17 +227,33 @@ function videoLink(value) {
   return link(value);
 }
 
-const bgPrefix = () => `${String(S3_PUBLIC_URL || '').replace(/\/+$/, '')}/assets/${FOLDER}/`;
+// The path of an http(s) or protocol-relative URL, without query and fragment
+const URL_PATH = /^(?:https?:)?\/\/[^/?#]*([^?#]*)/i;
+// The file name directly in assets/bg/ at the end of a path
+const BG_NAME = new RegExp(`/assets/${FOLDER}/([^/]+)$`);
 
 /**
- * The S3 key of a file this module stored (S3_PUBLIC_URL/assets/bg/<name matching `pattern`>), or null for anything
- * else: other hosts or folders, sub folders, seed images, site paths (/assets/bg/... from the PHP backend).
+ * The S3 key of a file this module stored, or null for anything else: an http(s) URL on any host whose path
+ * (repeated slashes collapsed, query and fragment ignored) ends in /assets/bg/<name matching `pattern`>. Any host,
+ * because S3_PUBLIC_URL may have changed since the upload (CDN, custom domain, http → https) or had a trailing slash
+ * ("bucket//assets/bg/..."). Null for other folders, sub folders, seed images and site paths (/assets/bg/... is served
+ * by the site, not S3; PHP backend).
  */
 export function generatedKey(url, pattern) {
-  const prefix = bgPrefix();
-  if (typeof url !== 'string' || !S3_PUBLIC_URL || !url.startsWith(prefix)) return null;
-  const name = url.slice(prefix.length);
-  return pattern.test(name) ? `assets/${FOLDER}/${name}` : null;
+  const path = typeof url === 'string' ? URL_PATH.exec(url)?.[1] : undefined;
+  const name = path && BG_NAME.exec(path.replace(/\/{2,}/g, '/'))?.[1];
+  return name && pattern.test(name) ? `assets/${FOLDER}/${name}` : null;
+}
+
+/**
+ * The file name a stored link points to: its last path segment, without query, fragment and trailing slashes ('' for
+ * none or not a string). The sweep keeps every object with this name, whatever host or folder the link has (same as
+ * hm_link_name() in hero_media.php).
+ */
+export function linkName(value) {
+  if (typeof value !== 'string') return '';
+  // Trimmed like the browser does with a src attribute, so a stored link with stray whitespace still protects its file
+  return value.trim().split(/[?#]/, 1)[0].replace(/\/+$/, '').split('/').pop();
 }
 
 /**
@@ -283,14 +300,15 @@ async function storedMedia(pool) {
 /**
  * 409 before anything is written when the save would undo or break another save:
  * - stale tab: `base` is the hero_media_base the admin page sent, the video/poster it loaded; a changed key whose
- *   loaded value is no longer the stored one was changed elsewhere in the meantime
+ *   loaded value is no longer the stored one was changed elsewhere in the meantime. A key sent with the stored value
+ *   undoes nothing and is not compared (a retry after a lost answer); a new data: poster never equals the stored one
  * - a changed link to a generated file that no longer exists (the sweep removed an old upload)
  */
 async function checkMedia(settings, pool, newPoster, base) {
   const stored = await storedMedia(pool);
   const loaded = base && typeof base === 'object' ? base : {};
   for (const [key, name] of [['hero_bg_video', 'video'], ['hero_bg_video_poster', 'poster']]) {
-    if (Object.hasOwn(settings, key) && typeof loaded[name] === 'string' && loaded[name] !== stored[key]) {
+    if (Object.hasOwn(settings, key) && settings[key] !== stored[key] && typeof loaded[name] === 'string' && loaded[name] !== stored[key]) {
       throw new HeroMediaError(STALE_ERROR, 409);
     }
   }
@@ -389,22 +407,23 @@ async function discardFiles(pool, written) {
 
 /**
  * Garbage-collect sweep, after every successful update_settings and upload_hero_video: deletes the generated videos
- * and posters under assets/bg/ that the stored settings do not use and that were last modified more than UNUSED_MS
- * ago (uploaded but never saved, or replaced by a later save). Never any other object. Errors are logged and never
- * fail the request.
+ * and posters under assets/bg/ that were last modified more than UNUSED_MS ago (uploaded but never saved, or replaced
+ * by a later save) and whose name is not the linkName() of the stored video or poster. By name only, so a stored
+ * link on another host, with "//" or a query string still keeps its file. Never any other object. Errors are logged
+ * and never fail the request.
  * @param {{ query: Function }} pool
  */
 export async function sweepHeroMedia(pool) {
   try {
     const stored = await storedMedia(pool);
-    const used = new Set([generatedKey(stored.hero_bg_video, GENERATED_VIDEO), generatedKey(stored.hero_bg_video_poster, GENERATED_POSTER)]);
+    const used = new Set([linkName(stored.hero_bg_video), linkName(stored.hero_bg_video_poster)]);
     const before = Date.now() - UNUSED_MS;
     for (const [stem, pattern] of [['hero_video_', GENERATED_VIDEO], ['hero_poster_', GENERATED_POSTER]]) {
       for (const { key, lastModified } of await listS3(`assets/${FOLDER}/${stem}`)) {
         const name = key.slice(`assets/${FOLDER}/`.length);
         // No date: kept
         const modified = lastModified ? new Date(lastModified).getTime() : NaN;
-        if (pattern.test(name) && !used.has(key) && modified < before) await deleteFromS3(key);
+        if (pattern.test(name) && !used.has(name) && modified < before) await deleteFromS3(key);
       }
     }
   } catch (err) {

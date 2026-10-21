@@ -204,7 +204,8 @@ switch ($action) {
         foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings") as $row) {
             $settings[$row['setting_key']] = $row['setting_value'];
         }
-        echo json_encode($settings);
+        // Always a JSON object like server.js: {} for an empty table (never []), numeric keys stay keys
+        echo json_encode((object)$settings);
         break;
 
     case 'update_settings':

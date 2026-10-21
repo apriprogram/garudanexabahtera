@@ -13,7 +13,8 @@ const S3_REGION = process.env.S3_REGION || 'us-east-1';
 const S3_BUCKET = process.env.S3_BUCKET || 'garudanexa';
 const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY;
 const S3_SECRET_KEY = process.env.S3_SECRET_KEY;
-const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL || `${S3_ENDPOINT}/${S3_BUCKET}`;
+// Without trailing slashes, so `${S3_PUBLIC_URL}/${key}` never has "//" (".../garudanexa//assets/bg/...")
+const S3_PUBLIC_URL = (process.env.S3_PUBLIC_URL || `${S3_ENDPOINT.replace(/\/+$/, '')}/${S3_BUCKET}`).replace(/\/+$/, '');
 
 if (!S3_ACCESS_KEY || !S3_SECRET_KEY) {
   console.warn('[S3] S3_ACCESS_KEY / S3_SECRET_KEY not set — uploads will fail (see .env.example)');

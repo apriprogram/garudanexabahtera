@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { X, Plus, Sparkles, Image as ImageIcon, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Chip, Field, Input, Notice, PanelHeader, Segmented, Spinner, Textarea, cn, FOCUS } from '../../components/admin/ui';
@@ -47,13 +48,28 @@ interface HeroSettingsProps {
   /** hero_bg_video_poster: URL gambar sampul, atau data URI baru (diubah backend jadi file saat disimpan). */
   heroVideoPoster: string;
   setHeroVideoPoster: (url: string) => void;
-  /** true selama video diunggah: halaman menahan tombol simpan. */
+  /**
+   * true selama video diunggah, termasuk menunggu gambar sampul (juga bila tab Hero sudah ditutup): halaman menahan
+   * tombol simpan.
+   */
   onBusyChange?: (busy: boolean) => void;
+  /**
+   * Status sibuk video di halaman (hasil onBusyChange). Unggahan dari tampilan Hero sebelumnya (tab ditutup lalu dibuka
+   * lagi) yang belum selesai mengunci pilihan latar dan bidang video sampai sampulnya terpasang.
+   */
+  videoUploading?: boolean;
   /**
    * Gambar latar yang sedang dikecilkan: +n saat mulai, −n saat selesai (juga bila tab Hero sudah ditutup).
    * Halaman menahan tombol simpan selama jumlahnya > 0.
    */
   onImagesProcessing?: (delta: number) => void;
+  /**
+   * Jumlah gambar latar yang sedang diproses di halaman (jumlah onImagesProcessing), termasuk dari tampilan Hero
+   * sebelumnya: ikut dihitung dalam batas HERO_MAX_IMAGES.
+   */
+  imagesPending?: number;
+  /** Pesan gambar latar yang selesai diproses setelah tab Hero ditutup (mis. gagal dibaca atau melewati batas). */
+  onImageNotice?: (message: string) => void;
   /** true selama halaman menyimpan: pilihan latar dan unggah/hapus media dikunci supaya tidak tertimpa hasil muat ulang. */
   saving?: boolean;
 }
@@ -71,7 +87,10 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   heroVideoPoster,
   setHeroVideoPoster,
   onBusyChange,
+  videoUploading = false,
   onImagesProcessing,
+  imagesPending = 0,
+  onImageNotice,
   saving = false,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -80,8 +99,27 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   const [processingImages, setProcessingImages] = useState(0);
   // Salinan sinkron processingImages: dua pilihan file beruntun tetap menghitung gambar yang belum selesai diproses
   const pendingImagesRef = useRef(0);
+  // false setelah tab Hero ditutup: pesan gambar yang selesai belakangan lewat onImageNotice
+  const mountedRef = useRef(false);
+  // Mode terbaru untuk pemrosesan gambar yang selesai belakangan: pesannya hanya tampil inline di mode Gambar
+  const bgModeRef = useRef(heroBgMode);
+  useEffect(() => {
+    bgModeRef.current = heroBgMode;
+  }, [heroBgMode]);
   // Key stabil per gambar (bukan index) supaya animasi hapus/geser mengenai kartu yang benar
   const imageKeys = useMemo(() => stableListKeys(heroImages), [heroImages]);
+  // Gambar yang sedang diproses: hitungan halaman (juga dari tampilan Hero sebelumnya), atau hitungan tampilan ini
+  // bila halaman tidak mengirimnya
+  const imagesProcessing = Math.max(imagesPending, processingImages);
+  // Unggahan video dari tampilan Hero sebelumnya belum selesai (sampul belum terpasang)
+  const videoBusyElsewhere = videoUploading && !videoBusy;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleVideoBusy = useCallback((busy: boolean) => {
     setVideoBusy(busy);
@@ -108,8 +146,8 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
 
   const [isHeroDragging, setIsHeroDragging] = useState(false);
 
-  // Gambar latar: lewati yang bukan gambar / > 10 MB, maks. HERO_MAX_IMAGES gambar (termasuk yang masih diproses),
-  // kecilkan sisanya ke maks. 1920×1080 (JPEG 0.82), urutan dipertahankan.
+  // Gambar latar: lewati yang bukan gambar / > 10 MB, maks. HERO_MAX_IMAGES gambar (termasuk yang masih diproses,
+  // juga dari tampilan Hero sebelumnya), kecilkan sisanya ke maks. 1920×1080 (JPEG 0.82), urutan dipertahankan.
   const handleImageUpload = async (files: File[]) => {
     if (files.length === 0 || saving) return;
     const rejected: { name: string; reason: ImageRejectReason | 'read' }[] = [];
@@ -118,14 +156,17 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
       if (reason) rejected.push({ name: file.name, reason });
       return !reason;
     });
-    const free = Math.max(0, HERO_MAX_IMAGES - heroImages.length - pendingImagesRef.current);
+    // Hitungan halaman mencakup tab Hero yang sudah ditutup; ref lokal menutup jeda sebelum hitungan itu sampai lewat props
+    const free = Math.max(0, HERO_MAX_IMAGES - heroImages.length - Math.max(imagesPending, pendingImagesRef.current));
     const accepted = valid.slice(0, free);
-    const overLimit = valid.length - accepted.length;
+    let overLimit = valid.length - accepted.length;
+    let kept = accepted.length;
     const errorMessage = () =>
-      [imageRejectMessage(rejected), overLimit > 0 ? imageCapMessage(overLimit, accepted.length, HERO_MAX_IMAGES) : null]
+      [imageRejectMessage(rejected), overLimit > 0 ? imageCapMessage(overLimit, kept, HERO_MAX_IMAGES) : null]
         .filter(Boolean)
         .join(' ') || null;
-    setImageError(errorMessage());
+    const shownError = errorMessage();
+    setImageError(shownError);
     if (accepted.length === 0) return;
 
     pendingImagesRef.current += accepted.length;
@@ -139,9 +180,27 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
         rejected.push({ name: file.name, reason: 'read' });
       }
     }
-    // Batas dicek lagi terhadap daftar terbaru (daftar tersimpan yang sudah > 12 tidak dipotong)
-    if (added.length) setHeroImages((prev) => [...prev, ...added.slice(0, Math.max(0, HERO_MAX_IMAGES - prev.length))]);
-    setImageError(errorMessage());
+    // Batas dicek lagi terhadap daftar terbaru (daftar tersimpan yang sudah > 12 tidak dipotong). flushSync: jumlah yang
+    // terpotong baru diketahui setelah updater dijalankan, dan harus ikut dilaporkan.
+    if (added.length) {
+      let dropped = 0;
+      flushSync(() =>
+        setHeroImages((prev) => {
+          const room = Math.max(0, HERO_MAX_IMAGES - prev.length);
+          dropped = Math.max(0, added.length - room);
+          return [...prev, ...added.slice(0, room)];
+        }),
+      );
+      overLimit += dropped;
+      kept -= dropped;
+    }
+    const finalError = errorMessage();
+    // Tab Hero sudah ditutup atau mode bukan Gambar lagi: pesan yang baru muncul (gagal dibaca, terpotong) lewat
+    // pemberitahuan halaman, karena pesan inline hanya tampil di mode Gambar
+    if (mountedRef.current) setImageError(finalError);
+    if ((!mountedRef.current || bgModeRef.current !== 'image') && finalError && finalError !== shownError) {
+      onImageNotice?.(finalError);
+    }
     pendingImagesRef.current -= accepted.length;
     setProcessingImages((n) => n - accepted.length);
     onImagesProcessing?.(-accepted.length);
@@ -181,7 +240,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   };
 
   const handleLogoDropReorder = (index: number) => {
-    if (logoDraggedIndex === null) return;
+    if (logoDraggedIndex === null || saving) return;
     const newLogos = [...heroLogos];
     const item = newLogos[logoDraggedIndex];
     newLogos.splice(logoDraggedIndex, 1);
@@ -241,7 +300,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                 label: mode.label,
                 icon: mode.icon,
                 // Selama video diunggah mode tidak bisa diganti (unggahan akan terputus); selama menyimpan semua dikunci
-                disabled: saving || (videoBusy && mode.value !== 'video'),
+                disabled: saving || ((videoBusy || videoUploading) && mode.value !== 'video'),
               }))}
               value={heroBgMode}
               onChange={setHeroBgMode}
@@ -330,10 +389,10 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                       isHeroDragging ? 'bg-cobalt text-white' : 'bg-adm-ghost text-adm-muted group-hover:bg-adm-cobalt-soft group-hover:text-adm-cobalt-fg',
                     )}
                   >
-                    {processingImages > 0 ? <Spinner size="sm" /> : <Plus className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />}
+                    {imagesProcessing > 0 ? <Spinner size="sm" /> : <Plus className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />}
                   </span>
                   <span className={cn('text-xs font-medium transition-colors', isHeroDragging ? 'text-adm-cobalt-fg' : 'text-adm-muted group-hover:text-adm-cobalt-fg')}>
-                    {isHeroDragging ? 'Lepaskan!' : processingImages > 0 ? 'Memproses...' : 'Tambah'}
+                    {isHeroDragging ? 'Lepaskan!' : imagesProcessing > 0 ? 'Memproses...' : 'Tambah'}
                   </span>
                 </label>
               </div>
@@ -343,7 +402,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                   {imageError}
                 </Notice>
               )}
-              {heroImages.length === 0 && processingImages === 0 && (
+              {heroImages.length === 0 && imagesProcessing === 0 && (
                 <Notice tone="warning">Belum ada gambar. Website memakai latar bawaan sampai gambar ditambahkan.</Notice>
               )}
               {/* Daftar lama bisa lebih panjang dari batas: website hanya memakai HERO_MAX_IMAGES gambar pertama */}
@@ -367,6 +426,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
               setVideo={setHeroVideo}
               setPoster={setHeroVideoPoster}
               onBusyChange={handleVideoBusy}
+              pendingUpload={videoBusyElsewhere}
               disabled={saving}
             />
           )}
@@ -396,10 +456,11 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
               >
                 <div
                   className={cn(
-                    'relative flex aspect-square cursor-move items-center justify-center overflow-hidden rounded-2xl bg-adm-ghost p-3 ring-1 ring-inset ring-adm-line transition-[opacity,box-shadow] duration-150 group-hover:ring-adm-line-strong sm:p-4',
+                    'relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-adm-ghost p-3 ring-1 ring-inset ring-adm-line transition-[opacity,box-shadow] duration-150 group-hover:ring-adm-line-strong sm:p-4',
+                    !saving && 'cursor-move',
                     logoDraggedIndex === index ? 'opacity-30' : 'opacity-100',
                   )}
-                  draggable
+                  draggable={!saving}
                   onDragStart={() => setLogoDraggedIndex(index)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleLogoDropReorder(index)}
@@ -409,6 +470,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                     type="button"
                     onClick={() => setHeroLogos(prev => prev.filter((_, i) => i !== index))}
                     aria-label={`Hapus ${logo.name || 'logo'}`}
+                    disabled={saving}
                     className={REMOVE_BTN}
                   >
                     <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
@@ -418,6 +480,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                   type="text"
                   controlSize="sm"
                   value={logo.name}
+                  disabled={saving}
                   onChange={(e) => {
                     const newLogos = [...heroLogos];
                     newLogos[index].name = e.target.value;

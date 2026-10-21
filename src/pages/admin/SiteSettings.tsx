@@ -208,11 +208,18 @@ const SiteSettings: React.FC = () => {
   const [heroBgMode, setHeroBgMode] = useState<HeroBgMode>('default');
   const [heroVideo, setHeroVideo] = useState('');
   const [heroVideoPoster, setHeroVideoPoster] = useState('');
-  // true selama video diunggah: tombol simpan ditahan supaya video setengah jadi tidak ikut tersimpan
+  // true selama video diunggah sampai sampulnya terpasang (juga setelah tab Hero ditutup): tombol simpan ditahan
+  // supaya video setengah jadi atau video tanpa sampulnya tidak ikut tersimpan
   const [heroBusy, setHeroBusy] = useState(false);
-  // Gambar latar yang sedang dikecilkan: tombol simpan ditahan sampai semuanya masuk daftar
+  // Gambar latar yang sedang dikecilkan: tombol simpan ditahan sampai semuanya masuk daftar; juga ikut dihitung dalam
+  // batas jumlah gambar oleh tab Hero yang dibuka lagi
   const [heroImagesPending, setHeroImagesPending] = useState(0);
   const handleHeroImagesProcessing = useCallback((delta: number) => setHeroImagesPending((n) => Math.max(0, n + delta)), []);
+  // Pesan gambar latar yang selesai diproses setelah tab Hero ditutup (gagal dibaca, melewati batas)
+  const handleHeroImageNotice = useCallback(
+    (message: string) => showNotify('warning', 'Gambar latar tidak ditambahkan', message),
+    [showNotify],
+  );
   // Muat terakhir: simpan hanya boleh setelah get_settings berhasil, supaya muat gagal tidak menyimpan isian kosong
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
   // Latar hero dari muat terakhir yang berhasil: dasar hero_media_base dan pembanding kunci yang tidak diubah
@@ -282,9 +289,11 @@ const SiteSettings: React.FC = () => {
     try {
       const apiUrl = '/api.php';
       const response = await fetch(`${apiUrl}?action=get_settings`);
-      // Respons gagal / {error} / bukan objek = muat gagal (bukan pengaturan kosong yang lalu ikut tersimpan)
+      // Respons gagal / {error} / bukan objek = muat gagal (bukan pengaturan kosong yang lalu ikut tersimpan).
+      // Tabel setting yang masih kosong dikirim PHP sebagai [] (json_encode array kosong) → pengaturan kosong {}.
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const body: unknown = await response.json();
+      const raw: unknown = await response.json();
+      const body = Array.isArray(raw) && raw.length === 0 ? {} : raw;
       if (!body || typeof body !== 'object' || Array.isArray(body) || 'error' in body) throw new Error('Respons get_settings tidak sesuai');
       const data = body as SettingsMap;
       setSettings(data);
@@ -766,7 +775,10 @@ const SiteSettings: React.FC = () => {
             heroVideoPoster={heroVideoPoster}
             setHeroVideoPoster={setHeroVideoPoster}
             onBusyChange={setHeroBusy}
+            videoUploading={heroBusy}
             onImagesProcessing={handleHeroImagesProcessing}
+            imagesPending={heroImagesPending}
+            onImageNotice={handleHeroImageNotice}
             saving={isSaving}
           />
         );
@@ -1217,7 +1229,7 @@ const SiteSettings: React.FC = () => {
                 <p id="save-blocked-reason" className="text-xs leading-relaxed text-adm-danger-fg">
                   Pengaturan gagal dimuat, jadi belum bisa disimpan.
                 </p>
-                <Button variant="secondary" icon={<RefreshCw />} onClick={() => void fetchSettings()}>
+                <Button variant="secondary" icon={<RefreshCw />} disabled={heroBusy} onClick={() => void fetchSettings()}>
                   Muat ulang
                 </Button>
               </>

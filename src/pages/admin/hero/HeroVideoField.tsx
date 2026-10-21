@@ -27,14 +27,31 @@ interface HeroVideoFieldProps {
   poster: string;
   setVideo: (url: string) => void;
   setPoster: (url: string) => void;
-  /** true selama unggahan berjalan, termasuk menunggu gambar sampul (tombol simpan dinonaktifkan oleh halaman). */
+  /**
+   * true selama unggahan berjalan, termasuk menunggu gambar sampul (tombol simpan dinonaktifkan oleh halaman).
+   * Dilaporkan oleh unggahan itu sendiri, juga setelah komponen dilepas: false baru saat unggahan selesai
+   * (video + sampul terpasang), gagal, atau dibatalkan.
+   */
   onBusyChange?: (busy: boolean) => void;
+  /**
+   * true selama unggahan dari tampilan sebelumnya (tab Hero ditutup saat sampul dibuat) belum selesai: unggah, ganti,
+   * hapus, dan lepas file dinonaktifkan sampai sampulnya terpasang.
+   */
+  pendingUpload?: boolean;
   /** true selama halaman menyimpan: unggah, ganti, hapus, dan lepas file dinonaktifkan. */
   disabled?: boolean;
 }
 
 /** Unggah, pratinjau, ganti, dan hapus video latar hero. Hasil baru tampil di website setelah "Simpan semua perubahan". */
-const HeroVideoField: React.FC<HeroVideoFieldProps> = ({ video, poster, setVideo, setPoster, onBusyChange, disabled = false }) => {
+const HeroVideoField: React.FC<HeroVideoFieldProps> = ({
+  video,
+  poster,
+  setVideo,
+  setPoster,
+  onBusyChange,
+  pendingUpload = false,
+  disabled = false,
+}) => {
   /* phase 'upload' = file sedang dikirim (bisa dibatalkan); 'poster' = file sudah tersimpan, menunggu gambar sampul. */
   const [upload, setUpload] = useState<{ name: string; size: number; percent: number; phase: 'upload' | 'poster' } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,16 +71,12 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({ video, poster, setVideo
   /* Nomor unggahan terakhir: hasil unggahan lama (dibatalkan/diganti) diabaikan. */
   const runRef = useRef(0);
   const uploading = upload !== null;
-  const locked = uploading || disabled;
+  const blocked = disabled || pendingUpload;
+  const locked = uploading || blocked;
 
-  // Laporkan status sibuk ke halaman; cleanup (selesai atau komponen dilepas) → tidak sibuk lagi.
-  useEffect(() => {
-    if (!uploading) return;
-    onBusyChange?.(true);
-    return () => onBusyChange?.(false);
-  }, [uploading, onBusyChange]);
-
-  // Pindah tab/halaman saat mengunggah → batalkan, supaya tidak ada unggahan yatim tanpa tampilan progres.
+  // Pindah tab/halaman saat file dikirim → batalkan, supaya tidak ada unggahan yatim tanpa tampilan progres; unggahan
+  // itu lalu melepas status sibuknya sendiri. Saat sampul dibuat file sudah tersimpan (abort tidak berbuat apa-apa):
+  // unggahan tetap selesai, memasang sampul ke halaman, baru melepas status sibuk.
   useEffect(() => () => jobRef.current?.abort(), []);
 
   // Batas ukuran video dari server (UPLOAD_MAX_VIDEO_MB); token dipasang pembungkus fetch.
@@ -93,7 +106,7 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({ video, poster, setVideo
   });
 
   const startUpload = async (file: File) => {
-    if (jobRef.current || disabled) return;
+    if (jobRef.current || blocked) return;
     const invalid = validateHeroVideoFile(file, maxMb);
     if (invalid) {
       setError(invalid);
@@ -108,6 +121,7 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({ video, poster, setVideo
     const run = ++runRef.current;
     setError(null);
     setUpload({ name: file.name, size: file.size, percent: 0, phase: 'upload' });
+    onBusyChange?.(true);
     setStatus(`Mengunggah ${file.name}...`);
     focusRef.current = 'cancel';
 
@@ -125,10 +139,11 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({ video, poster, setVideo
     try {
       url = await job.promise;
     } catch (err) {
-      // Dibatalkan lewat Batal (cancelUpload sudah merapikan) atau sudah diganti unggahan lain
+      // Dibatalkan lewat Batal (cancelUpload sudah merapikan, termasuk status sibuk) atau sudah diganti unggahan lain
       if (runRef.current !== run) return;
       jobRef.current = null;
       setUpload(null);
+      onBusyChange?.(false);
       // Dibatalkan tanpa Batal = komponen dilepas: tidak ada yang perlu ditampilkan
       if (err instanceof HeroUploadError && err.aborted) return;
       setError(err instanceof Error && err.message ? err.message : 'Gagal mengunggah video.');
@@ -145,12 +160,14 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({ video, poster, setVideo
     setUpload((prev) => (prev ? { ...prev, percent: 100, phase: 'poster' } : prev));
 
     const result = await posterJob;
-    // Juga setelah komponen dilepas: sampul tetap dipasang ke halaman
+    // Juga setelah komponen dilepas: sampul tetap dipasang ke halaman (setter dari props), baru status sibuk dilepas,
+    // supaya simpan tidak bisa mengirim video tanpa sampulnya. posterJob selalu selesai (maks. ~8 dtk).
     if (runRef.current !== run) return;
     setPoster(result.poster ?? '');
     setLongVideoUrl(result.duration !== null && result.duration > HERO_VIDEO_LONG_SECONDS ? url : null);
     jobRef.current = null;
     setUpload(null);
+    onBusyChange?.(false);
     setStatus(DONE_STATUS);
     focusRef.current = 'replace';
   };
@@ -165,6 +182,7 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({ video, poster, setVideo
     jobRef.current?.abort();
     jobRef.current = null;
     setUpload(null);
+    onBusyChange?.(false);
     setStatus('Unggahan video dibatalkan.');
     focusRef.current = 'drop';
   };
@@ -257,7 +275,7 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({ video, poster, setVideo
             <p className="min-w-0 text-xs leading-relaxed text-adm-muted">
               {poster
                 ? 'Gambar sampul diambil otomatis dari video. Tampil sebelum video siap diputar.'
-                : uploading
+                : uploading || pendingUpload
                   ? 'Gambar sampul sedang dibuat dari video.'
                   : 'Gambar sampul tidak bisa dibuat dari video ini. Ganti video untuk mencoba lagi.'}
             </p>
@@ -284,8 +302,8 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({ video, poster, setVideo
         </div>
       ) : (
         progress || (
-          <label {...dropHandlers} aria-disabled={disabled || undefined} className={dropZoneClass(isDragging, 'aspect-video w-full rounded-xl px-4 text-center', disabled)}>
-            <input ref={dropInputRef} type="file" accept={VIDEO_ACCEPT} className="sr-only" disabled={disabled} onChange={onInputChange} />
+          <label {...dropHandlers} aria-disabled={blocked || undefined} className={dropZoneClass(isDragging, 'aspect-video w-full rounded-xl px-4 text-center', blocked)}>
+            <input ref={dropInputRef} type="file" accept={VIDEO_ACCEPT} className="sr-only" disabled={blocked} onChange={onInputChange} />
             <span
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-full transition-colors',
