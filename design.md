@@ -85,7 +85,7 @@ mode terang panel admin) tidak mengubah apa pun di halaman publik. Jangan memaka
 |---|---|---|
 | `btn` + `btn-primary` | Biru brand solid | Satu aksi utama per area (Pesan, Bayar, Simpan) |
 | `btn` + `btn-outline` | Putih + garis tipis (CPNS secondary) | Aksi netral: Batal, Kembali, Lihat Demo (halaman template) |
-| `btn` + `btn-outline-clear` | Transparan, garis `line-strong` → hover `muted`, tanpa latar | Aksi kedua di atas visual: "Lihat demo" & "Konsultasi Gratis" di hero (tinggi sama dengan tombol utama) |
+| `btn` + `btn-outline-clear` | Transparan, garis `fg/20` (di atas putih setara `line-strong`, tetap terlihat di atas foto/video latar) → hover `fg/45`, tanpa latar | Aksi kedua di atas visual: "Lihat demo" & "Konsultasi Gratis" di hero (tinggi sama dengan tombol utama) |
 | `btn` + `btn-outline-primary` | Putih, garis & teks biru | Aksi kedua yang tetap menonjol |
 | `btn` + `btn-secondary` | Latar biru muda, teks biru | Aksi tonal |
 | `btn` + `btn-soft` | Latar abu lembut tanpa garis | Aksi tersier di kartu |

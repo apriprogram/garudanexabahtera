@@ -300,9 +300,12 @@
     @apply bg-surface text-fg ring-1 ring-inset ring-line hover:bg-alt hover:ring-line-strong active:bg-line disabled:hover:bg-surface;
   }
 
-  /* Garis saja, TANPA latar (di atas hero/visual): aksi kedua di samping tombol utama, mis. "Lihat demo" di hero */
+  /*
+   * Garis saja, TANPA latar (di atas hero/visual): aksi kedua di samping tombol utama, mis. "Lihat demo" di hero.
+   * Garis = teks utama tembus 20% (di atas putih setara line-strong), jadi tetap terlihat di atas foto/video latar hero.
+   */
   .btn-outline-clear {
-    @apply bg-transparent text-fg ring-1 ring-inset ring-line-strong hover:ring-muted active:ring-fg;
+    @apply bg-transparent text-fg ring-1 ring-inset ring-fg/20 hover:ring-fg/45 active:ring-fg/60;
   }
 
   /* Netral tanpa garis (latar abu lembut), mis. aksi tersier di kartu = CPNS "soft" */
