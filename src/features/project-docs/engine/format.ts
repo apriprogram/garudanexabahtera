@@ -50,6 +50,20 @@ export function terbilang(n: number): string {
   return `${bulat < 0 ? 'minus ' : ''}${bilangan(Math.abs(bulat))} rupiah`;
 }
 
+/** Whole number in words without a currency (legal style "41 (empat puluh satu) hari"): 41 → "empat puluh satu". */
+export function angkaTerbilang(n: number): string {
+  if (!Number.isFinite(n)) return '';
+  const bulat = roundRupiah(n);
+  if (bulat === 0) return 'nol';
+  return `${bulat < 0 ? 'minus ' : ''}${bilangan(Math.abs(bulat))}`;
+}
+
+/** Percentage with an Indonesian decimal comma, no trailing zeros: 12.5 → "12,5", 50 → "50". */
+export function persen(n: number): string {
+  if (!Number.isFinite(n)) return '0';
+  return String(Math.round(n * 100) / 100).replace('.', ',');
+}
+
 /** 1250000 → "Rp1.250.000"; negative → "-Rp1.000". Rounded to whole rupiah. */
 export function formatRupiahDoc(n: number): string {
   const bulat = roundRupiah(n);
@@ -79,6 +93,36 @@ export function tanggalPanjang(iso: string): string {
 export function hari(iso: string): string {
   const date = parseIsoDate(iso);
   return date ? HARI[date.getUTCDay()] : '';
+}
+
+/** '2026-10-21' → "21 Okt 2026" (narrow table columns); '' for an empty or invalid date. */
+export function tanggalPendek(iso: string): string {
+  const date = parseIsoDate(iso);
+  return date ? `${date.getUTCDate()} ${BULAN[date.getUTCMonth()].slice(0, 3)} ${date.getUTCFullYear()}` : '';
+}
+
+/** 'YYYY-MM-DD' plus `days` calendar days → 'YYYY-MM-DD'; '' for an invalid date. */
+export function tambahHari(iso: string, days: number): string {
+  const date = parseIsoDate(iso);
+  if (!date || !Number.isFinite(days)) return '';
+  date.setUTCDate(date.getUTCDate() + Math.trunc(days));
+  return date.toISOString().slice(0, 10);
+}
+
+/** Inclusive calendar days from `start` to `end` (same day = 1); 0 when a date is invalid or end < start. */
+export function jumlahHari(start: string, end: string): number {
+  const a = parseIsoDate(start);
+  const b = parseIsoDate(end);
+  if (!a || !b || b < a) return 0;
+  return Math.round((b.getTime() - a.getTime()) / 86_400_000) + 1;
+}
+
+/** Database timestamp '2026-10-22 10:05:00' (Asia/Jakarta) → "22 Oktober 2026 pukul 10.05 WIB"; date only without time. */
+export function waktuPanjang(timestamp: string): string {
+  const tanggal = tanggalPanjang(timestamp);
+  if (!tanggal) return '';
+  const time = /[T ](\d{2}):(\d{2})/.exec(timestamp);
+  return time ? `${tanggal} pukul ${time[1]}.${time[2]} WIB` : tanggal;
 }
 
 const ROMAWI: [number, string][] = [

@@ -1,7 +1,4 @@
-// Browser download of a generated file (PDF / DOCX export).
-
-/** `name` with `ext` appended unless it already ends with it (case-insensitive). */
-export const withExtension = (name: string, ext: string) => (name.toLowerCase().endsWith(ext) ? name : `${name}${ext}`);
+// Browser download of a generated file (PDF / DOCX export). File names come from layout.documentFileName().
 
 /** Saves `blob` as `fileName` through a temporary link. */
 export function triggerDownload(blob: Blob, fileName: string): void {
@@ -9,6 +6,7 @@ export function triggerDownload(blob: Blob, fileName: string): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = fileName;
+  link.rel = 'noopener';
   document.body.appendChild(link);
   link.click();
   link.remove();

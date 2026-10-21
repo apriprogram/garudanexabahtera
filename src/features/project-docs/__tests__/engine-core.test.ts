@@ -1,104 +1,41 @@
 // Pure helpers of the document engine (docs/platform/PROJECT-DOCS-SPEC.md §1, §2, §4, §6): numbers in words, rupiah,
-// Indonesian dates, roman months, invoice math, merge fields, the document set, plus a smoke test of the placeholder
-// template/model so the public API keeps working while the engine is built out.
+// Indonesian dates, roman months, invoice math and the document set.
 import { describe, expect, it } from 'vitest';
-import {
-  DOC_TYPES,
-  STAGES,
-  buildModel,
-  calcInvoice,
-  defaultContent,
-  formatRupiahDoc,
-  hari,
-  resolveMerge,
-  romawi,
-  tanggalPanjang,
-  terbilang,
-} from '../engine';
-import type { DocType, InvoiceCalcOptions, MergeData } from '../types';
-
-const merge = (over: Partial<MergeData> = {}): MergeData => ({
-  company: {
-    name: 'PT Garuda Nexa Bahtera',
-    address: 'Jl. Contoh No. 1',
-    city: 'Bandung',
-    phone: '0812',
-    email: 'info@garudanexa.com',
-    website: 'https://garudanexa.com',
-    npwp: '',
-    signatory_name: 'Budi Santoso',
-    signatory_title: 'Direktur',
-    bank_accounts: [{ bank: 'BCA', number: '123', holder: 'PT Garuda Nexa Bahtera' }],
-  },
-  client: {
-    type: 'perusahaan',
-    name: 'PT Klien Maju',
-    pic_name: 'Sari',
-    pic_title: 'Manajer TI',
-    email: 'sari@klien.test',
-    phone: '0813',
-    address: 'Jl. Klien 2',
-    city: 'Jakarta',
-    npwp: '',
-  },
-  project: {
-    id: 7,
-    code: 'PRJ-2026-001',
-    name: 'Website Company Profile',
-    service_type: 'website',
-    service_label: 'Website',
-    description: '',
-    scope_summary: 'Website 5 halaman',
-    value: 15_000_000,
-    value_rupiah: 'Rp15.000.000',
-    value_terbilang: 'lima belas juta rupiah',
-    start_date: '2026-10-21',
-    end_date: '2026-11-30',
-    duration_days: 41,
-    payment_terms: [],
-    has_maintenance: false,
-    maintenance_fee: 0,
-    maintenance_period: '',
-    maintenance_start: '',
-    maintenance_end: '',
-  },
-  milestones: [{ title: 'Desain', description: '', start_date: '2026-10-21', due_date: '2026-10-31', weight: 1, progress: 50, status: 'berjalan' }],
-  document: {
-    number: '007/PKS/GNB/X/2026',
-    type: 'pks',
-    title: 'Perjanjian Kerja Sama',
-    date: '2026-10-21',
-    date_long: '21 Oktober 2026',
-    day: 'Rabu',
-    version: 1,
-    status: 'draft',
-  },
-  signatures: [],
-  ...over,
-});
+import { DOC_TYPES, STAGES, calcInvoice, formatRupiahDoc, hari, romawi, tanggalPanjang, terbilang } from '../engine';
+import { angkaTerbilang, jumlahHari, persen, roundRupiah, tambahHari, tanggalPendek, waktuPanjang } from '../engine/format';
+import type { DocType, InvoiceCalcOptions } from '../types';
 
 describe('terbilang', () => {
   it.each([
     [0, 'nol rupiah'],
     [1, 'satu rupiah'],
-    [10, 'sepuluh rupiah'],
     [11, 'sebelas rupiah'],
+    [100, 'seratus rupiah'],
+    [1_000, 'seribu rupiah'],
+    [1_000_000, 'satu juta rupiah'],
+    [1_250_500, 'satu juta dua ratus lima puluh ribu lima ratus rupiah'],
+    [999_999_999_999, 'sembilan ratus sembilan puluh sembilan miliar sembilan ratus sembilan puluh sembilan juta sembilan ratus sembilan puluh sembilan ribu sembilan ratus sembilan puluh sembilan rupiah'],
+  ])('%d → %s (required cases)', (n, words) => {
+    expect(terbilang(n)).toBe(words);
+  });
+
+  it.each([
+    [10, 'sepuluh rupiah'],
     [12, 'dua belas rupiah'],
     [19, 'sembilan belas rupiah'],
     [20, 'dua puluh rupiah'],
     [21, 'dua puluh satu rupiah'],
-    [100, 'seratus rupiah'],
     [101, 'seratus satu rupiah'],
     [110, 'seratus sepuluh rupiah'],
     [115, 'seratus lima belas rupiah'],
     [200, 'dua ratus rupiah'],
     [999, 'sembilan ratus sembilan puluh sembilan rupiah'],
-    [1000, 'seribu rupiah'],
     [1001, 'seribu satu rupiah'],
     [1100, 'seribu seratus rupiah'],
+    [2000, 'dua ribu rupiah'],
     [11_000, 'sebelas ribu rupiah'],
     [100_000, 'seratus ribu rupiah'],
-    [1_000_000, 'satu juta rupiah'],
+    [111_111, 'seratus sebelas ribu seratus sebelas rupiah'],
     [1_250_000, 'satu juta dua ratus lima puluh ribu rupiah'],
     [15_000_000, 'lima belas juta rupiah'],
     [1_000_000_000, 'satu miliar rupiah'],
@@ -115,9 +52,16 @@ describe('terbilang', () => {
     expect(terbilang(-1500)).toBe('minus seribu lima ratus rupiah');
     expect(terbilang(Number.NaN)).toBe('');
   });
+
+  it('angkaTerbilang writes plain numbers for "41 (empat puluh satu) hari"', () => {
+    expect(angkaTerbilang(41)).toBe('empat puluh satu');
+    expect(angkaTerbilang(0)).toBe('nol');
+    expect(angkaTerbilang(1000)).toBe('seribu');
+    expect(angkaTerbilang(Number.POSITIVE_INFINITY)).toBe('');
+  });
 });
 
-describe('formatRupiahDoc', () => {
+describe('formatRupiahDoc / persen / roundRupiah', () => {
   it.each([
     [0, 'Rp0'],
     [999, 'Rp999'],
@@ -131,9 +75,23 @@ describe('formatRupiahDoc', () => {
   ])('%d → %s', (n, text) => {
     expect(formatRupiahDoc(n)).toBe(text);
   });
+
+  it('writes percentages with a decimal comma', () => {
+    expect(persen(50)).toBe('50');
+    expect(persen(12.5)).toBe('12,5');
+    expect(persen(33.333333)).toBe('33,33');
+    expect(persen(Number.NaN)).toBe('0');
+  });
+
+  it('rounds half away from zero like PHP round()', () => {
+    expect(roundRupiah(0.5)).toBe(1);
+    expect(roundRupiah(-0.5)).toBe(-1);
+    expect(roundRupiah(1.005 * 1000)).toBe(1005);
+    expect(Object.is(roundRupiah(-0.2), 0)).toBe(true);
+  });
 });
 
-describe('tanggalPanjang / hari', () => {
+describe('dates', () => {
   it('formats real dates in Indonesian', () => {
     expect(tanggalPanjang('2026-10-21')).toBe('21 Oktober 2026');
     expect(tanggalPanjang('2026-01-01 08:00:00')).toBe('1 Januari 2026');
@@ -141,13 +99,32 @@ describe('tanggalPanjang / hari', () => {
     expect(hari('2026-10-21')).toBe('Rabu');
     expect(hari('2024-02-29')).toBe('Kamis');
     expect(hari('2026-08-17')).toBe('Senin');
+    expect(tanggalPendek('2026-10-21')).toBe('21 Okt 2026');
   });
 
   it('returns an empty string for empty or impossible dates', () => {
     for (const bad of ['', 'abc', '2026-02-30', '2026-13-01', '21-10-2026']) {
       expect(tanggalPanjang(bad)).toBe('');
       expect(hari(bad)).toBe('');
+      expect(tanggalPendek(bad)).toBe('');
+      expect(tambahHari(bad, 1)).toBe('');
     }
+  });
+
+  it('adds days and counts inclusive calendar days', () => {
+    expect(tambahHari('2026-10-21', 30)).toBe('2026-11-20');
+    expect(tambahHari('2026-12-31', 1)).toBe('2027-01-01');
+    expect(tambahHari('2024-02-28', 1)).toBe('2024-02-29');
+    expect(jumlahHari('2026-10-21', '2026-11-30')).toBe(41);
+    expect(jumlahHari('2026-10-21', '2026-10-21')).toBe(1);
+    expect(jumlahHari('2026-10-22', '2026-10-21')).toBe(0);
+    expect(jumlahHari('', '2026-10-21')).toBe(0);
+  });
+
+  it('writes signature timestamps with the time in WIB', () => {
+    expect(waktuPanjang('2026-10-22 10:05:00')).toBe('22 Oktober 2026 pukul 10.05 WIB');
+    expect(waktuPanjang('2026-10-22')).toBe('22 Oktober 2026');
+    expect(waktuPanjang('')).toBe('');
   });
 });
 
@@ -205,33 +182,28 @@ describe('calcInvoice', () => {
     expect(calcInvoice([{ description: 'x', qty: 1, unit_price: 1000 }], { ...off, discount: -5 }).discount).toBe(0);
   });
 
+  it('PPh 23 is computed on the base (before PPN) and only reduces the amount due', () => {
+    const t = calcInvoice([{ description: 'x', qty: 1, unit_price: 3_333_333 }], { ...off, pph23_enabled: true, ppn_enabled: true });
+    expect(t.pph23_amount).toBe(66_667); // 66666.66
+    expect(t.total).toBe(3_700_000); // 3333333 + round(round(3055555.25) × 12%) = 3333333 + 366667
+    expect(t.amount_due).toBe(t.total - t.pph23_amount);
+  });
+
+  it('uses the configured PPN rate and DPP fraction; a zero denominator falls back to DPP = base', () => {
+    const t = calcInvoice([{ description: 'x', qty: 1, unit_price: 1_000_000 }], { ...off, ppn_enabled: true, ppn_rate: 11, dpp_numerator: 1, dpp_denominator: 1 });
+    expect([t.dpp, t.ppn_amount, t.total]).toEqual([1_000_000, 110_000, 1_110_000]);
+    const zero = calcInvoice([{ description: 'x', qty: 1, unit_price: 1_000_000 }], { ...off, ppn_enabled: true, dpp_denominator: 0 });
+    expect(zero.dpp).toBe(1_000_000);
+  });
+
+  it('handles the 1e12 money ceiling exactly and treats bad numbers as zero', () => {
+    expect(calcInvoice([{ description: 'x', qty: 1, unit_price: 1e12 }], off).amount_due).toBe(1e12);
+    const bad = calcInvoice([{ description: 'x', qty: Number.NaN, unit_price: 5 }, { description: 'y', qty: '2' as unknown as number, unit_price: 5 }], off);
+    expect(bad.subtotal).toBe(10);
+  });
+
   it('treats an empty item list as zero', () => {
     expect(calcInvoice([], { ...off, ppn_enabled: true, pph23_enabled: true }).amount_due).toBe(0);
-  });
-});
-
-describe('resolveMerge', () => {
-  it('fills known fields, also with spaces and array indexes', () => {
-    expect(resolveMerge('{{client.name}} · {{ project.value_rupiah }} · {{milestones.0.title}}', merge())).toEqual({
-      text: 'PT Klien Maju · Rp15.000.000 · Desain',
-      missing: [],
-    });
-    expect(resolveMerge('{{project.value}} {{project.has_maintenance}} {{company.npwp}}|', merge()).text).toBe('15000000 Tidak |');
-  });
-
-  it('marks unknown fields once, in order', () => {
-    expect(resolveMerge('{{a.b}} {{client.nama}} {{a.b}} {{project}} {{company.bank_accounts}}', merge())).toEqual({
-      text: '[…] […] […] […] […]',
-      missing: ['a.b', 'client.nama', 'project', 'company.bank_accounts'],
-    });
-  });
-
-  it('never walks the prototype chain', () => {
-    expect(resolveMerge('{{client.constructor}} {{__proto__.x}} {{milestones.length}}', merge()).missing).toEqual(['client.constructor', '__proto__.x']);
-  });
-
-  it('leaves text without fields alone', () => {
-    expect(resolveMerge('Biaya {100} dan {{ }}', merge())).toEqual({ text: 'Biaya {100} dan {{ }}', missing: [] });
   });
 });
 
@@ -252,42 +224,5 @@ describe('DOC_TYPES / STAGES', () => {
     expect(STAGES.map((s) => s.key)).toEqual(['perencanaan', 'penawaran', 'kontrak', 'pengerjaan', 'uji', 'serah_terima', 'pelunasan', 'maintenance', 'selesai']);
     const keys = STAGES.map((s) => s.key);
     for (const info of Object.values(DOC_TYPES)) expect(keys).toContain(info.stage);
-  });
-});
-
-describe('defaultContent + buildModel (placeholder smoke test)', () => {
-  it('builds a model with resolved fields, markup, e-Meterai and both signature slots', () => {
-    const data = merge();
-    const content = defaultContent('pks', data);
-    expect(content.sections.length).toBeGreaterThan(0);
-    content.sections.push(
-      { id: 'lingkup', title: 'Ruang lingkup', body: 'Pekerjaan untuk **{{client.name}}**:\n- Desain\n- Pengembangan\n\n1. Satu\n2. Dua\n\n{{tidak.ada}}' },
-      { id: 'tersembunyi', title: 'Rahasia', body: 'tidak tampil', hidden: true },
-    );
-    const model = buildModel('pks', content, data);
-    expect(model.meta).toEqual({ number: '007/PKS/GNB/X/2026', title: 'PERJANJIAN KERJA SAMA PEMBUATAN WEBSITE', type: 'pks', date: '2026-10-21' });
-    expect(model.kop.company.name).toBe('PT Garuda Nexa Bahtera');
-    expect(model.footer.text).toBe('007/PKS/GNB/X/2026');
-    expect(model.missing).toEqual(['tidak.ada']);
-    expect(JSON.stringify(model.blocks)).not.toContain('Rahasia');
-    expect(model.blocks).toContainEqual({ type: 'paragraph', runs: [{ text: 'Pekerjaan untuk ' }, { text: 'PT Klien Maju', bold: true }, { text: ':' }], align: 'justify' });
-    expect(model.blocks).toContainEqual({ type: 'list', ordered: false, items: [[{ text: 'Desain' }], [{ text: 'Pengembangan' }]] });
-    expect(model.blocks).toContainEqual({ type: 'list', ordered: true, items: [[{ text: 'Satu' }], [{ text: 'Dua' }]] });
-    expect(model.blocks.some((b) => b.type === 'meteraiBox')).toBe(true);
-    expect(model.signatures.map((s) => [s.label, s.organization, s.signer_name, s.signed_at])).toEqual([
-      ['PIHAK PERTAMA', 'PT Garuda Nexa Bahtera', 'Budi Santoso', null],
-      ['PIHAK KEDUA', 'PT Klien Maju', 'Sari', null],
-    ]);
-  });
-
-  it('uses the signature of the current version and skips e-Meterai below Rp5.000.000', () => {
-    const data = merge({
-      project: { ...merge().project, value: 4_999_999 },
-      signatures: [{ party: 'pihak_kedua', signer_name: 'Sari W.', signer_title: 'Direktur', signed_at: '2026-10-22 10:00:00', image_url: 'pdfile:sig:9' }],
-    });
-    const model = buildModel('bast', defaultContent('bast', data), data);
-    expect(model.blocks.some((b) => b.type === 'meteraiBox')).toBe(false);
-    expect(model.signatures[1]).toMatchObject({ signer_name: 'Sari W.', signer_title: 'Direktur', signed_at: '2026-10-22 10:00:00', image_ref: 'pdfile:sig:9' });
-    expect(buildModel('brd', defaultContent('brd', data), data).signatures).toEqual([]);
   });
 });

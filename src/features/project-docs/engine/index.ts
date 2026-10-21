@@ -1,11 +1,11 @@
 // Public API of the document engine (docs/platform/PROJECT-DOCS-SPEC.md §6). Other code imports ONLY from this file.
 //
-// Real (foundation, unit-tested in ../__tests__/engine-core.test.ts): DOC_TYPES, STAGES, resolveMerge, calcInvoice,
-// terbilang, formatRupiahDoc, tanggalPanjang, hari, romawi.
-// Placeholders the engine owner replaces behind the same signatures: defaultContent, SECTION_HINTS, buildModel,
-// DocumentPreview, exportPdf, exportDocx.
+//   defaultContent(type, data, options?)  Indonesian template; merge fields `{{client.name}}`, directives `{{#termin}}`
+//   buildModel(type, content, data)       → DocModel (kop, title, blocks, signature slots, e-Meterai, missing fields)
+//   DocumentPreview / exportPdf / exportDocx render the same DocModel (pdfmake and docx are lazy-loaded chunks)
+// Markup, merge fields and directives are documented in markup.ts, merge.ts / mergeView.ts and autoBlocks.ts.
 export { DOC_TYPES, STAGES, type DocTypeInfo } from './docTypes';
-export { defaultContent, SECTION_HINTS } from './templates';
+export { defaultContent, SECTION_HINTS, type TemplateOptions } from './templates';
 export { resolveMerge, MISSING_FIELD } from './merge';
 export { buildModel } from './buildModel';
 export { calcInvoice } from './invoice';
