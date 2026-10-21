@@ -1,7 +1,8 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { prefersReducedMotion } from '../../../hooks/useInView';
-import { HERO_SLIDE_MS, type HeroMediaConfig } from './heroBgConfig';
+import { HeroBackground } from './HeroBackground';
+import { HERO_FADE_MS, HERO_SLIDE_MS, type HeroMediaConfig } from './heroBgConfig';
 
 /** Mode hemat data browser (header Save-Data / "Lite mode"): video & gambar berikutnya tidak dimuat otomatis. */
 const prefersSaveData = (): boolean =>
@@ -21,6 +22,13 @@ const playMuted = (el: HTMLVideoElement): Promise<void> => {
     return Promise.reject(err);
   }
 };
+
+/**
+ * play() ditolak karena dibatalkan (pause() atau muat ulang sebelum pemutaran sempat mulai, mis. hero cepat digulir
+ * keluar layar), bukan karena diblokir browser: status jeda pengunjung tidak diubah.
+ */
+const isAbortError = (err: unknown): boolean =>
+  typeof err === 'object' && err !== null && (err as { name?: unknown }).name === 'AbortError';
 
 /** Tanpa poster: minta frame pertama (#t) agar Safari iOS tidak menampilkan kotak kosong selama video belum diputar. */
 const withFirstFrame = (src: string): string => (src.includes('#') ? src : `${src}#t=0.001`);
@@ -62,17 +70,28 @@ const useOnScreen = (ref: React.RefObject<Element | null>): boolean => {
 interface SlideState {
   /** Gambar yang tampil (paling atas) */
   index: number;
-  /** Gambar sebelumnya: tetap terlihat di bawah selama gambar baru memudar masuk (juga bila gambar baru belum termuat) */
+  /** Gambar sebelumnya: tetap penuh di bawah selama gambar baru memudar masuk, lalu disembunyikan (-1 = tidak ada) */
   previous: number;
   /** Indeks terjauh yang pernah tampil: gambar sampai sini tetap terpasang (sudah dimuat browser) */
   reached: number;
+  /** Gambar yang sudah selesai dimuat: hanya gambar ini yang boleh menjadi gambar berikutnya */
+  loaded: readonly number[];
   /** Gambar yang gagal dimuat: tidak dirender dan dilewati */
   failed: readonly number[];
+  /**
+   * Menunggu gambar berikutnya selesai dimuat: 'dwell' = 6 detik sudah lewat (berganti begitu termuat, selama tayangan
+   * berjalan); 'gone' = gambar yang tampil gagal dimuat (berganti begitu termuat, juga saat dijeda); null = tidak menunggu.
+   */
+  waiting: 'dwell' | 'gone' | null;
 }
 
-type SlideAction = { type: 'next'; count: number } | { type: 'fail'; at: number; count: number };
+type SlideAction =
+  | { type: 'due'; count: number }
+  | { type: 'load'; at: number; count: number; running: boolean }
+  | { type: 'fail'; at: number; count: number; running: boolean }
+  | { type: 'settle' };
 
-const FIRST_SLIDE: SlideState = { index: 0, previous: -1, reached: 0, failed: [] };
+const FIRST_SLIDE: SlideState = { index: 0, previous: -1, reached: 0, loaded: [], failed: [], waiting: null };
 
 /** Gambar berikutnya (melingkar) yang tidak gagal; tidak ada → tetap `from`. */
 const nextSlide = (from: number, count: number, failed: readonly number[]): number => {
@@ -83,85 +102,142 @@ const nextSlide = (from: number, count: number, failed: readonly number[]): numb
   return from;
 };
 
+/** Tampilkan gambar `to`; gambar yang tampil sekarang (bila tidak gagal) tetap penuh di bawahnya selama pudar masuk. */
+const showSlide = (state: SlideState, to: number): SlideState => ({
+  ...state,
+  index: to,
+  previous: state.failed.includes(state.index) ? state.previous : state.index,
+  reached: Math.max(state.reached, to),
+  waiting: null,
+});
+
+/** Penantian selesai bila gambar berikutnya sudah termuat; 'dwell' hanya dilanjutkan selama tayangan berjalan. */
+const resolveWaiting = (state: SlideState, count: number, running: boolean): SlideState => {
+  if (!state.waiting || (state.waiting === 'dwell' && !running)) return state;
+  const to = nextSlide(state.index, count, state.failed);
+  // Tidak ada gambar lain yang bisa tampil: tidak ada yang ditunggu lagi (semua gagal → kanvas bawaan di HeroMedia)
+  if (to === state.index) return state.waiting === 'dwell' ? { ...state, waiting: null } : state;
+  return state.loaded.includes(to) ? showSlide(state, to) : state;
+};
+
 const slidesReducer = (state: SlideState, action: SlideAction): SlideState => {
-  if (action.type === 'fail') {
-    if (state.failed.includes(action.at)) return state;
-    const failed = [...state.failed, action.at];
-    if (action.at !== state.index) return { ...state, failed };
-    // Gambar yang sedang tampil gagal: langsung ke gambar berikutnya, gambar sebelumnya tetap di bawahnya
-    const index = nextSlide(state.index, action.count, failed);
-    return { ...state, index, reached: Math.max(state.reached, index), failed };
+  switch (action.type) {
+    case 'settle':
+      return state.previous < 0 ? state : { ...state, previous: -1 };
+    case 'due':
+      // Timer 6 detik hanya berjalan selama tayangan berjalan
+      return resolveWaiting({ ...state, waiting: state.waiting ?? 'dwell' }, action.count, true);
+    case 'load':
+      if (state.loaded.includes(action.at) || state.failed.includes(action.at)) return state;
+      return resolveWaiting({ ...state, loaded: [...state.loaded, action.at] }, action.count, action.running);
+    case 'fail': {
+      if (state.failed.includes(action.at)) return state;
+      const failed = [...state.failed, action.at];
+      const waiting = action.at === state.index ? 'gone' : state.waiting;
+      return resolveWaiting({ ...state, failed, waiting }, action.count, action.running);
+    }
   }
-  const index = nextSlide(state.index, action.count, state.failed);
-  if (index === state.index) return state;
-  return { ...state, index, previous: state.index, reached: Math.max(state.reached, index) };
+};
+
+/**
+ * Urutan tayangan gambar: berganti paling cepat 6 detik setelah gambar tampil, dan hanya ke gambar yang sudah selesai
+ * dimuat (belum termuat → ditunggu, berganti begitu termuat). Gambar lama disembunyikan setelah pudar masuk selesai,
+ * jadi setiap gambar yang tampil lagi selalu memudar masuk dari transparan (juga bila hanya 2 gambar bergantian).
+ */
+const useSlides = (count: number, running: boolean) => {
+  const [state, dispatch] = useReducer(slidesReducer, FIRST_SLIDE);
+  const upcoming = nextSlide(state.index, count, state.failed);
+  const canAdvance = upcoming !== state.index && state.waiting !== 'gone';
+
+  useEffect(() => {
+    if (!running || !canAdvance) return undefined;
+    const timer = window.setTimeout(() => dispatch({ type: 'due', count }), HERO_SLIDE_MS);
+    return () => window.clearTimeout(timer);
+  }, [running, canAdvance, count, state.index]);
+
+  // Tetap berjalan saat dijeda: transisi CSS yang sudah mulai tetap selesai
+  useEffect(() => {
+    if (state.previous < 0) return undefined;
+    const timer = window.setTimeout(() => dispatch({ type: 'settle' }), HERO_FADE_MS);
+    return () => window.clearTimeout(timer);
+  }, [state.previous, state.index]);
+
+  return {
+    state,
+    upcoming,
+    /** Gambar yang masih bisa tampil (belum gagal dimuat) */
+    usable: count - state.failed.length,
+    onLoad: (at: number) => dispatch({ type: 'load', at, count, running }),
+    onError: (at: number) => dispatch({ type: 'fail', at, count, running }),
+  };
 };
 
 interface HeroSlidesProps {
   images: string[];
-  /** Berganti otomatis sekarang (terlihat, tab aktif, tidak dijeda) */
-  running: boolean;
-  /** Gambar berikutnya boleh dimuat lebih dulu (tidak dijeda pengunjung / reduced motion / hemat data) */
+  slides: SlideState;
+  upcoming: number;
+  /** Gambar berikutnya dipasang lebih dulu (tidak dijeda pengunjung / reduced motion / hemat data, atau gambar yang tampil gagal) */
   preload: boolean;
-  /** Gambar baru sedikit "mengendap" (skala 1,03 → 1); mati untuk reduced motion */
-  settle: boolean;
+  /** Pudar masuk 1,2 detik + skala 1,03 → 1; mati untuk reduced motion (langsung berganti) */
+  animate: boolean;
+  onLoad: (index: number) => void;
+  onError: (index: number) => void;
 }
 
 /**
  * Crossfade bertumpuk: gambar aktif memudar masuk DI ATAS gambar sebelumnya (yang tetap penuh), jadi tidak pernah ada
  * kilasan kosong. Gambar dipasang bertahap (yang tampil, berikutnya, dan yang sudah pernah tampil), bukan sekaligus.
  */
-const HeroSlides: React.FC<HeroSlidesProps> = ({ images, running, preload, settle }) => {
-  const count = images.length;
-  const [state, dispatch] = useReducer(slidesReducer, FIRST_SLIDE);
-  const upcoming = nextSlide(state.index, count, state.failed);
-
-  useEffect(() => {
-    if (!running || upcoming === state.index) return undefined;
-    const timer = window.setTimeout(() => dispatch({ type: 'next', count }), HERO_SLIDE_MS);
-    return () => window.clearTimeout(timer);
-  }, [running, count, state.index, upcoming]);
-
-  return (
-    <>
-      {images.map((src, index) => {
-        const mounted = index <= state.reached || (preload && index === upcoming);
-        if (!mounted || state.failed.includes(index)) return null;
-        const active = index === state.index;
-        const under = index === state.previous;
-        const layer = active ? 'z-[2] opacity-100' : under ? 'z-[1] opacity-100' : 'z-0 opacity-0';
-        return (
-          <img
-            key={src}
-            src={src}
-            alt=""
-            // Gambar pertama = kandidat LCP: dimuat segera; lainnya belakangan
-            loading={index === 0 ? 'eager' : 'lazy'}
-            fetchPriority={index === 0 ? 'high' : undefined}
-            decoding="async"
-            onError={() => dispatch({ type: 'fail', at: index, count })}
-            className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-[1200ms] ease-calm ${layer} ${
-              settle && !active && !under ? 'scale-[1.03]' : 'scale-100'
-            }`}
-          />
-        );
-      })}
-    </>
-  );
-};
+const HeroSlides: React.FC<HeroSlidesProps> = ({ images, slides, upcoming, preload, animate, onLoad, onError }) => (
+  <>
+    {images.map((src, index) => {
+      const mounted = index <= slides.reached || (preload && index === upcoming);
+      if (!mounted || slides.failed.includes(index)) return null;
+      const active = index === slides.index;
+      const under = index === slides.previous;
+      // Tampil / di bawah: penuh dengan transisi, jadi gambar tersembunyi yang menjadi aktif memudar dari 0 (+ skala
+      // 1,03 → 1; Tailwind v4 scale-* = properti CSS `scale`). Tersembunyi: langsung transparan tanpa transisi, karena
+      // saat itu tertutup gambar aktif yang sudah penuh.
+      const layer = active ? 'z-[2] opacity-100' : under ? 'z-[1] opacity-100' : 'z-0 opacity-0';
+      const motion = !animate
+        ? ''
+        : active || under
+          ? ' scale-100 transition-[opacity,scale] duration-[1200ms] ease-calm motion-reduce:transition-none'
+          : ' scale-[1.03]';
+      return (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          // Gambar pertama = kandidat LCP: dimuat segera; lainnya belakangan
+          loading={index === 0 ? 'eager' : 'lazy'}
+          fetchPriority={index === 0 ? 'high' : undefined}
+          decoding="async"
+          onLoad={() => onLoad(index)}
+          onError={() => onError(index)}
+          className={`absolute inset-0 h-full w-full object-cover ${layer}${motion}`}
+        />
+      );
+    })}
+  </>
+);
 
 /* ─── Lapisan latar + tombol jeda ─────────────────────────────────────────── */
 
 /**
  * Latar hero dari admin (mode Gambar / Video; mode Bawaan = HeroBackground):
- * - gambar: satu gambar statis, 2+ gambar bergantian tiap 6 detik (crossfade 1,2 detik);
+ * - gambar: satu gambar statis, 2+ gambar bergantian minimal tiap 6 detik (selalu memudar masuk dari 0 selama 1,2 detik,
+ *   hanya ke gambar yang sudah termuat); gambar yang gagal dimuat dilewati;
  * - video: berulang tanpa suara, inline, tanpa kontrol bawaan; poster tampil sampai video berjalan. Video rusak /
  *   gagal dimuat → disembunyikan (poster tetap tampil sebagai gambar bila ada).
+ * Tidak ada lagi yang bisa tampil (semua gambar gagal, atau video gagal tanpa poster yang bisa dimuat) → kanvas bawaan.
  * Di atas media: cuci putih agar teks tetap terbaca (HP rata, ≥ 1024px kuat di kolom teks kiri, tipis di kanan) +
  * pudar atas (navbar transparan) dan bawah (menyatu dengan strip layanan). Datar: tanpa scrim gelap, tanpa blur.
- * Berhenti saat hero tidak terlihat atau tab disembunyikan; tombol jeda (WCAG 2.2.2) untuk 2+ gambar dan video.
- * Reduced motion atau hemat data (Save-Data): mulai dijeda (gambar pertama / poster saja), pengunjung bisa memutar.
- * Autoplay yang diblokir browser → status dijeda, poster / frame pertama tetap tampil.
+ * Berhenti saat hero tidak terlihat atau tab disembunyikan; tombol jeda (WCAG 2.2.2) selama masih ada 2+ gambar yang
+ * bisa tampil, atau video yang masih bisa diputar.
+ * Reduced motion atau hemat data (Save-Data): mulai dijeda (gambar pertama / poster saja), pengunjung bisa memutar;
+ * reduced motion juga tanpa pudar & skala (gambar langsung berganti).
+ * Autoplay yang diblokir browser → status dijeda, poster / frame pertama tetap tampil (play() yang dibatalkan tidak).
  * Dirender di dalam section hero yang `relative isolate` (lapisan -z-10 di belakang isi, tombol z-10 di atasnya).
  */
 export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => {
@@ -175,8 +251,10 @@ export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => 
 
   const isVideo = config.mode === 'video';
   const playing = !paused && onScreen;
-  // Tombol jeda hanya bila ada yang bergerak: 2+ gambar, atau video yang masih bisa diputar
-  const controllable = config.mode === 'image' ? config.images.length > 1 : !broken;
+  const slides = useSlides(config.mode === 'image' ? config.images.length : 0, playing);
+  // Tombol jeda hanya bila ada yang bergerak: 2+ gambar yang masih bisa tampil, atau video yang masih bisa diputar
+  const controllable = config.mode === 'image' ? slides.usable > 1 : !broken;
+  const exhausted = config.mode === 'image' ? slides.usable === 0 : broken && (!config.poster || posterBroken);
 
   // Video diputar hanya selama boleh bergerak; diblokir browser → dijeda (poster / frame pertama tetap tampil)
   useEffect(() => {
@@ -188,8 +266,8 @@ export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => 
     }
     let alive = true;
     if (el.paused) {
-      playMuted(el).catch(() => {
-        if (alive) setPaused(true);
+      playMuted(el).catch((err: unknown) => {
+        if (alive && !isAbortError(err)) setPaused(true);
       });
     }
     return () => {
@@ -203,11 +281,14 @@ export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => 
     // Putar langsung di dalam klik (gesture pengguna): iOS mengizinkannya walau autoplay sebelumnya diblokir
     const el = videoRef.current;
     if (!next && isVideo && el) {
-      playMuted(el).catch(() => {
-        if (videoRef.current === el) setPaused(true);
+      playMuted(el).catch((err: unknown) => {
+        if (videoRef.current === el && !isAbortError(err)) setPaused(true);
       });
     }
   };
+
+  // Tidak ada lagi media yang bisa tampil: latar bawaan, bukan cuci putih kosong (sama dengan Hero.tsx)
+  if (exhausted) return <HeroBackground className="absolute inset-0 -z-10" />;
 
   return (
     <>
@@ -217,7 +298,15 @@ export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => 
         aria-hidden
       >
         {config.mode === 'image' && (
-          <HeroSlides images={config.images} running={playing} preload={!paused} settle={!reduced} />
+          <HeroSlides
+            images={config.images}
+            slides={slides.state}
+            upcoming={slides.upcoming}
+            preload={!paused || slides.state.waiting === 'gone'}
+            animate={!reduced}
+            onLoad={slides.onLoad}
+            onError={slides.onError}
+          />
         )}
 
         {config.mode === 'video' &&

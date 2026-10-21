@@ -37,6 +37,47 @@ export const parseHeroLogos = (raw: unknown): { name: string; src: string }[] =>
     return typeof src === 'string' && src ? [{ name: typeof name === 'string' ? name : '', src }] : [];
   });
 
+/* ─── Dasar simpan (tab basi) ─────────────────────────────────────────────── */
+
+/**
+ * Latar hero seperti dimuat get_settings terakhir yang berhasil, dalam bentuk yang sama dengan isian yang dikirim
+ * update_settings (mode dinormalkan, URL di-trim, hero_images = JSON daftar hasil parseHeroImages). `base` dikirim
+ * sebagai hero_media_base: nilai video/sampul persis seperti tersimpan, supaya server bisa menolak tab yang basi (409).
+ */
+export interface HeroMediaBaseline {
+  hero_bg_mode: HeroBgMode;
+  hero_bg_video: string;
+  hero_bg_video_poster: string;
+  hero_images: string;
+  base: { video: string; poster: string };
+}
+
+const HERO_MEDIA_KEYS = ['hero_bg_mode', 'hero_bg_video', 'hero_bg_video_poster', 'hero_images'] as const;
+
+/** Dasar latar hero dari respons get_settings (setting yang tidak ada = ""). */
+export function heroMediaBaseline(data: Record<string, unknown>): HeroMediaBaseline {
+  const raw = (key: string) => (typeof data[key] === 'string' ? (data[key] as string) : '');
+  return {
+    hero_bg_mode: normalizeHeroBgMode(data.hero_bg_mode),
+    hero_bg_video: raw('hero_bg_video').trim(),
+    hero_bg_video_poster: raw('hero_bg_video_poster').trim(),
+    hero_images: JSON.stringify(parseHeroImages(data.hero_images)),
+    base: { video: raw('hero_bg_video'), poster: raw('hero_bg_video_poster') },
+  };
+}
+
+/**
+ * Salinan settings tanpa kunci latar hero yang nilainya masih sama dengan dasar. Tab yang tidak menyentuh latar hero
+ * jadi tidak bisa mengembalikan perubahan latar dari tab atau perangkat lain.
+ */
+export function omitUnchangedHeroMedia(settings: Record<string, string>, baseline: HeroMediaBaseline): Record<string, string> {
+  const out = { ...settings };
+  for (const key of HERO_MEDIA_KEYS) {
+    if (out[key] === baseline[key]) delete out[key];
+  }
+  return out;
+}
+
 /* ─── Batas & ukuran ──────────────────────────────────────────────────────── */
 
 export const HERO_IMAGE_MAX_MB = 10;
@@ -44,6 +85,7 @@ export const HERO_IMAGE_MAX_WIDTH = 1920;
 export const HERO_IMAGE_MAX_HEIGHT = 1080;
 export const HERO_IMAGE_QUALITY = 0.82;
 
+/** Batas video bila get_hero_media_limits gagal (sama dengan bawaan UPLOAD_MAX_VIDEO_MB di server). */
 export const HERO_VIDEO_MAX_MB = 30;
 /** Lebih dari ini → saran memakai video yang lebih pendek (tidak memblokir). */
 export const HERO_VIDEO_LONG_SECONDS = 60;
@@ -87,6 +129,13 @@ export function checkHeroImageFile(file: FileLike): ImageRejectReason | null {
   return null;
 }
 
+/** Pesan bila gambar melebihi batas daftar: semua ditolak (daftar penuh) atau sebagian file terakhir. */
+export function imageCapMessage(dropped: number, added: number, max: number): string {
+  return added > 0
+    ? `Maksimal ${max} gambar latar, jadi ${dropped} file terakhir tidak ditambahkan.`
+    : `Maksimal ${max} gambar latar. Hapus salah satu dulu.`;
+}
+
 /** Pesan untuk gambar yang tidak ditambahkan (satu file → alasan lengkap, beberapa → ringkas). */
 export function imageRejectMessage(rejected: { name: string; reason: ImageRejectReason | 'read' }[]): string | null {
   if (rejected.length === 0) return null;
@@ -117,12 +166,17 @@ export function heroVideoKind(file: Pick<FileLike, 'name' | 'type'>): HeroVideoK
 export const heroVideoContentType = (file: Pick<FileLike, 'name' | 'type'>): string =>
   heroVideoKind(file) === 'webm' ? 'video/webm' : 'video/mp4';
 
-/** Pesan bila video tidak boleh diunggah, atau null bila lolos. */
-export function validateHeroVideoFile(file: FileLike): string | null {
+/** Pesan bila video tidak boleh diunggah, atau null bila lolos. maxMb: batas dari server (get_hero_media_limits). */
+export function validateHeroVideoFile(file: FileLike, maxMb = HERO_VIDEO_MAX_MB): string | null {
   if (!heroVideoKind(file)) return 'Format video harus MP4 atau WebM.';
   if (file.size <= 0) return 'File video kosong.';
-  if (file.size > HERO_VIDEO_MAX_MB * MB) return `Ukuran video maksimal ${HERO_VIDEO_MAX_MB} MB.`;
+  if (file.size > maxMb * MB) return `Ukuran video maksimal ${maxMb} MB.`;
   return null;
+}
+
+/** video_max_mb dari get_hero_media_limits → MB bulat (≥ 1), atau null bila bukan angka yang masuk akal. */
+export function heroVideoLimitMb(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : null;
 }
 
 /* ─── Error unggah ────────────────────────────────────────────────────────── */

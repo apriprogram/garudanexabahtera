@@ -29,7 +29,8 @@ import { handlePlatformAction } from './modules/templates.js';
 import { handleListProductAction } from './modules/list_products.js';
 // Client project files (dokumen-client/dokumen): staff-only download, the folder itself is closed to the web
 import { handleProjectFileAction } from './modules/project_files.js';
-// Home page hero background: raw video upload (upload_hero_video) and the hero_bg_* / hero_images settings
+// Home page hero background: raw video upload (upload_hero_video), its limits (get_hero_media_limits) and the
+// hero_bg_* / hero_images settings
 import { handleHeroMediaAction, prepareHeroMediaSettings } from './modules/hero_media.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -140,6 +141,8 @@ app.get('/api.php', async (req, res) => {
   if (await handlePlatformAction(action, req.query, req, res, pool)) return;
   if (await handleListProductAction(action, req.query, req, res, pool)) return;
   if (await handleProjectFileAction(action, req.query, req, res)) return;
+  // get_hero_media_limits; a GET upload_hero_video is not handled there and falls through to "Invalid action"
+  if (await handleHeroMediaAction(actionOf(req), req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -362,9 +365,10 @@ app.get('/api.php', async (req, res) => {
 
 // ── POST /api.php ──
 app.post('/api.php', async (req, res) => {
-  // upload_hero_video posts the raw file (video/mp4|webm, not JSON), so express.json left the stream unread.
-  // Same action lookup as the auth gate (actionOf), so the action checked there is the one handled here.
-  if (await handleHeroMediaAction(actionOf(req), req, res)) return;
+  // upload_hero_video posts the raw file (video/mp4|webm, not JSON), so express.json left the stream unread; also
+  // get_hero_media_limits. Same action lookup as the auth gate (actionOf), so the action checked there is the one
+  // handled here.
+  if (await handleHeroMediaAction(actionOf(req), req, res, pool)) return;
   console.log('POST /api.php action:', req.body && req.body.action);
   let { action, settings: inputSettings, ...input } = req.body;
   if (!action && req.query && req.query.action) {
@@ -409,87 +413,94 @@ app.post('/api.php', async (req, res) => {
         const settings = inputSettings || {};
         const errors = [];
         // ── hero_bg_mode, hero_bg_video, hero_bg_video_poster, hero_images ── (modules/hero_media.js)
-        // First, so a refused value (e.g. a data: video) stops the save before any upload
-        const deleteReplacedHeroMedia = await prepareHeroMediaSettings(settings, pool);
-
-        // ── products_data ──
-        if (settings.products_data) {
-          const newItems = JSON.parse(settings.products_data);
-          const [existingRows] = await pool.query("SELECT setting_value FROM hero_settings WHERE setting_key = 'products_data'");
-          const existingById = {};
-          if (existingRows.length > 0) {
-            const existingParsed = JSON.parse(existingRows[0].setting_value);
-            if (Array.isArray(existingParsed)) {
-              for (const ep of existingParsed) {
-                if (ep.id) existingById[ep.id] = ep;
-              }
-            }
-          }
-          for (const item of newItems) {
-            if (!item.image && existingById[item.id]?.image) item.image = existingById[item.id].image;
-            if (!item.logo && existingById[item.id]?.logo) item.logo = existingById[item.id].logo;
-          }
-          settings.products_data = JSON.stringify(newItems);
-        }
-
-        // ── portfolio_data ──
-        if (settings.portfolio_data) {
-          const newItems = JSON.parse(settings.portfolio_data);
-          const [existingRows] = await pool.query("SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data'");
-          const existingArr = existingRows.length > 0 ? JSON.parse(existingRows[0].setting_value || '[]') : [];
-          for (let i = 0; i < newItems.length; i++) {
-            if (!newItems[i].image && existingArr[i]?.image) newItems[i].image = existingArr[i].image;
-          }
-          settings.portfolio_data = JSON.stringify(newItems);
-        }
-
-        // ── services_data ──
-        if (settings.services_data) {
-          const items = JSON.parse(settings.services_data);
-          for (const item of items) {
-            // Upload returns a promise; without await the stored value was "{}"
-            if (item.image) item.image = await saveBase64Image(item.image, 'services');
-            if (item.icon) item.icon = await saveBase64Image(item.icon, 'services');
-          }
-          settings.services_data = JSON.stringify(items);
-        }
-
-        // ── hero_logos ──
-        if (settings.hero_logos) {
-          const logos = JSON.parse(settings.hero_logos);
-          if (Array.isArray(logos)) {
-            const finalLogos = [];
-            for (let i = 0; i < logos.length; i++) {
-              const logo = logos[i];
-              if (logo.src?.includes('data:image')) {
-                const url = await uploadBase64ToS3(logo.src, 'logo-product', `logo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${i}.png`);
-                finalLogos.push({ name: logo.name, src: url });
-              } else {
-                finalLogos.push(logo);
-              }
-            }
-            settings.hero_logos = JSON.stringify(finalLogos);
-          }
-        }
-
-        // ── Save all settings to DB ──
+        // First, so a refused hero value (stale tab, data: video, SVG poster) stops the save before any upload;
+        // hero_media_base is the hero video/poster the admin page loaded (compare-and-swap, never stored as a setting)
+        const finishHeroMedia = await prepareHeroMediaSettings(settings, pool, input.hero_media_base);
         let allSuccess = true;
         let lastError = null;
-        for (const [key, value] of Object.entries(settings)) {
-          try {
-            await pool.query(
-              'INSERT INTO hero_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
-              [key, value]
-            );
-          } catch (err) {
-            allSuccess = false;
-            lastError = err.message;
-            break;
+        try {
+          // ── products_data ──
+          if (settings.products_data) {
+            const newItems = JSON.parse(settings.products_data);
+            const [existingRows] = await pool.query("SELECT setting_value FROM hero_settings WHERE setting_key = 'products_data'");
+            const existingById = {};
+            if (existingRows.length > 0) {
+              const existingParsed = JSON.parse(existingRows[0].setting_value);
+              if (Array.isArray(existingParsed)) {
+                for (const ep of existingParsed) {
+                  if (ep.id) existingById[ep.id] = ep;
+                }
+              }
+            }
+            for (const item of newItems) {
+              if (!item.image && existingById[item.id]?.image) item.image = existingById[item.id].image;
+              if (!item.logo && existingById[item.id]?.logo) item.logo = existingById[item.id].logo;
+            }
+            settings.products_data = JSON.stringify(newItems);
           }
+
+          // ── portfolio_data ──
+          if (settings.portfolio_data) {
+            const newItems = JSON.parse(settings.portfolio_data);
+            const [existingRows] = await pool.query("SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data'");
+            const existingArr = existingRows.length > 0 ? JSON.parse(existingRows[0].setting_value || '[]') : [];
+            for (let i = 0; i < newItems.length; i++) {
+              if (!newItems[i].image && existingArr[i]?.image) newItems[i].image = existingArr[i].image;
+            }
+            settings.portfolio_data = JSON.stringify(newItems);
+          }
+
+          // ── services_data ──
+          if (settings.services_data) {
+            const items = JSON.parse(settings.services_data);
+            for (const item of items) {
+              // Upload returns a promise; without await the stored value was "{}"
+              if (item.image) item.image = await saveBase64Image(item.image, 'services');
+              if (item.icon) item.icon = await saveBase64Image(item.icon, 'services');
+            }
+            settings.services_data = JSON.stringify(items);
+          }
+
+          // ── hero_logos ──
+          if (settings.hero_logos) {
+            const logos = JSON.parse(settings.hero_logos);
+            if (Array.isArray(logos)) {
+              const finalLogos = [];
+              for (let i = 0; i < logos.length; i++) {
+                const logo = logos[i];
+                if (logo.src?.includes('data:image')) {
+                  const url = await uploadBase64ToS3(logo.src, 'logo-product', `logo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${i}.png`);
+                  finalLogos.push({ name: logo.name, src: url });
+                } else {
+                  finalLogos.push(logo);
+                }
+              }
+              settings.hero_logos = JSON.stringify(finalLogos);
+            }
+          }
+
+          // ── Save all settings to DB ──
+          for (const [key, value] of Object.entries(settings)) {
+            try {
+              await pool.query(
+                'INSERT INTO hero_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+                [key, value]
+              );
+            } catch (err) {
+              allSuccess = false;
+              lastError = err.message;
+              break;
+            }
+          }
+        } catch (err) {
+          // Removes the hero files this request stored that no saved setting points to
+          await finishHeroMedia(false);
+          throw err;
         }
-        // The old hero video/poster file, only once the new value is saved
-        if (allSuccess) await deleteReplacedHeroMedia();
         res.json({ success: allSuccess, error: lastError });
+        // Saved: garbage-collect sweep of unused hero videos/posters; not saved: as in the catch above. After the
+        // reply, which it never changes
+        await finishHeroMedia(allSuccess);
         return;
       }
 

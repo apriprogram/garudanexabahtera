@@ -1,16 +1,26 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { X, Plus, Sparkles, Image as ImageIcon, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Chip, Field, Input, Notice, PanelHeader, Segmented, Spinner, Textarea, cn, FOCUS } from '../../components/admin/ui';
+import { HERO_MAX_IMAGES } from '../../components/sections/hero/heroBgConfig';
 import HeroVideoField from './hero/HeroVideoField';
 import { resizeHeroImage } from './hero/heroImage';
-import { checkHeroImageFile, imageRejectMessage, stableListKeys, HERO_IMAGE_MAX_MB, type HeroBgMode, type ImageRejectReason } from './hero/heroMedia';
+import {
+  checkHeroImageFile,
+  imageCapMessage,
+  imageRejectMessage,
+  stableListKeys,
+  HERO_IMAGE_MAX_MB,
+  type HeroBgMode,
+  type ImageRejectReason,
+} from './hero/heroMedia';
 import { dropZoneClass } from './hero/styles';
 
 /* Tombol hapus kecil di atas gambar pratinjau (latar solid danger). Selalu tampak di HP, muncul saat hover di desktop. */
 const REMOVE_BTN = cn(
   'absolute right-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-danger text-white transition-opacity hover:bg-danger-700',
   'max-sm:before:absolute max-sm:before:-inset-2 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100',
+  'disabled:cursor-not-allowed disabled:opacity-40',
   FOCUS,
 );
 
@@ -39,6 +49,13 @@ interface HeroSettingsProps {
   setHeroVideoPoster: (url: string) => void;
   /** true selama video diunggah: halaman menahan tombol simpan. */
   onBusyChange?: (busy: boolean) => void;
+  /**
+   * Gambar latar yang sedang dikecilkan: +n saat mulai, −n saat selesai (juga bila tab Hero sudah ditutup).
+   * Halaman menahan tombol simpan selama jumlahnya > 0.
+   */
+  onImagesProcessing?: (delta: number) => void;
+  /** true selama halaman menyimpan: pilihan latar dan unggah/hapus media dikunci supaya tidak tertimpa hasil muat ulang. */
+  saving?: boolean;
 }
 
 const HeroSettings: React.FC<HeroSettingsProps> = ({
@@ -54,11 +71,15 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   heroVideoPoster,
   setHeroVideoPoster,
   onBusyChange,
+  onImagesProcessing,
+  saving = false,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [videoBusy, setVideoBusy] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [processingImages, setProcessingImages] = useState(0);
+  // Salinan sinkron processingImages: dua pilihan file beruntun tetap menghitung gambar yang belum selesai diproses
+  const pendingImagesRef = useRef(0);
   // Key stabil per gambar (bukan index) supaya animasi hapus/geser mengenai kartu yang benar
   const imageKeys = useMemo(() => stableListKeys(heroImages), [heroImages]);
 
@@ -76,7 +97,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   };
 
   const handleDrop = (index: number) => {
-    if (draggedIndex === null) return;
+    if (draggedIndex === null || saving) return;
     const newImages = [...heroImages];
     const draggedItem = newImages[draggedIndex];
     newImages.splice(draggedIndex, 1);
@@ -87,19 +108,29 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
 
   const [isHeroDragging, setIsHeroDragging] = useState(false);
 
-  // Gambar latar: lewati yang bukan gambar / > 10 MB, kecilkan sisanya ke maks. 1920×1080 (JPEG 0.82), urutan dipertahankan.
+  // Gambar latar: lewati yang bukan gambar / > 10 MB, maks. HERO_MAX_IMAGES gambar (termasuk yang masih diproses),
+  // kecilkan sisanya ke maks. 1920×1080 (JPEG 0.82), urutan dipertahankan.
   const handleImageUpload = async (files: File[]) => {
-    if (files.length === 0) return;
+    if (files.length === 0 || saving) return;
     const rejected: { name: string; reason: ImageRejectReason | 'read' }[] = [];
-    const accepted = files.filter((file) => {
+    const valid = files.filter((file) => {
       const reason = checkHeroImageFile(file);
       if (reason) rejected.push({ name: file.name, reason });
       return !reason;
     });
-    setImageError(imageRejectMessage(rejected));
+    const free = Math.max(0, HERO_MAX_IMAGES - heroImages.length - pendingImagesRef.current);
+    const accepted = valid.slice(0, free);
+    const overLimit = valid.length - accepted.length;
+    const errorMessage = () =>
+      [imageRejectMessage(rejected), overLimit > 0 ? imageCapMessage(overLimit, accepted.length, HERO_MAX_IMAGES) : null]
+        .filter(Boolean)
+        .join(' ') || null;
+    setImageError(errorMessage());
     if (accepted.length === 0) return;
 
+    pendingImagesRef.current += accepted.length;
     setProcessingImages((n) => n + accepted.length);
+    onImagesProcessing?.(accepted.length);
     const added: string[] = [];
     for (const file of accepted) {
       try {
@@ -108,16 +139,19 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
         rejected.push({ name: file.name, reason: 'read' });
       }
     }
-    if (added.length) setHeroImages((prev) => [...prev, ...added]);
-    setImageError(imageRejectMessage(rejected));
+    // Batas dicek lagi terhadap daftar terbaru (daftar tersimpan yang sudah > 12 tidak dipotong)
+    if (added.length) setHeroImages((prev) => [...prev, ...added.slice(0, Math.max(0, HERO_MAX_IMAGES - prev.length))]);
+    setImageError(errorMessage());
+    pendingImagesRef.current -= accepted.length;
     setProcessingImages((n) => n - accepted.length);
+    onImagesProcessing?.(-accepted.length);
   };
 
   const [logoDraggedIndex, setLogoDraggedIndex] = useState<number | null>(null);
   const [isLogoDragging, setIsLogoDragging] = useState(false);
 
   const handleLogoUpload = (files: FileList | null) => {
-    if (files) {
+    if (files && !saving) {
       Array.from(files).forEach(file => {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -206,8 +240,8 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                 value: mode.value,
                 label: mode.label,
                 icon: mode.icon,
-                // Selama video diunggah mode tidak bisa diganti (unggahan akan terputus)
-                disabled: videoBusy && mode.value !== 'video',
+                // Selama video diunggah mode tidak bisa diganti (unggahan akan terputus); selama menyimpan semua dikunci
+                disabled: saving || (videoBusy && mode.value !== 'video'),
               }))}
               value={heroBgMode}
               onChange={setHeroBgMode}
@@ -223,7 +257,9 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
             <>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[13px] font-medium text-adm-fg">Gambar latar</p>
-                <Chip className="tabular-nums">{heroImages.length} gambar</Chip>
+                <Chip className="tabular-nums">
+                  {heroImages.length}/{HERO_MAX_IMAGES} gambar
+                </Chip>
               </div>
 
               {/* Image Grid */}
@@ -238,10 +274,11 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                     >
                       <div
                         className={cn(
-                          'group relative aspect-video cursor-move overflow-hidden rounded-xl bg-adm-ghost ring-1 ring-inset ring-adm-line transition-opacity duration-150',
+                          'group relative aspect-video overflow-hidden rounded-xl bg-adm-ghost ring-1 ring-inset ring-adm-line transition-opacity duration-150',
+                          !saving && 'cursor-move',
                           draggedIndex === index ? 'opacity-30' : 'opacity-100',
                         )}
-                        draggable
+                        draggable={!saving}
                         onDragStart={() => handleDragStart(index)}
                         onDragOver={handleDragOver}
                         onDrop={() => handleDrop(index)}
@@ -251,6 +288,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                           type="button"
                           onClick={() => setHeroImages(prev => prev.filter((_, i) => i !== index))}
                           aria-label={`Hapus gambar ${index + 1}`}
+                          disabled={saving}
                           className={REMOVE_BTN}
                         >
                           <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
@@ -264,20 +302,22 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                 </AnimatePresence>
 
                 <label
-                  onDragOver={(e) => { e.preventDefault(); setIsHeroDragging(true); }}
+                  onDragOver={(e) => { e.preventDefault(); if (!saving) setIsHeroDragging(true); }}
                   onDragLeave={() => setIsHeroDragging(false)}
                   onDrop={(e) => {
                     e.preventDefault();
                     setIsHeroDragging(false);
-                    void handleImageUpload(Array.from(e.dataTransfer.files));
+                    void handleImageUpload(Array.from(e.dataTransfer?.files ?? []));
                   }}
-                  className={dropZoneClass(isHeroDragging, 'aspect-video rounded-xl')}
+                  aria-disabled={saving || undefined}
+                  className={dropZoneClass(isHeroDragging, 'aspect-video rounded-xl', saving)}
                 >
                   <input
                     type="file"
                     multiple
                     accept="image/*"
                     className="sr-only"
+                    disabled={saving}
                     onChange={(e) => {
                       const files = Array.from(e.target.files ?? []);
                       e.target.value = '';
@@ -306,8 +346,16 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
               {heroImages.length === 0 && processingImages === 0 && (
                 <Notice tone="warning">Belum ada gambar. Website memakai latar bawaan sampai gambar ditambahkan.</Notice>
               )}
+              {/* Daftar lama bisa lebih panjang dari batas: website hanya memakai HERO_MAX_IMAGES gambar pertama */}
+              {heroImages.length > HERO_MAX_IMAGES && (
+                <Notice tone="warning">
+                  Ada {heroImages.length} gambar, tapi hanya {HERO_MAX_IMAGES} gambar pertama yang tampil di website. Hapus gambar
+                  yang tidak dipakai.
+                </Notice>
+              )}
               <Notice tone="cobalt">
-                Lebih dari satu gambar berganti otomatis tiap 6 detik. Disarankan 1920×1080 px, maks. {HERO_IMAGE_MAX_MB} MB per gambar.
+                Lebih dari satu gambar berganti otomatis tiap 6 detik. Maks. {HERO_MAX_IMAGES} gambar, disarankan 1920×1080 px dan
+                maks. {HERO_IMAGE_MAX_MB} MB per gambar.
               </Notice>
             </>
           )}
@@ -319,6 +367,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
               setVideo={setHeroVideo}
               setPoster={setHeroVideoPoster}
               onBusyChange={handleVideoBusy}
+              disabled={saving}
             />
           )}
         </div>
@@ -383,16 +432,17 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
           </AnimatePresence>
 
           <label
-            onDragOver={(e) => { e.preventDefault(); setIsLogoDragging(true); }}
+            onDragOver={(e) => { e.preventDefault(); if (!saving) setIsLogoDragging(true); }}
             onDragLeave={() => setIsLogoDragging(false)}
             onDrop={(e) => {
               e.preventDefault();
               setIsLogoDragging(false);
               handleLogoUpload(e.dataTransfer.files);
             }}
-            className={dropZoneClass(isLogoDragging, 'aspect-square rounded-2xl px-2 text-center')}
+            aria-disabled={saving || undefined}
+            className={dropZoneClass(isLogoDragging, 'aspect-square rounded-2xl px-2 text-center', saving)}
           >
-            <input type="file" multiple accept="image/*" className="sr-only" onChange={(e) => handleLogoUpload(e.target.files)} />
+            <input type="file" multiple accept="image/*" className="sr-only" disabled={saving} onChange={(e) => handleLogoUpload(e.target.files)} />
             <Plus
               className={cn('h-5 w-5 transition-colors', isLogoDragging ? 'text-adm-cobalt-fg' : 'text-adm-subtle group-hover:text-adm-cobalt-fg')}
               strokeWidth={1.75}

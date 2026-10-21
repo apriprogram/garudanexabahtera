@@ -1,23 +1,31 @@
 // @vitest-environment node
-// Node environment: backend/s3-client.js imports @aws-sdk/client-s3, which only backend/node_modules has; the SDK is
-// mocked below (the real s3-client runs against it), and only the SSR transform leaves that import for the mock.
+// Node environment: backend/s3-client.js imports @aws-sdk/client-s3 and security.js bcryptjs, which only
+// backend/node_modules has; both are mocked below (the real s3-client runs against a fake bucket), and only the SSR
+// transform leaves those imports for the mocks.
 //
 // Hero background of the home page: upload_hero_video takes the raw video bytes (MP4/WebM by magic bytes only, capped
-// at UPLOAD_MAX_VIDEO_MB), and update_settings normalizes hero_bg_mode / hero_bg_video / hero_bg_video_poster /
-// hero_images and deletes only the generated file a save replaced. The Node module (backend/modules/hero_media.js) and
-// the PHP module (backend/modules/hero_media.php) must answer the same; the PHP half runs the real module in the CLI
-// (settings, sniffing, names) and behind `php -S` (php://input is only real over HTTP), and is skipped without `php`.
+// at UPLOAD_MAX_VIDEO_MB), get_hero_media_limits tells the admin page the limits, and update_settings normalizes
+// hero_bg_mode / hero_bg_video / hero_bg_video_poster / hero_images, refuses a stale tab (hero_media_base, 409) and a
+// link to a file that is gone, and leaves deleting to a garbage-collect sweep (generated, unused, older than a day).
+// The Node module (backend/modules/hero_media.js) and the PHP module (backend/modules/hero_media.php) must answer the
+// same; the PHP half runs the real module in the CLI (settings, sniffing, names, sweep, access) and behind `php -S`
+// (php://input is only real over HTTP), and is skipped without `php`.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 
 const { s3Send, fakeS3Sdk } = vi.hoisted(() => {
-  // s3-client.js reads these when it is imported
-  Object.assign(process.env, { S3_ACCESS_KEY: 'test-access', S3_SECRET_KEY: 'test-secret', S3_PUBLIC_URL: 'https://s3.test/bucket' });
+  // security.js and s3-client.js read these when they are imported
+  Object.assign(process.env, {
+    AUTH_SECRET: 'h'.repeat(16) + Math.random().toString(36).slice(2).padEnd(24, 'm'),
+    S3_ACCESS_KEY: 'test-access',
+    S3_SECRET_KEY: 'test-secret',
+    S3_PUBLIC_URL: 'https://s3.test/bucket',
+  });
   const s3Send = vi.fn();
   const fakeS3Sdk = () => {
     class Command {
@@ -33,6 +41,7 @@ const { s3Send, fakeS3Sdk } = vi.hoisted(() => {
       PutObjectCommand: class PutObjectCommand extends Command {},
       GetObjectCommand: class GetObjectCommand extends Command {},
       DeleteObjectCommand: class DeleteObjectCommand extends Command {},
+      HeadObjectCommand: class HeadObjectCommand extends Command {},
       ListObjectsV2Command: class ListObjectsV2Command extends Command {},
     };
   };
@@ -43,8 +52,12 @@ const { s3Send, fakeS3Sdk } = vi.hoisted(() => {
 // Mock both ids, or a checkout with backend/node_modules sends these tests to the real S3.
 vi.mock('@aws-sdk/client-s3', () => fakeS3Sdk());
 vi.mock('../../backend/node_modules/@aws-sdk/client-s3', () => fakeS3Sdk());
+// Only backend/node_modules has bcryptjs; the auth gate never needs a real hash here
+vi.mock('bcryptjs', () => ({ default: { hashSync: () => 'dummy', compare: async () => false, hash: async () => 'dummy' } }));
 
 import * as hm from '../../backend/modules/hero_media.js';
+import { parseUpload, svgHasActiveContent, uploadBase64ToS3 } from '../../backend/s3-client.js';
+import { createAuthGate, issueToken } from '../../backend/security.js';
 
 const ROOT = resolve(__dirname, '..', '..');
 const read = (...parts: string[]) => readFileSync(join(ROOT, ...parts), 'utf8');
@@ -57,12 +70,18 @@ const IMMUTABLE = 'public, max-age=31536000, immutable';
 const TYPE_ERROR = 'Hanya video MP4 atau WebM yang diizinkan.';
 const EMPTY_ERROR = 'File video kosong.';
 const DATA_VIDEO_ERROR = 'Video harus diunggah lewat upload_hero_video.';
-const IMAGE_ONLY_ERROR = 'Hanya file gambar (PNG, JPG, WEBP, GIF, SVG) yang diizinkan.';
+const RASTER_ERROR = 'Gambar latar dan sampul harus JPG, PNG, atau WEBP.';
+const STALE_ERROR = 'Latar hero sudah diubah di tab atau perangkat lain. Muat ulang halaman, lalu simpan lagi.';
+const SVG_ERROR = 'File SVG berisi script dan tidak diizinkan.';
 const GENERIC_ERROR = 'Terjadi kesalahan pada server. Silakan coba lagi.';
+const STORED_SQL = "SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN ('hero_bg_video', 'hero_bg_video_poster')";
+const SAVED_FILES_SQL = "SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN ('hero_bg_video_poster', 'hero_images')";
 // UPLOAD_MAX_VIDEO_MB for the upload tests: floor(0.01 MB) = 10485 bytes, same in both backends
 const LIMIT_MB = '0.01';
 const LIMIT = Math.floor(0.01 * 1024 * 1024);
 const TOO_LARGE = `Ukuran video maksimal ${LIMIT_MB} MB.`;
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
 
 // ── Fixtures ──
 // ISO-BMFF: [box size]['ftyp'][major brand][minor version][compatible brands], then payload
@@ -81,7 +100,12 @@ const ebml = (docType: string, payload = 64) =>
   ]);
 const PNG = Buffer.concat([Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex'), Buffer.alloc(32, 1)]);
 const JPEG = Buffer.concat([Buffer.from('ffd8ffe000104a46494600', 'hex'), Buffer.alloc(32, 2)]);
+const WEBP = Buffer.concat([Buffer.from('RIFF', 'latin1'), Buffer.from([40, 0, 0, 0]), Buffer.from('WEBPVP8 ', 'latin1'), Buffer.alloc(32, 3)]);
+const GIF = Buffer.concat([Buffer.from('GIF89a', 'latin1'), Buffer.alloc(32, 4)]);
+const ICO = Buffer.concat([Buffer.from([0, 0, 1, 0, 1, 0]), Buffer.alloc(32, 5)]);
+const SAFE_SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>');
 const RANDOM = Buffer.from(Array.from({ length: 256 }, (_, i) => (i * 73 + 41) % 256));
+const dataUri = (bytes: Buffer, mime = 'application/octet-stream') => `data:${mime};base64,${bytes.toString('base64')}`;
 const PNG_URI = 'data:image/png;base64,iVBORw0KGgo=';
 const HTML_URI = 'data:text/html;base64,PGgxPmhhbG88L2gxPg==';
 
@@ -109,7 +133,53 @@ const SNIFF_CASES: [string, Buffer, 'mp4' | 'webm' | null][] = [
 
 const MIME = { mp4: 'video/mp4', webm: 'video/webm' } as const;
 
-// ── Node: fake request stream and response ──
+// SVGs for the active-content check (s3-client.js ↔ svg_has_active_content() in api.php): [name, text, active]
+const svgWith = (inner: string, head = '') =>
+  `${head}<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${inner}</svg>`;
+const link = (href: string) => svgWith(`<a xlink:href="${href}"><rect width="1" height="1"/></a>`);
+const SVG_CASES: [string, string, boolean][] = [
+  ['plain', SAFE_SVG.toString(), false],
+  ['text with &amp; and &copy;', svgWith('<title>Garuda &amp; Nexa &copy; 2026 &nbsp;</title>'), false],
+  ['xml prolog, utf-8', svgWith('<rect/>', '<?xml version="1.0" encoding="UTF-8"?>'), false],
+  ['xml prolog, latin-1', svgWith('<rect/>', "<?xml version='1.0' encoding='iso-8859-1'?>"), false],
+  ['https link', link('https://garudanexa.com/'), false],
+  ['embedded png', svgWith('<image href="data:image/png;base64,iVBORw0KGgo="/>'), false],
+  ['plain javascript:', link('javascript:alert(1)'), true],
+  ['decimal reference', link('&#106;avascript:alert(1)'), true],
+  ['hex reference', link('&#x6A;avascript:alert(1)'), true],
+  ['no semicolon, leading zeros', link('&#0000106avascript:alert(1)'), true],
+  ['named colon', link('javascript&colon;alert(1)'), true],
+  ['tab and newline references', link('java&Tab;scr&NewLine;ipt:alert(1)'), true],
+  ['raw tab in the scheme', link('java\tscript:alert(1)'), true],
+  ['&amp;#106; (two passes)', link('&amp;#106;avascript:alert(1)'), true],
+  ['&#38;#106; (numeric, then html_entity_decode in one pass)', link('&#38;#106;avascript:alert(1)'), true],
+  ['&amp;amp;#106; (three passes)', link('&amp;amp;#106;avascript:alert(1)'), true],
+  ['four levels stay encoded after three passes (a browser decodes once)', link('&amp;amp;amp;#106;avascript:alert(1)'), false],
+  ['surrogate reference dropped', link('java&#xD800;script:alert(1)'), true],
+  ['out-of-range reference dropped', link('java&#99999999999999999999;script:alert(1)'), true],
+  ['zero reference dropped', link('java&#0;script:alert(1)'), true],
+  ['DEL is not stripped', link('java&#x7f;script:alert(1)'), false],
+  ['fj ligature', link('&fjlig;avascript:alert(1)'), true],
+  ['vbscript', link('vbscript:msgbox(1)'), true],
+  ['livescript', link('livescript:alert(1)'), true],
+  ['data:text/html', link('data:text/html;base64,PHNjcmlwdD4='), true],
+  ['encoded data:application/xhtml', link('&#100;ata:application/xhtml+xml,x'), true],
+  ['script element', svgWith('<script>alert(1)</script>'), true],
+  ['encoded script element in text', svgWith('<text>&lt;script&gt;alert(1)</text>'), true],
+  ['event handler', svgWith('<rect onload="alert(1)"/>'), true],
+  ['event handler after a newline reference', svgWith('<rect&#10;onclick="alert(1)"/>'), true],
+  ['no-break space is not XML whitespace', svgWith('<rect onload="x"/>'), false],
+  ['handler element', svgWith('<handler type="application/ecmascript">alert(1)</handler>'), true],
+  ['listener element', svgWith('<listener event="click" handler="#x"/>'), true],
+  ['foreignObject', svgWith('<foreignObject><div/></foreignObject>'), true],
+  ['iframe', svgWith('<iframe src="x"/>'), true],
+  ['entity declaration', `<!DOCTYPE svg [<!ENTITY x "y">]>${svgWith('<rect/>')}`, true],
+  ['internal DTD subset', `<!DOCTYPE svg [<!ATTLIST svg a CDATA "b">]>${svgWith('<rect/>')}`, true],
+  ['UTF-16 declared', svgWith('<rect/>', '<?xml version="1.0" encoding="UTF-16"?>'), true],
+  ['UTF-7 declared', svgWith('<rect/>', '<?xml version="1.0" encoding="utf-7"?>'), true],
+];
+
+// ── Node: fake request stream, response, bucket and database ──
 class FakeReq extends Readable {
   headers: Record<string, string>;
   method = 'POST';
@@ -161,22 +231,99 @@ class FakeRes {
   }
 }
 
+// Objects of the fake bucket by key; LastModified as given (undefined = the listing has no date)
+const bucket = new Map<string, { modified?: Date }>();
+const putObject = (name: string, age: number | null) => bucket.set(`assets/bg/${name}`, { modified: age === null ? undefined : new Date(Date.now() - age) });
+const bgNames = () => [...bucket.keys()].map((key) => key.replace(/^assets\/bg\//, '')).sort();
+const notFound = () => Object.assign(new Error('NotFound'), { name: 'NotFound', $metadata: { httpStatusCode: 404 } });
+// ListObjectsV2 answers two keys per page, so every listing goes through ContinuationToken
+async function fakeS3(cmd: { constructor: { name: string }; input: Record<string, unknown> }) {
+  const key = String(cmd.input.Key);
+  switch (cmd.constructor.name) {
+    case 'PutObjectCommand':
+      bucket.set(key, { modified: new Date() });
+      return {};
+    case 'DeleteObjectCommand':
+      bucket.delete(key);
+      return {};
+    case 'HeadObjectCommand':
+      if (bucket.has(key)) return {};
+      throw notFound();
+    case 'ListObjectsV2Command': {
+      const keys = [...bucket.keys()].filter((k) => k.startsWith(String(cmd.input.Prefix))).sort();
+      const start = Number(cmd.input.ContinuationToken ?? 0);
+      const more = start + 2 < keys.length;
+      return {
+        Contents: keys.slice(start, start + 2).map((Key) => ({ Key, LastModified: bucket.get(Key)?.modified })),
+        IsTruncated: more,
+        NextContinuationToken: more ? String(start + 2) : undefined,
+      };
+    }
+    default:
+      return {};
+  }
+}
+
+type Store = Record<string, string>;
+type Settings = Record<string, unknown>;
+// hero_settings in memory: answers the module's SELECT ... WHERE setting_key IN ('a', 'b') queries
+function fakePool(initial: Store = {}) {
+  const store: Store = { ...initial };
+  const queries: string[] = [];
+  const query = vi.fn(async (sql: string) => {
+    queries.push(sql);
+    const keys = [...sql.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+    return [keys.filter((k) => Object.hasOwn(store, k)).map((k) => ({ setting_key: k, setting_value: store[k] }))];
+  });
+  return { store, queries, query };
+}
+
 const chunks = (buf: Buffer, size = 1024) => Array.from({ length: Math.ceil(buf.length / size) }, (_, i) => buf.subarray(i * size, (i + 1) * size));
 const rawHeaders = (buf: Buffer, type = 'video/mp4') => ({ 'content-type': type, 'content-length': String(buf.length) });
 
-async function uploadNode(req: FakeReq) {
+async function uploadNode(req: FakeReq, pool = fakePool()) {
   const res = new FakeRes();
-  expect(await hm.handleHeroMediaAction('upload_hero_video', req, res)).toBe(true);
+  expect(await hm.handleHeroMediaAction('upload_hero_video', req, res, pool)).toBe(true);
   return { status: res.statusCode, body: res.body as Record<string, unknown>, headers: res.headers };
 }
 
 const sent = () => s3Send.mock.calls.map(([cmd]) => ({ type: cmd.constructor.name as string, ...(cmd.input as Record<string, unknown>) }));
 const puts = () => sent().filter((c) => c.type === 'PutObjectCommand');
 const deletes = () => sent().filter((c) => c.type === 'DeleteObjectCommand').map((c) => c.Key);
+const lists = () => sent().filter((c) => c.type === 'ListObjectsV2Command');
+
+// prepareHeroMediaSettings only (what server.js does before saving)
+async function prepareNode(settings: Settings, stored: Store = {}, base?: unknown) {
+  const pool = fakePool(stored);
+  const finish = await hm.prepareHeroMediaSettings(settings, pool, base);
+  return { settings, finish, pool };
+}
+
+// The whole update_settings: prepare, save (all keys, or only `savedBeforeFailure` when the request fails), finish
+type SaveOptions = { base?: unknown; fail?: boolean; savedBeforeFailure?: string[] };
+async function saveNode(settings: Settings, stored: Store = {}, { base, fail = false, savedBeforeFailure = [] }: SaveOptions = {}) {
+  const { finish, pool } = await prepareNode(settings, stored, base);
+  if (fail) {
+    for (const key of savedBeforeFailure) pool.store[key] = String(settings[key]);
+    await finish(false);
+  } else {
+    for (const [key, value] of Object.entries(settings)) pool.store[key] = typeof value === 'string' ? value : JSON.stringify(value);
+    await finish(true);
+  }
+  return { settings, pool };
+}
+
+type Outcome = { status: number; error?: string };
+const outcomeOf = (promise: Promise<unknown>): Promise<Outcome> =>
+  promise.then(
+    () => ({ status: 200 }),
+    (err: { status?: number; message: string }) => ({ status: err.status ?? 500, error: err.message }),
+  );
 
 beforeEach(() => {
+  bucket.clear();
   s3Send.mockReset();
-  s3Send.mockResolvedValue({});
+  s3Send.mockImplementation(fakeS3);
 });
 
 describe('sniffVideo (Node)', () => {
@@ -280,11 +427,41 @@ describe('upload_hero_video (Node)', () => {
     log.mockRestore();
   });
 
-  it('ignores other actions', async () => {
+  it('ignores other actions and GET (falls through to "Invalid action", like api.php)', async () => {
     const req = new FakeReq([mp4('isom')]);
-    expect(await hm.handleHeroMediaAction('update_settings', req, new FakeRes())).toBe(false);
-    expect(await hm.handleHeroMediaAction(undefined, req, new FakeRes())).toBe(false);
+    expect(await hm.handleHeroMediaAction('update_settings', req, new FakeRes(), fakePool())).toBe(false);
+    expect(await hm.handleHeroMediaAction(undefined, req, new FakeRes(), fakePool())).toBe(false);
+    req.method = 'GET';
+    expect(await hm.handleHeroMediaAction('upload_hero_video', req, new FakeRes(), fakePool())).toBe(false);
     expect(req.pulled).toBe(0);
+    expect(s3Send).not.toHaveBeenCalled();
+  });
+
+  it('runs the sweep after a successful upload: old unused uploads go, the stored and the new video stay', async () => {
+    putObject('hero_video_111111111111.mp4', 2 * DAY);
+    putObject('hero_video_222222222222.mp4', 2 * DAY);
+    const pool = fakePool({ hero_bg_video: `${S3}/assets/bg/hero_video_111111111111.mp4` });
+    const out = await uploadNode(new FakeReq([mp4('isom')]), pool);
+    expect(out.status).toBe(200);
+    expect(deletes()).toEqual(['assets/bg/hero_video_222222222222.mp4']);
+    expect(bgNames()).toEqual(['hero_video_111111111111.mp4', String(out.body.url).slice(`${S3}/assets/bg/`.length)].sort());
+    expect(pool.queries).toEqual([STORED_SQL]);
+    // A failed upload does not sweep
+    s3Send.mockClear();
+    expect((await uploadNode(new FakeReq([PNG]), pool)).status).toBe(400);
+    expect(lists()).toEqual([]);
+  });
+
+  it('a failing sweep is logged and the upload still succeeds', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    s3Send.mockImplementation(async (cmd) => {
+      if (cmd.constructor.name === 'ListObjectsV2Command') throw new Error('S3 list down');
+      return fakeS3(cmd);
+    });
+    const out = await uploadNode(new FakeReq([mp4('isom')]));
+    expect(out).toMatchObject({ status: 200, body: { success: true } });
+    expect(log).toHaveBeenCalledWith('[hero_media] Sweep failed:', expect.objectContaining({ message: 'S3 list down' }));
+    log.mockRestore();
   });
 
   it('defaults to 30 MB when UPLOAD_MAX_VIDEO_MB is missing or invalid', () => {
@@ -302,25 +479,66 @@ describe('upload_hero_video (Node)', () => {
   });
 });
 
+// ── get_hero_media_limits ──
+const LIMIT_ENV_CASES: [string | undefined, number][] = [[undefined, 30], ['64', 64], ['12.5', 12], ['0.01', 1], ['abc', 30]];
+
+async function withVideoLimit<T>(value: string | undefined, fn: () => Promise<T>): Promise<T> {
+  const before = process.env.UPLOAD_MAX_VIDEO_MB;
+  if (value === undefined) delete process.env.UPLOAD_MAX_VIDEO_MB;
+  else process.env.UPLOAD_MAX_VIDEO_MB = value;
+  try {
+    return await fn();
+  } finally {
+    if (before === undefined) delete process.env.UPLOAD_MAX_VIDEO_MB;
+    else process.env.UPLOAD_MAX_VIDEO_MB = before;
+  }
+}
+
+const userRow = (role: string) => ({ id: 3, name: 'U', email: 'u@test', phone: '', role, status: 'active', avatar: '', password: 'hash' });
+
+// The auth gate of security.js, then the module, as server.js wires them; role null = no token
+async function limitsNode(role: string | null, method: 'GET' | 'POST' = 'GET') {
+  const action = 'get_hero_media_limits';
+  const pool = { query: vi.fn(async () => [[userRow(role ?? 'user')]]) };
+  const headers: Record<string, string> = role ? { authorization: `Bearer ${issueToken(userRow(role)).token}` } : {};
+  const req = { method, headers, query: method === 'GET' ? { action } : {}, body: method === 'POST' ? { action } : {} };
+  const res = new FakeRes();
+  let passed = false;
+  await createAuthGate(pool)(req, res, () => {
+    passed = true;
+  });
+  if (passed) expect(await hm.handleHeroMediaAction(action, req, res, pool)).toBe(true);
+  return { status: res.statusCode, body: res.body };
+}
+
+describe('get_hero_media_limits (Node)', () => {
+  it('answers the video limit in whole MB and the slide limit, for GET and POST', async () => {
+    for (const [value, mb] of LIMIT_ENV_CASES) {
+      for (const method of ['GET', 'POST'] as const) {
+        const out = await withVideoLimit(value, () => limitsNode('user', method));
+        expect(out, `${value} ${method}`).toEqual({ status: 200, body: { success: true, video_max_mb: mb, max_images: 12 } });
+      }
+    }
+  });
+
+  it('is staff only: guests 401, customers 403, admin and user staff 200', async () => {
+    expect(await limitsNode(null)).toMatchObject({ status: 401, body: { code: 'UNAUTHORIZED' } });
+    expect(await limitsNode('customer')).toMatchObject({ status: 403, body: { code: 'FORBIDDEN' } });
+    expect((await limitsNode('admin')).status).toBe(200);
+    expect((await limitsNode('user')).status).toBe(200);
+  });
+
+  it('max_images is HERO_MAX_IMAGES of the home page', () => {
+    const config = read('src', 'components', 'sections', 'hero', 'heroBgConfig.ts');
+    expect(config).toMatch(new RegExp(`^export const HERO_MAX_IMAGES = ${hm.HERO_MAX_IMAGES};$`, 'm'));
+    expect(read('backend', 'modules', 'hero_media.php')).toMatch(new RegExp(`^const HM_MAX_IMAGES = ${hm.HERO_MAX_IMAGES};$`, 'm'));
+  });
+});
+
 // ── Node: update_settings helper ──
-type Settings = Record<string, unknown>;
 const OLD_VIDEO = `${S3}/assets/bg/hero_video_0123456789ab.mp4`;
 const OLD_POSTER = `${S3}/assets/bg/hero_poster_0123456789ab.jpg`;
-
-function poolWith(previous: Record<string, string> = {}) {
-  return {
-    query: vi.fn(async (sql: string) => {
-      expect(sql).toMatch(/^SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN \('hero_bg_video', 'hero_bg_video_poster'\)$/);
-      return [Object.entries(previous).map(([setting_key, setting_value]) => ({ setting_key, setting_value }))];
-    }),
-  };
-}
-
-async function prepareNode(settings: Settings, previous: Record<string, string> = {}) {
-  const pool = poolWith(previous);
-  const cleanup = await hm.prepareHeroMediaSettings(settings, pool);
-  return { settings, cleanup, pool };
-}
+const NEW_VIDEO = `${S3}/assets/bg/hero_video_ba9876543210.webm`;
 
 describe('update_settings hero keys (Node)', () => {
   it('normalizes hero_bg_mode and leaves unsent keys alone', async () => {
@@ -331,7 +549,7 @@ describe('update_settings hero keys (Node)', () => {
     for (const [value, mode] of cases) {
       const { settings, pool } = await prepareNode({ hero_bg_mode: value, hero_title: 'Judul' });
       expect(settings, JSON.stringify(value)).toEqual({ hero_bg_mode: mode, hero_title: 'Judul' });
-      // Previous values are only read for the video/poster keys
+      // Stored values are only read for the video/poster keys
       expect(pool.query).not.toHaveBeenCalled();
     }
     expect((await prepareNode({ hero_title: 'x' })).settings).toEqual({ hero_title: 'x' });
@@ -340,7 +558,7 @@ describe('update_settings hero keys (Node)', () => {
   it('refuses a data: video before storing anything', async () => {
     for (const video of ['data:video/mp4;base64,AAAAGGZ0eXBpc29t', ' DATA:video/webm;base64,GkXfow==', '\u0001data:video/mp4;base64,AA==']) {
       const settings = { hero_bg_video: video, hero_bg_video_poster: PNG_URI, hero_images: JSON.stringify([PNG_URI]) };
-      await expect(hm.prepareHeroMediaSettings(settings, poolWith())).rejects.toMatchObject({ status: 400, expose: true, message: DATA_VIDEO_ERROR });
+      await expect(hm.prepareHeroMediaSettings(settings, fakePool())).rejects.toMatchObject({ status: 400, expose: true, message: DATA_VIDEO_ERROR });
     }
     expect(s3Send).not.toHaveBeenCalled();
   });
@@ -353,9 +571,32 @@ describe('update_settings hero keys (Node)', () => {
     ]);
   });
 
-  it('refuses a poster that is not an image', async () => {
-    await expect(hm.prepareHeroMediaSettings({ hero_bg_video_poster: HTML_URI, hero_images: JSON.stringify([PNG_URI]) }, poolWith()))
-      .rejects.toMatchObject({ status: 400, message: IMAGE_ONLY_ERROR });
+  it('posters are JPG, PNG or WEBP only, whatever the data: type says', async () => {
+    for (const [bytes, ext] of [[PNG, 'png'], [JPEG, 'jpg'], [WEBP, 'webp']] as const) {
+      const { settings } = await prepareNode({ hero_bg_video_poster: dataUri(bytes) });
+      expect(settings.hero_bg_video_poster).toMatch(new RegExp(`/assets/bg/hero_poster_[0-9a-f]{12}\\.${ext}$`));
+    }
+    s3Send.mockClear();
+    for (const bytes of [GIF, ICO, SAFE_SVG, RANDOM, Buffer.from('<h1>halo</h1>')]) {
+      for (const mime of ['image/png', 'image/svg+xml']) {
+        await expect(hm.prepareHeroMediaSettings({ hero_bg_video_poster: dataUri(bytes, mime) }, fakePool())).rejects.toMatchObject({ status: 400, message: RASTER_ERROR });
+      }
+    }
+    await expect(hm.prepareHeroMediaSettings({ hero_bg_video_poster: HTML_URI }, fakePool())).rejects.toMatchObject({ status: 400, message: RASTER_ERROR });
+    expect(s3Send).not.toHaveBeenCalled();
+  });
+
+  it('new slides are JPG, PNG, WEBP or GIF only, and every one is checked before the first upload', async () => {
+    const { settings } = await prepareNode({ hero_images: JSON.stringify([dataUri(GIF), dataUri(WEBP)]) });
+    expect(JSON.parse(String(settings.hero_images))).toEqual([expect.stringMatching(/hero_[0-9a-f]{12}\.gif$/), expect.stringMatching(/hero_[0-9a-f]{12}\.webp$/)]);
+    s3Send.mockClear();
+    for (const bad of [SAFE_SVG, ICO, RANDOM]) {
+      const images = JSON.stringify([PNG_URI, dataUri(JPEG), dataUri(bad, 'image/png')]);
+      await expect(hm.prepareHeroMediaSettings({ hero_images: images, hero_bg_video_poster: PNG_URI }, fakePool())).rejects.toMatchObject({ status: 400, message: RASTER_ERROR });
+    }
+    // The poster is checked before the slides are stored too
+    await expect(hm.prepareHeroMediaSettings({ hero_images: JSON.stringify([PNG_URI]), hero_bg_video_poster: dataUri(SAFE_SVG) }, fakePool()))
+      .rejects.toMatchObject({ status: 400, message: RASTER_ERROR });
     expect(s3Send).not.toHaveBeenCalled();
   });
 
@@ -372,71 +613,176 @@ describe('update_settings hero keys (Node)', () => {
       const { settings } = await prepareNode({ hero_bg_video: video, hero_bg_video_poster: poster });
       expect(settings, JSON.stringify([video, poster])).toEqual({ hero_bg_video: storedVideo, hero_bg_video_poster: storedPoster });
     }
+    // None of them is a generated S3 file, so nothing is looked up
     expect(s3Send).not.toHaveBeenCalled();
   });
 
-  it('deletes the replaced generated video, and only after the save', async () => {
-    for (const next of [`${S3}/assets/bg/hero_video_ba9876543210.webm`, '']) {
-      s3Send.mockClear();
-      const { cleanup } = await prepareNode({ hero_bg_video: next }, { hero_bg_video: OLD_VIDEO });
-      expect(deletes()).toEqual([]);
-      await cleanup();
-      expect(deletes()).toEqual(['assets/bg/hero_video_0123456789ab.mp4']);
-    }
-  });
-
-  it('never deletes an unchanged value or a file it did not generate', async () => {
-    const previousValues = [
-      OLD_VIDEO, // unchanged below
-      '/assets/bg/hero_video_0123456789ab.mp4', // site path (PHP backend), not an S3 object
-      `${S3}/assets/bg/hero.mp4`,
-      `${S3}/assets/bg/intro_0123456789ab.mp4`,
-      `${S3}/assets/bg/hero_video_0123456789AB.mp4`,
-      `${S3}/assets/bg/hero_video_0123456789a.mp4`,
-      `${S3}/assets/bg/hero_video_0123456789ab.mov`,
-      `${S3}/assets/bg/sub/hero_video_0123456789ab.mp4`,
-      `${S3}/assets/bg/../product/hero_video_0123456789ab.mp4`,
-      `${S3}/assets/product/hero_video_0123456789ab.mp4`,
-      `https://evil.test/assets/bg/hero_video_0123456789ab.mp4`,
-      `${S3}2/assets/bg/hero_video_0123456789ab.mp4`,
-    ];
-    for (const previous of previousValues) {
-      const next = previous === OLD_VIDEO ? OLD_VIDEO : '';
-      const { cleanup } = await prepareNode({ hero_bg_video: next }, { hero_bg_video: previous });
-      await cleanup();
-      expect(deletes(), previous).toEqual([]);
-    }
-    // Not sent: the stored video stays even when the mode changes
-    const { cleanup } = await prepareNode({ hero_bg_mode: 'image' }, { hero_bg_video: OLD_VIDEO });
-    await cleanup();
-    expect(deletes()).toEqual([]);
-  });
-
-  it('replaces the generated poster and keeps the video that was not sent', async () => {
-    const { settings, cleanup } = await prepareNode({ hero_bg_video_poster: PNG_URI }, { hero_bg_video: OLD_VIDEO, hero_bg_video_poster: OLD_POSTER });
-    await cleanup();
-    expect(settings.hero_bg_video_poster).toMatch(/hero_poster_[0-9a-f]{12}\.png$/);
-    expect(deletes()).toEqual(['assets/bg/hero_poster_0123456789ab.jpg']);
-  });
-
   it('hero_images: every data: entry is validated and stored, other entries pass the link check', async () => {
-    const octetPng = `data:application/octet-stream;base64,${PNG.toString('base64')}`;
     const { settings } = await prepareNode({
-      hero_images: JSON.stringify([PNG_URI, '/assets/bg/hero.png', 'javascript:alert(1)', 42, 'https://cdn.test/a.jpg', octetPng]),
+      hero_images: JSON.stringify([PNG_URI, '/assets/bg/hero.png', 'javascript:alert(1)', 42, 'https://cdn.test/a.jpg', dataUri(PNG)]),
     });
     const images = JSON.parse(String(settings.hero_images));
     expect(images).toEqual([
-      expect.stringMatching(/^https:\/\/s3\.test\/bucket\/assets\/bg\/hero_[0-9a-z_]+\.png$/),
+      expect.stringMatching(/^https:\/\/s3\.test\/bucket\/assets\/bg\/hero_[0-9a-f]{12}\.png$/),
       '/assets/bg/hero.png',
       '',
       'https://cdn.test/a.jpg',
-      expect.stringMatching(/^https:\/\/s3\.test\/bucket\/assets\/bg\/hero_[0-9a-z_]+\.png$/),
+      expect.stringMatching(/^https:\/\/s3\.test\/bucket\/assets\/bg\/hero_[0-9a-f]{12}\.png$/),
     ]);
     expect(puts().map((p) => p.ContentType)).toEqual(['image/png', 'image/png']);
 
-    await expect(hm.prepareHeroMediaSettings({ hero_images: JSON.stringify([HTML_URI]) }, poolWith())).rejects.toMatchObject({ status: 400, message: IMAGE_ONLY_ERROR });
+    await expect(hm.prepareHeroMediaSettings({ hero_images: JSON.stringify([HTML_URI]) }, fakePool())).rejects.toMatchObject({ status: 400, message: RASTER_ERROR });
     // Not a JSON array: left as it was (like api.php)
     expect((await prepareNode({ hero_images: 'not json' })).settings).toEqual({ hero_images: 'not json' });
+  });
+
+  it('refuses a stale tab (hero_media_base) with 409 before storing anything', async () => {
+    const stored = { hero_bg_video: OLD_VIDEO, hero_bg_video_poster: OLD_POSTER };
+    putObject('hero_video_ba9876543210.webm', HOUR);
+    const stale: [Settings, unknown][] = [
+      [{ hero_bg_video: NEW_VIDEO }, { video: `${S3}/assets/bg/hero_video_111111111111.mp4`, poster: OLD_POSTER }],
+      [{ hero_bg_video: '' }, { video: '', poster: OLD_POSTER }],
+      // A new poster: its base is compared, not the new value
+      [{ hero_bg_video_poster: PNG_URI, hero_images: JSON.stringify([PNG_URI]) }, { video: OLD_VIDEO, poster: '' }],
+      [{ hero_bg_video: NEW_VIDEO, hero_bg_video_poster: '' }, { video: OLD_VIDEO, poster: `${S3}/assets/bg/hero_poster_111111111111.jpg` }],
+    ];
+    for (const [settings, base] of stale) {
+      s3Send.mockClear();
+      await expect(hm.prepareHeroMediaSettings(settings, fakePool(stored), base), JSON.stringify(settings)).rejects.toMatchObject({ status: 409, expose: true, message: STALE_ERROR });
+      expect(puts()).toEqual([]);
+    }
+    // Nothing stored counts as ''
+    await expect(hm.prepareHeroMediaSettings({ hero_bg_video: NEW_VIDEO }, fakePool(), { video: OLD_VIDEO })).rejects.toMatchObject({ status: 409 });
+  });
+
+  it('accepts a save whose base matches, has no base, or does not touch the stale key', async () => {
+    const stored = { hero_bg_video: OLD_VIDEO, hero_bg_video_poster: OLD_POSTER };
+    putObject('hero_video_ba9876543210.webm', HOUR);
+    const fine: [Settings, Store, unknown][] = [
+      [{ hero_bg_video: NEW_VIDEO }, stored, { video: OLD_VIDEO, poster: OLD_POSTER }],
+      [{ hero_bg_video: NEW_VIDEO }, stored, undefined],
+      [{ hero_bg_video: NEW_VIDEO }, {}, { video: '', poster: '' }],
+      // Only the poster is sent: a stale video base does not matter
+      [{ hero_bg_video_poster: PNG_URI }, stored, { video: `${S3}/assets/bg/hero_video_111111111111.mp4`, poster: OLD_POSTER }],
+      // Base values that are not strings, or a base that is not an object, are no check
+      [{ hero_bg_video: NEW_VIDEO }, stored, { video: null, poster: 5 }],
+      [{ hero_bg_video: NEW_VIDEO }, stored, 'x'],
+      [{ hero_bg_video: NEW_VIDEO }, stored, [OLD_VIDEO]],
+      [{ hero_bg_mode: 'image' }, stored, { video: 'other', poster: 'other' }],
+    ];
+    for (const [settings, previous, base] of fine) {
+      expect(await outcomeOf(hm.prepareHeroMediaSettings(settings, fakePool(previous), base)), JSON.stringify([settings, base])).toEqual({ status: 200 });
+    }
+  });
+
+  it('refuses a changed link to a generated file that does not exist (409), but not removals or unchanged values', async () => {
+    const stored = { hero_bg_video: OLD_VIDEO, hero_bg_video_poster: OLD_POSTER };
+    const missing: Settings[] = [
+      { hero_bg_video: NEW_VIDEO },
+      { hero_bg_video_poster: `${S3}/assets/bg/hero_poster_111111111111.webp` },
+    ];
+    for (const settings of missing) {
+      expect(await outcomeOf(hm.prepareHeroMediaSettings(settings, fakePool(stored))), JSON.stringify(settings)).toEqual({ status: 409, error: STALE_ERROR });
+    }
+    expect(sent().filter((c) => c.type === 'HeadObjectCommand').map((c) => c.Key)).toEqual(['assets/bg/hero_video_ba9876543210.webm', 'assets/bg/hero_poster_111111111111.webp']);
+    s3Send.mockClear();
+    const fine: Settings[] = [
+      { hero_bg_video: '', hero_bg_video_poster: '' },
+      // Unchanged: no lookup, even when the file is gone
+      { hero_bg_video: OLD_VIDEO, hero_bg_video_poster: OLD_POSTER },
+      // Not generated by this module: not looked up
+      { hero_bg_video: 'https://cdn.test/v.mp4', hero_bg_video_poster: `${S3}/assets/bg/hero_poster_111111111111.svg` },
+      { hero_bg_video: `${S3}/assets/bg/hero_video_custom.mp4`, hero_bg_video_poster: '/assets/bg/hero_poster_111111111111.jpg' },
+    ];
+    for (const settings of fine) expect(await outcomeOf(hm.prepareHeroMediaSettings(settings, fakePool(stored))), JSON.stringify(settings)).toEqual({ status: 200 });
+    expect(s3Send).not.toHaveBeenCalled();
+    putObject('hero_video_ba9876543210.webm', HOUR);
+    expect(await outcomeOf(hm.prepareHeroMediaSettings({ hero_bg_video: NEW_VIDEO }, fakePool(stored)))).toEqual({ status: 200 });
+  });
+
+  it('never deletes the replaced video or poster at save time: a fresh one stays for other tabs', async () => {
+    putObject('hero_video_0123456789ab.mp4', HOUR);
+    putObject('hero_poster_0123456789ab.jpg', HOUR);
+    putObject('hero_video_ba9876543210.webm', HOUR);
+    const { settings } = await saveNode({ hero_bg_video: NEW_VIDEO, hero_bg_video_poster: PNG_URI }, { hero_bg_video: OLD_VIDEO, hero_bg_video_poster: OLD_POSTER });
+    expect(deletes()).toEqual([]);
+    expect(bgNames()).toEqual(['hero_poster_0123456789ab.jpg', String(settings.hero_bg_video_poster).slice(`${S3}/assets/bg/`.length), 'hero_video_0123456789ab.mp4', 'hero_video_ba9876543210.webm'].sort());
+  });
+
+  it('the sweep after a save deletes only generated, unused files older than a day', async () => {
+    const stored = { hero_bg_video: OLD_VIDEO, hero_bg_video_poster: OLD_POSTER };
+    const keep = [
+      'hero_video_0123456789ab.mp4', // stored
+      'hero_poster_0123456789ab.jpg', // stored
+      'hero_video_333333333333.mp4', // 23 hours old
+      'hero_poster_333333333333.png', // 1 hour old
+      'hero_video_444444444444.mp4', // no date in the listing
+      'hero_poster_444444444444.svg', // not a generated name (posters are raster only)
+      'hero_poster_555555555555.gif',
+      'hero_video_0123456789AB.mp4',
+      'hero_video_custom.mp4',
+      'hero_video_555555555555.mp4.bak',
+      'hero_video_666666666666.mp4/x.mp4',
+      'hero_aaaaaaaaaaaa.png', // slide
+      'hero.png',
+    ];
+    const gone = ['hero_video_111111111111.mp4', 'hero_video_222222222222.webm', 'hero_poster_111111111111.jpg', 'hero_poster_222222222222.webp'];
+    for (const name of [...keep, ...gone]) putObject(name, 2 * DAY);
+    putObject('hero_video_333333333333.mp4', 23 * HOUR);
+    putObject('hero_poster_333333333333.png', HOUR);
+    putObject('hero_video_444444444444.mp4', null);
+    putObject('hero_poster_222222222222.webp', 25 * HOUR);
+
+    const { pool } = await saveNode({ hero_bg_mode: 'video' }, stored);
+    expect(deletes().sort()).toEqual(gone.map((name) => `assets/bg/${name}`).sort());
+    expect(bgNames()).toEqual([...keep].sort());
+    expect(pool.queries).toEqual([STORED_SQL]);
+    // Both prefixes, every page
+    expect(lists().map((c) => [c.Prefix, c.ContinuationToken])).toEqual([
+      ['assets/bg/hero_video_', undefined], ['assets/bg/hero_video_', '2'], ['assets/bg/hero_video_', '4'], ['assets/bg/hero_video_', '6'], ['assets/bg/hero_video_', '8'],
+      ['assets/bg/hero_poster_', undefined], ['assets/bg/hero_poster_', '2'], ['assets/bg/hero_poster_', '4'],
+    ]);
+  });
+
+  it('the sweep keeps what the save just stored and skips refused and failed saves', async () => {
+    putObject('hero_video_ba9876543210.webm', 2 * DAY);
+    putObject('hero_video_0123456789ab.mp4', 2 * DAY);
+    // The new value is read after the save, so the old one goes and the new one stays
+    await saveNode({ hero_bg_video: NEW_VIDEO }, { hero_bg_video: OLD_VIDEO });
+    expect(bgNames()).toEqual(['hero_video_ba9876543210.webm']);
+
+    putObject('hero_video_0123456789ab.mp4', 2 * DAY);
+    s3Send.mockClear();
+    await saveNode({ hero_bg_mode: 'image' }, { hero_bg_video: NEW_VIDEO }, { fail: true });
+    await expect(saveNode({ hero_bg_video: 'data:video/mp4;base64,AA==' }, { hero_bg_video: NEW_VIDEO })).rejects.toMatchObject({ status: 400 });
+    expect(lists()).toEqual([]);
+    expect(bgNames()).toEqual(['hero_video_0123456789ab.mp4', 'hero_video_ba9876543210.webm']);
+  });
+
+  it('a failed request removes the files it stored, except one a saved setting points to', async () => {
+    const settings = () => ({ hero_images: JSON.stringify([PNG_URI, '/assets/bg/hero.png']), hero_bg_video_poster: dataUri(JPEG) });
+    const first = await saveNode(settings(), {}, { fail: true });
+    expect(puts()).toHaveLength(2);
+    expect(deletes().sort()).toEqual(puts().map((p) => p.Key).sort());
+    expect(bgNames()).toEqual([]);
+    expect(first.pool.queries).toEqual([STORED_SQL, SAVED_FILES_SQL]);
+
+    // The poster row was saved before the failure: its file stays, the slide goes
+    const second = await saveNode(settings(), {}, { fail: true, savedBeforeFailure: ['hero_bg_video_poster'] });
+    expect(bgNames()).toEqual([String(second.settings.hero_bg_video_poster).slice(`${S3}/assets/bg/`.length)]);
+    bucket.clear();
+    const third = await saveNode(settings(), {}, { fail: true, savedBeforeFailure: ['hero_images'] });
+    expect(bgNames()).toEqual([JSON.parse(String(third.settings.hero_images))[0].slice(`${S3}/assets/bg/`.length)]);
+  });
+
+  it('an upload that fails halfway removes what this request already uploaded', async () => {
+    s3Send.mockImplementation(async (cmd) => {
+      if (cmd.constructor.name === 'PutObjectCommand' && puts().length > 1) throw new Error('S3 down');
+      return fakeS3(cmd);
+    });
+    await expect(hm.prepareHeroMediaSettings({ hero_images: JSON.stringify([PNG_URI, PNG_URI]) }, fakePool())).rejects.toThrow('S3 down');
+    expect(deletes().sort()).toEqual(puts().map((p) => p.Key).sort());
+    expect(bgNames()).toEqual([]);
   });
 
   it('generatedKey only accepts generated names directly under S3_PUBLIC_URL/assets/bg/', () => {
@@ -445,7 +791,32 @@ describe('update_settings hero keys (Node)', () => {
     expect(hm.generatedKey(OLD_POSTER, hm.GENERATED_POSTER)).toBe('assets/bg/hero_poster_0123456789ab.jpg');
     expect(hm.generatedKey(OLD_POSTER, hm.GENERATED_VIDEO)).toBeNull();
     expect(hm.generatedKey(OLD_VIDEO, hm.GENERATED_POSTER)).toBeNull();
-    for (const value of [undefined, null, 5, '', `${OLD_VIDEO}\n`, `${OLD_VIDEO}?x=1`]) expect(hm.generatedKey(value, hm.GENERATED_VIDEO)).toBeNull();
+    for (const ext of ['gif', 'svg', 'ico']) expect(hm.generatedKey(`${S3}/assets/bg/hero_poster_0123456789ab.${ext}`, hm.GENERATED_POSTER)).toBeNull();
+    const other = [
+      undefined, null, 5, '', `${OLD_VIDEO}\n`, `${OLD_VIDEO}?x=1`, '/assets/bg/hero_video_0123456789ab.mp4', `${S3}/assets/bg/sub/hero_video_0123456789ab.mp4`,
+      `${S3}/assets/product/hero_video_0123456789ab.mp4`, 'https://evil.test/assets/bg/hero_video_0123456789ab.mp4', `${S3}2/assets/bg/hero_video_0123456789ab.mp4`,
+    ];
+    for (const value of other) expect(hm.generatedKey(value, hm.GENERATED_VIDEO), String(value)).toBeNull();
+  });
+});
+
+describe('SVG uploads (Node, s3-client.js)', () => {
+  it.each(SVG_CASES)('%s', (_name, text, active) => {
+    expect(svgHasActiveContent(text)).toBe(active);
+  });
+
+  it('refuses javascript: hidden behind character references on every image path', async () => {
+    const svg = Buffer.from(link('&#106;avascript:alert(document.domain)'));
+    expect(() => parseUpload(dataUri(svg, 'image/svg+xml'))).toThrow(SVG_ERROR);
+    // e.g. services_data / hero_logos in server.js
+    await expect(uploadBase64ToS3(dataUri(svg, 'image/svg+xml'), 'services')).rejects.toMatchObject({ status: 400, message: SVG_ERROR });
+    expect(puts()).toEqual([]);
+    expect(await uploadBase64ToS3(dataUri(SAFE_SVG, 'image/svg+xml'), 'services')).toMatch(/^https:\/\/s3\.test\/bucket\/assets\/services\/services_[0-9a-z_]+\.svg$/);
+  });
+
+  it('sniffs like api.php: only ASCII whitespace before the markup is skipped', () => {
+    expect(parseUpload(dataUri(Buffer.concat([Buffer.from('﻿ \t\r\n\0\u000b'), SAFE_SVG]))).ext).toBe('svg');
+    expect(() => parseUpload(dataUri(Buffer.concat([Buffer.from(' '), SAFE_SVG])))).toThrow('Hanya file gambar');
   });
 });
 
@@ -456,24 +827,39 @@ describe('access and deploy config', () => {
     return [...block[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
   };
 
-  it('upload_hero_video is in no action list of either backend, so the default staff rule applies', () => {
+  it('both actions are in no action list of either backend, so the default staff rule applies', () => {
     for (const source of [API_PHP, SECURITY_JS]) {
-      for (const name of ['PUBLIC_ACTIONS', 'CUSTOMER_ACTIONS', 'ADMIN_ACTIONS']) expect(listOf(source, name)).not.toContain('upload_hero_video');
+      for (const name of ['PUBLIC_ACTIONS', 'CUSTOMER_ACTIONS', 'ADMIN_ACTIONS']) {
+        for (const action of ['upload_hero_video', 'get_hero_media_limits']) expect(listOf(source, name)).not.toContain(action);
+      }
     }
-    expect(hm.HERO_MEDIA_ACTIONS).toEqual(['upload_hero_video']);
+    expect(hm.HERO_MEDIA_ACTIONS).toEqual(['upload_hero_video', 'get_hero_media_limits']);
   });
 
-  it('both backends dispatch it only after the token check', () => {
+  it('both backends dispatch them only after the token check and pass hero_media_base on', () => {
     const authAt = API_PHP.indexOf('$authUser = authorize_request(');
     expect(authAt).toBeGreaterThan(0);
     expect(API_PHP).toContain("require_once __DIR__ . '/modules/hero_media.php';");
     expect(API_PHP.indexOf('handle_hero_media_action($conn')).toBeGreaterThan(authAt);
-    expect(API_PHP.indexOf('hero_media_prepare_settings($conn, $settings)')).toBeGreaterThan(API_PHP.indexOf("case 'update_settings':"));
+    const phpCase = API_PHP.slice(API_PHP.indexOf("case 'update_settings':"), API_PHP.indexOf("case 'get_projects':"));
+    expect(phpCase).toContain("$finishHeroMedia = hero_media_prepare_settings($conn, $settings, $input['hero_media_base'] ?? null);");
+    // Failure path inside the catch, sweep after the last database write
+    expect(phpCase.indexOf('$finishHeroMedia(false);')).toBeGreaterThan(phpCase.indexOf('catch (Throwable $e)'));
+    expect(phpCase.indexOf('$finishHeroMedia(true);')).toBeGreaterThan(phpCase.lastIndexOf('db_run('));
+
     const gateAt = SERVER_JS.indexOf("app.use(['/api.php', '/api'], createAuthGate(pool))");
     expect(gateAt).toBeGreaterThan(0);
-    // Same action lookup as the gate, so a body action cannot differ from the one that was checked
-    expect(SERVER_JS.indexOf('handleHeroMediaAction(actionOf(req), req, res)')).toBeGreaterThan(gateAt);
-    expect(SERVER_JS.indexOf('prepareHeroMediaSettings(settings, pool)')).toBeGreaterThan(SERVER_JS.indexOf("case 'update_settings':"));
+    // Same action lookup as the gate, so a body action cannot differ from the one that was checked; GET and POST
+    const getAt = SERVER_JS.indexOf("app.get('/api.php'");
+    const postAt = SERVER_JS.indexOf("app.post('/api.php'");
+    const call = 'handleHeroMediaAction(actionOf(req), req, res, pool)';
+    expect(SERVER_JS.indexOf(call, getAt)).toBeGreaterThan(gateAt);
+    expect(SERVER_JS.indexOf(call, getAt)).toBeLessThan(postAt);
+    expect(SERVER_JS.indexOf(call, postAt)).toBeGreaterThan(postAt);
+    const nodeCase = SERVER_JS.slice(SERVER_JS.indexOf("case 'update_settings':"), SERVER_JS.indexOf("case 'add_project':"));
+    expect(nodeCase).toContain('const finishHeroMedia = await prepareHeroMediaSettings(settings, pool, input.hero_media_base);');
+    expect(nodeCase.indexOf('await finishHeroMedia(false);')).toBeGreaterThan(nodeCase.indexOf('} catch (err) {'));
+    expect(nodeCase.indexOf('await finishHeroMedia(allSuccess);')).toBeGreaterThan(nodeCase.indexOf('res.json({ success: allSuccess'));
   });
 
   it('cPanel serves the videos with their MIME type and a long cache; dev uploads stay out of git and the deploy', () => {
@@ -499,21 +885,47 @@ function apiPhpBlock(pattern: string) {
   if (!match) throw new Error(`${pattern} not found in backend/api.php`);
   return match[0];
 }
+function apiPhpConst(name: string) {
+  const match = API_PHP.match(new RegExp(`^const ${name} = [\\s\\S]*?;\\r?$`, 'm'));
+  if (!match) throw new Error(`const ${name} not found in backend/api.php`);
+  return match[0];
+}
 const API_HELPERS = [
   'class ApiError ',
   ...['env_value', 'upload_limit_bytes', 'sniff_image', 'safe_stem', 'svg_has_active_content', 'parse_upload', 'safe_link', 'save_base64_asset', 'delete_local_asset']
     .map((name) => `function ${name}\\(`),
 ].map(apiPhpBlock).join('\n');
+// The real access check (lists and authorize_request); authenticate() is stubbed in the harness
+const GATE_HELPERS = [
+  ...['PUBLIC_ACTIONS', 'CUSTOMER_ACTIONS', 'ADMIN_ACTIONS', 'STAFF_ROLES', 'USER_ROLES'].map(apiPhpConst),
+  ...['in_int', 'contains_script_url', 'authorize_request'].map((name) => apiPhpBlock(`function ${name}\\(`)),
+].join('\n');
 
-const CLI_HARNESS = `<?php
+// hero_settings in memory ($GLOBALS['__store']): answers the module's SELECT ... WHERE setting_key IN ('a', 'b')
+const DB_STUB = String.raw`
+function db_all($conn, $sql, array $params = []) {
+    $GLOBALS['__queries'][] = $sql;
+    preg_match_all("/'([a-z_]+)'/", $sql, $m);
+    $rows = [];
+    foreach ($m[1] as $key) {
+        if (array_key_exists($key, $GLOBALS['__store'])) $rows[] = ['setting_key' => $key, 'setting_value' => $GLOBALS['__store'][$key]];
+    }
+    return $rows;
+}
+`;
+
+const CLI_HARNESS = String.raw`<?php
 ${API_HELPERS}
+${GATE_HELPERS}
 function public_dir() { return getenv('HM_PUBLIC_DIR'); }
-function db_all($conn, $sql, array $params = []) { $GLOBALS['__queries'][] = $sql; return $GLOBALS['__rows']; }
+function authenticate($conn) { return $GLOBALS['__user']; }
+${DB_STUB}
 require getenv('HM_MODULE');
 
 $req = json_decode(stream_get_contents(STDIN), true);
 $GLOBALS['__queries'] = [];
-$GLOBALS['__rows'] = $req['rows'] ?? [];
+$GLOBALS['__store'] = $req['store'] ?? [];
+$GLOBALS['__user'] = $req['user'] ?? null;
 switch ($req['op']) {
     case 'sniff':
         $out = array_map(function ($hex) { return hm_sniff_video(hex2bin($hex)); }, $req['inputs']);
@@ -524,25 +936,60 @@ switch ($req['op']) {
     case 'mode':
         $out = array_map('hm_bg_mode', $req['inputs']);
         break;
-    case 'prepare':
+    case 'svg':
+        $out = array_map('svg_has_active_content', $req['inputs']);
+        break;
+    case 'upload':
+        $out = array_map(function ($uri) {
+            try {
+                return ['ext' => parse_upload($uri, false)[1]];
+            } catch (ApiError $e) {
+                return ['error' => $e->getMessage()];
+            }
+        }, $req['inputs']);
+        break;
+    case 'save':
+        // update_settings as api.php runs it: prepare, save (all keys, or the ones saved before a failure), finish
         $settings = $req['settings'];
         try {
-            $cleanup = hero_media_prepare_settings(mysqli_init(), $settings);
-            if ($req['cleanup']) $cleanup();
+            $finish = hero_media_prepare_settings(mysqli_init(), $settings, $req['base'] ?? null);
             $out = ['status' => 200, 'settings' => $settings];
+            if (!empty($req['fail'])) {
+                foreach ($req['savedBeforeFailure'] ?? [] as $key) $GLOBALS['__store'][$key] = $settings[$key];
+                $finish(false);
+            } elseif (empty($req['prepareOnly'])) {
+                foreach ($settings as $key => $value) $GLOBALS['__store'][$key] = is_string($value) ? $value : json_encode($value);
+                $finish(true);
+            }
         } catch (ApiError $e) {
             $out = ['status' => $e->status, 'error' => $e->getMessage()];
         }
         $out['queries'] = $GLOBALS['__queries'];
+        $out['store'] = (object)$GLOBALS['__store'];
+        break;
+    case 'gate':
+        $input = ['action' => $req['action']];
+        ob_start();
+        try {
+            $user = authorize_request(mysqli_init(), $req['action'], $input);
+            $handled = handle_hero_media_action(mysqli_init(), $req['action'], $input, $user);
+            $out = ['status' => 200, 'handled' => $handled, 'body' => json_decode((string)ob_get_clean(), true)];
+        } catch (ApiError $e) {
+            ob_end_clean();
+            $out = ['status' => $e->status, 'body' => array_filter(['error' => $e->getMessage(), 'code' => $e->errorCode])];
+        }
         break;
 }
 echo json_encode($out, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 `;
 
-const UPLOAD_ROUTER = `<?php
+const UPLOAD_ROUTER = String.raw`<?php
 ${API_HELPERS}
 function public_dir() { return getenv('HM_PUBLIC_DIR'); }
+${DB_STUB}
 require getenv('HM_MODULE');
+$GLOBALS['__queries'] = [];
+$GLOBALS['__store'] = json_decode((string)@file_get_contents(getenv('HM_STORE')), true) ?: [];
 set_exception_handler(function ($e) {
     http_response_code($e instanceof ApiError ? $e->status : 500);
     echo json_encode(['error' => $e instanceof ApiError ? $e->getMessage() : 'Terjadi kesalahan pada server. Silakan coba lagi.']);
@@ -570,37 +1017,55 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
   let harnessDir = '';
   let webRoot = '';
   let bg = '';
+  let storeFile = '';
   let php: ChildProcess | null = null;
   let base = '';
+  const scratchDirs: string[] = [];
 
-  const runCli = (request: Record<string, unknown>) => {
+  type CliRequest = Record<string, unknown>;
+  const runCli = (request: CliRequest, { publicDir = webRoot, env = {} }: { publicDir?: string; env?: Record<string, string | undefined> } = {}) => {
     const result = spawnSync('php', [join(harnessDir, 'cli.php')], {
       input: JSON.stringify(request),
       encoding: 'utf8',
-      env: { ...process.env, HM_MODULE: MODULE_PHP, HM_PUBLIC_DIR: webRoot },
+      env: { ...process.env, HM_MODULE: MODULE_PHP, HM_PUBLIC_DIR: publicDir, ...env },
     });
     if (result.status !== 0 || !result.stdout) throw new Error(`php failed: ${result.stderr || result.stdout}`);
     return JSON.parse(result.stdout);
   };
-  const preparePhp = (settings: Settings, previous: Record<string, string> = {}, cleanup = true) =>
-    runCli({
-      op: 'prepare', settings, cleanup,
-      rows: Object.entries(previous).map(([setting_key, setting_value]) => ({ setting_key, setting_value })),
-    });
-  const bgFiles = () => readdirSync(bg).sort();
+  type PhpSave = { status: number; error?: string; settings: Record<string, string>; queries: string[]; store: Store };
+  const savePhp = (settings: Settings, store: Store = {}, options: SaveOptions & { prepareOnly?: boolean; publicDir?: string } = {}): PhpSave => {
+    const { publicDir, ...rest } = options;
+    return runCli({ op: 'save', settings, store, ...rest }, { publicDir });
+  };
+  const bgFiles = (dir = bg) => readdirSync(dir).sort();
+  // A fresh web root with assets/bg/<name> files, each `age` ms old
+  const webRootWith = (files: [string, number][] = []) => {
+    const dir = mkdtempSync(join(tmpdir(), 'gn-hero-media-case-'));
+    scratchDirs.push(dir);
+    mkdirSync(join(dir, 'assets', 'bg'), { recursive: true });
+    for (const [file, age] of files) {
+      const path = join(dir, 'assets', 'bg', file);
+      writeFileSync(path, 'x');
+      const when = new Date(Date.now() - age);
+      utimesSync(path, when, when);
+    }
+    return dir;
+  };
 
   beforeAll(async () => {
     harnessDir = mkdtempSync(join(tmpdir(), 'gn-hero-media-php-'));
     webRoot = mkdtempSync(join(tmpdir(), 'gn-hero-media-web-'));
     bg = join(webRoot, 'assets', 'bg');
+    storeFile = join(harnessDir, 'store.json');
     mkdirSync(bg, { recursive: true });
     writeFileSync(join(harnessDir, 'cli.php'), CLI_HARNESS);
     writeFileSync(join(harnessDir, 'router.php'), UPLOAD_ROUTER);
+    writeFileSync(storeFile, '{}');
     const port = await freePort();
     base = `http://127.0.0.1:${port}`;
     // Warnings must not end up in the JSON (e.g. PHP's own multipart parsing of the multipart case)
     php = spawn('php', ['-d', 'display_errors=0', '-S', `127.0.0.1:${port}`, join(harnessDir, 'router.php')], {
-      env: { ...process.env, HM_MODULE: MODULE_PHP, HM_PUBLIC_DIR: webRoot, UPLOAD_MAX_VIDEO_MB: LIMIT_MB },
+      env: { ...process.env, HM_MODULE: MODULE_PHP, HM_PUBLIC_DIR: webRoot, HM_STORE: storeFile, UPLOAD_MAX_VIDEO_MB: LIMIT_MB },
       stdio: 'ignore',
     });
     for (let i = 0; i < 100; i++) {
@@ -615,7 +1080,7 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
   }, 20_000);
   afterAll(() => {
     php?.kill();
-    for (const dir of [harnessDir, webRoot]) if (dir) rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    for (const dir of [harnessDir, webRoot, ...scratchDirs]) if (dir) rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   });
 
   it('sniffs the same video types', () => {
@@ -627,7 +1092,8 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
     const names = [
       'hero_video_0123456789ab.mp4', 'hero_video_0123456789ab.webm', 'hero_video_0123456789AB.mp4', 'hero_video_0123456789a.mp4',
       'hero_video_0123456789abc.mp4', 'hero_video_0123456789ab.mov', 'hero_video_0123456789ab.mp4.php', 'hero_video_0123456789ab.mp4\n',
-      'hero_poster_0123456789ab.jpg', 'hero_poster_0123456789ab.png', 'hero_poster_0123456789ab.webp', 'hero_poster_1729600000000_abc123.jpg',
+      'hero_poster_0123456789ab.jpg', 'hero_poster_0123456789ab.png', 'hero_poster_0123456789ab.webp', 'hero_poster_0123456789ab.gif',
+      'hero_poster_0123456789ab.svg', 'hero_poster_0123456789ab.ico', 'hero_poster_1729600000000_abc123.jpg',
       'hero_poster_0123456789ab.mp4', 'hero_6a0736659383e_0.jpg', 'hero.png', 'sub/hero_video_0123456789ab.mp4', '../hero_video_0123456789ab.mp4', '',
     ];
     const phpOut: [string | null, string | null][] = runCli({ op: 'names', inputs: names.map((n) => `/assets/bg/${n}`) });
@@ -635,6 +1101,7 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
     expect(phpOut.map((pair) => pair.map((v) => v !== null))).toEqual(nodeOut.map((pair) => pair.map((v) => v !== null)));
     expect(phpOut[0]).toEqual(['hero_video_0123456789ab.mp4', null]);
     expect(phpOut[8]).toEqual([null, 'hero_poster_0123456789ab.jpg']);
+    expect(phpOut.slice(11, 14)).toEqual([[null, null], [null, null], [null, null]]);
     // Only site paths directly in /assets/bg/; S3 URLs belong to the Node backend
     const other: [string | null, string | null][] = runCli({ op: 'names', inputs: [OLD_VIDEO, '/assets/product/hero_video_0123456789ab.mp4', 'assets/bg/hero_video_0123456789ab.mp4', null, 5] });
     expect(other.flat().every((v) => v === null)).toBe(true);
@@ -645,32 +1112,52 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
     expect(runCli({ op: 'mode', inputs: values })).toEqual(values.map((v) => hm.heroBgMode(v)));
   });
 
+  it('finds the same active SVG content', () => {
+    const texts = SVG_CASES.map(([, text]) => text);
+    expect(runCli({ op: 'svg', inputs: texts })).toEqual(texts.map((text) => svgHasActiveContent(text)));
+    // Through the upload check: same type and message
+    const uris = SVG_CASES.map(([, text]) => dataUri(Buffer.from(text), 'image/svg+xml'));
+    const node = uris.map((uri) => {
+      try {
+        return { ext: parseUpload(uri).ext };
+      } catch (err) {
+        return { error: (err as Error).message };
+      }
+    });
+    expect(runCli({ op: 'upload', inputs: uris })).toEqual(node);
+    expect(node.filter((out) => out.error === SVG_ERROR).length).toBeGreaterThan(20);
+  });
+
   it('refuses the same values with the same messages, before storing anything', async () => {
     const before = bgFiles();
     for (const settings of [
       { hero_bg_video: 'data:video/mp4;base64,AAAAGGZ0eXBpc29t', hero_bg_video_poster: PNG_URI, hero_images: JSON.stringify([PNG_URI]) },
       { hero_bg_video: '\u0001data:video/mp4;base64,AA==' },
       { hero_bg_video_poster: HTML_URI, hero_images: JSON.stringify([PNG_URI]) },
+      { hero_bg_video_poster: dataUri(SAFE_SVG, 'image/svg+xml'), hero_images: JSON.stringify([PNG_URI]) },
+      { hero_bg_video_poster: dataUri(GIF, 'image/gif') },
+      { hero_bg_video_poster: dataUri(ICO, 'image/x-icon') },
+      { hero_bg_video_poster: 'data:image/png,iVBORw0KGgo=' },
       { hero_images: JSON.stringify([HTML_URI]) },
+      { hero_images: JSON.stringify([PNG_URI, dataUri(JPEG), dataUri(SAFE_SVG, 'image/svg+xml')]), hero_bg_video_poster: PNG_URI },
+      { hero_images: JSON.stringify([PNG_URI, dataUri(ICO)]) },
     ]) {
-      const node = await hm.prepareHeroMediaSettings(structuredClone(settings), poolWith()).then(
-        () => ({ status: 200 }),
-        (err: { status: number; message: string }) => ({ status: err.status, error: err.message }),
-      );
-      const phpOut = preparePhp(settings);
+      const node = await outcomeOf(hm.prepareHeroMediaSettings(structuredClone(settings), fakePool()));
+      const phpOut = savePhp(settings);
       expect({ status: phpOut.status, error: phpOut.error }, JSON.stringify(settings)).toEqual(node);
       expect(node.status).toBe(400);
     }
+    expect(puts()).toEqual([]);
     expect(bgFiles()).toEqual(before);
   });
 
   it('stores links, modes, posters and slider images like Node', async () => {
     const settings = {
       hero_bg_mode: 'unknown', hero_bg_video: 'javascript:alert(1)', hero_bg_video_poster: PNG_URI, hero_title: 'Judul',
-      hero_images: JSON.stringify([PNG_URI, '/assets/bg/hero.png', 'javascript:alert(1)', 42]),
+      hero_images: JSON.stringify([PNG_URI, '/assets/bg/hero.png', 'javascript:alert(1)', 42, dataUri(GIF)]),
     };
     const node = (await prepareNode(structuredClone(settings))).settings;
-    const phpOut = preparePhp(settings);
+    const phpOut = savePhp(settings, {}, { prepareOnly: true });
     expect(phpOut.status).toBe(200);
     const asSitePath = (v: unknown) => String(v).replace(`${S3}/`, '/');
     expect(phpOut.settings).toEqual({
@@ -683,38 +1170,120 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
     expect(asSitePath(node.hero_bg_video_poster)).toMatch(/^\/assets\/bg\/hero_poster_[0-9a-f]{12}\.png$/);
     expect(readFileSync(join(webRoot, phpOut.settings.hero_bg_video_poster))).toEqual(Buffer.from('iVBORw0KGgo=', 'base64'));
     const phpImages: string[] = JSON.parse(phpOut.settings.hero_images);
-    expect(phpImages).toEqual([expect.stringMatching(/^\/assets\/bg\/hero_[0-9a-f]{12}\.png$/), '/assets/bg/hero.png', '']);
-    expect(JSON.parse(String(node.hero_images)).slice(1)).toEqual(phpImages.slice(1));
+    expect(phpImages).toEqual([expect.stringMatching(/^\/assets\/bg\/hero_[0-9a-f]{12}\.png$/), '/assets/bg/hero.png', '', expect.stringMatching(/^\/assets\/bg\/hero_[0-9a-f]{12}\.gif$/)]);
+    const nodeImages: string[] = JSON.parse(String(node.hero_images)).map(asSitePath);
+    expect(nodeImages.map((v) => v.replace(/[0-9a-f]{12}/, 'HEX'))).toEqual(phpImages.map((v) => v.replace(/[0-9a-f]{12}/, 'HEX')));
     // No database read without the video/poster keys
-    expect(preparePhp({ hero_bg_mode: 'video' }).queries).toEqual([]);
+    expect(savePhp({ hero_bg_mode: 'video' }, {}, { prepareOnly: true }).queries).toEqual([]);
   });
 
-  it('deletes only the replaced generated files, after the save', () => {
-    const seed = ['hero.png', 'hero_6a0736659383e_0.jpg', 'hero_video_custom.mp4', 'hero_video_0123456789ab.mp4', 'hero_poster_0123456789ab.jpg'];
-    for (const name of seed) writeFileSync(join(bg, name), 'x');
-    const previous = { hero_bg_video: '/assets/bg/hero_video_0123456789ab.mp4', hero_bg_video_poster: '/assets/bg/hero_poster_0123456789ab.jpg' };
-    const next = { hero_bg_video: '', hero_bg_video_poster: 'https://cdn.test/p.jpg' };
+  // ── Stale tab and missing files: "@name" is a generated file in assets/bg (site path in PHP, S3 URL in Node) ──
+  type MediaCase = { name: string; stored: Store; settings: Settings; base?: unknown; files: string[]; status: 200 | 409 };
+  const V1 = '@hero_video_111111111111.mp4';
+  const V2 = '@hero_video_222222222222.mp4';
+  const V3 = '@hero_video_333333333333.webm';
+  const P1 = '@hero_poster_111111111111.jpg';
+  const P2 = '@hero_poster_222222222222.png';
+  const name = (value: string) => value.slice(1);
+  const MEDIA_CASES: MediaCase[] = [
+    { name: 'stale video base', stored: { hero_bg_video: V2 }, settings: { hero_bg_video: V3 }, base: { video: V1, poster: '' }, files: [V2, V3], status: 409 },
+    { name: 'stale removal', stored: { hero_bg_video: V2 }, settings: { hero_bg_video: '' }, base: { video: V1, poster: '' }, files: [V2], status: 409 },
+    { name: 'stale poster base, new data: poster', stored: { hero_bg_video_poster: P2 }, settings: { hero_bg_video_poster: PNG_URI }, base: { video: '', poster: P1 }, files: [P2], status: 409 },
+    { name: 'nothing stored, base has a video', stored: {}, settings: { hero_bg_video: V3 }, base: { video: V1 }, files: [V3], status: 409 },
+    { name: 'current base', stored: { hero_bg_video: V1 }, settings: { hero_bg_video: V3 }, base: { video: V1, poster: '' }, files: [V1, V3], status: 200 },
+    { name: 'no base', stored: { hero_bg_video: V2 }, settings: { hero_bg_video: V3 }, files: [V3], status: 200 },
+    { name: 'nothing stored counts as ""', stored: {}, settings: { hero_bg_video: V3 }, base: { video: '', poster: '' }, files: [V3], status: 200 },
+    { name: 'stale key not sent', stored: { hero_bg_video: V2, hero_bg_video_poster: P1 }, settings: { hero_bg_video_poster: '' }, base: { video: V1, poster: P1 }, files: [], status: 200 },
+    { name: 'base values that are not strings', stored: { hero_bg_video: V2 }, settings: { hero_bg_video: V3 }, base: { video: null, poster: 5 }, files: [V3], status: 200 },
+    { name: 'base that is not an object', stored: { hero_bg_video: V2 }, settings: { hero_bg_video: V3 }, base: 'x', files: [V3], status: 200 },
+    { name: 'missing generated video', stored: {}, settings: { hero_bg_video: V3 }, files: [], status: 409 },
+    { name: 'missing generated poster link', stored: { hero_bg_video_poster: P1 }, settings: { hero_bg_video_poster: P2 }, files: [P1], status: 409 },
+    { name: 'unchanged, even if the file is gone', stored: { hero_bg_video: V1, hero_bg_video_poster: P1 }, settings: { hero_bg_video: V1, hero_bg_video_poster: P1 }, files: [], status: 200 },
+    { name: 'removal', stored: { hero_bg_video: V1, hero_bg_video_poster: P1 }, settings: { hero_bg_video: '', hero_bg_video_poster: '' }, base: { video: V1, poster: P1 }, files: [], status: 200 },
+    { name: 'not generated names are not looked up', stored: {}, settings: { hero_bg_video: '@hero_video_custom.mp4', hero_bg_video_poster: '@hero_poster_111111111111.svg' }, files: [], status: 200 },
+  ];
 
-    // Without the post-save call nothing is deleted
-    expect(preparePhp(next, previous, false).status).toBe(200);
-    for (const name of seed) expect(existsSync(join(bg, name)), name).toBe(true);
-
-    // Unchanged values and files it did not generate stay
-    for (const [video, poster] of [
-      ['/assets/bg/hero.png', '/assets/bg/hero_6a0736659383e_0.jpg'],
-      ['/assets/bg/hero_video_custom.mp4', `${S3}/assets/bg/hero_poster_0123456789ab.jpg`],
-      ['/assets/bg/sub/../hero_video_0123456789ab.mp4', '/assets/bg//hero_poster_0123456789ab.jpg'],
-    ]) {
-      expect(preparePhp(next, { hero_bg_video: video, hero_bg_video_poster: poster }).status).toBe(200);
+  it.each(MEDIA_CASES.map((c) => [c.name, c] as const))('%s answers like Node', async (_name, c) => {
+    const as = (prefix: string) => (value: unknown): unknown => {
+      if (typeof value === 'string' && value.startsWith('@')) return `${prefix}${name(value)}`;
+      if (value && typeof value === 'object' && !Array.isArray(value)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, as(prefix)(v)]));
+      return value;
+    };
+    const phpValue = as('/assets/bg/');
+    const nodeValue = as(`${S3}/assets/bg/`);
+    const dir = webRootWith(c.files.map((file) => [name(file), HOUR]));
+    for (const file of c.files) putObject(name(file), HOUR);
+    const phpOut = savePhp(phpValue(c.settings) as Settings, phpValue(c.stored) as Store, { base: phpValue(c.base), prepareOnly: true, publicDir: dir });
+    const node = await outcomeOf(hm.prepareHeroMediaSettings(nodeValue(c.settings) as Settings, fakePool(nodeValue(c.stored) as Store), nodeValue(c.base)));
+    expect({ status: phpOut.status, error: phpOut.error }).toEqual(node);
+    expect(node.status).toBe(c.status);
+    if (c.status === 409) {
+      expect(node.error).toBe(STALE_ERROR);
+      expect(bgFiles(join(dir, 'assets', 'bg'))).toEqual(c.files.map(name).sort());
+      expect(puts()).toEqual([]);
     }
-    expect(preparePhp(previous, previous).status).toBe(200);
-    expect(preparePhp({ hero_bg_mode: 'image' }, previous).status).toBe(200);
-    for (const name of seed) expect(existsSync(join(bg, name)), name).toBe(true);
+  });
 
-    const phpOut = preparePhp(next, previous);
-    expect(phpOut.settings).toEqual(next);
-    expect(phpOut.queries).toEqual(["SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN ('hero_bg_video', 'hero_bg_video_poster')"]);
-    expect(seed.filter((name) => existsSync(join(bg, name)))).toEqual(['hero.png', 'hero_6a0736659383e_0.jpg', 'hero_video_custom.mp4']);
+  it('sweeps the same files after a successful save, and nothing after a failed one', async () => {
+    const files: [string, number][] = [
+      ['hero_video_111111111111.mp4', 2 * DAY], // stored
+      ['hero_poster_111111111111.jpg', 2 * DAY], // stored
+      ['hero_video_222222222222.webm', 2 * DAY],
+      ['hero_poster_222222222222.webp', 25 * HOUR],
+      ['hero_video_333333333333.mp4', 23 * HOUR],
+      ['hero_poster_333333333333.png', HOUR],
+      ['hero_poster_444444444444.svg', 2 * DAY],
+      ['hero_video_0123456789AB.mp4', 2 * DAY],
+      ['hero_video_custom.mp4', 2 * DAY],
+      ['hero_video_555555555555.mp4.bak', 2 * DAY],
+      ['hero_aaaaaaaaaaaa.png', 2 * DAY],
+      ['hero.png', 2 * DAY],
+    ];
+    // PHP only: temp files of uploads (an hour), other dot files stay
+    const temp: [string, number][] = [['.hero_video_666666666666.part', 2 * HOUR], ['.hero_video_777777777777.part', 10 * 60 * 1000], ['.hero_video_custom.part', 2 * HOUR], ['.htaccess', 2 * DAY]];
+    const phpStore = { hero_bg_video: '/assets/bg/hero_video_111111111111.mp4', hero_bg_video_poster: '/assets/bg/hero_poster_111111111111.jpg' };
+    const nodeStore = { hero_bg_video: `${S3}/assets/bg/hero_video_111111111111.mp4`, hero_bg_video_poster: `${S3}/assets/bg/hero_poster_111111111111.jpg` };
+
+    const failed = webRootWith([...files, ...temp]);
+    expect(savePhp({ hero_bg_mode: 'video' }, phpStore, { fail: true, publicDir: failed }).status).toBe(200);
+    expect(bgFiles(join(failed, 'assets', 'bg'))).toHaveLength(files.length + temp.length);
+
+    const dir = webRootWith([...files, ...temp]);
+    const phpOut = savePhp({ hero_bg_mode: 'video' }, phpStore, { publicDir: dir });
+    expect(phpOut.queries).toEqual([STORED_SQL]);
+    for (const [file, age] of files) putObject(file, age);
+    await saveNode({ hero_bg_mode: 'video' }, nodeStore);
+    const phpLeft = bgFiles(join(dir, 'assets', 'bg'));
+    expect(phpLeft.filter((file) => !file.startsWith('.'))).toEqual(bgNames());
+    expect(bgNames()).toEqual(files.map(([file]) => file).filter((file) => !['hero_video_222222222222.webm', 'hero_poster_222222222222.webp'].includes(file)).sort());
+    expect(phpLeft.filter((file) => file.startsWith('.'))).toEqual(['.hero_video_777777777777.part', '.hero_video_custom.part', '.htaccess']);
+  });
+
+  it('removes the files of a failed request like Node, except one a saved setting points to', async () => {
+    const settings = { hero_images: JSON.stringify([PNG_URI, '/assets/bg/hero.png']), hero_bg_video_poster: dataUri(JPEG) };
+    for (const saved of [[], ['hero_bg_video_poster'], ['hero_images']]) {
+      bucket.clear();
+      const dir = webRootWith();
+      const phpOut = savePhp(settings, {}, { fail: true, savedBeforeFailure: saved, publicDir: dir });
+      const node = await saveNode(structuredClone(settings), {}, { fail: true, savedBeforeFailure: saved });
+      const kept = (value: unknown) => [String(value).replace(/^.*\/assets\/bg\//, '')];
+      const phpExpected = saved.length === 0 ? [] : kept(saved[0] === 'hero_images' ? JSON.parse(phpOut.settings.hero_images)[0] : phpOut.settings.hero_bg_video_poster);
+      const nodeExpected = saved.length === 0 ? [] : kept(saved[0] === 'hero_images' ? JSON.parse(String(node.settings.hero_images))[0] : node.settings.hero_bg_video_poster);
+      expect(bgFiles(join(dir, 'assets', 'bg')), JSON.stringify(saved)).toEqual(phpExpected);
+      expect(bgNames(), JSON.stringify(saved)).toEqual(nodeExpected);
+      expect(phpOut.queries).toEqual(node.pool.queries);
+    }
+  });
+
+  it('get_hero_media_limits: same access check and answer', async () => {
+    for (const role of [null, 'customer', 'user', 'admin']) {
+      for (const [value, mb] of LIMIT_ENV_CASES) {
+        const phpOut = runCli({ op: 'gate', action: 'get_hero_media_limits', user: role ? { id: 3, role, status: 'active' } : null }, { env: { UPLOAD_MAX_VIDEO_MB: value } });
+        const node = await withVideoLimit(value, () => limitsNode(role));
+        expect({ status: phpOut.status, body: phpOut.body }, `${role} ${value}`).toEqual(node);
+        if (role === 'user' || role === 'admin') expect(node.body).toEqual({ success: true, video_max_mb: mb, max_images: 12 });
+      }
+    }
   });
 
   // ── upload_hero_video behind php -S (UPLOAD_MAX_VIDEO_MB = 0.01) ──
@@ -753,7 +1322,7 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
       delete process.env.UPLOAD_MAX_VIDEO_MB;
     }
     expect(normalize(phpOut)).toEqual(normalize(nodeOut));
-    const added = bgFiles().filter((name) => !before.includes(name));
+    const added = bgFiles().filter((file) => !before.includes(file));
     if (phpOut.status === 200) {
       // The stored file has the uploaded bytes and no temporary file is left
       expect(phpOut.body.url).toMatch(/^\/assets\/bg\/hero_video_[0-9a-f]{12}\.(mp4|webm)$/);
@@ -764,8 +1333,32 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
     }
   });
 
+  it('a successful upload runs the sweep, a refused one does not', async () => {
+    const old: [string, number][] = [['hero_video_aaaaaaaaaaaa.mp4', 2 * DAY], ['hero_video_bbbbbbbbbbbb.mp4', 2 * DAY], ['.hero_video_cccccccccccc.part', 2 * HOUR]];
+    for (const [file, age] of old) {
+      writeFileSync(join(bg, file), 'x');
+      const when = new Date(Date.now() - age);
+      utimesSync(join(bg, file), when, when);
+    }
+    writeFileSync(storeFile, JSON.stringify({ hero_bg_video: '/assets/bg/hero_video_aaaaaaaaaaaa.mp4' }));
+    try {
+      expect((await uploadPhp(PNG)).status).toBe(400);
+      expect(old.every(([file]) => existsSync(join(bg, file)))).toBe(true);
+      const out = await uploadPhp(mp4('isom'));
+      expect(out.status).toBe(200);
+      expect(existsSync(join(bg, 'hero_video_aaaaaaaaaaaa.mp4'))).toBe(true);
+      expect(existsSync(join(bg, 'hero_video_bbbbbbbbbbbb.mp4'))).toBe(false);
+      expect(existsSync(join(bg, '.hero_video_cccccccccccc.part'))).toBe(false);
+      expect(existsSync(join(webRoot, String(out.body.url)))).toBe(true);
+    } finally {
+      writeFileSync(storeFile, '{}');
+    }
+  });
+
   it('GET is not an upload (falls through to "Invalid action", like server.js)', async () => {
     expect(await uploadPhp(Buffer.alloc(0), {}, 'GET')).toEqual({ status: 400, body: { error: 'Invalid action: upload_hero_video' } });
-    expect(SERVER_JS.slice(SERVER_JS.indexOf("app.get('/api.php'"), SERVER_JS.indexOf("app.post('/api.php'"))).not.toContain('handleHeroMediaAction');
+    const req = new FakeReq([]);
+    req.method = 'GET';
+    expect(await hm.handleHeroMediaAction('upload_hero_video', req, new FakeRes(), fakePool())).toBe(false);
   });
 });

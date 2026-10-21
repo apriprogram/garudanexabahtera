@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // Latar hero beranda dari setting admin (hero_bg_mode / hero_images / hero_bg_video / hero_bg_video_poster): parser &
-// URL aman, HeroMedia mode gambar (slide bertahap, jeda, reduced motion, di luar layar) dan video (muted/inline, play()
-// hanya bila boleh, autoplay diblokir, error), serta Hero yang menunggu setting lalu memilih kanvas / gambar / video.
+// URL aman, HeroMedia mode gambar (slide bertahap, selalu memudar masuk dari 0, hanya ke gambar yang sudah termuat, jeda,
+// reduced motion, di luar layar, semua gagal → kanvas) dan video (muted/inline, play() hanya bila boleh, autoplay
+// diblokir vs. dibatalkan, error → poster / kanvas), serta Hero yang menunggu setting lalu memilih kanvas / gambar / video.
 // Jalankan: node ../../../node_modules/vitest/vitest.mjs run src/components/sections/hero
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -9,6 +10,7 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import type { SiteSettings } from '../../../../hooks/useSiteSettings';
 import {
+  HERO_FADE_MS,
   HERO_MAX_IMAGES,
   HERO_SLIDE_MS,
   heroBackgroundKey,
@@ -197,8 +199,12 @@ const IMAGES = ['/assets/bg/hero_1.jpg', '/assets/bg/hero_2.jpg', '/assets/bg/he
 
 const renderMedia = (config: HeroMediaConfig) => render(<HeroMedia config={config} />);
 const imgs = (container: HTMLElement) => Array.from(container.querySelectorAll('img'));
+const srcs = (container: HTMLElement) => imgs(container).map((img) => img.getAttribute('src'));
+const imgOf = (container: HTMLElement, src: string) => container.querySelector(`img[src="${src}"]`) as HTMLImageElement;
 const activeSrc = (container: HTMLElement) =>
   imgs(container).find((img) => img.className.includes('z-[2]'))?.getAttribute('src');
+/** jsdom tidak pernah memuat gambar: tandai semua gambar yang sedang terpasang sebagai selesai dimuat. */
+const loadMounted = (container: HTMLElement) => imgs(container).forEach((img) => fireEvent.load(img));
 
 describe('HeroMedia mode gambar', () => {
   it('satu gambar: statis tanpa tombol jeda, dimuat segera, dekoratif', () => {
@@ -222,14 +228,16 @@ describe('HeroMedia mode gambar', () => {
     vi.useFakeTimers();
     const { container } = renderMedia({ mode: 'image', images: IMAGES });
     // Yang tampil + berikutnya saja; gambar berikutnya lazy
-    expect(imgs(container).map((img) => img.getAttribute('src'))).toEqual(IMAGES.slice(0, 2));
+    expect(srcs(container)).toEqual(IMAGES.slice(0, 2));
     expect(imgs(container)[1]).toHaveAttribute('loading', 'lazy');
     expect(imgs(container)[1]).not.toHaveAttribute('fetchpriority');
     expect(activeSrc(container)).toBe(IMAGES[0]);
+    loadMounted(container);
 
     act(() => vi.advanceTimersByTime(HERO_SLIDE_MS));
     expect(activeSrc(container)).toBe(IMAGES[1]);
     expect(imgs(container)).toHaveLength(3);
+    loadMounted(container);
     // Gambar sebelumnya tetap penuh di bawah gambar baru (crossfade tanpa kilasan kosong)
     expect(imgs(container)[0].className).toContain('z-[1] opacity-100');
 
@@ -253,6 +261,7 @@ describe('HeroMedia mode gambar', () => {
   it('berhenti saat hero di luar layar; tab yang aktif lagi tidak melanjutkan hero yang masih di luar layar', () => {
     vi.useFakeTimers();
     const { container } = renderMedia({ mode: 'image', images: IMAGES });
+    loadMounted(container);
     setIntersecting(false);
     act(() => vi.advanceTimersByTime(HERO_SLIDE_MS * 2));
     expect(activeSrc(container)).toBe(IMAGES[0]);
@@ -272,30 +281,165 @@ describe('HeroMedia mode gambar', () => {
     expect(activeSrc(container)).toBe(IMAGES[1]);
   });
 
-  it('reduced motion: hanya gambar pertama, mulai dijeda, pengunjung bisa memutar', () => {
+  it('2 gambar: setiap pergantian (juga kedua & ketiga) memudar masuk dari 0 di atas gambar lama yang tetap penuh', () => {
+    vi.useFakeTimers();
+    const [a, b] = IMAGES;
+    const { container } = renderMedia({ mode: 'image', images: [a, b] });
+    loadMounted(container);
+    let now = 0;
+    const at = (ms: number) => {
+      act(() => vi.advanceTimersByTime(ms - now));
+      now = ms;
+    };
+    // Tersembunyi = transparan, sedikit membesar, tanpa transisi: titik awal pudar masuk berikutnya
+    const expectHidden = (src: string) => {
+      const { className } = imgOf(container, src);
+      expect(className).toContain('z-0 opacity-0');
+      expect(className).toContain('scale-[1.03]');
+      expect(className).not.toContain('transition');
+    };
+    // Tailwind v4 scale-* memakai properti CSS `scale`, jadi properti itu yang ditransisikan (bukan transform)
+    const expectFadingIn = (src: string) => {
+      const { className } = imgOf(container, src);
+      expect(className).toContain('z-[2] opacity-100 scale-100');
+      expect(className).toContain('transition-[opacity,scale] duration-[1200ms] ease-calm');
+    };
+    const expectUnder = (src: string) => expect(imgOf(container, src).className).toContain('z-[1] opacity-100');
+
+    expect(activeSrc(container)).toBe(a);
+    [
+      [b, a],
+      [a, b],
+      [b, a],
+    ].forEach(([incoming, outgoing], step) => {
+      const start = HERO_SLIDE_MS * (step + 1);
+      at(start - 1);
+      expectHidden(incoming);
+      at(start);
+      expectFadingIn(incoming);
+      expectUnder(outgoing);
+      // Gambar lama tetap penuh di bawah sampai pudar masuk selesai, baru disembunyikan
+      at(start + HERO_FADE_MS - 1);
+      expectUnder(outgoing);
+      at(start + HERO_FADE_MS);
+      expectHidden(outgoing);
+      expectFadingIn(incoming);
+    });
+  });
+
+  it('hanya berganti ke gambar yang sudah termuat: ditunggu, lalu berganti begitu termuat (minimal tetap 6 detik)', () => {
+    vi.useFakeTimers();
+    const { container } = renderMedia({ mode: 'image', images: IMAGES });
+    fireEvent.load(imgOf(container, IMAGES[0]));
+    act(() => vi.advanceTimersByTime(HERO_SLIDE_MS * 2));
+    expect(activeSrc(container)).toBe(IMAGES[0]);
+    expect(imgOf(container, IMAGES[1]).className).toContain('opacity-0');
+
+    // 6 detik sudah lewat: langsung berganti begitu gambar berikutnya termuat
+    fireEvent.load(imgOf(container, IMAGES[1]));
+    expect(activeSrc(container)).toBe(IMAGES[1]);
+
+    // Gambar berikutnya sudah termuat lebih dulu: gambar yang tampil tetap 6 detik penuh
+    fireEvent.load(imgOf(container, IMAGES[2]));
+    act(() => vi.advanceTimersByTime(HERO_SLIDE_MS - 1));
+    expect(activeSrc(container)).toBe(IMAGES[1]);
+    act(() => vi.advanceTimersByTime(1));
+    expect(activeSrc(container)).toBe(IMAGES[2]);
+  });
+
+  it('berhenti (di luar layar) saat menunggu gambar berikutnya: gambar yang baru termuat tidak memutar tayangan', () => {
+    vi.useFakeTimers();
+    const { container } = renderMedia({ mode: 'image', images: IMAGES });
+    fireEvent.load(imgOf(container, IMAGES[0]));
+    act(() => vi.advanceTimersByTime(HERO_SLIDE_MS));
+    setIntersecting(false);
+    fireEvent.load(imgOf(container, IMAGES[1]));
+    act(() => vi.advanceTimersByTime(HERO_SLIDE_MS * 2));
+    expect(activeSrc(container)).toBe(IMAGES[0]);
+
+    // Terlihat lagi: tampil 6 detik lagi, lalu berganti
+    setIntersecting(true);
+    act(() => vi.advanceTimersByTime(HERO_SLIDE_MS - 1));
+    expect(activeSrc(container)).toBe(IMAGES[0]);
+    act(() => vi.advanceTimersByTime(1));
+    expect(activeSrc(container)).toBe(IMAGES[1]);
+  });
+
+  it('reduced motion: hanya gambar pertama, mulai dijeda, pengunjung bisa memutar; tanpa pudar & skala', () => {
     vi.useFakeTimers();
     mockReducedMotion();
     const { container } = renderMedia({ mode: 'image', images: IMAGES });
     expect(imgs(container)).toHaveLength(1);
-    expect(imgs(container)[0].className).not.toContain('scale-[1.03]');
+    loadMounted(container);
     act(() => vi.advanceTimersByTime(HERO_SLIDE_MS * 3));
     expect(activeSrc(container)).toBe(IMAGES[0]);
 
     fireEvent.click(screen.getByRole('button', { name: 'Putar latar' }));
     expect(imgs(container)).toHaveLength(2);
+    loadMounted(container);
     act(() => vi.advanceTimersByTime(HERO_SLIDE_MS));
     expect(activeSrc(container)).toBe(IMAGES[1]);
-    // Tanpa efek skala untuk pengguna ini
-    imgs(container).forEach((img) => expect(img.className).not.toContain('scale-[1.03]'));
+    // Langsung berganti: tanpa transisi dan tanpa efek skala untuk pengguna ini
+    act(() => vi.advanceTimersByTime(HERO_FADE_MS));
+    imgs(container).forEach((img) => {
+      expect(img.className).not.toContain('scale-[1.03]');
+      expect(img.className).not.toContain('transition');
+    });
   });
 
-  it('gambar yang gagal dimuat dilewati', () => {
+  it('gambar yang gagal dimuat dilewati, juga saat sedang ditunggu', () => {
     vi.useFakeTimers();
-    const { container } = renderMedia({ mode: 'image', images: IMAGES });
+    const first = renderMedia({ mode: 'image', images: IMAGES });
+    const { container } = first;
     fireEvent.error(imgs(container)[1]);
-    expect(imgs(container).map((img) => img.getAttribute('src'))).toEqual([IMAGES[0], IMAGES[2]]);
+    expect(srcs(container)).toEqual([IMAGES[0], IMAGES[2]]);
+    loadMounted(container);
     act(() => vi.advanceTimersByTime(HERO_SLIDE_MS));
     expect(activeSrc(container)).toBe(IMAGES[2]);
+    first.unmount();
+
+    // Gambar berikutnya gagal saat sedang ditunggu → gambar sesudahnya dipasang, tampil begitu termuat
+    const second = renderMedia({ mode: 'image', images: IMAGES }).container;
+    fireEvent.load(imgOf(second, IMAGES[0]));
+    act(() => vi.advanceTimersByTime(HERO_SLIDE_MS));
+    fireEvent.error(imgOf(second, IMAGES[1]));
+    expect(activeSrc(second)).toBe(IMAGES[0]);
+    fireEvent.load(imgOf(second, IMAGES[2]));
+    expect(activeSrc(second)).toBe(IMAGES[2]);
+  });
+
+  it('gambar pertama gagal: gambar berikutnya dipasang (juga saat dijeda) dan tampil begitu termuat', () => {
+    mockReducedMotion();
+    const { container } = renderMedia({ mode: 'image', images: IMAGES.slice(0, 2) });
+    expect(srcs(container)).toEqual([IMAGES[0]]);
+    fireEvent.error(imgs(container)[0]);
+    expect(srcs(container)).toEqual([IMAGES[1]]);
+    expect(activeSrc(container)).toBeUndefined();
+    fireEvent.load(imgs(container)[0]);
+    expect(activeSrc(container)).toBe(IMAGES[1]);
+  });
+
+  it('tombol jeda hanya selama masih ada 2+ gambar yang bisa tampil', () => {
+    vi.useFakeTimers();
+    const { container } = renderMedia({ mode: 'image', images: IMAGES });
+    loadMounted(container);
+    fireEvent.error(imgOf(container, IMAGES[1]));
+    expect(screen.getByRole('button', { name: 'Jeda latar' })).toBeInTheDocument();
+    fireEvent.error(imgOf(container, IMAGES[2]));
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(HERO_SLIDE_MS * 2));
+    expect(activeSrc(container)).toBe(IMAGES[0]);
+  });
+
+  it('semua gambar gagal dimuat → kanvas bawaan, tanpa tombol jeda', () => {
+    const { container } = renderMedia({ mode: 'image', images: IMAGES });
+    for (let guard = 0; imgs(container).length > 0 && guard < IMAGES.length; guard += 1) fireEvent.error(imgs(container)[0]);
+    expect(imgs(container)).toHaveLength(0);
+    const canvas = container.querySelector('canvas');
+    expect(canvas).not.toBeNull();
+    // Sama dengan latar bawaan di Hero.tsx: di belakang isi hero
+    expect((canvas?.parentElement as HTMLElement).className).toContain('absolute inset-0 -z-10');
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('tanpa timer & listener tersisa setelah dilepas', () => {
@@ -373,6 +517,24 @@ describe('HeroMedia mode video', () => {
     expect(videoOf(container)).toHaveAttribute('poster', POSTER);
   });
 
+  it('play() yang dibatalkan (AbortError, mis. pause() saat masih memulai) tidak mengubah status jadi dijeda', async () => {
+    const aborted = () => Promise.reject(new DOMException('The play() request was interrupted by a call to pause().', 'AbortError'));
+    play.mockImplementation(aborted);
+    renderMedia({ mode: 'video', src: VIDEO, poster: POSTER });
+    await act(() => new Promise((done) => setTimeout(done, 0)));
+    expect(play).toHaveBeenCalledTimes(1);
+    const button = screen.getByRole('button', { name: 'Jeda latar' });
+
+    // Juga dari tombol Putar
+    play.mockImplementation(() => Promise.resolve());
+    fireEvent.click(button);
+    expect(button).toHaveAccessibleName('Putar latar');
+    play.mockImplementation(aborted);
+    fireEvent.click(button);
+    await act(() => new Promise((done) => setTimeout(done, 0)));
+    expect(button).toHaveAccessibleName('Jeda latar');
+  });
+
   it('jeda saat di luar layar / tab disembunyikan, lanjut hanya bila terlihat lagi', () => {
     renderMedia({ mode: 'video', src: VIDEO, poster: POSTER });
     expect(play).toHaveBeenCalledTimes(1);
@@ -395,11 +557,22 @@ describe('HeroMedia mode video', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('video gagal tanpa poster → hanya cuci putih', () => {
+  it('video gagal tanpa poster → kanvas bawaan', () => {
     const { container } = renderMedia({ mode: 'video', src: VIDEO, poster: null });
+    expect(container.querySelector('canvas')).toBeNull();
     fireEvent.error(videoOf(container));
     expect(container.querySelector('video')).toBeNull();
     expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('canvas')).not.toBeNull();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('video dan poster gagal → kanvas bawaan', () => {
+    const { container } = renderMedia({ mode: 'video', src: VIDEO, poster: POSTER });
+    fireEvent.error(videoOf(container));
+    fireEvent.error(container.querySelector('img') as HTMLImageElement);
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('canvas')).not.toBeNull();
   });
 });
 

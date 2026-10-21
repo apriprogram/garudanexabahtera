@@ -262,12 +262,35 @@ Juga: `update_project` & `add_project` (lama) menerima `show_on_website` (0/1); 
 
 | Action | Input | Output |
 |---|---|---|
-| `upload_hero_video` | POST `/api.php?action=upload_hero_video`, header `Authorization: Bearer <token>`, body = **byte file mentah** (bukan JSON/base64/multipart; `Content-Type: video/mp4\|video/webm` hanya informasi) | `{ success, url }` (PHP `/assets/bg/hero_video_<12 hex>.<mp4\|webm>`, Node URL S3 publik dengan key yang sama). Jenis dari magic bytes saja: MP4 (`ftyp` + brand yang diizinkan, MOV `qt  ` ditolak) atau WebM (EBML + DocType `webm`); lainnya 400. Kosong 400; lebih dari `UPLOAD_MAX_VIDEO_MB` (default 30) 413 |
+| `upload_hero_video` | POST `/api.php?action=upload_hero_video`, header `Authorization: Bearer <token>`, body = **byte file mentah** (bukan JSON/base64/multipart; `Content-Type: video/mp4\|video/webm` hanya informasi) | `{ success, url }` (PHP `/assets/bg/hero_video_<12 hex>.<mp4\|webm>`, Node URL S3 publik dengan key yang sama). Jenis dari magic bytes saja: MP4 (`ftyp` + brand yang diizinkan, MOV `qt  ` ditolak) atau WebM (EBML + DocType `webm`); lainnya 400. Kosong 400; lebih dari `UPLOAD_MAX_VIDEO_MB` (default 30) 413. Setelah berhasil: sapu bersih (lihat di bawah) |
+| `get_hero_media_limits` | GET atau POST, token staf | `{ success: true, video_max_mb, max_images }`: `video_max_mb` = `UPLOAD_MAX_VIDEO_MB` dalam MB bulat (dibulatkan ke bawah, minimal 1; default 30), `max_images` = 12 (`HERO_MAX_IMAGES` di `src/components/sections/hero/heroBgConfig.ts`) |
 
 Setting `hero_settings` (semua string): `hero_bg_mode` (`default`, `image` atau `video`; selain itu disimpan `default`),
-`hero_images` (JSON array URL, urutan slide), `hero_bg_video` (URL dari `upload_hero_video`, `""` = tidak ada; data URI
-ditolak 400), `hero_bg_video_poster` (URL; data URI gambar baru disimpan jadi `assets/bg/hero_poster_<12 hex>.<ext>`).
-`update_settings` menghapus file video/poster lama hanya bila nilainya berubah dan file lama itu buatan modul ini.
+`hero_images` (JSON array URL, urutan slide; data URI gambar baru disimpan jadi `assets/bg/hero_<12 hex>.<ext>`),
+`hero_bg_video` (URL dari `upload_hero_video`, `""` = tidak ada; data URI ditolak 400), `hero_bg_video_poster` (URL;
+data URI gambar baru disimpan jadi `assets/bg/hero_poster_<12 hex>.<jpg|png|webp>`).
+
+`update_settings` untuk kunci hero:
+- Body boleh berisi `hero_media_base: { video, poster }` di **tingkat atas** (bukan di dalam `settings`, jadi tidak
+  pernah disimpan sebagai setting) = nilai `hero_bg_video` / `hero_bg_video_poster` yang dimuat halaman admin. Bila
+  `settings` berisi `hero_bg_video` dan `hero_media_base.video` berupa string yang berbeda dari nilai tersimpan (tidak
+  ada = `""`) → **409** `{ error: "Latar hero sudah diubah di tab atau perangkat lain. Muat ulang halaman, lalu simpan lagi." }`
+  sebelum apa pun disimpan atau diunggah. Sama untuk `hero_bg_video_poster` dengan `hero_media_base.poster` (poster
+  data URI baru juga: yang dibandingkan base-nya). Tanpa `hero_media_base` pemeriksaan ini dilewati.
+- Bila `hero_bg_video` (atau `hero_bg_video_poster` yang bukan data URI) berubah dan berupa nama buatan modul
+  (`hero_video_<12 hex>.<mp4|webm>` / `hero_poster_<12 hex>.<jpg|png|webp>` di `/assets/bg/`, Node di
+  `S3_PUBLIC_URL/assets/bg/`), file-nya harus ada (PHP di `public/assets/bg`, Node `HeadObject` S3); bila tidak → 409
+  dengan pesan yang sama. `""` (hapus) selalu boleh.
+- Poster dan gambar `hero_images` baru hanya gambar raster: JPG, PNG, WEBP (slide juga GIF); SVG, ICO dan lainnya →
+  400 `{ error: "Gambar latar dan sampul harus JPG, PNG, atau WEBP." }`. Semua gambar baru diperiksa dulu sebelum file
+  pertama ditulis; bila request gagal setelah file ditulis (setting lain, database), file dari request itu dihapus
+  kecuali yang dirujuk setting yang sempat tersimpan.
+- File video/poster lama **tidak** dihapus saat menyimpan. Setelah setiap `update_settings` dan `upload_hero_video`
+  yang berhasil, sapu bersih: hapus file di `assets/bg` yang namanya persis pola buatan modul di atas, bukan
+  `hero_bg_video` / `hero_bg_video_poster` yang tersimpan (dibaca setelah simpan), dan berumur lebih dari 24 jam (PHP
+  `filemtime`, Node `LastModified` dari `ListObjectsV2` prefix `assets/bg/hero_video_` dan `assets/bg/hero_poster_`).
+  PHP juga menghapus file sementaranya (`.hero_video_<12 hex>.part`) yang lebih dari 1 jam. File lain tidak pernah
+  disentuh; error saat menyapu hanya dicatat di log dan tidak menggagalkan request.
 
 ### Struktur kode backend
 - PHP: `backend/modules/templates.php` berisi fungsi `handle_platform_action(mysqli $conn, string $action, array $input, ?array $user): bool`

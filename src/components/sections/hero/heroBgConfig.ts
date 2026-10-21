@@ -17,8 +17,10 @@ export type HeroMediaConfig = Exclude<HeroBackgroundConfig, { mode: 'default' }>
 
 /** Batas gambar slider yang dipakai (sisanya diabaikan agar halaman tidak memuat terlalu banyak gambar). */
 export const HERO_MAX_IMAGES = 12;
-/** Lama satu gambar tampil sebelum berganti (ms). */
+/** Lama minimal satu gambar tampil sebelum berganti (ms); gambar berikutnya yang belum termuat ditunggu. */
 export const HERO_SLIDE_MS = 6000;
+/** Lama gambar baru memudar masuk (ms), sama dengan kelas `duration-[1200ms]` di HeroMedia; gambar lama disembunyikan sesudahnya. */
+export const HERO_FADE_MS = 1200;
 
 const DEFAULT: HeroBackgroundConfig = { mode: 'default' };
 

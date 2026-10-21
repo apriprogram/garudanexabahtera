@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Layout, 
   Image as ImageIcon, 
@@ -15,11 +15,19 @@ import {
   Edit2,
   X,
   Upload,
-  ChevronDown
+  ChevronDown,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import HeroSettings from './HeroSettings';
-import { normalizeHeroBgMode, parseHeroImages, parseHeroLogos, type HeroBgMode } from './hero/heroMedia';
+import {
+  heroMediaBaseline,
+  omitUnchangedHeroMedia,
+  parseHeroImages,
+  parseHeroLogos,
+  type HeroBgMode,
+  type HeroMediaBaseline,
+} from './hero/heroMedia';
 import {
   Button,
   Chip,
@@ -95,6 +103,28 @@ const NOTIFY_TONE = {
 
 /** Respons get_settings: setting_key → setting_value. Daftar di bawah disimpan sebagai string JSON. */
 type SettingsMap = Record<string, string>;
+
+/** Error simpan dengan pesan dari server yang ditampilkan apa adanya (mis. 409 latar hero diubah di tab lain). */
+class SaveError extends Error {}
+
+/** Pesan `error` dari respons JSON server, atau "" bila tidak ada / bukan JSON. */
+async function serverErrorOf(response: Response): Promise<string> {
+  try {
+    const body: unknown = await response.json();
+    const error = body && typeof body === 'object' ? (body as { error?: unknown }).error : undefined;
+    return typeof error === 'string' ? error.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+/* Teks tombol simpan selama ditahan (lihat saveBlock). Gagal muat: teks tetap, alasannya tampil di sebelahnya. */
+const SAVE_BLOCK_LABEL = {
+  loading: 'Memuat pengaturan...',
+  failed: 'Simpan semua perubahan',
+  video: 'Menunggu unggahan video...',
+  images: 'Memproses gambar...',
+} as const;
 
 /** Satu entri products_data. */
 interface ProductItem {
@@ -180,6 +210,13 @@ const SiteSettings: React.FC = () => {
   const [heroVideoPoster, setHeroVideoPoster] = useState('');
   // true selama video diunggah: tombol simpan ditahan supaya video setengah jadi tidak ikut tersimpan
   const [heroBusy, setHeroBusy] = useState(false);
+  // Gambar latar yang sedang dikecilkan: tombol simpan ditahan sampai semuanya masuk daftar
+  const [heroImagesPending, setHeroImagesPending] = useState(0);
+  const handleHeroImagesProcessing = useCallback((delta: number) => setHeroImagesPending((n) => Math.max(0, n + delta)), []);
+  // Muat terakhir: simpan hanya boleh setelah get_settings berhasil, supaya muat gagal tidak menyimpan isian kosong
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
+  // Latar hero dari muat terakhir yang berhasil: dasar hero_media_base dan pembanding kunci yang tidak diubah
+  const heroBaselineRef = useRef<HeroMediaBaseline | null>(null);
 
   // Products tab States
   const [productsCategories, setProductsCategories] = useState<{ id: string; label: string }[]>([]);
@@ -240,19 +277,25 @@ const SiteSettings: React.FC = () => {
 
 
 
-  const fetchSettings = useCallback(async () => {
+  /** Muat semua setting; true bila berhasil (baru setelah itu tombol simpan aktif). */
+  const fetchSettings = useCallback(async (): Promise<boolean> => {
     try {
       const apiUrl = '/api.php';
       const response = await fetch(`${apiUrl}?action=get_settings`);
-      const data: SettingsMap = await response.json();
+      // Respons gagal / {error} / bukan objek = muat gagal (bukan pengaturan kosong yang lalu ikut tersimpan)
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const body: unknown = await response.json();
+      if (!body || typeof body !== 'object' || Array.isArray(body) || 'error' in body) throw new Error('Respons get_settings tidak sesuai');
+      const data = body as SettingsMap;
       setSettings(data);
       
-      // Load Hero: gambar, logo, dan latar. JSON rusak → daftar kosong, tidak menggagalkan muat halaman.
-      if (data.hero_images) setHeroImages(parseHeroImages(data.hero_images));
+      // Load Hero: gambar, logo, dan latar (isi state = dasar). JSON rusak → daftar kosong, tidak menggagalkan muat halaman.
+      const heroBaseline = heroMediaBaseline(data);
+      setHeroImages(parseHeroImages(data.hero_images));
       if (data.hero_logos) setHeroLogos(parseHeroLogos(data.hero_logos));
-      setHeroBgMode(normalizeHeroBgMode(data.hero_bg_mode));
-      setHeroVideo(typeof data.hero_bg_video === 'string' ? data.hero_bg_video.trim() : '');
-      setHeroVideoPoster(typeof data.hero_bg_video_poster === 'string' ? data.hero_bg_video_poster.trim() : '');
+      setHeroBgMode(heroBaseline.hero_bg_mode);
+      setHeroVideo(heroBaseline.hero_bg_video);
+      setHeroVideoPoster(heroBaseline.hero_bg_video_poster);
 
       // Load Products tab data
       if (data.products_categories) {
@@ -402,9 +445,15 @@ const SiteSettings: React.FC = () => {
 
 
 
+      // Semua bagian termuat: dasar latar hero dari muatan ini, tombol simpan boleh aktif
+      heroBaselineRef.current = heroBaseline;
+      setLoadState('ready');
+      return true;
     } catch (error) {
       console.error('Error fetching settings:', error);
       showNotify('error', 'Gagal memuat pengaturan', 'Pengaturan website tidak bisa dimuat. Coba muat ulang halaman.');
+      setLoadState('failed');
+      return false;
     }
   }, [showNotify]);
 
@@ -414,8 +463,13 @@ const SiteSettings: React.FC = () => {
     fetchSettings();
   }, [fetchSettings]);
 
+  // Alasan tombol simpan ditahan, null = boleh simpan: belum/gagal muat, video diunggah, atau gambar masih diproses
+  const saveBlock: keyof typeof SAVE_BLOCK_LABEL | null =
+    loadState !== 'ready' ? loadState : heroBusy ? 'video' : heroImagesPending > 0 ? 'images' : null;
+
   const handleSave = async () => {
-    if (heroBusy) return;
+    const heroBaseline = heroBaselineRef.current;
+    if (isSaving || saveBlock || !heroBaseline) return;
     setIsSaving(true);
 
     // Catatan harga template hanya ditulis bila tab Harga sedang terbuka. Nilai kosong ikut disimpan (= sembunyikan
@@ -489,26 +543,36 @@ const SiteSettings: React.FC = () => {
         },
         body: JSON.stringify({
           action: 'update_settings',
-          settings: updatedSettings
+          // Latar hero yang tidak diubah sejak dimuat tidak dikirim, supaya tidak menimpa perubahan dari tab lain
+          settings: omitUnchangedHeroMedia(updatedSettings, heroBaseline),
+          // Video/sampul yang dimuat halaman ini: server menolak (409) bila sudah diganti di tab atau perangkat lain
+          hero_media_base: heroBaseline.base,
         })
       });
       if (!response.ok) {
+        // 4xx dengan pesan server (mis. 409 latar hero diubah di tab lain) → pesan itu apa adanya
+        const serverError = response.status >= 400 && response.status < 500 ? await serverErrorOf(response) : '';
+        if (serverError) throw new SaveError(serverError);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const data = await response.json();
       if (data.success) {
         showNotify('success', 'Pengaturan berhasil disimpan', 'Konten website sudah diperbarui.');
         setSettings(updatedSettings);
-        fetchSettings(); // Refresh settings to pull newly generated paths from PHP backend
+        // Muat ulang (path file baru dari backend, dasar latar hero baru) sebelum kunci dibuka, supaya isian yang
+        // diubah selama menyimpan tidak tertimpa hasil muat ulang
+        await fetchSettings();
       } else {
-        throw new Error(data.error || 'Server error');
+        throw new SaveError(typeof data.error === 'string' && data.error.trim() ? data.error.trim() : 'Server menolak perubahan.');
       }
     } catch (error) {
       console.error('Error saving settings:', error);
       const message = error instanceof Error ? error.message : '';
-      const msg = message.includes('HTTP')
-        ? `Gagal menyimpan: ${message}`
-        : "Gagal terhubung ke API. Pastikan server API berjalan (lihat 'cara menjalankan aplikasi') & cek konsol browser.";
+      const msg = error instanceof SaveError
+        ? message
+        : message.includes('HTTP')
+          ? `Gagal menyimpan: ${message}`
+          : "Gagal terhubung ke API. Pastikan server API berjalan (lihat 'cara menjalankan aplikasi') & cek konsol browser.";
       showNotify('error', 'Gagal menyimpan pengaturan', msg);
     } finally {
       setIsSaving(false);
@@ -702,6 +766,8 @@ const SiteSettings: React.FC = () => {
             heroVideoPoster={heroVideoPoster}
             setHeroVideoPoster={setHeroVideoPoster}
             onBusyChange={setHeroBusy}
+            onImagesProcessing={handleHeroImagesProcessing}
+            saving={isSaving}
           />
         );
 
@@ -1145,9 +1211,27 @@ const SiteSettings: React.FC = () => {
         title="Pengaturan website"
         description="Atur isi setiap bagian website kamu, dari Hero sampai Footer."
         actions={
-          <Button icon={<Save />} loading={isSaving} disabled={heroBusy} onClick={handleSave}>
-            {isSaving ? 'Menyimpan...' : heroBusy ? 'Menunggu unggahan video...' : 'Simpan semua perubahan'}
-          </Button>
+          <>
+            {loadState === 'failed' && (
+              <>
+                <p id="save-blocked-reason" className="text-xs leading-relaxed text-adm-danger-fg">
+                  Pengaturan gagal dimuat, jadi belum bisa disimpan.
+                </p>
+                <Button variant="secondary" icon={<RefreshCw />} onClick={() => void fetchSettings()}>
+                  Muat ulang
+                </Button>
+              </>
+            )}
+            <Button
+              icon={<Save />}
+              loading={isSaving}
+              disabled={saveBlock !== null}
+              aria-describedby={loadState === 'failed' ? 'save-blocked-reason' : undefined}
+              onClick={handleSave}
+            >
+              {isSaving ? 'Menyimpan...' : saveBlock ? SAVE_BLOCK_LABEL[saveBlock] : 'Simpan semua perubahan'}
+            </Button>
+          </>
         }
       />
 

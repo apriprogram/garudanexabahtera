@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 
@@ -67,6 +68,37 @@ export async function getFromS3(key) {
   }
 }
 
+/**
+ * Whether an object exists (HEAD request)
+ * @param {string} key - S3 object key (e.g. 'assets/bg/hero_video_0123456789ab.mp4')
+ * @returns {Promise<boolean>} false when S3 answers 404; any other failure is thrown
+ */
+export async function existsInS3(key) {
+  try {
+    await client.send(new HeadObjectCommand({ Bucket: S3_BUCKET, Key: key }));
+    return true;
+  } catch (err) {
+    if (err?.name === 'NotFound' || err?.name === 'NoSuchKey' || err?.$metadata?.httpStatusCode === 404) return false;
+    throw err;
+  }
+}
+
+/**
+ * Lists every object whose key starts with `prefix` (all pages of ListObjectsV2)
+ * @param {string} prefix - e.g. 'assets/bg/hero_video_'
+ * @returns {Promise<{ key: string, lastModified: Date | undefined }[]>}
+ */
+export async function listS3(prefix) {
+  const objects = [];
+  let token;
+  do {
+    const out = await client.send(new ListObjectsV2Command({ Bucket: S3_BUCKET, Prefix: prefix, ...(token ? { ContinuationToken: token } : {}) }));
+    for (const item of out?.Contents || []) if (typeof item.Key === 'string') objects.push({ key: item.Key, lastModified: item.LastModified });
+    token = out?.IsTruncated ? out.NextContinuationToken : undefined;
+  } while (token);
+  return objects;
+}
+
 // ── Upload validation ──
 // Uploads arrive as base64 data URIs. The file type is taken from the content (magic bytes) and an
 // allowlist, never from the client's MIME header, and the stored name is generated server side.
@@ -113,23 +145,77 @@ const DOCUMENT_MAGIC = {
 
 const startsWithBytes = (buf, bytes, offset = 0) => bytes.every((b, i) => buf[offset + i] === b);
 
-function sniffImage(buf) {
+/** Image type from the first bytes (same rules as sniff_image() in api.php), or null */
+export function sniffImage(buf) {
   if (startsWithBytes(buf, [0x89, 0x50, 0x4e, 0x47])) return 'png';
   if (startsWithBytes(buf, [0xff, 0xd8, 0xff])) return 'jpg';
   if (buf.subarray(0, 4).toString('latin1') === 'GIF8') return 'gif';
   if (buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') return 'webp';
   if (startsWithBytes(buf, [0x00, 0x00, 0x01, 0x00])) return 'ico';
-  const head = buf.subarray(0, 2048).toString('utf8').replace(/^﻿/, '').trimStart();
+  // ltrim() in api.php: only these characters, not every Unicode space like trimStart()
+  const head = buf.subarray(0, 2048).toString('utf8').replace(/^﻿/, '').replace(/^[ \t\n\r\0\x0B]+/, '');
   if (/^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/i.test(head)) return 'svg';
   return null;
 }
 
-// SVG is served as an image but can carry script; reject anything active instead of trying to clean it
-function assertSafeSvg(buf) {
-  const text = buf.toString('utf8');
-  if (/<script|<foreignObject|<iframe|<embed|<object|\son[a-z]+\s*=|javascript:|<!ENTITY/i.test(text)) {
-    throw new UploadError('File SVG berisi script dan tidak diizinkan.');
+// ── SVG: the same checks as svg_has_active_content() in api.php ──
+// Whitespace as PCRE without /u sees it (JavaScript's \s also matches Unicode spaces)
+const SVG_ACTIVE_TAGS = /<script|<foreignObject|<iframe|<embed|<object|<handler|<listener|[\t\n\v\f\r ]on[a-z]+[\t\n\v\f\r ]*=|<!ENTITY|<!DOCTYPE[^>]*\[/i;
+// Only UTF-8/ASCII/Latin-1: another declared encoding could hide markup from these checks
+const SVG_OTHER_ENCODING = /<\?xml[^>]*\bencoding[\t\n\v\f\r ]*=[\t\n\v\f\r ]*["'][\t\n\v\f\r ]*(?!(utf-?8|us-ascii|iso-8859-1)[\t\n\v\f\r ]*["'])/i;
+const SVG_SCRIPT_URL = /(javascript|vbscript|livescript):|data:(text\/html|application\/xhtml)/i;
+// The named character references of PHP's HTML5 table whose text contains ASCII (all 50). Every other name stands
+// for non-ASCII characters only, which none of the patterns above can match, so those may stay encoded.
+const ASCII_ENTITIES = Object.freeze({
+  Tab: '\t', NewLine: '\n', excl: '!', quot: '"', QUOT: '"', num: '#', dollar: '$', percnt: '%', amp: '&', AMP: '&',
+  apos: "'", lpar: '(', rpar: ')', ast: '*', midast: '*', plus: '+', comma: ',', period: '.', sol: '/', colon: ':',
+  semi: ';', lt: '<', LT: '<', nvlt: '<⃒', equals: '=', bne: '=⃥', gt: '>', GT: '>', nvgt: '>⃒',
+  quest: '?', commat: '@', lsqb: '[', lbrack: '[', bsol: '\\', rsqb: ']', rbrack: ']', Hat: '^', lowbar: '_',
+  UnderBar: '_', grave: '`', DiacriticalGrave: '`', fjlig: 'fj', lcub: '{', lbrace: '{', verbar: '|', vert: '|',
+  VerticalLine: '|', rcub: '}', rbrace: '}',
+});
+
+// Code points html_entity_decode(ENT_HTML5) decodes a numeric reference to; others stay encoded
+const html5Allowed = (cp) =>
+  (cp >= 0x20 && cp <= 0x7e) || cp === 0x09 || cp === 0x0a || cp === 0x0c || (cp >= 0xa0 && cp <= 0xd7ff)
+  || (cp >= 0xe000 && cp <= 0x10ffff && (cp & 0xffff) < 0xfffe && (cp < 0xfdd0 || cp > 0xfdef));
+
+// Numeric references with an optional ";"; zero, out of range and surrogates become '' (as mb_chr() in api.php)
+const decodeNumericRefs = (text) => text.replace(/&#(x[0-9a-f]+|[0-9]+);?/gi, (_ref, value) => {
+  const code = value[0] === 'x' || value[0] === 'X' ? parseInt(value.slice(1), 16) : parseInt(value, 10);
+  return code > 0 && code <= 0x10ffff && (code < 0xd800 || code > 0xdfff) ? String.fromCodePoint(code) : '';
+});
+
+// html_entity_decode(..., ENT_QUOTES | ENT_HTML5, 'UTF-8'): one left-to-right pass over references ending in ";"
+const decodeHtmlRefs = (text) => text.replace(/&(?:#(?:[xX]([0-9a-fA-F]+)|([0-9]+))|([A-Za-z0-9]+));/g, (ref, hex, dec, name) => {
+  if (name !== undefined) return Object.hasOwn(ASCII_ENTITIES, name) ? ASCII_ENTITIES[name] : ref;
+  const code = hex !== undefined ? parseInt(hex, 16) : parseInt(dec, 10);
+  return html5Allowed(code) ? String.fromCodePoint(code) : ref;
+});
+
+/**
+ * Whether an SVG can run script. Checked on the raw text and again after decoding character references
+ * (xlink:href="&#106;avascript:..."), with whitespace/control characters removed because browsers ignore them
+ * inside a URL scheme. Anything active is rejected instead of cleaned.
+ * @param {string} svg
+ * @returns {boolean}
+ */
+export function svgHasActiveContent(svg) {
+  if (SVG_ACTIVE_TAGS.test(svg) || SVG_OTHER_ENCODING.test(svg)) return true;
+  let decoded = svg;
+  // Nested references such as &amp;#106; decode one level per pass
+  for (let i = 0; i < 3; i++) {
+    const next = decodeHtmlRefs(decodeNumericRefs(decoded));
+    if (next === decoded) break;
+    decoded = next;
   }
+  if (SVG_ACTIVE_TAGS.test(decoded)) return true;
+  return SVG_SCRIPT_URL.test(decoded.replace(/[\x00-\x20]+/g, ''));
+}
+
+// SVG is served as an image but can carry script
+function assertSafeSvg(buf) {
+  if (svgHasActiveContent(buf.toString('utf8'))) throw new UploadError('File SVG berisi script dan tidak diizinkan.');
 }
 
 // Keeps a readable, filesystem/URL-safe stem of the client's file name

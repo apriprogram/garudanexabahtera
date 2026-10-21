@@ -196,22 +196,28 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
   - `default` (juga kosong/tidak dikenal) → `HeroBackground` (kanvas di atas). Hanya latar yang aktif yang dipasang, jadi
     loop kanvas tidak berjalan di mode lain. Sebelum setting dimuat tidak ada latar sama sekali (tanpa kedip).
   - `image` → `hero_images` (JSON array URL, urutan admin, tanpa duplikat, maks. 12): 1 gambar = statis; 2+ gambar =
-    crossfade tiap 6 detik (1,2 detik `ease-calm`, gambar baru memudar di atas gambar lama + skala 1,03 → 1). Gambar
-    dipasang bertahap (yang tampil, berikutnya, yang sudah pernah tampil); gambar pertama `loading="eager"`
-    `fetchPriority="high"`, lainnya lazy; `alt=""` (dekoratif); gambar yang gagal dimuat dilewati.
+    crossfade minimal tiap 6 detik: gambar baru SELALU memudar masuk dari 0 (1,2 detik `ease-calm`, skala 1,03 → 1 lewat
+    properti CSS `scale`) di atas gambar lama yang tetap penuh sampai pudarnya selesai, lalu gambar lama disembunyikan
+    (juga bila hanya 2 gambar bergantian). Hanya berganti ke gambar yang sudah selesai dimuat: belum termuat → ditunggu,
+    berganti begitu termuat. Gambar dipasang bertahap (yang tampil, berikutnya, yang sudah pernah tampil); gambar
+    pertama `loading="eager"` `fetchPriority="high"`, lainnya lazy; `alt=""` (dekoratif); gambar yang gagal dimuat
+    dilewati; semua gagal → kanvas bawaan (`HeroBackground`).
   - `video` → `hero_bg_video` (+ `hero_bg_video_poster` opsional): `<video muted loop playsInline>` tanpa kontrol/PiP,
     `object-cover`; `play()` hanya saat terlihat, tab aktif, tidak dijeda, bukan reduced motion, bukan Save-Data. Autoplay
-    diblokir (mis. iOS Low Power Mode) → status dijeda, poster/frame pertama tetap. Video rusak → disembunyikan, poster
-    tampil sebagai gambar (tanpa poster: tinggal latar putih).
+    diblokir (mis. iOS Low Power Mode) → status dijeda, poster/frame pertama tetap; `play()` yang dibatalkan
+    (`AbortError`, mis. hero cepat digulir keluar layar) tidak mengubah status. Video rusak → disembunyikan, poster
+    tampil sebagai gambar (tanpa poster / poster rusak: kanvas bawaan).
   - URL hanya path situs (`/…`, bukan `//`) atau `http(s)://` (S3); data:/blob:/javascript: diabaikan. Mode gambar tanpa
     gambar valid / mode video tanpa video valid → bawaan.
   - Di atas media: cuci putih netral agar teks terbaca (HP & tablet `bg-canvas/80` rata; ≥ 1024px `from-canvas/90
     via-canvas/75 to-canvas/40` dari kiri), pudar atas `h-28` (navbar transparan) & bawah `h-40` (strip layanan) sama
     dengan kanvas. Datar: tanpa scrim gelap, tanpa blur.
   - Tombol jeda bulat 40px (`bg-surface/90` + garis tipis, ikon `Pause`/`Play`, label "Jeda latar" / "Putar latar",
-    WCAG 2.2.2) untuk 2+ gambar dan video, di kiri bawah `container-site` (kanan bawah tertutup tombol WhatsApp melayang
-    di ≥ 640px). Berhenti otomatis saat hero di luar layar / tab disembunyikan. Reduced motion & Save-Data: mulai dijeda
-    (gambar pertama / poster saja, gambar berikutnya tidak dimuat), pengunjung bisa memutar.
+    WCAG 2.2.2) selama masih ada 2+ gambar yang bisa tampil, atau video yang masih bisa diputar, di kiri bawah
+    `container-site` (kanan bawah tertutup tombol WhatsApp melayang di ≥ 640px). Berhenti otomatis saat hero di luar
+    layar / tab disembunyikan. Reduced motion & Save-Data: mulai dijeda (gambar pertama / poster saja, gambar berikutnya
+    tidak dimuat kecuali gambar pertama gagal), pengunjung bisa memutar; reduced motion tanpa pudar & skala (langsung
+    berganti).
 - **Projects**: kartu sorotan lebar (≥ 3 proyek) + grid kartu datar bergambar.
 - **Proses**: kontrol segmen Template / Custom → bento (2 kartu langkah, 1 kartu tinggi, 1 kartu lebar biru muda).
 - **FAQ**: judul sticky kiri, accordion bernomor kanan (satu terbuka; terbuka = putih bergaris, tertutup = abu lembut).
