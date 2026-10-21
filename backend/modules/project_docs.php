@@ -5,10 +5,30 @@
 //
 // api.php calls handle_project_docs_action() after the access check (authorize_request): ANY_ROLE_ACTIONS,
 // CUSTOMER_ACTIONS and ADMIN_ACTIONS there already hold every pd_* action of spec §5; the handlers re-check roles
-// (Developer limits) as a second line.
+// (admin-only actions, the Developer limits, customer ownership) as a second line.
 //
-// FOUNDATION STUB: every pd_* action answers HTTP 501 {error: "Belum tersedia"} until the PHP backend owner replaces
-// this file with the real handlers (keep the function name and PD_ACTIONS).
+// Action `pd_<name>` runs pd_act_<name>($conn, $input, $user) from backend/modules/project_docs/:
+//   core.php           document set table, validation, formatting, settings, numbering, transactions, activity,
+//                      notifications, canonical JSON + content hash
+//   records.php        project bundles, derived stage / progress / missing documents, JSON shapes, MergeData
+//   files.php          private storage: signature PNGs (drawn or typed), payment proofs
+//   workspace.php      dashboard, clients, customer accounts, projects, milestones, settings
+//   documents.php      document lifecycle, approvals, signatures, customer projects and decisions
+//   finance.php        invoices, payments, receipts
+//   notifications.php  notifications (incl. due/overdue notices), pd_file
+// Uses from api.php: ApiError, db_run/db_all/db_one/db_affected_rows, client_ip, public_dir.
+//
+// Conventions: success → HTTP 200 + {success: true, ...data}; failure → {error, code?, errors?} with 400 VALIDATION,
+// 401, 403 FORBIDDEN, 404 NOT_FOUND, 409 LOCKED / DUPLICATE / STATE. Every state change runs in a transaction and
+// writes pd_activity.
+
+require_once __DIR__ . '/project_docs/core.php';
+require_once __DIR__ . '/project_docs/records.php';
+require_once __DIR__ . '/project_docs/files.php';
+require_once __DIR__ . '/project_docs/workspace.php';
+require_once __DIR__ . '/project_docs/documents.php';
+require_once __DIR__ . '/project_docs/finance.php';
+require_once __DIR__ . '/project_docs/notifications.php';
 
 const PD_ACTIONS = [
     // staff (admin + Developer); admin-only ones are in ADMIN_ACTIONS of api.php
@@ -27,5 +47,8 @@ const PD_ACTIONS = [
 /** Runs a pd_* action; returns false when `$action` is not one of them (api.php continues). */
 function handle_project_docs_action(mysqli $conn, string $action, array $input, ?array $user): bool {
     if (!in_array($action, PD_ACTIONS, true)) return false;
-    throw new ApiError('Belum tersedia', 501);
+    $data = call_user_func('pd_act_' . substr($action, 3), $conn, $input, $user);
+    // pd_file streams the file itself
+    if ($data !== null) echo json_encode(array_merge(['success' => true], $data), PD_JSON_FLAGS);
+    return true;
 }
