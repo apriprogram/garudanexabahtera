@@ -12,7 +12,8 @@ import { loadShowcase, type HeroMode, type ShowcaseData } from './hero/showcase'
  * - kiri: toggle mode Template / Custom, judul dua warna kata per kata, checklist, tombol
  *   ("Pilih Template" → #templates, "Pesan Website / Aplikasi Mobile Custom" → /pesan-custom);
  * - kanan (di HP: di bawah): bingkai browser yang menayangkan pratinjau template asli + rail langkah yang MENGIKUTI
- *   mode: alur pemesanan template, atau alur custom (konsultasi → penawaran → pengerjaan → rilis).
+ *   mode: alur pemesanan template, atau alur custom (konsultasi → penawaran → pengerjaan → rilis). Tayangan berhenti
+ *   selama "Lihat Demo" di-hover / difokus (`hold`), jadi demo yang dibuka sama dengan nama template yang terlihat.
  * Bila admin menyembunyikan section katalog (`disabled_sections` berisi "templates"), hero mulai di mode Custom dan
  * tombol mode Template tidak lagi menuju #templates yang tidak ada.
  * Saat digulir, isi sedikit memudar & visual sedikit miring (desktop saja, tidak untuk reduced motion).
@@ -27,6 +28,7 @@ const Hero: React.FC = () => {
   const [chosenMode, setChosenMode] = useState<HeroMode | null>(null);
   const mode: HeroMode = chosenMode ?? (templatesHidden ? 'custom' : 'template');
   const [step, setStep] = useState(0);
+  const [hold, setHold] = useState(false);
 
   // Alur baru selalu mulai dari langkah pertama, baik karena dipilih pengunjung maupun karena setting admin dimuat
   // (pola "sesuaikan state saat render" React, tanpa efek tambahan)
@@ -86,7 +88,13 @@ const Hero: React.FC = () => {
           className="hero-parallax lg:pl-[2%]"
           style={{ opacity: 'calc(1 - var(--p) * 1.2)', transform: 'translate3d(0, calc(var(--p) * -70px), 0)' }}
         >
-          <HeroIntro mode={mode} onModeChange={setChosenMode} current={current} templatesHidden={templatesHidden} />
+          <HeroIntro
+            mode={mode}
+            onModeChange={setChosenMode}
+            current={current}
+            templatesHidden={templatesHidden}
+            onHoldChange={setHold}
+          />
         </div>
 
         <Reveal variant="scale" delay={0.25}>
@@ -106,6 +114,7 @@ const Hero: React.FC = () => {
               slide={slide}
               onNext={nextSlide}
               templatesHidden={templatesHidden}
+              hold={hold}
             />
           </div>
         </Reveal>

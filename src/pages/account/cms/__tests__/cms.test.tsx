@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run --dir src/pages/account/cms
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, configure, fireEvent, getConfig, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEMPLATES, resolveContent } from '../../../../templates';
 import type { TemplateField } from '../../../../templates/types';
 import SiteEditor from '../../SiteEditor';
 import { countNewImages } from '../content';
+import { confirmLeave } from '../useLeaveGuard';
 import { isValidLink, validateContent, validateFieldValue } from '../validation';
 
 const field = (type: TemplateField['type'], extra: Partial<TemplateField> = {}): TemplateField => ({ type, key: 'x', label: 'X', ...extra });
@@ -83,6 +84,8 @@ function mockApi(overrides: Partial<Record<string, () => Response>> = {}) {
       const url = new URL(String(input), 'http://localhost');
       const action = url.searchParams.get('action') ?? '';
       if (overrides[action]) return overrides[action]!();
+      // Pengaturan website publik (nomor WhatsApp untuk tautan bantuan)
+      if (action === 'get_settings') return json(200, { footer_whatsapp: '0812-1111-2222' });
       if (action === 'customer_get_site') return json(200, { success: true, site: siteOut() });
       if (action === 'customer_save_site_content') {
         const body = JSON.parse(String(init?.body));
@@ -106,7 +109,18 @@ const renderEditor = () =>
     </MemoryRouter>,
   );
 
-describe('SiteEditor', () => {
+// Setiap langkah di sini merender ulang seluruh editor + pratinjau template (±1000 elemen jsdom). Sendirian tes terlama
+// ±1 dtk, tetapi saat suite penuh berjalan paralel (worker lain, server `php -S`) atau mesin sibuk, memuat situs saja
+// terukur 0,5–8 dtk dan satu tes sampai 11 dtk, melewati batas bawaan findBy*/waitFor (1 dtk) dan vitest (5 dtk).
+// Batas dilonggarkan hanya untuk blok ini; tes yang benar-benar rusak tetap gagal, hanya lebih lambat.
+describe('SiteEditor', { timeout: 30_000 }, () => {
+  let defaultAsyncTimeout = 1000;
+  beforeAll(() => {
+    defaultAsyncTimeout = getConfig().asyncUtilTimeout;
+    configure({ asyncUtilTimeout: 10_000 });
+  });
+  afterAll(() => configure({ asyncUtilTimeout: defaultAsyncTimeout }));
+
   beforeEach(() => {
     // jsdom tidak punya API gulir elemen
     Element.prototype.scrollIntoView = vi.fn();
@@ -117,6 +131,8 @@ describe('SiteEditor', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    localStorage.clear();
   });
 
   it('memuat situs, mengedit field, pratinjau ikut berubah, lalu menyimpan', async () => {
@@ -175,13 +191,107 @@ describe('SiteEditor', () => {
     expect(screen.getAllByRole('button', { name: /^Hapus Layanan/ })).toHaveLength(before + 1);
   });
 
-  it('situs dinonaktifkan → hanya baca', async () => {
+  it('situs dinonaktifkan → hanya baca, bantuan lewat WhatsApp', async () => {
     site.status = 'suspended';
     mockApi();
     renderEditor();
     expect(await screen.findByText('Situs sedang dinonaktifkan')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Simpan$/ })).not.toBeInTheDocument();
     expect(screen.getByLabelText('Nama perusahaan')).toBeDisabled();
+    const help = screen.getByRole('link', { name: /Hubungi kami via WhatsApp/ });
+    await waitFor(() => expect(help.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/6281211112222\?text=/));
+    expect(decodeURIComponent(help.getAttribute('href')!)).toContain('contoh-usaha.test');
+    expect(help).toHaveAttribute('target', '_blank');
+    // Situs nonaktif tidak menawarkan tautan sementara
+    expect(screen.queryByRole('link', { name: /Buka situs sementara/ })).not.toBeInTheDocument();
+  });
+
+  it('bilah atas HP: status simpan tidak dobel, teks pendek di HP, tautan sementara tanpa path mentah', async () => {
+    mockApi();
+    renderEditor();
+    await screen.findByRole('heading', { name: 'Kelola konten situs' });
+    // Kelas display ditentukan pemanggil; kelas dasar tanpa inline-flex (dulu mengalahkan `hidden` → status tampil dua kali)
+    const statuses = screen.getAllByRole('status').filter((el) => /tersimpan/i.test(el.textContent ?? ''));
+    expect(statuses).toHaveLength(2);
+    const [desktop, phone] = statuses;
+    expect(desktop.className.split(/\s+/)).toEqual(expect.arrayContaining(['hidden', 'md:inline-flex']));
+    expect(desktop.className.split(/\s+/)).not.toContain('inline-flex');
+    expect(phone.className.split(/\s+/)).toEqual(expect.arrayContaining(['inline-flex', 'md:hidden', 'min-w-0']));
+    expect(within(phone).getByText('Tersimpan')).toHaveClass('sm:hidden');
+    expect(within(phone).getByText('Semua perubahan tersimpan')).toHaveClass('max-sm:hidden');
+    expect(screen.getByRole('button', { name: /Edit konten/ })).toHaveClass('max-sm:h-8');
+
+    const temp = screen.getByRole('link', { name: /Buka situs sementara/ });
+    expect(temp).toHaveAttribute('href', '/situs/1');
+    expect(screen.queryByText('/situs/1')).not.toBeInTheDocument();
+
+    // Bantuan Logo tidak mengulang format & batas ukuran
+    const logoHelp = screen.getByText(/PNG\/SVG berlatar transparan/);
+    expect(logoHelp).toHaveTextContent('Gambar besar otomatis diperkecil.');
+    expect(logoHelp).not.toHaveTextContent('PNG, JPG, WEBP');
+  });
+
+  it('perubahan belum disimpan dicadangkan lokal dan bisa dipulihkan saat editor dibuka lagi', async () => {
+    mockApi();
+    renderEditor();
+    await screen.findByRole('heading', { name: 'Kelola konten situs' });
+    fireEvent.change(screen.getByLabelText('Nama perusahaan'), { target: { value: 'PT Draf Lokal' } });
+    await waitFor(() => expect(localStorage.getItem('cms-draft-1')).toContain('PT Draf Lokal'));
+
+    // Sesi habis / tab tertutup sebelum simpan → buka lagi
+    cleanup();
+    renderEditor();
+    expect(await screen.findByText('Pulihkan perubahan yang belum disimpan?')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nama perusahaan')).not.toHaveValue('PT Draf Lokal');
+    fireEvent.click(screen.getByRole('button', { name: 'Pulihkan' }));
+    expect(screen.getByLabelText('Nama perusahaan')).toHaveValue('PT Draf Lokal');
+    expect(screen.getByRole('button', { name: /^Simpan$/ })).toBeEnabled();
+
+    // Setelah tersimpan di server, draf dihapus
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^Simpan$/ }));
+    });
+    expect(await screen.findByText(/berhasil disimpan/i)).toBeInTheDocument();
+    expect(localStorage.getItem('cms-draft-1')).toBeNull();
+  });
+
+  it('draf bisa dibuang; draf yang sama dengan isi server tidak ditawarkan', async () => {
+    localStorage.setItem('cms-draft-1', JSON.stringify({ content: { brand: { company_name: 'PT Lama' } }, savedAt: Date.now() }));
+    mockApi();
+    renderEditor();
+    fireEvent.click(await screen.findByRole('button', { name: 'Buang' }));
+    expect(screen.queryByText('Pulihkan perubahan yang belum disimpan?')).not.toBeInTheDocument();
+    expect(localStorage.getItem('cms-draft-1')).toBeNull();
+    cleanup();
+
+    const def = TEMPLATES['corporate-nexa'];
+    localStorage.setItem('cms-draft-1', JSON.stringify({ content: resolveContent(def, null), savedAt: Date.now() }));
+    renderEditor();
+    await screen.findByRole('heading', { name: 'Kelola konten situs' });
+    expect(screen.queryByText('Pulihkan perubahan yang belum disimpan?')).not.toBeInTheDocument();
+    expect(localStorage.getItem('cms-draft-1')).toBeNull();
+  });
+
+  it('keluar akun dengan perubahan belum disimpan ditanyakan dulu (confirmLeave)', async () => {
+    mockApi();
+    renderEditor();
+    await screen.findByRole('heading', { name: 'Kelola konten situs' });
+    const confirm = vi.spyOn(window, 'confirm');
+    // Tanpa perubahan: tidak bertanya
+    expect(confirmLeave()).toBe(true);
+    expect(confirm).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText('Nama perusahaan'), { target: { value: 'PT Belum Simpan' } });
+    confirm.mockReturnValueOnce(false);
+    expect(confirmLeave()).toBe(false);
+    confirm.mockReturnValueOnce(true);
+    expect(confirmLeave()).toBe(true);
+    expect(confirm).toHaveBeenCalledTimes(2);
+
+    // Sudah setuju pergi: beforeunload (logout → /masuk) tidak memunculkan dialog kedua
+    const event = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
   });
 
   it('template tidak dikenal & situs bukan milik sendiri', async () => {

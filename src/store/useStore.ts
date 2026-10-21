@@ -2,12 +2,10 @@ import { create } from 'zustand';
 
 interface AppState {
   theme: 'light' | 'dark';
-  language: 'id' | 'en';
   isSearchActive: boolean;
   isSidebarCollapsed: boolean;
   isMobileSidebarOpen: boolean;
   toggleTheme: () => void;
-  setLanguage: (lang: 'id' | 'en') => void;
   toggleSearch: (active?: boolean) => void;
   toggleSidebar: () => void;
   toggleMobileSidebar: (open?: boolean) => void;
@@ -21,7 +19,6 @@ document.body.classList.toggle('light-theme', initialTheme === 'light');
 
 export const useStore = create<AppState>((set) => ({
   theme: initialTheme,
-  language: (localStorage.getItem('language') as 'id' | 'en') || 'id',
   isSearchActive: false,
   isSidebarCollapsed: localStorage.getItem('adminSidebarCollapsed') === '1',
   isMobileSidebarOpen: false,
@@ -35,11 +32,6 @@ export const useStore = create<AppState>((set) => ({
       document.body.classList.remove('light-theme');
     }
     return { theme: newTheme };
-  }),
-  
-  setLanguage: (lang) => set(() => {
-    localStorage.setItem('language', lang);
-    return { language: lang };
   }),
   
   toggleSearch: (active) => set((state) => ({

@@ -21,6 +21,8 @@ interface HeroShowcaseProps {
   onNext: () => void;
   /** Katalog #templates disembunyikan admin → layar contoh tidak menautkan ke sana */
   templatesHidden: boolean;
+  /** Berhenti sementara tanpa mengubah tombol jeda (mis. selama "Lihat Demo" di-hover / difokus) */
+  hold?: boolean;
 }
 
 const DOMAIN = 'bisnisanda.com';
@@ -30,10 +32,23 @@ const DOMAIN = 'bisnisanda.com';
  * template asli bergantian, dengan rail langkah di bawahnya yang MENGIKUTI mode hero:
  * - Template: Pilih template → Bayar via Midtrans → Domain aktif → Kelola lewat CMS;
  * - Custom: Konsultasi → Penawaran → Pengerjaan → Rilis (tanpa harga/pembayaran template).
- * Langkah aktif terisi perlahan; klik langkah untuk melompat; bisa dijeda (WCAG 2.2.2).
- * Berhenti saat tidak terlihat, tidak berputar otomatis bila reduced motion.
+ * Langkah aktif terisi perlahan; klik langkah untuk melompat; bisa dijeda (WCAG 2.2.2). Mulai 1280px label keempat
+ * langkah terlihat sekaligus (di bawahnya hanya langkah aktif yang berlabel).
+ * Berhenti saat tidak terlihat atau `hold`, tidak berputar otomatis bila reduced motion.
+ * Mode Custom memakai pratinjau template sebagai contoh tampilan (diberi keterangan "Contoh tampilan") sampai ada
+ * visual proyek custom asli.
  */
-export const HeroShowcase: React.FC<HeroShowcaseProps> = ({ mode, step, onStep, items, sample, slide, onNext, templatesHidden }) => {
+export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
+  mode,
+  step,
+  onStep,
+  items,
+  sample,
+  slide,
+  onNext,
+  templatesHidden,
+  hold = false,
+}) => {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(() => !prefersReducedMotion());
   const [onScreen, setOnScreen] = useState(true);
@@ -60,7 +75,7 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({ mode, step, onStep, 
   const steps = flow.steps;
   const custom = mode === 'custom';
   const ready = items !== null && items.length > 0;
-  const running = ready && playing && onScreen;
+  const running = ready && playing && onScreen && !hold;
   const current = ready ? items[Math.min(slide, items.length - 1)] : null;
   // Situs sudah online: template sejak domain aktif (langkah 3), custom saat rilis (langkah 4)
   const live = custom ? step >= 3 : step >= 2;
@@ -167,6 +182,18 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({ mode, step, onStep, 
                 </SmartLink>
               )}
 
+              {custom && (
+                // HP: disembunyikan selama kartu tengah (langkah 1-2) tampil, agar tidak bertumpuk di layar yang pendek
+                <span
+                  className={`pointer-events-none absolute left-2.5 top-2.5 z-[3] inline-flex h-6 items-center rounded-full bg-surface/90 px-2.5 text-[11px] font-medium text-muted ring-1 ring-inset ring-line backdrop-blur sm:left-3 sm:top-3 sm:h-7 sm:px-3 sm:text-xs ${
+                    step < 2 ? 'max-sm:hidden' : ''
+                  }`}
+                  aria-hidden
+                >
+                  Contoh tampilan
+                </span>
+              )}
+
               {current &&
                 (custom ? (
                   <CustomOverlay key={`custom-${step}`} step={step} />
@@ -180,11 +207,12 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({ mode, step, onStep, 
           <span className="pointer-events-none absolute inset-0 z-[3] rounded-[inherit] ring-1 ring-inset ring-fg/[0.06]" aria-hidden />
 
           {ready && (
+            // Tombol toggle: label tetap + aria-pressed (ditekan = dijeda); hanya ikonnya yang berganti
             <button
               type="button"
               onClick={() => setPlaying((value) => !value)}
               className="absolute right-2.5 top-2.5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface/90 text-fg ring-1 ring-inset ring-line backdrop-blur transition-colors hover:bg-surface max-sm:after:absolute max-sm:after:-inset-1 sm:right-3 sm:top-3 sm:h-9 sm:w-9"
-              aria-label={playing ? 'Jeda tayangan' : 'Putar tayangan'}
+              aria-label="Jeda tayangan"
               aria-pressed={!playing}
             >
               {playing ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
@@ -206,20 +234,20 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({ mode, step, onStep, 
       </div>
 
       {/* ---------- Rail langkah ---------- */}
-      <ol className="mt-3 flex items-center gap-2 sm:mt-4" aria-label={flow.label}>
+      <ol className="mt-3 flex items-center gap-2 sm:mt-4 xl:gap-1.5" aria-label={flow.label}>
         {steps.map((item, index) => {
           const on = index === step;
           const done = index < step;
           return (
-            <li key={item.key} className={on ? 'min-w-0 flex-1 min-[1440px]:flex-auto' : 'shrink-0 min-[1440px]:min-w-0 min-[1440px]:flex-auto min-[1440px]:shrink'}>
+            <li key={item.key} className={on ? 'min-w-0 flex-1 xl:flex-auto' : 'shrink-0 xl:min-w-0 xl:flex-auto xl:shrink'}>
               <button
                 type="button"
                 onClick={() => onStep(index)}
                 disabled={!ready}
                 aria-current={on ? 'step' : undefined}
                 aria-label={`Langkah ${index + 1}: ${item.label}`}
-                className={`relative flex h-9 w-full items-center rounded-full p-1 text-left ring-1 ring-inset transition-colors after:absolute after:inset-x-0 after:-inset-y-1 disabled:cursor-default sm:h-11 sm:p-1.5 sm:after:hidden ${
-                  on ? 'bg-surface pr-3 ring-line sm:pr-4' : 'bg-alt ring-transparent hover:bg-line/70 min-[1440px]:pr-4'
+                className={`relative flex h-9 w-full items-center rounded-full p-1 text-left ring-1 ring-inset transition-colors after:absolute after:inset-x-0 after:-inset-y-1 disabled:cursor-default sm:h-11 sm:p-1.5 sm:after:hidden xl:h-8 xl:p-1 ${
+                  on ? 'bg-surface pr-3 ring-line sm:pr-4 xl:pr-2' : 'bg-alt ring-transparent hover:bg-line/70 xl:pr-2'
                 }`}
               >
                 {/* Progres langkah = isian biru muda di belakang label */}
@@ -233,9 +261,9 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({ mode, step, onStep, 
                     />
                   )}
                 </span>
-                <span className="relative flex min-w-0 items-center gap-2">
+                <span className="relative flex min-w-0 items-center gap-2 xl:gap-1.5">
                   <span
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold transition-colors sm:h-8 sm:w-8 ${
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold transition-colors sm:h-8 sm:w-8 xl:h-6 xl:w-6 ${
                       on ? 'bg-fg text-white' : done ? 'bg-primary text-white' : 'bg-surface text-muted ring-1 ring-inset ring-line'
                     }`}
                     aria-hidden
@@ -243,8 +271,8 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({ mode, step, onStep, 
                     {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : index + 1}
                   </span>
                   <span
-                    className={`truncate text-[11px] font-semibold leading-tight sm:text-[13px] ${
-                      on ? 'text-fg' : 'hidden text-muted min-[1440px]:inline'
+                    className={`truncate text-[11px] font-semibold leading-tight sm:text-[13px] xl:text-[12px] ${
+                      on ? 'text-fg' : 'hidden text-muted xl:inline'
                     }`}
                   >
                     {item.label}
@@ -353,13 +381,11 @@ const TemplateOverlay: React.FC<{ step: number; item: ShowcaseItem; sample: bool
           {!sample && item.price !== null ? formatRupiah(item.price) : 'Pembayaran diterima'}
         </p>
         <p className="truncate text-[11px] text-muted sm:text-xs">Template {item.name}</p>
-        <div className="mt-2 flex flex-wrap gap-1 max-sm:hidden sm:mt-3 sm:gap-1.5" aria-hidden>
-          {['QRIS', 'Virtual Account', 'E-wallet'].map((method) => (
-            <span key={method} className="rounded-full bg-alt px-2 py-0.5 text-[10px] font-medium text-muted sm:text-[11px]">
-              {method}
-            </span>
-          ))}
-        </div>
+        {/* Metode pembayaran sengaja tidak dirinci (mengikuti yang tersedia di Midtrans) */}
+        <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-alt px-2 py-0.5 text-[10px] font-medium text-muted max-sm:hidden sm:mt-3 sm:text-[11px]">
+          <Lock className="h-3 w-3" aria-hidden />
+          Pembayaran aman via Midtrans
+        </p>
       </CenterCard>
     );
   }

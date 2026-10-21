@@ -107,7 +107,7 @@ export default function CustomOrder() {
               </div>
 
               {/* Formulir / layar sukses */}
-              <div ref={panelRef} id="formulir" className="scroll-mt-[calc(var(--nav-h)+2rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1">
+              <div ref={panelRef} id="formulir" className="scroll-mt-[calc(var(--nav-offset)+2rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1">
                 <div className="card-site p-5 sm:p-8">
                   {result ? (
                     <SuccessPanel

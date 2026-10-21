@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, X, ChevronDown, Globe, Globe2, ArrowRight, UserRound,
@@ -7,13 +7,14 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { getHiddenSections, useSiteSettings } from '../../hooks/useSiteSettings';
 import { useNavbarMenus, type NavbarMenuRow } from '../../hooks/useNavbarMenus';
 import { useSectionSpy } from '../../hooks/useSectionSpy';
-import { getToken } from '../../lib/auth';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { accountLinkFor, useSessionRole } from '../../hooks/useSessionRole';
 import { BrandLogo } from '../ui/LogoMark';
+import { SkipLink } from '../ui/SkipLink';
 import { SmartLink } from './SmartLink';
 
 interface MenuEntry {
@@ -50,9 +51,9 @@ const normalizeHref = (raw: string | null | undefined): string => {
 
 const bySortOrder = (a: NavbarMenuRow, b: NavbarMenuRow) => a.sort_order - b.sort_order || a.id - b.id;
 
-/** Baris datar navbar_menus → menu utama + submenu (1 level), teks sesuai bahasa aktif */
-const toNavItems = (rows: NavbarMenuRow[], en: boolean): NavItem[] => {
-  const label = (row: NavbarMenuRow) => (en && row.label_en) || row.label_id;
+/** Baris datar navbar_menus → menu utama + submenu (1 level). Website hanya berbahasa Indonesia: label_id. */
+const toNavItems = (rows: NavbarMenuRow[]): NavItem[] => {
+  const label = (row: NavbarMenuRow) => row.label_id;
   return rows
     .filter((row) => row.parent_id === null)
     .sort(bySortOrder)
@@ -68,27 +69,11 @@ const toNavItems = (rows: NavbarMenuRow[], en: boolean): NavItem[] => {
           return {
             icon: <Icon />,
             title: label(child),
-            desc: (en && child.description_en) || child.description_id || '',
+            desc: child.description_id || '',
             href: normalizeHref(child.url),
           };
         }),
     }));
-};
-
-/** Peran akun yang sedang login (dari sesi di localStorage), atau null bila belum login / sesi habis. */
-const readSessionRole = (): string | null => {
-  try {
-    if (!getToken()) return null;
-    const user = JSON.parse(localStorage.getItem('currentUser') || 'null') as { role?: unknown } | null;
-    return typeof user?.role === 'string' ? user.role : null;
-  } catch {
-    return null;
-  }
-};
-
-const subscribeSession = (onChange: () => void) => {
-  window.addEventListener('storage', onChange);
-  return () => window.removeEventListener('storage', onChange);
 };
 
 /** id section dari href `#templates` (null untuk tautan lain). */
@@ -107,7 +92,6 @@ interface Pill {
  * pada konten pertamanya.
  */
 const Navbar: React.FC = () => {
-  const { language, setLanguage } = useStore();
   const { t } = useTranslation();
   // Berlangganan perubahan rute: navbar dirender ulang saat pindah halaman (tombol akun ikut diperbarui)
   const { pathname } = useLocation();
@@ -118,8 +102,16 @@ const Navbar: React.FC = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [pill, setPill] = useState<Pill>({ left: 0, width: 0, visible: false });
+  const toggleRef = useRef<HTMLButtonElement>(null);
   // Dibaca ulang tiap render (mis. setelah pindah halaman) dan saat login/logout di tab lain
-  const role = useSyncExternalStore(subscribeSession, readSessionRole, () => null);
+  const role = useSessionRole();
+  const closeMenu = () => setIsMenuOpen(false);
+  // Menu HP terbuka: Tab berputar di header (logo, CTA, tombol menu, isi menu); Escape menutup & fokus kembali ke tombol menu
+  const headerRef = useFocusTrap<HTMLElement>(isMenuOpen, {
+    initialFocus: 'none',
+    returnFocusRef: toggleRef,
+    onEscape: closeMenu,
+  });
 
   // Latar mengikuti posisi gulir (rAF agar ringan)
   useEffect(() => {
@@ -140,14 +132,13 @@ const Navbar: React.FC = () => {
   }, []);
 
   // Menu dari admin (Navbar Manager); bila kosong/gagal dimuat, pakai menu bawaan
-  const en = language === 'en';
   const defaultItems: NavItem[] = [
     { key: 'templates', label: t('nav-templates'), href: '#templates', children: [] },
     { key: 'projects', label: t('nav-projects'), href: '#projects', children: [] },
     { key: 'process', label: t('nav-process'), href: '#process', children: [] },
     { key: 'faq', label: 'FAQ', href: '#faq', children: [] },
   ];
-  const source = !menusLoaded ? [] : menus.length > 0 ? toNavItems(menus, en) : defaultItems;
+  const source = !menusLoaded ? [] : menus.length > 0 ? toNavItems(menus) : defaultItems;
 
   // Tautan ke section yang disembunyikan admin (setting disabled_sections) atau sudah dihapus ikut disembunyikan
   const hidden = getHiddenSections(settings);
@@ -170,37 +161,21 @@ const Navbar: React.FC = () => {
   const desktopNav = compact ? 'lg:flex' : 'xl:flex';
   const mobileOnly = compact ? 'lg:hidden' : 'xl:hidden';
 
+  // Menu HP terbuka: halaman di belakang tidak ikut tergulir; menu tertutup sendiri saat layar melebar ke menu desktop
   useEffect(() => {
     if (!isMenuOpen) return undefined;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setIsMenuOpen(false);
+    const root = document.documentElement;
+    const previousOverflow = root.style.overflow;
+    root.style.overflow = 'hidden';
     const onResize = () => window.innerWidth >= (compact ? 1024 : 1280) && setIsMenuOpen(false);
-    document.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
     return () => {
-      document.removeEventListener('keydown', onKey);
+      root.style.overflow = previousOverflow;
       window.removeEventListener('resize', onResize);
     };
   }, [isMenuOpen, compact]);
 
-  const toggleLanguage = () => {
-    const newLang = language === 'id' ? 'en' : 'id';
-    setLanguage(newLang);
-
-    // Google Translate memakai cookie googtrans berformat /bahasa_asal/bahasa_tujuan
-    const gtValue = `/id/${newLang}`;
-    document.cookie = `googtrans=${gtValue}; path=/`;
-    document.cookie = `googtrans=${gtValue}; path=/; domain=${window.location.hostname}`;
-
-    // Muat ulang agar terjemahan diterapkan
-    window.location.reload();
-  };
-
-  const account =
-    role === 'customer'
-      ? { to: '/akun', label: t('nav-account') }
-      : role === 'admin' || role === 'user'
-        ? { to: '/admin', label: t('nav-admin') }
-        : { to: '/masuk', label: t('nav-login') };
+  const account = accountLinkFor(role);
 
   // Sorotan hover meluncur: diukur dari <li> saat hover/fokus (tanpa efek tata letak)
   const showPill = (el: HTMLElement | null) => {
@@ -209,16 +184,19 @@ const Navbar: React.FC = () => {
   };
   const hidePill = () => setPill((p) => ({ ...p, visible: false }));
 
-  const closeMenu = () => setIsMenuOpen(false);
-  const langLabel = language === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia';
-
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
+      ref={headerRef}
+      // Safe-area atas untuk mode standalone/PWA (di browser biasa nilainya 0); kiri-kanan diurus container-site.
+      // Tinggi total header = --nav-offset (bar --nav-h + safe-area), tanpa garis bawah / shadow di state mana pun.
+      className={`fixed inset-x-0 top-0 z-50 pt-[env(safe-area-inset-top)] transition-colors duration-300 ${
         isMenuOpen ? 'bg-canvas' : scrolled ? 'bg-canvas/85 backdrop-blur-xl backdrop-saturate-150' : 'bg-transparent'
       }`}
     >
-      <nav aria-label="Navigasi utama" className="container-site flex h-nav items-center gap-3">
+      {/* Tautan pertama di urutan Tab: lompat ke <main> (id="konten" di beranda, <main> pertama di halaman lain) */}
+      <SkipLink />
+
+      <nav aria-label="Navigasi utama" className="container-site flex h-(--nav-h) items-center gap-3">
         {/* Kiri: logo */}
         <Link
           to="/"
@@ -277,19 +255,8 @@ const Navbar: React.FC = () => {
           })}
         </ul>
 
-        {/* Kanan: bahasa, akun, CTA, tombol menu HP */}
+        {/* Kanan: akun, CTA, tombol menu HP */}
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <button
-            type="button"
-            onClick={toggleLanguage}
-            className="hidden h-9 items-center gap-1.5 rounded-full px-3 text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:inline-flex"
-            aria-label={langLabel}
-            title={langLabel}
-          >
-            <Globe2 className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
-            <span className="text-xs font-semibold uppercase">{language}</span>
-          </button>
-
           <Link
             to={account.to}
             className="hidden h-9 items-center gap-2 rounded-full px-3.5 text-[14px] font-medium text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:inline-flex"
@@ -304,6 +271,7 @@ const Navbar: React.FC = () => {
           </SmartLink>
 
           <button
+            ref={toggleRef}
             type="button"
             className={`relative -mr-1.5 flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors after:absolute after:-inset-1 hover:bg-fg/[0.06] sm:mr-0 ${mobileOnly}`}
             onClick={() => setIsMenuOpen((open) => !open)}
@@ -311,20 +279,31 @@ const Navbar: React.FC = () => {
             aria-expanded={isMenuOpen}
             aria-controls="menu-hp"
           >
-            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {isMenuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
           </button>
         </div>
       </nav>
 
+      {/* Latar redup datar (tanpa blur) di bawah menu HP: ketuk untuk menutup. -z-10 = di bawah isi header & menu */}
+      {isMenuOpen && (
+        <div
+          aria-hidden
+          onClick={closeMenu}
+          className={`absolute inset-x-0 top-full -z-10 h-[100lvh] animate-fade-in bg-fg/20 motion-reduce:animate-none ${mobileOnly}`}
+        />
+      )}
+
       {/* Menu HP: lapisan di bawah navbar (tidak menggeser tata letak), membuka dengan animasi tinggi */}
-      <div
+      <nav
         id="menu-hp"
+        aria-label="Menu"
+        inert={!isMenuOpen}
         className={`absolute inset-x-0 top-full grid transition-[grid-template-rows] duration-300 ease-out ${mobileOnly} ${
           isMenuOpen ? 'grid-rows-[1fr] border-b border-line bg-canvas' : 'grid-rows-[0fr]'
         }`}
       >
-        <div className="overflow-hidden" inert={!isMenuOpen}>
-          <ul className="container-site max-h-[calc(100svh-var(--nav-h))] space-y-1 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pt-1">
+        <div className="overflow-hidden">
+          <ul className="container-site max-h-[calc(100svh-var(--nav-offset))] space-y-1 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pt-1">
             {navItems.map((item, index) => {
               const id = anchorId(item.href);
               const current = Boolean(id) && id === activeId;
@@ -350,17 +329,6 @@ const Navbar: React.FC = () => {
                 </li>
               );
             })}
-            <li className="sm:hidden">
-              <button
-                type="button"
-                onClick={toggleLanguage}
-                className="flex min-h-11 w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left text-sm font-medium text-fg transition-colors hover:bg-alt"
-              >
-                <Globe2 className="h-4 w-4 text-subtle" aria-hidden />
-                {language === 'id' ? 'English' : 'Bahasa Indonesia'}
-                <span className="ml-auto rounded-full bg-alt px-2 py-0.5 text-[11px] font-semibold uppercase text-muted">{language}</span>
-              </button>
-            </li>
             <li className="grid grid-cols-2 gap-2 border-t border-line pt-3 sm:hidden">
               <Link to={account.to} onClick={closeMenu} className="btn btn-outline">
                 {role && <UserRound className="h-4 w-4 text-primary" aria-hidden />}
@@ -372,7 +340,7 @@ const Navbar: React.FC = () => {
             </li>
           </ul>
         </div>
-      </div>
+      </nav>
     </header>
   );
 };

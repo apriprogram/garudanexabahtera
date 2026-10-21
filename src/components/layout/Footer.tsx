@@ -5,12 +5,23 @@ import { BrandLogo } from '../ui/LogoMark';
 import { Reveal } from '../ui/Reveal';
 import { SplitText } from '../ui/SplitText';
 import { SmartLink } from './SmartLink';
-import { getHiddenSections, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
+import {
+  DEFAULT_CONTACT_EMAIL,
+  DEFAULT_CONTACT_PHONE,
+  displayPhone,
+  getHiddenSections,
+  getWhatsappNumber,
+  telHref,
+  useSiteSettings,
+  whatsappUrl,
+} from '../../hooks/useSiteSettings';
+import { sessionKind, useSessionRole, type SessionKind } from '../../hooks/useSessionRole';
+import { LEGAL_LINKS } from '../../lib/legal';
 
 const DEFAULTS = {
   footer_address: 'Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis.',
-  footer_phone: '085188009152',
-  footer_email: 'info@garudanexa.co.id',
+  footer_phone: DEFAULT_CONTACT_PHONE,
+  footer_email: DEFAULT_CONTACT_EMAIL,
   footer_copyright: `© ${new Date().getFullYear()} PT. Garuda Nexa Bahtera. Semua hak dilindungi.`,
   cta_title: 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!',
   cta_button: 'Hubungi WhatsApp',
@@ -26,11 +37,12 @@ interface FooterLink {
   section?: string;
 }
 
+// ?layanan= memilih jenis layanan di form /pesan-custom (dibaca CustomOrderForm)
 const SERVICE_LINKS: FooterLink[] = [
   { label: 'Template website', href: '#templates', section: 'templates' },
-  { label: 'Website custom', href: '/pesan-custom' },
-  { label: 'Aplikasi mobile custom', href: '/pesan-custom' },
-  { label: 'Konsultasi gratis', href: '#kontak' },
+  { label: 'Website custom', href: '/pesan-custom?layanan=website' },
+  { label: 'Aplikasi mobile custom', href: '/pesan-custom?layanan=mobile' },
+  { label: 'Konsultasi Gratis', href: '#kontak' },
 ];
 
 const EXPLORE_LINKS: FooterLink[] = [
@@ -40,11 +52,15 @@ const EXPLORE_LINKS: FooterLink[] = [
   { label: 'FAQ', href: '#faq', section: 'faq' },
 ];
 
-const ACCOUNT_LINKS: FooterLink[] = [
-  { label: 'Masuk', href: '/masuk' },
-  { label: 'Daftar akun', href: '/daftar' },
-  { label: 'Akun saya', href: '/akun' },
-];
+/** Kolom Akun mengikuti sesi (sama seperti tombol akun di Navbar): tamu, pembeli template, atau staf. */
+const ACCOUNT_LINKS: Record<SessionKind, FooterLink[]> = {
+  guest: [
+    { label: 'Masuk', href: '/masuk' },
+    { label: 'Daftar Akun', href: '/daftar' },
+  ],
+  customer: [{ label: 'Akun Saya', href: '/akun' }],
+  staff: [{ label: 'Panel Admin', href: '/admin' }],
+};
 
 const TikTok: React.FC<{ className?: string }> = ({ className }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
@@ -70,7 +86,7 @@ const splitCtaTitle = (title: string): [string, string] => {
 
 /**
  * Alamat email yang boleh terpotong baris HANYA setelah "@", jadi di kolom sempit (HP) menjadi "info@" /
- * "garudanexa.co.id" dengan domain utuh, bukan menyisakan satu huruf. `overflow-wrap:anywhere` hanya cadangan untuk
+ * "garudanexa.com" dengan domain utuh, bukan menyisakan satu huruf. `overflow-wrap:anywhere` hanya cadangan untuk
  * domain yang tetap lebih lebar dari kolomnya.
  */
 const EmailText: React.FC<{ email: string }> = ({ email }) => {
@@ -126,6 +142,7 @@ interface FooterProps {
 const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
   const { settings } = useSiteSettings();
   const pick = (key: keyof typeof DEFAULTS) => settings[key]?.trim() || DEFAULTS[key];
+  const session = sessionKind(useSessionRole());
 
   const hidden = getHiddenSections(settings);
   const whatsapp = getWhatsappNumber(settings);
@@ -154,7 +171,7 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
           Anchor #kontak sengaja di pembungkus polos: kartu di dalamnya overflow-hidden (jadi scroll container, sehingga
           scroll-margin diabaikan Chrome) dan ikut transform animasi Reveal (posisi visualnya bergeser saat diukur).
         */}
-        <div id="kontak" className="container-site scroll-mt-[calc(var(--nav-h)+1rem)] lg:scroll-mt-[calc(var(--nav-h)+1.5rem)]">
+        <div id="kontak" className="container-site scroll-mt-[calc(var(--nav-offset)+1rem)] lg:scroll-mt-[calc(var(--nav-offset)+1.5rem)]">
           <Reveal variant="scale">
             <div className="relative isolate overflow-hidden rounded-[24px] bg-primary px-5 py-12 text-center text-white sm:rounded-[28px] sm:px-12 sm:py-20 lg:py-24">
               {/* Dekorasi: cahaya bergerak pelan + pola titik putih yang memudar ke tepi */}
@@ -191,16 +208,16 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
                     {pick('cta_button')}
                   </a>
                   <Link to="/pesan-custom" className="btn btn-on-brand btn-xl">
-                    Isi form pesanan custom
+                    Pesan Custom
                   </Link>
                 </div>
                 <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-1 sm:mt-8">
                   <a
-                    href={`tel:${ctaPhone.replace(/[^\d+]/g, '')}`}
+                    href={telHref(ctaPhone)}
                     className="inline-flex min-h-10 items-center gap-2 text-sm text-white/80 transition-colors hover:text-white"
                   >
                     <Phone className="h-4 w-4" aria-hidden />
-                    <span className="font-medium tabular-nums tracking-wide">{ctaPhone}</span>
+                    <span className="font-medium tabular-nums tracking-wide">{displayPhone(ctaPhone)}</span>
                   </a>
                   <a
                     href={`mailto:${email}`}
@@ -228,7 +245,7 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
 
           <LinkColumn title="Layanan" links={shown(SERVICE_LINKS)} className="lg:col-span-2" />
           <LinkColumn title="Jelajahi" links={shown(EXPLORE_LINKS)} className="lg:col-span-2" />
-          <LinkColumn title="Akun" links={ACCOUNT_LINKS} className="lg:col-span-2" />
+          <LinkColumn title="Akun" links={ACCOUNT_LINKS[session]} className="lg:col-span-2" />
 
           <div className="lg:col-span-2">
             <h3 className="eyebrow">Hubungi kami</h3>
@@ -240,9 +257,9 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
                 </a>
               </li>
               <li>
-                <a href={`tel:${phone.replace(/[^\d+]/g, '')}`} className={linkClass}>
+                <a href={telHref(phone)} className={linkClass}>
                   <Phone className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                  <span className="tabular-nums">{phone}</span>
+                  <span className="tabular-nums">{displayPhone(phone)}</span>
                 </a>
               </li>
               <li>
@@ -258,21 +275,35 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
         {/* Bar bawah: ruang bawah/kanan untuk tombol WhatsApp melayang agar tidak menutupi teks & ikon */}
         <div className="border-t border-line">
           <div className="container-site flex flex-col-reverse items-start gap-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-6 sm:flex-row sm:items-center sm:justify-between sm:pb-24 lg:pb-6">
-            <p className="text-xs text-muted sm:text-[13px]">{pick('footer_copyright')}</p>
-            <ul className="flex items-center gap-2 lg:mr-20" aria-label="Media sosial">
-              {socials.map(({ key, label, Icon }) => (
-                <li key={key}>
-                  <a href={settings[key]} target="_blank" rel="noopener noreferrer" aria-label={label} className={socialClass}>
-                    <Icon className="h-4 w-4" />
-                  </a>
-                </li>
-              ))}
-              <li>
-                <a href={whatsappUrl(whatsapp, CONTACT_MESSAGE)} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className={socialClass}>
-                  <MessageCircle className="h-4 w-4" />
-                </a>
-              </li>
-            </ul>
+            <div className="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-6">
+              <p className="text-xs text-muted sm:text-[13px]">{pick('footer_copyright')}</p>
+              <nav aria-label="Dokumen legal">
+                <ul className="flex flex-wrap gap-x-4">
+                  {LEGAL_LINKS.map((link) => (
+                    <li key={link.key}>
+                      <Link
+                        to={link.to}
+                        className="inline-flex min-h-10 items-center text-xs text-muted transition-colors hover:text-fg sm:min-h-8 sm:text-[13px]"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </div>
+            {/* WhatsApp sudah ada di "Hubungi kami"; baris ini hanya untuk akun media sosial yang diisi admin */}
+            {socials.length > 0 && (
+              <ul className="flex items-center gap-2 lg:mr-20" aria-label="Media sosial">
+                {socials.map(({ key, label, Icon }) => (
+                  <li key={key}>
+                    <a href={settings[key]} target="_blank" rel="noopener noreferrer" aria-label={label} className={socialClass}>
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>

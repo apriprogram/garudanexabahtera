@@ -41,6 +41,14 @@ import {
   controlClass,
   panelClass,
 } from '../../components/admin/ui';
+import {
+  DEFAULT_CONTACT_EMAIL,
+  TEMPLATE_PRICE_INCLUDES_DEFAULT,
+  TEMPLATE_PRICE_NOTE_DEFAULT,
+} from '../../hooks/useSiteSettings';
+
+/** Judul CTA bawaan (sentence case; baris kedua tampil lebih lembut di website). */
+const CTA_TITLE_DEFAULT = 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!';
 
 /* Kotak unggah gambar (garis putus-putus): pratinjau + lapisan "ganti" saat hover/fokus. */
 function UploadTile({
@@ -398,7 +406,12 @@ const SiteSettings: React.FC = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    
+
+    // Catatan harga template hanya ditulis bila tab Harga sedang terbuka. Nilai kosong ikut disimpan (= sembunyikan
+    // barisnya di website); setting yang belum pernah disimpan memakai teks bawaan di useSiteSettings.
+    const priceIncludesEl = document.getElementById('template_price_includes') as HTMLTextAreaElement | null;
+    const priceNoteEl = document.getElementById('template_price_note') as HTMLTextAreaElement | null;
+
     // Read input values directly from DOM elements safely
     const updatedSettings = {
       ...settings,
@@ -424,6 +437,8 @@ const SiteSettings: React.FC = () => {
       pricing_title: (document.getElementById('pricing_title') as HTMLInputElement)?.value || settings.pricing_title || "Paket Layanan Kami",
       pricing_subtitle: (document.getElementById('pricing_subtitle') as HTMLTextAreaElement)?.value || settings.pricing_subtitle || "Pilih paket yang sesuai dengan skala bisnis dan kebutuhan Anda",
       pricing_data: JSON.stringify(pricingList),
+      ...(priceIncludesEl ? { template_price_includes: priceIncludesEl.value.trim() } : {}),
+      ...(priceNoteEl ? { template_price_note: priceNoteEl.value.trim() } : {}),
 
       // FAQ data
       faq_data: JSON.stringify(faqList),
@@ -431,7 +446,7 @@ const SiteSettings: React.FC = () => {
 
 
       // CTA Banner data
-      cta_title: (document.getElementById('cta_title') as HTMLTextAreaElement)?.value || settings.cta_title || "Siap Membangun Sistem Digital?\nKonsultasikan Sekarang Juga!",
+      cta_title: (document.getElementById('cta_title') as HTMLTextAreaElement)?.value || settings.cta_title || CTA_TITLE_DEFAULT,
       cta_button: (document.getElementById('cta_button') as HTMLInputElement)?.value || settings.cta_button || "Hubungi WhatsApp",
       cta_link: (document.getElementById('cta_link') as HTMLInputElement)?.value || settings.cta_link || "",
       cta_phone: (document.getElementById('cta_phone') as HTMLInputElement)?.value || settings.cta_phone || "085188009152",
@@ -440,7 +455,7 @@ const SiteSettings: React.FC = () => {
       // Footer data
       footer_address: (document.getElementById('footer_address') as HTMLTextAreaElement)?.value || settings.footer_address || "Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis.",
       footer_phone: (document.getElementById('footer_phone') as HTMLInputElement)?.value || settings.footer_phone || "085188009152",
-      footer_email: (document.getElementById('footer_email') as HTMLInputElement)?.value || settings.footer_email || "info@garudanexa.co.id",
+      footer_email: (document.getElementById('footer_email') as HTMLInputElement)?.value || settings.footer_email || DEFAULT_CONTACT_EMAIL,
       footer_whatsapp: (document.getElementById('footer_whatsapp') as HTMLInputElement)?.value || settings.footer_whatsapp || "6285188009152",
       footer_instagram: (document.getElementById('footer_instagram') as HTMLInputElement)?.value || settings.footer_instagram || "#",
       footer_facebook: (document.getElementById('footer_facebook') as HTMLInputElement)?.value || settings.footer_facebook || "#",
@@ -880,6 +895,35 @@ const SiteSettings: React.FC = () => {
       case 'pricing':
         return (
           <div className="space-y-4 sm:space-y-6">
+            {/* Isi harga template: tampil di detail template, halaman pesan, dan akun pembeli */}
+            <Panel className="space-y-4">
+              <PanelHeader
+                title="Harga template"
+                titleAs="h4"
+                subtitle="Daftar “Sudah termasuk” dan catatan di bawah harga template. Kosongkan isian untuk menyembunyikannya."
+              />
+              <Field
+                label="Sudah termasuk"
+                htmlFor="template_price_includes"
+                hint="Satu item per baris."
+              >
+                <Textarea
+                  id="template_price_includes"
+                  className="min-h-[112px] resize-y"
+                  placeholder={TEMPLATE_PRICE_INCLUDES_DEFAULT.join('\n')}
+                  defaultValue={settings.template_price_includes ?? TEMPLATE_PRICE_INCLUDES_DEFAULT.join('\n')}
+                />
+              </Field>
+              <Field label="Catatan harga" htmlFor="template_price_note" hint="Satu kalimat, mis. tentang biaya perpanjangan mulai tahun ke-2.">
+                <Textarea
+                  id="template_price_note"
+                  className="min-h-[60px] resize-y"
+                  placeholder={TEMPLATE_PRICE_NOTE_DEFAULT}
+                  defaultValue={settings.template_price_note ?? TEMPLATE_PRICE_NOTE_DEFAULT}
+                />
+              </Field>
+            </Panel>
+
             {/* Section Headers */}
             <Panel className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field label="Judul bagian" htmlFor="pricing_title">
@@ -987,7 +1031,7 @@ const SiteSettings: React.FC = () => {
 
             <Panel className="space-y-4">
               <Field label="Judul CTA (tekan Enter untuk memisah baris)" htmlFor="cta_title">
-                <Textarea id="cta_title" className="min-h-[60px] resize-y" placeholder="Siap Membangun Sistem Digital?&#10;Konsultasikan Sekarang Juga!" defaultValue={settings.cta_title || "Siap Membangun Sistem Digital?\\nKonsultasikan Sekarang Juga!"} />
+                <Textarea id="cta_title" className="min-h-[60px] resize-y" placeholder={CTA_TITLE_DEFAULT} defaultValue={settings.cta_title || CTA_TITLE_DEFAULT} />
               </Field>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Field label="Teks tombol WhatsApp" htmlFor="cta_button">
@@ -1027,7 +1071,7 @@ const SiteSettings: React.FC = () => {
                     <Input id="footer_whatsapp" type="text" inputMode="tel" placeholder="mis. 6285188009152" defaultValue={settings.footer_whatsapp || "6285188009152"} />
                   </Field>
                   <Field label="Email" htmlFor="footer_email" className="md:col-span-2">
-                    <Input id="footer_email" type="email" autoCapitalize="none" placeholder="info@garudanexa.co.id" defaultValue={settings.footer_email || "info@garudanexa.co.id"} />
+                    <Input id="footer_email" type="email" autoCapitalize="none" placeholder={`mis. ${DEFAULT_CONTACT_EMAIL}`} defaultValue={settings.footer_email || DEFAULT_CONTACT_EMAIL} />
                   </Field>
                 </div>
               </Panel>

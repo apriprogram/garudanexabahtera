@@ -73,8 +73,9 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
   );
 
   if (layout === 'stack') {
+    // max-w-lg: judul dua warna FAQ muat dua baris ("Pertanyaan yang / sering ditanyakan"); kolom grid tetap membatasi
     return (
-      <div className={`max-w-md ${className}`}>
+      <div className={`max-w-lg ${className}`}>
         {heading}
         {description && (
           <Reveal delay={0.25}>

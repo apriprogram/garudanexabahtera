@@ -1,13 +1,18 @@
 // Kerangka halaman akun pembeli (/akun/*). Penjaga akses (SPEC §2): tanpa sesi → /masuk?next=...,
-// staf (admin/user) → /admin. Header terang: logo, "Pesanan saya", "Lihat template", menu pengguna (keluar).
+// staf (admin/user) → /admin. Header terang: logo, "Pesanan saya", "Lihat Template", menu pengguna (keluar).
 // <Outlet /> tidak diberi lebar/padding: tiap halaman (AccountHome, AccountOrderDetail, SiteEditor) mengatur sendiri.
 // Header sticky setinggi 64px (h-16) + safe-area atas; elemen sticky di halaman anak memakai top-16 atau lebih.
 // Di HP ada baris tab di bawah header yang ikut tergulir (tidak sticky).
-import { useEffect, useRef, useState } from 'react';
+// "Lewati ke konten" (SkipLink) = elemen fokus pertama, menuju <main id="konten-akun">.
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { ChevronDown, LayoutTemplate, LogOut, ReceiptText } from 'lucide-react';
 import { BrandLogo } from '../../components/ui/LogoMark';
+import { SkipLink } from '../../components/ui/SkipLink';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { customerLoginPath, getCurrentUser, getRole, logout, type SessionUser } from '../../lib/auth';
+import { confirmLeave } from './cms/useLeaveGuard';
+import { accountHelpMessage, helpWhatsappUrl } from './components/orderCopy';
 
 export default function AccountLayout() {
   const location = useLocation();
@@ -22,29 +27,39 @@ export default function AccountLayout() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-alt">
+      <SkipLink target="konten-akun" />
       <AccountHeader user={user} />
       <MobileTabs />
-      <main id="konten-akun" className="flex-1">
+      <main id="konten-akun" tabIndex={-1} className="flex-1 focus:outline-none">
         <Outlet />
       </main>
-      <footer className="border-t border-line bg-surface">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-xs text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <span>© {new Date().getFullYear()} Garuda Nexa Bahtera</span>
-          <span>
-            Butuh bantuan?{' '}
-            <Link to="/#kontak" className="link-site">
-              Hubungi kami
-            </Link>
-          </span>
-        </div>
-      </footer>
+      <AccountFooter />
     </div>
+  );
+}
+
+/** Footer akun: "Hubungi kami" membuka WhatsApp (pesan awal menyebut nomor pesanan yang sedang dibuka). */
+function AccountFooter() {
+  const { pathname } = useLocation();
+  const { settings } = useSiteSettings();
+  return (
+    <footer className="border-t border-line bg-surface">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-xs text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <span>© {new Date().getFullYear()} Garuda Nexa Bahtera</span>
+        <span>
+          Butuh bantuan?{' '}
+          <a href={helpWhatsappUrl(settings, accountHelpMessage(pathname))} target="_blank" rel="noopener noreferrer" className="link-site">
+            Hubungi kami via WhatsApp
+          </a>
+        </span>
+      </div>
+    </footer>
   );
 }
 
 const NAV = [
   { to: '/akun', label: 'Pesanan saya', icon: ReceiptText, end: true },
-  { to: '/#templates', label: 'Lihat template', icon: LayoutTemplate, end: false },
+  { to: '/#templates', label: 'Lihat Template', icon: LayoutTemplate, end: false },
 ];
 
 function AccountHeader({ user }: { user: SessionUser | null }) {
@@ -121,10 +136,17 @@ const initials = (name: string) =>
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('') || 'A';
 
+/**
+ * Menu pengguna = disclosure biasa (tombol aria-expanded + daftar tautan/tombol), bukan role="menu": tidak ada
+ * navigasi panah yang diharapkan pembaca layar. Saat dibuka fokus pindah ke item pertama; Tab bergerak normal dan
+ * menu tertutup bila fokus keluar; Esc menutup dan mengembalikan fokus ke tombol.
+ */
 function UserMenu({ user }: { user: SessionUser | null }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelId = useId();
   const { pathname } = useLocation();
   const name = user?.name?.trim() || 'Akun saya';
 
@@ -137,6 +159,7 @@ function UserMenu({ user }: { user: SessionUser | null }) {
 
   useEffect(() => {
     if (!open) return;
+    panelRef.current?.querySelector<HTMLElement>('a[href], button:not([disabled])')?.focus();
     const onPointer = (e: PointerEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -146,13 +169,25 @@ function UserMenu({ user }: { user: SessionUser | null }) {
         buttonRef.current?.focus();
       }
     };
+    // Tab/Shift+Tab keluar dari menu → tutup (fokus tidak tertinggal di panel yang tak terlihat lagi)
+    const onFocusIn = (e: FocusEvent) => {
+      if (e.target instanceof Node && !rootRef.current?.contains(e.target)) setOpen(false);
+    };
     document.addEventListener('pointerdown', onPointer);
     document.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocusIn);
     return () => {
       document.removeEventListener('pointerdown', onPointer);
       document.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocusIn);
     };
   }, [open]);
+
+  // Keluar menghapus sesi lebih dulu, jadi perubahan CMS yang belum disimpan ditanyakan SEBELUM logout()
+  const signOut = () => {
+    if (!confirmLeave()) return;
+    logout();
+  };
 
   const itemClass =
     'flex h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-fg transition-colors hover:bg-alt';
@@ -163,8 +198,8 @@ function UserMenu({ user }: { user: SessionUser | null }) {
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
         aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         aria-label={`Menu akun ${name}`}
         className="relative flex h-10 items-center gap-2 rounded-full py-1 pl-1 pr-2 ring-1 ring-inset ring-line transition-colors after:absolute after:-inset-1 hover:bg-alt hover:ring-line-strong sm:pr-3"
       >
@@ -177,26 +212,30 @@ function UserMenu({ user }: { user: SessionUser | null }) {
 
       {open && (
         <div
-          role="menu"
-          aria-label="Menu akun"
+          ref={panelRef}
+          id={panelId}
           className="absolute right-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-2.5rem))] rounded-2xl bg-surface p-2 shadow-float ring-1 ring-line"
         >
           <div className="px-3 pb-3 pt-2">
             <p className="truncate text-sm font-semibold text-fg">{name}</p>
             {user?.email && <p className="truncate text-xs text-subtle">{user.email}</p>}
           </div>
-          <div className="border-t border-line pt-2">
+          <ul className="border-t border-line pt-2">
             {NAV.map((item) => (
-              <Link key={item.to} to={item.to} role="menuitem" className={itemClass}>
-                <item.icon className="h-4 w-4 text-subtle" aria-hidden />
-                {item.label}
-              </Link>
+              <li key={item.to}>
+                <Link to={item.to} className={itemClass}>
+                  <item.icon className="h-4 w-4 text-subtle" aria-hidden />
+                  {item.label}
+                </Link>
+              </li>
             ))}
-            <button type="button" role="menuitem" onClick={() => logout()} className={`${itemClass} text-danger-700 hover:bg-danger-50`}>
-              <LogOut className="h-4 w-4" aria-hidden />
-              Keluar
-            </button>
-          </div>
+            <li>
+              <button type="button" onClick={signOut} className={`${itemClass} text-danger-700 hover:bg-danger-50`}>
+                <LogOut className="h-4 w-4" aria-hidden />
+                Keluar
+              </button>
+            </li>
+          </ul>
         </div>
       )}
     </div>

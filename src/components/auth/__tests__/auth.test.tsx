@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Halaman masuk/daftar (/login, /masuk, /daftar) dengan kerangka auth bersama.
 // Jalankan: npx vitest run --dir src/components/auth
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -149,13 +149,21 @@ describe('/masuk (pembeli)', () => {
     expect(where()).toBe('/admin');
   });
 
-  it('sesi habis, lupa kata sandi, tampilkan kata sandi', () => {
+  it('sesi habis, lupa kata sandi (bantuan WhatsApp berisi email), tampilkan kata sandi', async () => {
+    handler = (action) => (action === 'get_settings' ? json(200, { footer_whatsapp: '0812-1111-2222' }) : json(200, {}));
     renderAt('/masuk?expired=1');
     expect(screen.getByRole('alert')).toHaveTextContent('Sesi Anda telah berakhir');
+    // Pengaturan (nomor WhatsApp) baru dimuat saat bantuan dibuka
+    expect(calls).toHaveLength(0);
 
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: ' budi@example.com ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Lupa kata sandi?' }));
     expect(screen.getByRole('button', { name: 'Lupa kata sandi?' })).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('link', { name: 'Buka halaman kontak' })).toHaveAttribute('href', '/#kontak');
+    const help = screen.getByRole('link', { name: /Hubungi via WhatsApp/ });
+    await waitFor(() => expect(help.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/6281211112222\?text=/));
+    expect(decodeURIComponent(help.getAttribute('href')!)).toContain('email: budi@example.com');
+    expect(help).toHaveAttribute('target', '_blank');
+    expect(screen.queryByRole('link', { name: 'Buka halaman kontak' })).not.toBeInTheDocument();
 
     const password = screen.getByLabelText('Kata sandi');
     expect(password).toHaveAttribute('type', 'password');
@@ -188,7 +196,6 @@ describe('/daftar (pembeli)', () => {
       Email: 'budi@example.com',
       'Nomor HP/WhatsApp': '0812-3456-7890',
       'Kata sandi': 'rahasia123',
-      'Ulangi kata sandi': 'rahasia123',
       ...overrides,
     };
     for (const [label, value] of Object.entries(values)) {
@@ -196,12 +203,21 @@ describe('/daftar (pembeli)', () => {
     }
   };
 
-  it('kata sandi ulang harus sama', async () => {
+  it('empat field (tanpa ulangi kata sandi), validasi per field, persetujuan S&K + privasi', async () => {
     renderAt('/daftar');
-    fill({ 'Ulangi kata sandi': 'rahasia124' });
-    await submit(/Buat akun/);
-    expect(screen.getByText('Kata sandi tidak sama.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Ulangi kata sandi')).not.toBeInTheDocument();
+    await submit(/Daftar Akun/);
+    expect(screen.getByText('Nama lengkap wajib diisi.')).toBeInTheDocument();
     expect(calls).toHaveLength(0);
+
+    fill({ 'Kata sandi': 'pendek' });
+    await submit(/Daftar Akun/);
+    expect(screen.getByLabelText('Kata sandi')).toHaveAttribute('aria-invalid', 'true');
+    expect(calls).toHaveLength(0);
+
+    expect(screen.getByText(/Dengan mendaftar, Anda menyetujui/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Syarat & Ketentuan/ })).toHaveAttribute('href', '/syarat-ketentuan');
+    expect(screen.getByRole('link', { name: /Kebijakan Privasi/ })).toHaveAttribute('href', '/kebijakan-privasi');
   });
 
   it('email sudah terdaftar: error di bawah field + tautan masuk', async () => {
@@ -209,7 +225,7 @@ describe('/daftar (pembeli)', () => {
       json(422, { error: 'Data tidak valid', code: 'EMAIL_TAKEN', errors: { email: 'Email sudah terdaftar.' } });
     renderAt('/daftar');
     fill();
-    await submit(/Buat akun/);
+    await submit(/Daftar Akun/);
     expect(await screen.findByText('Email sudah terdaftar.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Masuk dengan email ini' })).toHaveAttribute('href', '/masuk');
   });
@@ -218,7 +234,7 @@ describe('/daftar (pembeli)', () => {
     handler = () => json(200, session('customer'));
     renderAt('/daftar?next=%2Fpesan%2Fcompany-pro');
     fill();
-    await submit(/Buat akun/);
+    await submit(/Daftar Akun/);
     expect(calls[0]).toMatchObject({
       action: 'customer_register',
       body: { name: 'Budi Santoso', email: 'budi@example.com', phone: '081234567890', password: 'rahasia123' },
@@ -233,7 +249,13 @@ describe('/daftar (pembeli)', () => {
     expect(screen.getByLabelText('Email')).toHaveAttribute('autocomplete', 'email');
     expect(screen.getByLabelText('Nomor HP/WhatsApp')).toHaveAttribute('autocomplete', 'tel');
     expect(screen.getByLabelText('Kata sandi')).toHaveAttribute('autocomplete', 'new-password');
-    expect(screen.getByLabelText('Ulangi kata sandi')).toHaveAttribute('autocomplete', 'new-password');
+  });
+
+  it('input auth bergaya .input-site (latar putih, garis line-strong)', () => {
+    renderAt('/daftar');
+    const input = screen.getByLabelText('Email');
+    expect(input).toHaveClass('bg-surface', 'border-line-strong', 'hover:border-subtle');
+    expect(input).not.toHaveClass('bg-alt');
   });
 });
 

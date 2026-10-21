@@ -79,8 +79,8 @@
   --color-line: var(--site-line);
   --color-line-strong: var(--site-line-strong);
 
-  /* Tinggi navbar publik (nilai di --nav-h): h-nav, pt-nav (konten pertama halaman lain), top-nav, scroll-mt-nav */
-  --spacing-nav: var(--nav-h);
+  /* Tinggi total header navbar publik (--nav-offset): pt-nav (konten pertama halaman lain), top-nav, scroll-mt-nav */
+  --spacing-nav: var(--nav-offset);
 
   /* Skala font: desktop = default Tailwind, HP (< 640px) lebih ringkas */
   --text-sm: var(--fs-sm);
@@ -108,8 +108,12 @@
   --fs-3xl: 1.875rem;  --lh-3xl: 2.25rem;
   --fs-4xl: 2.25rem;   --lh-4xl: 2.5rem;
 
-  /* Navbar publik (fixed): 56px HP & tablet, 64px ≥ 1024px. Satu sumber untuk offset halaman, anchor & kolom sticky */
+  /*
+   * Navbar publik (fixed). --nav-h = tinggi bar (56px HP & tablet, 64px ≥ 1024px); --nav-offset = tinggi total header
+   * (bar + safe-area atas, > 0 hanya di mode PWA/standalone). Satu sumber untuk offset halaman, anchor & kolom sticky.
+   */
   --nav-h: 3.5rem;
+  --nav-offset: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
 }
 
 @media (min-width: 1024px) {
@@ -147,9 +151,14 @@
   }
 }
 
-/* Kontainer lebar (CPNS container-wide): hampir penuh kiri-kanan, dibatasi 1680px di layar sangat lebar */
+/*
+ * Kontainer lebar (CPNS container-wide): hampir penuh kiri-kanan, dibatasi 1680px di layar sangat lebar.
+ * Gutter 20/32/48/64px, tetapi tidak pernah lebih sempit dari safe-area (viewport-fit=cover: iPhone landscape
+ * menaruh notch di kiri/kanan). Di perangkat tanpa notch env() = 0, jadi tampilan tidak berubah.
+ */
 @utility container-site {
-  @apply mx-auto w-full max-w-[1680px] px-5 sm:px-8 lg:px-12 2xl:px-16;
+  @apply mx-auto w-full max-w-[1680px] [--gutter:1.25rem] sm:[--gutter:2rem] lg:[--gutter:3rem] 2xl:[--gutter:4rem];
+  padding-inline: max(var(--gutter), env(safe-area-inset-left)) max(var(--gutter), env(safe-area-inset-right));
 }
 
 /* Jarak vertikal section biasa: 48 → 80 → 96px */
@@ -163,12 +172,12 @@
  */
 @utility section-screen {
   @apply relative flex flex-col justify-center py-12 sm:py-20 lg:min-h-[100svh] lg:pb-16 lg:pt-24;
-  scroll-margin-top: calc(var(--nav-h) + 2rem - 3rem);
+  scroll-margin-top: calc(var(--nav-offset) + 2rem - 3rem);
   @media (min-width: 640px) {
-    scroll-margin-top: calc(var(--nav-h) + 2rem - 5rem);
+    scroll-margin-top: calc(var(--nav-offset) + 2rem - 5rem);
   }
   @media (min-width: 1024px) {
-    scroll-margin-top: calc(var(--nav-h) + 2.5rem - 6rem);
+    scroll-margin-top: calc(var(--nav-offset) + 2.5rem - 6rem);
   }
 }
 
@@ -229,6 +238,20 @@
   :focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+  }
+
+  /*
+   * Fokus keyboard tidak boleh tertutup navbar fixed (--nav-offset) atau tombol WhatsApp melayang (WCAG 2.4.11).
+   * Hanya elemen yang bisa difokus; offset anchor section (scroll-mt-*, section-screen) tetap dari utilitasnya.
+   */
+  :where(a, button, input, select, textarea, summary, [tabindex]) {
+    scroll-margin-top: calc(var(--nav-offset) + 1.5rem);
+    scroll-margin-bottom: 5.5rem;
+  }
+
+  /* <main> menerima fokus dari SkipLink (tabindex -1), tetapi bukan kontrol: tanpa cincin fokus di seluruh konten */
+  main:focus {
+    outline: none;
   }
 
   ::selection {
@@ -472,8 +495,18 @@
     @apply mt-1.5 text-xs text-subtle;
   }
 
+  /*
+   * Pesan error: danger-700 (#B42318, 6,57:1 di putih) + ikon peringatan, jadi tidak hanya mengandalkan warna.
+   * Ikon = lingkaran "!" (lucide CircleAlert) lewat mask, mengikuti warna teks. Garis input merah tetap danger (3:1 UI).
+   */
   .error-site {
-    @apply mt-1.5 text-xs font-medium text-danger;
+    @apply mt-1.5 flex items-start gap-1.5 text-xs font-medium text-danger-700;
+  }
+  .error-site::before {
+    content: '';
+    @apply mt-px h-3.5 w-3.5 shrink-0 bg-current;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' x2='12' y1='8' y2='12'/%3E%3Cline x1='12' x2='12.01' y1='16' y2='16'/%3E%3C/svg%3E")
+      center / contain no-repeat;
   }
 }
 
@@ -555,34 +588,6 @@
   .cta-orb {
     animation: none;
   }
-}
-
-/* Hide Google Translate Top Bar */
-.goog-te-banner-frame.skiptranslate,
-.goog-te-banner-frame,
-#goog-gt-tt,
-.goog-te-balloon-frame,
-.goog-te-menu-value span:nth-child(2),
-.goog-te-menu-value img,
-.goog-te-menu-frame.skiptranslate {
-    display: none !important;
-}
-
-body {
-    top: 0px !important;
-}
-
-.goog-te-gadget {
-    color: transparent !important;
-    font-size: 0 !important;
-}
-
-.goog-te-gadget .goog-te-combo {
-    display: none !important;
-}
-
-#google_translate_element {
-    display: none !important;
 }
 
 /* Scrollbar tipis (dipakai panel admin). Abu netral agar terlihat di latar terang maupun gelap. */

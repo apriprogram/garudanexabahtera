@@ -1,12 +1,14 @@
-// Detail pesanan pembeli (/akun/pesanan/:orderNumber): timeline status, tagihan, domain, riwayat, aksi
-// (bayar, batalkan, simulasi bayar bila MIDTRANS_SIMULATOR aktif, kelola situs). Setelah kembali dari Midtrans
-// (?order_id=…&transaction_status=…) status dimuat ulang tiap 10 detik selama masih menunggu pembayaran.
+// Detail pesanan pembeli (/akun/pesanan/:orderNumber): timeline status (+ riwayat lengkap yang bisa dibuka), tagihan,
+// domain, aksi (bayar, batalkan, simulasi bayar bila MIDTRANS_SIMULATOR aktif, kelola situs, pesan lagi, tanya via
+// WhatsApp). Setelah kembali dari Midtrans (?order_id=…&transaction_status=…) status dimuat ulang tiap 10 detik selama
+// masih menunggu pembayaran.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Ban,
   Check,
+  ChevronDown,
   Copy,
   CreditCard,
   ExternalLink,
@@ -14,13 +16,17 @@ import {
   Globe,
   History,
   LoaderCircle,
+  MessageCircle,
   ReceiptText,
   RefreshCw,
+  ScrollText,
   SquarePen,
   UserRound,
   X,
 } from 'lucide-react';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { ApiError, apiGet, apiPost, errorMessage } from '../../lib/api';
+import { LEGAL_LABELS, LEGAL_PATHS } from '../../lib/legal';
 import {
   ORDER_FLOW,
   formatRupiah,
@@ -33,13 +39,28 @@ import {
 } from '../../types/platform';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { Notice, type NoticeTone } from './components/Notice';
-import { STEP_TEXT, STEP_TITLE, stepTime } from './components/orderCopy';
+import {
+  REFUNDED_TEXT,
+  STEP_TEXT,
+  STEP_TITLE,
+  asSentence,
+  cancelledText,
+  customerHistoryEntry,
+  helpWhatsappUrl,
+  orderHelpMessage,
+  refundText,
+  stepTime,
+  type HistoryEntry,
+} from './components/orderCopy';
 import { payOrder, useDocumentTitle, type OrderCreatedState } from './components/payment';
 import { EmptyState, ErrorState, Skeleton } from './components/States';
 import {
   PAYMENT_TONE_CLASS,
   invoiceStatus,
+  isAwaitingRefund,
+  isNeverCharged,
   isPaymentUnderReview,
+  isRefunded,
   paymentStatusLabel,
   paymentTypeLabel,
 } from './components/paymentStatus';
@@ -70,18 +91,8 @@ const FAILED_TX = new Set(['deny', 'cancel', 'expire', 'failure']);
 // Midtrans sudah menerima pembayaran di halamannya; lunas atau tidaknya tetap ditentukan status pesanan dari server
 // ('capture' bisa ditahan untuk tinjauan fraud).
 const SUBMITTED_TX = new Set(['settlement', 'capture', 'simulated']);
-
-const LOG_EVENT_LABEL: Record<string, string> = {
-  created: 'Pesanan dibuat',
-  payment_created: 'Link pembayaran dibuat',
-  payment_update: 'Pembaruan pembayaran',
-  approved: 'Pesanan disetujui',
-  rejected: 'Pesanan ditolak',
-  domain_set: 'Domain ditetapkan',
-  activated: 'Situs diaktifkan',
-  cancelled: 'Pesanan dibatalkan',
-  note: 'Catatan',
-};
+/** Status yang masih bisa berubah dari sisi kami/Midtrans; hanya di sini tombol "Muat ulang" berguna. */
+const RELOADABLE: ReadonlySet<OrderStatus> = new Set<OrderStatus>(['menunggu_pembayaran', 'menunggu_approval', 'proses_domain']);
 
 export default function AccountOrderDetail() {
   const { orderNumber = '' } = useParams();
@@ -99,7 +110,7 @@ export default function AccountOrderDetail() {
       ? {
           tone: 'warning',
           title: 'Pesanan berhasil dibuat',
-          text: `Halaman pembayaran belum bisa dibuka: ${created.paymentError} Anda bisa mencoba lagi lewat tombol "Bayar sekarang".`,
+          text: `Halaman pembayaran belum bisa dibuka: ${created.paymentError} Anda bisa mencoba lagi lewat tombol "Bayar Sekarang".`,
         }
       : { tone: 'success', title: 'Pesanan berhasil dibuat', text: 'Kami akan memproses pesanan Anda.' };
   });
@@ -270,6 +281,9 @@ interface OrderViewProps {
 function OrderView({ data, simulator, flash, onFlash, returnTx, polling, pollsExhausted, refreshing, onReload }: OrderViewProps) {
   const { order, logs, site } = data;
   const [copied, setCopied] = useState(false);
+  const { settings } = useSiteSettings();
+  const helpHref = helpWhatsappUrl(settings, orderHelpMessage(order.order_number));
+  const awaitingRefund = isAwaitingRefund(order);
 
   const copyNumber = async () => {
     try {
@@ -283,9 +297,10 @@ function OrderView({ data, simulator, flash, onFlash, returnTx, polling, pollsEx
 
   return (
     <>
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      {/* relative: di HP tombol Muat ulang (ikon) diletakkan sebaris dengan No. pesanan */}
+      <header className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-[13px] text-muted">
+          <div className={`flex items-center gap-1.5 text-[13px] text-muted ${RELOADABLE.has(order.status) ? 'max-sm:pr-10' : ''}`}>
             <span>No. pesanan</span>
             <span className="font-medium tabular-nums text-fg">{order.order_number}</span>
             <button
@@ -303,10 +318,18 @@ function OrderView({ data, simulator, flash, onFlash, returnTx, polling, pollsEx
             <span className="text-xs text-subtle">Dibuat {formatTanggal(order.created_at, true)}</span>
           </div>
         </div>
-        <button type="button" onClick={() => onReload()} disabled={refreshing} className="btn btn-outline btn-sm self-start sm:self-auto">
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden />
-          Muat ulang
-        </button>
+        {/* HP: tombol ikon tanpa garis di kanan baris No. pesanan. ≥ 640px: tombol bergaris (btn-outline) di kanan judul. */}
+        {RELOADABLE.has(order.status) && (
+          <button
+            type="button"
+            onClick={() => onReload()}
+            disabled={refreshing}
+            className="btn btn-ghost btn-sm max-sm:absolute max-sm:-top-0.5 max-sm:right-0 max-sm:w-8 max-sm:px-0 max-sm:after:-inset-x-1.5 sm:bg-surface sm:text-fg sm:ring-1 sm:ring-inset sm:ring-line sm:hover:bg-alt sm:hover:ring-line-strong sm:active:bg-line"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden />
+            <span className="max-sm:sr-only">Muat ulang</span>
+          </button>
+        )}
       </header>
 
       <div className="mt-5 space-y-3 empty:hidden">
@@ -319,19 +342,24 @@ function OrderView({ data, simulator, flash, onFlash, returnTx, polling, pollsEx
         {site?.status === 'suspended' && (
           <Notice tone="warning" title="Situs sedang dinonaktifkan">
             Situs Anda untuk sementara tidak tampil dan kontennya tidak bisa diubah.{' '}
-            <Link to="/#kontak" className="font-semibold underline underline-offset-2">
-              Hubungi kami
-            </Link>{' '}
+            <a href={helpHref} target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-2">
+              Tanya via WhatsApp
+            </a>{' '}
             untuk informasi lebih lanjut.
           </Notice>
         )}
         {order.status === 'ditolak' && (
           <Notice tone="danger" title="Pesanan ditolak">
-            {order.rejected_reason ? `Alasan: ${order.rejected_reason}` : 'Tim kami menolak pesanan ini.'} Ada pertanyaan?{' '}
-            <Link to="/#kontak" className="font-semibold underline underline-offset-2">
-              Hubungi kami
-            </Link>
-            .
+            <p>{order.rejected_reason?.trim() ? `Alasan: ${asSentence(order.rejected_reason)}` : 'Tim kami menolak pesanan ini.'}</p>
+            {awaitingRefund && (
+              <p className="mt-1.5">
+                {refundText(order)}{' '}
+                <Link to={LEGAL_PATHS.refund} className="font-semibold underline underline-offset-2">
+                  {LEGAL_LABELS.refund}
+                </Link>
+              </p>
+            )}
+            {isRefunded(order) && <p className="mt-1.5">{REFUNDED_TEXT}</p>}
           </Notice>
         )}
       </div>
@@ -341,10 +369,9 @@ function OrderView({ data, simulator, flash, onFlash, returnTx, polling, pollsEx
           <TimelineCard order={order} logs={logs} />
           <DomainCard order={order} site={site} />
           <CustomerCard order={order} />
-          <HistoryCard logs={logs} />
         </div>
         <div className="order-first space-y-5 lg:order-none lg:sticky lg:top-24">
-          <InvoiceCard order={order} site={site} simulator={simulator} onFlash={onFlash} onReload={onReload} />
+          <InvoiceCard order={order} site={site} simulator={simulator} helpHref={helpHref} onFlash={onFlash} onReload={onReload} />
         </div>
       </div>
     </>
@@ -372,7 +399,7 @@ function PaymentReturnNotice({
   if (tx && FAILED_TX.has(tx)) {
     return (
       <Notice tone="warning" title="Pembayaran belum berhasil">
-        Status dari Midtrans: {paymentStatusLabel(tx)}. Anda bisa mencoba membayar lagi lewat tombol "Bayar sekarang".
+        Status dari Midtrans: {paymentStatusLabel(tx)}. Anda bisa mencoba membayar lagi lewat tombol "Bayar Sekarang".
       </Notice>
     );
   }
@@ -459,6 +486,14 @@ interface Step {
   terminal?: OrderStatus;
 }
 
+/** Keterangan langkah yang sudah dilalui; langkah pembayaran menyebut metode yang dipakai bila diketahui. */
+function doneText(order: Order, status: OrderStatus): string {
+  if (status === 'menunggu_approval' && order.payment_type) {
+    return order.payment_type === 'gratis' ? 'Template gratis, tanpa pembayaran.' : `Lunas lewat ${paymentTypeLabel(order.payment_type)}.`;
+  }
+  return STEP_TEXT[status].done;
+}
+
 /** Langkah timeline dari status pesanan (alur normal + langkah akhir bila ditolak/dibatalkan). */
 function buildSteps(order: Order, logs: OrderLog[]): Step[] {
   const flowIndex = ORDER_FLOW.indexOf(order.status);
@@ -476,7 +511,7 @@ function buildSteps(order: Order, logs: OrderLog[]): Step[] {
     steps.push({
       key: status,
       title: STEP_TITLE[status],
-      text: state === 'done' ? copy.done : state === 'current' ? current : copy.waiting,
+      text: state === 'done' ? doneText(order, status) : state === 'current' ? current : copy.waiting,
       time: state === 'upcoming' ? null : stepTime(order, status),
       state,
     });
@@ -484,12 +519,13 @@ function buildSteps(order: Order, logs: OrderLog[]): Step[] {
 
   if (terminated) {
     const log = [...logs].reverse().find((l) => l.to_status === order.status);
+    // Catatan log tidak ditampilkan mentah (bisa berisi teks teknis Midtrans); alasan penolakan dari kolom pesanan
     const reason =
       order.status === 'ditolak'
-        ? order.rejected_reason
-          ? `Alasan: ${order.rejected_reason}`
+        ? order.rejected_reason?.trim()
+          ? `Alasan: ${asSentence(order.rejected_reason)}`
           : STEP_TEXT.ditolak.current
-        : log?.note || STEP_TEXT.dibatalkan.current;
+        : cancelledText(log);
     steps.push({
       key: order.status,
       title: STEP_TITLE[order.status],
@@ -530,13 +566,52 @@ function TimelineCard({ order, logs }: { order: Order; logs: OrderLog[] }) {
                   </p>
                   {step.time && <time className="text-xs tabular-nums text-subtle">{formatTanggal(step.time, true)}</time>}
                 </div>
-                <p className={`mt-0.5 text-[13px] leading-relaxed ${step.state === 'upcoming' ? 'text-subtle' : 'text-muted'}`}>{step.text}</p>
+                {step.text && (
+                  <p className={`mt-0.5 text-[13px] leading-relaxed ${step.state === 'upcoming' ? 'text-subtle' : 'text-muted'}`}>{step.text}</p>
+                )}
               </div>
             </li>
           );
         })}
       </ol>
+      <HistoryDisclosure logs={logs} />
     </Card>
+  );
+}
+
+/**
+ * Riwayat lengkap (log pesanan) dilipat di bawah timeline, tertutup secara bawaan: isinya sebagian besar mengulang
+ * timeline. Teks tiap log dipetakan ke kalimat untuk pembeli (customerHistoryEntry), catatan internal tidak tampil.
+ */
+function HistoryDisclosure({ logs }: { logs: OrderLog[] }) {
+  const entries = [...logs]
+    .reverse()
+    .map(customerHistoryEntry)
+    .filter((entry): entry is HistoryEntry => entry !== null);
+  if (entries.length === 0) return null;
+  return (
+    <details className="group mt-5 border-t border-line pt-2">
+      <summary className="-mx-2 flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-2 text-[13px] font-medium text-muted transition-colors hover:bg-alt hover:text-fg [&::-webkit-details-marker]:hidden">
+        <ScrollText className="h-4 w-4 text-subtle" aria-hidden />
+        Lihat riwayat lengkap
+        <span className="tabular-nums text-subtle">({entries.length})</span>
+        <ChevronDown
+          className="ml-auto h-4 w-4 text-subtle transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
+          aria-hidden
+        />
+      </summary>
+      <ul className="mt-1 divide-y divide-line">
+        {entries.map((entry) => (
+          <li key={entry.id} className="flex flex-col gap-0.5 py-3 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-fg">{entry.title}</p>
+              {entry.text && <p className="mt-0.5 break-words text-[13px] text-muted">{entry.text}</p>}
+            </div>
+            <time className="shrink-0 text-xs tabular-nums text-subtle">{formatTanggal(entry.time, true)}</time>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
@@ -588,12 +663,15 @@ function InvoiceCard({
   order,
   site,
   simulator,
+  helpHref,
   onFlash,
   onReload,
 }: {
   order: Order;
   site: Site | null;
   simulator: boolean;
+  /** Tautan WhatsApp bantuan (pesan awal berisi nomor pesanan) */
+  helpHref: string;
   onFlash: (flash: Flash | null) => void;
   onReload: () => Promise<void> | void;
 }) {
@@ -608,6 +686,8 @@ function InvoiceCard({
   const underReview = isPaymentUnderReview(order);
   const siteId = site?.id ?? order.site_id;
   const payment = invoiceStatus(order);
+  // Pesanan ditutup yang tidak pernah dibayar: total tidak boleh terbaca seperti utang
+  const notCharged = isNeverCharged(order);
 
   const pay = async () => {
     setPaying(true);
@@ -678,10 +758,17 @@ function InvoiceCard({
         <Row label="Harga template">
           <span className="tabular-nums">{formatRupiah(order.price)}</span>
         </Row>
-        <div className="flex items-baseline justify-between gap-4 py-3">
-          <dt className="text-sm font-semibold text-fg">Total</dt>
-          <dd className="text-xl font-semibold tabular-nums tracking-tight text-fg sm:text-2xl">{formatRupiah(order.price)}</dd>
-        </div>
+        {notCharged ? (
+          <div className="flex items-baseline justify-between gap-4 py-3">
+            <dt className="text-sm font-medium text-muted">Total (tidak ditagihkan)</dt>
+            <dd className="text-base font-medium tabular-nums text-muted">{formatRupiah(order.price)}</dd>
+          </div>
+        ) : (
+          <div className="flex items-baseline justify-between gap-4 py-3">
+            <dt className="text-sm font-semibold text-fg">Total</dt>
+            <dd className="text-xl font-semibold tabular-nums tracking-tight text-fg sm:text-2xl">{formatRupiah(order.price)}</dd>
+          </div>
+        )}
         {order.payment_type && <Row label="Metode">{paymentTypeLabel(order.payment_type)}</Row>}
         {order.paid_at && <Row label="Dibayar pada">{formatTanggal(order.paid_at, true)}</Row>}
       </dl>
@@ -698,7 +785,7 @@ function InvoiceCard({
             {!underReview && (
               <button type="button" className="btn btn-primary btn-lg w-full" onClick={pay} disabled={busy}>
                 {paying ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : <CreditCard className="h-4 w-4" aria-hidden />}
-                {paying ? 'Membuka pembayaran...' : 'Bayar sekarang'}
+                {paying ? 'Membuka pembayaran...' : 'Bayar Sekarang'}
               </button>
             )}
             {simulator && (
@@ -730,7 +817,7 @@ function InvoiceCard({
           <>
             <Link to={`/akun/situs/${siteId}`} className="btn btn-primary btn-lg w-full">
               <SquarePen className="h-4 w-4" aria-hidden />
-              Kelola konten situs
+              Kelola Situs
             </Link>
             <a href={`/situs/${siteId}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline w-full">
               <ExternalLink className="h-4 w-4" aria-hidden />
@@ -745,10 +832,11 @@ function InvoiceCard({
           </p>
         )}
 
-        {order.status === 'dibatalkan' &&
+        {/* Ditolak (mis. domain tidak tersedia) atau dibatalkan: jalan keluarnya memesan lagi, mis. dengan domain lain */}
+        {(order.status === 'dibatalkan' || order.status === 'ditolak') &&
           (order.template_slug ? (
             <Link to={`/pesan/${encodeURIComponent(order.template_slug)}`} className="btn btn-primary w-full">
-              Pesan lagi
+              Pesan Lagi
             </Link>
           ) : (
             <Link to="/#templates" className="btn btn-primary w-full">
@@ -757,9 +845,11 @@ function InvoiceCard({
           ))}
 
         {order.status === 'ditolak' && (
-          <Link to="/#kontak" className="btn btn-outline w-full">
-            Hubungi kami
-          </Link>
+          <a href={helpHref} target="_blank" rel="noopener noreferrer" className="btn btn-outline w-full">
+            <MessageCircle className="h-4 w-4" aria-hidden />
+            Tanya via WhatsApp
+            <span className="sr-only">(tab baru)</span>
+          </a>
         )}
       </div>
 
@@ -833,27 +923,6 @@ function CustomerCard({ order }: { order: Order }) {
           <p className="mt-1 whitespace-pre-line break-words text-sm text-fg">{order.notes}</p>
         </div>
       )}
-    </Card>
-  );
-}
-
-function HistoryCard({ logs }: { logs: OrderLog[] }) {
-  if (logs.length === 0) return null;
-  const ordered = [...logs].reverse();
-  return (
-    <Card title="Riwayat" icon={<History className="h-[18px] w-[18px]" aria-hidden />}>
-      <ul className="divide-y divide-line">
-        {ordered.map((log) => (
-          <li key={log.id} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-fg">{LOG_EVENT_LABEL[log.event] ?? log.event}</p>
-              {log.note && <p className="mt-0.5 break-words text-[13px] text-muted">{log.note}</p>}
-              {log.actor_name && <p className="mt-0.5 text-xs text-subtle">oleh {log.actor_name}</p>}
-            </div>
-            <time className="shrink-0 text-xs tabular-nums text-subtle">{formatTanggal(log.created_at, true)}</time>
-          </li>
-        ))}
-      </ul>
     </Card>
   );
 }

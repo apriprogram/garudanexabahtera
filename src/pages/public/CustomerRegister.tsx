@@ -1,12 +1,14 @@
 // Pendaftaran pembeli (/daftar): action `customer_register`, akun langsung aktif dan langsung masuk (setSession),
 // lalu ke ?next (path relatif saja) atau /akun. Tampilan: kerangka auth terang bersama (src/components/auth).
-// Lihat docs/platform/SPEC.md §2 & §6.
+// Tanpa "Ulangi kata sandi": field kata sandi punya tombol tampilkan untuk memeriksa salah ketik, dan form jadi
+// cukup pendek agar tombol daftar terlihat di layar pertama. Lihat docs/platform/SPEC.md §2 & §6.
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Lock, LockKeyhole, Mail, Phone, User } from 'lucide-react';
+import { Lock, Mail, Phone, User } from 'lucide-react';
 import { ApiError, apiPost, errorMessage } from '../../lib/api';
 import { getRole, setSession } from '../../lib/auth';
+import { LEGAL_LABELS, LEGAL_PATHS } from '../../lib/legal';
 import { AuthLayout, AuthSwitch } from '../../components/auth/AuthLayout';
 import { AuthTabs } from '../../components/auth/AuthTabs';
 import { AuthField } from '../../components/auth/AuthField';
@@ -28,10 +30,10 @@ import {
   type FieldErrors,
 } from '../account/components/validation';
 
-type RegisterField = 'name' | 'email' | 'phone' | 'password' | 'password_confirm';
-const FIELD_ORDER: RegisterField[] = ['name', 'email', 'phone', 'password', 'password_confirm'];
+type RegisterField = 'name' | 'email' | 'phone' | 'password';
+const FIELD_ORDER: RegisterField[] = ['name', 'email', 'phone', 'password'];
 /** Field yang langsung dicek saat ditinggalkan (bila sudah diisi) */
-const CHECK_ON_BLUR: RegisterField[] = ['name', 'email', 'phone', 'password_confirm'];
+const CHECK_ON_BLUR: RegisterField[] = ['name', 'email', 'phone'];
 
 export default function CustomerRegister() {
   useAuthTitle('Daftar');
@@ -48,7 +50,6 @@ export default function CustomerRegister() {
     email: '',
     phone: '',
     password: '',
-    password_confirm: '',
   });
   const [errors, setErrors] = useState<FieldErrors<RegisterField>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -73,9 +74,6 @@ export default function CustomerRegister() {
         return checkPhone(values.phone, 'Nomor HP/WhatsApp');
       case 'password':
         return checkPassword(values.password);
-      case 'password_confirm':
-        if (!values.password_confirm) return 'Ulangi kata sandi Anda.';
-        return values.password_confirm !== values.password ? 'Kata sandi tidak sama.' : undefined;
     }
   };
 
@@ -89,10 +87,6 @@ export default function CustomerRegister() {
       setValues((prev) => ({ ...prev, [key]: value }));
       if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
       if (key === 'email') setEmailTaken(false);
-      // Kata sandi diperbaiki hingga sama dengan ulangannya: hapus pesan "tidak sama"
-      if (key === 'password' && errors.password_confirm && values.password_confirm === value) {
-        setErrors((prev) => ({ ...prev, password_confirm: undefined }));
-      }
     },
     onBlur: CHECK_ON_BLUR.includes(key)
       ? () => {
@@ -241,24 +235,31 @@ export default function CustomerRegister() {
           label="Kata sandi"
           icon={Lock}
           autoComplete="new-password"
-          enterKeyHint="next"
+          enterKeyHint="go"
           placeholder="Buat kata sandi"
           help="Minimal 8 karakter."
         />
 
-        <AuthField
-          {...field('password_confirm')}
-          password
-          label="Ulangi kata sandi"
-          icon={LockKeyhole}
-          autoComplete="new-password"
-          enterKeyHint="go"
-          placeholder="Ketik ulang kata sandi"
-        />
-
-        <AuthSubmit loading={submitting} loadingText="Membuat akun...">
-          Buat akun
-        </AuthSubmit>
+        <div>
+          <AuthSubmit loading={submitting} loadingText="Mendaftarkan akun...">
+            Daftar Akun
+          </AuthSubmit>
+          {/* Persetujuan dokumen legal (UU PDP: form ini mengumpulkan nama, email, dan nomor HP). Tab baru agar isian
+              form tidak hilang. */}
+          <p className="mt-3 text-center text-xs leading-relaxed text-subtle">
+            Dengan mendaftar, Anda menyetujui{' '}
+            <Link to={LEGAL_PATHS.terms} target="_blank" rel="noopener" className="link-site">
+              {LEGAL_LABELS.terms}
+              <span className="sr-only"> (tab baru)</span>
+            </Link>{' '}
+            dan{' '}
+            <Link to={LEGAL_PATHS.privacy} target="_blank" rel="noopener" className="link-site">
+              {LEGAL_LABELS.privacy}
+              <span className="sr-only"> (tab baru)</span>
+            </Link>
+            .
+          </p>
+        </div>
       </form>
     </AuthLayout>
   );

@@ -43,16 +43,17 @@ export function AuthLayout({ title, subtitle, tabs, children, footer, entrance =
           </Link>
         </header>
 
-        <main id="konten" className="flex flex-1 justify-center px-4 pb-8 pt-5 sm:items-center sm:px-6 sm:py-10">
+        {/* Kepala dirapatkan (logo, judul, jarak) agar tombol kirim form daftar tetap di layar pertama */}
+        <main id="konten" className="flex flex-1 justify-center px-4 pb-8 pt-2 sm:items-center sm:px-6 sm:py-6">
           <motion.div
             initial={fromTab ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: EASE_CALM }}
             className="w-full max-w-[400px] md:max-w-[460px]"
           >
-            <div className="mb-6 text-center sm:mb-8">
-              <Link to="/" aria-label="Garuda Nexa, ke beranda" className="mx-auto mb-4 inline-flex rounded-[14px] sm:mb-5">
-                <img src="/brand/logo-mark.svg" alt="" width={56} height={56} className="h-12 w-12 sm:h-14 sm:w-14" />
+            <div className="mb-4 text-center sm:mb-6">
+              <Link to="/" aria-label="Garuda Nexa, ke beranda" className="mx-auto mb-3 inline-flex rounded-[14px]">
+                <img src="/brand/logo-mark.svg" alt="" width={48} height={48} className="h-10 w-10 sm:h-12 sm:w-12" />
               </Link>
               {/* key: judul berganti (mis. tab Masuk ↔ Daftar staf) memudar masuk */}
               <motion.div key={title} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>

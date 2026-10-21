@@ -108,7 +108,7 @@ function DetailContent({ template }: { template: Template }) {
           <TemplateGallery images={images} name={template.name} />
         </div>
 
-        <aside className="min-w-0 lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
+        <aside className="min-w-0 lg:sticky lg:top-[calc(var(--nav-offset)+1.5rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
           <div className="card-site p-5 sm:p-7">
             {template.category && <span className="badge-site">{template.category}</span>}
             <h1 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-fg [overflow-wrap:anywhere] sm:text-4xl">{template.name}</h1>

@@ -31,19 +31,45 @@ async function parse<T>(res: Response): Promise<T> {
   return data as T;
 }
 
+/**
+ * Aksi baca publik yang hasilnya dibagi selama satu kali muat halaman: beberapa komponen (hero, katalog, template
+ * lain) memanggil `get_templates` bersamaan, cukup satu request. Hasil dianggap hanya-baca oleh pemanggil.
+ */
+const SHARED_GET_ACTIONS = new Set(['get_templates']);
+const sharedGets = new Map<string, Promise<unknown>>();
+
+/** Kosongkan cache apiGet bersama (untuk tes, atau setelah admin mengubah data di tab yang sama). */
+export const clearApiCache = () => sharedGets.clear();
+
+async function requestGet<T>(url: string): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch {
+    throw new ApiError(NETWORK_ERROR, 0, 'NETWORK');
+  }
+  return parse<T>(res);
+}
+
 /** GET untuk aksi baca publik: apiGet('get_templates', { category: 'Company Profile' }) */
 export async function apiGet<T>(action: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
   const query = new URLSearchParams({ action });
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== '') query.set(key, String(value));
   }
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}?${query.toString()}`);
-  } catch {
-    throw new ApiError(NETWORK_ERROR, 0, 'NETWORK');
+  const url = `${API_URL}?${query.toString()}`;
+  if (!SHARED_GET_ACTIONS.has(action)) return requestGet<T>(url);
+
+  let shared = sharedGets.get(url) as Promise<T> | undefined;
+  if (!shared) {
+    shared = requestGet<T>(url);
+    sharedGets.set(url, shared);
+    // Gagal → hapus dari cache, jadi "Coba lagi" benar-benar meminta ulang ke server
+    shared.catch(() => {
+      if (sharedGets.get(url) === shared) sharedGets.delete(url);
+    });
   }
-  return parse<T>(res);
+  return shared;
 }
 
 /** POST JSON: apiPost('customer_create_order', { template_id: 1, ... }) */

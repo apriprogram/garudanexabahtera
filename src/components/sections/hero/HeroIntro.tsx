@@ -1,5 +1,5 @@
 import React, { useId, useRef } from 'react';
-import { Check, LayoutTemplate, MessageCircle, Play } from 'lucide-react';
+import { Check, LayoutTemplate, MessageCircle, Play, Smartphone, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation, type TranslationKey } from '../../../hooks/useTranslation';
 import { SplitText } from '../../ui/SplitText';
@@ -8,6 +8,8 @@ import type { HeroMode, ShowcaseItem } from './showcase';
 
 interface Mode {
   key: HeroMode;
+  /** Ikon segmen, sama dengan segmen alur di section Proses */
+  icon: LucideIcon;
   tab: TranslationKey;
   tabShort: TranslationKey;
   lead: TranslationKey;
@@ -18,6 +20,7 @@ interface Mode {
 const MODES: Mode[] = [
   {
     key: 'template',
+    icon: LayoutTemplate,
     tab: 'home-hero-mode-template',
     tabShort: 'home-hero-mode-template-short',
     lead: 'home-hero-template-lead',
@@ -26,6 +29,7 @@ const MODES: Mode[] = [
   },
   {
     key: 'custom',
+    icon: Smartphone,
     tab: 'home-hero-mode-custom',
     tabShort: 'home-hero-mode-custom-short',
     lead: 'home-hero-custom-lead',
@@ -39,20 +43,23 @@ const TITLE_CLASS =
 
 /**
  * Sisi kiri hero (port HeroIntro BELAJAR CPNS): toggle mode berindikator meluncur
- * [Template siap pakai | Website & Aplikasi Custom] yang mengganti judul dua warna (muncul kata per kata),
- * tiga poin checklist, dan tombol. Kedua panel ditumpuk di sel grid yang sama, jadi tinggi hero tidak melompat
- * saat mode berganti. State mode dipegang Hero agar visual kanan ikut berganti alur.
+ * [Template siap pakai | Website & aplikasi custom] (bentuk & huruf sama dengan segmen alur di section Proses) yang
+ * mengganti judul dua warna (muncul kata per kata), tiga poin checklist, dan tombol. Kedua panel ditumpuk di sel grid
+ * yang sama, jadi tinggi hero tidak melompat saat mode berganti. State mode dipegang Hero agar visual kanan ikut
+ * berganti alur.
  */
 interface HeroIntroProps {
   mode: HeroMode;
   onModeChange: (mode: HeroMode) => void;
-  /** Template yang sedang tampil di visual kanan (untuk "Lihat demo"). */
+  /** Template yang sedang tampil di visual kanan (untuk "Lihat Demo"). */
   current: ShowcaseItem | null;
   /** Section katalog #templates disembunyikan admin → tombol mode Template tidak boleh menuju ke sana. */
   templatesHidden: boolean;
+  /** true selama "Lihat Demo" di-hover / difokus: tayangan berhenti agar template yang dibuka tidak berganti. */
+  onHoldChange?: (hold: boolean) => void;
 }
 
-export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChange, current, templatesHidden }) => {
+export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChange, current, templatesHidden, onHoldChange }) => {
   const { t } = useTranslation();
   const mode = Math.max(0, MODES.findIndex((item) => item.key === modeKey));
   const setMode = (index: number) => onModeChange(MODES[index].key);
@@ -81,11 +88,11 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
         role="tablist"
         aria-label="Pilih layanan"
         onKeyDown={onTabKey}
-        className="relative inline-grid animate-fade-up grid-cols-2 rounded-full bg-alt p-1 ring-1 ring-inset ring-line/60 motion-reduce:animate-none"
+        className="relative inline-grid animate-fade-up grid-cols-2 rounded-full bg-surface p-1 ring-1 ring-inset ring-line motion-reduce:animate-none"
       >
         <span
           aria-hidden
-          className="absolute inset-y-1 left-1 rounded-full bg-surface ring-1 ring-inset ring-line transition-transform duration-500 ease-calm"
+          className="absolute inset-y-1 left-1 rounded-full bg-primary transition-transform duration-500 ease-calm motion-reduce:transition-none"
           style={{ width: 'calc((100% - 8px) / 2)', transform: `translateX(${mode * 100}%)` }}
         />
         {MODES.map((item, index) => {
@@ -103,10 +110,11 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
               aria-controls={`${baseId}-panel-${item.key}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setMode(index)}
-              className={`relative z-10 h-8 whitespace-nowrap rounded-full px-4 text-[11px] font-semibold uppercase tracking-[0.06em] transition-colors duration-300 after:absolute after:inset-x-0 after:-inset-y-1.5 sm:h-9 sm:px-5 sm:text-xs sm:after:hidden ${
-                selected ? 'text-fg' : 'text-muted hover:text-fg'
+              className={`relative z-10 inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-xs font-semibold transition-colors duration-300 after:absolute after:inset-x-0 after:-inset-y-1.5 sm:h-10 sm:px-5 sm:text-sm sm:after:hidden ${
+                selected ? 'text-white' : 'text-muted hover:text-fg'
               }`}
             >
+              <item.icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
               {/* Label pendek di layar sempit & 1024-1279px (kolom hero sempit), panjang di tempat lain */}
               <span className="sm:hidden lg:inline xl:hidden">{t(item.tabShort)}</span>
               <span className="hidden sm:inline lg:hidden xl:inline">{t(item.tab)}</span>
@@ -164,7 +172,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
                 {item.key === 'template' ? (
                   <>
                     <TemplateCta current={current} templatesHidden={templatesHidden} />
-                    <DemoLink current={current} label={t('home-hero-demo')} templatesHidden={templatesHidden} />
+                    <DemoLink current={current} label={t('home-hero-demo')} templatesHidden={templatesHidden} onHoldChange={onHoldChange} />
                   </>
                 ) : (
                   <>
@@ -224,20 +232,36 @@ const TemplateCta: React.FC<{ current: ShowcaseItem | null; templatesHidden: boo
 };
 
 /**
- * "Lihat demo" (tombol garis tanpa latar, ikon play polos) untuk template yang sedang tampil di visual; tanpa template →
- * ke katalog (tidak tampil bila katalog disembunyikan). Tab baru hanya diumumkan ke pembaca layar.
+ * "Lihat Demo · {nama template}" untuk template yang sedang tampil di visual: tombol garis tanpa latar dengan ikon play
+ * polos (tanpa lingkaran, tanpa panah ↗). Nama template terlihat mulai 640px; di HP cukup "Lihat Demo" agar tetap
+ * sebaris dengan tombol utama (nama lengkap & "(tab baru)" tetap ada di nama aksesibel). Tanpa template → ke katalog
+ * (tidak tampil bila katalog disembunyikan). Selama di-hover (mouse) atau difokus, tayangan hero berhenti
+ * (`onHoldChange`) agar template tidak berganti tepat sebelum diklik.
  */
-const DemoLink: React.FC<{ current: ShowcaseItem | null; label: string; templatesHidden: boolean }> = ({
-  current,
-  label,
-  templatesHidden,
-}) => {
+const DemoLink: React.FC<{
+  current: ShowcaseItem | null;
+  label: string;
+  templatesHidden: boolean;
+  onHoldChange?: (hold: boolean) => void;
+}> = ({ current, label, templatesHidden, onHoldChange }) => {
+  // Nama aksesibel lengkap (diawali label yang terlihat): "Lihat Demo template Corporate Nexa (tab baru)"
+  const linkProps = {
+    'aria-label': current?.demoHref ? `${label} template ${current.name} (tab baru)` : undefined,
+    onPointerEnter: (event: React.PointerEvent) => {
+      if (event.pointerType === 'mouse') onHoldChange?.(true);
+    },
+    onPointerLeave: (event: React.PointerEvent) => {
+      if (event.pointerType === 'mouse') onHoldChange?.(false);
+    },
+    onFocus: () => onHoldChange?.(true),
+    onBlur: () => onHoldChange?.(false),
+  };
   const content = (
     <>
-      <Play className={`${SECONDARY_ICON} max-sm:h-3.5 max-sm:w-3.5`} fill="currentColor" aria-hidden />
-      <span>
-        {label}
-        {current?.demoHref && <span className="sr-only"> template {current.name} (tab baru)</span>}
+      <Play className={`${SECONDARY_ICON} shrink-0 max-sm:h-3.5 max-sm:w-3.5`} fill="currentColor" aria-hidden />
+      <span className="flex min-w-0 items-baseline">
+        <span className="shrink-0">{label}</span>
+        {current?.demoHref && <span className="ml-1 max-w-[9rem] truncate font-medium text-subtle max-sm:hidden">· {current.name}</span>}
       </span>
     </>
   );
@@ -252,13 +276,13 @@ const DemoLink: React.FC<{ current: ShowcaseItem | null; label: string; template
   }
   if (current.demoExternal) {
     return (
-      <a href={current.demoHref} target="_blank" rel="noopener noreferrer" className={SECONDARY_BTN}>
+      <a href={current.demoHref} target="_blank" rel="noopener noreferrer" className={SECONDARY_BTN} {...linkProps}>
         {content}
       </a>
     );
   }
   return (
-    <Link to={current.demoHref} target="_blank" rel="noopener" className={SECONDARY_BTN}>
+    <Link to={current.demoHref} target="_blank" rel="noopener" className={SECONDARY_BTN} {...linkProps}>
       {content}
     </Link>
   );

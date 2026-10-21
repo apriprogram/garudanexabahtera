@@ -173,7 +173,7 @@ export default function OrderTemplate() {
                     <LoginPrompt orderPath={orderPath} expired={sessionExpired} />
                   )}
                 </div>
-                <div className="order-first lg:order-none lg:sticky lg:top-[calc(var(--nav-h)+1.5rem)]">
+                <div className="order-first lg:order-none lg:sticky lg:top-[calc(var(--nav-offset)+1.5rem)]">
                   <OrderSummary template={state.template} />
                 </div>
               </div>

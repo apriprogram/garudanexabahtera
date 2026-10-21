@@ -19,7 +19,10 @@ export function ImageField({ field, path, value, onChange, error, disabled, defa
   const isNew = isDataUri(value);
   const canReset = !!defaultValue && value !== defaultValue;
   const shownError = uploadError || error;
-  const help = field.help ? `${field.help} ` : '';
+  // Bantuan field (mis. Logo) sudah menyebut format/ukuran: tambahkan kalimat pendek saja agar tidak mengulang
+  const help = field.help
+    ? `${field.help} Gambar besar otomatis diperkecil.`
+    : `PNG, JPG, WEBP, GIF, atau SVG. Gambar besar otomatis diperkecil ke ${MAX_IMAGE_DIMENSION} px (maks. ${MAX_IMAGE_MB} MB).`;
 
   const handleFile = async (file: File | undefined) => {
     if (!file || disabled) return;
@@ -125,11 +128,7 @@ export function ImageField({ field, path, value, onChange, error, disabled, defa
               </button>
             )}
           </div>
-          <FieldMessage
-            id={id}
-            error={shownError}
-            help={`${help}PNG, JPG, WEBP, GIF, atau SVG. Gambar besar otomatis diperkecil ke ${MAX_IMAGE_DIMENSION} px (maks. ${MAX_IMAGE_MB} MB).`}
-          />
+          <FieldMessage id={id} error={shownError} help={help} />
         </div>
       </div>
       <input
