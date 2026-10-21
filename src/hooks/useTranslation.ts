@@ -15,11 +15,12 @@ export const translations = {
   "nav-consult": "Konsultasi Gratis",
   "nav-consult-short": "Konsultasi",
 
-  // Hero: toggle mode (label pendek dipakai di layar sempit)
+  // Hero: toggle mode, sentence case seperti segmen Proses (label pendek dipakai di layar sempit; ikon template /
+  // HP di depannya menjelaskan konteksnya)
   "home-hero-mode-template": "Template siap pakai",
-  "home-hero-mode-template-short": "Template",
-  "home-hero-mode-custom": "Website & Aplikasi Custom",
-  "home-hero-mode-custom-short": "Custom",
+  "home-hero-mode-template-short": "Siap pakai",
+  "home-hero-mode-custom": "Website & aplikasi custom",
+  "home-hero-mode-custom-short": "Jasa custom",
 
   // Hero mode Template
   "home-hero-template-lead": "Website profesional,",
@@ -28,7 +29,7 @@ export const translations = {
   "home-hero-template-point-2": "Harga jelas, bayar aman lewat Midtrans",
   "home-hero-template-point-3": "Domain kami urus, isi Anda kelola lewat CMS",
   "home-hero-btn-templates": "Pilih Template",
-  "home-hero-demo": "Lihat demo",
+  "home-hero-demo": "Lihat Demo",
 
   // Hero mode Custom
   "home-hero-custom-lead": "Website & aplikasi mobile,",

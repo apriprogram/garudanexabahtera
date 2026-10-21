@@ -7,6 +7,7 @@ import { readList, useSiteSettings } from '../../hooks/useSiteSettings';
 import { Reveal } from '../ui/Reveal';
 import { SectionHeading } from '../ui/SectionHeading';
 import { LogoMark } from '../ui/LogoMark';
+import { MIN_PRESENTABLE_PROJECTS, isPresentableProject } from './projects/presentable';
 
 /** Satu entri `portfolio_data` lama (Pengaturan website > Portofolio), dipakai sebagai cadangan. */
 interface PortfolioItem {
@@ -56,9 +57,11 @@ const gridCols = (n: number) => {
 type LoadState = { status: 'loading' } | { status: 'done'; projects: PublicProject[] };
 
 /**
- * Section "Projects" (#projects), gaya BELAJAR CPNS: kartu datar (garis tipis, tanpa shadow) — proyek pertama
- * jadi kartu sorotan lebar (gambar kiri, teks kanan), sisanya grid kartu bergambar.
- * Data: `get_public_projects` (project_client show_on_website = 1); bila gagal/kosong → `portfolio_data` lama.
+ * Section "Projects" (#projects), gaya BELAJAR CPNS: kartu datar (garis tipis, tanpa shadow, tidak bereaksi saat
+ * di-hover karena kartu bukan tautan) — proyek pertama jadi kartu sorotan lebar (gambar kiri, teks kanan), sisanya
+ * grid kartu bergambar.
+ * Data: `get_public_projects` (project_client show_on_website = 1) yang lolos `isPresentableProject` (ada gambar,
+ * deskripsi ≥ 40 karakter, bukan teks uji). Bila gagal atau kurang dari 2 proyek yang lolos → `portfolio_data` lama.
  */
 const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '02' }) => {
   const { settings } = useSiteSettings();
@@ -81,13 +84,15 @@ const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = 
 
   let items: ProjectCardData[] = [];
   if (state.status === 'done') {
+    // Teks uji (Lorem ipsum, "Coba text") tidak boleh sampai ke beranda; satu proyek saja juga tampak sepi
+    const presentable = state.projects.filter(isPresentableProject);
     items =
-      state.projects.length > 0
-        ? state.projects.map((project) => ({
+      presentable.length >= MIN_PRESENTABLE_PROJECTS
+        ? presentable.map((project) => ({
             key: `p-${project.id}`,
             title: project.name,
             label: serviceLabel(project.service_type),
-            description: project.description || '',
+            description: (project.description || '').trim(),
             image: project.image || null,
           }))
         : readList<PortfolioItem>(settings.portfolio_data, DEFAULT_PORTFOLIO)
@@ -124,8 +129,8 @@ const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = 
           description="Website dan aplikasi untuk sekolah, pesantren, UMKM, hingga instansi pemerintahan."
           action={
             <Link to="/pesan-custom" className="btn btn-outline group">
-              Diskusikan proyek Anda
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+              Pesan Custom
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
             </Link>
           }
         />
@@ -155,7 +160,10 @@ const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = 
   );
 };
 
-/** Gambar proyek dengan cadangan logo bila gagal dimuat. */
+/**
+ * Gambar proyek dengan cadangan logo bila gagal dimuat. Dekoratif (`alt=""`): judul proyek sudah dibacakan dari h3 di
+ * bawahnya. Tanpa zoom saat hover, karena kartu tidak bisa diklik.
+ */
 const ProjectImage: React.FC<{ item: ProjectCardData; className?: string }> = ({ item, className = '' }) => {
   const [broken, setBroken] = useState(false);
   if (!item.image || broken) {
@@ -168,10 +176,11 @@ const ProjectImage: React.FC<{ item: ProjectCardData; className?: string }> = ({
   return (
     <img
       src={item.image}
-      alt={item.title}
+      alt=""
       loading="lazy"
+      decoding="async"
       onError={() => setBroken(true)}
-      className={`h-full w-full object-cover object-top transition-transform duration-[1.2s] ease-out group-hover:scale-[1.04] ${className}`}
+      className={`h-full w-full object-cover object-top ${className}`}
     />
   );
 };
@@ -184,12 +193,15 @@ const Tag: React.FC<{ children: React.ReactNode; className?: string }> = ({ chil
   </span>
 );
 
-/** Kartu sorotan (gaya artikel unggulan CPNS): gambar kiri, teks kanan. */
+/**
+ * Kartu sorotan (gaya artikel unggulan CPNS): gambar kiri, teks kanan. HP: tinggi tetap; ≥ 640px rasio 16:10; ≥ 768px
+ * gambar mengisi tinggi baris (minimal 260-360px) sehingga tidak terpotong jadi pita tipis.
+ */
 const FeaturedProject: React.FC<{ item: ProjectCardData }> = ({ item }) => (
   <Reveal variant="scale">
-    <article className="card-flat lift group grid overflow-hidden p-1.5 md:grid-cols-2">
-      <div className="relative h-48 overflow-hidden rounded-[19px] bg-alt sm:h-60 md:h-[clamp(260px,36svh,360px)]">
-        <ProjectImage item={item} />
+    <article className="card-flat grid overflow-hidden p-1.5 md:grid-cols-2">
+      <div className="relative h-48 overflow-hidden rounded-[19px] bg-alt sm:aspect-[16/10] sm:h-auto md:aspect-auto md:h-full md:min-h-[clamp(260px,36svh,360px)]">
+        <ProjectImage item={item} className="md:absolute md:inset-0" />
       </div>
       <div className="flex flex-col p-5 sm:p-9 lg:p-11">
         {item.label && <Tag>{item.label}</Tag>}
@@ -221,12 +233,11 @@ const FeaturedProject: React.FC<{ item: ProjectCardData }> = ({ item }) => (
   </Reveal>
 );
 
-/** Kartu proyek: gambar di atas (memudar ke putih) + tag, judul, deskripsi. */
+/** Kartu proyek: gambar di atas (HP tinggi tetap, ≥ 640px rasio 16:10 = saran unggahan 1600×1000 px) + tag, judul, deskripsi. */
 const ProjectCard: React.FC<{ item: ProjectCardData }> = ({ item }) => (
-  <article className="card-flat lift group flex h-full flex-col overflow-hidden p-1.5">
-    <div className="relative h-44 overflow-hidden rounded-[19px] bg-alt sm:h-48 lg:h-[clamp(170px,22svh,230px)]">
+  <article className="card-flat flex h-full flex-col overflow-hidden p-1.5">
+    <div className="relative h-44 overflow-hidden rounded-[19px] bg-alt sm:aspect-[16/10] sm:h-auto">
       <ProjectImage item={item} />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-b from-transparent to-surface/90" aria-hidden />
       {item.label && <Tag className="absolute right-3 top-3 max-w-[calc(100%-1.5rem)]">{item.label}</Tag>}
     </div>
     <div className="px-4 pb-5 pt-3 sm:px-5 sm:pb-6 lg:px-6">
@@ -243,7 +254,7 @@ const ProjectsSkeleton: React.FC = () => (
     </span>
     <div className="space-y-4 sm:space-y-5 xl:space-y-6" aria-hidden>
       <div className="card-flat grid overflow-hidden p-1.5 md:grid-cols-2">
-        <div className="h-48 animate-pulse rounded-[19px] bg-alt sm:h-60 md:h-[300px]" />
+        <div className="h-48 animate-pulse rounded-[19px] bg-alt sm:aspect-[16/10] sm:h-auto md:aspect-auto md:h-[300px]" />
         <div className="space-y-3 p-5 sm:p-9">
           <div className="h-6 w-24 animate-pulse rounded-full bg-alt" />
           <div className="h-8 w-3/4 animate-pulse rounded-full bg-line" />
@@ -254,7 +265,7 @@ const ProjectsSkeleton: React.FC = () => (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:gap-6">
         {[0, 1, 2].map((i) => (
           <div key={i} className={`card-flat overflow-hidden p-1.5 ${i === 2 ? 'max-lg:hidden' : ''} ${i === 1 ? 'max-sm:hidden' : ''}`}>
-            <div className="h-44 animate-pulse rounded-[19px] bg-alt sm:h-48" />
+            <div className="h-44 animate-pulse rounded-[19px] bg-alt sm:aspect-[16/10] sm:h-auto" />
             <div className="space-y-2.5 px-4 pb-5 pt-3">
               <div className="h-4 w-2/3 animate-pulse rounded-full bg-line" />
               <div className="h-3 w-full animate-pulse rounded-full bg-alt" />

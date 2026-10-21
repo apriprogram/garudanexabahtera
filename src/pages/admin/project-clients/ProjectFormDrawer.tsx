@@ -42,6 +42,7 @@ import {
   cn,
   controlClass,
 } from '../../../components/admin/ui';
+import { projectIssues } from '../../../components/sections/projects/presentable';
 import { ApiError, apiPost, errorMessage, readImageAsDataUrl } from '../../../lib/api';
 import { downloadProjectFile, parseProjectFiles, toDateInput, type Project, type ProjectFile, type ProjectStatus, type UserLite } from './projectShared';
 import { Avatar, SectionTitle } from './ProjectUi';
@@ -185,6 +186,8 @@ export function ProjectFormDrawer({
   );
 
   const staffUsers = useMemo(() => usersList.filter((u) => u.role !== 'customer'), [usersList]);
+  // Syarat tampil di #projects beranda (sama dengan section Projects): gambar, deskripsi >= 40 karakter, bukan teks uji
+  const homepageIssues = projectIssues(formData);
 
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -298,7 +301,8 @@ export function ProjectFormDrawer({
           <section>
             <SectionTitle icon={Camera}>Media & pratinjau</SectionTitle>
             <div className="group relative mx-auto w-full max-w-sm">
-              <div className="flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-adm-line-strong bg-adm-ghost transition-colors group-hover:border-cobalt/60">
+              {/* Rasio 16:10 = rasio kartu proyek di beranda */}
+              <div className="flex aspect-[16/10] w-full flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-adm-line-strong bg-adm-ghost transition-colors group-hover:border-cobalt/60">
                 {formData.image ? (
                   <img src={formData.image} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -306,7 +310,7 @@ export function ProjectFormDrawer({
                     <Upload className="h-7 w-7" strokeWidth={1.75} />
                     <div className="text-center">
                       <p className="text-[13px] font-semibold text-adm-fg">Taruh gambar proyek di sini</p>
-                      <p className="mt-0.5 text-xs text-adm-muted">Disarankan 1600×900 px, maks. {MAX_IMAGE_MB} MB</p>
+                      <p className="mt-0.5 text-xs text-adm-muted">Disarankan 1600×1000 px, maks. {MAX_IMAGE_MB} MB</p>
                     </div>
                   </div>
                 )}
@@ -612,9 +616,14 @@ export function ProjectFormDrawer({
                 checked={formData.show_on_website}
                 onChange={(on) => update('show_on_website', on)}
                 label="Tampilkan di website"
-                description="Proyek tampil di bagian Projects di beranda (nama, layanan, gambar, dan deskripsi; tanpa harga dan kontak klien)."
+                description="Proyek tampil di bagian Projects di beranda (nama, layanan, gambar, dan deskripsi; tanpa harga dan kontak klien). Syaratnya ada gambar dan deskripsi minimal 40 karakter; beranda baru menampilkan proyek bila minimal 2 proyek memenuhinya."
               />
             </div>
+            {formData.show_on_website && homepageIssues.length > 0 && (
+              <Notice tone="warning" title="Belum tampil di beranda" className="mt-3">
+                Proyek ini belum memenuhi syarat: {homepageIssues.join(', ')}.
+              </Notice>
+            )}
           </section>
 
           {/* Materi proyek */}
