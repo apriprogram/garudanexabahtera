@@ -20,6 +20,9 @@ const AccountLayout = lazy(() => import('./pages/account/AccountLayout'));
 const AccountHome = lazy(() => import('./pages/account/AccountHome'));
 const AccountOrderDetail = lazy(() => import('./pages/account/AccountOrderDetail'));
 const SiteEditor = lazy(() => import('./pages/account/SiteEditor'));
+const MyProjects = lazy(() => import('./pages/account/projects/MyProjects'));
+const MyProjectDetail = lazy(() => import('./pages/account/projects/MyProjectDetail'));
+const MyProjectDocument = lazy(() => import('./pages/account/projects/MyProjectDocument'));
 
 const PageFallback = () => (
   <div className="flex min-h-[60vh] items-center justify-center" role="status" aria-label="Memuat halaman">
@@ -68,6 +71,10 @@ function App() {
             <Route index element={lazyPage(<AccountHome />)} />
             <Route path="pesanan/:orderNumber" element={lazyPage(<AccountOrderDetail />)} />
             <Route path="situs/:siteId" element={lazyPage(<SiteEditor />)} />
+            {/* Dokumen proyek custom (docs/platform/PROJECT-DOCS-SPEC.md §7) */}
+            <Route path="proyek" element={lazyPage(<MyProjects />)} />
+            <Route path="proyek/:id" element={lazyPage(<MyProjectDetail />)} />
+            <Route path="proyek/:id/dokumen/:docId" element={lazyPage(<MyProjectDocument />)} />
           </Route>
 
           {/* Login staf & panel admin */}

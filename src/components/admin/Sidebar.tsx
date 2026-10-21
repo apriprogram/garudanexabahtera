@@ -5,7 +5,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { logout } from '../../lib/auth';
 import { LogoMark } from '../ui/LogoMark';
-import { ADMIN_NAV, isNavActive, type AdminNavItem } from './nav';
+import { ADMIN_NAV, getActiveNavItem, isNavActive, type AdminNavItem } from './nav';
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt';
 
@@ -30,6 +30,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ collapsed = false, onTo
   const isAdmin = currentUser?.role === 'admin';
   const items = ADMIN_NAV.filter((item) => !item.adminOnly || isAdmin);
   const groups = [...new Set(items.map((item) => item.group))];
+  // Satu item aktif saja: yang paling spesifik (/admin/proyek/pengaturan bukan juga /admin/proyek)
+  const activePath = getActiveNavItem(location.pathname)?.path;
 
   // Hapus authToken + currentUser lalu ke /login (lihat src/lib/auth.ts)
   const handleLogout = () => {
@@ -86,24 +88,20 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ collapsed = false, onTo
                     <NavGroupItem key={item.path} item={item} collapsed={collapsed} onNavigate={onNavigate} pathname={location.pathname} />
                   ) : (
                     <li key={item.path}>
-                      <NavLink
+                      <Link
                         to={item.path}
-                        end={item.end}
                         onClick={onNavigate}
                         title={collapsed ? item.label : undefined}
-                        className={({ isActive }) => itemClass(isActive, collapsed)}
+                        aria-current={item.path === activePath ? 'page' : undefined}
+                        className={itemClass(item.path === activePath, collapsed)}
                       >
-                        {({ isActive }) => (
-                          <>
-                            <item.icon
-                              className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-cobalt' : 'text-adm-subtle'}`}
-                              strokeWidth={1.75}
-                              aria-hidden
-                            />
-                            <span className={collapsed ? 'sr-only' : 'truncate'}>{item.label}</span>
-                          </>
-                        )}
-                      </NavLink>
+                        <item.icon
+                          className={`h-[18px] w-[18px] shrink-0 ${item.path === activePath ? 'text-cobalt' : 'text-adm-subtle'}`}
+                          strokeWidth={1.75}
+                          aria-hidden
+                        />
+                        <span className={collapsed ? 'sr-only' : 'truncate'}>{item.label}</span>
+                      </Link>
                     </li>
                   ),
                 )}

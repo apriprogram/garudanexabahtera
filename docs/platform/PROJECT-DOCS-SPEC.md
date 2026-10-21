@@ -37,8 +37,8 @@ Related contracts: `docs/platform/SPEC.md` (roles, auth, design tokens), `design
 | `timeline` | Jadwal & Tahapan Pengerjaan | TML | yes | client | none | pengerjaan |
 | `uat` | UAT – Pengujian & Persetujuan Hasil | UAT | yes | client | both parties | uji |
 | `bast` | BAST – Berita Acara Serah Terima | BAST | yes | client | both parties | serah_terima |
-| `invoice` | Invoice / Tagihan | INV | yes (≥1) | none | none | pembayaran |
-| `receipt` | Kuitansi / Bukti Pembayaran | KWT | auto | none | none | pembayaran |
+| `invoice` | Invoice / Tagihan | INV | yes (≥1) | none | none | pelunasan |
+| `receipt` | Kuitansi / Bukti Pembayaran | KWT | auto | none | none | pelunasan |
 | `sla` | SLA – Perjanjian Pemeliharaan & Dukungan | SLA | **optional** (project flag `has_maintenance`) | client | both parties | maintenance |
 
 "Both parties" = Pihak Pertama (PT Garuda Nexa Bahtera, signed by an admin as the company signatory) and Pihak Kedua
@@ -255,6 +255,11 @@ Private storage (signatures, payment proofs): PHP `dirname(public_dir()) . '/sto
 
 ## 4. Shared data shapes (TypeScript in `src/features/project-docs/types.ts`; backends emit the same JSON)
 
+`types.ts` is the complete contract: besides the shapes below it defines every record (`Client`, `Milestone`,
+`DocSummary`, `DocDetail`, `InvoiceSummary`, `InvoiceDetail`, `Payment`, `ProjectSummary`, `ProjectDetail`,
+`ChecklistItem`, `Activity`, `PdNotification`, settings) and one request/response interface per action of §5,
+plus `PD_ACTIONS` (action → access class), `ActivityAction` and `CLIENT_VISIBLE_ACTIVITY`.
+
 ### 4.1 Document content
 
 ```ts
@@ -295,7 +300,7 @@ interface MergeData {
              maintenance_start; maintenance_end };
   milestones: { title; description; start_date; due_date; weight; progress; status }[];
   document: { number; type; title; date; date_long; day; version; status };
-  invoice?: InvoiceTotals & { kind; issue_date; due_date; items: InvoiceItem[]; amount_paid; payment_status; notes };
+  invoice?: InvoiceTotals & { kind; term_key; issue_date; due_date; items: InvoiceItem[]; amount_paid; payment_status; notes };
   payment?: { amount; amount_terbilang; paid_at; method; reference; invoice_number };
   signatures: { party; signer_name; signer_title; signed_at; image_url? }[];
 }
@@ -395,8 +400,9 @@ export function exportDocx(model: DocModel, fileName: string): Promise<void>;  /
 export const SECTION_HINTS: Record<DocType, Record<string, string>>;          // editor help per section id
 ```
 
-`DocModel` = `{ meta:{number,title,type,date}, kop:{company}, blocks: Block[], signatures: SignatureSlot[], footer }`
-with `Block` = heading | paragraph (runs: text/bold) | list | table | keyValue | spacer | pageBreak | meteraiBox.
+`DocModel` = `{ meta:{number,title,type,date}, kop:{company}, blocks: Block[], signatures: SignatureSlot[], footer, missing: string[] }`
+with `Block` = heading | paragraph (runs: text/bold) | list | table | keyValue | spacer | pageBreak | meteraiBox;
+`missing` lists the unresolved merge fields for the editor warnings (types in `engine/model.ts`).
 The same model drives preview, PDF and DOCX so the three look alike.
 
 Templates (Indonesian, formal, ready for real use; every section editable):

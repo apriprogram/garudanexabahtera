@@ -14,7 +14,8 @@ database/
 │   ├── 2026-10-19_002_navbar_anchor_urls.sql
 │   ├── 2026-10-19_003_navbar_top_level_links.sql
 │   ├── 2026-10-19_004_template_marketplace.sql
-│   └── 2026-10-19_005_drop_monitoring_tables.sql   # BELUM DISETUJUI, jangan dijalankan (lihat bawah)
+│   ├── 2026-10-19_005_drop_monitoring_tables.sql   # BELUM DISETUJUI, jangan dijalankan (lihat bawah)
+│   └── 2026-10-21_006_project_documents.sql        # dokumen proyek (pd_*), lihat bawah
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -79,6 +80,7 @@ C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/
 C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-19_003_navbar_top_level_links.sql
 C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-19_004_template_marketplace.sql
 C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/seed.templates.sql   # opsional, contoh katalog
+C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-21_006_project_documents.sql
 ```
 
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
@@ -156,6 +158,21 @@ Langkah (produksi cPanel: `.env` di `/home/garudanexa/.env`; docker: `.env` di s
 Rollback: restore backup dari langkah 1. Kode lama tidak bisa mendekripsi, jadi kembali ke kode lama setelah langkah 4
 berarti akun tampil sebagai teks `enc:v1:...` (tetap tidak bocor ke publik). Backup dan dump DB yang dibuat sebelum
 langkah 4 masih berisi akun dalam teks biasa: simpan di tempat aman atau hapus.
+
+### Migrasi 2026-10-21_006 — dokumen proyek (`2026-10-21_006_project_documents.sql`)
+
+Fitur Project Documentation & Agreement Management (kontrak: `docs/platform/PROJECT-DOCS-SPEC.md`). Bukan "Migrasi 006"
+enkripsi akun produk di atas (itu migrasi data lewat API, tanpa file SQL).
+
+- Tabel baru `pd_clients`, `pd_milestones`, `pd_documents`, `pd_document_revisions`, `pd_approvals`, `pd_signatures`,
+  `pd_invoices`, `pd_payments`, `pd_notifications`, `pd_notification_reads`, `pd_counters`, `pd_activity`.
+- `project_client` + `client_id`, `code` (unik), `stage_override`, `use_mou`, `has_maintenance`, `maintenance_*`,
+  `scope_summary`, `payment_terms` (JSON), `updated_at`. Nilai kontrak tetap kolom `price`.
+- Pengaturan bawaan di `hero_settings` (`pd_company`, `pd_numbering`, `pd_tax`, `pd_payment_terms`, `pd_sla_defaults`)
+  lewat `INSERT IGNORE`: nilai yang sudah diubah admin tidak ditimpa; NPWP/rekening sengaja kosong.
+- Hanya menambah (tanpa DROP/DELETE/UPDATE data), aman diulang. Kode lama tidak memakai kolom/tabel baru, jadi migrasi
+  boleh dipasang sebelum deploy kode baru; kode baru **butuh** migrasi ini. Rollback: restore backup.
+- Tanda tangan & bukti bayar disimpan privat di `storage/project-docs/` (di luar `public_html`, di-gitignore).
 
 ### Produksi (VPS, docker-compose)
 

@@ -22,6 +22,16 @@ INSERT IGNORE INTO hero_settings (setting_key, setting_value) VALUES
   ('hero_images',      '[]'),
   ('disabled_sections','[]');
 
+-- Project documents defaults (same values as migration 2026-10-21_006, docs/platform/PROJECT-DOCS-SPEC.md §3).
+-- NPWP, address, signatory and bank accounts stay empty on purpose: the admin fills them in
+-- "Pengaturan dokumen"; never commit real legal data here.
+INSERT IGNORE INTO hero_settings (setting_key, setting_value) VALUES
+  ('pd_company', '{"name":"PT Garuda Nexa Bahtera","address":"","city":"","phone":"","email":"","website":"https://garudanexa.com","npwp":"","signatory_name":"","signatory_title":"Direktur","bank_accounts":[{"bank":"","number":"","holder":""}]}'),
+  ('pd_numbering', '{"prefix":"GNB"}'),
+  ('pd_tax', '{"ppn_enabled":false,"ppn_rate":12,"dpp_numerator":11,"dpp_denominator":12,"pph23_rate":2}'),
+  ('pd_payment_terms', '[{"key":"dp","label":"Uang muka (DP)","percent":50,"trigger":"kontrak","due_days":7},{"key":"termin2","label":"Termin 2","percent":30,"trigger":"uji","due_days":7},{"key":"pelunasan","label":"Pelunasan","percent":20,"trigger":"serah_terima","due_days":7}]'),
+  ('pd_sla_defaults', '{"support_hours":"Senin–Jumat 09.00–17.00 WIB","uptime":"99,5%","priorities":[{"level":"P1 – Kritis","response":"2 jam","resolution":"1 hari kerja"},{"level":"P2 – Tinggi","response":"4 jam","resolution":"2 hari kerja"},{"level":"P3 – Normal","response":"1 hari kerja","resolution":"5 hari kerja"}]}');
+
 -- Singleton row: the backend only ever UPDATEs this WHERE id = 1.
 INSERT IGNORE INTO visitor_stats (id, total_visits) VALUES (1, 0);
 

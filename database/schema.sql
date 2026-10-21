@@ -3,7 +3,7 @@
 -- ============================================================================
 -- Single source of truth for the structure of `db_garudanexabahtera`.
 -- Matches what backend/server.js (production) and backend/api.php (XAMPP)
--- actually query, after migrations up to 2026-10-19_004 are applied.
+-- actually query, after migrations up to 2026-10-21_006 are applied.
 -- (2026-10-19_005 — drop the monitoring tables — is written but NOT approved yet;
 --  the monitoring tables below are kept and marked DEPRECATED until it runs.)
 --
@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS hero_settings (
 -- Client projects (admin > Project Clients). Rows with source = 'website' come from the public
 -- custom-order form (submit_custom_order); show_on_website = 1 lists the project in the public
 -- Projects section (get_public_projects returns only id, name, service_type, image, description).
+-- client_id … payment_terms, updated_at: project documents workspace (migration 006,
+-- docs/platform/PROJECT-DOCS-SPEC.md §3); the contract value is `price`.
 CREATE TABLE IF NOT EXISTS project_client (
   id            INT NOT NULL AUTO_INCREMENT,
   name          VARCHAR(255) NOT NULL,
@@ -84,8 +86,22 @@ CREATE TABLE IF NOT EXISTS project_client (
   description   TEXT DEFAULT NULL,
   show_on_website TINYINT(1) NOT NULL DEFAULT 0,
   source        ENUM('admin','website') NOT NULL DEFAULT 'admin',
+  client_id     INT DEFAULT NULL,             -- pd_clients.id
+  code          VARCHAR(32) DEFAULT NULL,     -- PRJ-YYYY-NNN, assigned when the workspace is first saved
+  stage_override VARCHAR(20) DEFAULT NULL,    -- admin override of the derived stage
+  use_mou       TINYINT(1) NOT NULL DEFAULT 0,
+  has_maintenance TINYINT(1) NOT NULL DEFAULT 0,
+  maintenance_fee DECIMAL(15,2) DEFAULT NULL,
+  maintenance_period ENUM('bulanan','tahunan') DEFAULT NULL,
+  maintenance_start DATE DEFAULT NULL,
+  maintenance_end DATE DEFAULT NULL,
+  scope_summary TEXT DEFAULT NULL,
+  payment_terms LONGTEXT DEFAULT NULL,        -- JSON PaymentTerm[]
   created_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+  updated_at    TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_project_client_code (code),
+  KEY idx_project_client_client (client_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Company products shown in admin > List Products.
@@ -253,6 +269,219 @@ CREATE TABLE IF NOT EXISTS template_order_logs (
   created_at  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_logs_order (order_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- PROJECT DOCUMENTS (migration 2026-10-21_006, docs/platform/PROJECT-DOCS-SPEC.md §3)
+-- One workspace per custom project (project_client): BRD, MoU, Proposal, PKS + SOW, Jadwal,
+-- UAT, BAST, Invoice, Kuitansi, SLA. Document status: draft -> menunggu_persetujuan ->
+-- disetujui -> selesai. Default settings (pd_company, pd_numbering, pd_tax, pd_payment_terms,
+-- pd_sla_defaults in hero_settings) are seeded by database/seed.sql.
+-- ============================================================================
+
+-- Clients; user_id links a customer account (role customer) that may approve and sign.
+CREATE TABLE IF NOT EXISTS pd_clients (
+  id         INT NOT NULL AUTO_INCREMENT,
+  type       ENUM('perusahaan','perorangan') NOT NULL DEFAULT 'perusahaan',
+  name       VARCHAR(255) NOT NULL,               -- company or person name
+  pic_name   VARCHAR(255) DEFAULT NULL,
+  pic_title  VARCHAR(255) DEFAULT NULL,
+  email      VARCHAR(255) DEFAULT NULL,
+  phone      VARCHAR(50) DEFAULT NULL,
+  address    TEXT DEFAULT NULL,
+  city       VARCHAR(120) DEFAULT NULL,
+  npwp       VARCHAR(32) DEFAULT NULL,
+  user_id    INT DEFAULT NULL,                    -- users.id with role customer
+  notes      TEXT DEFAULT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Milestones (Jadwal); project progress = Σ(weight × progress) / Σ weight.
+CREATE TABLE IF NOT EXISTS pd_milestones (
+  id           INT NOT NULL AUTO_INCREMENT,
+  project_id   INT NOT NULL,                      -- project_client.id
+  title        VARCHAR(255) NOT NULL,
+  description  TEXT DEFAULT NULL,
+  start_date   DATE DEFAULT NULL,
+  due_date     DATE DEFAULT NULL,
+  weight       INT NOT NULL DEFAULT 1,            -- relative weight
+  progress     TINYINT NOT NULL DEFAULT 0,        -- 0..100
+  status       ENUM('belum_mulai','berjalan','selesai','tertunda') NOT NULL DEFAULT 'belum_mulai',
+  sort_order   INT NOT NULL DEFAULT 0,
+  completed_at DATETIME DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_project (project_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Documents. `number` (007/PKS/GNB/X/2026) is assigned once at creation through pd_counters.
+CREATE TABLE IF NOT EXISTS pd_documents (
+  id                 INT NOT NULL AUTO_INCREMENT,
+  project_id         INT NOT NULL,
+  doc_type           ENUM('brd','mou','proposal','pks','timeline','uat','bast','invoice','receipt','sla') NOT NULL,
+  number             VARCHAR(64) NOT NULL,
+  title              VARCHAR(255) NOT NULL,
+  status             ENUM('draft','menunggu_persetujuan','disetujui','selesai') NOT NULL DEFAULT 'draft',
+  version            INT NOT NULL DEFAULT 1,
+  content            LONGTEXT NOT NULL,           -- JSON DocContent of the current version
+  snapshot           LONGTEXT DEFAULT NULL,       -- JSON MergeData frozen at submit/issue
+  content_hash       CHAR(64) DEFAULT NULL,       -- SHA-256 of canonical JSON {content, snapshot}
+  revision_requested TINYINT(1) NOT NULL DEFAULT 0,
+  review_note        TEXT DEFAULT NULL,
+  doc_date           DATE NOT NULL,
+  submitted_at       DATETIME DEFAULT NULL,
+  approved_at        DATETIME DEFAULT NULL,
+  completed_at       DATETIME DEFAULT NULL,
+  created_by         INT DEFAULT NULL,
+  updated_by         INT DEFAULT NULL,
+  created_at         TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at         TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_number (number),
+  KEY idx_project_type (project_id, doc_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Revision history: one row per saved version (full content).
+CREATE TABLE IF NOT EXISTS pd_document_revisions (
+  id          INT NOT NULL AUTO_INCREMENT,
+  document_id INT NOT NULL,
+  version     INT NOT NULL,
+  content     LONGTEXT NOT NULL,
+  change_note VARCHAR(500) DEFAULT NULL,
+  changed_by  INT DEFAULT NULL,
+  created_at  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_doc_version (document_id, version)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Client approvals / rejections per document version.
+CREATE TABLE IF NOT EXISTS pd_approvals (
+  id          INT NOT NULL AUTO_INCREMENT,
+  document_id INT NOT NULL,
+  version     INT NOT NULL,
+  user_id     INT NOT NULL,
+  decision    ENUM('approved','rejected') NOT NULL,
+  note        TEXT DEFAULT NULL,
+  ip          VARCHAR(64) DEFAULT NULL,
+  user_agent  VARCHAR(255) DEFAULT NULL,
+  created_at  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_doc (document_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Electronic signatures (audit trail); the PNG lives in private storage (storage/project-docs).
+CREATE TABLE IF NOT EXISTS pd_signatures (
+  id           INT NOT NULL AUTO_INCREMENT,
+  document_id  INT NOT NULL,
+  version      INT NOT NULL,
+  party        ENUM('pihak_pertama','pihak_kedua') NOT NULL,
+  user_id      INT NOT NULL,
+  signer_name  VARCHAR(255) NOT NULL,
+  signer_title VARCHAR(255) DEFAULT NULL,
+  method       ENUM('draw','type') NOT NULL,
+  image_file   VARCHAR(255) NOT NULL,             -- file name in private storage
+  content_hash CHAR(64) NOT NULL,
+  ip           VARCHAR(64) DEFAULT NULL,
+  user_agent   VARCHAR(255) DEFAULT NULL,
+  signed_at    TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_doc_version_party (document_id, version, party)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Invoices (one pd_documents row each); totals are always recomputed by the server.
+CREATE TABLE IF NOT EXISTS pd_invoices (
+  id             INT NOT NULL AUTO_INCREMENT,
+  project_id     INT NOT NULL,
+  document_id    INT NOT NULL,
+  term_key       VARCHAR(40) DEFAULT NULL,        -- PaymentTerm.key or NULL for manual
+  kind           ENUM('dp','termin','pelunasan','maintenance','lainnya') NOT NULL,
+  issue_date     DATE NOT NULL,
+  due_date       DATE NOT NULL,
+  items          LONGTEXT NOT NULL,               -- JSON InvoiceItem[]
+  subtotal       DECIMAL(15,2) NOT NULL,
+  discount       DECIMAL(15,2) NOT NULL DEFAULT 0,
+  dpp            DECIMAL(15,2) NOT NULL,
+  ppn_rate       DECIMAL(5,2) NOT NULL DEFAULT 0,
+  ppn_amount     DECIMAL(15,2) NOT NULL DEFAULT 0,
+  pph23_rate     DECIMAL(5,2) NOT NULL DEFAULT 0,
+  pph23_amount   DECIMAL(15,2) NOT NULL DEFAULT 0,
+  total          DECIMAL(15,2) NOT NULL,
+  amount_due     DECIMAL(15,2) NOT NULL,
+  amount_paid    DECIMAL(15,2) NOT NULL DEFAULT 0,
+  payment_status ENUM('belum_dibayar','sebagian','lunas','dibatalkan') NOT NULL DEFAULT 'belum_dibayar',
+  notes          TEXT DEFAULT NULL,
+  created_at     TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_document (document_id),
+  KEY idx_project (project_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Payments recorded by an admin; each one issues a receipt document (Kuitansi).
+CREATE TABLE IF NOT EXISTS pd_payments (
+  id                  INT NOT NULL AUTO_INCREMENT,
+  invoice_id          INT NOT NULL,
+  amount              DECIMAL(15,2) NOT NULL,
+  paid_at             DATE NOT NULL,
+  method              ENUM('transfer','tunai','qris','lainnya') NOT NULL DEFAULT 'transfer',
+  reference           VARCHAR(120) DEFAULT NULL,
+  proof_file          VARCHAR(255) DEFAULT NULL,  -- file name in private storage
+  note                TEXT DEFAULT NULL,
+  receipt_document_id INT DEFAULT NULL,
+  recorded_by         INT NOT NULL,
+  created_at          TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_invoice (invoice_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- In-app notifications: user_id = one user, or user_id NULL + role = broadcast to that role.
+CREATE TABLE IF NOT EXISTS pd_notifications (
+  id         INT NOT NULL AUTO_INCREMENT,
+  user_id    INT DEFAULT NULL,
+  role       ENUM('admin','user','customer') DEFAULT NULL,
+  type       VARCHAR(40) NOT NULL,
+  title      VARCHAR(255) NOT NULL,
+  body       VARCHAR(500) DEFAULT NULL,
+  link       VARCHAR(255) DEFAULT NULL,
+  project_id INT DEFAULT NULL,
+  dedupe_key VARCHAR(120) DEFAULT NULL,
+  read_at    DATETIME DEFAULT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_dedupe (dedupe_key),
+  KEY idx_user (user_id),
+  KEY idx_role (role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Read state of role broadcasts, per user.
+CREATE TABLE IF NOT EXISTS pd_notification_reads (
+  notification_id INT NOT NULL,
+  user_id         INT NOT NULL,
+  read_at         DATETIME NOT NULL,
+  PRIMARY KEY (notification_id, user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Atomic numbering: INSERT … ON DUPLICATE KEY UPDATE last_seq = LAST_INSERT_ID(last_seq + 1).
+CREATE TABLE IF NOT EXISTS pd_counters (
+  counter_key VARCHAR(16) NOT NULL,               -- document CODE (BRD, PKS, ...) or PRJ
+  year        SMALLINT NOT NULL,
+  last_seq    INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (counter_key, year)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Project activity log (every state change).
+CREATE TABLE IF NOT EXISTS pd_activity (
+  id          INT NOT NULL AUTO_INCREMENT,
+  project_id  INT NOT NULL,
+  document_id INT DEFAULT NULL,
+  user_id     INT DEFAULT NULL,
+  action      VARCHAR(40) NOT NULL,
+  detail      VARCHAR(500) DEFAULT NULL,
+  created_at  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_project (project_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
@@ -673,7 +902,8 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-19_001', 'baseline: canonical schema aligned with backend queries'),
   ('2026-10-19_002', 'baseline: navbar_menus anchor URLs (no rows to fix)'),
   ('2026-10-19_003', 'baseline: navbar top-level links (no navbar rows)'),
-  ('2026-10-19_004', 'baseline: template marketplace tables, customer role, project_client show_on_website/source');
+  ('2026-10-19_004', 'baseline: template marketplace tables, customer role, project_client show_on_website/source'),
+  ('2026-10-21_006', 'baseline: project documents pd_* tables, project_client workspace columns (settings: seed.sql)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

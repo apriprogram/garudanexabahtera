@@ -28,6 +28,8 @@ import { handlePlatformAction } from './modules/templates.js';
 import { handleListProductAction } from './modules/list_products.js';
 // Client project files (dokumen-client/dokumen): staff-only download, the folder itself is closed to the web
 import { handleProjectFileAction } from './modules/project_files.js';
+// Project documents & agreements, pd_* actions (docs/platform/PROJECT-DOCS-SPEC.md)
+import { handleProjectDocsAction } from './modules/project_docs.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -137,11 +139,14 @@ app.get('/api.php', async (req, res) => {
   if (await handlePlatformAction(action, req.query, req, res, pool)) return;
   if (await handleListProductAction(action, req.query, req, res, pool)) return;
   if (await handleProjectFileAction(action, req.query, req, res)) return;
+  if (await handleProjectDocsAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
     try {
-      const [rows] = await pool.query('SELECT setting_key, setting_value FROM hero_settings');
+      // Public: pd_* keys (company identity, tax, payment terms of the project documents) are read through
+      // pd_settings_get only; the comparison follows the column's case-insensitive collation
+      const [rows] = await pool.query("SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_'");
       const settings = {};
       for (const row of rows) {
         settings[row.setting_key] = row.setting_value;
@@ -369,6 +374,7 @@ app.post('/api.php', async (req, res) => {
   if (await handlePlatformAction(action, req.body, req, res, pool)) return;
   if (await handleListProductAction(action, req.body, req, res, pool)) return;
   if (await handleProjectFileAction(action, req.body, req, res)) return;
+  if (await handleProjectDocsAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {
@@ -401,6 +407,11 @@ app.post('/api.php', async (req, res) => {
 
       case 'update_settings': {
         const settings = inputSettings || {};
+        // pd_* settings are admin-only and validated per field: pd_settings_save (backend/modules/project_docs.js)
+        if (Object.keys(settings).some((key) => key.toLowerCase().startsWith('pd_'))) {
+          res.status(403).json({ error: 'Pengaturan dokumen proyek hanya bisa diubah lewat Pengaturan dokumen.', code: 'FORBIDDEN' });
+          return;
+        }
         const errors = [];
 
         // ── products_data ──
