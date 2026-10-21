@@ -6,6 +6,7 @@ import Home from './pages/public/Home';
 import { adminRoutes } from './pages/admin/routes';
 import SiteHostGate from './templates/SiteHostGate';
 import { isMainHost } from './templates/siteHosts';
+import { LEGAL_PATHS } from './lib/legal';
 
 // Halaman di luar beranda dimuat saat dibuka agar bundel beranda tetap ringan
 const TemplateDetail = lazy(() => import('./pages/public/TemplateDetail'));
@@ -20,6 +21,26 @@ const AccountLayout = lazy(() => import('./pages/account/AccountLayout'));
 const AccountHome = lazy(() => import('./pages/account/AccountHome'));
 const AccountOrderDetail = lazy(() => import('./pages/account/AccountOrderDetail'));
 const SiteEditor = lazy(() => import('./pages/account/SiteEditor'));
+const SyaratKetentuan = lazy(() => import('./pages/public/legal/SyaratKetentuan'));
+const KebijakanPrivasi = lazy(() => import('./pages/public/legal/KebijakanPrivasi'));
+const KebijakanPengembalianDana = lazy(() => import('./pages/public/legal/KebijakanPengembalianDana'));
+
+/**
+ * Website hanya berbahasa Indonesia (sakelar ID/EN & Google Translate dihapus): bersihkan sisa pilihan bahasa lama
+ * di browser pengunjung, yaitu `language` di localStorage dan cookie `googtrans` milik Google Translate.
+ */
+const clearLegacyLanguage = () => {
+  try {
+    localStorage.removeItem('language');
+  } catch {
+    // penyimpanan diblokir: tidak ada yang perlu dibersihkan
+  }
+  if (!document.cookie.includes('googtrans=')) return;
+  const host = window.location.hostname;
+  for (const domain of ['', `; domain=${host}`, `; domain=.${host}`]) {
+    document.cookie = `googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT${domain}`;
+  }
+};
 
 const PageFallback = () => (
   <div className="flex min-h-[60vh] items-center justify-center" role="status" aria-label="Memuat halaman">
@@ -35,6 +56,10 @@ function App() {
   useEffect(() => {
     document.body.classList.toggle('light-theme', theme === 'light');
   }, [theme]);
+
+  useEffect(() => {
+    clearLegacyLanguage();
+  }, []);
 
   useEffect(() => {
     // Situs milik pembeli (domain lain) tidak dihitung di statistik pengunjung Garuda Nexa
@@ -62,6 +87,11 @@ function App() {
           <Route path="/pesan-custom" element={lazyPage(<CustomOrder />)} />
           <Route path="/masuk" element={lazyPage(<CustomerLogin />)} />
           <Route path="/daftar" element={lazyPage(<CustomerRegister />)} />
+
+          {/* Dokumen legal (ditautkan di Footer, checkout, dan form daftar) */}
+          <Route path={LEGAL_PATHS.terms} element={lazyPage(<SyaratKetentuan />)} />
+          <Route path={LEGAL_PATHS.privacy} element={lazyPage(<KebijakanPrivasi />)} />
+          <Route path={LEGAL_PATHS.refund} element={lazyPage(<KebijakanPengembalianDana />)} />
 
           {/* Akun pembeli template */}
           <Route path="/akun" element={lazyPage(<AccountLayout />)}>

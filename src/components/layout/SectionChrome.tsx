@@ -39,7 +39,8 @@ export const SectionChrome: React.FC<{ sections: ChromeSection[] }> = ({ section
       />
 
       {shown.length > 1 && (
-        <nav aria-label="Pindah section" className="fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 xl:block 2xl:right-6">
+        // Titik tetap di posisi lama (pusat 19px / 27px dari tepi kanan) walau anchor kini selebar 28px
+        <nav aria-label="Pindah section" className="fixed right-1.25 top-1/2 z-30 hidden -translate-y-1/2 xl:block 2xl:right-3.25">
           <ul className="flex flex-col items-end gap-1.5">
             {shown.map((section) => {
               const current = section.id === active.id;
@@ -51,9 +52,11 @@ export const SectionChrome: React.FC<{ sections: ChromeSection[] }> = ({ section
                       if (scrollToSection(section.id)) event.preventDefault();
                     }}
                     aria-current={current ? 'location' : undefined}
-                    className="group flex h-7 items-center gap-3 rounded-full pl-3"
+                    // Area klik hanya sebesar titik (28×28) di tepi layar; label melayang di luar alur tata letak,
+                    // jadi tidak menangkap klik di atas konten halaman (mis. pratinjau hero)
+                    className="group relative flex h-7 w-7 items-center justify-center rounded-full"
                   >
-                    <span className="pointer-events-none translate-x-2 whitespace-nowrap rounded-full bg-fg px-2.5 py-1 text-[11px] font-medium text-white opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100">
+                    <span className="pointer-events-none absolute right-full top-1/2 mr-0.5 -translate-y-1/2 translate-x-2 whitespace-nowrap rounded-full bg-fg px-2.5 py-1 text-[11px] font-medium text-white opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100">
                       {section.label}
                     </span>
                     <span

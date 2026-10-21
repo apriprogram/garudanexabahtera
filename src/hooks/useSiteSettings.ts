@@ -5,6 +5,9 @@ export type SiteSettings = Record<string, string | undefined>;
 
 const ENDPOINT = '/api.php?action=get_settings';
 const DEFAULT_WHATSAPP = '6285188009152';
+/** Kontak bawaan bila setting kosong. Domain email = garudanexa.com (garudanexa.co.id tidak ada / NXDOMAIN). */
+export const DEFAULT_CONTACT_EMAIL = 'info@garudanexa.com';
+export const DEFAULT_CONTACT_PHONE = '085188009152';
 const EMPTY: SiteSettings = {};
 
 const normalizeSettings = (data: unknown): SiteSettings =>
@@ -39,9 +42,89 @@ export const getHiddenSections = (settings: SiteSettings): Set<string> =>
       .map((id) => id.trim().toLowerCase()),
   );
 
-/** Nomor WhatsApp (hanya angka) dari setting footer. */
-export const getWhatsappNumber = (settings: SiteSettings): string =>
-  (settings.footer_whatsapp || '').replace(/\D/g, '') || DEFAULT_WHATSAPP;
+/**
+ * Nomor WhatsApp (hanya angka, berkode negara) dari setting footer. wa.me butuh kode negara, jadi nomor yang ditulis
+ * admin dalam format lokal ("0851…") diubah menjadi "62851…".
+ */
+export const getWhatsappNumber = (settings: SiteSettings): string => {
+  const digits = (settings.footer_whatsapp || '').replace(/\D/g, '');
+  if (!digits) return DEFAULT_WHATSAPP;
+  return digits.startsWith('0') ? `62${digits.slice(1)}` : digits;
+};
 
 export const whatsappUrl = (number: string, message?: string): string =>
   `https://wa.me/${number}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+
+/** Email kontak publik (setting `footer_email`, cadangan info@garudanexa.com). */
+export const getContactEmail = (settings: SiteSettings): string =>
+  (settings.footer_email || '').trim() || DEFAULT_CONTACT_EMAIL;
+
+/** Nomor telepon kontak publik apa adanya dari setting `footer_phone` (tampilkan lewat `displayPhone`). */
+export const getContactPhone = (settings: SiteSettings): string =>
+  (settings.footer_phone || '').trim() || DEFAULT_CONTACT_PHONE;
+
+/**
+ * Nomor telepon yang mudah dibaca: nomor HP Indonesia dikelompokkan 4-4-sisa ("085188009152" → "0851-8800-9152";
+ * "+62 851…" → "0851-…"). Nomor lain (telepon kantor, luar negeri) ditampilkan seperti yang ditulis admin.
+ */
+export const displayPhone = (raw: string): string => {
+  const trimmed = raw.trim();
+  const digits = trimmed.replace(/\D/g, '');
+  const local = digits.startsWith('628') ? `0${digits.slice(2)}` : digits;
+  if (!local.startsWith('08') || local.length < 10 || local.length > 13) return trimmed;
+  return [local.slice(0, 4), local.slice(4, 8), local.slice(8)].join('-');
+};
+
+/** Tautan `tel:` berkode negara agar bisa dipanggil dari luar negeri: "085188009152" → "tel:+6285188009152". */
+export const telHref = (raw: string): string => {
+  const trimmed = raw.trim();
+  const digits = trimmed.replace(/\D/g, '');
+  if (!digits) return '';
+  if (trimmed.startsWith('+') || digits.startsWith('62')) return `tel:+${digits}`;
+  return `tel:+62${digits.replace(/^0/, '')}`;
+};
+
+/**
+ * Isi harga template Rp 1.500.000 (keputusan pemilik 2026-10-21): termasuk template + setup, domain, hosting dan SSL
+ * tahun pertama; perpanjangan domain & hosting ditagih per tahun mulai tahun ke-2 (nominal diinformasikan sebelum
+ * jatuh tempo). Admin bisa mengubahnya di Pengaturan website > Harga.
+ */
+export const TEMPLATE_PRICE_INCLUDES_DEFAULT: readonly string[] = [
+  'Template website + setup awal',
+  'Domain tahun pertama',
+  'Hosting tahun pertama',
+  'Sertifikat SSL (HTTPS) tahun pertama',
+];
+export const TEMPLATE_PRICE_NOTE_DEFAULT =
+  'Mulai tahun ke-2, perpanjangan domain & hosting ditagih per tahun. Biayanya kami informasikan sebelum jatuh tempo.';
+
+export interface TemplatePricing {
+  /** Daftar "Sudah termasuk" (kosong = jangan tampilkan daftarnya). */
+  includes: string[];
+  /** Catatan satu kalimat di bawah harga (kosong = jangan tampilkan barisnya). */
+  note: string;
+}
+
+/**
+ * Catatan harga template dari setting `template_price_includes` (satu item per baris, awalan "-"/"•" dibuang) dan
+ * `template_price_note`. Setting yang belum pernah disimpan memakai teks bawaan di atas; setting yang sengaja
+ * dikosongkan admin menyembunyikan barisnya.
+ */
+export const getTemplatePricing = (settings: SiteSettings): TemplatePricing => {
+  const rawIncludes = settings.template_price_includes;
+  const includes =
+    rawIncludes === undefined
+      ? [...TEMPLATE_PRICE_INCLUDES_DEFAULT]
+      : rawIncludes
+          .split(/\r?\n/)
+          .map((line) => line.replace(/^\s*[-•*]\s*/, '').trim())
+          .filter(Boolean);
+  const note = settings.template_price_note === undefined ? TEMPLATE_PRICE_NOTE_DEFAULT : settings.template_price_note.trim();
+  return { includes, note };
+};
+
+/** `getTemplatePricing` + status muat setting, untuk halaman detail template, pemesanan, dan akun. */
+export const useTemplatePricing = (): TemplatePricing & { loaded: boolean } => {
+  const { settings, loaded } = useSiteSettings();
+  return { ...getTemplatePricing(settings), loaded };
+};

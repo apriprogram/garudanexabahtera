@@ -69,7 +69,8 @@ mode terang panel admin) tidak mengubah apa pun di halaman publik. Jangan memaka
 
 - Radius: kontrol/input 12px (`rounded-xl`), kartu 24px (`card-flat`/`card-site`; gambar di dalam kartu `p-1.5` → 19px),
   accordion 20px, bingkai visual hero 20 → 28px, tombol/chip/tab pill (`rounded-full`).
-- **Container** `container-site`: maks 1680px, gutter 20/32/48/64px. **Section**: `section-y` (48 → 80 → 96px) atau
+- **Container** `container-site`: maks 1680px, gutter 20/32/48/64px, tidak pernah lebih sempit dari
+  `env(safe-area-inset-left/right)` (iPhone landscape). **Section**: `section-y` (48 → 80 → 96px) atau
   `section-screen` (beranda: ≈ satu layar di ≥ 1024px, isi di tengah; di HP tinggi mengikuti isi).
 - Tipografi Inter + **JetBrains Mono** (`font-mono`: nomor section, nomor langkah, penghitung). Angka `tabular-nums`.
 - Skala (HP → desktop): H1 hero `text-[26px] → sm:text-[52px] lg:text-[48px] xl:text-[60px] 2xl:text-[72px]`;
@@ -94,12 +95,14 @@ mode terang panel admin) tidak mengubah apa pun di halaman publik. Jangan memaka
 | `eyebrow` | 12px huruf besar, tracking lebar, `text-subtle` | Judul kolom footer, label kecil |
 | `grid-dots` / `grid-dots-light` | Pola titik halus gelap / putih | Latar visual, CTA biru |
 | `glow-brand` | Cahaya biru lembut dari atas (pseudo-element) | Kartu sorotan |
-| `label-site`, `input-site`, `help-site`, `error-site` | Label 13px, input 44px rounded-xl (16px di HP), bantuan, error merah | `aria-invalid="true"` = garis merah |
+| `label-site`, `input-site`, `help-site`, `error-site` | Label 13px, input 44px rounded-xl (16px di HP), bantuan, error `danger-700` (6,57:1) + ikon peringatan otomatis (`::before`, jangan tambah ikon sendiri) | `aria-invalid="true"` = garis merah |
 | `chip-site` | Pill filter; aktif = `aria-pressed`/`aria-selected` (biru solid) | Filter kategori |
 | `badge-site` / `link-site` | Pill kecil biru muda / teks biru bergaris bawah saat hover | |
 
 State wajib: default, hover, focus (outline biru global `:focus-visible`), disabled (`disabled` / `aria-disabled` = pudar),
 loading (ikon `Loader2 animate-spin` + `disabled`, atau skeleton `animate-pulse bg-alt`), error, empty.
+Elemen yang bisa difokus punya `scroll-margin` 88px atas/bawah (index.css), jadi fokus keyboard tidak tertutup navbar fixed
+atau tombol WhatsApp melayang; offset anchor section tetap lewat `scroll-mt-*`.
 
 ### Gerak (`src/components/ui`, `src/index.css`)
 
@@ -114,16 +117,52 @@ loading (ikon `Loader2 animate-spin` + `disabled`, atau skeleton `animate-pulse 
 - `Navbar` (fixed, tinggi 64px HP / 72px ≥ 1024px; **halaman lain memberi `pt-16 lg:pt-[72px]`**): transparan di puncak,
   putih kaca + garis rambut saat digulir (tanpa shadow), menu tengah dengan sorotan pill yang meluncur saat hover, titik
   biru = section aktif di beranda, bar progres baca 2px. Menu dari "Navbar Manager" (`useNavbarMenus`); bawaan Template
-  `#templates`, Projects `#projects`, Proses `#process`, FAQ `#faq`. Kanan: bahasa, "Masuk" → `/masuk` (customer: "Akun Saya"
-  → `/akun`; staf: "Panel Admin" → `/admin`), CTA pill "Konsultasi Gratis" → `#kontak`. HP: logo + CTA ringkas + hamburger;
-  menu HP berupa lapisan di bawah navbar (item 44px, bahasa, akun, CTA).
-- `Footer`: blok CTA biru brand `id="kontak"` (pola titik putih + cahaya lembut, judul kata per kata), lalu footer putih
-  bergaris rambut (logo, kolom tautan `eyebrow`, hak cipta, media sosial). Prop `alt` = latar abu di area CTA; `chrome` = transparan (beranda).
-- `SectionChrome`: latar halaman ber-crossfade per section + indikator titik section di kanan (≥ 1280px). Dipakai beranda.
+  `#templates`, Projects `#projects`, Proses `#process`, FAQ `#faq`. Kanan: "Masuk" → `/masuk` (customer: "Akun Saya"
+  → `/akun`; staf: "Panel Admin" → `/admin`, lewat `accountLinkFor(useSessionRole())`), CTA pill "Konsultasi Gratis" →
+  `#kontak`. Tidak ada sakelar bahasa. Anak pertama `<header>` = `<SkipLink />` ("Lewati ke konten" → `#konten`, cadangan
+  `<main>` pertama). HP: logo + CTA ringkas + hamburger; menu HP = `<nav id="menu-hp" aria-label="Menu">` di bawah navbar
+  (item 44px, akun, CTA) + latar redup datar `bg-fg/20` (ketuk = tutup), gulir halaman dikunci, Tab berputar di header
+  (`useFocusTrap`), Escape menutup & fokus kembali ke tombol menu. `pt-[env(safe-area-inset-top)]` untuk mode PWA.
+- `Footer`: blok CTA biru brand `id="kontak"` (pola titik putih + cahaya lembut, judul kata per kata; tombol "Hubungi WhatsApp"
+  + "Pesan Custom"), lalu footer putih bergaris rambut (logo, kolom tautan `eyebrow`, hak cipta + tautan dokumen legal,
+  media sosial hanya bila admin mengisinya). Kolom Akun mengikuti sesi: tamu "Masuk" + "Daftar Akun", customer "Akun Saya",
+  staf "Panel Admin". Telepon tampil `displayPhone()` ("0851-8800-9152"), tautan `telHref()` (`tel:+62…`). Prop `alt` =
+  latar abu di area CTA; `chrome` = transparan (beranda).
+- `SectionChrome`: latar halaman ber-crossfade per section + indikator titik section di kanan (≥ 1280px). Dipakai beranda,
+  dirender SETELAH `<Footer>` (titik di akhir urutan Tab). Area klik tiap titik 28×28px; label melayang di luar alur.
+- `FloatingWhatsApp` (`components/layout`): tombol WhatsApp melayang (48/56px, safe-area, `shadow-float`). Di HP tersembunyi
+  selama elemen `hideOverId` (hero `beranda`) terlihat dan saat menggulir ke bawah; muncul lagi saat menggulir ke atas.
+- `SkipLink` (`components/ui`): `<SkipLink target="konten-akun" />` untuk layout lain; konten utama diberi `id` +
+  `tabIndex={-1}` + `focus:outline-none`.
 - `SmartLink`: `href="#templates"` menggulir halus berkurva (`scroll.ts`, batal bila pengguna menggulir) bila section ada,
   kalau tidak membuka `/#templates`; `/rute` = navigasi SPA; `https://` = tab baru.
 - `SectionHeading` (`components/ui`): chip "01 · Label" (nomor mono di pil gelap) + judul kata per kata (opsional `accent`
   biru) + deskripsi rata kanan + aksi. `layout="stack"` untuk kolom sticky (FAQ). `titleId` untuk `aria-labelledby`.
+
+### Hook & data bersama (`src/hooks`, `src/lib`)
+
+- `useFocusTrap<T>(active, { initialFocus?: 'first' | 'container' | 'none', returnFocusRef?, onEscape? })` → ref untuk
+  container: Tab/Shift+Tab berputar di dalamnya, fokus kembali ke pemicu saat nonaktif. Elemen `data-focus-trap-ignore` dilewati.
+  Pakai untuk menu HP, dialog, lightbox.
+- `useSessionRole()` → `'customer' | 'admin' | 'user' | null` (ikut login/logout di tab lain); `sessionKind(role)` →
+  `guest | customer | staff`; `accountLinkFor(role)` → `{ to, label }`.
+- `useSiteSettings.ts`: `getWhatsappNumber` (selalu berkode negara), `whatsappUrl(number, pesan)`, `getContactEmail`
+  (cadangan `info@garudanexa.com`), `getContactPhone`, `displayPhone`, `telHref`, dan harga template:
+  `getTemplatePricing(settings)` / `useTemplatePricing()` → `{ includes: string[], note: string }` dari setting
+  `template_price_includes` (satu item per baris) & `template_price_note` (Admin > Pengaturan website > Harga). Bawaan =
+  keputusan pemilik: template + setup, domain, hosting, SSL tahun pertama; perpanjangan domain & hosting per tahun mulai
+  tahun ke-2. Isian yang dikosongkan admin = baris/daftar tidak ditampilkan.
+- `lib/legal.ts`: `LEGAL_PATHS` (`terms` `/syarat-ketentuan`, `privacy` `/kebijakan-privasi`, `refund`
+  `/kebijakan-pengembalian-dana`), `LEGAL_LABELS`, `LEGAL_LINKS`, `LEGAL_UPDATED_AT`.
+- `lib/api.ts`: `apiGet('get_templates')` dibagi satu request per muat halaman (gagal = tidak di-cache); `clearApiCache()` untuk tes.
+
+### Halaman legal (`src/pages/public/legal`)
+
+`LegalPage` = Navbar, breadcrumb, H1 + "Terakhir diperbarui" (`<time>`), daftar isi (desktop: kolom sticky; HP: `<details>`),
+bagian bernomor, kotak kontak (WhatsApp + email dari setting), dokumen terkait, Footer. Isi = draf dari cara kerja platform
+dan keputusan pemilik (refund pesanan lunas yang ditolak: penuh ke metode bayar semula, maks. 7 hari kerja), wajib ditinjau
+pemilik; setiap perubahan isi → perbarui `LEGAL_UPDATED_AT`. Metode pembayaran ditulis umum ("metode pembayaran yang
+tersedia di Midtrans").
 
 ### Beranda (`src/pages/public/Home.tsx`)
 
@@ -239,6 +278,31 @@ Tetap ditulis apa adanya (istilah teknis/nama): Dashboard, Monitoring, server, w
 
 ## Bahasa (website publik & akun pembeli)
 
-Bahasa Indonesia, menyapa pengguna dengan **"Anda"** (panel admin memakai "kamu", lihat di atas). Aksi utama yang sudah
-dikenal memakai Title Case ("Pilih Template", "Lihat Demo", "Pesan", "Konsultasi Gratis", "Masuk", "Akun Saya");
-teks lain sentence case. Jangan menampilkan harga atau paket untuk jasa custom (biaya disampaikan lewat penawaran).
+**Hanya Bahasa Indonesia** (keputusan pemilik 2026-10-21: tidak ada sakelar ID/EN dan tidak memuat Google Translate). Teks
+UI pendek navbar/hero ada di `useTranslation.ts` (`t('kunci')`, Indonesia saja). Menyapa pengguna dengan **"Anda"** (panel
+admin memakai "kamu", lihat di atas). Aksi utama yang sudah dikenal memakai Title Case (lihat glosarium); teks lain
+sentence case. Jangan menampilkan harga atau paket untuk jasa custom (biaya disampaikan lewat penawaran).
+
+**Glosarium label aksi (pakai persis, Title Case):**
+
+| Label | Untuk |
+|---|---|
+| Pilih Template | Ke katalog `#templates` (hero) |
+| Lihat Demo | Buka demo template (`/demo/:slug` atau `demo_url`) |
+| Pesan Template | Ke `/pesan/:slug` (kartu sempit boleh "Pesan" + `aria-label="Pesan Template {nama}"`) |
+| Lihat Semua Template | Tautan ke katalog lengkap |
+| Pesan Custom | Tombol pendek ke `/pesan-custom` (Proses, CTA `#kontak`, 404, kartu) |
+| Pesan Website / Aplikasi Mobile Custom | Versi panjang, hanya tombol hero & judul halaman `/pesan-custom` |
+| Konsultasi Gratis | Ngobrol via WhatsApp / ke `#kontak` (bukan form) |
+| Kirim Kebutuhan | Kirim form `/pesan-custom` |
+| Lanjut ke Pembayaran | Kirim form `/pesan/:slug` (ke Midtrans) |
+| Bayar Sekarang | Bayar pesanan yang menunggu pembayaran (akun) |
+| Pesan Lagi | Pesan template lagi dari akun |
+| Kelola Situs | Buka CMS `/akun/situs/:id` |
+| Masuk / Daftar Akun / Akun Saya / Panel Admin | Akun (Navbar, Footer, form) |
+
+- **Label navigasi final** (Navbar & Footer "Jelajahi"): Template, Projects (tetap bahasa Inggris, keputusan pemilik), Proses, FAQ.
+- **Kosakata form**: "Nama lengkap", "Email", "Nomor WhatsApp", "Nama perusahaan / instansi (opsional)"; placeholder contoh
+  diawali "mis." ("mis. 0812-3456-7890"); rentang memakai en dash ("8–15 digit").
+- **Istilah**: teks isi memakai "custom" (bukan "khusus"); "domain", "hosting", "SSL", "CMS" tetap. Dokumen legal:
+  "Syarat & Ketentuan", "Kebijakan Privasi", "Kebijakan Pengembalian Dana".
