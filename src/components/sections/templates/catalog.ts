@@ -2,7 +2,7 @@
 import type { Template } from '../../../types/platform';
 
 /**
- * Isian abu tipis berbasis warna teks (bukan bg-alt), supaya kolom cari, tab aktif, area gambar, dan skeleton
+ * Isian abu tipis berbasis warna teks (bukan bg-alt), supaya kolom cari, area gambar, dan skeleton
  * tetap terlihat baik di latar section putih maupun abu (latar beranda ber-crossfade per section).
  */
 export const TINT = 'bg-fg/5';
@@ -25,24 +25,27 @@ export const normalize = (value: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-/** Kata kunci yang umum dicari pembeli; `terms` = sinonim yang dicocokkan ke isi template. */
+/**
+ * Kata kunci yang umum dicari pembeli; `terms` = sinonim yang dicocokkan ke isi template.
+ * Label sentence case (huruf besar hanya untuk akronim & nama produk: UMKM, WhatsApp, CMS).
+ */
 const KEYWORDS: { label: string; terms: string[] }[] = [
-  { label: 'company profile', terms: ['company profile', 'profil perusahaan', 'compro'] },
-  { label: 'landing page', terms: ['landing page', 'halaman promosi', 'one page'] },
-  { label: 'toko online', terms: ['toko online', 'e-commerce', 'ecommerce', 'online shop', 'katalog produk', 'keranjang'] },
+  { label: 'Company profile', terms: ['company profile', 'profil perusahaan', 'compro'] },
+  { label: 'Landing page', terms: ['landing page', 'halaman promosi', 'one page'] },
+  { label: 'Toko online', terms: ['toko online', 'e-commerce', 'ecommerce', 'online shop', 'katalog produk', 'keranjang'] },
   { label: 'UMKM', terms: ['umkm', 'usaha kecil'] },
-  { label: 'startup', terms: ['startup'] },
-  { label: 'portofolio', terms: ['portofolio', 'portfolio'] },
-  { label: 'restoran', terms: ['restoran', 'kafe', 'cafe', 'kuliner'] },
-  { label: 'pendidikan', terms: ['sekolah', 'pendidikan', 'kursus', 'bimbel'] },
-  { label: 'kesehatan', terms: ['klinik', 'kesehatan', 'dokter', 'apotek'] },
-  { label: 'properti', terms: ['properti', 'real estate', 'perumahan'] },
-  { label: 'travel', terms: ['travel', 'wisata'] },
-  { label: 'undangan', terms: ['undangan', 'pernikahan', 'wedding'] },
-  { label: 'blog', terms: ['blog', 'artikel', 'berita'] },
+  { label: 'Startup', terms: ['startup'] },
+  { label: 'Portofolio', terms: ['portofolio', 'portfolio'] },
+  { label: 'Restoran', terms: ['restoran', 'kafe', 'cafe', 'kuliner'] },
+  { label: 'Pendidikan', terms: ['sekolah', 'pendidikan', 'kursus', 'bimbel'] },
+  { label: 'Kesehatan', terms: ['klinik', 'kesehatan', 'dokter', 'apotek'] },
+  { label: 'Properti', terms: ['properti', 'real estate', 'perumahan'] },
+  { label: 'Travel', terms: ['travel', 'wisata'] },
+  { label: 'Undangan', terms: ['undangan', 'pernikahan', 'wedding'] },
+  { label: 'Blog', terms: ['blog', 'artikel', 'berita'] },
   { label: 'WhatsApp', terms: ['whatsapp'] },
-  { label: 'galeri', terms: ['galeri', 'gallery'] },
-  { label: 'testimoni', terms: ['testimoni'] },
+  { label: 'Galeri', terms: ['galeri', 'gallery'] },
+  { label: 'Testimoni', terms: ['testimoni'] },
   { label: 'CMS', terms: ['cms', 'kelola konten'] },
 ].map((kw) => ({ label: kw.label, terms: kw.terms.map(normalize) }));
 
@@ -81,31 +84,25 @@ export function matchesQuery(haystack: string, query: string): boolean {
 
 /**
  * Chip "Populer:": kata kunci yang benar-benar ada di template (tidak pernah memberi hasil kosong).
- * Yang membedakan template (tidak cocok dengan semuanya) didahulukan, lalu kategori yang belum terwakili.
+ * Yang membedakan template (tidak cocok dengan semuanya) didahulukan. Kata kunci yang sama dengan nama kategori
+ * dilewati, karena kategori sudah punya tab sendiri (atau, bila hanya satu kategori, memberi hasil yang sama).
  */
 export function buildPopularKeywords(items: IndexedTemplate[], categories: string[], limit = 8): string[] {
   if (items.length === 0) return [];
-  const scored = KEYWORDS.map((kw, order) => ({
+  const categoryKeys = new Set(categories.map(normalize));
+  return KEYWORDS.map((kw, order) => ({
     label: kw.label,
     order,
     count: items.filter((item) => kw.terms.some((term) => item.haystack.includes(term))).length,
   }))
-    .filter((kw) => kw.count > 0)
+    .filter((kw) => kw.count > 0 && !categoryKeys.has(normalize(kw.label)))
     .sort((a, b) => {
       const aAll = a.count === items.length ? 1 : 0;
       const bAll = b.count === items.length ? 1 : 0;
       return aAll - bAll || b.count - a.count || a.order - b.order;
     })
-    .map((kw) => kw.label);
-
-  const seen = new Set(scored.map(normalize));
-  const extra = categories.filter((name) => {
-    const key = normalize(name);
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  return [...scored, ...extra].slice(0, limit);
+    .map((kw) => kw.label)
+    .slice(0, limit);
 }
 
 /** Waktu dari string "YYYY-MM-DD HH:mm:ss" (format MySQL); tidak valid → 0. */
@@ -129,35 +126,6 @@ export function sortTemplates(list: Template[], key: SortKey): Template[] {
       // Rekomendasi = urutan yang diatur admin (sort_order)
       return sorted.sort(byAdminOrder);
   }
-}
-
-/** Sebutan pendek yang lazim di Indonesia untuk kategori panjang (kunci sudah dinormalisasi). */
-const SHORT_CATEGORY: Record<string, string> = {
-  'company profile': 'Compro',
-  'profil perusahaan': 'Compro',
-  'landing page': 'Landing',
-  'halaman promosi': 'Landing',
-  'undangan digital': 'Undangan',
-  'undangan pernikahan': 'Undangan',
-};
-/** Kata umum yang tidak membedakan kategori ("Website Sekolah" → "Sekolah"). */
-const GENERIC_WORDS = new Set(['website', 'web', 'situs', 'template', 'tema', 'digital', 'online']);
-const SHORT_MAX = 11;
-
-/**
- * Label lencana kategori yang ringkas (±≤ 11 huruf) agar muat di baris info kartu selebar 270–300px
- * seperti lencana "PRO" di Dribbble. Nama lengkap tetap disertakan lewat title / teks pembaca layar.
- */
-export function shortCategory(category: string): string {
-  const clean = category.trim().replace(/\s+/g, ' ');
-  const mapped = SHORT_CATEGORY[normalize(clean)];
-  if (mapped) return mapped;
-  if (clean.length <= SHORT_MAX) return clean;
-  const words = clean.split(' ').filter((word) => !GENERIC_WORDS.has(normalize(word)));
-  const rest = words.join(' ');
-  if (rest && rest.length <= SHORT_MAX) return rest;
-  // Masih panjang: kata pertama yang bermakna (CSS memotong dengan elipsis bila tetap terlalu lebar)
-  return words[0] || clean;
 }
 
 const NEW_WINDOW_MS = 45 * 24 * 60 * 60 * 1000;

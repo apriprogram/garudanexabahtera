@@ -5,13 +5,14 @@ import { Link } from 'react-router-dom';
 import { formatRupiah, type Template } from '../../../types/platform';
 import { LogoMark } from '../../ui/LogoMark';
 import { Reveal } from '../../ui/Reveal';
-import { shortCategory, TINT } from './catalog';
+import { TINT } from './catalog';
 
 /** Tautan demo: demo_url eksternal (http/https) atau /demo/:slug, selalu di tab baru. */
-function DemoLink({ template, className, children, label }: { template: Template; className: string; children: ReactNode; label?: string }) {
+function DemoLink({ template, className, children }: { template: Template; className: string; children: ReactNode }) {
   const external = /^https?:\/\//i.test(template.demo_url || '');
   const href = external ? (template.demo_url as string) : `/demo/${encodeURIComponent(template.slug)}`;
-  const common = { className, 'aria-label': label, title: label ? 'Lihat demo' : undefined };
+  // Nama aksesibel diawali label yang terlihat ("Lihat Demo"), lalu nama template & keterangan tab baru
+  const common = { className, 'aria-label': `Lihat Demo ${template.name} (tab baru)` };
   return external ? (
     <a href={href} target="_blank" rel="noopener noreferrer" {...common}>
       {children}
@@ -34,19 +35,25 @@ interface TemplateShotProps {
   template: Template;
   index: number;
   isNew?: boolean;
+  /** Lencana kategori hanya berguna bila katalog punya ≥ 2 kategori (Templates.tsx yang menentukan). */
+  showCategory?: boolean;
+  /** Tingkat judul kartu: h3 di grid utama, h4 bila grid berada di bawah sub-judul (mis. "Template yang tersedia"). */
+  headingLevel?: 3 | 4;
 }
 
 /**
- * Kartu template bergaya "shot" Dribbble: gambar 4:3 tanpa garis & shadow, di bawahnya baris avatar + nama +
- * lencana + harga. Desktop (pointer halus, ≥ lg): saat hover muncul gradien gelap lembut dengan nama dan tombol
- * bulat "Lihat demo" & "Pesan". Layar sentuh / sempit: deskripsi singkat + tombol di bawah kartu.
+ * Kartu template bergaya "shot" Dribbble: gambar 4:3 tanpa garis & shadow (zoom halus saat hover), di bawahnya
+ * baris avatar + nama + lencana + harga, deskripsi singkat, lalu tombol "Lihat Demo" & "Pesan". Isi & aksi selalu
+ * terlihat di semua perangkat (kontrak kartu SPEC §8), tanpa lapisan hover. Di HP dan kartu sempit (< 20rem)
+ * harga turun ke baris sendiri di bawah nama, jadi nama tidak terpotong dan tepi kanan bebas dari tombol WhatsApp.
  */
-export function TemplateShot({ template, index, isNew = false }: TemplateShotProps) {
+export function TemplateShot({ template, index, isNew = false, showCategory = false, headingLevel = 3 }: TemplateShotProps) {
   const [imageBroken, setImageBroken] = useState(false);
   const slug = encodeURIComponent(template.slug);
   const detailHref = `/template/${slug}`;
   const orderHref = `/pesan/${slug}`;
   const showImage = Boolean(template.preview_image) && !imageBroken;
+  const Heading = headingLevel === 4 ? 'h4' : 'h3';
 
   return (
     <li className="min-w-0">
@@ -71,96 +78,59 @@ export function TemplateShot({ template, index, isNew = false }: TemplateShotPro
                 </span>
               )}
             </Link>
-
-            {/* Lapisan hover (desktop): gradien bawah + kategori/nama + tombol bulat */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden items-end gap-3 bg-linear-to-t from-fg/70 via-fg/25 to-transparent px-4 pb-4 pt-20 opacity-0 transition-opacity duration-300 group-focus-within/shot:opacity-100 group-hover/shot:opacity-100 motion-reduce:transition-none lg:pointer-fine:flex">
-              <div className="min-w-0 flex-1">
-                {template.category && (
-                  <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-white/70">{template.category}</p>
-                )}
-                <p className="mt-0.5 truncate text-[15px] font-semibold leading-snug text-white">{template.name}</p>
-              </div>
-              <div className="pointer-events-auto flex shrink-0 items-center gap-2">
-                <DemoLink
-                  template={template}
-                  label={`Lihat demo ${template.name} (tab baru)`}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-fg transition-colors hover:bg-brand-50 hover:text-primary"
-                >
-                  <Eye className="h-[18px] w-[18px]" aria-hidden />
-                </DemoLink>
-                <Link
-                  to={orderHref}
-                  aria-label={`Pesan template ${template.name}`}
-                  title="Pesan"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover active:bg-brand-800"
-                >
-                  <ShoppingBag className="h-[18px] w-[18px]" aria-hidden />
-                </Link>
-              </div>
-            </div>
           </div>
 
-          {/* Baris info ala Dribbble: avatar + nama + lencana | harga + ikon demo */}
-          <div className="mt-3 flex min-w-0 items-center gap-2">
+          {/* Baris info ala Dribbble: avatar + nama + lencana | harga (HP & kartu sempit: harga di baris kedua) */}
+          <div className="mt-3 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-0.5 max-sm:grid-cols-[auto_minmax(0,1fr)] @max-[20rem]:grid-cols-[auto_minmax(0,1fr)]">
             <BrandAvatar />
-            {/* Nama mengalah (terpotong elipsis) lebih dulu; lencana pendek selalu tampil seperti "PRO" di Dribbble */}
-            <div className="flex min-w-0 items-center gap-1.5">
-              <h3 className="min-w-0 text-sm font-medium leading-5 text-fg">
-                {/* truncate di span dalam (bukan di tautan/h3): outline fokus & area sentuh ::after (44px) tidak terpotong */}
+            {/* Nama mengalah (terpotong elipsis) lebih dulu; lencana kategori dibatasi 9rem dan ikut terpotong bila perlu */}
+            <div className="flex min-w-0 items-center gap-2">
+              <Heading className="min-w-0 text-base font-semibold leading-snug text-fg sm:text-[17px]">
+                {/* truncate di span dalam (bukan di tautan/judul): outline fokus & area sentuh ::after (44px) tidak terpotong */}
                 <Link
                   to={detailHref}
                   className="relative block rounded-sm transition-colors after:absolute after:inset-x-0 after:-inset-y-3 hover:text-primary"
                 >
                   <span className="block truncate">{template.name}</span>
                 </Link>
-              </h3>
+              </Heading>
               {isNew ? (
-                <span className="inline-block h-4 shrink-0 rounded-full bg-primary px-1.5 text-[10px] font-semibold leading-4 text-white">
+                <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-primary px-2 text-[11px] font-semibold text-white">
                   Baru
                 </span>
               ) : (
+                showCategory &&
                 template.category && (
-                  <span
-                    className="inline-block h-4 max-w-[5.5rem] shrink-0 truncate rounded-full bg-fg px-1.5 text-[10px] font-semibold leading-4 text-white"
-                    title={template.category}
-                  >
-                    <span aria-hidden>{shortCategory(template.category)}</span>
-                    <span className="sr-only">Kategori {template.category}</span>
+                  <span className="badge-site max-w-[9rem] shrink-0" title={template.category}>
+                    <span className="sr-only">Kategori </span>
+                    <span className="min-w-0 truncate">{template.category}</span>
                   </span>
                 )
               )}
             </div>
 
-            <div className="ml-auto flex shrink-0 items-center gap-1.5">
-              {/* 13px (seperti angka statistik di Dribbble) agar nama template tetap utuh di kartu 4 kolom 1366px */}
-              <p className="whitespace-nowrap text-[13px] font-semibold tabular-nums text-fg">
-                <span className="sr-only">Harga </span>
-                {formatRupiah(template.price)}
-              </p>
-              {/* Ikon demo hanya di kartu lebar (≥ 352px); kartu desktop yang lebih sempit memakai tombol demo di lapisan hover */}
-              <DemoLink
-                template={template}
-                label={`Lihat demo ${template.name} (tab baru)`}
-                className="hidden h-7 w-7 items-center justify-center rounded-full text-subtle transition-colors hover:bg-brand-50 hover:text-primary @[22rem]:lg:pointer-fine:inline-flex"
-              >
-                <Eye className="h-4 w-4" aria-hidden />
-              </DemoLink>
-            </div>
+            <p className="whitespace-nowrap text-sm font-semibold tabular-nums text-fg max-sm:col-start-2 sm:text-[15px] @max-[20rem]:col-start-2">
+              <span className="sr-only">Harga </span>
+              {formatRupiah(template.price)}
+            </p>
           </div>
 
-          {/* Layar sentuh / sempit: deskripsi + tombol selalu terlihat (tanpa lapisan hover) */}
-          <div className="flex flex-1 flex-col lg:pointer-fine:hidden">
+          {/* Deskripsi + tombol selalu terlihat; mt-auto menyejajarkan tombol di dasar kartu dalam satu baris grid */}
+          <div className="flex flex-1 flex-col">
             {template.short_description && (
-              <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted">{template.short_description}</p>
+              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">{template.short_description}</p>
             )}
-            <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-              {/* px-3/gap-1.5: muat di kartu 2 kolom tersempit (±270px) tanpa teks meluber */}
-              <DemoLink template={template} className="btn btn-outline gap-1.5 px-3">
+            {/* btn-sm (36px) mulai sm; HP tetap 40px agar mudah diketuk. px-3/gap-1.5: muat di kartu tersempit (±270px) */}
+            <div className="mt-auto grid grid-cols-2 gap-2 pt-3 sm:pt-4">
+              <DemoLink template={template} className="btn btn-outline btn-sm px-3 max-sm:h-10 max-sm:text-[13px]">
                 <Eye className="h-4 w-4" aria-hidden />
-                Lihat demo
-                <span className="sr-only"> {template.name} (tab baru)</span>
+                Lihat Demo
               </DemoLink>
-              <Link to={orderHref} className="btn btn-primary gap-1.5 px-3" aria-label={`Pesan template ${template.name}`}>
+              <Link
+                to={orderHref}
+                className="btn btn-primary btn-sm px-3 max-sm:h-10 max-sm:text-[13px]"
+                aria-label={`Pesan Template ${template.name}`}
+              >
                 <ShoppingBag className="h-4 w-4" aria-hidden />
                 Pesan
               </Link>
