@@ -231,8 +231,8 @@ const HeroSlides: React.FC<HeroSlidesProps> = ({ images, slides, upcoming, prelo
  * - video: berulang tanpa suara, inline, tanpa kontrol bawaan; poster tampil sampai video berjalan. Video rusak /
  *   gagal dimuat → disembunyikan (poster tetap tampil sebagai gambar bila ada).
  * Tidak ada lagi yang bisa tampil (semua gambar gagal, atau video gagal tanpa poster yang bisa dimuat) → kanvas bawaan.
- * Di atas media: cuci putih agar teks tetap terbaca (HP rata, ≥ 1024px kuat di kolom teks kiri, tipis di kanan) +
- * pudar atas (navbar transparan) dan bawah (menyatu dengan strip layanan). Datar: tanpa scrim gelap, tanpa blur.
+ * Media tampil penuh tanpa lapisan penutup (permintaan pemilik: gambar harus jelas); hanya pudar di bawah agar menyatu
+ * dengan strip layanan. Jadi pilih gambar/video yang cukup terang di sisi kiri agar teks gelap tetap terbaca.
  * Berhenti saat hero tidak terlihat atau tab disembunyikan; tombol jeda (WCAG 2.2.2) selama masih ada 2+ gambar yang
  * bisa tampil, atau video yang masih bisa diputar.
  * Reduced motion atau hemat data (Save-Data): mulai dijeda (gambar pertama / poster saja), pengunjung bisa memutar;
@@ -339,10 +339,7 @@ export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => 
             )
           ))}
 
-        {/* Cuci putih untuk keterbacaan: HP & tablet rata; ≥ 1024px kuat di belakang kolom teks, tipis di kanan */}
-        <div className="absolute inset-0 z-[3] bg-canvas/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-canvas/90 lg:via-canvas/75 lg:to-canvas/40" />
-        {/* Pudar di atas (area navbar) dan di bawah (menyatu dengan strip layanan), sama dengan HeroBackground */}
-        <div className="absolute inset-x-0 top-0 z-[3] h-28 bg-gradient-to-b from-canvas via-canvas/70 to-transparent" />
+        {/* Media tampil penuh (tanpa lapisan penutup); hanya pudar di bawah agar menyatu dengan strip layanan */}
         <div className="absolute inset-x-0 bottom-0 z-[3] h-40 bg-gradient-to-b from-transparent to-canvas" />
       </div>
 

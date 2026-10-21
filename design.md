@@ -209,9 +209,9 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
     tampil sebagai gambar (tanpa poster / poster rusak: kanvas bawaan).
   - URL hanya path situs (`/…`, bukan `//`) atau `http(s)://` (S3); data:/blob:/javascript: diabaikan. Mode gambar tanpa
     gambar valid / mode video tanpa video valid → bawaan.
-  - Di atas media: cuci putih netral agar teks terbaca (HP & tablet `bg-canvas/80` rata; ≥ 1024px `from-canvas/90
-    via-canvas/75 to-canvas/40` dari kiri), pudar atas `h-28` (navbar transparan) & bawah `h-40` (strip layanan) sama
-    dengan kanvas. Datar: tanpa scrim gelap, tanpa blur.
+  - Media tampil penuh: TANPA lapisan putih/transparan di atasnya dan tanpa pudar atas (keputusan pemilik, 2026-10-22);
+    hanya pudar bawah `h-40` ke `canvas` agar menyatu dengan strip layanan. Teks hero tetap gelap, jadi pakai
+    gambar/video yang cukup terang di sisi kiri (kolom teks) dan di bagian atas (navbar transparan di puncak halaman).
   - Tombol jeda bulat 40px (`bg-surface/90` + garis tipis, ikon `Pause`/`Play`, label "Jeda latar" / "Putar latar",
     WCAG 2.2.2) selama masih ada 2+ gambar yang bisa tampil, atau video yang masih bisa diputar, di kiri bawah
     `container-site` (kanan bawah tertutup tombol WhatsApp melayang di ≥ 640px). Berhenti otomatis saat hero di luar

@@ -224,6 +224,16 @@ describe('HeroMedia mode gambar', () => {
     expect(img.className).toContain('object-cover');
   });
 
+  it('media tampil penuh: tanpa lapisan putih & pudar atas, hanya pudar bawah ke canvas', () => {
+    const { container } = renderMedia({ mode: 'image', images: [IMAGES[0]] });
+    const overlays = Array.from((container.firstElementChild as HTMLElement).querySelectorAll('div'));
+    expect(overlays.some((el) => /bg-canvas\/\d+|from-canvas\/\d+/.test(el.className))).toBe(false);
+    expect(overlays.some((el) => el.className.includes('top-0') && el.className.includes('from-canvas'))).toBe(false);
+    const bottom = overlays.filter((el) => el.className.includes('bottom-0') && el.className.includes('to-canvas'));
+    expect(bottom).toHaveLength(1);
+    expect(bottom[0].className).toContain('h-40');
+  });
+
   it('2+ gambar: dipasang bertahap, berganti tiap 6 detik, tombol jeda mengganti labelnya', () => {
     vi.useFakeTimers();
     const { container } = renderMedia({ mode: 'image', images: IMAGES });
