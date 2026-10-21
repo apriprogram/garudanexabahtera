@@ -1,17 +1,21 @@
 // Formulir pesanan jasa custom (website / aplikasi mobile) → submit_custom_order (SPEC §6).
 // Validasi per field (saat keluar field, lalu langsung setelah percobaan kirim), error server per field,
-// honeypot "website" tersembunyi, tombol kirim dengan status memuat.
+// honeypot "website" tersembunyi, tombol kirim dengan status memuat. `?layanan=website|mobile` memilih jenis layanan.
 import { useEffect, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CircleAlert, Loader2, Send } from 'lucide-react';
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
+import { Field } from '../../account/components/Field';
 import { describedBy } from './a11y';
-import { CharCounter, FormField } from './FormField';
+import { CharCounter } from './CharCounter';
 import { ServiceTypePicker } from './ServiceTypePicker';
 import {
   DESCRIPTION_MIN,
   EMPTY_VALUES,
   FIELD_ORDER,
   LIMITS,
+  REQUIRED_FIELDS,
+  serviceFromParam,
   toPayload,
   validateAll,
   validateField,
@@ -35,11 +39,28 @@ interface CustomOrderFormProps {
 const fid = (field: string) => `co-${field.replace(/_/g, '-')}`;
 
 export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormProps) {
-  const [values, setValues] = useState<CustomOrderValues>(() => ({ ...EMPTY_VALUES, ...initialValues }));
+  // Tautan Footer "Website custom" / "Aplikasi mobile custom" → /pesan-custom?layanan=website|mobile
+  const [searchParams] = useSearchParams();
+  const layanan = serviceFromParam(searchParams.get('layanan'));
+  const [values, setValues] = useState<CustomOrderValues>(() => ({
+    ...EMPTY_VALUES,
+    service_type: layanan,
+    ...initialValues,
+  }));
   const [errors, setErrors] = useState<CustomOrderErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Parameter berubah saat halaman sudah terbuka (mis. tautan Footer diklik di /pesan-custom): ikuti pilihan baru
+  const [seenLayanan, setSeenLayanan] = useState(layanan);
+  if (layanan !== seenLayanan) {
+    setSeenLayanan(layanan);
+    if (layanan) {
+      setValues((prev) => ({ ...prev, service_type: layanan }));
+      setErrors((prev) => ({ ...prev, service_type: undefined }));
+    }
+  }
 
   const hasDraft = values.description.trim().length > 0 || values.project_name.trim().length > 0;
 
@@ -121,6 +142,7 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
     onChange: (e: { target: { value: string } }) => set(field, e.target.value),
     onBlur: () => blur(field),
     'aria-invalid': errors[field] ? (true as const) : undefined,
+    'aria-required': REQUIRED_FIELDS.includes(field) ? (true as const) : undefined,
     className: 'input-site',
   });
 
@@ -129,41 +151,42 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
   return (
     <form noValidate onSubmit={submit} aria-describedby={formError ? 'co-form-error' : undefined} className="relative space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
-        <FormField id={fid('name')} label="Nama lengkap" error={errors.name}>
-          <input {...text('name')} type="text" autoComplete="name" maxLength={LIMITS.name} placeholder="Nama Anda" aria-describedby={describedBy(fid('name'), { error: errors.name })} />
-        </FormField>
-        <FormField id={fid('email')} label="Email" error={errors.email}>
+        <Field id={fid('name')} label="Nama lengkap" error={errors.name}>
+          <input {...text('name')} type="text" autoComplete="name" maxLength={LIMITS.name} placeholder="mis. Budi Santoso" aria-describedby={describedBy(fid('name'), { error: errors.name })} />
+        </Field>
+        <Field id={fid('email')} label="Email" error={errors.email}>
           <input
             {...text('email')}
             type="email"
             inputMode="email"
             autoComplete="email"
+            autoCapitalize="none"
             maxLength={LIMITS.email}
-            placeholder="nama@email.com"
+            placeholder="mis. nama@email.com"
             aria-describedby={describedBy(fid('email'), { error: errors.email })}
           />
-        </FormField>
-        <FormField id={fid('phone')} label="Nomor WhatsApp" error={errors.phone} help="Kami menghubungi Anda lewat nomor ini.">
+        </Field>
+        <Field id={fid('phone')} label="Nomor WhatsApp" error={errors.phone} help="Kami menghubungi Anda lewat nomor ini.">
           <input
             {...text('phone')}
             type="tel"
             inputMode="tel"
             autoComplete="tel"
             maxLength={LIMITS.phone}
-            placeholder="081234567890"
+            placeholder="mis. 0812-3456-7890"
             aria-describedby={describedBy(fid('phone'), { error: errors.phone, help: true })}
           />
-        </FormField>
-        <FormField id={fid('company')} label="Perusahaan / instansi" optional error={errors.company}>
+        </Field>
+        <Field id={fid('company')} label="Nama perusahaan / instansi" optional error={errors.company}>
           <input
             {...text('company')}
             type="text"
             autoComplete="organization"
             maxLength={LIMITS.company}
-            placeholder="Nama usaha atau instansi"
+            placeholder="mis. PT Maju Bersama"
             aria-describedby={describedBy(fid('company'), { error: errors.company })}
           />
-        </FormField>
+        </Field>
       </div>
 
       <ServiceTypePicker
@@ -174,20 +197,20 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
         disabled={submitting}
       />
 
-      <FormField id={fid('project_name')} label="Nama proyek" optional error={errors.project_name}>
+      <Field id={fid('project_name')} label="Nama proyek" optional error={errors.project_name}>
         <input
           {...text('project_name')}
           type="text"
           autoComplete="off"
           maxLength={LIMITS.project_name}
-          placeholder="Contoh: Aplikasi pemesanan katering"
+          placeholder="mis. Aplikasi pemesanan katering"
           aria-describedby={describedBy(fid('project_name'), { error: errors.project_name })}
         />
-      </FormField>
+      </Field>
 
-      <FormField
+      <Field
         id={fid('description')}
-        label="Ceritakan kebutuhan Anda"
+        label="Detail kebutuhan"
         error={errors.description}
         help={`Tujuan, fitur utama, pengguna, dan target waktu. Minimal ${DESCRIPTION_MIN} karakter.`}
         aside={<CharCounter id={`${fid('description')}-count`} length={values.description.length} max={LIMITS.description} />}
@@ -196,7 +219,7 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
           {...text('description')}
           rows={6}
           maxLength={LIMITS.description}
-          placeholder="Contoh: Kami butuh website company profile 5 halaman dengan formulir kontak dan blog, bisa diubah sendiri oleh tim kami, target selesai dalam 2 bulan."
+          placeholder="mis. Kami butuh website company profile 5 halaman dengan formulir kontak dan blog, bisa diubah sendiri oleh tim kami, target selesai dalam 2 bulan."
           aria-describedby={describedBy(fid('description'), { error: errors.description, help: true, extra: `${fid('description')}-count` })}
           className="input-site resize-y"
         />
@@ -205,9 +228,9 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
             Kurang {DESCRIPTION_MIN - descriptionLength} karakter lagi.
           </p>
         )}
-      </FormField>
+      </Field>
 
-      <FormField
+      <Field
         id={fid('budget_note')}
         label="Catatan anggaran atau tenggat"
         optional
@@ -219,10 +242,10 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
           type="text"
           autoComplete="off"
           maxLength={LIMITS.budget_note}
-          placeholder="Contoh: Anggaran terbatas, ingin rilis sebelum Desember"
+          placeholder="mis. Anggaran terbatas, ingin rilis sebelum Desember"
           aria-describedby={describedBy(fid('budget_note'), { error: errors.budget_note, help: true })}
         />
-      </FormField>
+      </Field>
 
       {/* Honeypot anti-bot: tidak terlihat dan tidak bisa difokus pengunjung; bot yang mengisinya diabaikan server */}
       <div aria-hidden="true" className="pointer-events-none absolute -left-[9999px] top-0 h-px w-px overflow-hidden opacity-0">

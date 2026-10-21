@@ -22,6 +22,9 @@ export type CustomOrderErrors = Partial<Record<CustomOrderField, string>>;
 /** Urutan field di formulir (untuk fokus ke error pertama). */
 export const FIELD_ORDER: CustomOrderField[] = ['name', 'email', 'phone', 'company', 'service_type', 'project_name', 'description', 'budget_note'];
 
+/** Field wajib (diumumkan ke pembaca layar lewat aria-required / required). */
+export const REQUIRED_FIELDS: readonly CustomOrderField[] = ['name', 'email', 'phone', 'service_type', 'description'];
+
 export const LIMITS = {
   name: 150,
   email: 150,
@@ -39,6 +42,26 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_PATTERN = /^\+?[0-9]{8,15}$/;
 
 export const normalizePhone = (value: string) => value.trim().replace(/[\s().-]+/g, '');
+
+/**
+ * Nomor WhatsApp (wajib). Pesannya dipakai bersama form /pesan-custom dan /pesan/:slug agar kedua form berbunyi sama
+ * (glosarium design.md: "Nomor WhatsApp", rentang dengan en dash).
+ */
+export function checkWhatsapp(value: string): string | undefined {
+  if (!value.trim()) return 'Nomor WhatsApp wajib diisi.';
+  return PHONE_PATTERN.test(normalizePhone(value)) ? undefined : 'Nomor tidak valid. Gunakan 8–15 digit angka, contoh: 081234567890.';
+}
+
+/**
+ * Jenis layanan awal dari parameter `?layanan=` (tautan Footer: `website` | `mobile`). Nilai lain diabaikan.
+ * `mobile_app` (nilai API) juga diterima.
+ */
+export function serviceFromParam(value: string | null): ServiceType | '' {
+  const v = (value ?? '').trim().toLowerCase();
+  if (v === 'website') return 'website';
+  if (v === 'mobile' || v === 'mobile_app') return 'mobile_app';
+  return '';
+}
 
 export const EMPTY_VALUES: CustomOrderValues = {
   name: '',
@@ -69,12 +92,8 @@ export function validateField(field: CustomOrderField, values: CustomOrderValues
       if (error) return error;
       return EMAIL_PATTERN.test(values.email.trim()) ? undefined : 'Format email tidak valid, contoh: nama@email.com';
     }
-    case 'phone': {
-      if (!values.phone.trim()) return 'Nomor WhatsApp wajib diisi.';
-      return PHONE_PATTERN.test(normalizePhone(values.phone))
-        ? undefined
-        : 'Nomor tidak valid. Gunakan 8–15 digit angka, contoh: 081234567890.';
-    }
+    case 'phone':
+      return checkWhatsapp(values.phone);
     case 'company':
       return text(values.company, 'Nama perusahaan', LIMITS.company);
     case 'service_type':

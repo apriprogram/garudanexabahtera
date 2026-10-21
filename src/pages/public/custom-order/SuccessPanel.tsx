@@ -1,10 +1,10 @@
-// Layar sukses setelah kebutuhan custom terkirim: nomor referensi (bisa disalin), tindak lanjut WhatsApp,
-// dan ajakan membuat akun.
+// Layar sukses setelah kebutuhan custom terkirim: nomor referensi (bisa disalin) dan tindak lanjut WhatsApp.
+// Tanpa ajakan membuat akun: permintaan custom belum tersimpan di akun dan nomor referensi tidak dikirim lewat email,
+// jadi panel ini tidak menjanjikan pemantauan status.
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, CircleCheck, Copy, RotateCcw } from 'lucide-react';
 import { whatsappUrl } from '../../../hooks/useSiteSettings';
-import { AccountOffer } from './AccountOffer';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import type { CustomOrderResult } from './CustomOrderForm';
 
@@ -66,13 +66,16 @@ export function SuccessPanel({ result, whatsappNumber, onReset }: SuccessPanelPr
           </button>
         </div>
         <p className="mt-2 text-xs text-subtle" aria-live="polite">
-          {copied === 'failed' ? 'Gagal menyalin otomatis. Catat nomor di atas secara manual.' : 'Sebutkan nomor ini saat menghubungi kami.'}
+          {copied === 'failed'
+            ? 'Gagal menyalin otomatis. Catat nomor di atas secara manual.'
+            : 'Simpan nomor ini (mis. dengan screenshot) dan sebutkan saat menghubungi kami.'}
         </p>
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <a href={waHref} target="_blank" rel="noopener noreferrer" className="btn btn-lg bg-whatsapp text-white hover:bg-whatsapp-hover">
-          <WhatsAppIcon className="h-5 w-5" />
+        {/* Aksi utama = biru brand (satu aksen, kontras 7:1); hijau WhatsApp hanya untuk ikon di tempat lain */}
+        <a href={waHref} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-lg">
+          <WhatsAppIcon className="h-5 w-5 max-sm:h-4 max-sm:w-4" />
           Lanjutkan via WhatsApp
         </a>
         <Link to="/" className="btn btn-outline btn-lg">
@@ -84,8 +87,6 @@ export function SuccessPanel({ result, whatsappNumber, onReset }: SuccessPanelPr
         <RotateCcw className="h-4 w-4" aria-hidden />
         Kirim kebutuhan lain
       </button>
-
-      <AccountOffer className="mt-6 text-left" />
     </div>
   );
 }
