@@ -2,13 +2,17 @@
 // Kontrak: docs/platform/SPEC.md §6 (customer_get_site, customer_save_site_content) & §7 (format template).
 // Kiri: daftar section (diciutkan, sakelar tampil) + field per tipe. Kanan: pratinjau langsung (Desktop/HP).
 // Di HP pratinjau menjadi tab tersendiri.
+// Selama ada perubahan belum disimpan, konten dicadangkan di localStorage (`cms-draft-{siteId}`) dan ditawarkan untuk
+// dipulihkan saat editor dibuka lagi (mis. sesi habis di tengah mengedit, tab tertutup, atau keluar akun).
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { CalendarClock, ExternalLink, Globe } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { CalendarClock, ExternalLink, Globe, MessageCircle } from 'lucide-react';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { ApiError, apiGet, apiPost, errorMessage } from '../../lib/api';
 import { formatTanggal, type Site } from '../../types/platform';
 import { getTemplate, resolveContent } from '../../templates';
 import type { ListItem, SiteContent } from '../../templates/types';
+import { helpWhatsappUrl, siteHelpMessage } from './components/orderCopy';
 import { countNewImages, fieldDomId, readList, setEnabled, setList, setText } from './cms/content';
 import { EditorToolbar, type MobileTab, type SaveState } from './cms/EditorToolbar';
 import { EditorLoadError, EditorNotFound, EditorSkeleton, EditorUnknownTemplate } from './cms/EditorStates';
@@ -29,6 +33,58 @@ const MAX_NEW_IMAGES = 30;
 const MAX_PAYLOAD_BYTES = 30 * 1024 * 1024;
 
 const isDesktop = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches;
+
+// ─── Cadangan perubahan (draf lokal) ──────────────────────────────────────────
+// Hanya di browser ini; bisa kosong/gagal (mode privat, kuota penuh oleh gambar besar), jadi semua akses dibungkus
+// try/catch dan editor tetap berjalan normal tanpa draf.
+interface CmsDraft {
+  content: SiteContent;
+  /** Waktu (ms) draf terakhir ditulis */
+  savedAt: number;
+}
+
+const DRAFT_DEBOUNCE_MS = 400;
+/** Draf yang lebih tua dari ini dianggap basi dan dibuang. */
+const DRAFT_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+const draftKey = (siteId: number) => `cms-draft-${siteId}`;
+
+const isDraft = (value: unknown): value is CmsDraft => {
+  if (!value || typeof value !== 'object') return false;
+  const { content, savedAt } = value as Partial<CmsDraft>;
+  return typeof savedAt === 'number' && !!content && typeof content === 'object' && !Array.isArray(content);
+};
+
+function readDraft(siteId: number): CmsDraft | null {
+  try {
+    const raw = window.localStorage.getItem(draftKey(siteId));
+    if (!raw) return null;
+    const draft: unknown = JSON.parse(raw);
+    if (!isDraft(draft) || Date.now() - draft.savedAt > DRAFT_MAX_AGE_MS) {
+      window.localStorage.removeItem(draftKey(siteId));
+      return null;
+    }
+    return draft;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(siteId: number, content: SiteContent) {
+  try {
+    window.localStorage.setItem(draftKey(siteId), JSON.stringify({ content, savedAt: Date.now() } satisfies CmsDraft));
+  } catch {
+    // Kuota penuh (biasanya karena gambar baru): jangan tinggalkan draf lama yang sudah tidak sesuai
+    clearDraft(siteId);
+  }
+}
+
+function clearDraft(siteId: number) {
+  try {
+    window.localStorage.removeItem(draftKey(siteId));
+  } catch {
+    // penyimpanan tidak tersedia: tidak ada yang perlu dihapus
+  }
+}
 
 export default function SiteEditor() {
   const { siteId: rawId } = useParams();
@@ -53,8 +109,11 @@ export default function SiteEditor() {
   const [tab, setTab] = useState<MobileTab>('edit');
   const [device, setDevice] = useState<PreviewDevice>(() => (isDesktop() ? 'desktop' : 'mobile'));
   const [toolbarHeight, setToolbarHeight] = useState(112);
+  /** Draf lokal dari sesi sebelumnya yang belum dipulihkan/dibuang (selama ada, draf baru tidak ditulis) */
+  const [draftOffer, setDraftOffer] = useState<CmsDraft | null>(null);
 
   const { toast, show: showToast, dismiss: dismissToast } = useToast();
+  const { settings } = useSiteSettings();
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   const definition = useMemo(() => (site ? getTemplate(site.template_code) : undefined), [site]);
@@ -70,8 +129,14 @@ export default function SiteEditor() {
       .then(({ site: loaded }) => {
         if (cancelled) return;
         const def = getTemplate(loaded.template_code);
+        const resolved = def ? resolveContent(def, loaded.content) : {};
+        // Tawarkan draf lokal hanya bila berbeda dari konten di server (draf yang sama = sudah tersimpan)
+        const draft = def && loaded.status === 'active' ? readDraft(loaded.id) : null;
+        const offer = def && draft && JSON.stringify(resolveContent(def, draft.content)) !== JSON.stringify(resolved) ? draft : null;
+        if (draft && !offer) clearDraft(loaded.id);
+        setDraftOffer(offer);
         setSite(loaded);
-        setContent(def ? resolveContent(def, loaded.content) : {});
+        setContent(resolved);
         setDirty(false);
         setTouched(new Set());
         setShowAllErrors(false);
@@ -100,6 +165,45 @@ export default function SiteEditor() {
   }, []);
 
   useLeaveGuard(dirty && !readOnly, LEAVE_MESSAGE);
+
+  // ─── Draf lokal ────────────────────────────────────────────────────────────
+  // Ditulis (ditunda sebentar) selama ada perubahan belum disimpan. Tidak ditulis selama tawaran pulihkan masih tampil,
+  // supaya draf lama tidak tertimpa sebelum pengguna memilih.
+  const writeDraftNow = !!site && !readOnly && dirty && !draftOffer;
+  const draftRef = useRef<{ siteId: number; content: SiteContent } | null>(null);
+  useEffect(() => {
+    draftRef.current = writeDraftNow && site ? { siteId: site.id, content } : null;
+  });
+
+  useEffect(() => {
+    if (!writeDraftNow || !site) return;
+    const timer = window.setTimeout(() => writeDraft(site.id, content), DRAFT_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [writeDraftNow, site, content]);
+
+  // Halaman ditutup/dimuat ulang/keluar akun sebelum jeda selesai: tulis draf terakhir sekarang juga
+  useEffect(() => {
+    const flush = () => {
+      if (draftRef.current) writeDraft(draftRef.current.siteId, draftRef.current.content);
+    };
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, []);
+
+  const restoreDraft = () => {
+    if (!draftOffer || !definition) return;
+    setContent(resolveContent(definition, draftOffer.content));
+    setDirty(true);
+    setSaveError('');
+    setTouched(new Set());
+    setDraftOffer(null);
+    showToast('info', 'Perubahan dipulihkan. Periksa lagi, lalu klik Simpan.');
+  };
+
+  const discardDraft = () => {
+    if (site) clearDraft(site.id);
+    setDraftOffer(null);
+  };
 
   // Tinggi bilah atas (berubah di HP karena baris tab) → offset pratinjau lengket & scroll-margin section
   useLayoutEffect(() => {
@@ -198,6 +302,8 @@ export default function SiteEditor() {
     setSaveError('');
     try {
       const res = await apiPost<{ site: Site }>('customer_save_site_content', { site_id: site.id, content });
+      clearDraft(site.id);
+      setDraftOffer(null);
       setSite(res.site);
       // Gambar baru (data-URI) sudah jadi path file di server; pakai konten dari server agar tidak diunggah ulang
       setContent(resolveContent(definition, res.site.content));
@@ -271,14 +377,40 @@ export default function SiteEditor() {
         <div className="lg:grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
           {/* Panel kiri: info situs + section */}
           <div className={`space-y-3 ${tab === 'preview' ? 'max-lg:hidden' : ''}`}>
+            {draftOffer && !readOnly && (
+              <Notice
+                tone="info"
+                title="Pulihkan perubahan yang belum disimpan?"
+                action={
+                  <>
+                    <button type="button" onClick={restoreDraft} className="btn btn-primary btn-sm">
+                      Pulihkan
+                    </button>
+                    <button type="button" onClick={discardDraft} className="btn btn-outline btn-sm">
+                      Buang
+                    </button>
+                  </>
+                }
+              >
+                Ada perubahan dari {formatTanggal(new Date(draftOffer.savedAt).toISOString(), true)} yang belum sempat disimpan di
+                perangkat ini.
+              </Notice>
+            )}
             {readOnly && (
               <Notice
                 tone="warning"
                 title="Situs sedang dinonaktifkan"
                 action={
-                  <Link to="/#kontak" className="btn btn-outline btn-sm">
-                    Hubungi kami
-                  </Link>
+                  <a
+                    href={helpWhatsappUrl(settings, siteHelpMessage(site.domain))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline btn-sm"
+                  >
+                    <MessageCircle className="h-4 w-4" aria-hidden />
+                    Hubungi kami via WhatsApp
+                    <span className="sr-only">(tab baru)</span>
+                  </a>
                 }
               >
                 Situs ini dinonaktifkan sementara oleh admin, jadi kontennya hanya bisa dilihat dan belum bisa diubah. Hubungi kami untuk
@@ -390,11 +522,17 @@ function SiteInfo({ site, domainHref, sitePath }: { site: Site; domainHref: stri
             <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
           </a>
           <p className="mt-1 text-xs leading-relaxed text-subtle">
-            Domain aktif setelah DNS mengarah ke server kami. Sementara itu, buka{' '}
-            <a href={sitePath} target="_blank" rel="noopener noreferrer" className="link-site">
-              {sitePath}
-            </a>
-            . Situs menampilkan versi yang terakhir disimpan.
+            Situs menampilkan versi yang terakhir disimpan.
+            {active && (
+              <>
+                {' '}
+                Jika domain belum bisa dibuka (DNS masih diproses), pakai tautan sementara:{' '}
+                <a href={sitePath} target="_blank" rel="noopener noreferrer" className="link-site">
+                  Buka situs sementara
+                  <span className="sr-only"> (tab baru)</span>
+                </a>
+              </>
+            )}
           </p>
           <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-subtle">
             <CalendarClock className="h-3.5 w-3.5" aria-hidden />

@@ -1,9 +1,10 @@
 // Halaman masuk pembeli (/masuk). Satu action `login` untuk semua peran: customer → ?next (path relatif saja) atau
 // /akun, staf → /admin. Tampilan: kerangka auth terang bersama (src/components/auth). Lihat docs/platform/SPEC.md §2.
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, MessageCircle } from 'lucide-react';
+import { getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
 import { ApiError, apiPost, errorMessage } from '../../lib/api';
 import { getRole, setSession } from '../../lib/auth';
 import { AuthLayout, AuthSwitch } from '../../components/auth/AuthLayout';
@@ -175,10 +176,7 @@ export default function CustomerLogin() {
           <AnimatePresence initial={false}>
             {forgotOpen && (
               <AuthAlert key="forgot" id="forgot-hint" tone="info" spacing="top" onClose={() => setForgotOpen(false)}>
-                Hubungi tim kami, kami bantu mengatur ulang kata sandi Anda.{' '}
-                <Link to="/#kontak" className="font-semibold underline underline-offset-4 hover:text-brand-900">
-                  Buka halaman kontak
-                </Link>
+                <ForgotPasswordHelp email={email} />
               </AuthAlert>
             )}
           </AnimatePresence>
@@ -187,5 +185,33 @@ export default function CustomerLogin() {
         <AuthSubmit loading={submitting}>Masuk</AuthSubmit>
       </form>
     </AuthLayout>
+  );
+}
+
+/**
+ * Bantuan lupa kata sandi. Belum ada reset mandiri lewat email (butuh backend), jadi pembeli diarahkan ke WhatsApp
+ * tim (nomor dari pengaturan website) dengan pesan berisi email yang sudah diketik. Pengaturan baru dimuat saat kotak
+ * ini dibuka, bukan di setiap kunjungan halaman masuk.
+ */
+function ForgotPasswordHelp({ email }: { email: string }) {
+  const { settings } = useSiteSettings();
+  const message = `Halo Admin, saya lupa kata sandi akun Garuda Nexa (email: ${email.trim() || '-'}). Mohon bantu atur ulang.`;
+  return (
+    <>
+      <p>
+        Tim kami bantu mengatur ulang kata sandi Anda lewat WhatsApp.{' '}
+        {email.trim() ? 'Pesannya sudah berisi email yang Anda ketik.' : 'Sebutkan email akun Anda di pesan.'}
+      </p>
+      <a
+        href={whatsappUrl(getWhatsappNumber(settings), message)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn btn-outline btn-sm mt-3"
+      >
+        <MessageCircle className="h-4 w-4" aria-hidden />
+        Hubungi via WhatsApp
+        <span className="sr-only">(tab baru)</span>
+      </a>
+    </>
   );
 }

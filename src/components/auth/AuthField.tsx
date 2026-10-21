@@ -77,12 +77,13 @@ export function AuthField({
             setCapsLock(false);
             onBlur?.(e);
           }}
-          className={`block h-11 w-full rounded-xl border bg-alt pl-11 text-[16px] text-fg outline-none transition-[border-color,background-color,box-shadow] duration-200 placeholder:text-subtle focus:bg-surface focus:ring-4 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:h-12 sm:text-[15px] ${
+          // Latar & garis sama dengan .input-site (putih + line-strong, ≥ 3:1 terhadap kartu) agar tidak tampak nonaktif
+          className={`block h-11 w-full rounded-xl border bg-surface pl-11 text-[16px] text-fg outline-none transition-[border-color,background-color,box-shadow] duration-200 placeholder:text-subtle focus:ring-4 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:h-12 sm:text-[15px] ${
             password ? 'pr-12' : 'pr-4'
           } ${
             error
               ? 'border-danger/70 focus:border-danger focus:ring-danger/10'
-              : 'border-line hover:border-line-strong focus:border-primary focus:ring-primary/10'
+              : 'border-line-strong hover:border-subtle focus:border-primary focus:ring-primary/10'
           }`}
         />
         {password && (
