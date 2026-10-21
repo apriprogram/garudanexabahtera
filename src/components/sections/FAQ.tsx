@@ -1,4 +1,4 @@
-﻿import React, { useId, useState } from 'react';
+﻿import React, { useId, useLayoutEffect, useRef, useState } from 'react';
 import { MessageCircle, Plus } from 'lucide-react';
 import { Reveal } from '../ui/Reveal';
 import { SectionHeading } from '../ui/SectionHeading';
@@ -23,7 +23,7 @@ const PLATFORM_FAQS: FaqItem[] = [
   {
     question: 'Metode pembayaran apa saja yang bisa dipakai?',
     answer:
-      'Pembayaran diproses dengan aman oleh Midtrans. Anda bisa membayar lewat virtual account bank, e-wallet, QRIS, atau kartu kredit, sesuai metode yang tersedia di halaman pembayaran. Setelah pembayaran berhasil, status pesanan berubah otomatis.',
+      'Pembayaran diproses dengan aman oleh Midtrans. Anda bisa memilih metode pembayaran yang tersedia di Midtrans, yang tampil di halaman pembayaran. Setelah pembayaran berhasil, status pesanan berubah otomatis.',
   },
   {
     question: 'Bagaimana dengan domain website saya?',
@@ -68,6 +68,19 @@ const FAQ: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '04' 
   const { settings } = useSiteSettings();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const baseId = useId();
+  // Posisi tombol yang baru diketuk (sebelum jawaban lain menutup), agar barisnya tetap di bawah jari
+  const anchorRef = useRef<{ button: HTMLElement; top: number } | null>(null);
+
+  // Jawaban yang menutup langsung hilang (tanpa transisi), jadi tombol di bawahnya bisa naik. Sebelum digambar,
+  // halaman digeser sebesar selisihnya sehingga pertanyaan yang diketuk tidak berpindah di layar.
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    anchorRef.current = null;
+    if (!anchor) return;
+    const shift = anchor.button.getBoundingClientRect().top - anchor.top;
+    // `instant`: html memakai scroll-behavior smooth, pergeseran ini tidak boleh terlihat bergulir
+    if (Math.abs(shift) >= 1) window.scrollBy({ top: shift, behavior: 'instant' });
+  }, [openIndex]);
   const adminFaqs = readList<FaqItem>(settings.faq_data, DEFAULT_FAQS).filter(
     (faq) => faq && typeof faq.question === 'string' && faq.question.trim(),
   );
@@ -116,22 +129,25 @@ const FAQ: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '04' 
               <li key={`${index}-${faq.question}`}>
                 <Reveal delay={Math.min(index, 6) * 0.06}>
                   <div
-                    className={`rounded-[20px] ring-1 ring-inset transition-colors duration-300 ${
+                    className={`rounded-[20px] ring-1 ring-inset transition-colors duration-300 motion-reduce:transition-none ${
                       open
                         ? 'bg-surface ring-line'
                         : alt
-                          ? 'bg-surface/60 ring-transparent hover:bg-surface'
-                          : 'bg-alt/80 ring-transparent hover:bg-alt'
+                          ? 'bg-surface/60 ring-transparent hover:bg-surface hover:ring-line-strong'
+                          : 'bg-alt ring-transparent hover:ring-line-strong'
                     }`}
                   >
                     <h3>
                       <button
                         id={buttonId}
                         type="button"
-                        onClick={() => setOpenIndex(open ? null : index)}
+                        onClick={(event) => {
+                          anchorRef.current = { button: event.currentTarget, top: event.currentTarget.getBoundingClientRect().top };
+                          setOpenIndex(open ? null : index);
+                        }}
                         aria-expanded={open}
                         aria-controls={panelId}
-                        className="flex min-h-12 w-full items-center gap-3 rounded-[20px] px-4 py-3 text-left sm:gap-4 sm:px-6 sm:py-5"
+                        className="group flex min-h-12 w-full items-center gap-3 rounded-[20px] px-4 py-3 text-left sm:gap-4 sm:px-6 sm:py-5"
                       >
                         <span
                           className={`w-5 shrink-0 font-mono text-xs font-semibold tabular-nums transition-colors sm:w-6 ${
@@ -142,8 +158,10 @@ const FAQ: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '04' 
                         </span>
                         <span className="flex-1 text-[14px] font-semibold leading-snug text-fg sm:text-base">{faq.question}</span>
                         <span
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 sm:h-8 sm:w-8 ${
-                            open ? 'rotate-45 bg-fg text-white' : 'bg-surface text-fg ring-1 ring-inset ring-line'
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 motion-reduce:transition-none sm:h-8 sm:w-8 ${
+                            open
+                              ? 'rotate-45 bg-fg text-white'
+                              : 'bg-surface text-fg ring-1 ring-inset ring-line group-hover:text-primary group-hover:ring-line-strong'
                           }`}
                           aria-hidden
                         >
@@ -155,14 +173,17 @@ const FAQ: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '04' 
                       id={panelId}
                       role="region"
                       aria-labelledby={buttonId}
-                      className="grid transition-[grid-template-rows] duration-500 ease-calm"
+                      // Membuka: 300ms; menutup: seketika (duration-0) agar pertanyaan yang diketuk tidak bergeser
+                      className={`grid transition-[grid-template-rows] ease-calm motion-reduce:transition-none ${
+                        open ? 'duration-300' : 'duration-0'
+                      }`}
                       style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
                     >
                       <div className="overflow-hidden" inert={!open}>
                         {/* Rata dengan teks pertanyaan: padding tombol + lebar nomor + gap */}
                         <p
-                          className={`pb-5 pl-12 pr-4 text-sm leading-relaxed text-muted transition-opacity duration-500 sm:pb-6 sm:pl-[64px] sm:pr-16 sm:text-[15px] ${
-                            open ? 'opacity-100' : 'opacity-0'
+                          className={`pb-5 pl-12 pr-4 text-sm leading-relaxed text-muted transition-opacity motion-reduce:transition-none sm:pb-6 sm:pl-[64px] sm:pr-16 sm:text-[15px] ${
+                            open ? 'opacity-100 duration-300' : 'opacity-0 duration-0'
                           }`}
                         >
                           {faq.answer}

@@ -60,8 +60,14 @@ const TallHead: React.FC<{ n: number; path: string; title: string; children: Rea
 // after: = garis tepi di ATAS ilustrasi (ilustrasi berlatar menutupi ring bawaan kartu)
 const CARD =
   'card-flat relative flex h-full flex-col overflow-hidden after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:ring-1 after:ring-inset after:ring-line';
+// Tinggi minimum kartu: di HP mengikuti isi / lebih pendek (section tidak memakan hampir 3 layar), ≥ 640px tetap
+const STEP_CARD_H = 'min-h-0 sm:min-h-[320px] lg:min-h-0';
+const TALL_CARD_H = 'min-h-[460px] sm:min-h-[560px] lg:min-h-0';
 
-/** Kartu lebar penutup alur (latar biru muda + glow lembut, terang). */
+/**
+ * Kartu lebar penutup alur (latar biru muda + glow lembut, terang). Desktop: teks + tombol di kiri, ilustrasi di kanan.
+ * HP & tablet: kolom teks `contents` (anaknya ikut flex luar), jadi tombol pindah ke akhir kartu, SETELAH langkah-langkah.
+ */
 const WideCard: React.FC<{ eyebrow: string; title: string; text: string; actions: React.ReactNode; art: React.ReactNode }> = ({
   eyebrow,
   title,
@@ -70,13 +76,15 @@ const WideCard: React.FC<{ eyebrow: string; title: string; text: string; actions
   art,
 }) => (
   <div className="glow-brand relative flex h-full flex-col gap-6 overflow-hidden rounded-[24px] bg-brand-50/50 p-5 ring-1 ring-inset ring-brand-100 sm:p-8 lg:flex-row lg:items-center lg:gap-8 xl:p-10">
-    <div className="lg:w-1/2 lg:shrink-0">
-      <span className="font-mono text-xs font-semibold text-primary">{eyebrow}</span>
-      <h3 className="mt-3 text-xl font-semibold leading-[1.2] tracking-[-0.025em] text-fg sm:text-[30px] sm:leading-[1.1] sm:tracking-[-0.03em] xl:text-[34px]">
-        {title}
-      </h3>
-      <p className="mt-3 max-w-[380px] text-sm leading-relaxed text-muted sm:text-[15px]">{text}</p>
-      <div className="mt-6 flex flex-wrap gap-2">{actions}</div>
+    <div className="contents lg:block lg:w-1/2 lg:shrink-0">
+      <div>
+        <span className="font-mono text-xs font-semibold text-primary">{eyebrow}</span>
+        <h3 className="mt-3 text-xl font-semibold leading-[1.2] tracking-[-0.025em] text-fg sm:text-[30px] sm:leading-[1.1] sm:tracking-[-0.03em] xl:text-[34px]">
+          {title}
+        </h3>
+        <p className="mt-3 max-w-[380px] text-sm leading-relaxed text-muted sm:text-[15px]">{text}</p>
+      </div>
+      <div className="order-last flex flex-wrap gap-2 lg:order-none lg:mt-6">{actions}</div>
     </div>
     <div className="min-w-0 flex-1">{art}</div>
   </div>
@@ -85,16 +93,23 @@ const WideCard: React.FC<{ eyebrow: string; title: string; text: string; actions
 const TemplateBento: React.FC<{ templatesHidden: boolean }> = ({ templatesHidden }) => (
   <>
     <Reveal className="lg:col-span-4" height="100%">
-      <article className={`${CARD} min-h-[320px] lg:min-h-0`}>
+      <article className={`${CARD} ${STEP_CARD_H}`}>
         <StepHead n="01" title="Pilih template">
           Lihat demonya dulu, lalu pilih desain yang paling cocok untuk bisnis Anda.
         </StepHead>
         <PickTemplateArt />
+        {/* Tombol nyata di luar ilustrasi (aria-hidden), di pojok kanan bawah panel; tidak ada bila katalog disembunyikan */}
+        {!templatesHidden && (
+          <SmartLink href="#templates" className="btn btn-sm btn-outline absolute bottom-6 right-6 z-30">
+            <LayoutTemplate className="h-3.5 w-3.5" aria-hidden />
+            Lihat template
+          </SmartLink>
+        )}
       </article>
     </Reveal>
 
     <Reveal delay={0.1} className="lg:col-span-4" height="100%">
-      <article className={`${CARD} min-h-[320px] lg:min-h-0`}>
+      <article className={`${CARD} ${STEP_CARD_H}`}>
         <StepHead n="02" title="Isi form & domain">
           Lengkapi data pemesan dan nama domain yang Anda inginkan.
         </StepHead>
@@ -103,9 +118,9 @@ const TemplateBento: React.FC<{ templatesHidden: boolean }> = ({ templatesHidden
     </Reveal>
 
     <Reveal delay={0.2} className="md:col-span-2 lg:col-span-4 lg:row-span-2" height="100%">
-      <article className={`${CARD} min-h-[560px] lg:min-h-0`}>
+      <article className={`${CARD} ${TALL_CARD_H}`}>
         <TallHead n={3} path="/pesan" title="Bayar via Midtrans">
-          Virtual account, e-wallet, QRIS, atau kartu. Status pesanan berubah otomatis.
+          Pilih metode pembayaran yang tersedia di Midtrans. Status pesanan berubah otomatis.
         </TallHead>
         <PaymentArt />
       </article>
@@ -140,7 +155,7 @@ const TemplateBento: React.FC<{ templatesHidden: boolean }> = ({ templatesHidden
 const CustomBento: React.FC = () => (
   <>
     <Reveal className="lg:col-span-4" height="100%">
-      <article className={`${CARD} min-h-[320px] lg:min-h-0`}>
+      <article className={`${CARD} ${STEP_CARD_H}`}>
         <StepHead n="01" title="Konsultasi">
           Ceritakan kebutuhan Anda lewat form pesanan atau WhatsApp, gratis.
         </StepHead>
@@ -149,7 +164,7 @@ const CustomBento: React.FC = () => (
     </Reveal>
 
     <Reveal delay={0.1} className="lg:col-span-4" height="100%">
-      <article className={`${CARD} min-h-[320px] lg:min-h-0`}>
+      <article className={`${CARD} ${STEP_CARD_H}`}>
         <StepHead n="02" title="Penawaran">
           Kami kirim rancangan solusi, perkiraan waktu, dan penawaran biaya.
         </StepHead>
@@ -158,7 +173,7 @@ const CustomBento: React.FC = () => (
     </Reveal>
 
     <Reveal delay={0.2} className="md:col-span-2 lg:col-span-4 lg:row-span-2" height="100%">
-      <article className={`${CARD} min-h-[560px] lg:min-h-0`}>
+      <article className={`${CARD} ${TALL_CARD_H}`}>
         <TallHead n={3} path="/proyek-anda" title="Pengerjaan">
           Desain dan pengembangan bertahap, dengan kabar progres berkala.
         </TallHead>

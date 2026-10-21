@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Home as HomeIcon, LayoutTemplate, MessageCircle, Smartphone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
@@ -5,6 +6,31 @@ import { HeroBackground } from '../../components/sections/hero/HeroBackground';
 import { LogoBadge } from '../../components/ui/LogoMark';
 import { SplitText } from '../../components/ui/SplitText';
 import { getHiddenSections, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
+import { useDocumentTitle } from './template/useDocumentTitle';
+
+const NOT_FOUND_TITLE = 'Halaman tidak ditemukan | Garuda Nexa';
+
+/**
+ * `<meta name="robots" content="noindex">` selama halaman 404 tampil, agar alamat yang salah tidak diindeks sebagai
+ * salinan beranda (hosting tetap mengirim index.html berstatus 200). Meta yang sudah ada dipulihkan saat keluar.
+ */
+function useNoIndex() {
+  useEffect(() => {
+    const existing = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (existing) {
+      const previous = existing.content;
+      existing.content = 'noindex';
+      return () => {
+        existing.content = previous;
+      };
+    }
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex';
+    document.head.appendChild(meta);
+    return () => meta.remove();
+  }, []);
+}
 
 /**
  * Halaman 404 publik gaya BELAJAR CPNS (terang): latar medan titik interaktif, kartu bilah alamat datar,
@@ -17,19 +43,30 @@ export default function NotFound() {
   const templatesHidden = getHiddenSections(settings).has('templates');
   const canGoBack = typeof window !== 'undefined' && window.history.length > 1;
   const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+  useDocumentTitle(NOT_FOUND_TITLE);
+  useNoIndex();
 
   return (
     <>
       <Navbar />
-      <main className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-canvas pb-16 pt-24 sm:pt-28">
+      {/* id="konten" = tujuan SkipLink di Navbar; tabIndex -1 agar bisa menerima fokus tanpa masuk urutan Tab */}
+      <main
+        id="konten"
+        tabIndex={-1}
+        className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-canvas pb-16 pt-24 focus:outline-none sm:pt-28"
+      >
         <HeroBackground className="absolute inset-0 -z-10" />
 
         <div className="container-site">
           <div className="mx-auto flex max-w-xl flex-col items-center text-center">
-            {/* Bilah alamat datar dengan path yang tidak ditemukan */}
-            <div className="flex h-10 w-full max-w-sm animate-fade-up items-center gap-2 rounded-full bg-surface pl-1.5 pr-4 ring-1 ring-inset ring-line motion-reduce:animate-none sm:h-11 sm:pl-2">
-              <LogoBadge className="h-7 w-7" />
-              <span className="min-w-0 flex-1 truncate text-left text-[13px] font-medium text-muted sm:text-sm">
+            {/* Bilah alamat datar dengan path yang tidak ditemukan. Path panjang membungkus (tidak dipotong), jadi
+                bagian yang salah tetap terbaca; satu baris = pil (radius = setengah tinggi), lebih = kotak rounded. */}
+            <div
+              title={path}
+              className="flex min-h-10 w-full max-w-md animate-fade-up items-center gap-2 rounded-[20px] bg-surface py-1.5 pl-1.5 pr-4 ring-1 ring-inset ring-line motion-reduce:animate-none sm:min-h-11 sm:max-w-lg sm:rounded-[22px] sm:pl-2"
+            >
+              <LogoBadge className="h-7 w-7 shrink-0" />
+              <span className="min-w-0 flex-1 text-left text-[13px] font-medium leading-snug text-muted [overflow-wrap:anywhere] sm:text-sm">
                 garudanexa.com<span className="text-fg">{path}</span>
               </span>
               <span className="inline-flex h-6 shrink-0 items-center rounded-full bg-danger-50 px-2.5 font-mono text-[11px] font-semibold text-danger-700">
@@ -59,7 +96,7 @@ export default function NotFound() {
               {templatesHidden ? (
                 <Link to="/pesan-custom" className="btn btn-outline btn-lg">
                   <Smartphone className="h-4 w-4" aria-hidden />
-                  Pesan website / aplikasi custom
+                  Pesan Custom
                 </Link>
               ) : (
                 <Link to="/#templates" className="btn btn-outline btn-lg">
