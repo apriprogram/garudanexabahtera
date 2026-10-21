@@ -117,7 +117,8 @@ atau tombol WhatsApp melayang; offset anchor section tetap lewat `scroll-mt-*`.
   muncul saat digulir = memudar + naik 32px + blur 8px (HP: tanpa blur, 16px). Murni CSS `.reveal` + IntersectionObserver.
 - `<SplitText parts={[{ text }, { text, className: 'text-primary' }]} />`: judul muncul kata per kata dari balik masker.
 - `stagger-item`, `animate-fade-up`, `animate-scale-in`, `animate-fade-in`, kurva `ease-calm`.
-- Reduced motion: semua di atas langsung tampil; kanvas hero statis; tayangan hero tidak berputar otomatis.
+- Reduced motion: semua di atas langsung tampil; kanvas hero statis; tayangan hero tidak berputar otomatis; latar
+  gambar/video hero mulai dijeda.
 
 ### Layout publik (`src/components/layout`, `src/components/ui`)
 
@@ -184,13 +185,33 @@ Footer. Section bisa disembunyikan lewat setting `disabled_sections` (JSON array
 `faq`); nomor chip menyesuaikan otomatis. Latar per section (crossfade): beranda/templates/faq putih, projects/process/kontak
 abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section` dibuat transparan oleh `index.css`.
 
-- **Hero**: kanvas medan titik interaktif + cahaya biru mengikuti kursor (berkelana saat diam, berhenti saat tak terlihat,
-  ±30 fps di HP). Kiri: toggle mode [Template siap pakai | Website & Aplikasi Custom] berindikator meluncur → judul dua warna,
+- **Hero**: latar dipilih admin (lihat "Latar hero" di bawah); bawaan = kanvas medan titik interaktif + cahaya biru
+  mengikuti kursor (berkelana saat diam, berhenti saat tak terlihat, ±30 fps di HP). Kiri: toggle mode [Template siap pakai | Website & Aplikasi Custom] berindikator meluncur → judul dua warna,
   3 poin, tombol tanpa panah setinggi `btn-xl` (Template: "Pilih Template" → `#templates` + "Lihat demo" template yang
   sedang tampil; Custom: "Pesan Website / Aplikasi Mobile Custom" → `/pesan-custom` + "Konsultasi Gratis"; tombol kedua =
   `btn-outline-clear` dengan ikon polos, HP: sama lebar dalam satu baris). Kanan (HP: di bawah): bingkai browser datar yang menayangkan
   pratinjau template dari `get_templates` (cadangan `/assets/templates/*-preview.svg`) + rail langkah Pilih template → Bayar via
   Midtrans → Domain aktif → Kelola lewat CMS (bisa diklik & dijeda).
+- **Latar hero** (`Hero.tsx`, `hero/heroBgConfig.ts`, `hero/HeroMedia.tsx`): setting `hero_bg_mode` (dicocokkan persis)
+  - `default` (juga kosong/tidak dikenal) → `HeroBackground` (kanvas di atas). Hanya latar yang aktif yang dipasang, jadi
+    loop kanvas tidak berjalan di mode lain. Sebelum setting dimuat tidak ada latar sama sekali (tanpa kedip).
+  - `image` → `hero_images` (JSON array URL, urutan admin, tanpa duplikat, maks. 12): 1 gambar = statis; 2+ gambar =
+    crossfade tiap 6 detik (1,2 detik `ease-calm`, gambar baru memudar di atas gambar lama + skala 1,03 → 1). Gambar
+    dipasang bertahap (yang tampil, berikutnya, yang sudah pernah tampil); gambar pertama `loading="eager"`
+    `fetchPriority="high"`, lainnya lazy; `alt=""` (dekoratif); gambar yang gagal dimuat dilewati.
+  - `video` → `hero_bg_video` (+ `hero_bg_video_poster` opsional): `<video muted loop playsInline>` tanpa kontrol/PiP,
+    `object-cover`; `play()` hanya saat terlihat, tab aktif, tidak dijeda, bukan reduced motion, bukan Save-Data. Autoplay
+    diblokir (mis. iOS Low Power Mode) → status dijeda, poster/frame pertama tetap. Video rusak → disembunyikan, poster
+    tampil sebagai gambar (tanpa poster: tinggal latar putih).
+  - URL hanya path situs (`/…`, bukan `//`) atau `http(s)://` (S3); data:/blob:/javascript: diabaikan. Mode gambar tanpa
+    gambar valid / mode video tanpa video valid → bawaan.
+  - Di atas media: cuci putih netral agar teks terbaca (HP & tablet `bg-canvas/80` rata; ≥ 1024px `from-canvas/90
+    via-canvas/75 to-canvas/40` dari kiri), pudar atas `h-28` (navbar transparan) & bawah `h-40` (strip layanan) sama
+    dengan kanvas. Datar: tanpa scrim gelap, tanpa blur.
+  - Tombol jeda bulat 40px (`bg-surface/90` + garis tipis, ikon `Pause`/`Play`, label "Jeda latar" / "Putar latar",
+    WCAG 2.2.2) untuk 2+ gambar dan video, di kiri bawah `container-site` (kanan bawah tertutup tombol WhatsApp melayang
+    di ≥ 640px). Berhenti otomatis saat hero di luar layar / tab disembunyikan. Reduced motion & Save-Data: mulai dijeda
+    (gambar pertama / poster saja, gambar berikutnya tidak dimuat), pengunjung bisa memutar.
 - **Projects**: kartu sorotan lebar (≥ 3 proyek) + grid kartu datar bergambar.
 - **Proses**: kontrol segmen Template / Custom → bento (2 kartu langkah, 1 kartu tinggi, 1 kartu lebar biru muda).
 - **FAQ**: judul sticky kiri, accordion bernomor kanan (satu terbuka; terbuka = putih bergaris, tertutup = abu lembut).
@@ -212,6 +233,11 @@ Gaya "Calm Workspace" dari BELAJAR CPNS (`E:\_____________\WEBSITE\GARUDANEXA\Be
 - **Input**: `h-11 rounded-xl border border-adm-line bg-adm-surface text-[15px] max-sm:text-[16px] focus:border-cobalt focus:ring-1 focus:ring-cobalt`.
 - **Pill status**: `h-6 rounded-full px-2.5 text-xs font-medium` + tint: sukses `bg-mint-50 text-mint-700`, proses `bg-cobalt-50 text-cobalt-700`, menunggu `bg-warning-50 text-warning-700`, gagal `bg-danger-50 text-danger-700`, draf `bg-mist-50 text-mist-700`.
 - **Modal**: overlay `bg-obsidian/30` tanpa blur, panel `rounded-[24px] shadow-float`; di HP jadi bottom-sheet.
+- **Pengaturan website → tab Hero → "Latar hero"**: kontrol segmen Bawaan / Gambar / Video (`hero_bg_mode`). Grid
+  "Gambar slider" hanya di mode Gambar (gambar dikecilkan ke maks. 1920×1080 di browser, maks. 10 MB per file; 2+ gambar
+  berganti tiap 6 detik). Mode Video: unggah MP4/WebM maks. 30 MB (`upload_hero_video`, dengan progres), poster dibuat
+  dari salah satu frame di browser, pratinjau, ganti & hapus. Semua tersimpan lewat "Simpan semua perubahan". Detail
+  tampilan di website: "Latar hero" di bagian Beranda.
 
 ### Bahasa & istilah (copy panel admin)
 

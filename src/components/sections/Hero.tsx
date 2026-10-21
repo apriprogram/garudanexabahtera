@@ -1,14 +1,19 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Reveal } from '../ui/Reveal';
 import { getHiddenSections, useSiteSettings } from '../../hooks/useSiteSettings';
 import { HeroBackground } from './hero/HeroBackground';
+import { heroBackgroundKey, parseHeroBackground } from './hero/heroBgConfig';
 import { HeroIntro } from './hero/HeroIntro';
+import { HeroMedia } from './hero/HeroMedia';
 import { HeroShowcase } from './hero/HeroShowcase';
 import { loadShowcase, type HeroMode, type ShowcaseData } from './hero/showcase';
 
 /**
  * Hero beranda gaya BELAJAR CPNS (terang):
- * - latar kanvas medan titik interaktif + cahaya biru brand yang mengikuti kursor;
+ * - latar dari setting admin `hero_bg_mode` (Pengaturan website → Hero → "Latar hero", lihat hero/heroBgConfig.ts):
+ *   Bawaan = kanvas medan titik interaktif + cahaya biru brand yang mengikuti kursor; Gambar (1 statis / 2+ bergantian)
+ *   atau Video = HeroMedia dengan cuci putih agar teks tetap terbaca. Setting tidak lengkap/tidak aman → Bawaan. Sebelum
+ *   setting dimuat tidak ada latar sama sekali, jadi kanvas tidak sempat berkedip berganti gambar/video;
  * - kiri: toggle mode Template / Custom, judul dua warna kata per kata, checklist, tombol
  *   ("Pilih Template" → #templates, "Pesan Website / Aplikasi Mobile Custom" → /pesan-custom);
  * - kanan (di HP: di bawah): bingkai browser yang menayangkan pratinjau template asli + rail langkah yang MENGIKUTI
@@ -20,8 +25,10 @@ import { loadShowcase, type HeroMode, type ShowcaseData } from './hero/showcase'
  */
 const Hero: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
-  const { settings } = useSiteSettings();
+  const { settings, loaded } = useSiteSettings();
   const templatesHidden = getHiddenSections(settings).has('templates');
+  // Dihitung sekali per setting: Hero render ulang tiap langkah tayangan, latar tidak perlu ikut berubah
+  const background = useMemo(() => parseHeroBackground(settings), [settings]);
   const [showcase, setShowcase] = useState<ShowcaseData | null>(null);
   const [slide, setSlide] = useState(0);
   // null = pengunjung belum memilih → bawaan Template, atau Custom bila katalog disembunyikan admin
@@ -81,7 +88,13 @@ const Hero: React.FC = () => {
       className="relative isolate overflow-hidden"
       style={{ '--p': 0 } as React.CSSProperties}
     >
-      <HeroBackground className="absolute inset-0 -z-10" />
+      {/* Hanya satu latar yang dipasang: loop kanvas (RAF + listener) tidak berjalan di mode gambar/video */}
+      {loaded &&
+        (background.mode === 'default' ? (
+          <HeroBackground className="absolute inset-0 -z-10" />
+        ) : (
+          <HeroMedia key={heroBackgroundKey(background)} config={background} />
+        ))}
 
       <div className="container-site grid items-center gap-8 pb-12 pt-20 sm:min-h-[100svh] sm:gap-12 sm:pb-16 sm:pt-28 lg:grid-cols-2 lg:gap-12 lg:pb-20 lg:pt-28 xl:gap-16 2xl:gap-24">
         <div

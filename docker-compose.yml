@@ -40,6 +40,8 @@ services:
       - TRUST_PROXY=${TRUST_PROXY:-1}
       - UPLOAD_MAX_IMAGE_MB=${UPLOAD_MAX_IMAGE_MB:-10}
       - UPLOAD_MAX_FILE_MB=${UPLOAD_MAX_FILE_MB:-25}
+      # Hero background video (upload_hero_video); keep it below client_max_body_size in nginx.conf (64m)
+      - UPLOAD_MAX_VIDEO_MB=${UPLOAD_MAX_VIDEO_MB:-30}
       - AI_BASE_URL=${AI_BASE_URL:-}
       - AI_API_KEY=${AI_API_KEY:-}
       - AI_MODEL=${AI_MODEL:-}

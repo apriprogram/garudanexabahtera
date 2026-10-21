@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import HeroSettings from './HeroSettings';
+import { normalizeHeroBgMode, parseHeroImages, parseHeroLogos, type HeroBgMode } from './hero/heroMedia';
 import {
   Button,
   Chip,
@@ -173,6 +174,12 @@ const SiteSettings: React.FC = () => {
   // Hero section States
   const [heroImages, setHeroImages] = useState<string[]>([]);
   const [heroLogos, setHeroLogos] = useState<{name: string, src: string}[]>([]);
+  // Latar hero: mode + video (URL hasil upload_hero_video) + gambar sampul
+  const [heroBgMode, setHeroBgMode] = useState<HeroBgMode>('default');
+  const [heroVideo, setHeroVideo] = useState('');
+  const [heroVideoPoster, setHeroVideoPoster] = useState('');
+  // true selama video diunggah: tombol simpan ditahan supaya video setengah jadi tidak ikut tersimpan
+  const [heroBusy, setHeroBusy] = useState(false);
 
   // Products tab States
   const [productsCategories, setProductsCategories] = useState<{ id: string; label: string }[]>([]);
@@ -240,9 +247,12 @@ const SiteSettings: React.FC = () => {
       const data: SettingsMap = await response.json();
       setSettings(data);
       
-      // Load Hero Image Slider
-      if (data.hero_images) setHeroImages(JSON.parse(data.hero_images));
-      if (data.hero_logos) setHeroLogos(JSON.parse(data.hero_logos));
+      // Load Hero: gambar, logo, dan latar. JSON rusak → daftar kosong, tidak menggagalkan muat halaman.
+      if (data.hero_images) setHeroImages(parseHeroImages(data.hero_images));
+      if (data.hero_logos) setHeroLogos(parseHeroLogos(data.hero_logos));
+      setHeroBgMode(normalizeHeroBgMode(data.hero_bg_mode));
+      setHeroVideo(typeof data.hero_bg_video === 'string' ? data.hero_bg_video.trim() : '');
+      setHeroVideoPoster(typeof data.hero_bg_video_poster === 'string' ? data.hero_bg_video_poster.trim() : '');
 
       // Load Products tab data
       if (data.products_categories) {
@@ -405,6 +415,7 @@ const SiteSettings: React.FC = () => {
   }, [fetchSettings]);
 
   const handleSave = async () => {
+    if (heroBusy) return;
     setIsSaving(true);
 
     // Catatan harga template hanya ditulis bila tab Harga sedang terbuka. Nilai kosong ikut disimpan (= sembunyikan
@@ -422,7 +433,11 @@ const SiteSettings: React.FC = () => {
       hero_secondary_btn: (document.getElementById('hero_secondary_btn') as HTMLInputElement)?.value || settings.hero_secondary_btn || "Hubungi Kami",
       hero_images: JSON.stringify(heroImages),
       hero_logos: JSON.stringify(heroLogos),
-      
+      // Latar hero (string semua). Sampul baru berupa data URI JPEG; backend menyimpannya sebagai file.
+      hero_bg_mode: heroBgMode,
+      hero_bg_video: heroVideo,
+      hero_bg_video_poster: heroVideoPoster,
+
       // Products data
       products_categories: JSON.stringify(productsCategories),
       products_data: JSON.stringify(productsList),
@@ -674,12 +689,19 @@ const SiteSettings: React.FC = () => {
     switch (activeTab) {
       case 'hero':
         return (
-          <HeroSettings 
-            settings={settings} 
-            heroImages={heroImages} 
-            setHeroImages={setHeroImages} 
+          <HeroSettings
+            settings={settings}
+            heroImages={heroImages}
+            setHeroImages={setHeroImages}
             heroLogos={heroLogos}
             setHeroLogos={setHeroLogos}
+            heroBgMode={heroBgMode}
+            setHeroBgMode={setHeroBgMode}
+            heroVideo={heroVideo}
+            setHeroVideo={setHeroVideo}
+            heroVideoPoster={heroVideoPoster}
+            setHeroVideoPoster={setHeroVideoPoster}
+            onBusyChange={setHeroBusy}
           />
         );
 
@@ -1123,8 +1145,8 @@ const SiteSettings: React.FC = () => {
         title="Pengaturan website"
         description="Atur isi setiap bagian website kamu, dari Hero sampai Footer."
         actions={
-          <Button icon={<Save />} loading={isSaving} onClick={handleSave}>
-            {isSaving ? 'Menyimpan...' : 'Simpan semua perubahan'}
+          <Button icon={<Save />} loading={isSaving} disabled={heroBusy} onClick={handleSave}>
+            {isSaving ? 'Menyimpan...' : heroBusy ? 'Menunggu unggahan video...' : 'Simpan semua perubahan'}
           </Button>
         }
       />

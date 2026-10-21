@@ -74,6 +74,9 @@ require_once __DIR__ . '/modules/templates.php';
 require_once __DIR__ . '/modules/list_products.php';
 // Client project files: staff-only download, the folder itself is closed to the web (handle_project_file_action)
 require_once __DIR__ . '/modules/project_files.php';
+// Home page hero background: raw video upload and the hero_bg_* / hero_images settings (handle_hero_media_action,
+// hero_media_prepare_settings)
+require_once __DIR__ . '/modules/hero_media.php';
 
 load_env_file();
 
@@ -100,7 +103,9 @@ $conn = new mysqli($host, $user, $pass, $db);
 $conn->set_charset('utf8mb4');
 
 $method = $_SERVER['REQUEST_METHOD'];
-$input = json_decode(file_get_contents('php://input'), true);
+// upload_hero_video posts the raw video file (not JSON): hero_media.php streams php://input itself
+$rawBody = ($_GET['action'] ?? '') === 'upload_hero_video';
+$input = $rawBody ? null : json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) $input = [];
 // Read actions may be called with a query string (GET); the body wins over the query
 if ($method === 'GET') $input = $input + $_GET;
@@ -127,6 +132,11 @@ if (handle_list_product_action($conn, $action, $input, $authUser)) {
 }
 // Client project files (dokumen-client/dokumen): staff download (backend/modules/project_files.php)
 if (handle_project_file_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Hero background video upload, staff only (backend/modules/hero_media.php)
+if (handle_hero_media_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }
@@ -199,6 +209,9 @@ switch ($action) {
 
     case 'update_settings':
         $settings = is_array($input['settings'] ?? null) ? $input['settings'] : [];
+        // hero_bg_mode, hero_bg_video, hero_bg_video_poster, hero_images (backend/modules/hero_media.php).
+        // First, so a refused value (e.g. a data: video) stops the save before any upload
+        $deleteReplacedHeroMedia = hero_media_prepare_settings($conn, $settings);
 
         // Special handling for products_data
         // Gambar disimpan sebagai base64 langsung di DB (tidak ke disk)
@@ -254,20 +267,6 @@ switch ($action) {
             }
         }
 
-        // Special handling for hero_images
-        if (isset($settings['hero_images'])) {
-            $images = json_decode((string)$settings['hero_images'], true);
-            if (is_array($images)) {
-                // Removed images are not deleted from disk (same as server.js): the folder also holds
-                // files committed to the repo, and every settings save resends this list
-                $final_paths = [];
-                foreach ($images as $imgData) {
-                    if (is_string($imgData)) $final_paths[] = save_base64_asset($imgData, 'bg', 'hero');
-                }
-                $settings['hero_images'] = json_encode($final_paths);
-            }
-        }
-
         // Special handling for hero_logos
         if (isset($settings['hero_logos'])) {
             $logos = json_decode((string)$settings['hero_logos'], true);
@@ -287,6 +286,8 @@ switch ($action) {
             db_run($conn, "INSERT INTO hero_settings (setting_key, setting_value) VALUES (?, ?)
                            ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [(string)$key, $value]);
         }
+        // The old hero video/poster file, only once the new value is saved
+        $deleteReplacedHeroMedia();
         echo json_encode(["success" => true, "error" => null]);
         break;
 

@@ -41,6 +41,12 @@ database/*.local.sql
 # Upload konten situs pembeli (CMS) dari dev lokal: hanya ada di server, jangan di-commit
 public/assets/sites/
 
+# Video & poster latar hero yang diunggah dari admin (api.php lokal), termasuk file sementara .hero_video_*.part:
+# hanya di server/disk lokal, jangan di-commit. Gambar slider bawaan di public/assets/bg/ tetap ter-track.
+public/assets/bg/hero_video_*
+public/assets/bg/hero_poster_*
+public/assets/bg/.hero_video_*
+
 # Dokumen & logo klien (upload dari admin): tetap di server/disk lokal, jangan masuk repo publik.
 # File lama yang sudah ter-track tidak ikut terhapus oleh aturan ini.
 public/assets/dokumen-client/

@@ -9,7 +9,7 @@
 
 import { execSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { build } from 'vite';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -24,6 +24,11 @@ const push = process.argv.includes('--push');
 // Upload folders that hold user content: never published from git (they live only on the server).
 // assets/dokumen-client = client documents and project logos uploaded from the admin; the deploy branch is public.
 const EXCLUDE = ['assets/sites', 'assets/documents', 'assets/list-products', 'assets/dokumen-client'];
+// File upload di folder yang juga berisi file ter-commit: video & poster latar hero (backend/modules/hero_media.php)
+// di assets/bg, di samping gambar slider bawaan. Dikecualikan per nama file (path relatif terhadap public/, pakai /).
+const EXCLUDE_FILES = ['assets/bg/hero_video_*', 'assets/bg/hero_poster_*', 'assets/bg/.hero_video_*'];
+const excludedFile = (rel) =>
+  EXCLUDE_FILES.some((glob) => new RegExp(`^${glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')}$`).test(rel));
 
 const run = (cmd, cwd = ROOT) => execSync(cmd, { cwd, stdio: 'inherit' });
 const out = (cmd, cwd = ROOT) => execSync(cmd, { cwd, encoding: 'utf8' }).trim();
@@ -37,8 +42,12 @@ rmSync(OUT, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
 run('npx tsc -b');
 await build({ root: ROOT, publicDir: false, logLevel: 'warn', build: { outDir: OUT, emptyOutDir: true } });
 const excluded = new Set(EXCLUDE.map((rel) => join(ROOT, 'public', rel)));
-cpSync(join(ROOT, 'public'), OUT, { recursive: true, filter: (src) => !excluded.has(src) });
-const leaked = EXCLUDE.filter((rel) => existsSync(join(OUT, rel)));
+const publicRel = (src) => relative(join(ROOT, 'public'), src).split(sep).join('/');
+cpSync(join(ROOT, 'public'), OUT, { recursive: true, filter: (src) => !excluded.has(src) && !excludedFile(publicRel(src)) });
+const leakedFiles = existsSync(join(OUT, 'assets', 'bg'))
+  ? readdirSync(join(OUT, 'assets', 'bg')).map((name) => `assets/bg/${name}`).filter(excludedFile)
+  : [];
+const leaked = [...EXCLUDE.filter((rel) => existsSync(join(OUT, rel))), ...leakedFiles];
 if (leaked.length) throw new Error(`Folder upload ikut ter-build (harus dikecualikan): ${leaked.join(', ')}`);
 
 // 2. PHP API next to index.html (api.php finds its .env one level up, outside public_html)
@@ -66,7 +75,7 @@ writeFileSync(
 );
 // public_html adalah checkout branch ini: upload di folder EXCLUDE tetap file untracked di server.
 // Di-ignore agar working tree cPanel tetap bersih dan `git clean -fd` tidak menghapusnya.
-writeFileSync(join(OUT, '.gitignore'), EXCLUDE.map((rel) => `/${rel}/`).join('\n') + '\n');
+writeFileSync(join(OUT, '.gitignore'), [...EXCLUDE.map((rel) => `/${rel}/`), ...EXCLUDE_FILES.map((rel) => `/${rel}`)].join('\n') + '\n');
 
 // 4. Commit the build to the deploy branch through a separate worktree
 const sourceSha = out('git rev-parse --short HEAD');

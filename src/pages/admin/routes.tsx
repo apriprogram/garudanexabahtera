@@ -29,7 +29,24 @@ export const adminRoutes = (
     <Route path="pesanan-template/kelola-template" element={<KelolaTemplate />} />
     <Route path="pesanan-template/template-aktif" element={<TemplateAktif />} />
     <Route path="project-clients" element={<ProjectClients />} />
-    <Route path="hero" element={<HeroSettings settings={{}} heroImages={[]} setHeroImages={() => {}} heroLogos={[]} setHeroLogos={() => {}} />} />
+    <Route
+      path="hero"
+      element={
+        <HeroSettings
+          settings={{}}
+          heroImages={[]}
+          setHeroImages={() => {}}
+          heroLogos={[]}
+          setHeroLogos={() => {}}
+          heroBgMode="default"
+          setHeroBgMode={() => {}}
+          heroVideo=""
+          setHeroVideo={() => {}}
+          heroVideoPoster=""
+          setHeroVideoPoster={() => {}}
+        />
+      }
+    />
     <Route path="services" element={<ServicesManager />} />
     <Route path="product-manager" element={<ProductManager />} />
     <Route path="documents" element={<Documents />} />

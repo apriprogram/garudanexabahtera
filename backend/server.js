@@ -1,5 +1,6 @@
 // Imported first: also loads .env for local runs before other modules read process.env
 import {
+  actionOf,
   createAuthActions,
   createAuthGate,
   corsOptions,
@@ -28,6 +29,8 @@ import { handlePlatformAction } from './modules/templates.js';
 import { handleListProductAction } from './modules/list_products.js';
 // Client project files (dokumen-client/dokumen): staff-only download, the folder itself is closed to the web
 import { handleProjectFileAction } from './modules/project_files.js';
+// Home page hero background: raw video upload (upload_hero_video) and the hero_bg_* / hero_images settings
+import { handleHeroMediaAction, prepareHeroMediaSettings } from './modules/hero_media.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -359,6 +362,9 @@ app.get('/api.php', async (req, res) => {
 
 // ── POST /api.php ──
 app.post('/api.php', async (req, res) => {
+  // upload_hero_video posts the raw file (video/mp4|webm, not JSON), so express.json left the stream unread.
+  // Same action lookup as the auth gate (actionOf), so the action checked there is the one handled here.
+  if (await handleHeroMediaAction(actionOf(req), req, res)) return;
   console.log('POST /api.php action:', req.body && req.body.action);
   let { action, settings: inputSettings, ...input } = req.body;
   if (!action && req.query && req.query.action) {
@@ -402,6 +408,9 @@ app.post('/api.php', async (req, res) => {
       case 'update_settings': {
         const settings = inputSettings || {};
         const errors = [];
+        // ── hero_bg_mode, hero_bg_video, hero_bg_video_poster, hero_images ── (modules/hero_media.js)
+        // First, so a refused value (e.g. a data: video) stops the save before any upload
+        const deleteReplacedHeroMedia = await prepareHeroMediaSettings(settings, pool);
 
         // ── products_data ──
         if (settings.products_data) {
@@ -445,24 +454,6 @@ app.post('/api.php', async (req, res) => {
           settings.services_data = JSON.stringify(items);
         }
 
-        // ── hero_images ──
-        if (settings.hero_images) {
-          const images = JSON.parse(settings.hero_images);
-          if (Array.isArray(images)) {
-            const finalPaths = [];
-            for (let i = 0; i < images.length; i++) {
-              const imgData = images[i];
-              if (typeof imgData === 'string' && imgData.includes('data:image')) {
-                const url = await uploadBase64ToS3(imgData, 'bg', `hero_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${i}.jpg`);
-                finalPaths.push(url);
-              } else {
-                finalPaths.push(imgData);
-              }
-            }
-            settings.hero_images = JSON.stringify(finalPaths);
-          }
-        }
-
         // ── hero_logos ──
         if (settings.hero_logos) {
           const logos = JSON.parse(settings.hero_logos);
@@ -496,6 +487,8 @@ app.post('/api.php', async (req, res) => {
             break;
           }
         }
+        // The old hero video/poster file, only once the new value is saved
+        if (allSuccess) await deleteReplacedHeroMedia();
         res.json({ success: allSuccess, error: lastError });
         return;
       }

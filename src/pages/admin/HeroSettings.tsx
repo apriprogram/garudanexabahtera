@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { X, Plus, Sparkles, Image as ImageIcon, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Chip, Field, Input, Notice, PanelHeader, Textarea, cn, FOCUS } from '../../components/admin/ui';
+import { Chip, Field, Input, Notice, PanelHeader, Segmented, Spinner, Textarea, cn, FOCUS } from '../../components/admin/ui';
+import HeroVideoField from './hero/HeroVideoField';
+import { resizeHeroImage } from './hero/heroImage';
+import { checkHeroImageFile, imageRejectMessage, stableListKeys, HERO_IMAGE_MAX_MB, type HeroBgMode, type ImageRejectReason } from './hero/heroMedia';
+import { dropZoneClass } from './hero/styles';
 
 /* Tombol hapus kecil di atas gambar pratinjau (latar solid danger). Selalu tampak di HP, muncul saat hover di desktop. */
 const REMOVE_BTN = cn(
@@ -10,14 +14,12 @@ const REMOVE_BTN = cn(
   FOCUS,
 );
 
-/* Kotak unggah (label) bergaris putus-putus; status seret-lepas → cobalt. */
-const dropZoneClass = (active: boolean, shape: string) =>
-  cn(
-    'group flex cursor-pointer flex-col items-center justify-center gap-1.5 border-2 border-dashed transition-colors duration-150',
-    'focus-within:ring-2 focus-within:ring-cobalt',
-    shape,
-    active ? 'border-cobalt bg-adm-cobalt-soft' : 'border-adm-line-strong hover:border-cobalt hover:bg-adm-hover',
-  );
+/* Pilihan latar hero + keterangan singkat tiap mode. */
+const BG_MODES: { value: HeroBgMode; label: string; icon: typeof Sparkles; hint: string }[] = [
+  { value: 'default', label: 'Bawaan', icon: Sparkles, hint: 'Animasi titik bawaan yang mengikuti kursor.' },
+  { value: 'image', label: 'Gambar', icon: ImageIcon, hint: 'Satu gambar tampil diam, lebih dari satu berganti otomatis.' },
+  { value: 'video', label: 'Video', icon: Film, hint: 'Video diputar otomatis tanpa suara dan berulang.' },
+];
 
 interface HeroSettingsProps {
   /** Respons get_settings (setting_key → setting_value). */
@@ -26,16 +28,44 @@ interface HeroSettingsProps {
   setHeroImages: React.Dispatch<React.SetStateAction<string[]>>;
   heroLogos: {name: string, src: string}[];
   setHeroLogos: React.Dispatch<React.SetStateAction<{name: string, src: string}[]>>;
+  /** hero_bg_mode: latar hero di website. */
+  heroBgMode: HeroBgMode;
+  setHeroBgMode: (mode: HeroBgMode) => void;
+  /** hero_bg_video: URL video tersimpan ("" = belum ada). */
+  heroVideo: string;
+  setHeroVideo: (url: string) => void;
+  /** hero_bg_video_poster: URL gambar sampul, atau data URI baru (diubah backend jadi file saat disimpan). */
+  heroVideoPoster: string;
+  setHeroVideoPoster: (url: string) => void;
+  /** true selama video diunggah: halaman menahan tombol simpan. */
+  onBusyChange?: (busy: boolean) => void;
 }
 
-const HeroSettings: React.FC<HeroSettingsProps> = ({ 
-  settings, 
-  heroImages, 
+const HeroSettings: React.FC<HeroSettingsProps> = ({
+  settings,
+  heroImages,
   setHeroImages,
   heroLogos = [],
-  setHeroLogos
+  setHeroLogos,
+  heroBgMode,
+  setHeroBgMode,
+  heroVideo,
+  setHeroVideo,
+  heroVideoPoster,
+  setHeroVideoPoster,
+  onBusyChange,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [videoBusy, setVideoBusy] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [processingImages, setProcessingImages] = useState(0);
+  // Key stabil per gambar (bukan index) supaya animasi hapus/geser mengenai kartu yang benar
+  const imageKeys = useMemo(() => stableListKeys(heroImages), [heroImages]);
+
+  const handleVideoBusy = useCallback((busy: boolean) => {
+    setVideoBusy(busy);
+    onBusyChange?.(busy);
+  }, [onBusyChange]);
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
@@ -57,43 +87,30 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
 
   const [isHeroDragging, setIsHeroDragging] = useState(false);
 
-  const handleImageUpload = (files: FileList | null) => {
-    if (files) {
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const img = new Image();
-          img.src = event.target?.result as string;
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 1080;
-            const MAX_HEIGHT = 608;
-            let width = img.width;
-            let height = img.height;
+  // Gambar latar: lewati yang bukan gambar / > 10 MB, kecilkan sisanya ke maks. 1920×1080 (JPEG 0.82), urutan dipertahankan.
+  const handleImageUpload = async (files: File[]) => {
+    if (files.length === 0) return;
+    const rejected: { name: string; reason: ImageRejectReason | 'read' }[] = [];
+    const accepted = files.filter((file) => {
+      const reason = checkHeroImageFile(file);
+      if (reason) rejected.push({ name: file.name, reason });
+      return !reason;
+    });
+    setImageError(imageRejectMessage(rejected));
+    if (accepted.length === 0) return;
 
-            if (width > height) {
-              if (width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-              }
-            } else {
-              if (height > MAX_HEIGHT) {
-                width *= MAX_HEIGHT / height;
-                height = MAX_HEIGHT;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, width, height);
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5);
-            setHeroImages(prev => [...prev, compressedDataUrl]);
-          };
-        };
-        reader.readAsDataURL(file);
-      });
+    setProcessingImages((n) => n + accepted.length);
+    const added: string[] = [];
+    for (const file of accepted) {
+      try {
+        added.push(await resizeHeroImage(file));
+      } catch {
+        rejected.push({ name: file.name, reason: 'read' });
+      }
     }
+    if (added.length) setHeroImages((prev) => [...prev, ...added]);
+    setImageError(imageRejectMessage(rejected));
+    setProcessingImages((n) => n - accepted.length);
   };
 
   const [logoDraggedIndex, setLogoDraggedIndex] = useState<number | null>(null);
@@ -178,76 +195,132 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Multiple Image Slider Settings */}
+        {/* Right Column: latar hero (bawaan / gambar / video) */}
         <div className="min-w-0 space-y-4 sm:space-y-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[13px] font-medium text-adm-fg">Gambar slider</p>
-            <Chip className="tabular-nums">{heroImages.length} gambar</Chip>
+          <div className="space-y-2.5">
+            <p className="text-[13px] font-medium text-adm-fg">Latar hero</p>
+            <Segmented
+              ariaLabel="Pilih latar hero"
+              fullWidth
+              items={BG_MODES.map((mode) => ({
+                value: mode.value,
+                label: mode.label,
+                icon: mode.icon,
+                // Selama video diunggah mode tidak bisa diganti (unggahan akan terputus)
+                disabled: videoBusy && mode.value !== 'video',
+              }))}
+              value={heroBgMode}
+              onChange={setHeroBgMode}
+            />
+            <p className="text-xs leading-relaxed text-adm-muted">{BG_MODES.find((mode) => mode.value === heroBgMode)?.hint}</p>
           </div>
 
-          {/* Image Grid */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-            <AnimatePresence>
-              {heroImages.map((src, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                >
-                  <div
-                    className={cn(
-                      'group relative aspect-video cursor-move overflow-hidden rounded-xl bg-adm-ghost ring-1 ring-inset ring-adm-line transition-opacity duration-150',
-                      draggedIndex === index ? 'opacity-30' : 'opacity-100',
-                    )}
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragOver={handleDragOver}
-                    onDrop={() => handleDrop(index)}
-                  >
-                    <img src={src} alt={`Slide ${index + 1}`} className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setHeroImages(prev => prev.filter((_, i) => i !== index))}
-                      aria-label={`Hapus slide ${index + 1}`}
-                      className={REMOVE_BTN}
+          {heroBgMode === 'default' && (heroImages.length > 0 || heroVideo) && (
+            <Notice tone="mist">Gambar dan video yang sudah diunggah tetap tersimpan. Pilih Gambar atau Video untuk memakainya lagi.</Notice>
+          )}
+
+          {heroBgMode === 'image' && (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[13px] font-medium text-adm-fg">Gambar latar</p>
+                <Chip className="tabular-nums">{heroImages.length} gambar</Chip>
+              </div>
+
+              {/* Image Grid */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+                <AnimatePresence initial={false}>
+                  {heroImages.map((src, index) => (
+                    <motion.div
+                      key={imageKeys[index]}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
                     >
-                      <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-                    </button>
-                    <div className="absolute bottom-1.5 left-1.5 rounded-md bg-obsidian/70 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-white transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                      #{index + 1}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                      <div
+                        className={cn(
+                          'group relative aspect-video cursor-move overflow-hidden rounded-xl bg-adm-ghost ring-1 ring-inset ring-adm-line transition-opacity duration-150',
+                          draggedIndex === index ? 'opacity-30' : 'opacity-100',
+                        )}
+                        draggable
+                        onDragStart={() => handleDragStart(index)}
+                        onDragOver={handleDragOver}
+                        onDrop={() => handleDrop(index)}
+                      >
+                        <img src={src} alt={`Gambar latar ${index + 1}`} className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setHeroImages(prev => prev.filter((_, i) => i !== index))}
+                          aria-label={`Hapus gambar ${index + 1}`}
+                          className={REMOVE_BTN}
+                        >
+                          <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                        </button>
+                        <div className="absolute bottom-1.5 left-1.5 rounded-md bg-obsidian/70 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-white transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                          #{index + 1}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
 
-            <label
-              onDragOver={(e) => { e.preventDefault(); setIsHeroDragging(true); }}
-              onDragLeave={() => setIsHeroDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsHeroDragging(false);
-                handleImageUpload(e.dataTransfer.files);
-              }}
-              className={dropZoneClass(isHeroDragging, 'aspect-video rounded-xl')}
-            >
-              <input type="file" multiple accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e.target.files)} />
-              <span
-                className={cn(
-                  'flex h-9 w-9 items-center justify-center rounded-full transition-colors',
-                  isHeroDragging ? 'bg-cobalt text-white' : 'bg-adm-ghost text-adm-muted group-hover:bg-adm-cobalt-soft group-hover:text-adm-cobalt-fg',
-                )}
-              >
-                <Plus className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
-              </span>
-              <span className={cn('text-xs font-medium transition-colors', isHeroDragging ? 'text-adm-cobalt-fg' : 'text-adm-muted group-hover:text-adm-cobalt-fg')}>
-                {isHeroDragging ? 'Lepaskan!' : 'Tambah'}
-              </span>
-            </label>
-          </div>
+                <label
+                  onDragOver={(e) => { e.preventDefault(); setIsHeroDragging(true); }}
+                  onDragLeave={() => setIsHeroDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsHeroDragging(false);
+                    void handleImageUpload(Array.from(e.dataTransfer.files));
+                  }}
+                  className={dropZoneClass(isHeroDragging, 'aspect-video rounded-xl')}
+                >
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      e.target.value = '';
+                      void handleImageUpload(files);
+                    }}
+                  />
+                  <span
+                    className={cn(
+                      'flex h-9 w-9 items-center justify-center rounded-full transition-colors',
+                      isHeroDragging ? 'bg-cobalt text-white' : 'bg-adm-ghost text-adm-muted group-hover:bg-adm-cobalt-soft group-hover:text-adm-cobalt-fg',
+                    )}
+                  >
+                    {processingImages > 0 ? <Spinner size="sm" /> : <Plus className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />}
+                  </span>
+                  <span className={cn('text-xs font-medium transition-colors', isHeroDragging ? 'text-adm-cobalt-fg' : 'text-adm-muted group-hover:text-adm-cobalt-fg')}>
+                    {isHeroDragging ? 'Lepaskan!' : processingImages > 0 ? 'Memproses...' : 'Tambah'}
+                  </span>
+                </label>
+              </div>
 
-          <Notice tone="cobalt">Gambar berganti otomatis. Disarankan 1920×1080 px.</Notice>
+              {imageError && (
+                <Notice tone="danger" onClose={() => setImageError(null)}>
+                  {imageError}
+                </Notice>
+              )}
+              {heroImages.length === 0 && processingImages === 0 && (
+                <Notice tone="warning">Belum ada gambar. Website memakai latar bawaan sampai gambar ditambahkan.</Notice>
+              )}
+              <Notice tone="cobalt">
+                Lebih dari satu gambar berganti otomatis tiap 6 detik. Disarankan 1920×1080 px, maks. {HERO_IMAGE_MAX_MB} MB per gambar.
+              </Notice>
+            </>
+          )}
+
+          {heroBgMode === 'video' && (
+            <HeroVideoField
+              video={heroVideo}
+              poster={heroVideoPoster}
+              setVideo={setHeroVideo}
+              setPoster={setHeroVideoPoster}
+              onBusyChange={handleVideoBusy}
+            />
+          )}
         </div>
       </div>
 

@@ -34,15 +34,18 @@ const client = new S3Client({
  * @param {string} key - S3 object key (e.g. 'assets/product/image.webp')
  * @param {string} contentType - MIME type (optional)
  * @param {'public-read'|'private'} acl - private objects are only read through getFromS3
+ * @param {{ cacheControl?: string }} options - cacheControl: Cache-Control header served with the object
+ *   (e.g. 'public, max-age=31536000, immutable' for files whose name changes on every upload)
  * @returns {Promise<string>} Public URL
  */
-export async function uploadToS3(content, key, contentType, acl = 'public-read') {
+export async function uploadToS3(content, key, contentType, acl = 'public-read', { cacheControl } = {}) {
   const command = new PutObjectCommand({
     Bucket: S3_BUCKET,
     Key: key,
     Body: content,
     ContentType: contentType || 'application/octet-stream',
     ACL: acl,
+    ...(cacheControl ? { CacheControl: cacheControl } : {}),
   });
   await client.send(command);
   return `${S3_PUBLIC_URL}/${key}`;
@@ -170,8 +173,8 @@ export function parseUpload(dataUri, { allowDocuments = false, filename = '' } =
   return { content, ext, contentType: DOCUMENT_TYPES[ext], isImage: false };
 }
 
-// Non-upload values are stored as given (existing URLs/paths); script URLs are dropped
-function passThrough(value) {
+// Non-upload values are stored as given (existing URLs/paths); script URLs are dropped (safe_link() in api.php)
+export function passThrough(value) {
   if (typeof value !== 'string') return value;
   return /^[\s\x00-\x1f]*(javascript|vbscript|data):/i.test(value) ? '' : value;
 }

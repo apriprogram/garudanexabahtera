@@ -258,6 +258,17 @@ content: object|null, activated_at, updated_at, owner_name, owner_email }` (owne
 Juga: `update_project` & `add_project` (lama) menerima `show_on_website` (0/1); `get_projects` mengembalikan
 `show_on_website` dan `source`.
 
+**Latar hero beranda** (`backend/modules/hero_media.php` / `hero_media.js`, aksi staf, tidak ada di daftar mana pun):
+
+| Action | Input | Output |
+|---|---|---|
+| `upload_hero_video` | POST `/api.php?action=upload_hero_video`, header `Authorization: Bearer <token>`, body = **byte file mentah** (bukan JSON/base64/multipart; `Content-Type: video/mp4\|video/webm` hanya informasi) | `{ success, url }` (PHP `/assets/bg/hero_video_<12 hex>.<mp4\|webm>`, Node URL S3 publik dengan key yang sama). Jenis dari magic bytes saja: MP4 (`ftyp` + brand yang diizinkan, MOV `qt  ` ditolak) atau WebM (EBML + DocType `webm`); lainnya 400. Kosong 400; lebih dari `UPLOAD_MAX_VIDEO_MB` (default 30) 413 |
+
+Setting `hero_settings` (semua string): `hero_bg_mode` (`default`, `image` atau `video`; selain itu disimpan `default`),
+`hero_images` (JSON array URL, urutan slide), `hero_bg_video` (URL dari `upload_hero_video`, `""` = tidak ada; data URI
+ditolak 400), `hero_bg_video_poster` (URL; data URI gambar baru disimpan jadi `assets/bg/hero_poster_<12 hex>.<ext>`).
+`update_settings` menghapus file video/poster lama hanya bila nilainya berubah dan file lama itu buatan modul ini.
+
 ### Struktur kode backend
 - PHP: `backend/modules/templates.php` berisi fungsi `handle_platform_action(mysqli $conn, string $action, array $input, ?array $user): bool`
   (return true bila action ditangani). `api.php` cukup `require_once` + memanggilnya tepat sebelum `switch ($action)`.
