@@ -15,7 +15,8 @@ export const LogoMark: React.FC<{ className?: string }> = ({ className = '' }) =
 );
 
 /**
- * Lambang lengkap: kotak biru brand rounded + sayap putih (= public/brand/logo-mark.svg, juga favicon).
+ * Lambang berlatar: kotak biru brand rounded + sayap putih (= public/brand/logo-mark.svg). Hanya untuk ilustrasi
+ * di dalam kartu/mockup; navbar, footer, sidebar admin dan favicon memakai sayap tanpa latar (`LogoMark`).
  * Ukuran lewat kelas, mis. `h-8 w-8`.
  */
 export const LogoBadge: React.FC<{ className?: string }> = ({ className = '' }) => (
@@ -26,9 +27,9 @@ export const LogoBadge: React.FC<{ className?: string }> = ({ className = '' }) 
 );
 
 /**
- * Logo + nama perusahaan untuk navbar/footer (ukuran CPNS: tanda 32px & nama 15px di HP, 36px & 17px di desktop).
- * "Bahtera" tampil mulai `sm`; `compact` = tanpa "Bahtera"; `fullFrom="xl"` = "Bahtera" baru tampil mulai 1280px
- * (navbar: memberi ruang menu di 1024px).
+ * Logo + nama perusahaan untuk navbar/footer: sayap biru brand tanpa latar (tinggi 20px & nama 15px di HP,
+ * 24px & 17px di desktop). "Bahtera" tampil mulai `sm`; `compact` = tanpa "Bahtera"; `fullFrom="xl"` = "Bahtera"
+ * baru tampil mulai 1280px (navbar: memberi ruang menu di 1024px).
  */
 export const BrandLogo: React.FC<{ className?: string; compact?: boolean; fullFrom?: 'sm' | 'xl' }> = ({
   className = '',
@@ -36,7 +37,7 @@ export const BrandLogo: React.FC<{ className?: string; compact?: boolean; fullFr
   fullFrom = 'sm',
 }) => (
   <span className={`inline-flex min-w-0 items-center gap-2.5 ${className}`}>
-    <LogoBadge className="h-8 w-8 sm:h-9 sm:w-9" />
+    <LogoMark className="h-5 text-primary sm:h-6" />
     <span className="min-w-0 truncate text-[15px] font-bold tracking-[-0.03em] text-fg sm:text-[17px]">
       Garuda Nexa
       {!compact && <span className={`hidden font-semibold text-subtle ${fullFrom === 'xl' ? 'xl:inline' : 'sm:inline'}`}> Bahtera</span>}

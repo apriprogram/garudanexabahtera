@@ -4,6 +4,7 @@ import { ChevronDown, LogOut, PanelLeftClose, PanelLeftOpen, X } from 'lucide-re
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { logout } from '../../lib/auth';
+import { LogoMark } from '../ui/LogoMark';
 import { ADMIN_NAV, isNavActive, type AdminNavItem } from './nav';
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt';
@@ -41,9 +42,9 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ collapsed = false, onTo
       {/* Logo + ciutkan */}
       <div className={collapsed ? 'flex flex-col items-center gap-3' : 'flex items-center justify-between gap-2 pl-1.5'}>
         <Link to="/admin" onClick={onNavigate} aria-label="Dashboard admin" className={`flex min-w-0 items-center gap-2.5 rounded-xl py-1 ${focusRing}`}>
-          {/* Logo mark brand: kotak biru brand + sayap putih (sama dengan website & akun pembeli) */}
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-brand-600 ring-1 ring-inset ring-white/10">
-            <img src="/assets/logo/logognbputih.png" alt="" className="h-4 w-auto object-contain" />
+          {/* Sayap brand tanpa latar, sama dengan navbar website; adm-link = biru brand (terang) / brand-300 (gelap) */}
+          <span className="flex h-8 w-9 shrink-0 items-center justify-center">
+            <LogoMark className="h-5 text-adm-link" />
           </span>
           {!collapsed && (
             <span className="min-w-0 leading-tight">

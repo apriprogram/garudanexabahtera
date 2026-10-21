@@ -15,11 +15,16 @@ Stack: Vite + React 19 + TypeScript + Tailwind CSS v4 (`@theme` di CSS, tanpa `t
 
 ### Logo (SVG, path sayap persis dari `public/logogarudanexa.svg`)
 
+**Logo utama = sayap biru brand TANPA latar** (navbar, footer, sidebar admin, favicon). Versi berkotak biru hanya untuk
+ilustrasi di dalam kartu/mockup dan halaman masuk/daftar.
+
 | File | Isi | Pakai di React (`src/components/ui/LogoMark.tsx`) |
 |---|---|---|
-| `public/brand/logo-mark.svg` | Kotak rounded biru brand + sayap putih (juga favicon) | `<LogoBadge className="h-8 w-8" />` |
-| `public/brand/logo-wings.svg` | Sayap saja, `fill="currentColor"` | `<LogoMark className="h-4 text-primary" />` (warna lewat kelas teks) |
-| (komponen) | Lambang + "Garuda Nexa Bahtera" | `<BrandLogo />` (navbar, footer) |
+| `public/favicon.svg` | Favicon: sayap biru brand tanpa latar di kotak transparan (tab gelap: brand-400) | `<link rel="icon">` di `index.html` |
+| `public/brand/logo-wings.svg` | Sayap saja, `fill="currentColor"` | `<LogoMark className="h-5 text-primary" />` (warna lewat kelas teks) |
+| (komponen) | Sayap `h-5`/`sm:h-6` + "Garuda Nexa Bahtera" | `<BrandLogo />` (navbar, footer) |
+| (sidebar admin) | Sayap `text-adm-link` (biru brand di tema terang, brand-300 di tema gelap) | `<LogoMark className="h-5 text-adm-link" />` |
+| `public/brand/logo-mark.svg` | Kotak rounded biru brand + sayap putih | `<LogoBadge className="h-8 w-8" />` (ilustrasi, halaman auth) |
 
 ## File gaya
 
