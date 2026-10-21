@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Eye,
   FileText,
+  FolderKanban,
   Globe,
   Hand,
   Mail,
@@ -299,6 +300,9 @@ export function ProjectViewDrawer({
             <ModalFooter>
               <Button variant="secondary" onClick={onClose}>
                 Tutup
+              </Button>
+              <Button variant="secondary" icon={<FolderKanban />} to={`/admin/proyek/${project.id}`}>
+                Buka workspace
               </Button>
               <Button onClick={() => onEdit(project)}>Edit proyek</Button>
             </ModalFooter>
