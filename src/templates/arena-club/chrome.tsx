@@ -257,8 +257,9 @@ export function Footer({ m }: { m: ArenaModel }) {
         </div>
 
         <div className="mt-14 flex flex-col gap-2 border-t border-white/10 pt-6 text-[13px] text-white/60 @3xl:flex-row @3xl:items-center @3xl:justify-between">
-          <p>{copyright}</p>
-          {text(footer, 'description') && m.tagline && <p>{m.tagline}</p>}
+          {/* Ruang kanan untuk tombol WhatsApp melayang (pojok kanan bawah) agar tidak menutupi teks di ujung halaman */}
+          <p className="pr-16 @3xl:pr-0">{copyright}</p>
+          {text(footer, 'description') && m.tagline && <p className="pr-16 @3xl:pr-24">{m.tagline}</p>}
         </div>
       </div>
     </footer>

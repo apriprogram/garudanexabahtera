@@ -30,9 +30,9 @@ function TreatmentTile({ t, slot, action }: { t: Treatment; slot: BentoSlot; act
     <>
       <span className="relative flex flex-col gap-1">
         <span className="text-[14px] font-medium leading-snug @3xl:text-[16px]">{t.title}</span>
-        {t.count && <span className="text-[12px] opacity-85">{t.count}</span>}
+        {t.count && <span className="text-[12px] opacity-90">{t.count}</span>}
         {t.description && (
-          <span className={`mt-1 line-clamp-2 max-w-[36ch] text-[13px] leading-snug opacity-85 ${big ? 'hidden @5xl:block' : 'sr-only'}`}>{t.description}</span>
+          <span className={`mt-1 line-clamp-2 max-w-[36ch] text-[13px] leading-snug opacity-90 ${big ? 'hidden @5xl:block' : 'sr-only'}`}>{t.description}</span>
         )}
       </span>
       <span className="relative mt-auto flex items-end justify-between gap-2">
@@ -72,7 +72,8 @@ function TreatmentTile({ t, slot, action }: { t: Treatment; slot: BentoSlot; act
         className="absolute inset-0 h-full w-full"
         imgClassName="transition-[scale] duration-700 group-hover:scale-[1.03]"
       >
-        <span aria-hidden className="absolute inset-x-0 top-0 h-[85%] bg-gradient-to-b from-black/70 via-black/35 to-transparent" />
+        {/* Scrim atas cukup pekat sampai baris deskripsi agar teks putih ≥ 4,5:1 juga di foto terang (krim, handuk putih) */}
+        <span aria-hidden className="absolute inset-x-0 top-0 h-[90%] bg-gradient-to-b from-black/75 via-black/50 via-55% to-transparent" />
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent" />
       </KitPhoto>
       <span className="relative flex h-full flex-col p-4 text-white @3xl:p-5">{content}</span>

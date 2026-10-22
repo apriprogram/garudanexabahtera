@@ -60,7 +60,7 @@ export function Gallery({ m }: { m: ArenaModel }) {
                       className="absolute inset-0"
                     />
                     {caption && hasImage(image) && (
-                      <figcaption className="absolute inset-x-0 bottom-0 bg-linear-to-t from-[#0E1B2E]/80 to-transparent px-4 pb-3.5 pt-10 text-[13px] font-medium text-white @3xl:px-5 @3xl:pb-4 @3xl:text-[14px]">
+                      <figcaption className="absolute inset-x-0 bottom-0 bg-linear-to-t from-[#0E1B2E]/85 via-[#0E1B2E]/45 to-transparent px-4 pb-3.5 pt-10 text-[13px] font-medium text-white @3xl:px-5 @3xl:pb-4 @3xl:text-[14px]">
                         {caption}
                       </figcaption>
                     )}

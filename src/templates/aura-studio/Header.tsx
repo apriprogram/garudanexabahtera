@@ -17,7 +17,7 @@ const LINK = `h-10 items-center whitespace-nowrap text-[12px] font-medium upperc
 const DESKTOP_LINKS: Record<string, string> = {
   about: 'inline-flex',
   gallery: 'hidden @6xl:inline-flex',
-  testimonials: 'hidden @min-[96rem]:inline-flex',
+  testimonials: 'hidden @min-[102rem]:inline-flex', // dari 96rem "Kontak" tertutup foto hero sampai ±1620px
   contact: 'inline-flex',
 };
 
@@ -128,9 +128,11 @@ export function Header({ m, heroOn, onCategory }: { m: AuraModel; heroOn: boolea
       <div className={CONTAINER}>
         <div className={`flex h-16 items-center gap-3 @5xl:h-[88px] @5xl:pt-4 ${heroOn ? '@5xl:w-[calc(45%-12px)]' : ''}`}>
           <ActionLink action={{ kind: 'section', target: 'hero' }} onNavigate={close} aria-label={`${m.companyName}, ke atas halaman`} className="min-w-0 rounded-full">
-            <Brand name={m.companyName} logo={m.logo} size="h-10 w-10 @5xl:h-11 @5xl:w-11" nameClassName="@5xl:hidden @7xl:block" />
+            <Brand name={m.companyName} logo={m.logo} size="h-10 w-10 @5xl:h-11 @5xl:w-11" nameClassName="@5xl:hidden @min-[90rem]:block" />
           </ActionLink>
 
+          {/* Nama studio baru tampil di wadah ≥ 90rem: di 1280–1439px (mis. pratinjau CMS 1280) nama + menu terlalu lebar
+            untuk kolom kiri 45% dan "Kontak" tertutup foto hero */}
           {(m.servicesOn || links.length > 0) && (
             <nav aria-label="Menu utama" className="ml-2 hidden min-w-0 items-center gap-5 @5xl:flex @7xl:ml-6">
               {m.servicesOn && <ServicesMenu m={m} onCategory={onCategory} />}

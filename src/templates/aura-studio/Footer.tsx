@@ -112,8 +112,9 @@ export function Footer({ m }: { m: AuraModel }) {
         </p>
 
         <div className={`mt-6 flex flex-col gap-2 border-t ${HAIR} py-6 @3xl:flex-row @3xl:items-center @3xl:justify-between`}>
-          <p className="text-[13px] text-[#6B6B6B]">{copyright}</p>
-          {text(footer, 'description') && m.tagline && <p className="text-[13px] text-[#6B6B6B]">{m.tagline}</p>}
+          {/* Ruang kanan untuk tombol WhatsApp melayang (pojok kanan bawah) agar tidak menutupi teks di ujung halaman */}
+          <p className="pr-16 text-[13px] text-[#6B6B6B] @3xl:pr-0">{copyright}</p>
+          {text(footer, 'description') && m.tagline && <p className="pr-16 text-[13px] text-[#6B6B6B] @3xl:pr-24">{m.tagline}</p>}
         </div>
       </div>
     </footer>

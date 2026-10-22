@@ -117,7 +117,7 @@ export function Events({ m }: { m: ArenaModel }) {
                   </p>
                   <div className="min-w-0">
                     {tag && (
-                      <p className="mb-2 w-fit rounded-full bg-(--tpl-accent-100) px-2.5 py-0.5 text-[12px] font-medium text-(--tpl-accent-ink)">{tag}</p>
+                      <p className="mb-2 w-fit rounded-full bg-(--tpl-accent-100) px-2.5 py-0.5 text-[12px] font-medium text-[#0E1B2E]">{tag}</p>
                     )}
                     {name && <h3 className={`text-[19px] font-medium leading-snug tracking-[-0.01em] @3xl:text-[21px] ${C.ink}`}>{name}</h3>}
                     {location && (

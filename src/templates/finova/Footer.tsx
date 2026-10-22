@@ -81,8 +81,9 @@ export function Footer({ m }: { m: FinovaModel }) {
         </div>
 
         <div className={`mt-14 flex flex-col gap-2 border-t border-black/10 pt-6 text-[13px] ${C.muted} @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:gap-8`}>
-          <p>{copyright}</p>
-          {legal && <p className="@3xl:max-w-[60ch] @3xl:text-right">{legal}</p>}
+          {/* Ruang kanan untuk tombol WhatsApp melayang (pojok kanan bawah) agar tidak menutupi teks di ujung halaman */}
+          <p className="pr-16 @3xl:pr-0">{copyright}</p>
+          {legal && <p className="pr-16 @3xl:max-w-[60ch] @3xl:pr-24 @3xl:text-right">{legal}</p>}
         </div>
       </div>
     </footer>

@@ -2,7 +2,7 @@
 // "cocok untuk", tengah foto BULAT besar dengan busur tipis bertitik (dekoratif, titik muncul bertahap), kanan
 // deskripsi, tahapan bernomor, dan tautan reservasi + bulatan sage. HP: judul → foto bulat 240px → paragraf → tahapan.
 import { Reveal } from '../shared/Animated';
-import { CONTAINER, SECTION_Y } from '../shared/layout';
+import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, list, paragraphs, resolveAction, text } from '../shared/utils';
@@ -50,7 +50,9 @@ export function Featured({ m }: { m: AuraModel }) {
   const withPhoto = hasImage(image);
 
   return (
-    <TemplateSection sectionKey="featured" className={SECTION_Y}>
+    // Atas rapat: garis rambut + label langsung menyambung bento perawatan (ruang bawah section sebelumnya sudah
+    // cukup); dulu ±260px kosong di desktop
+    <TemplateSection sectionKey="featured" className="pb-16 pt-4 @3xl:pb-24 @3xl:pt-6 @5xl:pb-28 @7xl:pb-32">
       <div className={CONTAINER}>
         <Reveal className={`flex items-center justify-between gap-4 border-t ${HAIR} pt-5`}>
           <Label>{eyebrow}</Label>

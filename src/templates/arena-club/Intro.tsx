@@ -201,7 +201,9 @@ export function Numbers({ m }: { m: ArenaModel }) {
   const cols = stats.length >= 4 ? '@3xl:grid-cols-4' : stats.length === 3 ? '@3xl:grid-cols-3' : '';
 
   return (
-    <TemplateSection sectionKey="advantages" className="pb-16 @3xl:pb-24 @5xl:pb-28">
+    // Tanpa padding bawah: section berikutnya sudah membawa ruang atas (SECTION_Y), jadi jarak garis → program sama
+    // dengan jarak bento → garis (sebelumnya ±300px kosong di desktop)
+    <TemplateSection sectionKey="advantages">
       <div className={CONTAINER}>
         <div className="border-y border-[#0B1220]/[0.08] py-12 @3xl:py-16">
           {title && (

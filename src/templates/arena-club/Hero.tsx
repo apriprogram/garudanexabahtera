@@ -99,7 +99,7 @@ export function Hero({ m }: { m: ArenaModel }) {
               )}
             </Reveal>
             {subtitle && (
-              <Reveal as="p" delay={160} className="mt-5 max-w-[56ch] text-pretty text-[15px] leading-relaxed text-white/90 @3xl:mt-6 @3xl:text-[17px]">
+              <Reveal as="p" delay={160} className="mt-5 max-w-[56ch] text-pretty text-[15px] leading-relaxed text-white @3xl:mt-6 @3xl:text-[17px]">
                 {subtitle}
               </Reveal>
             )}

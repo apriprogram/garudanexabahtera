@@ -15,9 +15,9 @@
 -- PERHATIAN: menjalankan ulang MENIMPA perubahan admin (harga, deskripsi, gambar, status) pada 3 slug ini.
 -- Tidak ada DELETE. Template lain tidak disentuh.
 --
--- Gambar pratinjau masih placeholder (file <slug>-preview.svg di folder public/assets/templates); ganti
--- nilai preview_image/gallery di file ini (dan di database/seed.templates.sql) dengan tangkapan layar demo
--- final sebelum dijalankan di produksi.
+-- Gambar pratinjau = tangkapan layar asli demo (WebP 1600x1000, sama dengan database/seed.templates.sql):
+--   <slug>-preview.webp (hero desktop dalam bingkai peramban + hero HP), galeri <slug>-1.webp & <slug>-2.webp.
+-- File SVG lama (<slug>-preview.svg) tetap ada sebagai cadangan kode (src/components/sections/hero/showcase.ts).
 --
 -- Harga (termasuk setup + domain + hosting + SSL tahun pertama, lihat setting harga):
 --   Arena Club   Rp1.290.000  — klub/lapangan olahraga (UMKM), section lebih banyak dari Startup Clean
@@ -34,11 +34,11 @@ INSERT IGNORE INTO templates
    preview_image, gallery, template_code, demo_url, status, sort_order)
 VALUES
   ('arena-club', 'Arena Club', 'Olahraga & Komunitas', '', '', '[]', 1290000.00,
-   '/assets/templates/arena-club-preview.svg', '[]', 'arena-club', NULL, 'published', 3),
+   '/assets/templates/arena-club-preview.webp', '[]', 'arena-club', NULL, 'published', 3),
   ('aura-studio', 'Aura Studio', 'Kecantikan & Klinik', '', '', '[]', 1390000.00,
-   '/assets/templates/aura-studio-preview.svg', '[]', 'aura-studio', NULL, 'published', 4),
+   '/assets/templates/aura-studio-preview.webp', '[]', 'aura-studio', NULL, 'published', 4),
   ('finova', 'Finova', 'Fintech & Startup', '', '', '[]', 1790000.00,
-   '/assets/templates/finova-preview.svg', '[]', 'finova', NULL, 'published', 5);
+   '/assets/templates/finova-preview.webp', '[]', 'finova', NULL, 'published', 5);
 
 -- 2. Samakan isi katalog ---------------------------------------------------------
 UPDATE templates SET
@@ -48,8 +48,8 @@ UPDATE templates SET
   description       = 'Arena Club dirancang untuk klub dan tempat olahraga yang ingin tampil profesional sekaligus memudahkan member baru bergabung. Foto besar di bagian pembuka dengan ajakan pesan lapangan, profil klub, angka pencapaian, program latihan dan sewa lapangan, paket membership dengan harga yang jelas, profil pelatih, jadwal turnamen dan acara, testimoni member, serta tombol pesan lewat WhatsApp.\n\nCocok untuk lapangan padel dan tenis, futsal, badminton, mini soccer, gym, hingga akademi olahraga anak. Semua teks, foto, harga paket, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
   features          = '["Desain enerjik dan responsif untuk HP, tablet, dan desktop","Paket membership dengan harga dan benefit yang bisa diubah","Profil pelatih serta jadwal turnamen dan acara klub","Program latihan dan sewa lapangan dalam kartu foto","Tombol pesan lapangan langsung ke WhatsApp","Kelola teks, foto, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
   price             = 1290000.00,
-  preview_image     = '/assets/templates/arena-club-preview.svg',
-  gallery           = '[]',
+  preview_image     = '/assets/templates/arena-club-preview.webp',
+  gallery           = '["/assets/templates/arena-club-1.webp","/assets/templates/arena-club-2.webp"]',
   template_code     = 'arena-club',
   demo_url          = NULL,
   status            = 'published',
@@ -63,8 +63,8 @@ UPDATE templates SET
   description       = 'Aura Studio menghadirkan tampilan lembut dan elegan untuk bisnis kecantikan. Bagian pembuka dengan foto potret besar dan daftar layanan singkat, alasan memilih studio Anda, galeri kategori perawatan dengan tab, sorotan perawatan unggulan beserta tahapannya, harga mulai per layanan, testimoni pelanggan, dan ajakan reservasi lewat WhatsApp.\n\nCocok untuk klinik kecantikan dan estetika, salon rambut, nail art, spa, lash & brow studio, hingga barbershop. Ubah teks, foto, harga layanan, dan warna sendiri kapan saja lewat CMS tanpa coding.',
   features          = '["Tampilan elegan dan lembut, nyaman dibuka di HP","Daftar perawatan dengan foto, kategori, dan harga mulai","Sorotan perawatan unggulan beserta tahapannya","Galeri suasana studio dan hasil perawatan","Testimoni pelanggan dengan foto","Tombol reservasi langsung ke WhatsApp","Kelola teks, foto, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
   price             = 1390000.00,
-  preview_image     = '/assets/templates/aura-studio-preview.svg',
-  gallery           = '[]',
+  preview_image     = '/assets/templates/aura-studio-preview.webp',
+  gallery           = '["/assets/templates/aura-studio-1.webp","/assets/templates/aura-studio-2.webp"]',
   template_code     = 'aura-studio',
   demo_url          = NULL,
   status            = 'published',
@@ -78,8 +78,8 @@ UPDATE templates SET
   description       = 'Finova memberi kesan aman, modern, dan meyakinkan untuk produk keuangan. Bagian pembuka gelap dengan foto kartu dan bukti sosial, strip logo mitra, angka pencapaian besar, fitur produk dengan kartu antarmuka melayang, kartu manfaat bento, testimoni pengguna, tanya jawab, ajakan mengunduh aplikasi, serta footer lengkap dengan tautan dan media sosial.\n\nCocok untuk startup fintech, koperasi simpan pinjam, aplikasi pembayaran dan dompet digital, konsultan keuangan, hingga produk SaaS. Semua isi, angka, logo mitra, dan dua warna merek bisa Anda kelola sendiri lewat CMS tanpa coding.',
   features          = '["Bagian pembuka gelap premium dengan foto produk dan bukti sosial","Strip logo mitra dan angka pencapaian","Fitur produk dengan kartu antarmuka yang teksnya bisa diubah","Kartu manfaat bento dan testimoni pengguna","Tanya jawab (FAQ) untuk calon pengguna atau anggota","Footer lengkap dengan tautan unduh aplikasi","Kelola teks, foto, dan dua warna merek sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
   price             = 1790000.00,
-  preview_image     = '/assets/templates/finova-preview.svg',
-  gallery           = '[]',
+  preview_image     = '/assets/templates/finova-preview.webp',
+  gallery           = '["/assets/templates/finova-1.webp","/assets/templates/finova-2.webp"]',
   template_code     = 'finova',
   demo_url          = NULL,
   status            = 'published',

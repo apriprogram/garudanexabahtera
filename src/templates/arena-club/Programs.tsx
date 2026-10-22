@@ -184,7 +184,7 @@ export function Pricing({ m }: { m: ArenaModel }) {
                             )}
                           </div>
                           {field(plan, 'badge') && (
-                            <p className="mt-2 w-fit rounded-full bg-(--tpl-accent-100) px-2.5 py-0.5 text-[12px] font-medium text-(--tpl-accent-ink)">
+                            <p className="mt-2 w-fit rounded-full bg-(--tpl-accent-100) px-2.5 py-0.5 text-[12px] font-medium text-[#0E1B2E]">
                               {field(plan, 'badge')}
                             </p>
                           )}

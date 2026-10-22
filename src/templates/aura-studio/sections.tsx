@@ -363,7 +363,8 @@ export function Contact({ m }: { m: AuraModel }) {
               <MapEmbed embed={maps.embed} title={`Peta lokasi ${m.companyName}`} className="h-[260px] rounded-[24px] ring-1 ring-black/[0.06] @3xl:h-[320px]" />
             </Reveal>
           )}
-          <Reveal delay={120} className={`${CARD} p-5 @3xl:p-8`}>
+          {/* Teks "subtle" form bersama (mis. "(opsional)") digelapkan sedikit: 4,3:1 → 5,2:1 di kartu abu #F0F0F0 */}
+          <Reveal delay={120} className={`${CARD} p-5 [--site-subtle:#5E6470] @3xl:p-8`}>
             <p className={`${DISPLAY} text-[20px] @3xl:text-[24px]`}>Kirim pesan</p>
             <p className={`mt-1 text-[14px] ${MUTED}`}>Ceritakan perawatan yang Anda inginkan, kami balas secepatnya.</p>
             <ContactForm companyName={m.companyName} whatsapp={text(contact, 'whatsapp')} email={email} className="mt-6" />
