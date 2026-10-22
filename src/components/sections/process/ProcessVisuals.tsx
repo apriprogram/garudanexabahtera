@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  ArrowRight, Check, CheckCircle2, FileText, Globe2, LayoutTemplate, Loader2, MessageCircle, PenLine, ShieldCheck, Smartphone,
+  ArrowRight, Check, CheckCircle2, FileText, Globe2, Loader2, MessageCircle, PenLine, ShieldCheck, Smartphone,
 } from 'lucide-react';
 import { LogoMark } from '../../ui/LogoMark';
 
@@ -9,7 +9,7 @@ import { LogoMark } from '../../ui/LogoMark';
 /** Panel latar ilustrasi: biru muda lembut + pola titik. */
 const Panel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
   <div
-    className={`relative mx-3 mb-3 mt-5 min-h-[170px] flex-1 overflow-hidden rounded-[20px] bg-gradient-to-br from-brand-50 via-brand-50/60 to-surface ring-1 ring-inset ring-brand-100/70 ${className}`}
+    className={`relative mx-3 mb-3 mt-4 min-h-[140px] flex-1 overflow-hidden rounded-[20px] bg-gradient-to-br sm:mt-5 sm:min-h-[170px] from-brand-50 via-brand-50/60 to-surface ring-1 ring-inset ring-brand-100/70 ${className}`}
     aria-hidden
   >
     <div className="absolute inset-0 opacity-70 [background-image:radial-gradient(var(--color-brand-100)_1px,transparent_1px)] [background-size:16px_16px]" />
@@ -29,7 +29,10 @@ const Pill: React.FC<{ icon?: React.ReactNode; children: React.ReactNode; classN
 
 /* ===================== Alur template ===================== */
 
-/** 01 · Pilih template: dua pratinjau template miring + ajakan lihat demo. */
+/**
+ * 01 · Pilih template: dua pratinjau template miring. Pojok kanan bawah sengaja kosong (gradasi) untuk tombol nyata
+ * "Lihat template" yang dirender Process.tsx di luar panel aria-hidden ini.
+ */
 export const PickTemplateArt: React.FC = () => (
   <Panel>
     <img
@@ -45,12 +48,6 @@ export const PickTemplateArt: React.FC = () => (
       className="absolute left-4 top-4 w-[66%] max-w-[300px] -rotate-[2deg] rounded-xl bg-surface ring-1 ring-line sm:left-5"
     />
     <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-brand-50 via-brand-50/70 to-transparent" />
-    <div className="absolute bottom-3 right-3 flex items-center gap-2">
-      <Pill icon={<LayoutTemplate />}>Lihat demo</Pill>
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-fg text-white sm:h-10 sm:w-10">
-        <ArrowRight className="h-4 w-4" />
-      </span>
-    </div>
   </Panel>
 );
 
@@ -69,18 +66,21 @@ const MockField: React.FC<{ label: string; value: string; ok?: boolean }> = ({ l
   </div>
 );
 
-/** 02 · Isi form & domain: formulir mini dengan domain tersedia. */
+/** 02 · Isi form & domain: formulir mini dengan domain tersedia (HP: tanpa domain alternatif agar kartu ringkas). */
 export const OrderFormArt: React.FC = () => (
   <Panel className="flex flex-col justify-end">
     <div className="relative space-y-2 p-3 sm:p-4">
       <MockField label="Nama domain" value="bisnisanda.com" ok />
-      <MockField label="Domain alternatif" value="bisnisanda.id" />
+      <div className="max-sm:hidden">
+        <MockField label="Domain alternatif" value="bisnisanda.id" />
+      </div>
       <div className="flex items-center justify-between gap-2 pt-1">
         <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted sm:text-xs">
           <CheckCircle2 className="h-3.5 w-3.5 text-success" />
           Data pemesan lengkap
         </span>
-        <span className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-3 text-[11px] font-semibold text-white sm:text-xs">
+        {/* Tombol tiruan diredam (bukan biru solid) dan tidak bisa diklik: terbaca sebagai tangkapan layar */}
+        <span className="pointer-events-none inline-flex h-8 shrink-0 select-none items-center gap-1 whitespace-nowrap rounded-full bg-brand-200 px-3 text-[11px] font-semibold text-brand-800 sm:text-xs">
           Lanjut bayar
           <ArrowRight className="h-3.5 w-3.5" />
         </span>
@@ -98,12 +98,18 @@ const LightGlow: React.FC = () => (
   </div>
 );
 
-/** 03 · Bayar via Midtrans: halaman bayar mini (sedikit miring) + notifikasi lunas. */
+// Bingkai mock kartu tinggi: di tablet (kartu selebar 2 kolom) dibatasi 440px dan ditengahkan; desktop tidak berubah
+const MOCK_FRAME = 'absolute inset-x-5 top-4 mx-auto max-w-[440px] sm:inset-x-7 lg:inset-x-5 lg:max-w-none xl:inset-x-7';
+
+/**
+ * 03 · Bayar via Midtrans: ringkasan pesanan mini (sedikit miring) + notifikasi lunas. Metode pembayaran sengaja
+ * tidak dirinci (mengikuti yang tersedia di Midtrans); baris = isi harga template tahun pertama.
+ */
 export const PaymentArt: React.FC = () => (
-  <div className="relative mt-6 min-h-[350px] flex-1" aria-hidden>
+  <div className="relative mt-6 min-h-[290px] flex-1 sm:min-h-[350px]" aria-hidden>
     <LightGlow />
-    <div className="absolute inset-x-5 top-4 sm:inset-x-7 lg:inset-x-5 xl:inset-x-7" style={{ perspective: '1400px' }}>
-      <div className="origin-top rounded-[20px] bg-surface p-4 ring-1 ring-inset ring-line [transform:rotateX(6deg)] sm:p-5">
+    <div className={MOCK_FRAME} style={{ perspective: '1400px' }}>
+      <div className="origin-top rounded-[20px] bg-surface p-3.5 ring-1 ring-inset ring-line [transform:rotateX(6deg)] sm:p-5">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-subtle">Ringkasan pesanan</span>
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-subtle">
@@ -113,28 +119,23 @@ export const PaymentArt: React.FC = () => (
         </div>
         <p className="mt-1 text-base font-semibold tracking-tight text-fg sm:text-lg">Template Company Profile</p>
         <p className="text-xs text-subtle">Domain: bisnisanda.com</p>
-        <div className="mt-3 space-y-1.5">
-          {[
-            { name: 'QRIS', on: true },
-            { name: 'Virtual Account', on: false },
-            { name: 'E-wallet', on: false },
-          ].map((method) => (
+        <div className="mt-2.5 space-y-1.5 sm:mt-3">
+          {['Template + setup', 'Domain & hosting tahun pertama', 'SSL (HTTPS)'].map((row, index) => (
             <div
-              key={method.name}
-              className={`flex h-9 items-center justify-between rounded-xl px-3 text-[13px] font-medium ring-1 ring-inset ${
-                method.on ? 'bg-brand-50 text-fg ring-brand-200' : 'bg-surface text-muted ring-line'
+              key={row}
+              className={`flex h-8 items-center justify-between gap-2 rounded-xl bg-surface px-3 text-[12px] font-medium text-muted ring-1 ring-inset ring-line sm:h-9 sm:text-[13px] ${
+                index === 2 ? 'max-sm:hidden' : ''
               }`}
             >
-              {method.name}
-              <span
-                className={`flex h-4 w-4 items-center justify-center rounded-full ring-1 ring-inset ${method.on ? 'bg-primary ring-primary' : 'ring-line-strong'}`}
-              >
-                {method.on && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
-              </span>
+              <span className="truncate">{row}</span>
+              <Check className="h-3.5 w-3.5 shrink-0 text-success" strokeWidth={3} />
             </div>
           ))}
         </div>
-        <span className="mt-3 flex h-10 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-white">Bayar sekarang</span>
+        {/* Tombol tiruan diredam (bukan biru solid) dan tidak bisa diklik: terbaca sebagai tangkapan layar */}
+        <span className="pointer-events-none mt-2.5 flex h-9 select-none items-center justify-center rounded-full bg-brand-200 text-[13px] font-semibold text-brand-800 sm:mt-3 sm:h-10">
+          Bayar sekarang
+        </span>
       </div>
     </div>
     <span className="absolute bottom-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-surface px-4 py-2 text-[13px] font-semibold text-fg ring-1 ring-inset ring-line">
@@ -152,13 +153,16 @@ export const AfterPaymentArt: React.FC = () => (
       { n: '05', icon: Globe2, title: 'Domain aktif', text: 'Domain disiapkan sampai website online.' },
       { n: '06', icon: PenLine, title: 'Kelola via CMS', text: 'Ubah teks, gambar & kontak sendiri.' },
     ].map(({ n, icon: Icon, title, text }) => (
-      <li key={n} className="flex items-start gap-3 rounded-[18px] bg-surface p-3.5 ring-1 ring-inset ring-line sm:flex-col sm:p-4 lg:flex-row lg:items-center">
+      <li key={n} className="flex items-start gap-3 rounded-[18px] bg-surface p-3 ring-1 ring-inset ring-line sm:flex-col sm:p-4 lg:flex-row lg:items-center">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-primary">
           <Icon className="h-[18px] w-[18px]" aria-hidden />
         </span>
         <span className="min-w-0">
-          <span className="font-mono text-[11px] font-semibold text-subtle">{n}</span>
-          <span className="mt-0.5 block text-[15px] font-semibold leading-snug text-fg sm:text-base">{title}</span>
+          {/* HP: nomor sebaris dengan judul (kartu lebih pendek); ≥ 640px: nomor di atas judul */}
+          <span className="flex items-baseline gap-2 sm:block">
+            <span className="font-mono text-[11px] font-semibold text-subtle">{n}</span>
+            <span className="block text-[15px] font-semibold leading-snug text-fg sm:mt-0.5 sm:text-base">{title}</span>
+          </span>
           <span className="mt-0.5 block text-[13px] leading-relaxed text-muted sm:text-sm">{text}</span>
         </span>
       </li>
@@ -225,9 +229,9 @@ export const ProposalArt: React.FC = () => (
 
 /** 03 · Pengerjaan: papan progres bertahap. */
 export const BuildArt: React.FC = () => (
-  <div className="relative mt-6 min-h-[300px] flex-1" aria-hidden>
+  <div className="relative mt-6 min-h-[260px] flex-1 sm:min-h-[300px]" aria-hidden>
     <LightGlow />
-    <div className="absolute inset-x-5 top-4 sm:inset-x-7 lg:inset-x-5 xl:inset-x-7" style={{ perspective: '1400px' }}>
+    <div className={MOCK_FRAME} style={{ perspective: '1400px' }}>
       <div className="origin-top rounded-[20px] bg-surface p-4 ring-1 ring-inset ring-line [transform:rotateX(6deg)] sm:p-5">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-subtle">Progres proyek</span>

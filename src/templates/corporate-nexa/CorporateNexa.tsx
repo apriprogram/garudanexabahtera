@@ -47,14 +47,16 @@ import { CORPORATE_NEXA_ACCENT } from './defaultContent';
 
 const WRAP = 'mx-auto w-full max-w-[1200px] px-5 @2xl:px-8 @5xl:px-10';
 const SECTION_Y = 'py-14 @3xl:py-20 @5xl:py-24';
-const H2 = 'text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg @3xl:text-[34px] @5xl:text-[40px]';
-const LEAD = 'text-[15px] leading-relaxed text-muted @3xl:text-[17px]';
+const H2 = 'text-[22px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg @3xl:text-[34px] @5xl:text-[40px]';
+const LEAD = 'text-[14px] leading-relaxed text-muted @3xl:text-[17px]';
 // Tanpa kelas display agar bisa digabung dengan `hidden @xl:inline-flex` tanpa bentrok
-const BTN_SHAPE = 'relative h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 text-sm font-semibold transition-colors';
+const BTN_BASE = 'relative items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-colors';
+const BTN_SHAPE = `${BTN_BASE} h-11 px-5 text-sm`;
 const ACCENT_FILL = 'bg-(--tpl-accent) text-(--tpl-on-accent) hover:bg-(--tpl-accent-hover)';
-const BTN = `inline-flex ${BTN_SHAPE}`;
-const BTN_PRIMARY = `${BTN} ${ACCENT_FILL}`;
-const BTN_SECONDARY = `${BTN} bg-white text-fg ring-1 ring-inset ring-line-strong hover:bg-alt`;
+// Tombol besar (hero, CTA, kontak): ringkas di HP (44px, teks 14px), 48px/15px mulai lebar wadah @md
+const BTN_LG = `inline-flex ${BTN_BASE} h-11 px-5 text-[14px] @md:h-12 @md:px-6 @md:text-[15px]`;
+const BTN_PRIMARY = `${BTN_LG} ${ACCENT_FILL}`;
+const BTN_SECONDARY = `${BTN_LG} bg-white text-fg ring-1 ring-inset ring-line-strong hover:bg-alt`;
 
 const SERVICE_ICONS: LucideIcon[] = [Ruler, Building2, Warehouse, PaintRoller, ClipboardCheck, Wrench, HardHat, Landmark, Factory];
 
@@ -190,7 +192,7 @@ function Hero({ m }: { m: CompanyProfileModel }) {
               <span className="truncate">{eyebrow}</span>
             </p>
           )}
-          <h1 className="mt-5 text-[30px] font-semibold leading-[1.12] tracking-[-0.025em] text-fg [overflow-wrap:anywhere] @2xl:text-[40px] @5xl:text-[50px] @7xl:text-[56px]">
+          <h1 className="mt-5 text-[26px] font-semibold leading-[1.12] tracking-[-0.025em] text-fg [overflow-wrap:anywhere] @2xl:text-[40px] @5xl:text-[50px] @7xl:text-[56px]">
             {parts ? (
               <>
                 {parts[0]}
@@ -206,13 +208,13 @@ function Hero({ m }: { m: CompanyProfileModel }) {
           {(primary || secondary) && (
             <div className="mt-8 flex flex-col gap-3 @md:flex-row">
               {primary && (
-                <ActionLink action={primary} className={`${BTN_PRIMARY} h-12 px-6 text-[15px]`}>
+                <ActionLink action={primary} className={BTN_PRIMARY}>
                   {text(hero, 'primary_label') || 'Hubungi Kami'}
                   <ArrowRight className="h-4 w-4" aria-hidden />
                 </ActionLink>
               )}
               {secondary && (
-                <ActionLink action={secondary} className={`${BTN_SECONDARY} h-12 px-6 text-[15px]`}>
+                <ActionLink action={secondary} className={BTN_SECONDARY}>
                   {secondaryLabel}
                 </ActionLink>
               )}
@@ -481,7 +483,7 @@ function Cta({ m }: { m: CompanyProfileModel }) {
               {text(cta, 'subtitle') && <p className="mt-3 text-[15px] leading-relaxed opacity-90 @3xl:text-[17px]">{text(cta, 'subtitle')}</p>}
             </div>
             {action && (
-              <ActionLink action={action} className={`${BTN} h-12 bg-white px-6 text-[15px] text-(--tpl-accent-ink) shadow-sm hover:bg-white/90`}>
+              <ActionLink action={action} className={`${BTN_LG} bg-white text-(--tpl-accent-ink) shadow-sm hover:bg-white/90`}>
                 {action.kind === 'external' && /wa\.me/.test(action.href) && <WhatsAppIcon className="h-4 w-4" />}
                 {text(cta, 'button_label') || 'Hubungi Kami'}
               </ActionLink>
@@ -537,7 +539,7 @@ function Contact({ m }: { m: CompanyProfileModel }) {
             {hours && <ContactRow icon={Clock} label="Jam operasional" value={hours} />}
           </ul>
           {m.waAction && (
-            <ActionLink action={m.waAction} className={`${BTN_PRIMARY} mt-6 h-12 w-full px-6 text-[15px] @xl:w-auto`}>
+            <ActionLink action={m.waAction} className={`${BTN_PRIMARY} mt-6 w-full @xl:w-auto`}>
               <WhatsAppIcon className="h-4 w-4" />
               Chat via WhatsApp
             </ActionLink>

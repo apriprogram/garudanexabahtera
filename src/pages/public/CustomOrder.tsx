@@ -36,12 +36,10 @@ const STEPS = [
   },
 ];
 
-/** wa.me butuh kode negara: "0812..." → "62812..." (nomor dari setting admin bisa ditulis format lokal). */
-const toWhatsappIntl = (digits: string) => (digits.startsWith('0') ? `62${digits.slice(1)}` : digits);
-
 export default function CustomOrder() {
   const { settings } = useSiteSettings();
-  const whatsapp = toWhatsappIntl(getWhatsappNumber(settings));
+  // Sudah berkode negara ("0812…" dari setting admin → "62812…"), siap untuk wa.me
+  const whatsapp = getWhatsappNumber(settings);
   const [result, setResult] = useState<CustomOrderResult | null>(null);
   const [formKey, setFormKey] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -80,8 +78,9 @@ export default function CustomOrder() {
             <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,40rem)] lg:gap-x-16 xl:gap-x-24">
               {/* Pengantar */}
               <div className="lg:col-start-1 lg:row-start-1">
-                <nav aria-label="Breadcrumb" className="mb-5 flex items-center gap-1.5 text-xs text-subtle sm:text-[13px]">
-                  <Link to="/" className="rounded transition-colors hover:text-fg">
+                <nav aria-label="Breadcrumb" className="mb-5 flex items-center gap-1.5 text-[13px] text-subtle max-sm:mb-3">
+                  {/* HP: area sentuh 40px tanpa mengubah ukuran teks (mobile-responsive.md §5) */}
+                  <Link to="/" className="rounded transition-colors hover:text-fg max-sm:inline-flex max-sm:min-h-10 max-sm:items-center">
                     Beranda
                   </Link>
                   <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -90,14 +89,15 @@ export default function CustomOrder() {
                   </span>
                 </nav>
                 <span className="badge-site">Jasa pembuatan custom</span>
-                <h1 className="mt-4 text-[28px] font-semibold leading-[1.15] tracking-[-0.03em] text-fg sm:text-5xl sm:leading-[1.08] xl:text-[56px]">
+                <h1 className="mt-4 text-[24px] font-semibold leading-[1.2] tracking-[-0.02em] text-fg sm:text-5xl sm:leading-[1.08] sm:tracking-[-0.03em] xl:text-[56px]">
                   Pesan Website / Aplikasi Mobile <span className="text-primary">Custom</span>
                 </h1>
                 <p className="mt-4 max-w-xl text-[14px] leading-relaxed text-muted sm:mt-5 sm:text-lg">
                   Punya ide yang tidak cukup dengan template? Ceritakan kebutuhan Anda. Kami akan menghubungi Anda untuk berdiskusi, lalu mengirim
                   penawaran harga dan jadwal yang sesuai dengan cakupan proyek Anda.
                 </p>
-                <ul className="mt-5 flex flex-wrap gap-2 text-[13px] text-muted">
+                {/* HP: chip disembunyikan agar form lebih cepat terlihat; poinnya ada lagi di kartu proses & konsultasi */}
+                <ul className="mt-5 flex flex-wrap gap-2 text-[13px] text-muted max-sm:hidden">
                   {['Tanpa daftar harga, biaya lewat penawaran', 'Konsultasi gratis', 'Website & aplikasi Android/iOS'].map((item) => (
                     <li key={item} className="inline-flex h-8 items-center rounded-full bg-surface px-3 ring-1 ring-inset ring-line">
                       {item}

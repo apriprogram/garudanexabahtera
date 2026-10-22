@@ -194,7 +194,7 @@ describe('/daftar (pembeli)', () => {
     const values = {
       'Nama lengkap': 'Budi Santoso',
       Email: 'budi@example.com',
-      'Nomor HP/WhatsApp': '0812-3456-7890',
+      'Nomor WhatsApp': '0812-3456-7890',
       'Kata sandi': 'rahasia123',
       ...overrides,
     };
@@ -247,7 +247,7 @@ describe('/daftar (pembeli)', () => {
     renderAt('/daftar');
     expect(screen.getByLabelText('Nama lengkap')).toHaveAttribute('autocomplete', 'name');
     expect(screen.getByLabelText('Email')).toHaveAttribute('autocomplete', 'email');
-    expect(screen.getByLabelText('Nomor HP/WhatsApp')).toHaveAttribute('autocomplete', 'tel');
+    expect(screen.getByLabelText('Nomor WhatsApp')).toHaveAttribute('autocomplete', 'tel');
     expect(screen.getByLabelText('Kata sandi')).toHaveAttribute('autocomplete', 'new-password');
   });
 

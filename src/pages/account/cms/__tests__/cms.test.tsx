@@ -206,6 +206,18 @@ describe('SiteEditor', { timeout: 30_000 }, () => {
     expect(screen.queryByRole('link', { name: /Buka situs sementara/ })).not.toBeInTheDocument();
   });
 
+  it('template tidak dikenal → kembali ke pesanan + bantuan lewat WhatsApp (bukan /#kontak)', async () => {
+    site.template_code = 'template-lama';
+    mockApi();
+    renderEditor();
+    expect(await screen.findByText('Template tidak dikenal')).toBeInTheDocument();
+    const help = screen.getByRole('link', { name: /Hubungi kami via WhatsApp/ });
+    await waitFor(() => expect(help.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/6281211112222\?text=/));
+    expect(decodeURIComponent(help.getAttribute('href')!)).toContain('contoh-usaha.test');
+    expect(help).toHaveAttribute('target', '_blank');
+    expect(document.querySelector('a[href="/#kontak"]')).toBeNull();
+  });
+
   it('bilah atas HP: status simpan tidak dobel, teks pendek di HP, tautan sementara tanpa path mentah', async () => {
     mockApi();
     renderEditor();

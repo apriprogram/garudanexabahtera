@@ -2,7 +2,7 @@
 // Mode Desktop dirender selebar 1280 px lalu diperkecil agar tata letak desktop tetap akurat; mode HP selebar 390 px.
 // Template memakai container query sehingga mengikuti lebar wadah ini, bukan viewport.
 // Pengecilan memakai CSS `zoom` (header lengket template tetap benar); browser lama memakai transform.
-import { Component, useEffect, useLayoutEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, memo, useEffect, useLayoutEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
 import { Monitor, Smartphone, TriangleAlert } from 'lucide-react';
 import type { SiteContent, TemplateDefinition } from '../../../templates/types';
 
@@ -53,7 +53,16 @@ interface PreviewPaneProps {
   className?: string;
 }
 
-export function PreviewPane({ definition, content, device, onDeviceChange, activeSection, className = '' }: PreviewPaneProps) {
+// memo: SiteEditor mengirim konten lewat useDeferredValue. Tanpa memo, setiap ketikan tetap merender ulang seluruh template
+// di render mendesak (dengan konten lama), jadi pratinjau tidak benar-benar ditunda dan dirender dua kali.
+export const PreviewPane = memo(function PreviewPane({
+  definition,
+  content,
+  device,
+  onDeviceChange,
+  activeSection,
+  className = '',
+}: PreviewPaneProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [available, setAvailable] = useState(0);
@@ -147,4 +156,4 @@ export function PreviewPane({ definition, content, device, onDeviceChange, activ
       </div>
     </section>
   );
-}
+});

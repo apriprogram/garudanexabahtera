@@ -143,7 +143,7 @@ export default function AccountHome() {
         </div>
         <Link to="/#templates" className="btn btn-primary shrink-0 self-start sm:self-auto">
           <ShoppingBag className="h-4 w-4" aria-hidden />
-          Pesan Template
+          Pilih Template
         </Link>
       </header>
 
@@ -247,7 +247,7 @@ export default function AccountHome() {
               description="Pilih template company profile yang cocok untuk bisnis Anda, lalu pesan dalam beberapa menit."
               action={
                 <Link to="/#templates" className="btn btn-primary">
-                  Lihat Template
+                  Pilih Template
                   <ArrowRight className="h-4 w-4" aria-hidden />
                 </Link>
               }

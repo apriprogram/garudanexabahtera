@@ -1,4 +1,4 @@
-// Pilihan jenis layanan sebagai kartu besar (radio group): Website / Aplikasi Mobile.
+// Pilihan jenis layanan sebagai kartu besar (radio group, wajib): Website / Aplikasi Mobile.
 import { Check, Globe, Smartphone, type LucideIcon } from 'lucide-react';
 import type { ServiceType } from './validation';
 
@@ -50,6 +50,9 @@ export function ServiceTypePicker({ id, value, onChange, error, disabled }: Serv
                 checked={checked}
                 disabled={disabled}
                 onChange={() => onChange(option)}
+                // Wajib & error dibacakan per pilihan (form noValidate: `required` tidak memblokir kirim)
+                required
+                aria-invalid={error ? true : undefined}
                 className="sr-only"
               />
               <span

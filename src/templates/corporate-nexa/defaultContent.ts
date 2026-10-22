@@ -74,15 +74,17 @@ export const corporateNexaContent: SiteContent = {
   gallery: {
     enabled: true,
     eyebrow: 'Galeri proyek',
-    title: 'Sebagian proyek yang telah kami selesaikan',
-    subtitle: 'Dari gedung perkantoran hingga fasilitas industri di berbagai kota.',
+    title: 'Sebagian proyek dan cara kami bekerja',
+    subtitle: 'Dari gedung perkantoran hingga penataan kawasan industri, lengkap dengan laporan progres untuk klien.',
+    // Foto demo belum ada: keterangan disamakan dengan ilustrasi pengganti (urutan ART_SEQUENCE: kota, ruang kerja,
+    // tim, lanskap, produk, abstrak) agar gambar dan keterangannya tidak bertolak belakang.
     items: [
       { image: '', caption: 'Gedung kantor 8 lantai, Surabaya' },
       { image: '', caption: 'Interior kantor regional, Malang' },
       { image: '', caption: 'Ruang rapat direksi, Sidoarjo' },
-      { image: '', caption: 'Kawasan pergudangan, Gresik' },
-      { image: '', caption: 'Showroom otomotif, Denpasar' },
-      { image: '', caption: 'Pabrik makanan ringan, Pasuruan' },
+      { image: '', caption: 'Penataan lahan kawasan industri, Gresik' },
+      { image: '', caption: 'Laporan progres mingguan untuk klien' },
+      { image: '', caption: 'Moodboard material showroom, Denpasar' },
     ],
   },
   testimonials: {

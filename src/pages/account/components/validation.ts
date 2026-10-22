@@ -31,7 +31,7 @@ export const normalizePhone = (value: string) => value.trim().replace(/[\s().-]+
 export function checkPhone(value: string, label = 'Nomor HP'): string | undefined {
   if (!value.trim()) return `${label} wajib diisi.`;
   if (!PHONE_PATTERN.test(normalizePhone(value))) {
-    return `${label} tidak valid. Gunakan 8-15 digit angka, contoh: 081234567890.`;
+    return `${label} tidak valid. Gunakan 8–15 digit angka, contoh: 081234567890.`;
   }
   return undefined;
 }

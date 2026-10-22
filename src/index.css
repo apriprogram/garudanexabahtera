@@ -134,7 +134,7 @@
   --site-surface: #ffffff;     /* neutral-0: kartu */
   --site-fg: #121620;          /* neutral-900: teks utama */
   --site-muted: #4b5262;       /* neutral-600: teks sekunder */
-  --site-subtle: #6b7383;      /* neutral-500: keterangan, placeholder */
+  --site-subtle: #697181;      /* neutral-500 sedikit digelapkan (4,6:1 di atas --site-alt, 4,9:1 di putih): keterangan, placeholder */
   --site-line: #e3e6ee;        /* neutral-200: garis */
   --site-line-strong: #cbd0db; /* neutral-300: garis tegas, hover */
 }

@@ -348,7 +348,8 @@ export default function SiteEditor() {
   if (!site) return <EditorNotFound />;
 
   const backTo = site.order_number ? `/akun/pesanan/${encodeURIComponent(site.order_number)}` : '/akun';
-  if (!definition) return <EditorUnknownTemplate code={site.template_code} backTo={backTo} />;
+  if (!definition)
+    return <EditorUnknownTemplate code={site.template_code} backTo={backTo} helpHref={helpWhatsappUrl(settings, siteHelpMessage(site.domain))} />;
 
   const sitePath = `/situs/${site.id}`;
   const domainHref = `https://${site.domain}`;

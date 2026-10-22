@@ -1,8 +1,11 @@
-// Galeri detail template: gambar utama + thumbnail + tampilan perbesar (lightbox terang). Gambar rusak → placeholder.
-import { ChevronLeft, ChevronRight, ImageOff, Maximize2, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+// Galeri detail template: gambar utama (bisa digeser di HP) + thumbnail + ubin "Lihat Demo" + tampilan perbesar
+// (lightbox terang, fokus keyboard terkunci di dalamnya). Gambar rusak → placeholder.
+import { ChevronLeft, ChevronRight, Eye, ImageOff, Maximize2, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { LogoMark } from '../../../components/ui/LogoMark';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
 function Picture({ src, alt, broken, onBroken, className = '', fit = 'cover' }: {
   src: string;
@@ -25,18 +28,39 @@ function Picture({ src, alt, broken, onBroken, className = '', fit = 'cover' }: 
       src={src}
       alt={alt}
       onError={onBroken}
+      draggable={false}
       className={`h-full w-full ${fit === 'cover' ? 'object-cover object-top' : 'object-contain'} ${className}`}
     />
   );
 }
 
 const arrowClass =
-  'absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-surface/95 text-fg shadow-soft ring-1 ring-inset ring-line transition-colors hover:bg-surface hover:text-primary after:absolute after:-inset-1';
+  'absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-surface/95 text-fg ring-1 ring-inset ring-line transition-colors hover:bg-surface hover:text-primary after:absolute after:-inset-1';
+// Panah di gambar utama versi HP: lebih kecil & lebih ke tepi agar tidak menutupi pratinjau; area sentuh tetap ±44px
+const frameArrowClass = `${arrowClass} max-sm:h-8 max-sm:w-8 max-sm:bg-surface/80 max-sm:after:-inset-1.5`;
 
-export function TemplateGallery({ images, name }: { images: string[]; name: string }) {
+/** Geser horizontal minimal (px) agar dihitung sebagai swipe, bukan ketukan. */
+const SWIPE_MIN = 40;
+
+// Thumbnail + ubin demo mengisi satu baris penuh (tidak ada kolom kosong)
+const GRID_COLS: Record<number, string> = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' };
+
+export function TemplateGallery({
+  images,
+  name,
+  demo,
+}: {
+  images: string[];
+  name: string;
+  /** Tautan demo untuk ubin "Lihat Demo" di baris thumbnail (diisi bila baris belum penuh). */
+  demo?: { href: string; external: boolean };
+}) {
   const [index, setIndex] = useState(0);
   const [broken, setBroken] = useState<Record<string, true>>({});
   const [zoom, setZoom] = useState(false);
+  const swipe = useRef<{ x: number; y: number; id: number } | null>(null);
+  const swiped = useRef(false);
+  const zoomRef = useRef<HTMLButtonElement>(null);
   const count = images.length;
   const safeIndex = count > 0 ? Math.min(index, count - 1) : 0;
   const current = images[safeIndex];
@@ -56,6 +80,30 @@ export function TemplateGallery({ images, name }: { images: string[]; name: stri
     }
   };
 
+  // Geser di gambar utama (sentuh atau seret mouse) = gambar sebelumnya/berikutnya; klik perbesar dibatalkan
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    swiped.current = false;
+    swipe.current = count > 1 && e.isPrimary ? { x: e.clientX, y: e.clientY, id: e.pointerId } : null;
+  };
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    const start = swipe.current;
+    swipe.current = null;
+    if (!start || start.id !== e.pointerId) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) > SWIPE_MIN && Math.abs(dx) > Math.abs(dy)) {
+      swiped.current = true;
+      go(dx < 0 ? 1 : -1);
+    }
+  };
+  const onZoomClick = () => {
+    if (swiped.current) {
+      swiped.current = false;
+      return;
+    }
+    setZoom(true);
+  };
+
   if (count === 0) {
     return (
       <div className="flex aspect-[16/10] flex-col items-center justify-center gap-3 rounded-[24px] bg-gradient-to-br from-brand-50 to-brand-100 text-center ring-1 ring-inset ring-line">
@@ -65,29 +113,40 @@ export function TemplateGallery({ images, name }: { images: string[]; name: stri
     );
   }
 
+  const demoTile = demo && count < 4;
+  const columns = GRID_COLS[Math.min(count + (demoTile ? 1 : 0), 4)] ?? 'grid-cols-4';
+
   return (
     <div onKeyDown={onKeyDown}>
-      <div className="group relative aspect-[16/10] overflow-hidden rounded-[24px] bg-alt shadow-soft ring-1 ring-inset ring-line">
+      <div
+        className="group relative aspect-[16/10] touch-pan-y overflow-hidden rounded-[24px] bg-alt ring-1 ring-inset ring-line"
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => {
+          swipe.current = null;
+        }}
+      >
         <button
+          ref={zoomRef}
           type="button"
-          onClick={() => setZoom(true)}
+          onClick={onZoomClick}
           className="absolute inset-0 cursor-zoom-in focus-visible:outline-offset-[-2px]"
           aria-label={`Perbesar ${label(safeIndex)}`}
         >
           <Picture key={current} src={current} alt={label(safeIndex)} broken={!!broken[current]} onBroken={() => markBroken(current)} />
         </button>
-        <span className="pointer-events-none absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-surface/90 text-muted opacity-0 shadow-soft ring-1 ring-inset ring-line transition-opacity group-hover:opacity-100 max-sm:hidden" aria-hidden>
+        <span className="pointer-events-none absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-surface/90 text-muted opacity-0 ring-1 ring-inset ring-line transition-opacity group-hover:opacity-100 max-sm:hidden" aria-hidden>
           <Maximize2 className="h-4 w-4" />
         </span>
         {count > 1 && (
           <>
-            <button type="button" onClick={() => go(-1)} className={`${arrowClass} left-3`} aria-label="Gambar sebelumnya">
-              <ChevronLeft className="h-5 w-5" aria-hidden />
+            <button type="button" onClick={() => go(-1)} className={`${frameArrowClass} left-3 max-sm:left-2`} aria-label="Gambar sebelumnya">
+              <ChevronLeft className="h-5 w-5 max-sm:h-4 max-sm:w-4" aria-hidden />
             </button>
-            <button type="button" onClick={() => go(1)} className={`${arrowClass} right-3`} aria-label="Gambar berikutnya">
-              <ChevronRight className="h-5 w-5" aria-hidden />
+            <button type="button" onClick={() => go(1)} className={`${frameArrowClass} right-3 max-sm:right-2`} aria-label="Gambar berikutnya">
+              <ChevronRight className="h-5 w-5 max-sm:h-4 max-sm:w-4" aria-hidden />
             </button>
-            <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-surface/95 px-2.5 py-1 text-xs font-medium tabular-nums text-fg shadow-soft ring-1 ring-inset ring-line">
+            <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-surface/95 px-2.5 py-1 text-xs font-medium tabular-nums text-fg ring-1 ring-inset ring-line max-sm:bottom-2 max-sm:right-2">
               {safeIndex + 1} / {count}
             </span>
           </>
@@ -95,7 +154,7 @@ export function TemplateGallery({ images, name }: { images: string[]; name: stri
       </div>
 
       {count > 1 && (
-        <ul className="mt-3 grid grid-cols-4 gap-2 sm:gap-3" aria-label="Pilih gambar">
+        <ul className={`mt-3 grid ${columns} gap-2 sm:gap-3`} aria-label="Pilih gambar">
           {images.map((src, i) => (
             <li key={`${src}-${i}`}>
               <button
@@ -111,6 +170,11 @@ export function TemplateGallery({ images, name }: { images: string[]; name: stri
               </button>
             </li>
           ))}
+          {demoTile && (
+            <li>
+              <DemoTile demo={demo} name={name} />
+            </li>
+          )}
         </ul>
       )}
 
@@ -123,9 +187,31 @@ export function TemplateGallery({ images, name }: { images: string[]; name: stri
           onBroken={markBroken}
           onIndex={setIndex}
           onClose={() => setZoom(false)}
+          returnFocusRef={zoomRef}
         />
       )}
     </div>
+  );
+}
+
+/** Ubin terakhir baris thumbnail: buka demo (tab baru bila demo_url eksternal). */
+function DemoTile({ demo, name }: { demo: { href: string; external: boolean }; name: string }) {
+  const className =
+    'flex aspect-[16/10] w-full flex-col items-center justify-center gap-1 rounded-xl bg-surface px-1 text-center text-[11px] font-semibold text-primary ring-1 ring-inset ring-brand-200 transition-colors hover:bg-brand-50 hover:ring-primary sm:gap-1.5 sm:text-[13px]';
+  const content = (
+    <>
+      <Eye className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden />
+      Lihat Demo
+    </>
+  );
+  return demo.external ? (
+    <a href={demo.href} target="_blank" rel="noopener noreferrer" className={className} aria-label={`Lihat Demo ${name} (tab baru)`}>
+      {content}
+    </a>
+  ) : (
+    <Link to={demo.href} className={className} aria-label={`Lihat Demo ${name}`}>
+      {content}
+    </Link>
   );
 }
 
@@ -137,6 +223,7 @@ function Lightbox({
   onBroken,
   onIndex,
   onClose,
+  returnFocusRef,
 }: {
   images: string[];
   index: number;
@@ -145,34 +232,34 @@ function Lightbox({
   onBroken: (src: string) => void;
   onIndex: (i: number) => void;
   onClose: () => void;
+  /** Tombol perbesar: menerima fokus lagi saat lightbox ditutup (juga bila klik tidak memfokuskannya, mis. Safari) */
+  returnFocusRef: RefObject<HTMLButtonElement | null>;
 }) {
-  const closeRef = useRef<HTMLButtonElement>(null);
+  // Tab/Shift+Tab berputar di dalam dialog, Escape menutup, fokus kembali ke tombol perbesar saat ditutup
+  const dialogRef = useFocusTrap<HTMLDivElement>(true, { onEscape: onClose, returnFocusRef });
   const count = images.length;
   const src = images[index];
 
   useEffect(() => {
-    const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
     return () => {
       document.body.style.overflow = previousOverflow;
-      previousFocus?.focus?.();
     };
   }, []);
 
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowLeft' && count > 1) onIndex((index - 1 + count) % count);
+      if (e.key === 'ArrowLeft' && count > 1) onIndex((index - 1 + count) % count);
       else if (e.key === 'ArrowRight' && count > 1) onIndex((index + 1) % count);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [count, index, onClose, onIndex]);
+  }, [count, index, onIndex]);
 
   return createPortal(
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[70] flex flex-col bg-canvas/95 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
@@ -185,10 +272,9 @@ function Lightbox({
           {count > 1 && <span className="ml-2 tabular-nums text-subtle">{index + 1} / {count}</span>}
         </p>
         <button
-          ref={closeRef}
           type="button"
           onClick={onClose}
-          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface text-fg shadow-soft ring-1 ring-inset ring-line transition-colors hover:text-primary after:absolute after:-inset-1"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface text-fg ring-1 ring-inset ring-line transition-colors hover:text-primary after:absolute after:-inset-1"
           aria-label="Tutup galeri"
         >
           <X className="h-5 w-5" aria-hidden />
