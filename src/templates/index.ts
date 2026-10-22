@@ -2,6 +2,7 @@
 // Kunci = `template_code` di tabel templates / template_orders / template_sites.
 import { corporateNexa } from './corporate-nexa';
 import { startupClean } from './startup-clean';
+import { applyIntroduced } from './shared/compat';
 import { isPlainObject, toListItem } from './shared/utils';
 import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from './types';
 
@@ -79,7 +80,8 @@ function mergeSection(base: unknown, saved: unknown): SectionContent {
  * diabaikan, dan `enabled` bawaan = true. `content` boleh null, string JSON, atau objek tidak lengkap.
  */
 export function resolveContent(def: TemplateDefinition, content: SiteContent | Record<string, unknown> | string | null | undefined): SiteContent {
-  const saved = parseSiteContent(content) ?? {};
+  const parsed = parseSiteContent(content);
+  const saved = parsed ?? {};
   const defaults: Record<string, unknown> = isPlainObject(def?.defaultContent) ? def.defaultContent : {};
   const keys = new Set([...Object.keys(defaults), ...Object.keys(saved)]);
   const result: SiteContent = {};
@@ -87,7 +89,8 @@ export function resolveContent(def: TemplateDefinition, content: SiteContent | R
     if (!isPlainObject(defaults[key]) && !isPlainObject(saved[key])) continue;
     result[key] = mergeSection(defaults[key], saved[key]);
   }
-  return result;
+  // Konten tersimpan sebelum field/section `introduced` ada → tanpa isi demo (shared/compat.ts)
+  return parsed ? applyIntroduced(def, parsed, result) : result;
 }
 
 export type { SiteContent, TemplateDefinition } from './types';

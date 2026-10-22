@@ -33,11 +33,16 @@ interface SiteRendererProps {
   /** Konten tersimpan (objek, string JSON, atau null = konten bawaan template); bentuk lain diabaikan */
   content: unknown;
   preview?: boolean;
+  /**
+   * Gerak template (muncul saat digulir, marquee, hitung angka). Bawaan true: demo & situs live bergerak.
+   * Pratinjau CMS merender Component langsung tanpa prop ini, jadi tetap diam.
+   */
+  motion?: boolean;
   /** Layar bila template tidak tersedia / error (default: SiteStatus "unavailable" layar penuh) */
   fallback?: ReactNode;
 }
 
-export function SiteRenderer({ templateCode, content, preview = false, fallback }: SiteRendererProps) {
+export function SiteRenderer({ templateCode, content, preview = false, motion = true, fallback }: SiteRendererProps) {
   const def = getTemplate(templateCode);
   const resolved = useMemo(() => (def ? resolveContent(def, parseSiteContent(content)) : null), [def, content]);
   const unavailable = fallback ?? <SiteStatus kind="unavailable" />;
@@ -45,7 +50,7 @@ export function SiteRenderer({ templateCode, content, preview = false, fallback 
   const Template = def.Component;
   return (
     <TemplateErrorBoundary fallback={unavailable} resetKey={resolved}>
-      <Template content={resolved} preview={preview} />
+      <Template content={resolved} preview={preview} motion={motion} />
     </TemplateErrorBoundary>
   );
 }

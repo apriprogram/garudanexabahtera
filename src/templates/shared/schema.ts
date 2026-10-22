@@ -1,5 +1,6 @@
 // Skema CMS bersama template Company Profile (corporate-nexa, startup-clean).
 // Kunci section & field SAMA di kedua template agar konten tetap terbaca bila suatu saat template diganti.
+// Tambahan desain premium (SchemaOptions) bertanda `introduced` agar situs lama tidak mendapat isi demo.
 import type { TemplateField, TemplateListField, TemplateSection } from '../types';
 
 const t = (key: string, label: string, extra: Partial<TemplateField> = {}): TemplateField => ({ type: 'text', key, label, ...extra });
@@ -26,8 +27,55 @@ export interface SchemaLabels {
   serviceItemLabel: string;
 }
 
-export function companyProfileSections({ servicesLabel, serviceItemLabel }: SchemaLabels): TemplateSection[] {
-  return [
+/** Tanda `introduced` untuk field/section desain premium 2026-10 (lihat shared/compat.ts). */
+export const TEMPLATE_V2 = '2026-10';
+
+/**
+ * Field/section tambahan desain premium (semua opsional). Template mengaktifkan yang ia render, lalu WAJIB mengisi
+ * nilainya di defaultContent (uji registry memeriksa setiap section skema ada di defaultContent).
+ */
+export interface SchemaOptions {
+  /** Section `clients` (strip logo klien/mitra) tepat setelah Hero: { title, items: [{ name, logo }] } */
+  clients?: boolean | { label?: string; titlePlaceholder?: string };
+  /** Field `about.image_2`: foto pendukung kedua di section Tentang */
+  aboutSecondImage?: boolean;
+  /** Field `cta.image`: foto latar blok ajakan */
+  ctaImage?: boolean;
+  /** Bantuan field logo menyebut simbol bawaan template (template memakai <BrandMark mark>), bukan inisial */
+  brandMark?: boolean;
+}
+
+function clientsSection(option: SchemaOptions['clients']): TemplateSection {
+  const custom = typeof option === 'object' && option ? option : {};
+  return {
+    key: 'clients',
+    label: custom.label || 'Logo klien & mitra',
+    description: 'Strip logo "Dipercaya oleh" di bawah bagian pembuka. Logo ditampilkan abu-abu agar seragam.',
+    toggleable: true,
+    introduced: TEMPLATE_V2,
+    fields: [
+      t('title', 'Judul kecil', { placeholder: custom.titlePlaceholder || 'mis. Dipercaya perusahaan dari berbagai sektor', maxLength: 90 }),
+      listField(
+        'items',
+        'Daftar logo',
+        'Logo',
+        [
+          t('name', 'Nama klien', {
+            placeholder: 'mis. PT Contoh Abadi',
+            maxLength: 60,
+            help: 'Dipakai sebagai teks alternatif logo, atau ditampilkan sebagai teks bila logo kosong.',
+          }),
+          img('logo', 'Logo', 'PNG atau WEBP berlatar transparan, sebaiknya versi mendatar. Kosongkan untuk menampilkan nama saja.'),
+        ],
+        12,
+      ),
+    ],
+  };
+}
+
+export function companyProfileSections({ servicesLabel, serviceItemLabel }: SchemaLabels, options: SchemaOptions = {}): TemplateSection[] {
+  const v2 = <F extends TemplateField>(field: F): F => ({ ...field, introduced: TEMPLATE_V2 });
+  const sections: TemplateSection[] = [
     {
       key: 'brand',
       label: 'Identitas & warna',
@@ -35,7 +83,13 @@ export function companyProfileSections({ servicesLabel, serviceItemLabel }: Sche
       fields: [
         t('company_name', 'Nama perusahaan', { placeholder: 'mis. PT Maju Bersama', maxLength: 80 }),
         t('tagline', 'Tagline', { placeholder: 'mis. Solusi konstruksi terpercaya', maxLength: 100, help: 'Tampil di footer dan judul tab browser.' }),
-        img('logo', 'Logo', 'PNG/SVG berlatar transparan, maks. 2 MB. Kosongkan untuk memakai inisial nama perusahaan.'),
+        img(
+          'logo',
+          'Logo',
+          options.brandMark
+            ? 'PNG/SVG berlatar transparan, maks. 2 MB. Kosongkan untuk memakai simbol bawaan template dan nama perusahaan.'
+            : 'PNG/SVG berlatar transparan, maks. 2 MB. Kosongkan untuk memakai inisial nama perusahaan.',
+        ),
         { type: 'color', key: 'accent_color', label: 'Warna aksen', help: 'Dipakai untuk tombol, tautan, dan sorotan. Teks otomatis disesuaikan agar tetap terbaca.' },
       ],
     },
@@ -69,6 +123,9 @@ export function companyProfileSections({ servicesLabel, serviceItemLabel }: Sche
         title('mis. Mitra yang mengutamakan kualitas'),
         ta('body', 'Isi', { placeholder: 'Ceritakan sejarah, visi, dan nilai perusahaan. Pisahkan paragraf dengan baris kosong.', maxLength: 1500 }),
         img('image', 'Gambar', 'Disarankan 1200×900 px.'),
+        ...(options.aboutSecondImage
+          ? [v2(img('image_2', 'Gambar kedua (opsional)', 'Foto pendukung yang lebih kecil di samping gambar utama. Disarankan 1200×900 px. Kosongkan untuk menyembunyikan.'))]
+          : []),
         t('badge_value', 'Angka sorotan', { placeholder: 'mis. 15+', maxLength: 12, help: 'Tampil sebagai label di atas gambar. Kosongkan untuk menyembunyikan.' }),
         t('badge_label', 'Keterangan angka sorotan', { placeholder: 'mis. Tahun pengalaman', maxLength: 40 }),
         listField('points', 'Poin unggulan', 'Poin', [t('text', 'Poin', { placeholder: 'mis. Tim bersertifikat', maxLength: 100 })], 6),
@@ -173,6 +230,17 @@ export function companyProfileSections({ servicesLabel, serviceItemLabel }: Sche
         ta('subtitle', 'Deskripsi', { placeholder: 'Kalimat ajakan singkat.', maxLength: 220 }),
         t('button_label', 'Teks tombol', { placeholder: 'mis. Hubungi Kami', maxLength: 30 }),
         url('button_url', 'Tautan tombol', { placeholder: 'https://...', help: 'Kosongkan untuk membuka WhatsApp (nomor di bagian Kontak).' }),
+        ...(options.ctaImage
+          ? [
+              v2(
+                img(
+                  'image',
+                  'Foto latar (opsional)',
+                  'Foto di belakang blok ajakan, diberi lapisan warna gelap agar teks tetap terbaca. Kosongkan untuk latar warna aksen polos.',
+                ),
+              ),
+            ]
+          : []),
       ],
     },
     {
@@ -210,4 +278,7 @@ export function companyProfileSections({ servicesLabel, serviceItemLabel }: Sche
       ],
     },
   ];
+  // Urutan form CMS = urutan halaman: strip logo tepat setelah Hero
+  if (options.clients) sections.splice(sections.findIndex((s) => s.key === 'hero') + 1, 0, clientsSection(options.clients));
+  return sections;
 }

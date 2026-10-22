@@ -1,7 +1,10 @@
-// Gambar template: foto pengguna bila ada, ilustrasi SVG bernuansa warna aksen bila kosong/gagal dimuat.
+// Gambar template lama: foto pengguna bila ada, ilustrasi SVG bernuansa warna aksen bila kosong/gagal dimuat.
+// Desain baru memakai <Photo> (./Photo) yang tanpa ilustrasi; <Img>, <Art>, <BrandMark>, <Avatar>, <MapEmbed> tetap
+// tersedia. Foto demo (./assets) otomatis mendapat srcset di <Img> dan <Avatar>.
 import { MapPin } from 'lucide-react';
 import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import type { ArtKind } from './art';
+import { photoAsset } from './assets';
 import { initials, safeImage } from './utils';
 
 const fill = (variable: string, opacity?: number): CSSProperties => ({ fill: `var(${variable})`, opacity });
@@ -147,6 +150,7 @@ export function Img({
   className = '',
   imgClassName = '',
   eager = false,
+  sizes = '100vw',
 }: {
   src: string;
   alt: string;
@@ -154,16 +158,24 @@ export function Img({
   className?: string;
   imgClassName?: string;
   eager?: boolean;
+  /** Atribut sizes untuk foto demo yang punya srcset */
+  sizes?: string;
 }) {
   const url = safeImage(src);
+  const asset = photoAsset(url);
   const [broken, setBroken] = useState<string | null>(null);
   if (!url || broken === url) return <Art kind={art} className={className} label={alt || undefined} />;
   return (
     <div className={`relative overflow-hidden bg-(--tpl-accent-50) ${className}`}>
       <img
         src={url}
+        srcSet={asset?.srcSet}
+        sizes={asset ? sizes : undefined}
+        width={asset?.width}
+        height={asset?.height}
         alt={alt}
         loading={eager ? 'eager' : 'lazy'}
+        fetchPriority={eager ? 'high' : undefined}
         decoding="async"
         onError={() => setBroken(url)}
         className={`absolute inset-0 h-full w-full object-cover ${imgClassName}`}
@@ -174,9 +186,23 @@ export function Img({
 
 /**
  * Logo + nama perusahaan. Logo lebar (wordmark, rasio ≥ 2.6) tampil sendiri; logo ikon/persegi tampil dengan nama.
- * Tanpa logo → monogram inisial berwarna aksen.
+ * Tanpa logo → `mark` bawaan template (mis. <StructureMark className="h-8 w-8 text-(--tpl-accent)" />) + nama,
+ * atau monogram inisial berwarna aksen bila `mark` tidak diberikan (perilaku lama).
  */
-export function BrandMark({ name, logo, className = '', nameClassName = '' }: { name: string; logo: string; className?: string; nameClassName?: string }) {
+export function BrandMark({
+  name,
+  logo,
+  className = '',
+  nameClassName = '',
+  mark,
+}: {
+  name: string;
+  logo: string;
+  className?: string;
+  nameClassName?: string;
+  /** Mark SVG bawaan template, dipakai bila belum ada logo (atau logo gagal dimuat) */
+  mark?: ReactNode;
+}) {
   const url = safeImage(logo);
   const [state, setState] = useState<{ url: string; wide: boolean; broken: boolean } | null>(null);
   const current = state?.url === url ? state : null;
@@ -197,6 +223,10 @@ export function BrandMark({ name, logo, className = '', nameClassName = '' }: { 
           onError={() => setState({ url, wide: false, broken: true })}
           className={`w-auto shrink-0 object-contain ${current?.wide ? 'h-8 max-w-[180px]' : 'h-9 max-w-[56px]'}`}
         />
+      ) : mark ? (
+        <span className="flex shrink-0 items-center" aria-hidden>
+          {mark}
+        </span>
       ) : (
         <span
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-(--tpl-accent) text-[13px] font-bold tracking-tight text-(--tpl-on-accent)"
@@ -210,12 +240,26 @@ export function BrandMark({ name, logo, className = '', nameClassName = '' }: { 
   );
 }
 
-/** Foto bulat atau inisial. */
-export function Avatar({ name, photo, className = 'h-11 w-11' }: { name: string; photo: string; className?: string }) {
+/** Foto bulat atau inisial. `sizes` = lebar tampil (untuk srcset potret demo 240/480). */
+export function Avatar({ name, photo, className = 'h-11 w-11', sizes = '48px' }: { name: string; photo: string; className?: string; sizes?: string }) {
   const url = safeImage(photo);
+  const asset = photoAsset(url);
   const [broken, setBroken] = useState<string | null>(null);
   if (url && broken !== url) {
-    return <img src={url} alt="" loading="lazy" onError={() => setBroken(url)} className={`shrink-0 rounded-full object-cover ${className}`} />;
+    return (
+      <img
+        src={url}
+        srcSet={asset?.srcSet}
+        sizes={asset ? sizes : undefined}
+        width={asset?.width}
+        height={asset?.height}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => setBroken(url)}
+        className={`shrink-0 rounded-full object-cover ${className}`}
+      />
+    );
   }
   return (
     <span
@@ -233,7 +277,7 @@ export function MapEmbed({ embed, title, className = '' }: { embed: string | nul
     return (
       <div className={`relative flex items-center justify-center overflow-hidden bg-(--tpl-accent-50) ${className}`}>
         <Art kind="landscape" className="absolute inset-0 opacity-60" />
-        <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white text-(--tpl-accent-ink) shadow-sm">
+        <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white text-(--tpl-accent-ink) ring-1 ring-black/10">
           <MapPin className="h-6 w-6" aria-hidden />
         </span>
       </div>
@@ -244,7 +288,7 @@ export function MapEmbed({ embed, title, className = '' }: { embed: string | nul
       {/* Terlihat selama peta dimuat (atau bila diblokir browser) */}
       <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
         <Art kind="landscape" className="absolute inset-0 opacity-60" />
-        <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white text-(--tpl-accent-ink) shadow-sm">
+        <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white text-(--tpl-accent-ink) ring-1 ring-black/10">
           <MapPin className="h-6 w-6" />
         </span>
       </div>

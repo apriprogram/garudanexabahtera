@@ -1,0 +1,140 @@
+/*
+ * CSS bersama template situs pembeli (diimpor ./Shell.tsx): cincin fokus warna aksen + gerak (./Animated.tsx,
+ * ./Photo.tsx, useParallax di ./motion.ts). Di layer "components": utilitas Tailwind pada elemen yang sama tetap
+ * menang (jadi JANGAN beri kelas transition-* pada elemen <Reveal>; taruh efek hover di elemen dalamnya).
+ * Gerak hanya berjalan bila root template ber-data-tpl-motion="on" (demo & situs live). Pratinjau CMS
+ * (data-tpl-motion="off"), prefers-reduced-motion, dan cetak: semua isi langsung tampil, tanpa pergerakan.
+ */
+
+@layer components {
+  [data-tpl-root] {
+    --tpl-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Cincin fokus keyboard mengikuti warna aksen template (versi gelap yang kontras ≥ 4.5 di latar putih) */
+  [data-tpl-root] :focus-visible {
+    outline: 2px solid var(--tpl-accent-ink);
+    outline-offset: 2px;
+  }
+
+  /* Di atas bidang aksen atau foto gelap: tandai wadahnya data-tpl-tone="inverse" → cincin putih */
+  [data-tpl-root] [data-tpl-tone='inverse'] :focus-visible {
+    outline-color: #ffffff;
+  }
+
+  /* ─── Muncul saat digulir (<Reveal>) ───────────────────────────────────────── */
+
+  .tpl-reveal {
+    transition:
+      opacity 0.8s var(--tpl-ease),
+      transform 0.9s var(--tpl-ease);
+    transition-delay: var(--tpl-delay, 0ms);
+  }
+
+  .tpl-reveal[data-reveal='pending'] {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+
+  .tpl-reveal[data-reveal='pending'][data-reveal-variant='fade'] {
+    transform: none;
+  }
+
+  .tpl-reveal[data-reveal='pending'][data-reveal-variant='scale'] {
+    transform: scale(0.97);
+  }
+
+  .tpl-reveal[data-reveal='pending'][data-reveal-variant='left'] {
+    transform: translate3d(-24px, 0, 0);
+  }
+
+  .tpl-reveal[data-reveal='pending'][data-reveal-variant='right'] {
+    transform: translate3d(24px, 0, 0);
+  }
+
+  /* ─── Foto: zoom-out halus saat muncul & parallax ringan ─────────────────── */
+
+  .tpl-photo-zoom {
+    transform: scale(1);
+    transition: transform 1.6s var(--tpl-ease);
+  }
+
+  [data-reveal='pending'] > .tpl-photo-zoom {
+    transform: scale(1.08);
+  }
+
+  .tpl-photo-parallax {
+    /* --tpl-parallax: -1 (foto di bawah layar) … 1 (di atas), diisi useParallax */
+    transform: translate3d(0, calc(var(--tpl-parallax, 0) * var(--tpl-parallax-strength, 6%)), 0) scale(1.14);
+    will-change: transform;
+  }
+
+  /* ─── Hitung angka (<CountUp>) ───────────────────────────────────────────── */
+
+  .tpl-count[data-count]::before {
+    content: attr(data-count);
+  }
+
+  /* ─── Strip logo berjalan (<Marquee>) ─────────────────────────────────────── */
+
+  .tpl-marquee {
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  }
+
+  .tpl-marquee-track {
+    display: flex;
+    width: max-content;
+    animation: tpl-marquee var(--tpl-marquee-duration, 40s) linear infinite;
+  }
+
+  .tpl-marquee:hover .tpl-marquee-track,
+  .tpl-marquee:focus-within .tpl-marquee-track {
+    animation-play-state: paused;
+  }
+
+  /* ─── Gerak mati: pratinjau CMS, preferensi pengunjung, cetak ─────────────── */
+
+  [data-tpl-motion='off'] .tpl-reveal,
+  [data-tpl-motion='off'] .tpl-photo-zoom,
+  [data-tpl-motion='off'] .tpl-photo-parallax {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  [data-tpl-motion='off'] .tpl-marquee-track {
+    animation: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tpl-reveal,
+    .tpl-photo-zoom,
+    .tpl-photo-parallax {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+
+    .tpl-marquee-track {
+      animation: none !important;
+    }
+  }
+
+  @media print {
+    .tpl-reveal {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+}
+
+@keyframes tpl-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(calc(-100% / var(--tpl-marquee-copies, 4)), 0, 0);
+  }
+}

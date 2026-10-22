@@ -1,6 +1,13 @@
 // Turunan konten yang sama untuk semua template Company Profile (section, aksi kontak, menu).
-import type { SiteContent } from '../types';
-import { getSection, isEnabled, list, text, whatsappHref, type LinkAction } from './utils';
+import type { SectionContent, SiteContent } from '../types';
+import { field, getSection, isEnabled, list, safeImage, text, whatsappHref, type LinkAction } from './utils';
+
+/** Item strip logo klien (section `clients`, list `items` { name, logo }); item tanpa nama & logo dibuang. */
+export function clientItems(section: SectionContent | null | undefined, max = 12): { name: string; logo: string }[] {
+  return list(section, 'items', max)
+    .map((item) => ({ name: field(item, 'name'), logo: field(item, 'logo') }))
+    .filter((item) => item.name || safeImage(item.logo));
+}
 
 export interface NavItem {
   key: string;
@@ -36,6 +43,7 @@ export function navItems(content: SiteContent, servicesLabel = 'Layanan'): NavIt
 export function readCompanyProfile(content: SiteContent, servicesLabel = 'Layanan') {
   const brand = getSection(content, 'brand');
   const hero = getSection(content, 'hero');
+  const clients = getSection(content, 'clients');
   const about = getSection(content, 'about');
   const services = getSection(content, 'services');
   const advantages = getSection(content, 'advantages');
@@ -66,6 +74,8 @@ export function readCompanyProfile(content: SiteContent, servicesLabel = 'Layana
   return {
     brand,
     hero,
+    /** Section strip logo (opsional, template yang memakai skema `clients`) */
+    clients,
     about,
     services,
     advantages,

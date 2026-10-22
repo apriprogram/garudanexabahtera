@@ -1,7 +1,16 @@
 // Format template situs pembeli + skema CMS. Kontrak: docs/platform/SPEC.md §7. Jangan ubah bentuknya.
+// Tambahan 2026-10 (semua opsional, lihat docs/platform/TEMPLATE-DESIGN.md §2): `introduced` di field/section dan
+// `motion` di TemplateRenderProps.
 import type { ComponentType } from 'react';
 
 export type FieldType = 'text' | 'textarea' | 'image' | 'url' | 'email' | 'phone' | 'color';
+
+/**
+ * Penanda field/section yang ditambahkan SETELAH situs pembeli bisa menyimpan konten (mis. "2026-10").
+ * Konten tersimpan yang belum punya kuncinya tidak diisi nilai demo oleh resolveContent: field → kosong,
+ * section → disembunyikan (enabled: false). Situs baru / demo (konten null) tetap memakai nilai bawaan.
+ */
+export type IntroducedTag = string;
 
 export interface TemplateField {
   type: FieldType;
@@ -10,6 +19,7 @@ export interface TemplateField {
   placeholder?: string;
   help?: string;
   maxLength?: number;
+  introduced?: IntroducedTag;
 }
 
 export interface TemplateListField {
@@ -20,6 +30,7 @@ export interface TemplateListField {
   itemLabel: string;
   fields: TemplateField[];
   max?: number;
+  introduced?: IntroducedTag;
 }
 
 export type AnyTemplateField = TemplateField | TemplateListField;
@@ -31,6 +42,7 @@ export interface TemplateSection {
   /** Section boleh disembunyikan pembeli (pakai `enabled`) */
   toggleable?: boolean;
   fields: AnyTemplateField[];
+  introduced?: IntroducedTag;
 }
 
 export type ListItem = Record<string, string>;
@@ -43,6 +55,12 @@ export interface TemplateRenderProps {
   content: SiteContent;
   /** true di pratinjau CMS / demo: tautan tidak membuka halaman lain */
   preview?: boolean;
+  /**
+   * Gerak (muncul saat digulir, marquee logo, hitung angka, parallax). Bawaan: `!preview`, jadi pratinjau CMS yang
+   * merender Component langsung tetap diam; SiteRenderer (demo & situs live) mengirim `true`. Selalu mati bila
+   * pengunjung memilih prefers-reduced-motion.
+   */
+  motion?: boolean;
 }
 
 export interface TemplateDefinition {

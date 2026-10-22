@@ -5,10 +5,15 @@ import { createContext, useContext } from 'react';
 export interface TemplateRuntime {
   /** true di demo/pratinjau CMS: tautan keluar dan formulir tidak dijalankan */
   preview: boolean;
+  /**
+   * Gerak diizinkan oleh tempat render (demo & situs live: true, pratinjau CMS: false). Preferensi pengunjung
+   * (prefers-reduced-motion) dicek terpisah oleh useMotionEnabled() di ./motion.
+   */
+  motion: boolean;
   /** Gulir halus ke section (kunci section atau anchor Indonesia, mis. "contact" / "kontak") */
   goTo: (target: string) => void;
 }
 
-export const TemplateRuntimeContext = createContext<TemplateRuntime>({ preview: false, goTo: () => undefined });
+export const TemplateRuntimeContext = createContext<TemplateRuntime>({ preview: false, motion: false, goTo: () => undefined });
 
 export const useTemplateRuntime = () => useContext(TemplateRuntimeContext);

@@ -108,6 +108,9 @@ export function safeImage(raw: string | null | undefined): string {
   return '';
 }
 
+/** Ada gambar yang bisa ditampilkan? (dipakai template untuk menyembunyikan slot foto yang kosong) */
+export const hasImage = (raw: string | null | undefined): boolean => safeImage(raw) !== '';
+
 /** Nomor WhatsApp → https://wa.me/62xxx (0xxx dan 8xxx diubah ke 62xxx). Tidak valid → "". */
 export function whatsappHref(raw: string, message?: string): string {
   let digits = (raw || '').replace(/\D/g, '');
@@ -204,6 +207,7 @@ export function accentVars(color: string, fallback: string): CSSProperties {
 /** Anchor berbahasa Indonesia per section (dipakai di id & tautan "#kontak"). */
 export const SECTION_ANCHOR: Record<string, string> = {
   hero: 'beranda',
+  clients: 'klien',
   about: 'tentang',
   services: 'layanan',
   advantages: 'keunggulan',

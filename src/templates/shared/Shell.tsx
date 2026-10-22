@@ -11,6 +11,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type HTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
@@ -19,7 +20,9 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import type { SiteContent } from '../types';
+import { TEMPLATE_FONTS, useTemplateFont, type TemplateFont } from './fonts';
 import { WhatsAppIcon } from './icons';
+import './template.css';
 import { TemplateRuntimeContext, useTemplateRuntime } from './runtime';
 import {
   SECTION_ANCHOR,
@@ -35,6 +38,13 @@ import {
 interface ShellProps {
   content: SiteContent;
   preview?: boolean;
+  /**
+   * Teruskan prop `motion` template apa adanya. Bawaan `!preview`: pratinjau CMS diam, situs live bergerak;
+   * SiteRenderer mengirim true untuk demo & situs live. prefers-reduced-motion selalu menang.
+   */
+  motion?: boolean;
+  /** Huruf judul (FONT_DISPLAY di ./layout); bawaan Inter */
+  displayFont?: TemplateFont;
   /** Warna aksen bawaan template bila brand.accent_color kosong/tidak valid */
   defaultAccent: string;
   className?: string;
@@ -130,14 +140,20 @@ function NoticeBubble({ notice, layerRef }: { notice: PreviewNotice; layerRef: R
 const WA_FLOAT =
   'flex items-center justify-center rounded-full bg-whatsapp text-white shadow-float transition-colors hover:bg-whatsapp-hover';
 
-export function TemplateShell({ content, preview = false, defaultAccent, className = '', children }: ShellProps) {
+export function TemplateShell({ content, preview = false, motion, displayFont = 'inter', defaultAccent, className = '', children }: ShellProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
   const [notice, setNotice] = useState<PreviewNotice | null>(null);
   const brand = getSection(content, 'brand');
   const contact = getSection(content, 'contact');
   const accent = text(brand, 'accent_color');
-  const style = useMemo(() => accentVars(accent, defaultAccent), [accent, defaultAccent]);
+  const motionAllowed = motion ?? !preview;
+  const fontFamily = (TEMPLATE_FONTS[displayFont] ?? TEMPLATE_FONTS.inter).family;
+  const style = useMemo(
+    () => ({ ...accentVars(accent, defaultAccent), '--tpl-font-display': fontFamily }) as CSSProperties,
+    [accent, defaultAccent, fontFamily],
+  );
+  useTemplateFont(displayFont);
   // Nomor WhatsApp tetap dipakai walau section Kontak disembunyikan (nomor diisi = ingin dihubungi)
   const waHref = whatsappHref(text(contact, 'whatsapp'), text(contact, 'whatsapp_message'));
 
@@ -169,7 +185,7 @@ export function TemplateShell({ content, preview = false, defaultAccent, classNa
     return () => window.clearTimeout(timer);
   }, [preview, goTo]);
 
-  const runtime = useMemo(() => ({ preview, goTo }), [preview, goTo]);
+  const runtime = useMemo(() => ({ preview, motion: motionAllowed, goTo }), [preview, motionAllowed, goTo]);
   const waIcon = <WhatsAppIcon className={preview ? 'h-6 w-6' : 'h-6 w-6 sm:h-7 sm:w-7'} />;
 
   return (
@@ -178,6 +194,8 @@ export function TemplateShell({ content, preview = false, defaultAccent, classNa
         <div
           ref={rootRef}
           style={style}
+          data-tpl-root=""
+          data-tpl-motion={motionAllowed ? 'on' : 'off'}
           className={`relative isolate w-full scroll-mt-(--tpl-sticky-top) bg-white font-sans text-fg antialiased ${className}`}
         >
           <div className="@container">{children}</div>
