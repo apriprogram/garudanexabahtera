@@ -11,8 +11,8 @@ import {
 } from './process/ProcessVisuals';
 
 const FLOWS = [
-  { key: 'template', icon: LayoutTemplate, tab: 'Template siap pakai', short: 'Template', note: '6 langkah, dari memilih desain sampai kelola sendiri.' },
-  { key: 'custom', icon: Smartphone, tab: 'Website & aplikasi custom', short: 'Custom', note: '4 langkah, dari konsultasi sampai rilis.' },
+  { key: 'template', icon: LayoutTemplate, tab: 'Template siap pakai', short: 'Siap pakai', note: '6 langkah, dari memilih desain sampai kelola sendiri.' },
+  { key: 'custom', icon: Smartphone, tab: 'Website & aplikasi custom', short: 'Jasa custom', note: '4 langkah, dari konsultasi sampai rilis.' },
 ] as const;
 
 /** Kepala kartu langkah: judul besar + nomor mono + deskripsi singkat (pola StepsBento CPNS). */

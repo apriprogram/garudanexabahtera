@@ -116,6 +116,15 @@ describe('Proses (#process)', () => {
     expect(panel).not.toHaveTextContent(/QRIS|Virtual Account|E-wallet/);
   });
 
+  it('label segmen di HP sama dengan toggle hero: "Siap pakai" / "Jasa custom" (A-08)', () => {
+    renderAt(<Process />);
+    const [template, custom] = screen.getAllByRole('tab');
+    expect(within(template).getByText('Siap pakai')).toHaveClass('sm:hidden');
+    expect(within(template).getByText('Template siap pakai')).toHaveClass('hidden', 'sm:inline');
+    expect(within(custom).getByText('Jasa custom')).toHaveClass('sm:hidden');
+    expect(within(custom).getByText('Website & aplikasi custom')).toHaveClass('hidden', 'sm:inline');
+  });
+
   it('kartu ringkas di HP, tetap sama mulai 640px (C-06)', () => {
     renderAt(<Process />);
     const articles = within(screen.getByRole('tabpanel')).getAllByRole('article');

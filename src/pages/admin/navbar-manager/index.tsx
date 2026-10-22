@@ -101,7 +101,6 @@ function SortableItem({ menu, onEdit, onDelete, children }: SortableItemProps) {
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
             <h4 className="truncate text-sm font-semibold text-adm-fg">{menu.label_id}</h4>
-            <span className="max-w-[45%] shrink-0 truncate rounded-md bg-adm-ghost px-1.5 py-0.5 text-[11px] font-medium uppercase text-adm-muted">{menu.label_en}</span>
           </div>
           <p className="truncate text-xs text-adm-muted">{menu.url}</p>
         </div>
@@ -202,7 +201,9 @@ const NavbarManager = () => {
     setIsSaving(true);
     try {
       const action = editingMenu.id === 0 ? 'add_navbar_menu' : 'edit_navbar_menu';
-      await api(action, editingMenu);
+      // Kolom label_en tetap ada di database (dipakai migrasi sebagai kunci): menu lama menyimpan nilainya,
+      // menu baru memakai label Indonesia.
+      await api(action, { ...editingMenu, label_en: editingMenu.label_en || editingMenu.label_id });
       await fetchMenus();
       setIsModalOpen(false);
     } catch (err) { console.error(err); }
@@ -295,14 +296,10 @@ const NavbarManager = () => {
         {editingMenu && (
           <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
             <ModalBody className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Label (ID)" htmlFor="navbar_label_id">
-                  <Input id="navbar_label_id" type="text" required value={editingMenu.label_id} onChange={e => setEditingMenu({...editingMenu, label_id: e.target.value})} />
-                </Field>
-                <Field label="Label (EN)" htmlFor="navbar_label_en">
-                  <Input id="navbar_label_en" type="text" required value={editingMenu.label_en} onChange={e => setEditingMenu({...editingMenu, label_en: e.target.value})} />
-                </Field>
-              </div>
+              {/* Website publik hanya berbahasa Indonesia (design.md), jadi label EN tidak lagi diisi di sini */}
+              <Field label="Label" htmlFor="navbar_label_id">
+                <Input id="navbar_label_id" type="text" required value={editingMenu.label_id} onChange={e => setEditingMenu({...editingMenu, label_id: e.target.value})} />
+              </Field>
 
               <Field label="URL / hash" htmlFor="navbar_url">
                 <Input

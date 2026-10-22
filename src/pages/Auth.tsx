@@ -225,7 +225,7 @@ const Auth = () => {
                   inputMode="tel"
                   autoComplete="tel"
                   enterKeyHint="next"
-                  placeholder="mis. 081234567890"
+                  placeholder="mis. 0812-3456-7890"
                 />
               </div>
             </motion.div>

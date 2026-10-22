@@ -59,7 +59,7 @@ mode terang panel admin) tidak mengubah apa pun di halaman publik. Jangan memaka
 | `bg-surface` | `#FFFFFF` | Kartu, input |
 | `text-fg` / `bg-fg` | `#121620` | Teks utama, judul, chip nomor section, ikon aktif (obsidian) |
 | `text-muted` | `#4B5262` | Deskripsi, teks sekunder (mist-700) |
-| `text-subtle` | `#6B7383` | Keterangan kecil, eyebrow, placeholder (mist-500) |
+| `text-subtle` | `#697181` | Keterangan kecil, eyebrow, placeholder (mist-500 sedikit digelapkan: 4,6:1 di atas `bg-alt`, 4,9:1 di putih) |
 | `ring-line` / `border-line` | `#E3E6EE` | Garis kartu, pemisah (mist-100) |
 | `ring-line-strong` / `border-line-strong` | `#CBD0DB` | Garis input, hover (mist) |
 | `bg-primary` / `text-primary` | `#211FFE` | Aksi, tautan, kata kunci judul (cobalt) |
@@ -172,13 +172,23 @@ Footer. Section bisa disembunyikan lewat setting `disabled_sections` (JSON array
 abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section` dibuat transparan oleh `index.css`.
 
 - **Hero**: kanvas medan titik interaktif + cahaya biru mengikuti kursor (berkelana saat diam, berhenti saat tak terlihat,
-  ±30 fps di HP). Kiri: toggle mode [Template siap pakai | Website & Aplikasi Custom] berindikator meluncur → judul dua warna,
-  3 poin, tombol (Template: "Pilih Template" → `#templates` + "Lihat demo" template yang sedang tampil; Custom: "Pesan Website /
-  Aplikasi Mobile Custom" → `/pesan-custom` + "Konsultasi Gratis"). Kanan (HP: di bawah): bingkai browser datar yang menayangkan
-  pratinjau template dari `get_templates` (cadangan `/assets/templates/*-preview.svg`) + rail langkah Pilih template → Bayar via
-  Midtrans → Domain aktif → Kelola lewat CMS (bisa diklik & dijeda).
-- **Projects**: kartu sorotan lebar (≥ 3 proyek) + grid kartu datar bergambar.
-- **Proses**: kontrol segmen Template / Custom → bento (2 kartu langkah, 1 kartu tinggi, 1 kartu lebar biru muda).
+  ±30 fps di HP). Kiri: toggle mode [Template siap pakai | Website & aplikasi custom] (HP: "Siap pakai" / "Jasa custom";
+  sentence case, pill terpilih biru solid, bentuk sama dengan segmen Proses) berindikator meluncur → judul dua warna,
+  3 poin, tombol (Template: "Pilih Template" → `#templates` + "Lihat Demo · {nama template}" yang sedang tampil, nama lengkap
+  di `aria-label`, tayangan berhenti selama tautan di-hover/difokus; Custom: "Pesan Website / Aplikasi Mobile Custom" →
+  `/pesan-custom` + "Konsultasi Gratis"). Kanan (HP: di bawah): bingkai browser datar yang menayangkan pratinjau template dari
+  `get_templates` (cadangan `/assets/templates/*-preview.svg`; mode Custom berlabel "Contoh tampilan") + rail langkah Pilih
+  template → Bayar via Midtrans → Domain aktif → Kelola lewat CMS (bisa diklik & dijeda; tombol jeda "Jeda tayangan" +
+  `aria-pressed`; keempat label tampil mulai 1280px).
+- **Strip layanan** (`LogoTicker`): satu perlakuan untuk semua item, ikon lucide per layanan atau tanda produk SVG satu warna
+  (`public/assets/logo/{ischool,isantri,invitation}-mark.svg`, digambar lewat CSS mask `currentColor`) dalam `text-subtle` +
+  nama 13px `text-muted` dengan ejaan aslinya (i-School, i-Santri). PNG lama di setting `hero_logos` otomatis diganti SVG.
+- **Projects**: kartu sorotan lebar (≥ 3 proyek) + grid kartu datar bergambar (tanpa naik/zoom saat hover, gambar 16:10
+  mulai 640px, `alt=""`). Hanya proyek layak tampil (`isPresentableProject`: ada gambar, deskripsi ≥ 40 karakter, bukan
+  teks uji `lorem ipsum` / `coba` / `test`); bila kurang dari 2 → portofolio cadangan `portfolio_data`. Tombol kepala
+  "Pesan Custom" → `/pesan-custom`.
+- **Proses**: kontrol segmen [Template siap pakai | Website & aplikasi custom] (HP: "Siap pakai" / "Jasa custom") → bento
+  (2 kartu langkah, 1 kartu tinggi, 1 kartu lebar biru muda).
 - **FAQ**: judul sticky kiri, accordion bernomor kanan (satu terbuka; terbuka = putih bergaris, tertutup = abu lembut).
 
 ## Panel admin (`src/pages/admin`, `src/components/admin`)
@@ -287,7 +297,7 @@ sentence case. Jangan menampilkan harga atau paket untuk jasa custom (biaya disa
 
 | Label | Untuk |
 |---|---|
-| Pilih Template | Ke katalog `#templates` (hero) |
+| Pilih Template | Ke katalog `#templates` (hero, Proses, dashboard akun) |
 | Lihat Demo | Buka demo template (`/demo/:slug` atau `demo_url`) |
 | Pesan Template | Ke `/pesan/:slug` (kartu sempit boleh "Pesan" + `aria-label="Pesan Template {nama}"`) |
 | Lihat Semua Template | Tautan ke katalog lengkap |

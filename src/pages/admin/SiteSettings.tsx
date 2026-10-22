@@ -274,7 +274,7 @@ const SiteSettings: React.FC = () => {
           {
             id: 'santri',
             category: 'santri',
-            logo: '/assets/logo/logoisantri.png',
+            logo: '/assets/logo/isantri-mark.svg',
             badge: 'Aplikasi I-Santri',
             title: 'Manajemen Pesantren Modern',
             description: 'Manajemen pesantren yang lebih terstruktur dan modern dengan sistem digital terintegrasi.',
@@ -283,7 +283,7 @@ const SiteSettings: React.FC = () => {
           {
             id: 'school',
             category: 'school',
-            logo: '/assets/logo/logoischool.png',
+            logo: '/assets/logo/ischool-mark.svg',
             badge: 'Aplikasi I-School',
             title: 'Digitalisasi Ekosistem Sekolah',
             description: 'Manajemen sekolah berbasis digital tingkat lanjut untuk efisiensi administrasi dan akademik.',
@@ -308,7 +308,7 @@ const SiteSettings: React.FC = () => {
           {
             id: 'invitation',
             category: 'invitation',
-            logo: '/assets/logo/logowedding.png',
+            logo: '/assets/logo/invitation-mark.svg',
             badge: 'Undangan Digital Premium',
             title: 'Undangan Digital Interaktif',
             description: 'Solusi undangan pernikahan dan acara spesial dalam bentuk website modern yang elegan dan mudah dibagikan.',

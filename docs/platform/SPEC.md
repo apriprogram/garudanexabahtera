@@ -305,8 +305,9 @@ Urutan homepage: **Hero** (putih, headline gelap + kata kunci biru, 2 tombol: "P
 **Projects** `#projects` (dari `get_public_projects`; bila kosong, fallback ke `portfolio_data` lama) → **Proses**
 `#process` (dua alur: Template & Custom) → **FAQ** `#faq` (tanpa harga/paket jasa custom) → **CTA** biru brand
 (`#kontak`, bukan hitam) → Footer terang. Section Harga/Pricelist dan "Solusi Produk Kami" DIHAPUS.
-Navbar: struktur tetap (menu dari Navbar Manager, bahasa, Masuk, Konsultasi Gratis); "Masuk" → `/masuk`; bila
-login sebagai customer tampilkan "Akun Saya" → `/akun`.
+Navbar: struktur tetap (menu dari Navbar Manager, Masuk, Konsultasi Gratis; tanpa sakelar bahasa, website hanya
+berbahasa Indonesia, keputusan pemilik 2026-10-21); "Masuk" → `/masuk`; bila login sebagai customer tampilkan
+"Akun Saya" → `/akun`. Kartu template SELALU menampilkan deskripsi + "Lihat Demo" / "Pesan" (bukan hanya saat hover).
 
 Rute publik: `/template/:slug` (detail: galeri, fitur, harga, demo, tombol pesan), `/demo/:slug`, `/pesan/:slug`
 (form pemesanan, wajib login customer; belum login → tampilkan daftar/masuk inline atau arahkan `/masuk?next=`),

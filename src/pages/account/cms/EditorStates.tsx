@@ -1,7 +1,7 @@
 // Layar memuat / gagal / tidak ditemukan / template tidak dikenal untuk CMS.
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { CircleAlert, FileQuestion, LayoutTemplate, RefreshCw } from 'lucide-react';
+import { CircleAlert, FileQuestion, LayoutTemplate, MessageCircle, RefreshCw } from 'lucide-react';
 
 export function EditorSkeleton() {
   return (
@@ -81,7 +81,8 @@ export function EditorNotFound() {
   );
 }
 
-export function EditorUnknownTemplate({ code, backTo }: { code: string; backTo: string }) {
+/** `helpHref` = tautan wa.me bantuan situs (pesan menyebut domainnya), sama dengan notice situs dinonaktifkan. */
+export function EditorUnknownTemplate({ code, backTo, helpHref }: { code: string; backTo: string; helpHref: string }) {
   return (
     <StateCard
       icon={<LayoutTemplate className="h-6 w-6 text-warning" aria-hidden />}
@@ -91,9 +92,11 @@ export function EditorUnknownTemplate({ code, backTo }: { code: string; backTo: 
           <Link to={backTo} className="btn btn-primary">
             Kembali ke pesanan
           </Link>
-          <Link to="/#kontak" className="btn btn-outline">
-            Hubungi kami
-          </Link>
+          <a href={helpHref} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+            <MessageCircle className="h-4 w-4" aria-hidden />
+            Hubungi kami via WhatsApp
+            <span className="sr-only">(tab baru)</span>
+          </a>
         </>
       }
     >

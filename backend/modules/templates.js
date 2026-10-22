@@ -1104,6 +1104,8 @@ async function orderLogs(pool, orderId, staff) {
   return rows.map((r) => {
     let actorName = names[r.actor_type] ?? r.user_name;
     if (r.actor_type === 'staff' && !staff) actorName = 'Tim Garuda Nexa';
+    // Customers only get the rejection reason; other notes are internal (admin notes, Midtrans/test-mode details)
+    const note = staff || r.event === 'rejected' ? r.note : null;
     const log = {
       id: Number(r.id),
       event: r.event,
@@ -1111,7 +1113,7 @@ async function orderLogs(pool, orderId, staff) {
       to_status: r.to_status,
       actor_type: r.actor_type,
       actor_name: actorName,
-      note: r.note,
+      note,
       created_at: r.created_at,
     };
     if (staff) log.payload = r.payload !== null ? parseJson(r.payload) : null;

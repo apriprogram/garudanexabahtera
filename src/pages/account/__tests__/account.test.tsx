@@ -184,8 +184,8 @@ describe('dashboard /akun', () => {
     const sites = screen.getByRole('heading', { name: 'Situs Anda' }).closest('section')!;
     expect(within(sites).getByRole('link', { name: /Kelola Situs/ })).toHaveAttribute('href', '/akun/situs/7');
 
-    // Label glosarium
-    expect(screen.getByRole('link', { name: /Pesan Template/ })).toBeInTheDocument();
+    // Label glosarium: ke katalog = "Pilih Template" ("Pesan Template" khusus /pesan/:slug)
+    expect(screen.getByRole('link', { name: /Pilih Template/ })).toHaveAttribute('href', '/#templates');
     expect(screen.getByRole('button', { name: /Bayar Sekarang/ })).toBeInTheDocument();
 
     // Filter lewat tile: pembayaran yang ditinjau bank masuk "Diproses", bukan "Perlu dibayar"

@@ -3,7 +3,7 @@
 // Harga "Sudah termasuk" & catatan perpanjangan dari useTemplatePricing (keputusan pemilik 2026-10-21); pesanan lunas
 // yang ditolak → dana kembali penuh ke metode bayar semula maks. 7 hari kerja (sama dengan /kebijakan-pengembalian-dana).
 // Di bawah lg: ringkasan ringkas di atas form, rincian (termasuk, langkah) di dekat tombol bayar; urutan DOM = urutan tampil.
-import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowRight,
@@ -190,7 +190,7 @@ export default function OrderTemplate() {
                 description="Template ini mungkin sudah tidak tersedia atau alamatnya salah. Silakan pilih template lain."
                 action={
                   <Link to="/#templates" className="btn btn-primary">
-                    Lihat Template
+                    Pilih Template
                   </Link>
                 }
               />
@@ -213,9 +213,9 @@ export default function OrderTemplate() {
                       </>
                     )}
                   </div>
-                  <div className="hidden lg:sticky lg:top-24 lg:block">
+                  <StickySummary>
                     <OrderSummary template={state.template} pricing={pricing} />
-                  </div>
+                  </StickySummary>
                 </div>
               </>
             )}
@@ -417,6 +417,33 @@ function StepsDisclosure({ free, className = '' }: { free: boolean; className?: 
         <OrderSteps free={free} />
       </div>
     </details>
+  );
+}
+
+/**
+ * Kolom kanan sticky (≥ lg). Bila ringkasan lebih tinggi dari layar (mis. 1366×768), offset atasnya menyesuaikan agar
+ * ujung bawahnya (langkah setelah membayar) tetap bisa terlihat, sama seperti panel harga di /template/:slug.
+ */
+function StickySummary({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => setHeight(Math.ceil(el.getBoundingClientRect().height)));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      style={{ '--order-aside-h': `${height}px` } as CSSProperties}
+      className="hidden lg:sticky lg:top-[min(6rem,calc(100svh-var(--order-aside-h)-1.5rem))] lg:block"
+    >
+      {children}
+    </div>
   );
 }
 

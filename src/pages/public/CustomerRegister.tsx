@@ -71,7 +71,7 @@ export default function CustomerRegister() {
       case 'email':
         return checkEmail(values.email);
       case 'phone':
-        return checkPhone(values.phone, 'Nomor HP/WhatsApp');
+        return checkPhone(values.phone, 'Nomor WhatsApp');
       case 'password':
         return checkPassword(values.password);
     }
@@ -219,13 +219,13 @@ export default function CustomerRegister() {
 
         <AuthField
           {...field('phone')}
-          label="Nomor HP/WhatsApp"
+          label="Nomor WhatsApp"
           icon={Phone}
           type="tel"
           inputMode="tel"
           autoComplete="tel"
           enterKeyHint="next"
-          placeholder="mis. 081234567890"
+          placeholder="mis. 0812-3456-7890"
           help="Dipakai tim kami untuk konfirmasi pesanan."
         />
 

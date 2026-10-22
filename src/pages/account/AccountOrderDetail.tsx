@@ -840,7 +840,7 @@ function InvoiceCard({
             </Link>
           ) : (
             <Link to="/#templates" className="btn btn-primary w-full">
-              Lihat Template
+              Pilih Template
             </Link>
           ))}
 
