@@ -27,16 +27,21 @@ class ApiError extends Exception {
 const GENERIC_ERROR = 'Terjadi kesalahan pada server. Silakan coba lagi.';
 
 // ── Access policy (same lists as backend/security.js, docs/platform/SPEC.md §2) ──
-// Default deny: an action that is not public needs a valid token. Customer tokens may only call
-// CUSTOMER_ACTIONS; everything else is a staff action (role admin or user), ADMIN_ACTIONS admin only.
+// Default deny: an action that is not public needs a valid token. ANY_ROLE_ACTIONS accept every logged-in role;
+// customer tokens may only call CUSTOMER_ACTIONS; everything else is a staff action (role admin or user),
+// ADMIN_ACTIONS admin only. Project documents (pd_*): docs/platform/PROJECT-DOCS-SPEC.md §5.
 const PUBLIC_ACTIONS = [
     'get_settings', 'track_visit', 'login', 'register', 'get_list_products', 'get_navbar_menus',
     'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
     'customer_register', 'midtrans_notification', 'get_payment_config',
 ];
+const ANY_ROLE_ACTIONS = [
+    'pd_notifications_list', 'pd_notifications_read', 'pd_file',
+];
 const CUSTOMER_ACTIONS = [
     'customer_create_order', 'customer_pay_order', 'customer_get_orders', 'customer_get_order',
     'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment',
+    'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
 ];
 const ADMIN_ACTIONS = [
     'add_user', 'delete_user',
@@ -45,6 +50,10 @@ const ADMIN_ACTIONS = [
     'add_changelog', 'update_changelog', 'delete_changelog',
     'admin_delete_template',
     'encrypt_list_products',
+    'pd_client_save', 'pd_client_delete', 'pd_customers_list', 'pd_project_save', 'pd_milestone_delete',
+    'pd_document_change', 'pd_document_sign', 'pd_document_complete', 'pd_document_delete',
+    'pd_invoice_create', 'pd_invoice_update', 'pd_invoice_cancel', 'pd_payment_record', 'pd_payment_delete',
+    'pd_settings_save',
 ];
 const STAFF_ROLES = ['admin', 'user'];
 const USER_ROLES = ['admin', 'user', 'customer'];
@@ -77,6 +86,8 @@ require_once __DIR__ . '/modules/project_files.php';
 // Home page hero background: raw video upload, upload limits and the hero_bg_* / hero_images settings
 // (handle_hero_media_action, hero_media_prepare_settings)
 require_once __DIR__ . '/modules/hero_media.php';
+// Project documents & agreements, pd_* actions (handle_project_docs_action, docs/platform/PROJECT-DOCS-SPEC.md)
+require_once __DIR__ . '/modules/project_docs.php';
 
 load_env_file();
 
@@ -140,6 +151,11 @@ if (handle_hero_media_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }
+// Project documents & agreements (pd_*): staff workspace, customer approvals, notifications (backend/modules/project_docs.php)
+if (handle_project_docs_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
 
 switch ($action) {
     case 'migrate_paths':
@@ -200,8 +216,10 @@ switch ($action) {
         break;
 
     case 'get_settings':
+        // Public: pd_* keys (company identity, tax, payment terms of the project documents) are read through
+        // pd_settings_get only; the comparison follows the column's case-insensitive collation
         $settings = [];
-        foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings") as $row) {
+        foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_'") as $row) {
             $settings[$row['setting_key']] = $row['setting_value'];
         }
         // Always a JSON object like server.js: {} for an empty table (never []), numeric keys stay keys
@@ -210,6 +228,11 @@ switch ($action) {
 
     case 'update_settings':
         $settings = is_array($input['settings'] ?? null) ? $input['settings'] : [];
+        // pd_* settings are admin-only and validated per field: pd_settings_save (backend/modules/project_docs.php). Before
+        // the hero media step below, so a refused save never stores an upload
+        foreach (array_keys($settings) as $key) {
+            if (stripos((string)$key, 'pd_') === 0) throw new ApiError('Pengaturan dokumen proyek hanya bisa diubah lewat Pengaturan dokumen.', 403, 'FORBIDDEN');
+        }
         // hero_bg_mode, hero_bg_video, hero_bg_video_poster, hero_images (backend/modules/hero_media.php). First, so a
         // refused hero value (stale tab, data: video, SVG poster) stops the save before any upload; hero_media_base is
         // the hero video/poster the admin page loaded (compare-and-swap, never stored as a setting)
@@ -352,6 +375,11 @@ switch ($action) {
         break;
 
     case 'delete_project':
+        // A project with project documents (signed contracts, invoices, receipts, pd_*) is an archive: deleting it would
+        // orphan them for the client and the admin alike (same rule as server.js)
+        if (db_one($conn, "SELECT id FROM pd_documents WHERE project_id = ? LIMIT 1", [in_int($input, 'id')])) {
+            throw new ApiError('Proyek ini sudah punya dokumen proyek (BRD, kontrak, invoice, atau kuitansi), jadi tidak bisa dihapus agar arsipnya tetap utuh.', 409, 'STATE');
+        }
         db_run($conn, "DELETE FROM project_client WHERE id = ?", [in_int($input, 'id')]);
         echo json_encode(["success" => true]);
         break;
@@ -797,11 +825,14 @@ function authorize_request(mysqli $conn, $action, array &$input) {
 
     $user = authenticate($conn);
     if (!$user) throw new ApiError('Sesi tidak valid atau sudah berakhir. Silakan login kembali.', 401, 'UNAUTHORIZED');
-    // Customers (template buyers) only reach their own customer_* actions; staff never use those
-    if (in_array($action, CUSTOMER_ACTIONS, true)) {
-        if ($user['role'] !== 'customer') throw new ApiError('Akses ditolak: aksi ini khusus akun pembeli.', 403, 'FORBIDDEN');
-    } elseif (!in_array($user['role'], STAFF_ROLES, true)) {
-        throw new ApiError('Akses ditolak.', 403, 'FORBIDDEN');
+    // ANY_ROLE_ACTIONS (notifications, private project files) serve every logged-in role; the handler limits the data
+    // to the caller. Otherwise customers only reach their CUSTOMER_ACTIONS; staff never use those
+    if (!in_array($action, ANY_ROLE_ACTIONS, true)) {
+        if (in_array($action, CUSTOMER_ACTIONS, true)) {
+            if ($user['role'] !== 'customer') throw new ApiError('Akses ditolak: aksi ini khusus akun pembeli.', 403, 'FORBIDDEN');
+        } elseif (!in_array($user['role'], STAFF_ROLES, true)) {
+            throw new ApiError('Akses ditolak.', 403, 'FORBIDDEN');
+        }
     }
     $isAdmin = $user['role'] === 'admin';
     if (in_array($action, ADMIN_ACTIONS, true) && !$isAdmin) throw new ApiError('Akses ditolak: hanya admin.', 403, 'FORBIDDEN');

@@ -3,9 +3,10 @@ FROM node:22-alpine
 # Set UID/GID 1000 for node user (already exists in alpine)
 WORKDIR /app
 
-# Ensure we have the target directory for volumes
+# Ensure we have the target directories for volumes (a new named volume takes over this owner):
+# /data/project-docs = PD_STORAGE_DIR, private project-document files (docker-compose.yml)
 USER root
-RUN mkdir -p /var/www/html && chown -R node:node /var/www/html
+RUN mkdir -p /var/www/html /data/project-docs && chown -R node:node /var/www/html /data/project-docs
 
 # Install deps
 COPY package*.json ./

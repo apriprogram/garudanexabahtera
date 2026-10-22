@@ -8,7 +8,7 @@
 // The branch holds only the built site + the PHP API; source code stays on main.
 
 import { execSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { build } from 'vite';
 
@@ -52,10 +52,13 @@ if (leaked.length) throw new Error(`Folder upload ikut ter-build (harus dikecual
 
 // 2. PHP API next to index.html (api.php finds its .env one level up, outside public_html)
 cpSync(join(ROOT, 'backend', 'api.php'), join(OUT, 'api.php'));
+// PHP modules including their subfolders (modules/project_docs/*.php); the Node .js files stay out.
+// modules/.htaccess below closes the whole tree, subfolders included, to direct web access.
 mkdirSync(join(OUT, 'modules'), { recursive: true });
-for (const file of readdirSync(join(ROOT, 'backend', 'modules')).filter((f) => f.endsWith('.php'))) {
-  cpSync(join(ROOT, 'backend', 'modules', file), join(OUT, 'modules', file));
-}
+cpSync(join(ROOT, 'backend', 'modules'), join(OUT, 'modules'), {
+  recursive: true,
+  filter: (src) => statSync(src).isDirectory() || src.endsWith('.php'),
+});
 writeFileSync(join(OUT, 'modules', '.htaccess'), 'Require all denied\n');
 cpSync(join(ROOT, 'deploy', 'cpanel', 'htaccess'), join(OUT, '.htaccess'));
 

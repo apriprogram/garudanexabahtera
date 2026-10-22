@@ -31,16 +31,21 @@ if (!authConfigured) {
 export const isAuthConfigured = () => authConfigured;
 
 // ── Access policy (same lists as backend/api.php, docs/platform/SPEC.md §2) ──
-// Default deny: an action that is not public needs a valid token. Customer tokens may only call
-// CUSTOMER_ACTIONS; everything else is a staff action (role admin or user), ADMIN_ACTIONS admin only.
+// Default deny: an action that is not public needs a valid token. ANY_ROLE_ACTIONS accept every logged-in role;
+// customer tokens may only call CUSTOMER_ACTIONS; everything else is a staff action (role admin or user),
+// ADMIN_ACTIONS admin only. Project documents (pd_*): docs/platform/PROJECT-DOCS-SPEC.md §5.
 export const PUBLIC_ACTIONS = new Set([
   'get_settings', 'track_visit', 'login', 'register', 'get_list_products', 'get_navbar_menus',
   'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
   'customer_register', 'midtrans_notification', 'get_payment_config',
 ]);
+export const ANY_ROLE_ACTIONS = new Set([
+  'pd_notifications_list', 'pd_notifications_read', 'pd_file',
+]);
 export const CUSTOMER_ACTIONS = new Set([
   'customer_create_order', 'customer_pay_order', 'customer_get_orders', 'customer_get_order',
   'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment',
+  'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
 ]);
 export const ADMIN_ACTIONS = new Set([
   'add_user', 'delete_user',
@@ -49,6 +54,10 @@ export const ADMIN_ACTIONS = new Set([
   'add_changelog', 'update_changelog', 'delete_changelog',
   'admin_delete_template',
   'encrypt_list_products',
+  'pd_client_save', 'pd_client_delete', 'pd_customers_list', 'pd_project_save', 'pd_milestone_delete',
+  'pd_document_change', 'pd_document_sign', 'pd_document_complete', 'pd_document_delete',
+  'pd_invoice_create', 'pd_invoice_update', 'pd_invoice_cancel', 'pd_payment_record', 'pd_payment_delete',
+  'pd_settings_save',
 ]);
 
 const STAFF_ROLES = new Set(['admin', 'user']);
@@ -242,13 +251,16 @@ export function createAuthGate(pool) {
         return res.status(401).json({ error: 'Sesi tidak valid atau sudah berakhir. Silakan login kembali.', code: 'UNAUTHORIZED' });
       }
       req.user = user;
-      // Customers (template buyers) only reach their own customer_* actions; staff never use those
-      if (CUSTOMER_ACTIONS.has(action)) {
-        if (user.role !== 'customer') {
-          return res.status(403).json({ error: 'Akses ditolak: aksi ini khusus akun pembeli.', code: 'FORBIDDEN' });
+      // ANY_ROLE_ACTIONS (notifications, private project files) serve every logged-in role; the handler limits the
+      // data to the caller. Otherwise customers only reach their CUSTOMER_ACTIONS; staff never use those
+      if (!ANY_ROLE_ACTIONS.has(action)) {
+        if (CUSTOMER_ACTIONS.has(action)) {
+          if (user.role !== 'customer') {
+            return res.status(403).json({ error: 'Akses ditolak: aksi ini khusus akun pembeli.', code: 'FORBIDDEN' });
+          }
+        } else if (!STAFF_ROLES.has(user.role)) {
+          return res.status(403).json({ error: 'Akses ditolak.', code: 'FORBIDDEN' });
         }
-      } else if (!STAFF_ROLES.has(user.role)) {
-        return res.status(403).json({ error: 'Akses ditolak.', code: 'FORBIDDEN' });
       }
       const isAdmin = user.role === 'admin';
       if (ADMIN_ACTIONS.has(action) && !isAdmin) {

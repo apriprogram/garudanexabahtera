@@ -1,0 +1,131 @@
+// Editor help per section id, per document type (admin UI copy: Bahasa Indonesia, menyapa "kamu").
+import type { DocType } from '../../types';
+
+const PARTIES =
+  'Identitas para pihak terisi otomatis dari Pengaturan dokumen (perusahaan & penandatangan) dan data klien. Kalau muncul […], lengkapi datanya di sana.';
+const OPENING = 'Hari dan tanggal mengikuti tanggal dokumen. Ubah tanggal dokumen bila penandatanganan dijadwalkan di hari lain.';
+const RECITALS = 'Latar belakang kerja sama dengan huruf a., b., c. Sesuaikan bila ada dokumen rujukan lain.';
+const AYAT = 'Tulis ayat dengan (1), (2), dan huruf a., b. dengan dua spasi di awal baris agar menjorok.';
+const TERMIN = 'Tabel termin ({{#termin}}) dihitung otomatis dari termin dan nilai kontrak proyek. Ubah terminnya di tab Ringkasan.';
+const SCHEDULE = 'Tabel jadwal ({{#jadwal}}) dibuat otomatis dari tab Jadwal, jadi cukup perbarui milestone di sana.';
+const SIGN_CLOSE =
+  'Penutup memuat dasar hukum tanda tangan elektronik. Tanda tangan para pihak dan kotak e-Meterai (nilai kontrak ≥ Rp5.000.000) ditambahkan otomatis.';
+
+export const SECTION_HINTS: Record<DocType, Record<string, string>> = {
+  brd: {
+    informasi: 'Ringkasan identitas proyek. Nilainya terisi otomatis dari data proyek dan klien.',
+    latar_belakang: 'Jelaskan kondisi bisnis klien saat ini dan masalah yang ingin diselesaikan. Deskripsi proyek ({{project.description}}) diambil dari data proyek.',
+    tujuan: 'Tulis tujuan bisnis yang terukur, misalnya "menambah 30% prospek dari website dalam 6 bulan".',
+    ruang_lingkup: 'Ringkasan lingkup ({{project.scope_summary}}) diisi di tab Ringkasan proyek. Tegaskan juga apa yang tidak termasuk.',
+    pemangku_kepentingan: 'Daftar orang yang terlibat beserta perannya. Tambahkan baris bila ada pengguna kunci lain.',
+    kebutuhan_fungsional: 'Satu baris satu kebutuhan. Prioritas: Must have, Should have, Could have, atau Won\'t have.',
+    kebutuhan_non_fungsional: 'Standar mutu: kinerja, keamanan, kompatibilitas, ketersediaan, dan pelindungan data.',
+    asumsi: 'Hal yang dianggap benar dan batasan proyek. Asumsi yang meleset biasanya memengaruhi jadwal atau biaya.',
+    kriteria: 'Kondisi yang harus terpenuhi agar proyek dinyatakan berhasil; dipakai lagi saat UAT.',
+    persetujuan: 'Klien menyetujui BRD lewat portal klien; persetujuan tercatat otomatis beserta waktunya.',
+  },
+  mou: {
+    pembukaan: OPENING,
+    para_pihak: PARTIES,
+    pertimbangan: RECITALS,
+    pasal_1: AYAT,
+    pasal_2: 'Ruang lingkup kerja sama secara garis besar; rinciannya nanti di PKS dan lampirannya.',
+    pasal_3: 'Masa berlaku MoU. Umumnya 3–6 bulan sampai PKS ditandatangani.',
+    pasal_4: 'MoU tidak mengikat soal biaya; nilai di sini hanya perkiraan dari nilai proyek.',
+    pasal_5: 'Klausul kerahasiaan tetap mengikat walaupun MoU tidak mengikat.',
+    pasal_6: 'Menegaskan bahwa MoU adalah kesepakatan awal yang tidak mengikat.',
+    pasal_7: AYAT,
+    pasal_8: 'Penutup dan dasar hukum tanda tangan elektronik. Tanda tangan para pihak ditambahkan otomatis.',
+  },
+  proposal: {
+    pengantar: 'Surat pengantar untuk narahubung klien. Baris yang kosong otomatis disembunyikan.',
+    ringkasan: 'Satu paragraf: apa yang ditawarkan, nilai investasi, dan perkiraan waktu.',
+    pemahaman: 'Tunjukkan bahwa kamu memahami kebutuhan klien. Deskripsi proyek diambil dari data proyek.',
+    solusi: 'Pendekatan dan keunggulan solusi yang ditawarkan.',
+    lingkup: 'Ruang lingkup dari tab Ringkasan proyek dan daftar deliverable.',
+    jadwal: 'Tabel ({{#jadwal_ringkas}}) dibuat otomatis dari tab Jadwal.',
+    biaya: 'Rincian biaya. Baris diawali **Total** tampil tebal sebagai baris total. Nilai kontrak memakai {{project.value_rupiah}}.',
+    termin: TERMIN,
+    masa_berlaku: 'Penawaran berlaku 30 hari sejak tanggal dokumen; tanggal akhirnya dihitung otomatis.',
+    syarat: 'Syarat utama penawaran: mulai kerja, revisi, garansi, hak kode sumber, dan pajak.',
+    penutup: 'Salam penutup dan penanda tangan penawaran dari Pengaturan dokumen.',
+  },
+  pks: {
+    pembukaan: OPENING,
+    para_pihak: PARTIES,
+    pertimbangan: RECITALS,
+    pasal_1: 'Definisi istilah yang dipakai di seluruh perjanjian. Istilah berhuruf tebal dipakai dengan huruf kapital di pasal lain.',
+    pasal_2: 'Ruang lingkup ({{project.scope_summary}}) diisi di tab Ringkasan proyek; rinciannya di Lampiran SOW.',
+    pasal_3: 'Jangka waktu dihitung dari tanggal mulai dan selesai proyek.',
+    pasal_4: 'Nilai kontrak dan terbilang diambil dari nilai proyek.',
+    pasal_5: `${TERMIN} Rekening ({{#rekening}}) diambil dari Pengaturan dokumen.`,
+    pasal_6: AYAT,
+    pasal_7: 'Alur UAT dan serah terima. Batas waktu UAT bisa kamu sesuaikan.',
+    pasal_8: 'Masa garansi 90 hari. Kalimat pemeliharaan menyesuaikan pilihan maintenance di proyek.',
+    pasal_9: 'Kepemilikan kode sumber dan hak portofolio.',
+    pasal_10: AYAT,
+    pasal_11: AYAT,
+    pasal_12: AYAT,
+    pasal_13: 'Sengketa diselesaikan di Pengadilan Negeri kota perusahaan (Pengaturan dokumen).',
+    pasal_14: `${SIGN_CLOSE} Baris {{#tanda_tangan}} menentukan letak tanda tangan, sebelum lampiran.`,
+    lampiran: 'Lampiran SOW dimulai di halaman baru ({{#halaman_baru}}).',
+    sow_deliverable: 'Daftar hasil yang diserahkan.',
+    sow_fitur: 'Fitur dan spesifikasi; sesuaikan dengan BRD yang disetujui.',
+    sow_di_luar: 'Tegaskan pekerjaan yang tidak termasuk agar tidak terjadi salah paham.',
+    sow_asumsi: 'Asumsi dan ketergantungan pada klien atau pihak ketiga.',
+    sow_kriteria: 'Kriteria penerimaan yang dipakai saat UAT dan serah terima.',
+    sow_jadwal: SCHEDULE,
+  },
+  timeline: {
+    informasi: 'Tanggal mulai, target selesai, dan durasi diambil dari data proyek.',
+    jadwal: SCHEDULE,
+    catatan: 'Catatan tentang cara membaca jadwal dan ketergantungan pada klien.',
+    persetujuan: 'Klien menyetujui jadwal lewat portal klien.',
+  },
+  uat: {
+    pembukaan: OPENING,
+    informasi: 'Data pelaksanaan pengujian. Isi lingkungan pengujian dengan alamat staging bila perlu.',
+    skenario: 'Isi kolom Hasil aktual dan Lulus/Gagal (tulis "Lulus" atau "Gagal") saat pengujian. Ringkasan dihitung otomatis dari kolom ini.',
+    ringkasan: 'Jumlah skenario lulus/gagal ({{#ringkasan_uji}}) dihitung otomatis dari tabel skenario.',
+    keputusan: 'Pernyataan penerimaan oleh klien. Klien menyetujui dan menandatangani lewat portal klien.',
+  },
+  bast: {
+    pembukaan: OPENING,
+    pihak_pertama: 'Penanda tangan perusahaan dari Pengaturan dokumen.',
+    pihak_kedua: 'Penerima dari data klien (narahubung untuk perusahaan).',
+    dasar: 'Daftar hasil pekerjaan yang diserahkan. Sesuaikan dengan deliverable di Lampiran SOW.',
+    pernyataan: 'Pernyataan penerimaan dan peralihan tanggung jawab.',
+    garansi: 'Tanggal akhir garansi dihitung otomatis 90 hari dari tanggal dokumen.',
+    penutup: 'Tanda tangan para pihak dan kotak e-Meterai (nilai kontrak ≥ Rp5.000.000) ditambahkan otomatis.',
+  },
+  invoice: {
+    info: 'Tanggal dan jatuh tempo mengikuti data invoice.',
+    tagihan: 'Alamat penagihan dari data klien. Baris yang kosong otomatis disembunyikan.',
+    rincian: 'Item, total, pajak, dan terbilang ({{#rincian_invoice}}, {{#total_invoice}}) dihitung otomatis dari form invoice.',
+    keterangan: 'Keterangan termin terisi otomatis; catatan invoice dan PPh 23 muncul bila ada.',
+    pembayaran: 'Rekening ({{#rekening}}) diambil dari Pengaturan dokumen.',
+    status: 'Status dan sisa tagihan mengikuti pembayaran yang tercatat.',
+    penutup: 'Catatan bahwa invoice sah tanpa tanda tangan.',
+  },
+  receipt: {
+    penerimaan: 'Data pembayaran diambil otomatis dari pembayaran yang dicatat.',
+    nominal: 'Kotak nominal ({{#nominal}}) memakai jumlah pembayaran.',
+    catatan: 'Keterangan keabsahan kuitansi elektronik. Kota, tanggal, dan penerima ditambahkan otomatis.',
+  },
+  sla: {
+    pembukaan: OPENING,
+    para_pihak: PARTIES,
+    pertimbangan: RECITALS,
+    pasal_1: 'Definisi istilah layanan.',
+    pasal_2: 'Layanan yang termasuk dalam biaya pemeliharaan.',
+    pasal_3: 'Jam layanan diambil dari Pengaturan dokumen saat dokumen dibuat.',
+    pasal_4: 'Tabel prioritas diambil dari Pengaturan dokumen saat dokumen dibuat; kamu bisa mengubahnya di sini.',
+    pasal_5: 'Target uptime diambil dari Pengaturan dokumen saat dokumen dibuat.',
+    pasal_6: 'Hal yang tidak ditanggung layanan pemeliharaan.',
+    pasal_7: 'Biaya dan periode diambil dari pengaturan maintenance di tab Ringkasan proyek.',
+    pasal_8: 'Laporan bulanan dan jenjang eskalasi.',
+    pasal_9: 'Kompensasi bila target uptime tidak tercapai.',
+    pasal_10: 'Tanggal mulai dan akhir maintenance diambil dari data proyek.',
+    pasal_11: SIGN_CLOSE,
+  },
+};

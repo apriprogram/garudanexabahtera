@@ -1,9 +1,10 @@
 // Project Clients (/admin/project-clients): pengelolaan proyek custom (dipindah dari Dashboard) + toggle
 // "Tampilkan di website" (show_on_website) dan badge "Dari website" (source = website). SPEC §6, §9.
-// Query: ?new=1 membuka form proyek baru (dipakai tombol "Tambah proyek" di Dashboard), ?filter=website = pesanan baru dari website.
+// Query: ?new=1 membuka form proyek baru (dipakai tombol "Tambah proyek" di Dashboard), ?filter=website = pesanan baru dari website,
+// ?edit=<id> membuka form edit proyek itu (tautan "Atur jadwal" dari workspace dokumen proyek).
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Briefcase, Clock, Edit2, Eye, Globe, Inbox, Plus, RotateCw, Trash2 } from 'lucide-react';
+import { Briefcase, Clock, Edit2, Eye, FolderKanban, Globe, Inbox, Plus, RotateCw, Trash2 } from 'lucide-react';
 import {
   Button,
   ConfirmDialog,
@@ -100,6 +101,18 @@ export default function ProjectClients() {
     (p) => matchesFilter(p, filter) && (!term || [p.name, p.client_name, p.client_email, p.client_phone].some((v) => v.toLowerCase().includes(term))),
   );
 
+  // ?edit=<id>: form edit proyek itu dibuka sekali setelah daftar termuat; param dihapus saat form ditutup
+  const editParam = Number(searchParams.get('edit')) || null;
+  const [editHandled, setEditHandled] = useState<number | null>(null);
+  if (editParam && editHandled !== editParam) {
+    const target = projects.find((p) => p.id === editParam);
+    if (target) {
+      setEditHandled(editParam);
+      setEditing(target);
+      setEditOpen(true);
+    }
+  }
+
   // Drawer form: ?new=1 = proyek baru, editOpen = edit proyek
   const formOpen = createOpen || editOpen;
   // Proyek di form tetap sama selama animasi tutup (judul tidak berganti)
@@ -119,7 +132,12 @@ export default function ProjectClients() {
   };
   const closeForm = () => {
     setEditOpen(false);
-    if (createOpen) setParam('new', null);
+    if (createOpen || editParam) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('new');
+      next.delete('edit');
+      setSearchParams(next, { replace: true });
+    }
   };
   const openView = (project: Project) => {
     setViewing(project);
@@ -190,6 +208,8 @@ export default function ProjectClients() {
 
   const projectActions = (project: Project) => (
     <>
+      {/* Workspace dokumen proyek: BRD, penawaran, kontrak, jadwal, UAT, BAST, invoice (PROJECT-DOCS-SPEC §7) */}
+      <IconButton icon={<FolderKanban />} label="Buka workspace" size="sm" to={`/admin/proyek/${project.id}`} />
       <IconButton icon={<Eye />} label="Lihat detail" size="sm" onClick={() => openView(project)} />
       <IconButton icon={<Edit2 />} label="Edit proyek" size="sm" onClick={() => openEdit(project)} />
       <IconButton icon={<Trash2 />} label="Hapus proyek" size="sm" variant="danger-ghost" onClick={() => setToDelete(project)} />

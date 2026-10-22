@@ -32,10 +32,13 @@ import { handleProjectFileAction } from './modules/project_files.js';
 // Home page hero background: raw video upload (upload_hero_video), its limits (get_hero_media_limits) and the
 // hero_bg_* / hero_images settings
 import { handleHeroMediaAction, prepareHeroMediaSettings } from './modules/hero_media.js';
+// Project documents & agreements, pd_* actions (docs/platform/PROJECT-DOCS-SPEC.md)
+import { handleProjectDocsAction } from './modules/project_docs.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = 4000;
+// PORT is for local runs and tests; Docker exposes 4000
+const PORT = Number(process.env.PORT) || 4000;
 
 // ── AI Setup ── (OpenAI-compatible API; Ollama on the docker host by default)
 const AI_MODEL = process.env.AI_MODEL || 'qwen2.5:3b';
@@ -133,6 +136,21 @@ async function trackVisit(req, input) {
   );
 }
 
+// A project with project documents (signed contracts, invoices, receipts, pd_*) is an archive: deleting it would
+// orphan them for the client and the admin alike (same rule and message as delete_project in api.php)
+async function deleteProject(id, res) {
+  const [docs] = await pool.query('SELECT id FROM pd_documents WHERE project_id = ? LIMIT 1', [id]);
+  if (docs.length) {
+    res.status(409).json({
+      error: 'Proyek ini sudah punya dokumen proyek (BRD, kontrak, invoice, atau kuitansi), jadi tidak bisa dihapus agar arsipnya tetap utuh.',
+      code: 'STATE',
+    });
+    return;
+  }
+  await pool.query('DELETE FROM project_client WHERE id = ?', [id]);
+  res.json({ success: true });
+}
+
 // ── GET /api.php?action=get_settings ──
 app.get('/api.php', async (req, res) => {
   const action = req.query.action;
@@ -143,11 +161,14 @@ app.get('/api.php', async (req, res) => {
   if (await handleProjectFileAction(action, req.query, req, res)) return;
   // get_hero_media_limits; a GET upload_hero_video is not handled there and falls through to "Invalid action"
   if (await handleHeroMediaAction(actionOf(req), req, res, pool)) return;
+  if (await handleProjectDocsAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
     try {
-      const [rows] = await pool.query('SELECT setting_key, setting_value FROM hero_settings');
+      // Public: pd_* keys (company identity, tax, payment terms of the project documents) are read through
+      // pd_settings_get only; the comparison follows the column's case-insensitive collation
+      const [rows] = await pool.query("SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_'");
       const settings = {};
       for (const row of rows) {
         settings[row.setting_key] = row.setting_value;
@@ -344,8 +365,7 @@ app.get('/api.php', async (req, res) => {
     const id = parseInt(req.query.id, 10);
     if (!id) return res.status(400).json({ error: 'Invalid id' });
     try {
-      await pool.query('DELETE FROM project_client WHERE id = ?', [id]);
-      res.json({ success: true });
+      await deleteProject(id, res);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -379,6 +399,7 @@ app.post('/api.php', async (req, res) => {
   if (await handlePlatformAction(action, req.body, req, res, pool)) return;
   if (await handleListProductAction(action, req.body, req, res, pool)) return;
   if (await handleProjectFileAction(action, req.body, req, res)) return;
+  if (await handleProjectDocsAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {
@@ -410,7 +431,19 @@ app.post('/api.php', async (req, res) => {
       }
 
       case 'update_settings': {
-        const settings = inputSettings || {};
+        const settings = inputSettings !== null && typeof inputSettings === 'object' ? inputSettings : {};
+        // pd_* settings are admin-only and validated per field: pd_settings_save (backend/modules/project_docs.js)
+        if (Object.keys(settings).some((key) => key.toLowerCase().startsWith('pd_'))) {
+          res.status(403).json({ error: 'Pengaturan dokumen proyek hanya bisa diubah lewat Pengaturan dokumen.', code: 'FORBIDDEN' });
+          return;
+        }
+        // ASCII names only, like api.php: setting_key compares with utf8mb4_unicode_ci, where "ｐd_company" or a
+        // zero-width character + "pd_company" equal "pd_company", so ON DUPLICATE KEY UPDATE would overwrite it
+        const badKey = Object.keys(settings).find((key) => !/^[A-Za-z0-9_]{1,100}\n?$/.test(key));
+        if (badKey !== undefined) {
+          res.status(400).json({ error: `Nama setting tidak valid: ${badKey}` });
+          return;
+        }
         const errors = [];
         // ── hero_bg_mode, hero_bg_video, hero_bg_video_poster, hero_images ── (modules/hero_media.js)
         // First, so a refused hero value (stale tab, data: video, SVG poster) stops the save before any upload;
@@ -729,8 +762,7 @@ app.post('/api.php', async (req, res) => {
       case 'delete_project': {
         const id = parseInt(input.id, 10);
         if (!id) return res.status(400).json({ error: 'Invalid id' });
-        await pool.query('DELETE FROM project_client WHERE id = ?', [id]);
-        res.json({ success: true });
+        await deleteProject(id, res);
         return;
       }
 

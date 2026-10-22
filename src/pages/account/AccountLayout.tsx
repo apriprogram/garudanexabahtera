@@ -1,15 +1,17 @@
 // Kerangka halaman akun pembeli (/akun/*). Penjaga akses (SPEC §2): tanpa sesi → /masuk?next=...,
-// staf (admin/user) → /admin. Header terang: logo, "Pesanan saya", "Lihat Template", menu pengguna (keluar).
+// staf (admin/user) → /admin. Header terang: logo, "Pesanan saya", "Proyek saya", "Lihat Template", lonceng notifikasi,
+// menu pengguna (keluar).
 // <Outlet /> tidak diberi lebar/padding: tiap halaman (AccountHome, AccountOrderDetail, SiteEditor) mengatur sendiri.
 // Header sticky setinggi 64px (h-16) + safe-area atas; elemen sticky di halaman anak memakai top-16 atau lebih.
 // Di HP ada baris tab di bawah header yang ikut tergulir (tidak sticky).
 // "Lewati ke konten" (SkipLink) = elemen fokus pertama, menuju <main id="konten-akun">.
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { ChevronDown, LayoutTemplate, LogOut, ReceiptText } from 'lucide-react';
+import { ChevronDown, FolderKanban, LayoutTemplate, LogOut, ReceiptText } from 'lucide-react';
 import { BrandLogo } from '../../components/ui/LogoMark';
 import { SkipLink } from '../../components/ui/SkipLink';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { NotificationBell } from '../../features/project-docs/notifications/NotificationBell';
 import { customerLoginPath, getCurrentUser, getRole, logout, type SessionUser } from '../../lib/auth';
 import { confirmLeave } from './cms/useLeaveGuard';
 import { accountHelpMessage, helpWhatsappUrl } from './components/orderCopy';
@@ -57,14 +59,15 @@ function AccountFooter() {
   );
 }
 
+/** Menu akun; `match` = halaman yang membuat item aktif. Proyek saya = dokumen proyek custom (PROJECT-DOCS-SPEC §7). */
 const NAV = [
-  { to: '/akun', label: 'Pesanan saya', icon: ReceiptText, end: true },
-  { to: '/#templates', label: 'Lihat Template', icon: LayoutTemplate, end: false },
+  { to: '/akun', label: 'Pesanan saya', icon: ReceiptText, match: (p: string) => p === '/akun' || p.startsWith('/akun/pesanan') },
+  { to: '/akun/proyek', label: 'Proyek saya', icon: FolderKanban, match: (p: string) => p === '/akun/proyek' || p.startsWith('/akun/proyek/') },
+  { to: '/#templates', label: 'Lihat Template', icon: LayoutTemplate, match: () => false },
 ];
 
 function AccountHeader({ user }: { user: SessionUser | null }) {
   const { pathname } = useLocation();
-  const isOrdersArea = pathname === '/akun' || pathname.startsWith('/akun/pesanan');
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-surface/85">
@@ -75,7 +78,7 @@ function AccountHeader({ user }: { user: SessionUser | null }) {
 
         <nav aria-label="Menu akun" className="ml-4 hidden items-center gap-1 md:flex">
           {NAV.map((item) => {
-            const active = item.end && isOrdersArea;
+            const active = item.match(pathname);
             return (
               <Link
                 key={item.to}
@@ -92,7 +95,8 @@ function AccountHeader({ user }: { user: SessionUser | null }) {
           })}
         </nav>
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <NotificationBell variant="account" />
           <UserMenu user={user} />
         </div>
       </div>
@@ -100,25 +104,25 @@ function AccountHeader({ user }: { user: SessionUser | null }) {
   );
 }
 
-/** Tab "Pesanan saya" / "Lihat template" di HP (< 768px), di bawah header dan ikut tergulir. */
+/** Tab "Pesanan saya" / "Proyek saya" / "Lihat Template" di HP (< 768px), di bawah header dan ikut tergulir. */
 function MobileTabs() {
   const { pathname } = useLocation();
-  const isOrdersArea = pathname === '/akun' || pathname.startsWith('/akun/pesanan');
   return (
     <nav aria-label="Menu akun" className="border-b border-line bg-surface md:hidden">
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-1 px-5 py-2">
+      <div className="mx-auto grid max-w-6xl grid-cols-3 gap-1 px-5 py-2">
         {NAV.map((item) => {
-          const active = item.end && isOrdersArea;
+          const active = item.match(pathname);
           return (
             <Link
               key={item.to}
               to={item.to}
               aria-current={active ? 'page' : undefined}
-              className={`inline-flex h-9 items-center justify-center gap-2 rounded-full text-[13px] font-medium transition-colors ${
+              className={`inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-1 text-[13px] font-medium transition-colors ${
                 active ? 'bg-brand-50 text-brand-700' : 'text-muted hover:bg-alt hover:text-fg'
               }`}
             >
-              <item.icon className="h-4 w-4" aria-hidden />
+              {/* Ikon hanya bila muat: tiga tab di layar 360px */}
+              <item.icon className="h-4 w-4 shrink-0 max-[419px]:hidden" aria-hidden />
               {item.label}
             </Link>
           );

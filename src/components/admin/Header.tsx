@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, CalendarDays, ChevronDown, ChevronRight, Eye, HelpCircle, LogOut, Menu, Moon, Sun, User } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronRight, Eye, HelpCircle, LogOut, Menu, Moon, Sun, User } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { logout } from '../../lib/auth';
 import { getAdminCrumbs } from './nav';
+import { NotificationBell } from '../../features/project-docs/notifications/NotificationBell';
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt';
 const iconBtn = `relative flex h-10 w-10 items-center justify-center rounded-xl text-adm-muted transition-colors hover:bg-adm-hover hover:text-adm-fg max-sm:h-9 max-sm:w-9 max-sm:after:absolute max-sm:after:-inset-1 ${focusRing}`;
@@ -157,9 +158,8 @@ const Header: React.FC = () => {
           >
             {theme === 'light' ? <Moon className="h-[18px] w-[18px]" strokeWidth={1.75} /> : <Sun className="h-[18px] w-[18px]" strokeWidth={1.75} />}
           </button>
-          <button type="button" aria-label="Notifikasi" title="Notifikasi" className={iconBtn}>
-            <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
-          </button>
+          {/* Notifikasi dokumen proyek (persetujuan, jatuh tempo): src/features/project-docs/notifications */}
+          <NotificationBell variant="admin" />
 
           <div ref={menuRef} className="relative ml-1">
             <button

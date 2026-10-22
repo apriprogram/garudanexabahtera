@@ -53,3 +53,6 @@ public/assets/bg/hero_????????????.*
 # Dokumen & logo klien (upload dari admin): tetap di server/disk lokal, jangan masuk repo publik.
 # File lama yang sudah ter-track tidak ikut terhapus oleh aturan ini.
 public/assets/dokumen-client/
+
+# Penyimpanan privat dokumen proyek (tanda tangan elektronik, bukti bayar): di luar web root, jangan di-commit
+storage/

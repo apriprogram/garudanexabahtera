@@ -7,6 +7,8 @@ import { IconBox, IconButton, Input, cn, FOCUS } from './ui';
 
 /* Posisi melayang kanan-bawah, aman untuk notch/home indicator. */
 const FLOAT_POS = 'bottom-[max(16px,calc(env(safe-area-inset-bottom)+8px))] right-[max(16px,env(safe-area-inset-right))]';
+/* Di bawah Modal/Drawer (z-100): tombol melayang tidak boleh menutupi tombol aksi di footer drawer. */
+const FLOAT_LAYER = 'z-[90]';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -71,8 +73,9 @@ const AIChatWidget: React.FC = () => {
             onClick={() => setIsOpen(true)}
             aria-label="Garuda Nexa AI"
             className={cn(
-              'fixed z-[9999] flex h-14 w-14 items-center justify-center rounded-full bg-cobalt text-white shadow-float transition-colors duration-150 hover:bg-cobalt-600 max-sm:h-12 max-sm:w-12',
+              'fixed flex h-14 w-14 items-center justify-center rounded-full bg-cobalt text-white shadow-float transition-colors duration-150 hover:bg-cobalt-600 max-sm:h-12 max-sm:w-12',
               FLOAT_POS,
+              FLOAT_LAYER,
               FOCUS,
             )}
           >
@@ -94,8 +97,9 @@ const AIChatWidget: React.FC = () => {
             exit={{ opacity: 0, scale: 0.85, y: 15, transition: { duration: 0.12 } }}
             transition={{ type: 'spring', stiffness: 350, damping: 25, mass: 0.8 }}
             className={cn(
-              'fixed z-[9999] flex flex-col overflow-hidden rounded-[24px] bg-adm-surface text-adm-fg shadow-float ring-1 ring-adm-line',
+              'fixed flex flex-col overflow-hidden rounded-[24px] bg-adm-surface text-adm-fg shadow-float ring-1 ring-adm-line',
               FLOAT_POS,
+              FLOAT_LAYER,
               'sm:w-[420px] lg:w-[480px]',
               // HP: bottom-sheet penuh lebar
               'max-sm:inset-x-0 max-sm:bottom-0 max-sm:w-full max-sm:rounded-b-none',
