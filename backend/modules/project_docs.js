@@ -21,9 +21,10 @@
 //
 // Conventions: success → HTTP 200 + {success: true, ...data}; failure → {error, code?, errors?} with 400 VALIDATION,
 // 401, 403 FORBIDDEN, 404 NOT_FOUND, 409 LOCKED / DUPLICATE / STATE. Every action runs on one pooled connection (like
-// PHP's single mysqli connection: transactions and LAST_INSERT_ID() need it); every state change runs in a
+// PHP's single mysqli connection: transactions and LAST_INSERT_ID() need it) in the MySQL session time zone
+// PD_DB_TIME_ZONE (Jakarta), reset before the connection goes back to the pool; every state change runs in a
 // transaction and writes pd_activity.
-import { PdError } from './project_docs/core.js';
+import { PD_DB_TIME_ZONE, PdError } from './project_docs/core.js';
 import {
   pdActDocumentChange,
   pdActDocumentComplete,
@@ -118,6 +119,7 @@ export async function handleProjectDocsAction(action, input, req, res, pool) {
   let db = null;
   try {
     db = await pool.getConnection();
+    await db.query({ sql: 'SET time_zone = ?', values: [PD_DB_TIME_ZONE] });
     const ctx = { db, req, res, settings: null };
     const body = input !== null && typeof input === 'object' && !Array.isArray(input) ? input : {};
     const data = await HANDLERS[name](ctx, body, req.user || null);
@@ -126,9 +128,20 @@ export async function handleProjectDocsAction(action, input, req, res, pool) {
   } catch (err) {
     sendError(res, err, name);
   } finally {
-    db?.release();
+    if (db) await releaseConnection(db);
   }
   return true;
+}
+
+// The pooled connection goes back with the server's own time zone (the other handlers of server.js share the pool);
+// one that cannot be reset is closed instead
+async function releaseConnection(db) {
+  try {
+    await db.query({ sql: 'SET time_zone = DEFAULT' });
+    db.release();
+  } catch {
+    db.destroy();
+  }
 }
 
 function sendError(res, err, action) {

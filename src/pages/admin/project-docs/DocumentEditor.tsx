@@ -628,12 +628,18 @@ export default function DocumentEditor() {
           documentId={doc.id}
           documentLabel={label}
           version={doc.version}
+          contentHash={doc.content_hash}
           companyName={doc.merge.company.name}
           defaultName={settings?.company.signatory_name || doc.merge.company.signatory_name}
           defaultTitle={settings?.company.signatory_title || doc.merge.company.signatory_title}
           onSigned={(res) => {
             setSignOpen(false);
             show('success', res.status === 'selesai' ? 'Dokumen ditandatangani kedua pihak dan selesai.' : 'Dokumen berhasil ditandatangani.');
+            query.reload();
+          }}
+          onConflict={(message) => {
+            setSignOpen(false);
+            show('error', message);
             query.reload();
           }}
         />

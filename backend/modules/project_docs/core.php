@@ -6,6 +6,10 @@
 
 const PD_JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE;
 const PD_TIMEZONE = 'Asia/Jakarta';
+// MySQL session time zone of every pd_* request: NOW() and TIMESTAMP columns (signed_at "… WIB", approvals,
+// notifications) are Jakarta wall-clock time whatever zone the server runs in (MySQL in Docker defaults to UTC).
+// An offset, because named zones need the time zone tables; Asia/Jakarta has no daylight saving.
+const PD_DB_TIME_ZONE = '+07:00';
 const PD_MONEY_MAX = 1000000000000;   // 1e12 rupiah (spec §5 validation)
 const PD_CONTENT_MAX_BYTES = 262144;  // DocContent as JSON, 256 KB (spec §4.1)
 
@@ -221,6 +225,25 @@ function pd_int_in(array $input, string $key, string $label, int $min, int $max,
 
 function pd_is_list($value): bool {
     return is_array($value) && ($value === [] || array_keys($value) === range(0, count($value) - 1));
+}
+
+// Optional `content_hash` of the version the caller reviewed (approve/reject/sign); null when absent
+function pd_seen_hash(array $input, array &$errors): ?string {
+    $raw = $input['content_hash'] ?? null;
+    if ($raw === null || $raw === '') return null;
+    if (!is_string($raw) || !preg_match('/^[0-9a-f]{64}$/D', $raw)) {
+        $errors['content_hash'] = 'Versi dokumen tidak valid.';
+        return null;
+    }
+    return $raw;
+}
+
+// A decision or signature binds to the frozen content the person saw: when the document was withdrawn, edited or
+// re-frozen meanwhile (same version number, other content hash), they must look at it again first
+function pd_check_seen_hash(array $d, ?string $seen): void {
+    if ($seen !== null && $seen !== (string)$d['content_hash']) {
+        throw pd_conflict('Isi dokumen sudah berubah sejak halaman ini dibuka. Muat ulang dan periksa isinya sebelum menyetujui atau menandatangani.', 'STATE');
+    }
 }
 
 // LIKE pattern for a search text (wildcards in the text are matched literally)

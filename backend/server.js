@@ -33,7 +33,8 @@ import { handleProjectDocsAction } from './modules/project_docs.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = 4000;
+// PORT is for local runs and tests; Docker exposes 4000
+const PORT = Number(process.env.PORT) || 4000;
 
 // ── AI Setup ── (OpenAI-compatible API; Ollama on the docker host by default)
 const AI_MODEL = process.env.AI_MODEL || 'qwen2.5:3b';
@@ -129,6 +130,21 @@ async function trackVisit(req, input) {
      VALUES (?, ?, ?, ?, ?, ?, NOW())`,
     [ip, ua, device, browser, os, country]
   );
+}
+
+// A project with project documents (signed contracts, invoices, receipts, pd_*) is an archive: deleting it would
+// orphan them for the client and the admin alike (same rule and message as delete_project in api.php)
+async function deleteProject(id, res) {
+  const [docs] = await pool.query('SELECT id FROM pd_documents WHERE project_id = ? LIMIT 1', [id]);
+  if (docs.length) {
+    res.status(409).json({
+      error: 'Proyek ini sudah punya dokumen proyek (BRD, kontrak, invoice, atau kuitansi), jadi tidak bisa dihapus agar arsipnya tetap utuh.',
+      code: 'STATE',
+    });
+    return;
+  }
+  await pool.query('DELETE FROM project_client WHERE id = ?', [id]);
+  res.json({ success: true });
 }
 
 // ── GET /api.php?action=get_settings ──
@@ -343,8 +359,7 @@ app.get('/api.php', async (req, res) => {
     const id = parseInt(req.query.id, 10);
     if (!id) return res.status(400).json({ error: 'Invalid id' });
     try {
-      await pool.query('DELETE FROM project_client WHERE id = ?', [id]);
-      res.json({ success: true });
+      await deleteProject(id, res);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -406,10 +421,17 @@ app.post('/api.php', async (req, res) => {
       }
 
       case 'update_settings': {
-        const settings = inputSettings || {};
+        const settings = inputSettings !== null && typeof inputSettings === 'object' ? inputSettings : {};
         // pd_* settings are admin-only and validated per field: pd_settings_save (backend/modules/project_docs.js)
         if (Object.keys(settings).some((key) => key.toLowerCase().startsWith('pd_'))) {
           res.status(403).json({ error: 'Pengaturan dokumen proyek hanya bisa diubah lewat Pengaturan dokumen.', code: 'FORBIDDEN' });
+          return;
+        }
+        // ASCII names only, like api.php: setting_key compares with utf8mb4_unicode_ci, where "ｐd_company" or a
+        // zero-width character + "pd_company" equal "pd_company", so ON DUPLICATE KEY UPDATE would overwrite it
+        const badKey = Object.keys(settings).find((key) => !/^[A-Za-z0-9_]{1,100}\n?$/.test(key));
+        if (badKey !== undefined) {
+          res.status(400).json({ error: `Nama setting tidak valid: ${badKey}` });
           return;
         }
         const errors = [];
@@ -736,8 +758,7 @@ app.post('/api.php', async (req, res) => {
       case 'delete_project': {
         const id = parseInt(input.id, 10);
         if (!id) return res.status(400).json({ error: 'Invalid id' });
-        await pool.query('DELETE FROM project_client WHERE id = ?', [id]);
-        res.json({ success: true });
+        await deleteProject(id, res);
         return;
       }
 

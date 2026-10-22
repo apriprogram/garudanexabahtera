@@ -542,6 +542,7 @@ export interface Payment {
   reference: string | null;
   /** pd_file reference `pdfile:proof:<id>`, null without proof */
   proof_url: string | null;
+  /** internal note of the admin; always null in the customer's view (pd_my_document) */
   note: string | null;
   receipt_document_id: number | null;
   receipt_number: string | null;
@@ -890,6 +891,8 @@ export interface DocumentSignRequest {
   signature: SignatureInput;
   signer_name: string;
   signer_title: string;
+  /** DocDetail.content_hash the admin reviewed; 409 STATE when the document changed since */
+  content_hash?: string;
 }
 export type DocumentSignResponse = DocumentStateResponse;
 
@@ -1011,6 +1014,8 @@ export interface MyDocumentDecideRequest {
   signature?: SignatureInput;
   signer_name?: string;
   signer_title?: string;
+  /** DocDetail.content_hash the customer reviewed; 409 STATE when the document changed since */
+  content_hash?: string;
 }
 export type MyDocumentDecideResponse = DocumentStateResponse;
 

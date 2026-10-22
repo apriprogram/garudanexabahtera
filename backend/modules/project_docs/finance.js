@@ -182,6 +182,9 @@ export async function pdActInvoiceUpdate(ctx, input, user) {
   const contentJson = pdJson(v.content);
 
   const version = await pdTx(ctx, async () => {
+    // The project row first, like pd_invoice_create: the "term billed once" check below is then atomic, also
+    // against a parallel update that moves another draft onto the same term
+    if (!(await dbOne(ctx, 'SELECT id FROM project_client WHERE id = ? FOR UPDATE', [Number(current.project_id)]))) throw pdNotFound('Proyek');
     const invoice = await pdInvoiceRow(ctx, id, true);
     if (!invoice) throw pdNotFound('Invoice');
     if (invoice.payment_status === 'dibatalkan') throw pdConflict('Invoice yang dibatalkan tidak bisa diubah.', 'STATE');

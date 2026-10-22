@@ -212,7 +212,7 @@ function DocumentView({
     setApproving(true);
     setApproveError(null);
     try {
-      await afterDecision(await pdMyDocumentDecide({ id: doc.id, decision: 'approved' }), false);
+      await afterDecision(await pdMyDocumentDecide({ id: doc.id, decision: 'approved', content_hash: doc.content_hash ?? undefined }), false);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) await onConflict(err.message);
       else setApproveError(`Gagal menyetujui dokumen: ${errorMessage(err, 'kesalahan tidak diketahui')}`);

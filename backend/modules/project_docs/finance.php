@@ -145,7 +145,10 @@ function pd_act_invoice_update(mysqli $conn, array $input, ?array $user): array 
     pd_fail($errors);
     $contentJson = pd_json($v['content']);
 
-    $version = pd_tx($conn, function () use ($conn, $user, $id, $v, $contentJson) {
+    $version = pd_tx($conn, function () use ($conn, $user, $id, $v, $contentJson, $current) {
+        // The project row first, like pd_invoice_create: the "term billed once" check below is then atomic, also
+        // against a parallel update that moves another draft onto the same term
+        if (!db_one($conn, "SELECT id FROM project_client WHERE id = ? FOR UPDATE", [(int)$current['project_id']])) throw pd_not_found('Proyek');
         $invoice = pd_invoice_row($conn, $id, true);
         if (!$invoice) throw pd_not_found('Invoice');
         if ($invoice['payment_status'] === 'dibatalkan') throw pd_conflict('Invoice yang dibatalkan tidak bisa diubah.', 'STATE');

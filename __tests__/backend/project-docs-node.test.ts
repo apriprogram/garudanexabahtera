@@ -50,6 +50,8 @@ function stubPool(respond: Responder = () => []) {
   const conn = {
     query: vi.fn(async (q: { sql: string; values: unknown[] }) => {
       const sql = squash(q.sql);
+      // the session time zone that handleProjectDocsAction sets and resets is no data access
+      if (sql.startsWith('SET time_zone')) return [[]];
       queries.push({ sql, params: q.values });
       return [respond(sql, q.values)];
     }),

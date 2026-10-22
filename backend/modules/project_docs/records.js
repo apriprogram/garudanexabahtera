@@ -415,20 +415,21 @@ function pdSignatureOut(s, customer) {
   };
 }
 
-function pdPaymentOut(pay) {
+// Customers do not see the payment note: the admin form asks for an internal note
+function pdPaymentOut(pay, customer) {
   return {
     id: Number(pay.id), invoice_id: Number(pay.invoice_id), amount: pdNum(pay.amount), paid_at: pay.paid_at,
     method: pay.method, reference: pay.reference, proof_url: pay.proof_file ? `pdfile:proof:${pay.id}` : null,
-    note: pay.note, receipt_document_id: pdIntOrNull(pay.receipt_document_id), receipt_number: pay.receipt_number,
+    note: customer ? null : pay.note, receipt_document_id: pdIntOrNull(pay.receipt_document_id), receipt_number: pay.receipt_number,
     recorded_by: Number(pay.recorded_by), recorded_by_name: pay.recorded_by_name, created_at: pay.created_at,
   };
 }
 
 // Payments of an invoice, oldest first
-async function pdPaymentsOf(ctx, invoiceId) {
+async function pdPaymentsOf(ctx, invoiceId, customer) {
   return (await dbAll(ctx, `SELECT pay.*, r.number AS receipt_number, u.name AS recorded_by_name
         FROM pd_payments pay LEFT JOIN pd_documents r ON r.id = pay.receipt_document_id LEFT JOIN users u ON u.id = pay.recorded_by
-        WHERE pay.invoice_id = ? ORDER BY pay.paid_at, pay.id`, [invoiceId])).map(pdPaymentOut);
+        WHERE pay.invoice_id = ? ORDER BY pay.paid_at, pay.id`, [invoiceId])).map((pay) => pdPaymentOut(pay, customer));
 }
 
 // The invoice a document shows: its own (invoice) or the paid one (receipt), with number and doc_status
@@ -527,7 +528,7 @@ async function pdMergeFor(ctx, b, d, signatureRows) {
   return merge;
 }
 
-// DocDetail; customers get no revisions and no audit data (ip, user agent)
+// DocDetail; customers get no revisions, no audit data (ip, user agent) and no internal payment notes
 export async function pdDocumentDetail(ctx, d, today, customer) {
   const b = await pdBundle(ctx, Number(d.project_id));
   if (!b) throw pdNotFound('Proyek');
@@ -558,7 +559,7 @@ export async function pdDocumentDetail(ctx, d, today, customer) {
   };
   const invoice = await pdDocInvoice(ctx, b, d);
   if (invoice) out.invoice = pdInvoiceDetail(invoice, b.p, today);
-  if (invoice && d.doc_type === 'invoice') out.payments = await pdPaymentsOf(ctx, Number(invoice.id));
+  if (invoice && d.doc_type === 'invoice') out.payments = await pdPaymentsOf(ctx, Number(invoice.id), customer);
   return out;
 }
 

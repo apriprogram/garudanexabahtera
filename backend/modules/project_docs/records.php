@@ -432,18 +432,22 @@ function pd_signature_out(array $s, bool $customer): array {
     ];
 }
 
-function pd_payment_out(array $pay): array {
+// Customers do not see the payment note: the admin form asks for an internal note
+function pd_payment_out(array $pay, bool $customer): array {
     return [
         'id' => (int)$pay['id'], 'invoice_id' => (int)$pay['invoice_id'], 'amount' => pd_num($pay['amount']), 'paid_at' => $pay['paid_at'],
         'method' => $pay['method'], 'reference' => $pay['reference'], 'proof_url' => $pay['proof_file'] ? 'pdfile:proof:' . $pay['id'] : null,
-        'note' => $pay['note'], 'receipt_document_id' => pd_int_or_null($pay['receipt_document_id']), 'receipt_number' => $pay['receipt_number'],
-        'recorded_by' => (int)$pay['recorded_by'], 'recorded_by_name' => $pay['recorded_by_name'], 'created_at' => $pay['created_at'],
+        'note' => $customer ? null : $pay['note'], 'receipt_document_id' => pd_int_or_null($pay['receipt_document_id']),
+        'receipt_number' => $pay['receipt_number'], 'recorded_by' => (int)$pay['recorded_by'], 'recorded_by_name' => $pay['recorded_by_name'],
+        'created_at' => $pay['created_at'],
     ];
 }
 
 // Payments of an invoice, oldest first
-function pd_payments_of(mysqli $conn, int $invoiceId): array {
-    return array_map('pd_payment_out', db_all($conn, "SELECT pay.*, r.number AS receipt_number, u.name AS recorded_by_name
+function pd_payments_of(mysqli $conn, int $invoiceId, bool $customer): array {
+    return array_map(function ($pay) use ($customer) {
+        return pd_payment_out($pay, $customer);
+    }, db_all($conn, "SELECT pay.*, r.number AS receipt_number, u.name AS recorded_by_name
         FROM pd_payments pay LEFT JOIN pd_documents r ON r.id = pay.receipt_document_id LEFT JOIN users u ON u.id = pay.recorded_by
         WHERE pay.invoice_id = ? ORDER BY pay.paid_at, pay.id", [$invoiceId]));
 }
@@ -548,7 +552,7 @@ function pd_merge_for(mysqli $conn, array $b, array $d, array $signatureRows): a
     return $merge;
 }
 
-// DocDetail; customers get no revisions and no audit data (ip, user agent)
+// DocDetail; customers get no revisions, no audit data (ip, user agent) and no internal payment notes
 function pd_document_detail(mysqli $conn, array $d, string $today, bool $customer): array {
     $b = pd_bundle($conn, (int)$d['project_id']);
     if (!$b) throw pd_not_found('Proyek');
@@ -582,7 +586,7 @@ function pd_document_detail(mysqli $conn, array $d, string $today, bool $custome
     ]);
     $invoice = pd_doc_invoice($conn, $b, $d);
     if ($invoice) $out['invoice'] = pd_invoice_detail($invoice, $b['p'], $today);
-    if ($invoice && $d['doc_type'] === 'invoice') $out['payments'] = pd_payments_of($conn, (int)$invoice['id']);
+    if ($invoice && $d['doc_type'] === 'invoice') $out['payments'] = pd_payments_of($conn, (int)$invoice['id'], $customer);
     return $out;
 }
 

@@ -82,7 +82,9 @@ Format (Indonesian letter style): `{SEQ:3}/{CODE}/{PREFIX}/{ROMAN_MONTH}/{YEAR}`
 - Assigned **once, at creation**, atomically through `pd_counters` (`INSERT … ON DUPLICATE KEY UPDATE last_seq = LAST_INSERT_ID(last_seq + 1)`), so two
   parallel creations never get the same number. `pd_documents.number` is UNIQUE.
 - Project code: `PRJ-{YEAR}-{SEQ:3}` (counter key `PRJ`), assigned when a project first gets a workspace.
-- Roman months: I II III IV V VI VII VIII IX X XI XII. Dates in Asia/Jakarta.
+- Roman months: I II III IV V VI VII VIII IX X XI XII. Dates in Asia/Jakarta; timestamps too: both backends set the
+  MySQL session `time_zone = '+07:00'` for every pd_* request (Node resets it before the pooled connection goes back), so
+  `NOW()` and TIMESTAMP columns such as `signed_at` (printed as "… WIB") never follow the server's own zone.
 
 ---
 
@@ -341,11 +343,11 @@ Success: `{success:true, ...}`.
 | `pd_document_submit` | staff* | `id` | → `menunggu_persetujuan` (approval=client) or `disetujui` (invoice "issue"); freezes snapshot; notifies client |
 | `pd_document_withdraw` | staff* | `id` | `menunggu_persetujuan` → `draft` |
 | `pd_document_change` | admin | `id`, `reason` (≥10 chars) | locked → new `draft` version; 409 for invoices with payments |
-| `pd_document_sign` | admin | `id`, `signature:{method, data_url?, typed_name?}`, `signer_name`, `signer_title` | signs as `pihak_pertama` (must be `disetujui` or `menunggu_persetujuan`); may complete the doc |
+| `pd_document_sign` | admin | `id`, `signature:{method, data_url?, typed_name?}`, `signer_name`, `signer_title`, `content_hash?` | signs as `pihak_pertama` (must be `disetujui` or `menunggu_persetujuan`); may complete the doc; 409 `STATE` when `content_hash` (the version on screen) is no longer the document's |
 | `pd_document_complete` | admin | `id` | → `selesai` (brd/proposal/timeline only, from `disetujui`) |
 | `pd_document_delete` | admin | `id` | only `draft` and never submitted |
 | `pd_invoice_create` | admin | `project_id`, `term_key?` or manual `kind`, `items`, `discount`, `ppn_enabled`, `pph23_enabled`, `issue_date`, `due_date`, `notes`, `content` | creates `pd_documents` (invoice) + `pd_invoices`; server recomputes all totals (never trusts client totals) |
-| `pd_invoice_update` | admin | `id` (invoice id) + same fields | draft only |
+| `pd_invoice_update` | admin | `id` (invoice id) + same fields | draft only; like create it locks the project row first, so a payment term is billed once even under parallel requests (409 `DUPLICATE`) |
 | `pd_invoice_cancel` | admin | `id`, `reason` | `dibatalkan` (no payments only) |
 | `pd_payment_record` | admin | `invoice_id`, `amount` (> 0, ≤ remaining), `paid_at`, `method`, `reference?`, `proof?` (data URL jpg/png/pdf ≤ 5 MB), `note?`, `receipt_content` | creates payment + receipt document (`selesai`) atomically; updates invoice; notifies client |
 | `pd_payment_delete` | admin | `id` | reverses amounts; receipt gets `review_note` "Dibatalkan" and stays in history |
@@ -354,7 +356,7 @@ Success: `{success:true, ...}`.
 | `pd_my_projects` | customer | – | `{projects:[ProjectSummary]}` own only |
 | `pd_my_project` | customer | `id` | ProjectDetail without drafts, activity limited to client-visible events |
 | `pd_my_document` | customer | `id` | DocDetail (non-draft, own project) |
-| `pd_my_document_decide` | customer | `id`, `decision` (`approved`/`rejected`), `note` (required when rejected), `signature?` (required when the type needs both parties), `signer_name`, `signer_title?` | approves/rejects the **current version** in `menunggu_persetujuan` |
+| `pd_my_document_decide` | customer | `id`, `decision` (`approved`/`rejected`), `note` (required when rejected), `signature?` (required when the type needs both parties), `signer_name`, `signer_title?`, `content_hash?` | approves/rejects the **current version** in `menunggu_persetujuan`; 409 `STATE` when `content_hash` (the version the client reviewed) is no longer the document's |
 | `pd_notifications_list` | any role | `unread_only?` | `{notifications:[…], unread}`; also lazily creates due-soon (H-3) and overdue notices with `dedupe_key` |
 | `pd_notifications_read` | any role | `id?` or `all:true` | `{success}` |
 | `pd_file` | any role | `ref` (`sig:<id>` / `proof:<id>`) | binary with correct `Content-Type`, `Content-Disposition`, `Cache-Control: private, no-store`; access checked (staff: any; customer: own project only) |
@@ -362,6 +364,16 @@ Success: `{success:true, ...}`.
 `staff*` = admin or Developer. **Developer limits**: may create/save/submit/withdraw only `brd`, `timeline`, `uat`;
 may save milestones; may read everything. Everything financial (proposal, PKS, invoices, payments, settings, clients)
 and signing as the company are admin-only. Enforce in the handler (not only in the UI).
+
+Reviewed content: the UIs always send `content_hash` with a decision or signature. A document can be withdrawn and
+resubmitted with the same version number but another frozen snapshot (e.g. a new contract value), so the hash, not the
+version, proves which content was approved and signed. Customers never see internal data: no revisions, no IP/user
+agent of approvals and signatures, no client `notes`, and `Payment.note` (the admin's internal note) is `null`.
+
+Existing actions that touch this feature (same rules in `api.php` and `server.js`): the public `get_settings` never
+returns `pd_*` keys; `update_settings` (staff) refuses `pd_*` keys (403) and any key outside `[A-Za-z0-9_]{1,100}` (400),
+because `setting_key` compares with `utf8mb4_unicode_ci`, where e.g. "ｐd_company" or a zero-width character +
+"pd_company" equal "pd_company"; `delete_project` refuses (409 `STATE`) a project that has project documents.
 
 Validation essentials: ids positive ints; enums checked; dates `YYYY-MM-DD` and real; money `0 ≤ x ≤ 1e12`;
 percentages 0–100 and payment terms sum to 100 (± 0.01); text limits (title 255, notes 2000, reason 500); signature

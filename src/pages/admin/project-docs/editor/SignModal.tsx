@@ -5,7 +5,7 @@ import { PenLine } from 'lucide-react';
 import { Button, Field, Input, Modal, ModalBody, ModalFooter, Notice, Segmented, checkboxClass } from '../../../../components/admin/ui';
 import { pdDocumentSign } from '../../../../features/project-docs/api';
 import type { DocumentSignResponse, SignatureMethod } from '../../../../features/project-docs/types';
-import { errorMessage } from '../../../../lib/api';
+import { ApiError, errorMessage } from '../../../../lib/api';
 import { fieldErrorsOf } from '../shared/hooks';
 import type { Errors } from '../shared/validation';
 import { SignaturePad, type SignaturePadHandle } from './SignaturePad';
@@ -16,10 +16,12 @@ export function SignModal({
   documentId,
   documentLabel,
   version,
+  contentHash,
   companyName,
   defaultName,
   defaultTitle,
   onSigned,
+  onConflict,
 }: {
   open: boolean;
   onClose: () => void;
@@ -27,10 +29,14 @@ export function SignModal({
   /** e.g. "PKS 007/PKS/GNB/X/2026" */
   documentLabel: string;
   version: number;
+  /** content_hash of the frozen version on screen: the server refuses (409) when the document changed since */
+  contentHash: string | null;
   companyName: string;
   defaultName: string;
   defaultTitle: string;
   onSigned: (result: DocumentSignResponse) => void;
+  /** 409: the document changed or was already signed meanwhile; the editor reloads it */
+  onConflict: (message: string) => void;
 }) {
   const padRef = useRef<SignaturePadHandle>(null);
   const [method, setMethod] = useState<SignatureMethod>('draw');
@@ -75,9 +81,14 @@ export function SignModal({
         signature: method === 'draw' ? { method, data_url: dataUrl ?? undefined } : { method, typed_name: typed.trim() },
         signer_name: name.trim(),
         signer_title: title.trim(),
+        content_hash: contentHash ?? undefined,
       });
       onSigned(res);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        onConflict(err.message);
+        return;
+      }
       setErrors(fieldErrorsOf(err));
       setServerError(`Gagal menandatangani: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
     } finally {

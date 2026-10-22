@@ -111,6 +111,8 @@ describe('Dokumen proyek (pembeli)', () => {
         signature: { method: 'type', typed_name: 'Sari Wulandari' },
         signer_name: 'Sari Wulandari',
         signer_title: 'Manajer TI',
+        // the reviewed version: a document changed meanwhile is refused (409)
+        content_hash: 'a'.repeat(64),
       }),
     );
     expect(await screen.findByText('Dokumen disetujui dan ditandatangani')).toBeInTheDocument();
@@ -128,7 +130,7 @@ describe('Dokumen proyek (pembeli)', () => {
     fireEvent.click((await screen.findAllByRole('button', { name: 'Setujui dokumen' }))[0]);
     const dialog = screen.getByRole('alertdialog', { name: 'Setujui dokumen ini?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, setujui' }));
-    await waitFor(() => expect(api.pdMyDocumentDecide).toHaveBeenCalledWith({ id: 10, decision: 'approved' }));
+    await waitFor(() => expect(api.pdMyDocumentDecide).toHaveBeenCalledWith({ id: 10, decision: 'approved', content_hash: 'a'.repeat(64) }));
     expect(await screen.findByText('Dokumen disetujui')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Tanda tangan' })).not.toBeInTheDocument();
   });
@@ -146,7 +148,7 @@ describe('Dokumen proyek (pembeli)', () => {
 
     fireEvent.change(within(dialog).getByLabelText('Catatan revisi'), { target: { value: 'Ubah jadwal serah terima.' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Kirim permintaan revisi' }));
-    await waitFor(() => expect(api.pdMyDocumentDecide).toHaveBeenCalledWith({ id: 20, decision: 'rejected', note: 'Ubah jadwal serah terima.' }));
+    await waitFor(() => expect(api.pdMyDocumentDecide).toHaveBeenCalledWith({ id: 20, decision: 'rejected', note: 'Ubah jadwal serah terima.', content_hash: 'a'.repeat(64) }));
     expect(await screen.findByText('Halaman proyek')).toBeInTheDocument();
   });
 

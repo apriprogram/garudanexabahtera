@@ -96,6 +96,7 @@ export function SignApproveDialog({ open, doc, onClose, onDone, onConflict, acco
         signature: signature.input,
         signer_name: name.trim(),
         signer_title: title.trim(),
+        content_hash: doc.content_hash ?? undefined,
       });
       onDone(result);
     } catch (err) {
@@ -223,7 +224,7 @@ export function RevisionDialog({ open, doc, onClose, onDone, onConflict }: Omit<
     setBusy(true);
     setServerError(null);
     try {
-      onDone(await pdMyDocumentDecide({ id: doc.id, decision: 'rejected', note: text }));
+      onDone(await pdMyDocumentDecide({ id: doc.id, decision: 'rejected', note: text, content_hash: doc.content_hash ?? undefined }));
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         onConflict(err.message);

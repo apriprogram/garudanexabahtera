@@ -25,6 +25,10 @@ import {
 export const PD_MONEY_MAX = 1000000000000; // 1e12 rupiah (spec §5 validation)
 const PD_CONTENT_MAX_BYTES = 262144; // DocContent as JSON, 256 KB (spec §4.1)
 const JAKARTA_OFFSET_MS = 7 * 3600 * 1000; // Asia/Jakarta, UTC+7 without daylight saving
+// MySQL session time zone of every pd_* request: NOW() and TIMESTAMP columns (signed_at "… WIB", approvals,
+// notifications) are Jakarta wall-clock time whatever zone the server runs in (MySQL in Docker defaults to UTC).
+// An offset, because named zones need the time zone tables; Asia/Jakarta has no daylight saving.
+export const PD_DB_TIME_ZONE = '+07:00';
 
 const BOTH_PARTIES = Object.freeze(['pihak_pertama', 'pihak_kedua']);
 // §1 document set in checklist order; same table as src/features/project-docs/engine/docTypes.ts
@@ -240,6 +244,25 @@ export function pdIntIn(input, key, label, min, max, required, errors, fallback 
     return null;
   }
   return value;
+}
+
+// Optional `content_hash` of the version the caller reviewed (approve/reject/sign); null when absent
+export function pdSeenHash(input, errors) {
+  const raw = own(input, 'content_hash');
+  if (raw === null || raw === '') return null;
+  if (typeof raw !== 'string' || !/^[0-9a-f]{64}$/.test(raw)) {
+    errors.content_hash = 'Versi dokumen tidak valid.';
+    return null;
+  }
+  return raw;
+}
+
+// A decision or signature binds to the frozen content the person saw: when the document was withdrawn, edited or
+// re-frozen meanwhile (same version number, other content hash), they must look at it again first
+export function pdCheckSeenHash(d, seen) {
+  if (seen !== null && seen !== String(d.content_hash ?? '')) {
+    throw pdConflict('Isi dokumen sudah berubah sejak halaman ini dibuka. Muat ulang dan periksa isinya sebelum menyetujui atau menandatangani.', 'STATE');
+  }
 }
 
 // LIKE pattern for a search text (wildcards in the text are matched literally)

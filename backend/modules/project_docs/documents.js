@@ -10,6 +10,7 @@ import {
   dbRun,
   pdBad,
   pdCheckDocTypeAccess,
+  pdCheckSeenHash,
   pdClientIp,
   pdConflict,
   pdDate,
@@ -29,6 +30,7 @@ import {
   pdRequireId,
   pdRequireStaff,
   pdRupiah,
+  pdSeenHash,
   pdTanggalPanjang,
   pdText,
   pdToday,
@@ -274,13 +276,15 @@ export async function pdActDocumentChange(ctx, input, user) {
   });
 }
 
-// The admin signs as Pihak Pertama (company); completes the document when every party signed the current version
+// The admin signs as Pihak Pertama (company); completes the document when every party signed the current version.
+// `content_hash` (optional) = the frozen version the admin reviewed: 409 STATE when it changed meanwhile
 export async function pdActDocumentSign(ctx, input, user) {
   pdRequireAdmin(user);
   const id = pdRequireId(input, 'id', 'ID dokumen');
   const errors = {};
   const name = pdText(input, 'signer_name', 'Nama penanda tangan', 255, true, errors);
   const title = pdText(input, 'signer_title', 'Jabatan penanda tangan', 255, false, errors);
+  const seen = pdSeenHash(input, errors);
   const signature = pdSignatureInput(own(input, 'signature'), errors);
   pdFail(errors);
 
@@ -290,6 +294,7 @@ export async function pdActDocumentSign(ctx, input, user) {
     if (d.status !== 'menunggu_persetujuan' && d.status !== 'disetujui') {
       throw pdConflict('Dokumen hanya bisa ditandatangani setelah diajukan atau disetujui klien.', 'STATE');
     }
+    pdCheckSeenHash(d, seen);
     if (await dbOne(ctx, "SELECT id FROM pd_signatures WHERE document_id = ? AND version = ? AND party = 'pihak_pertama'", [id, Number(d.version)])) {
       throw pdConflict('Pihak Pertama sudah menandatangani versi ini.', 'DUPLICATE');
     }
@@ -362,13 +367,15 @@ export async function pdActMyDocument(ctx, input, user) {
   return { document: await pdDocumentDetail(ctx, d, pdToday(), true) };
 }
 
-// Approve (and sign as Pihak Kedua when the type needs both parties) or reject the current version
+// Approve (and sign as Pihak Kedua when the type needs both parties) or reject the current version.
+// `content_hash` (optional) = the frozen version the customer reviewed: 409 STATE when it changed meanwhile
 export async function pdActMyDocumentDecide(ctx, input, user) {
   pdRequireCustomer(user);
   const id = pdRequireId(input, 'id', 'ID dokumen');
   const errors = {};
   const decision = pdEnum(input, 'decision', 'Keputusan', ['approved', 'rejected'], true, errors);
   const note = pdText(input, 'note', 'Catatan revisi', 2000, decision === 'rejected', errors);
+  const seen = pdSeenHash(input, errors);
   pdFail(errors);
   const current = await pdCustomerDoc(ctx, user, id);
   let signature = null;
@@ -384,6 +391,7 @@ export async function pdActMyDocumentDecide(ctx, input, user) {
   return pdWithStoredFile(signature ? [signature[1], 'png'] : null, (file) => pdTx(ctx, async () => {
     const d = await pdCustomerDoc(ctx, user, id, true);
     if (d.status !== 'menunggu_persetujuan') throw pdConflict('Dokumen ini tidak sedang menunggu persetujuan Anda.', 'STATE');
+    pdCheckSeenHash(d, seen);
     const projectId = Number(d.project_id);
     const version = Number(d.version);
     const label = pdDocLabel(d);

@@ -240,18 +240,20 @@ function pd_act_document_change(mysqli $conn, array $input, ?array $user): array
     });
 }
 
-// The admin signs as Pihak Pertama (company); completes the document when every party signed the current version
+// The admin signs as Pihak Pertama (company); completes the document when every party signed the current version.
+// `content_hash` (optional) = the frozen version the admin reviewed: 409 STATE when it changed meanwhile
 function pd_act_document_sign(mysqli $conn, array $input, ?array $user): array {
     $user = pd_require_admin($user);
     $id = pd_require_id($input, 'id', 'ID dokumen');
     $errors = [];
     $name = pd_text($input, 'signer_name', 'Nama penanda tangan', 255, true, $errors);
     $title = pd_text($input, 'signer_title', 'Jabatan penanda tangan', 255, false, $errors);
+    $seen = pd_seen_hash($input, $errors);
     $signature = pd_signature_input($input['signature'] ?? null, $errors);
     pd_fail($errors);
 
-    return pd_with_stored_file([$signature[1], 'png'], function ($file) use ($conn, $user, $id, $signature, $name, $title) {
-        return pd_tx($conn, function () use ($conn, $user, $id, $signature, $file, $name, $title) {
+    return pd_with_stored_file([$signature[1], 'png'], function ($file) use ($conn, $user, $id, $signature, $name, $title, $seen) {
+        return pd_tx($conn, function () use ($conn, $user, $id, $signature, $file, $name, $title, $seen) {
             $d = pd_doc_for_update($conn, $id);
             if (!in_array('pihak_pertama', PD_DOC_TYPES[$d['doc_type']]['parties'], true)) {
                 throw pd_conflict('Dokumen ini tidak memerlukan tanda tangan.', 'STATE');
@@ -259,6 +261,7 @@ function pd_act_document_sign(mysqli $conn, array $input, ?array $user): array {
             if (!in_array($d['status'], ['menunggu_persetujuan', 'disetujui'], true)) {
                 throw pd_conflict('Dokumen hanya bisa ditandatangani setelah diajukan atau disetujui klien.', 'STATE');
             }
+            pd_check_seen_hash($d, $seen);
             if (db_one($conn, "SELECT id FROM pd_signatures WHERE document_id = ? AND version = ? AND party = 'pihak_pertama'", [$id, (int)$d['version']])) {
                 throw pd_conflict('Pihak Pertama sudah menandatangani versi ini.', 'DUPLICATE');
             }
@@ -335,13 +338,15 @@ function pd_act_my_document(mysqli $conn, array $input, ?array $user): array {
     return ['document' => pd_document_detail($conn, $d, pd_today(), true)];
 }
 
-// Approve (and sign as Pihak Kedua when the type needs both parties) or reject the current version
+// Approve (and sign as Pihak Kedua when the type needs both parties) or reject the current version.
+// `content_hash` (optional) = the frozen version the customer reviewed: 409 STATE when it changed meanwhile
 function pd_act_my_document_decide(mysqli $conn, array $input, ?array $user): array {
     $user = pd_require_customer($user);
     $id = pd_require_id($input, 'id', 'ID dokumen');
     $errors = [];
     $decision = pd_enum($input, 'decision', 'Keputusan', ['approved', 'rejected'], true, $errors);
     $note = pd_text($input, 'note', 'Catatan revisi', 2000, $decision === 'rejected', $errors);
+    $seen = pd_seen_hash($input, $errors);
     pd_fail($errors);
     $d = pd_customer_doc($conn, $user, $id);
     $signature = null;
@@ -354,10 +359,11 @@ function pd_act_my_document_decide(mysqli $conn, array $input, ?array $user): ar
         pd_fail($errors);
     }
 
-    return pd_with_stored_file($signature ? [$signature[1], 'png'] : null, function ($file) use ($conn, $user, $id, $decision, $note, $signature, $name, $title) {
-        return pd_tx($conn, function () use ($conn, $user, $id, $decision, $note, $signature, $file, $name, $title) {
+    return pd_with_stored_file($signature ? [$signature[1], 'png'] : null, function ($file) use ($conn, $user, $id, $decision, $note, $signature, $name, $title, $seen) {
+        return pd_tx($conn, function () use ($conn, $user, $id, $decision, $note, $signature, $file, $name, $title, $seen) {
             $d = pd_customer_doc($conn, $user, $id, true);
             if ($d['status'] !== 'menunggu_persetujuan') throw pd_conflict('Dokumen ini tidak sedang menunggu persetujuan Anda.', 'STATE');
+            pd_check_seen_hash($d, $seen);
             $projectId = (int)$d['project_id'];
             $version = (int)$d['version'];
             $label = pd_doc_label($d);

@@ -366,6 +366,11 @@ switch ($action) {
         break;
 
     case 'delete_project':
+        // A project with project documents (signed contracts, invoices, receipts, pd_*) is an archive: deleting it would
+        // orphan them for the client and the admin alike (same rule as server.js)
+        if (db_one($conn, "SELECT id FROM pd_documents WHERE project_id = ? LIMIT 1", [in_int($input, 'id')])) {
+            throw new ApiError('Proyek ini sudah punya dokumen proyek (BRD, kontrak, invoice, atau kuitansi), jadi tidak bisa dihapus agar arsipnya tetap utuh.', 409, 'STATE');
+        }
         db_run($conn, "DELETE FROM project_client WHERE id = ?", [in_int($input, 'id')]);
         echo json_encode(["success" => true]);
         break;

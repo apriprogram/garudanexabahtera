@@ -19,8 +19,8 @@
 // Uses from api.php: ApiError, db_run/db_all/db_one/db_affected_rows, client_ip, public_dir.
 //
 // Conventions: success → HTTP 200 + {success: true, ...data}; failure → {error, code?, errors?} with 400 VALIDATION,
-// 401, 403 FORBIDDEN, 404 NOT_FOUND, 409 LOCKED / DUPLICATE / STATE. Every state change runs in a transaction and
-// writes pd_activity.
+// 401, 403 FORBIDDEN, 404 NOT_FOUND, 409 LOCKED / DUPLICATE / STATE. Every action runs in the MySQL session time zone
+// PD_DB_TIME_ZONE (Jakarta); every state change runs in a transaction and writes pd_activity.
 
 require_once __DIR__ . '/project_docs/core.php';
 require_once __DIR__ . '/project_docs/records.php';
@@ -47,6 +47,7 @@ const PD_ACTIONS = [
 /** Runs a pd_* action; returns false when `$action` is not one of them (api.php continues). */
 function handle_project_docs_action(mysqli $conn, string $action, array $input, ?array $user): bool {
     if (!in_array($action, PD_ACTIONS, true)) return false;
+    db_run($conn, "SET time_zone = ?", [PD_DB_TIME_ZONE]);
     $data = call_user_func('pd_act_' . substr($action, 3), $conn, $input, $user);
     // pd_file streams the file itself
     if ($data !== null) echo json_encode(array_merge(['success' => true], $data), PD_JSON_FLAGS);
