@@ -39,13 +39,14 @@ const Hero: React.FC = () => {
   const [exhaustedKey, setExhaustedKey] = useState<string | null>(null);
   const backgroundKey = heroBackgroundKey(background);
   const media = loaded && background.mode !== 'default' && exhaustedKey !== backgroundKey ? background : null;
-  const { legibility, onVideoFrame } = useHeroLegibility({ media, text: textSettings, sectionRef, textRef });
   const onExhausted = useCallback(() => setExhaustedKey(backgroundKey), [backgroundKey]);
   const [showcase, setShowcase] = useState<ShowcaseData | null>(null);
   const [slide, setSlide] = useState(0);
   // null = pengunjung belum memilih → bawaan Template, atau Custom bila katalog disembunyikan admin
   const [chosenMode, setChosenMode] = useState<HeroMode | null>(null);
   const mode: HeroMode = chosenMode ?? (templatesHidden ? 'custom' : 'template');
+  // Mode ikut menentukan tinggi blok teks (di HP mode Custom lebih tinggi): ganti mode = ukur ulang
+  const { legibility, onVideoFrame } = useHeroLegibility({ media, text: textSettings, sectionRef, textRef, layoutKey: mode });
   const [step, setStep] = useState(0);
   const [hold, setHold] = useState(false);
 

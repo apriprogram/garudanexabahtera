@@ -246,7 +246,9 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
       video tanpa frame, Save-Data dengan 2+ gambar): teks terang + lapisan 62,4% (lolos bahkan di atas putih polos,
       ≥ 55%); nada `dark` yang dipaksa: lapisan putih 77% (lolos di atas hitam polos). Tidak pernah ada kilasan teks
       yang tidak terbaca;
-    - diukur ulang saat tata letak berganti (640px / 1024px) atau lebar jendela berubah (gambar tidak diunduh ulang).
+    - diukur ulang saat tata letak berganti (640px / 1024px), lebar jendela berubah, mode hero berganti (Template ↔
+      Custom: di HP blok teks mode Custom lebih tinggi, tombolnya harus tetap di dalam lapisan pekat), atau ukuran blok
+      teks / section berubah (ResizeObserver); gambar tidak diunduh ulang.
       Media habis (semua gambar / video + poster gagal) → kanvas bawaan dan teks bawaan.
   - Lapisan `.hero-scrim` (di dalam lapisan media, di atas gambar, di bawah pudar bawah): datar, tanpa blur/bayangan;
     pekat (`--scrim-a`) dari tepi sampai tepi blok teks (`--scrim-end`: ≥ 1024px tepi kanan kolom teks, di bawahnya

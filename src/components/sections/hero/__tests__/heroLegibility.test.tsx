@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 // Teks hero selalu terbaca di atas gambar/video (useHeroLegibility + Hero + HeroMedia): nada & lapisan dari sampel latar
 // di belakang blok teks (kasus terburuk tayangan), cadangan aman selama mengukur / bila tidak bisa diukur, nada yang
-// dipaksa admin, lapisan minimum, ukur ulang saat lebar berubah, hemat data, video (poster / frame pertama), media yang
-// habis → tampilan bawaan, pudar bawah yang tidak sampai ke teks, dan kelas teks terang vs gelap.
+// dipaksa admin, lapisan minimum, ukur ulang saat lebar / mode hero / ukuran blok teks berubah, hemat data, video
+// (poster / frame pertama), media yang habis → tampilan bawaan, pudar bawah yang tidak sampai ke teks, dan kelas teks
+// terang vs gelap.
 // Jalankan: npx vitest run src/components/sections/hero/__tests__/heroLegibility.test.tsx
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -239,6 +240,71 @@ describe('Hero: gambar latar', () => {
       await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(2), { timeout: 2000 });
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+    }
+  });
+
+  it('ganti mode Template ↔ Custom: diukur ulang dengan blok teks yang baru (di HP mode Custom lebih tinggi)', async () => {
+    site.settings = image(IMAGE_1);
+    vi.mocked(sampleImage).mockResolvedValue(ok(DARK));
+    const view = renderHero();
+    await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(view.scrim()!.style.getPropertyValue('--scrim-end')).toBe('816px'));
+    const height = LAYOUT.text.height;
+    try {
+      LAYOUT.text.height = 760;
+      fireEvent.click(view.getAllByRole('tab')[1]);
+      await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(2));
+      expect(vi.mocked(sampleImage).mock.calls[1][1].region).toEqual({ x: 32, y: 84, w: 627, h: 792 });
+      await waitFor(() => expect(view.scrim()!.style.getPropertyValue('--scrim-end')).toBe('876px'));
+    } finally {
+      LAYOUT.text.height = height;
+    }
+  });
+
+  it('ukuran blok teks berubah (ResizeObserver): diukur ulang; laporan pertama hanya dicatat', async () => {
+    // Callback per elemen yang diamati (komponen lain boleh punya ResizeObserver sendiri)
+    const observed = new Map<Element, ResizeObserverCallback>();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        callback: ResizeObserverCallback;
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback;
+        }
+        observe(el: Element) {
+          observed.set(el, this.callback);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    let textHeight = 700;
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return isText(this) ? textHeight : 0;
+      },
+    });
+    try {
+      site.settings = image(IMAGE_1);
+      vi.mocked(sampleImage).mockResolvedValue(ok(DARK));
+      const view = renderHero();
+      await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(1));
+      const callback = observed.get(view.textColumn());
+      expect(callback).toBeDefined();
+      const report = () =>
+        act(() => {
+          callback!([{ target: view.textColumn() } as unknown as ResizeObserverEntry], {} as ResizeObserver);
+        });
+      report(); // laporan pertama: ukuran awal, tidak mengukur ulang
+      report(); // ukuran sama
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      expect(sampleImage).toHaveBeenCalledTimes(1);
+      textHeight = 760;
+      report();
+      await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(2), { timeout: 2000 });
+    } finally {
+      Reflect.deleteProperty(HTMLElement.prototype, 'offsetHeight');
     }
   });
 

@@ -12,6 +12,8 @@ const PAD = 16;
 const FADE_MAX = 160;
 const FADE_MIN = 64;
 const FADE_GAP = 8;
+/** Jeda sebelum mengukur ulang setelah ukuran berubah (resize jendela / ResizeObserver beruntun). */
+const RESIZE_DEBOUNCE_MS = 250;
 
 export interface HeroLegibilityState extends HeroLegibility {
   /** Tepi blok teks untuk --scrim-end (px dari kiri pada ≥ 1024px, dari atas di bawahnya); null = belum diukur */
@@ -73,7 +75,9 @@ const mergeVideo = (poster: SampleResult | null, video: HTMLVideoElement | null,
  *   video: poster, atau frame pertama (loadeddata, lewat `onVideoFrame` yang dipasang ke HeroMedia);
  * - selama mengukur, dan bila tidak bisa diukur (lintas domain tanpa CORS, canvas tercemar, hemat data dengan 2+
  *   gambar), memakai cadangan aman: teks terang dengan lapisan yang cukup untuk latar putih (≥ 55%);
- * - diukur ulang saat tata letak berganti (640px / 1024px) atau lebar jendela berubah (tanpa unduh ulang).
+ * - diukur ulang saat tata letak berganti (640px / 1024px), lebar jendela berubah, isi blok teks berganti
+ *   (`layoutKey`, mis. mode Template ↔ Custom: di HP blok teks mode Custom lebih tinggi), atau ukuran blok teks /
+ *   section berubah (ResizeObserver), tanpa unduh ulang.
  * `media` null (latar bawaan, belum dimuat, atau semua media gagal) → null: teks hero tampil seperti biasa.
  */
 export function useHeroLegibility({
@@ -81,11 +85,14 @@ export function useHeroLegibility({
   text,
   sectionRef,
   textRef,
+  layoutKey = '',
 }: {
   media: HeroMediaConfig | null;
   text: HeroTextSettings;
   sectionRef: RefObject<HTMLElement | null>;
   textRef: RefObject<HTMLElement | null>;
+  /** Berubah saat isi blok teks berganti (mode hero): diukur ulang langsung, tanpa menunggu ResizeObserver */
+  layoutKey?: string;
 }): { legibility: HeroLegibilityState | null; onVideoFrame: (video: HTMLVideoElement) => void } {
   const mediaKey = media ? heroBackgroundKey(media) : null;
   const [measured, setMeasured] = useState<Measured | null>(null);
@@ -100,7 +107,9 @@ export function useHeroLegibility({
     [mediaKey],
   );
 
-  // Ukur ulang saat tata letak berganti atau lebar berubah (tinggi saja = bilah alamat HP: diabaikan)
+  // Ukur ulang saat tata letak berganti, lebar jendela berubah (tinggi jendela saja = bilah alamat HP: diabaikan),
+  // atau ukuran blok teks / section berubah: mis. di HP panel mode yang tidak aktif dilepas dari tata letak, jadi
+  // mode Custom (tombol lebih tinggi) memanjangkan blok teks; tanpa ukur ulang tombolnya jatuh di luar lapisan pekat
   useEffect(() => {
     if (!mediaKey || typeof window === 'undefined') return undefined;
     const bump = () => setLayoutTick((n) => n + 1);
@@ -108,19 +117,39 @@ export function useHeroLegibility({
     queries.forEach((m) => m.addEventListener?.('change', bump));
     let width = window.innerWidth;
     let timer = 0;
+    const later = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(bump, RESIZE_DEBOUNCE_MS);
+    };
     const onResize = () => {
       if (window.innerWidth === width) return;
       width = window.innerWidth;
-      window.clearTimeout(timer);
-      timer = window.setTimeout(bump, 250);
+      later();
     };
     window.addEventListener('resize', onResize);
+    // Ukuran terakhir per elemen (border-box, dibulatkan); laporan pertama hanya mencatat (pengukuran awal sudah jalan)
+    const sizes = new Map<Element, string>();
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver((entries) => {
+            let changed = false;
+            for (const entry of entries) {
+              const el = entry.target as HTMLElement;
+              const size = `${Math.round(el.offsetWidth)}x${Math.round(el.offsetHeight)}`;
+              if (sizes.has(el) && sizes.get(el) !== size) changed = true;
+              sizes.set(el, size);
+            }
+            if (changed) later();
+          });
+    for (const el of [sectionRef.current, textRef.current]) if (el) observer?.observe(el);
     return () => {
       queries.forEach((m) => m.removeEventListener?.('change', bump));
       window.removeEventListener('resize', onResize);
+      observer?.disconnect();
       window.clearTimeout(timer);
     };
-  }, [mediaKey]);
+  }, [mediaKey, sectionRef, textRef]);
 
   useEffect(() => {
     if (!media || !mediaKey) return undefined;
@@ -153,7 +182,7 @@ export function useHeroLegibility({
     return () => {
       alive = false;
     };
-  }, [media, mediaKey, frame, layoutTick, sectionRef, textRef]);
+  }, [media, mediaKey, frame, layoutTick, layoutKey, sectionRef, textRef]);
 
   const legibility = useMemo<HeroLegibilityState | null>(() => {
     if (!mediaKey) return null;
