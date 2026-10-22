@@ -1,0 +1,90 @@
+/*
+ * Gerak khas Aura Studio (brief §2.5 / §4.4): lingkaran "Mengapa kami" digambar, crossfade tab perawatan, bilah ringkas.
+ * Hanya berjalan bila root template ber-data-tpl-motion="on" (demo & situs live) dan pengunjung tidak memilih
+ * prefers-reduced-motion. Pratinjau CMS (motion off) & cetak: semua tampil statis apa adanya.
+ */
+
+@layer components {
+  /* Lingkaran konsentris: pathLength=1 → dasharray 1, digambar dari 1 → 0 saat wadah <Reveal> muncul */
+  .aura-circles circle {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  [data-tpl-motion='on'] .aura-circles circle {
+    transition: stroke-dashoffset 1.2s var(--tpl-ease, ease-out);
+    transition-delay: var(--aura-delay, 0ms);
+  }
+
+  [data-tpl-motion='on'] .tpl-reveal[data-reveal='pending'] .aura-circles circle,
+  [data-tpl-motion='on'] .aura-circles.tpl-reveal[data-reveal='pending'] circle {
+    stroke-dashoffset: 1;
+  }
+
+  /* Tab perawatan: isi baru memudar masuk 200ms (grid tetap di tempatnya) */
+  [data-tpl-motion='on'] .aura-tabpanel {
+    animation: aura-fade 0.2s ease-out both;
+  }
+
+  /* Testimoni: kutipan baru memudar masuk */
+  [data-tpl-motion='on'] .aura-quote {
+    animation: aura-fade 0.35s ease-out both;
+  }
+
+  /* Bilah ringkas desktop (muncul setelah hero lewat) */
+  .aura-compact {
+    transition:
+      transform 0.35s var(--tpl-ease, ease-out),
+      opacity 0.25s ease-out;
+  }
+
+  .aura-compact[data-state='hidden'] {
+    transform: translate3d(0, -110%, 0);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aura-circles circle {
+      stroke-dashoffset: 0 !important;
+      transition: none !important;
+    }
+
+    .aura-tabpanel,
+    .aura-quote {
+      animation: none !important;
+    }
+
+    .aura-compact {
+      transition: none;
+    }
+  }
+
+  @media print {
+    .aura-circles circle {
+      stroke-dashoffset: 0 !important;
+    }
+
+    .aura-compact {
+      display: none !important;
+    }
+  }
+
+  /* Rel gulir horizontal tanpa bilah gulir (galeri & tim di HP, tab kategori) */
+  .aura-rail {
+    scrollbar-width: none;
+  }
+
+  .aura-rail::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes aura-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

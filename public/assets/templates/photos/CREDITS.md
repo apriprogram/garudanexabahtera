@@ -68,3 +68,33 @@ Foto suasana `-1600.webp` + `-800.webp` (foto tegak 4:5: `-1200.webp` + `-800.we
 | `arena-club-portrait-1-*` | Potret pria tersenyum | https://unsplash.com/photos/OFSQ6bHjFjs | Hà Nguyễn |
 | `arena-club-portrait-2-*` | Potret wanita tersenyum | https://unsplash.com/photos/jBqMJdzTcgA | Phước Sang |
 | `arena-club-portrait-3-*` | Potret wanita tersenyum | https://unsplash.com/photos/OuxJHYeUYpk | panitan punpuang |
+
+## Aura Studio (Sekar Ayu Aesthetic Studio, fiktif)
+
+Foto suasana `-1600.webp` + `-800.webp`; foto tegak 4:5 dan persegi `-1200.webp` + `-800.webp`; potret pelanggan
+persegi `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash License, bukan Unsplash+) 2026-10-23.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `aura-studio-hero-*` | Perempuan menyentuh pipi, kulit wajah tampak lembap | https://unsplash.com/photos/MyFdvHRinoI | Laura Jaeger |
+| `aura-studio-facial-*` | Masker krim saat perawatan wajah | https://unsplash.com/photos/RbIcMsh0NSk | kimia kazemi |
+| `aura-studio-texture-*` | Olesan krim putih di permukaan krem | https://unsplash.com/photos/kD9qprR6HBI | Kelsey Curtis |
+| `aura-studio-therapist-*` | Terapis merawat wajah dengan alat perawatan | https://unsplash.com/photos/HtXyytr9304 | Look Studio |
+| `aura-studio-products-*` | Botol pompa putih, handuk abu-abu, dan tulip | https://unsplash.com/photos/VxAwTeiqDao | Camille Brodard |
+| `aura-studio-lash-*` | Pemasangan bulu mata oleh terapis | https://unsplash.com/photos/xA_djNkH0Yo | Bermix Studio |
+| `aura-studio-sage-*` | Tekstur krim hijau dan putih | https://unsplash.com/photos/3m1h6CgfLL8 | Irene Demetri |
+| `aura-studio-manicure-*` | Tangan dengan kuku alami warna nude | https://unsplash.com/photos/vtQHwU4F13s | Chelson Tamares |
+| `aura-studio-nailart-*` | Nail art mauve, putih, dan glitter | https://unsplash.com/photos/Y14F-1vzVds | Patrícia Hellinger |
+| `aura-studio-nail-care-*` | Tangan dengan manikur putih susu | https://unsplash.com/photos/DtoWpHt2_d8 | Ellie Eshaghi |
+| `aura-studio-nail-salon-*` | Nail artist merapikan kuku pelanggan | https://unsplash.com/photos/refgCopwymo | Anna Keibalo |
+| `aura-studio-interior-*` | Rak kutek berbentuk lengkung dan tanaman | https://unsplash.com/photos/qtoMPyiIBPA | Alona Gross |
+| `aura-studio-lounge-*` | Sudut studio putih dengan kursi dan tanaman | https://unsplash.com/photos/Ui6DZ9A1eXU | Daniel |
+| `aura-studio-room-*` | Ruang perawatan dengan ranjang dan jendela | https://unsplash.com/photos/JnsuyfJrxQw | Mayur Roxan |
+| `aura-studio-massage-*` | Pijat wajah di spa | https://unsplash.com/photos/BJ7i-96glwM | Anna Keibalo |
+| `aura-studio-glow-*` | Perempuan berlatar putih dengan kulit bercahaya | https://unsplash.com/photos/_5c6OMrr5LI | Ompia |
+| `aura-studio-team-1-*` | Perempuan berblazer putih di studio | https://unsplash.com/photos/cDmQ48iNbm8 | Jonathan Borba |
+| `aura-studio-team-2-*` | Perempuan berkaus merah muda, latar abu | https://unsplash.com/photos/_JAAQZ2wt5I | Dynamic Wang |
+| `aura-studio-team-3-*` | Perempuan berhijab hitam tersenyum | https://unsplash.com/photos/RWiLPZD5XyU | Fajar Herlambang STUDIO |
+| `aura-studio-portrait-1-*` | Perempuan berhijab krem tersenyum | https://unsplash.com/photos/14V7fly4Vz0 | Nadia Assabella |
+| `aura-studio-portrait-2-*` | Perempuan berambut panjang tersenyum | https://unsplash.com/photos/jGZITdFhmts | Le Minh Phuong |
+| `aura-studio-portrait-3-*` | Perempuan tersenyum menoleh ke samping | https://unsplash.com/photos/_DlHQIvieJA | Conikal |
