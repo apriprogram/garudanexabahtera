@@ -1,15 +1,16 @@
 // Workspace proyek (/admin/proyek/:id): header (code, name, client, value, stage stepper) and the tabs Ringkasan,
 // Dokumen, Jadwal, Invoice & pembayaran, Aktivitas (docs/platform/PROJECT-DOCS-SPEC.md §7). The tab is kept in the
 // URL (?tab=dokumen) so links from the dashboard and the editor land on the right one.
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Activity as ActivityIcon, CalendarRange, FileStack, FolderSearch, LayoutDashboard, RotateCw, Wallet } from 'lucide-react';
-import { Badge, Button, EmptyState, ErrorState, LoadingState, Notice, PageHeader, Panel, Tabs, cn, type TabItem } from '../../../components/admin/ui';
+import { Badge, Button, ConfirmDialog, EmptyState, ErrorState, LoadingState, Notice, PageHeader, Panel, Tabs, cn, type TabItem } from '../../../components/admin/ui';
 import { pdProjectGet, pdSettingsGet } from '../../../features/project-docs/api';
 import type { ProjectGetResponse, SettingsGetResponse } from '../../../features/project-docs/types';
 import { useToast } from '../template-orders/shared/hooks';
 import { Toast } from '../template-orders/shared/OrderUi';
 import { rupiah, STAGE_LABEL, tanggal } from './shared/format';
-import { usePdQuery, useViewer } from './shared/hooks';
+import { usePdQuery, useUnsavedGuard, useViewer } from './shared/hooks';
 import { ActivityList, ProgressCell, StageStepper } from './shared/ui';
 import { DocumentsTab } from './workspace/DocumentsTab';
 import { FinanceTab } from './workspace/FinanceTab';
@@ -37,6 +38,10 @@ export default function ProjectWorkspace() {
   const tab: Tab = isTab(tabParam) ? tabParam : 'ringkasan';
   const viewer = useViewer();
   const { toast, show, dismiss } = useToast();
+  // Form Ringkasan yang belum disimpan: tetap terpasang saat pindah tab, dan meninggalkan halaman ditanya dulu
+  const navigate = useNavigate();
+  const [setupDirty, setSetupDirty] = useState(false);
+  const guard = useUnsavedGuard(setupDirty, navigate);
 
   const query = usePdQuery<ProjectGetResponse>(valid ? `project:${projectId}` : null, () => pdProjectGet({ id: projectId }));
   // Pengaturan (termin bawaan, pajak, SLA) dibutuhkan untuk template dan invoice; gagal memuat tidak memblokir halaman
@@ -88,6 +93,8 @@ export default function ProjectWorkspace() {
     reload: query.reload,
     notify: show,
     openTab: (t) => setTab(t),
+    go: guard.request,
+    setSetupDirty,
   };
   const missingCount = project.checklist.filter((c) => c.missing).length;
   const unpaid = project.invoices.filter((i) => i.payment_status !== 'lunas' && i.payment_status !== 'dibatalkan' && i.doc_status !== 'draft');
@@ -180,7 +187,10 @@ export default function ProjectWorkspace() {
       <Tabs<Tab> items={tabs} value={tab} onChange={setTab} variant="underline" ariaLabel="Bagian workspace" className="mb-4 w-full sm:mb-5" />
 
       <div role="tabpanel" aria-label={tabs.find((t) => t.value === tab)?.label as string}>
-        {tab === 'ringkasan' && <OverviewTab ctx={ctx} />}
+        {/* Ringkasan selalu terpasang agar isian form yang belum disimpan tidak hilang saat pindah tab */}
+        <div hidden={tab !== 'ringkasan'}>
+          <OverviewTab ctx={ctx} />
+        </div>
         {tab === 'dokumen' && <DocumentsTab ctx={ctx} />}
         {tab === 'jadwal' && <ScheduleTab ctx={ctx} />}
         {tab === 'invoice' && <FinanceTab ctx={ctx} />}
@@ -195,6 +205,16 @@ export default function ProjectWorkspace() {
         )}
       </div>
 
+      <ConfirmDialog
+        open={!!guard.pending}
+        onClose={guard.cancel}
+        onConfirm={guard.proceed}
+        tone="danger"
+        title="Tinggalkan workspace?"
+        description="Perubahan data proyek di tab Ringkasan yang belum disimpan akan hilang."
+        confirmText="Ya, tinggalkan"
+        cancelText="Tetap di sini"
+      />
       <Toast toast={toast} onClose={dismiss} />
     </div>
   );

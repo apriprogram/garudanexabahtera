@@ -24,6 +24,8 @@ export interface EditorPermissions {
   /** pd_invoice_update (draft invoice) */
   canEditInvoice: boolean;
   canRecordPayment: boolean;
+  /** pd_invoice_cancel: invoice without payments that is not cancelled yet */
+  canCancelInvoice: boolean;
   canRestore: boolean;
 }
 
@@ -50,6 +52,7 @@ export function editorPermissions(doc: DocDetail, viewer: { isAdmin: boolean; ca
     canDelete: viewer.isAdmin && draft && !doc.submitted_at && !isReceipt,
     canEditInvoice: viewer.isAdmin && isInvoice && draft && !cancelled && !!doc.invoice,
     canRecordPayment: viewer.isAdmin && isInvoice && !draft && !!paymentStatus && paymentStatus !== 'lunas' && paymentStatus !== 'dibatalkan',
+    canCancelInvoice: viewer.isAdmin && isInvoice && !cancelled && !!doc.invoice && doc.invoice.amount_paid === 0 && !hasPayments,
     canRestore: draft && canEdit,
   };
 }

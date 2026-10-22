@@ -8,6 +8,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
   BadgeCheck,
+  Ban,
   Banknote,
   CheckCircle2,
   Download,
@@ -55,6 +56,7 @@ import {
   pdDocumentSave,
   pdDocumentSubmit,
   pdDocumentWithdraw,
+  pdInvoiceCancel,
   pdSettingsGet,
 } from '../../../features/project-docs/api';
 import { DOC_TYPES, DocumentPreview, SECTION_HINTS, buildModel, defaultContent, hari, tanggalPanjang } from '../../../features/project-docs/engine';
@@ -77,7 +79,7 @@ import { exportModel, signatureRefs, withSignatureImages, type ExportFormat } fr
 import { docShort, tanggal, waktu } from './shared/format';
 import { useUnsavedGuard, usePdQuery, useViewer } from './shared/hooks';
 import { ReasonModal } from './shared/ReasonModal';
-import { DocStatusBadge } from './shared/ui';
+import { DocStatusBadge, PaymentBadge } from './shared/ui';
 import { isDate } from './shared/validation';
 
 /** Editable part of a document. */
@@ -134,6 +136,7 @@ export default function DocumentEditor() {
   const [changeOpen, setChangeOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
 
   const perms = doc ? editorPermissions(doc, viewer) : null;
@@ -323,7 +326,8 @@ export default function DocumentEditor() {
     { label: 'Riwayat revisi', icon: <History />, onClick: () => setRevisionsOpen(true) },
     ...(perms.canEditInvoice ? [{ label: 'Ubah rincian invoice', icon: <Receipt />, onClick: () => setInvoiceOpen(true) }] : []),
     ...(perms.canChange ? [{ label: 'Ajukan perubahan', icon: <FilePen />, onClick: () => setChangeOpen(true) }] : []),
-    ...(perms.canDelete ? [{ label: 'Hapus draft', icon: <Trash2 />, danger: true, divider: true, onClick: () => setConfirm('delete') }] : []),
+    ...(perms.canCancelInvoice ? [{ label: 'Batalkan invoice', icon: <Ban />, danger: true, divider: true, onClick: () => setCancelOpen(true) }] : []),
+    ...(perms.canDelete ? [{ label: 'Hapus draft', icon: <Trash2 />, danger: true, divider: !perms.canCancelInvoice, onClick: () => setConfirm('delete') }] : []),
   ];
 
   const toolbar = (
@@ -366,7 +370,15 @@ export default function DocumentEditor() {
       <Dropdown
         width="w-48"
         trigger={({ open, toggle }) => (
-          <Button variant="secondary" icon={busy === 'export' ? <Spinner size="sm" /> : <Download />} onClick={toggle} aria-haspopup="menu" aria-expanded={open} disabled={busy === 'export'}>
+          <Button
+            variant="secondary"
+            icon={busy === 'export' ? <Spinner size="sm" /> : <Download />}
+            onClick={toggle}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            disabled={busy === 'export'}
+            className="max-sm:w-full"
+          >
             Ekspor
           </Button>
         )}
@@ -378,7 +390,9 @@ export default function DocumentEditor() {
       <Dropdown
         width="w-56"
         label="Aksi lainnya"
-        trigger={({ open, toggle }) => <IconButton icon={<MoreHorizontal />} label="Aksi lainnya" variant="secondary" onClick={toggle} aria-haspopup="menu" aria-expanded={open} />}
+        trigger={({ open, toggle }) => (
+          <IconButton icon={<MoreHorizontal />} label="Aksi lainnya" variant="secondary" onClick={toggle} aria-haspopup="menu" aria-expanded={open} className="max-sm:w-full" />
+        )}
         items={moreItems}
       />
     </>
@@ -436,7 +450,7 @@ export default function DocumentEditor() {
         }
         meta={
           <>
-            <DocStatusBadge doc={doc} />
+            {cancelled ? <PaymentBadge status="dibatalkan" /> : <DocStatusBadge doc={doc} />}
             <Badge tone="mist" dot={false}>
               Versi {doc.version}
             </Badge>
@@ -453,8 +467,12 @@ export default function DocumentEditor() {
             )}
           </>
         }
-        actions={toolbar}
-      />
+      >
+        {/* Toolbar di bawah judul (bukan di kanan) agar judul dokumen tidak terhimpit di layar 1024–1366 px */}
+        <div role="group" aria-label="Aksi dokumen" className="flex flex-wrap items-center gap-2 max-sm:[&>*]:min-w-[calc(50%-4px)] max-sm:[&>*]:grow">
+          {toolbar}
+        </div>
+      </PageHeader>
 
       {/* Pemberitahuan status */}
       <div className="mb-4 space-y-3 empty:hidden sm:mb-5">
@@ -637,6 +655,26 @@ export default function DocumentEditor() {
           query.reload();
         }}
       />
+      {perms.canCancelInvoice && doc.invoice && (
+        <ReasonModal
+          open={cancelOpen}
+          onClose={() => setCancelOpen(false)}
+          title={`Batalkan invoice ${doc.number}?`}
+          description="Invoice yang dibatalkan tetap tersimpan di riwayat dan termin bisa ditagih ulang."
+          label="Alasan pembatalan"
+          placeholder="mis. Nilai termin berubah setelah adendum."
+          confirmText="Ya, batalkan"
+          tone="danger"
+          icon={<Ban />}
+          onSubmit={async (reason) => {
+            if (!doc.invoice) return;
+            await pdInvoiceCancel({ id: doc.invoice.id, reason });
+            setCancelOpen(false);
+            show('success', `Invoice ${doc.number} berhasil dibatalkan.`);
+            query.reload();
+          }}
+        />
+      )}
       {isInvoice && doc.invoice && (
         <InvoiceFormModal
           open={invoiceOpen}

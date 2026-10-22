@@ -1,6 +1,6 @@
 // Small display components shared by the admin project-docs pages (status pills, stage stepper, progress,
 // activity feed, money field). Admin tokens only (adm-*, cobalt/mint/warning/danger), design.md "Panel admin".
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Ban,
@@ -112,8 +112,17 @@ export function ProgressCell({ value, className }: { value: number; className?: 
  */
 export function StageStepper({ stage, className }: { stage: Stage; className?: string }) {
   const current = stageIndex(stage);
+  const listRef = useRef<HTMLOListElement>(null);
+  // Baris yang menggulir ke samping: tahap berjalan selalu terlihat (di tengah bila bisa)
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || list.scrollWidth <= list.clientWidth) return;
+    const item = list.querySelector<HTMLElement>('[aria-current="step"]');
+    // Proyek selesai tidak punya tahap berjalan: tampilkan ujung kanan
+    list.scrollLeft = item ? Math.max(0, item.offsetLeft - (list.clientWidth - item.offsetWidth) / 2) : list.scrollWidth;
+  }, [stage]);
   return (
-    <ol className={cn('no-scrollbar flex items-start overflow-x-auto pb-1', className)} aria-label="Tahapan proyek">
+    <ol ref={listRef} className={cn('no-scrollbar relative flex items-start overflow-x-auto pb-1', className)} aria-label="Tahapan proyek">
       {STAGES.map((s, i) => {
         const done = i < current || stage === 'selesai';
         const active = i === current && stage !== 'selesai';

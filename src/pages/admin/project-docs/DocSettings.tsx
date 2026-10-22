@@ -30,7 +30,7 @@ import { Toast } from '../template-orders/shared/OrderUi';
 import { formatPercent, todayIso } from './shared/format';
 import { fieldErrorsOf, usePdQuery, useUnsavedGuard, useViewer } from './shared/hooks';
 import { TermsEditor } from './shared/TermsEditor';
-import { isEmail, isNpwp, validateBankAccounts, validateSlaPriorities, validateTerms, type Errors } from './shared/validation';
+import { bankAccountUsed, isEmail, isNpwp, validateBankAccounts, validateSlaPriorities, validateTerms, type Errors } from './shared/validation';
 
 const toSettings = (r: SettingsGetResponse): PdSettings => ({
   company: r.company,
@@ -118,7 +118,8 @@ export default function DocSettings() {
       const clean: PdSettings = {
         ...draft,
         numbering: { prefix: draft.numbering.prefix.trim().toUpperCase() },
-        company: { ...draft.company, bank_accounts: draft.company.bank_accounts.filter((a) => a.bank.trim() || a.number.trim() || a.holder.trim()) },
+        // Baris yang belum diisi bank/nomornya tidak ikut disimpan (atas nama sudah terisi otomatis)
+        company: { ...draft.company, bank_accounts: draft.company.bank_accounts.filter(bankAccountUsed) },
       };
       await pdSettingsSave(clean);
       show('success', 'Pengaturan dokumen berhasil disimpan.');
@@ -253,12 +254,27 @@ export default function DocSettings() {
             ) : (
               <ul className="space-y-3">
                 {c.bank_accounts.map((a, i) => {
-                  const set = (k: 'bank' | 'number' | 'holder', v: string) =>
+                  const set = (k: 'bank' | 'number' | 'holder', v: string) => {
                     patch('company', { bank_accounts: c.bank_accounts.map((x, j) => (j === i ? { ...x, [k]: v } : x)) });
+                    clearError(`company.bank_accounts.${i}.${k}`);
+                  };
+                  const bankErr = errors[`company.bank_accounts.${i}.bank`];
                   const err = errors[`company.bank_accounts.${i}.number`];
                   return (
                     <li key={i} className="grid gap-2 rounded-xl bg-adm-ghost p-3 sm:grid-cols-[1fr_1fr_1.3fr_36px] sm:items-start sm:bg-transparent sm:p-0">
-                      <Input aria-label={`Nama bank ${i + 1}`} value={a.bank} maxLength={100} onChange={(e) => set('bank', e.target.value)} disabled={readOnly} controlSize="sm" placeholder="mis. BCA" />
+                      <div>
+                        <Input
+                          aria-label={`Nama bank ${i + 1}`}
+                          value={a.bank}
+                          maxLength={100}
+                          onChange={(e) => set('bank', e.target.value)}
+                          invalid={!!bankErr}
+                          disabled={readOnly}
+                          controlSize="sm"
+                          placeholder="mis. BCA"
+                        />
+                        {bankErr && <p className="mt-1 text-xs text-adm-danger-fg">{bankErr}</p>}
+                      </div>
                       <div>
                         <Input
                           aria-label={`Nomor rekening ${i + 1}`}

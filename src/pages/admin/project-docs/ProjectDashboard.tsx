@@ -115,7 +115,7 @@ export default function ProjectDashboard() {
           )}
 
           {/* Statistik */}
-          <section aria-label="Ringkasan" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+          <section aria-label="Ringkasan" className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
             <StatTile title="Proyek aktif" value={stats?.projects_active} icon={FolderKanban} tone="cobalt" loading={query.initialLoading} compact caption="Belum masuk tahap selesai" />
             <StatTile
               title="Dokumen kurang"
@@ -152,7 +152,7 @@ export default function ProjectDashboard() {
               tone="danger"
               loading={query.initialLoading}
               compact
-              className="col-span-2 lg:col-span-1"
+              className="col-span-2 xl:col-span-1"
               caption={stats ? `${stats.invoices_overdue_count} invoice lewat jatuh tempo · ${rupiah(stats.invoices_overdue_amount)}` : undefined}
             />
           </section>
@@ -170,7 +170,7 @@ export default function ProjectDashboard() {
                 )
               }
             />
-            <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:grid lg:grid-cols-9 lg:overflow-visible">
+            <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:grid xl:grid-cols-9 xl:overflow-visible">
               {STAGES.map((s, i) => {
                 const count = data?.stages?.[s.key] ?? 0;
                 const active = stage === s.key;
@@ -181,7 +181,7 @@ export default function ProjectDashboard() {
                     aria-pressed={active}
                     onClick={() => setStage(active ? null : s.key)}
                     className={cn(
-                      'relative flex min-w-[112px] shrink-0 flex-col items-start rounded-2xl px-3 py-3 text-left ring-1 ring-inset transition-colors lg:min-w-0',
+                      'relative flex min-w-[112px] shrink-0 flex-col items-start rounded-2xl px-3 py-3 text-left ring-1 ring-inset transition-colors xl:min-w-0',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt',
                       active ? 'bg-adm-cobalt-soft ring-cobalt/40' : 'bg-adm-surface ring-adm-line hover:bg-adm-hover hover:ring-adm-line-strong',
                     )}

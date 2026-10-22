@@ -1,7 +1,6 @@
 // Tab Dokumen: checklist of the project's document set (spec §1, §2 "Missing documents") with status, number,
 // version and signatures; actions buat (from the engine template) / buka (editor) / ekspor (PDF, DOCX).
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowRight, Download, FilePlus2, FileText, PenLine } from 'lucide-react';
 import { Badge, Button, Dropdown, Panel, PanelHeader, Spinner, cn } from '../../../../components/admin/ui';
 import { pdDocumentCreate } from '../../../../features/project-docs/api';
@@ -44,9 +43,8 @@ export function ExportMenu({ docId, onError, size = 'sm' }: { docId: number; onE
 
 export function DocumentsTab({ ctx }: { ctx: WorkspaceContext }) {
   const { project, settings, canEditType, notify } = ctx;
-  const navigate = useNavigate();
   const [creating, setCreating] = useState<DocType | null>(null);
-  const open = (docId: number) => navigate(`/admin/proyek/${project.id}/dokumen/${docId}`);
+  const open = (docId: number) => ctx.go(`/admin/proyek/${project.id}/dokumen/${docId}`);
 
   const create = async (type: DocType) => {
     setCreating(type);

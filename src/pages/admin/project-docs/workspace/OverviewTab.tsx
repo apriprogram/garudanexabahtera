@@ -1,6 +1,6 @@
 // Tab Ringkasan: project setup for the documents (client record, contract value, scope, payment terms, MoU and
 // maintenance flags, manual stage) via pd_project_save (admin), plus project and client facts (spec §5, §7).
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, CalendarDays, FileText, Mail, Phone, RotateCcw, Save, ShieldCheck, UserRound, Users } from 'lucide-react';
 import { Button, Field, InfoRow, Input, Notice, Panel, PanelHeader, Select, Switch, Textarea, cn } from '../../../../components/admin/ui';
@@ -84,6 +84,12 @@ export function OverviewTab({ ctx }: { ctx: WorkspaceContext }) {
   const [saving, setSaving] = useState(false);
   const dirty = JSON.stringify(form) !== baseline;
   const readOnly = !isAdmin;
+  // Workspace menahan navigasi keluar selama ada perubahan yang belum disimpan
+  const { setSetupDirty } = ctx;
+  useEffect(() => {
+    setSetupDirty(dirty && !readOnly);
+    return () => setSetupDirty(false);
+  }, [dirty, readOnly, setSetupDirty]);
 
   const set = <K extends keyof SetupForm>(key: K, value: SetupForm[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -308,7 +314,13 @@ export function OverviewTab({ ctx }: { ctx: WorkspaceContext }) {
               {project.service_label}
             </InfoRow>
             <InfoRow icon={CalendarDays} label="Jadwal">
-              {project.start_date || project.end_date ? `${tanggal(project.start_date)} – ${tanggal(project.end_date)}` : '-'}
+              <span className="inline-flex flex-wrap items-center gap-x-2">
+                {project.start_date || project.end_date ? `${tanggal(project.start_date)} – ${tanggal(project.end_date)}` : '-'}
+                {/* Tanggal mulai/selesai milik data proyek di Project Clients (dipakai "jangka waktu" di PKS & jadwal) */}
+                <Link to={`/admin/project-clients?edit=${project.id}`} className="text-xs font-medium text-adm-link hover:underline">
+                  Atur
+                </Link>
+              </span>
             </InfoRow>
             <InfoRow icon={UserRound} label="Penanggung jawab">
               {project.assigned_user || '-'}

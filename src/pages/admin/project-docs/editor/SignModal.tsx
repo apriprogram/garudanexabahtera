@@ -115,7 +115,7 @@ export function SignModal({
             <Field label="Nama untuk tanda tangan" htmlFor="sign-typed" error={errors.signature} hint="Server membuat gambar tanda tangan dari nama ini.">
               <Input id="sign-typed" value={typed} maxLength={100} onChange={(e) => setTyped(e.target.value)} invalid={!!errors.signature} />
               <div className="mt-3 flex h-24 items-center justify-center rounded-2xl bg-white px-4 ring-1 ring-inset ring-adm-line-strong" aria-hidden>
-                <span className="truncate font-serif text-3xl italic text-fg">{typed.trim() || 'Nama Anda'}</span>
+                <span className="truncate font-serif text-3xl italic text-fg">{typed.trim() || 'Nama penanda tangan'}</span>
               </div>
             </Field>
           )}

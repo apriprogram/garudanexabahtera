@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run src/pages/admin/project-docs/__tests__/ProjectDashboard.test.tsx
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dashboard } from './fixtures';
+
+// Di mesin yang sibuk 1 detik bawaan findBy/waitFor tidak cukup
+configure({ asyncUtilTimeout: 5000 });
 
 const api = vi.hoisted(() => ({ pdDashboard: vi.fn() }));
 vi.mock('../../../../features/project-docs/api', () => api);

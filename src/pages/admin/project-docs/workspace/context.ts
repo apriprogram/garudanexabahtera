@@ -13,4 +13,8 @@ export interface WorkspaceContext {
   reload: () => void;
   notify: (tone: ToastTone, message: string) => void;
   openTab: (tab: 'ringkasan' | 'dokumen' | 'jadwal' | 'invoice' | 'aktivitas') => void;
+  /** in-app navigation that asks first while the Ringkasan form has unsaved changes */
+  go: (to: string) => void;
+  /** the Ringkasan form reports its unsaved changes (drives the leave guard) */
+  setSetupDirty: (dirty: boolean) => void;
 }

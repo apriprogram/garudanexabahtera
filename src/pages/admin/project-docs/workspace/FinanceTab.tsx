@@ -2,7 +2,6 @@
 // proof, cancellation and the receipts (Kuitansi) issued per payment (spec §4.2, §5). Admin only for changes; a
 // Developer sees the same figures read-only.
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Ban, Banknote, FilePlus2, Plus, ReceiptText, Wallet } from 'lucide-react';
 import {
   Badge,
@@ -46,7 +45,6 @@ function InvoiceStatus({ invoice, size }: { invoice: InvoiceSummary; size?: 'sm'
 
 export function FinanceTab({ ctx }: { ctx: WorkspaceContext }) {
   const { project, settings, isAdmin, reload, notify } = ctx;
-  const navigate = useNavigate();
   const [invoiceModal, setInvoiceModal] = useState<{ open: boolean; term: PaymentTerm | null }>({ open: false, term: null });
   const [paying, setPaying] = useState<InvoiceSummary | null>(null);
   const [cancelling, setCancelling] = useState<InvoiceSummary | null>(null);
@@ -58,7 +56,7 @@ export function FinanceTab({ ctx }: { ctx: WorkspaceContext }) {
   const paid = active.reduce((s, i) => s + i.amount_paid, 0);
   const outstanding = active.filter((i) => i.doc_status !== 'draft').reduce((s, i) => s + i.remaining, 0);
   const termInvoice = (key: string) => invoices.find((i) => i.term_key === key && live(i)) ?? null;
-  const openDoc = (documentId: number) => navigate(`/admin/proyek/${project.id}/dokumen/${documentId}`);
+  const openDoc = (documentId: number) => ctx.go(`/admin/proyek/${project.id}/dokumen/${documentId}`);
   // Isi awal invoice baru dan kuitansi yang terbit bersama pembayaran (template engine)
   const invoiceContent = useMemo(() => templateFor('invoice', project, settings), [project, settings]);
   const receiptContent = useMemo(() => templateFor('receipt', project, settings), [project, settings]);

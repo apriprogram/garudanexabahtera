@@ -152,11 +152,18 @@ export function validatePayment(f: PaymentForm, remaining: number): Errors {
   return errors;
 }
 
+/** A bank account row is in use once its bank or number is filled (the holder is prefilled with the company name). */
+export const bankAccountUsed = (a: BankAccount) => !!(a.bank.trim() || a.number.trim());
+
+/** Rows in use need both the bank and a numeric account number; unused rows are dropped before saving. */
 export function validateBankAccounts(accounts: BankAccount[]): Errors {
   const errors: Errors = {};
   if (accounts.length > 5) errors['company.bank_accounts'] = 'Rekening bank maksimal 5.';
   accounts.forEach((a, i) => {
-    if (a.number.trim() && !/^[0-9 .-]+$/.test(a.number.trim())) errors[`company.bank_accounts.${i}.number`] = 'Nomor rekening hanya angka.';
+    if (!bankAccountUsed(a)) return;
+    if (!a.bank.trim()) errors[`company.bank_accounts.${i}.bank`] = 'Nama bank wajib diisi.';
+    if (!a.number.trim()) errors[`company.bank_accounts.${i}.number`] = 'Nomor rekening wajib diisi.';
+    else if (!/^[0-9 .-]+$/.test(a.number.trim())) errors[`company.bank_accounts.${i}.number`] = 'Nomor rekening hanya angka.';
   });
   return errors;
 }

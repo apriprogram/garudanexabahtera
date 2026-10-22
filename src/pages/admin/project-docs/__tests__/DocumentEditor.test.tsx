@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run src/pages/admin/project-docs/__tests__/DocumentEditor.test.tsx
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocDetail } from '../../../../features/project-docs/types';
 import type { DocModel } from '../../../../features/project-docs/engine';
 import { brdDraft, merge, settings } from './fixtures';
+
+// Editor + engine render berat; di mesin yang sibuk 1 detik bawaan findBy/waitFor tidak cukup
+configure({ asyncUtilTimeout: 5000 });
 
 const api = vi.hoisted(() => ({
   pdDocumentGet: vi.fn(),
@@ -229,7 +232,15 @@ describe('Hak aksi editor', () => {
       invoice: { payment_status: 'sebagian' } as DocDetail['invoice'],
       payments: [{ id: 1 } as NonNullable<DocDetail['payments']>[number]],
     });
-    expect(editorPermissions(invoice, admin)).toMatchObject({ canChange: false, canRecordPayment: true, canWithdraw: false });
+    expect(editorPermissions(invoice, admin)).toMatchObject({ canChange: false, canRecordPayment: true, canWithdraw: false, canCancelInvoice: false });
     expect(editorPermissions(brdDraft({ doc_type: 'receipt', status: 'selesai' }), admin)).toMatchObject({ editable: false, canChange: false, canDelete: false });
+  });
+
+  it('invoice tanpa pembayaran bisa dibatalkan admin; yang sudah dibatalkan tidak', () => {
+    const issued = (payment_status: 'belum_dibayar' | 'dibatalkan') =>
+      brdDraft({ doc_type: 'invoice', status: 'disetujui', invoice: { id: 5, payment_status, amount_paid: 0 } as DocDetail['invoice'], payments: [] });
+    expect(editorPermissions(issued('belum_dibayar'), admin)).toMatchObject({ canCancelInvoice: true, canRecordPayment: true });
+    expect(editorPermissions(issued('belum_dibayar'), developer).canCancelInvoice).toBe(false);
+    expect(editorPermissions(issued('dibatalkan'), admin)).toMatchObject({ canCancelInvoice: false, canRecordPayment: false, canChange: false });
   });
 });
