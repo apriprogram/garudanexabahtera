@@ -14,6 +14,7 @@ import KebijakanPrivasi from '../../../pages/public/legal/KebijakanPrivasi';
 import KebijakanPengembalianDana from '../../../pages/public/legal/KebijakanPengembalianDana';
 import { apiGet, clearApiCache } from '../../../lib/api';
 import { LEGAL_PATHS } from '../../../lib/legal';
+import { getHead } from '../../../seo/routes';
 import {
   TEMPLATE_PRICE_INCLUDES_DEFAULT,
   TEMPLATE_PRICE_NOTE_DEFAULT,
@@ -262,7 +263,8 @@ describe('halaman legal', () => {
     expect(time).toHaveAttribute('dateTime', '2026-10-21');
     expect(time?.parentElement).toHaveTextContent('Terakhir diperbarui: 21 Oktober 2026');
     expect(screen.getAllByRole('navigation', { name: 'Daftar isi' }).length).toBeGreaterThan(0);
-    expect(document.title).toBe(`${title} | Garuda Nexa`);
+    // Judul tab dari head (src/seo/pages/legal.seo.ts lewat SeoManager/prerender), bukan dari halamannya
+    expect(getHead(path, { settings: {}, navbar: [], templates: [], projects: [], templateBySlug: {}, builtAt: '' }).title).toBe(`${title} | Garuda Nexa`);
   });
 
   it('refund: dana penuh ke metode semula dalam 7 hari kerja', () => {

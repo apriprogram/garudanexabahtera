@@ -1,13 +1,12 @@
 // Kerangka halaman legal publik (/syarat-ketentuan, /kebijakan-privasi, /kebijakan-pengembalian-dana):
 // Navbar, breadcrumb, judul + "Terakhir diperbarui", daftar isi (sticky di desktop, disclosure di HP), isi bernomor,
-// kotak kontak, dokumen terkait, Footer.
+// kotak kontak, dokumen terkait, Footer. Judul tab, description, canonical dan JSON-LD: src/seo/pages/legal.seo.ts.
 import React from 'react';
 import { ArrowRight, ChevronDown, ChevronRight, FileText, Mail, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Footer from '../../../components/layout/Footer';
 import Navbar from '../../../components/layout/Navbar';
 import { LEGAL_LABELS, LEGAL_LINKS, LEGAL_UPDATED_AT, type LegalPageKey } from '../../../lib/legal';
-import { useDocumentTitle } from '../template/useDocumentTitle';
 import { formatLegalDate, useLegalContact } from './legalContact';
 
 export interface LegalSection {
@@ -50,7 +49,6 @@ export const LegalPage: React.FC<LegalPageProps> = ({ page, intro, sections }) =
   const title = LEGAL_LABELS[page];
   const contact = useLegalContact(page);
   const related = LEGAL_LINKS.filter((link) => link.key !== page);
-  useDocumentTitle(`${title} | Garuda Nexa`);
 
   return (
     <>

@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run src/pages/public/__tests__/notFound.test.tsx
-// Halaman 404 (paket "proses-faq-404"): judul tab sendiri + robots noindex selama tampil (dipulihkan saat keluar),
-// bilah alamat yang membungkus path panjang (tidak dipotong), dan label "Pesan Custom" sesuai glosarium.
+// Halaman 404 (paket "proses-faq-404"): bilah alamat yang membungkus path panjang (tidak dipotong) dan label
+// "Pesan Custom" sesuai glosarium. Judul tab & robots noindex sekarang datang dari head (getHead → kepala 404,
+// docs/platform/SEO-PLAN.md §5.3), bukan dari komponen; path baru tampil setelah hidrasi (404.html dipakai semua alamat).
 import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SiteSettings } from '../../../hooks/useSiteSettings';
+import { notFoundHead } from '../../../seo/defaults';
+import { getHead } from '../../../seo/routes';
 import NotFound from '../NotFound';
 
 // Kanvas hero tidak didukung jsdom; latar dekoratif tidak relevan untuk tes ini
@@ -36,41 +39,24 @@ afterEach(() => {
 const robots = () => [...document.head.querySelectorAll<HTMLMetaElement>('meta[name="robots"]')].map((meta) => meta.content);
 
 describe('NotFound (404)', () => {
-  it('memberi judul tab sendiri dan robots noindex, lalu memulihkannya saat keluar (C-04)', () => {
+  it('tidak mengubah judul tab atau robots sendiri: head 404 dari getHead (noindex,follow)', () => {
     const { unmount } = render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/halaman-tidak-ada']}>
         <NotFound />
       </MemoryRouter>,
     );
-    expect(document.title).toBe('Halaman tidak ditemukan | Garuda Nexa');
-    expect(robots()).toEqual(['noindex']);
-
-    unmount();
     expect(document.title).toBe(HOME_TITLE);
     expect(robots()).toEqual([]);
-  });
-
-  it('meta robots yang sudah ada diubah sementara, bukan diduplikasi', () => {
-    const meta = document.createElement('meta');
-    meta.name = 'robots';
-    meta.content = 'index, follow';
-    document.head.appendChild(meta);
-
-    const { unmount } = render(
-      <MemoryRouter>
-        <NotFound />
-      </MemoryRouter>,
-    );
-    expect(robots()).toEqual(['noindex']);
     unmount();
-    expect(robots()).toEqual(['index, follow']);
+    const head = getHead('/halaman-tidak-ada', { settings: {}, navbar: [], templates: [], projects: [], templateBySlug: {}, builtAt: '' });
+    expect(head).toEqual(notFoundHead());
+    expect(head).toMatchObject({ title: 'Halaman tidak ditemukan | Garuda Nexa', robots: 'noindex,follow', canonical: null });
   });
 
   it('bilah alamat menampilkan path lengkap yang membungkus, bukan dipotong (C-14)', () => {
     const path = '/halaman-yang-tidak-ada/dengan-alamat-yang-sangat-panjang-sekali';
-    window.history.replaceState(null, '', path);
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
         <NotFound />
       </MemoryRouter>,
     );

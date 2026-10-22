@@ -14,7 +14,10 @@
 // - head() = null berarti "path ini milik saya tetapi tidak ada" (mis. slug yang tidak dikenal) → kepala 404.
 // - routes() hanya untuk halaman yang `index,follow`; rute noindex disaring dari sitemap.
 import { notFoundHead } from './defaults';
+import { normalizePathname } from './paths';
 import type { PageSeo, SeoData, SeoHead, SitemapEntry } from './types';
+
+export { normalizePathname };
 
 type SeoModule = { default?: PageSeo };
 
@@ -44,13 +47,6 @@ function collect(modules: Record<string, SeoModule>): RegisteredSeo[] {
 
 /** Semua modul SEO: halaman publik baru dulu, lalu definisi statis; masing-masing urut nama file. */
 export const SEO_MODULES: readonly RegisteredSeo[] = [...collect(pageModules), ...collect(staticModules)];
-
-/** "/harga/?utm_source=x#a" → "/harga"; "" → "/". */
-export function normalizePathname(pathname: string): string {
-  const path = pathname.split(/[?#]/, 1)[0] || '/';
-  const withSlash = path.startsWith('/') ? path : `/${path}`;
-  return withSlash.replace(/\/{2,}/g, '/').replace(/(.)\/+$/, '$1');
-}
 
 /** Modul yang memiliki path ini (sudah dinormalkan), atau null. */
 export function findSeoModule(pathname: string): RegisteredSeo | null {

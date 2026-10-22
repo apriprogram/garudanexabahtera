@@ -1,36 +1,27 @@
-import { useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import { ArrowLeft, ArrowRight, Home as HomeIcon, LayoutTemplate, MessageCircle, Smartphone } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import { HeroBackground } from '../../components/sections/hero/HeroBackground';
 import { LogoBadge } from '../../components/ui/LogoMark';
 import { SplitText } from '../../components/ui/SplitText';
 import { getHiddenSections, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
-import { useDocumentTitle } from './template/useDocumentTitle';
 
-const NOT_FOUND_TITLE = 'Halaman tidak ditemukan | Garuda Nexa';
+// Judul tab dan robots noindex,follow halaman ini datang dari head (getHead → kepala 404: prerender 404.html dan
+// SeoManager), bukan dari komponen ini (docs/platform/SEO-PLAN.md §5.3).
+
+const noopSubscribe = () => () => undefined;
 
 /**
- * `<meta name="robots" content="noindex">` selama halaman 404 tampil, agar alamat yang salah tidak diindeks sebagai
- * salinan beranda (hosting tetap mengirim index.html berstatus 200). Meta yang sudah ada dipulihkan saat keluar.
+ * true setelah hidrasi. Path yang tidak ditemukan dan riwayat browser hanya diketahui di klien: 404.html hasil prerender
+ * disajikan untuk semua alamat yang salah, jadi keduanya baru ditampilkan setelah hidrasi (tanpa hydration mismatch).
  */
-function useNoIndex() {
-  useEffect(() => {
-    const existing = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
-    if (existing) {
-      const previous = existing.content;
-      existing.content = 'noindex';
-      return () => {
-        existing.content = previous;
-      };
-    }
-    const meta = document.createElement('meta');
-    meta.name = 'robots';
-    meta.content = 'noindex';
-    document.head.appendChild(meta);
-    return () => meta.remove();
-  }, []);
-}
+const useHydrated = () =>
+  useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
 
 /**
  * Halaman 404 publik gaya BELAJAR CPNS (terang): latar medan titik interaktif, kartu bilah alamat datar,
@@ -41,10 +32,10 @@ export default function NotFound() {
   const { settings } = useSiteSettings();
   const whatsapp = getWhatsappNumber(settings);
   const templatesHidden = getHiddenSections(settings).has('templates');
-  const canGoBack = typeof window !== 'undefined' && window.history.length > 1;
-  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
-  useDocumentTitle(NOT_FOUND_TITLE);
-  useNoIndex();
+  const { pathname } = useLocation();
+  const hydrated = useHydrated();
+  const canGoBack = hydrated && window.history.length > 1;
+  const path = hydrated ? pathname : '';
 
   return (
     <>
@@ -62,7 +53,7 @@ export default function NotFound() {
             {/* Bilah alamat datar dengan path yang tidak ditemukan. Path panjang membungkus (tidak dipotong), jadi
                 bagian yang salah tetap terbaca; satu baris = pil (radius = setengah tinggi), lebih = kotak rounded. */}
             <div
-              title={path}
+              title={path || undefined}
               className="flex min-h-10 w-full max-w-md animate-fade-up items-center gap-2 rounded-[20px] bg-surface py-1.5 pl-1.5 pr-4 ring-1 ring-inset ring-line motion-reduce:animate-none sm:min-h-11 sm:max-w-lg sm:rounded-[22px] sm:pl-2"
             >
               <LogoBadge className="h-7 w-7 shrink-0" />

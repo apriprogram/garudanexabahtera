@@ -61,3 +61,21 @@ export { LEGAL_PATHS };
 
 /** URL absolut kanonis dari path situs ("/harga" → "https://garudanexa.com/harga"). */
 export const absoluteUrl = (path: string) => (path === '/' ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${path}`);
+
+/** "/harga/?utm_source=x#a" → "/harga"; "" → "/". Path kanonis: diawali "/", tanpa query/hash/garis miring di akhir. */
+export function normalizePathname(pathname: string): string {
+  const path = pathname.split(/[?#]/, 1)[0] || '/';
+  const withSlash = path.startsWith('/') ? path : `/${path}`;
+  return withSlash.replace(/\/{2,}/g, '/').replace(/(.)\/+$/, '$1');
+}
+
+/** URL kanonis (absolut, apex, tanpa query dan garis miring di akhir) untuk path apa pun. */
+export const canonicalUrl = (pathname: string) => absoluteUrl(normalizePathname(pathname));
+
+/**
+ * Rute aplikasi (akun, checkout, login, admin, pratinjau situs): selalu noindex,follow (rencana §2) dan kepalanya tidak
+ * bergantung pada data. `/pesan-custom` BUKAN rute aplikasi.
+ */
+const APP_PATH = /^\/(?:akun|admin|masuk|daftar|login|auth)(?:\/.*)?$|^\/(?:pesan|situs)\/[^/]+(?:\/.*)?$/;
+
+export const isAppPath = (pathname: string): boolean => APP_PATH.test(normalizePathname(pathname));

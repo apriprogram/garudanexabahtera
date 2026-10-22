@@ -2,6 +2,7 @@
 // Jalankan: npx vitest run src/seo
 // Kontrak SEO (docs/platform/SEO-PLAN.md §4, §5.1): getHead/getIndexableRoutes atas semua modul *.seo.ts, stub WP1
 // selalu noindex dan tidak pernah masuk sitemap, satu path dimiliki paling banyak satu modul, head.ts men-escape.
+// Kepala lengkap per rute (WP3): heads.test.ts.
 import { describe, expect, it } from 'vitest';
 import { COMPANY_FACTS } from '../../lib/companyFacts';
 import { notFoundHead, stubHead } from '../defaults';
@@ -170,17 +171,17 @@ describe('getIndexableRoutes', () => {
   });
 });
 
-describe('head.ts (stub)', () => {
+describe('head.ts', () => {
   it('renderHeadTags men-escape semua nilai dan hanya menulis canonical bila ada', () => {
     const html = renderHeadTags({
       ...stubHead({ title: 'A & B <script>', description: 'Kutip "ganda" & \'tunggal\'' }),
     });
     expect(html).toContain('<title>A &amp; B &lt;script&gt;</title>');
     expect(html).toContain('content="Kutip &quot;ganda&quot; &amp; &#39;tunggal&#39;"');
-    expect(html).toContain('<meta name="robots" content="noindex,follow">');
+    expect(html).toContain('<meta name="robots" content="noindex,follow" data-gn="robots">');
     expect(html).not.toContain('canonical');
     expect(renderHeadTags({ ...notFoundHead(), robots: 'index,follow', canonical: 'https://garudanexa.com/harga' })).toContain(
-      '<link rel="canonical" href="https://garudanexa.com/harga">',
+      '<link rel="canonical" href="https://garudanexa.com/harga" data-gn="canonical">',
     );
     expect(escapeHtml(`<>&"'`)).toBe('&lt;&gt;&amp;&quot;&#39;');
   });

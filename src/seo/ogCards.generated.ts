@@ -1,0 +1,21 @@
+// DIBUAT OTOMATIS oleh scripts/seo/og-images.mjs. Jangan diedit manual: jalankan ulang skripnya.
+// Daftar kartu Open Graph yang ada di public/og/{nama}.jpg (1200×630). Dipakai src/seo/og.ts.
+export const OG_CARDS: readonly string[] = [
+  'catalog',
+  'default',
+  'harga',
+  'jasa-aplikasi',
+  'jasa-website',
+  'kategori-company-profile',
+  'kategori-fintech-startup',
+  'kategori-kecantikan-klinik',
+  'kategori-olahraga-komunitas',
+  'kontak',
+  'panduan',
+  'template-arena-club',
+  'template-aura-studio',
+  'template-corporate-nexa',
+  'template-finova',
+  'template-startup-clean',
+  'tentang',
+];

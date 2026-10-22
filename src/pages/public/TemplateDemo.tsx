@@ -1,6 +1,8 @@
 // Demo template (/demo/:slug): render template layar penuh dengan konten bawaan + bar tipis (kembali, nama, harga,
-// "Pesan Template"). Di layar lebar ada pilihan tampilan Desktop / HP (template memakai container query); tampilan HP
-// = viewport 390px persis tanpa scrollbar desktop di dalam bingkai.
+// label "Konten demo (fiktif)", "Pesan Template"). Di layar lebar ada pilihan tampilan Desktop / HP (template memakai
+// container query); tampilan HP = viewport 390px persis tanpa scrollbar desktop di dalam bingkai.
+// Head (judul tab, noindex,follow tanpa canonical): src/seo/pages/demo.seo.ts. Isi demo (nama usaha, testimoni) fiktif,
+// jadi halaman ini tidak diindeks dan bar demo menyebutnya dengan jelas (SEO-PLAN §2, audit CONTENT-11).
 import { ArrowLeft, ExternalLink, LayoutTemplate, Monitor, ShoppingBag, Smartphone } from 'lucide-react';
 import { useState, useSyncExternalStore } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -8,7 +10,6 @@ import { getTemplate } from '../../templates';
 import { SiteRenderer } from '../../templates/SiteRenderer';
 import { SiteStatus } from '../../templates/SiteStatus';
 import { formatRupiah, type Template } from '../../types/platform';
-import { useDocumentTitle } from './template/useDocumentTitle';
 import { useTemplateBySlug } from './template/useTemplateBySlug';
 
 type Device = 'desktop' | 'mobile';
@@ -31,8 +32,6 @@ export default function TemplateDemo() {
   const device: Device = wide ? chosenDevice : 'desktop';
   const template = state.status === 'ready' ? state.template : null;
   const def = template ? getTemplate(template.template_code) : undefined;
-
-  useDocumentTitle(template ? `Demo ${template.name} | Garuda Nexa` : state.status === 'notfound' ? 'Demo tidak ditemukan | Garuda Nexa' : null);
 
   return (
     <div className="min-h-[100svh] bg-canvas">
@@ -102,7 +101,13 @@ function DemoBar({
                 <span className="truncate text-sm font-semibold text-fg sm:text-[15px]">{template.name}</span>
                 <span className="badge-site h-5 shrink-0 px-2 text-[11px]">Demo</span>
               </p>
-              <p className="text-xs tabular-nums text-subtle">{formatRupiah(template.price)}</p>
+              <p className="flex min-w-0 items-center gap-1.5 text-xs text-subtle">
+                <span className="shrink-0 tabular-nums">{formatRupiah(template.price)}</span>
+                <span aria-hidden className="shrink-0">
+                  ·
+                </span>
+                <span className="truncate">Konten demo (fiktif)</span>
+              </p>
             </>
           ) : (
             <p className="truncate text-sm font-semibold text-fg">Demo template</p>
