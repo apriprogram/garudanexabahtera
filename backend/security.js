@@ -236,6 +236,18 @@ function containsScriptUrl(value, depth = 0) {
   return Object.values(value).some((v) => containsScriptUrl(v, depth + 1));
 }
 
+// update_project with a `price` key (any value, null and the current one included), or add_project with a price
+// other than empty or zero ("", null, 0, "0", "0.00", ".0": what a new project gets anyway). Same rule as
+// sets_contract_value() in api.php
+const ZERO_PRICE = /^[+-]?(0+(\.0*)?|\.0+)$/;
+export function setsContractValue(action, input) {
+  if ((action !== 'update_project' && action !== 'add_project') || !Object.prototype.hasOwnProperty.call(input, 'price')) return false;
+  if (action === 'update_project') return true;
+  const { price } = input;
+  if (price === null || price === '' || price === 0) return false;
+  return !(typeof price === 'string' && ZERO_PRICE.test(price));
+}
+
 // Rejects protected actions without a valid token and enforces roles; must run before the route handlers.
 // Sets req.user (null for public actions) for the handlers, e.g. backend/modules/templates.js.
 export function createAuthGate(pool) {
@@ -292,6 +304,12 @@ export function createAuthGate(pool) {
       }
       if (action === 'delete_user' && Number(body.id ?? req.query.id) === Number(user.id)) {
         return res.status(400).json({ error: 'Tidak bisa menghapus akun yang sedang dipakai.' });
+      }
+      // Contract value (project_client.price, "Nilai kontrak" of the project documents) is admin only: the whole
+      // request is refused, so nothing of it is saved (same check in api.php). A GET reads the query like api.php,
+      // whose input for GET is the body plus the query string.
+      if (!isAdmin && setsContractValue(action, req.method === 'GET' ? { ...req.query, ...body } : body)) {
+        return res.status(403).json({ error: 'Hanya admin yang dapat mengubah nilai kontrak.', code: 'FORBIDDEN' });
       }
       if (containsScriptUrl(body)) {
         return res.status(400).json({ error: 'Tautan javascript:/vbscript: tidak diizinkan.' });

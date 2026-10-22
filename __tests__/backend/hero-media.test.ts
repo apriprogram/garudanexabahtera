@@ -991,7 +991,7 @@ const API_HELPERS = [
 // The real access check (lists and authorize_request); authenticate() is stubbed in the harness
 const GATE_HELPERS = [
   ...['PUBLIC_ACTIONS', 'ANY_ROLE_ACTIONS', 'CUSTOMER_ACTIONS', 'ADMIN_ACTIONS', 'STAFF_ROLES', 'USER_ROLES'].map(apiPhpConst),
-  ...['in_int', 'contains_script_url', 'authorize_request'].map((name) => apiPhpBlock(`function ${name}\\(`)),
+  ...['in_int', 'contains_script_url', 'authorize_request', 'sets_contract_value'].map((name) => apiPhpBlock(`function ${name}\\(`)),
 ].join('\n');
 
 // hero_settings in memory ($GLOBALS['__store']): answers the module's SELECT ... WHERE setting_key IN ('a', 'b'), and

@@ -855,8 +855,22 @@ function authorize_request(mysqli $conn, $action, array &$input) {
         if ($action === 'update_user' && !empty($password) && strlen((string)$password) < 8) throw new ApiError('Password minimal 8 karakter.');
     }
     if ($action === 'delete_user' && in_int($input, 'id') === $user['id']) throw new ApiError('Tidak bisa menghapus akun yang sedang dipakai.');
+    // Contract value (project_client.price, "Nilai kontrak" of the project documents) is admin only: the whole request
+    // is refused, so nothing of it is saved (same check in backend/security.js)
+    if (!$isAdmin && sets_contract_value($action, $input)) throw new ApiError('Hanya admin yang dapat mengubah nilai kontrak.', 403, 'FORBIDDEN');
     if (contains_script_url($input)) throw new ApiError('Tautan javascript:/vbscript: tidak diizinkan.');
     return $user;
+}
+
+// update_project with a `price` key (any value, null and the current one included), or add_project with a price
+// other than empty or zero ("", null, 0, "0", "0.00", ".0": what a new project gets anyway). Same rule as
+// setsContractValue() in backend/security.js
+function sets_contract_value($action, array $input) {
+    if (($action !== 'update_project' && $action !== 'add_project') || !array_key_exists('price', $input)) return false;
+    if ($action === 'update_project') return true;
+    $price = $input['price'];
+    if ($price === null || $price === '' || $price === 0 || $price === 0.0) return false;
+    return !(is_string($price) && preg_match('/^[+-]?(0+(\.0*)?|\.0+)$/D', $price));
 }
 
 // ── Login rate limit: small JSON files in the system temp folder (PHP has no shared memory) ──

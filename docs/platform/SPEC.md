@@ -45,6 +45,12 @@ Peran `users.role`: `admin`, `user` (staf), **`customer`** (baru, pembeli templa
     Data selalu difilter `user_id = token.sub` (cegah IDOR; order/site milik orang lain → 404).
   - Selain itu = **aksi staf**: token role `admin` atau `user`. Token `customer` → 403.
   - `ADMIN_ACTIONS` (admin saja): yang lama + `admin_delete_template`.
+  - **Nilai kontrak** (`project_client.price`, "Nilai kontrak" dokumen proyek) hanya diisi/diubah admin (keputusan
+    pemilik). Non-admin → 403 `{ error: "Hanya admin yang dapat mengubah nilai kontrak.", code: "FORBIDDEN" }` untuk
+    `update_project` yang mengirim key `price` (nilai apa pun, termasuk null) dan untuk `add_project` dengan `price`
+    selain kosong/nol (`""`, null, `0`, `"0"`, `"0.00"`); seluruh request ditolak, tidak ada pembaruan sebagian. Dicek di
+    gerbang akses kedua backend (`authorize_request` / `createAuthGate`, GET dan POST). Form Project Clients menampilkan
+    anggaran baca-saja untuk non-admin dan tidak mengirim `price`; `pd_project_save` sudah admin saja.
 - Panel admin (frontend `/admin/*`): role `customer` diarahkan ke `/akun`. Halaman akun (`/akun/*`): tanpa token →
   `/masuk?next=...`; staf yang membuka `/akun` diarahkan ke `/admin`.
 
@@ -256,7 +262,7 @@ content: object|null, activated_at, updated_at, owner_name, owner_email }` (owne
 | `admin_dashboard_summary` | – | `{ template_orders: { total, this_month, by_status }, custom_projects: { total, this_month, from_website_pending }, revenue: { template_paid, custom_total }, recent_template_orders: Order[] (5 terbaru) }` |
 
 Juga: `update_project` & `add_project` (lama) menerima `show_on_website` (0/1); `get_projects` mengembalikan
-`show_on_website` dan `source`.
+`show_on_website` dan `source`. `price` (nilai kontrak) hanya dari admin, lihat §2.
 
 **Latar hero beranda** (`backend/modules/hero_media.php` / `hero_media.js`, aksi staf, tidak ada di daftar mana pun):
 

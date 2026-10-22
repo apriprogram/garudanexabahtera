@@ -142,7 +142,8 @@ maintenance_start DATE NULL, maintenance_end DATE NULL,
 scope_summary TEXT NULL,
 payment_terms LONGTEXT NULL,               -- JSON PaymentTerm[] (§4.2)
 updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP
--- contract value = existing column project_client.price
+-- contract value = existing column project_client.price (admin only: pd_project_save, and update_project /
+-- add_project refuse a price from non-admins with 403, docs/platform/SPEC.md §2)
 
 pd_milestones (
   id INT PK AI, project_id INT NOT NULL,

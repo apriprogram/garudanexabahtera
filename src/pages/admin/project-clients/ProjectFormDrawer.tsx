@@ -14,6 +14,7 @@ import {
   FileText,
   Globe,
   GripVertical,
+  Lock,
   Mail,
   Paperclip,
   Phone,
@@ -44,6 +45,7 @@ import {
 } from '../../../components/admin/ui';
 import { projectIssues } from '../../../components/sections/projects/presentable';
 import { ApiError, apiPost, errorMessage, readImageAsDataUrl } from '../../../lib/api';
+import { getRole } from '../../../lib/auth';
 import { downloadProjectFile, parseProjectFiles, toDateInput, type Project, type ProjectFile, type ProjectStatus, type UserLite } from './projectShared';
 import { Avatar, SectionTitle } from './ProjectUi';
 
@@ -153,6 +155,8 @@ export function ProjectFormDrawer({
   const [saveError, setSaveError] = useState('');
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  // Nilai kontrak (price) hanya diisi/diubah admin; backend menolak price dari non-admin (403, docs/platform/SPEC.md §2)
+  const [canEditPrice] = useState(() => getRole() === 'admin');
 
   // Isi ulang form setiap kali drawer dibuka (proyek baru atau proyek lain)
   const [prevOpen, setPrevOpen] = useState(open);
@@ -255,10 +259,11 @@ export function ProjectFormDrawer({
     const { price, ...rest } = formData;
     // Anggaran kosong = belum ditentukan (NULL). Saat edit proyek yang anggarannya memang belum ditentukan,
     // `price` tidak dikirim sama sekali agar update_project (hanya mengubah field yang dikirim) tetap NULL.
-    const keepNullPrice = isEdit && price == null && project?.price == null;
+    // Non-admin tidak pernah mengirim `price` (nilai kontrak hanya untuk admin).
+    const sendPrice = canEditPrice && !(isEdit && price == null && project?.price == null);
     const payload = {
       ...rest,
-      ...(keepNullPrice ? {} : { price }),
+      ...(sendPrice ? { price } : {}),
       show_on_website: formData.show_on_website ? 1 : 0,
       ...(project ? { id: project.id } : {}),
     };
@@ -560,23 +565,45 @@ export function ProjectFormDrawer({
           <section>
             <SectionTitle icon={DollarSign}>Keuangan & jadwal</SectionTitle>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Field label="Anggaran (IDR)" htmlFor="project-price" error={errors.price} hint="Kosongkan bila penawaran belum disepakati." className="md:col-span-2">
-                <Input
-                  id="project-price"
-                  type="text"
-                  inputMode="numeric"
-                  leftIcon="Rp"
-                  mono
-                  className="font-semibold"
-                  value={formData.price == null ? '' : formData.price.toLocaleString('id-ID')}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\./g, '').trim();
-                    if (val === '') update('price', null);
-                    else if (/^\d+$/.test(val) && val.length <= 13) update('price', Number(val));
-                  }}
-                  placeholder="Belum ditentukan"
-                />
-              </Field>
+              {canEditPrice ? (
+                <Field label="Anggaran (IDR)" htmlFor="project-price" error={errors.price} hint="Kosongkan bila penawaran belum disepakati." className="md:col-span-2">
+                  <Input
+                    id="project-price"
+                    type="text"
+                    inputMode="numeric"
+                    leftIcon="Rp"
+                    mono
+                    className="font-semibold"
+                    value={formData.price == null ? '' : formData.price.toLocaleString('id-ID')}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\./g, '').trim();
+                      if (val === '') update('price', null);
+                      else if (/^\d+$/.test(val) && val.length <= 13) update('price', Number(val));
+                    }}
+                    placeholder="Belum ditentukan"
+                  />
+                </Field>
+              ) : (
+                <Field
+                  label="Anggaran (IDR)"
+                  htmlFor="project-price"
+                  hint={<span id="project-price-note">Nilai kontrak hanya dapat diisi dan diubah oleh admin.</span>}
+                  className="md:col-span-2"
+                >
+                  <Input
+                    id="project-price"
+                    type="text"
+                    readOnly
+                    aria-describedby="project-price-note"
+                    leftIcon="Rp"
+                    rightIcon={<Lock />}
+                    mono
+                    className="cursor-default bg-adm-ghost font-semibold text-adm-muted"
+                    value={formData.price == null ? '' : formData.price.toLocaleString('id-ID')}
+                    placeholder="Belum ditentukan"
+                  />
+                </Field>
+              )}
               <Field label="Tanggal mulai" htmlFor="project-start_date" error={errors.start_date}>
                 <Input
                   id="project-start_date"
