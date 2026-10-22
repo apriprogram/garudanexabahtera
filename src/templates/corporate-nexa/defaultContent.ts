@@ -1,4 +1,7 @@
-// Konten bawaan Corporate Nexa (perusahaan fiktif). Dipakai di demo dan sebagai isi awal CMS pembeli.
+// Konten bawaan Corporate Nexa (perusahaan fiktif PT Samudra Karya Persada). Dipakai di demo dan sebagai isi awal CMS
+// pembeli. Foto asli Unsplash (public/assets/templates/photos/CREDITS.md), logo klien fiktif. brand.logo sengaja
+// kosong: header memakai simbol bawaan template + nama perusahaan (docs/platform/TEMPLATE-DESIGN.md §1.6, §3.2).
+import { demoClients, templatePhoto } from '../shared/assets';
 import type { SiteContent } from '../types';
 
 export const CORPORATE_NEXA_ACCENT = '#1D4ED8';
@@ -21,7 +24,12 @@ export const corporateNexaContent: SiteContent = {
     primary_url: '',
     secondary_label: 'Lihat Layanan',
     secondary_url: '',
-    image: '',
+    image: templatePhoto('corporate-nexa-hero'),
+  },
+  clients: {
+    enabled: true,
+    title: 'Dipercaya perusahaan konstruksi, properti, dan industri',
+    items: demoClients('corporate-nexa'),
   },
   about: {
     enabled: true,
@@ -29,7 +37,8 @@ export const corporateNexaContent: SiteContent = {
     title: 'Mitra konstruksi yang mengutamakan kualitas dan keterbukaan',
     body:
       'Berdiri di Surabaya pada 2009, PT Samudra Karya Persada telah menyelesaikan ratusan proyek gedung komersial di Jawa, Bali, dan Kalimantan. Kami percaya bangunan yang baik lahir dari perencanaan yang matang dan komunikasi yang jujur.\n\nSetiap proyek ditangani tim insinyur, arsitek, dan pengawas lapangan bersertifikat. Anda menerima laporan progres mingguan lengkap dengan foto lapangan, sehingga selalu tahu kondisi proyek tanpa harus datang ke lokasi.',
-    image: '',
+    image: templatePhoto('corporate-nexa-engineers'),
+    image_2: templatePhoto('corporate-nexa-blueprint'),
     badge_value: '15+',
     badge_label: 'Tahun pengalaman',
     points: [
@@ -76,15 +85,13 @@ export const corporateNexaContent: SiteContent = {
     eyebrow: 'Galeri proyek',
     title: 'Sebagian proyek dan cara kami bekerja',
     subtitle: 'Dari gedung perkantoran hingga penataan kawasan industri, lengkap dengan laporan progres untuk klien.',
-    // Foto demo belum ada: keterangan disamakan dengan ilustrasi pengganti (urutan ART_SEQUENCE: kota, ruang kerja,
-    // tim, lanskap, produk, abstrak) agar gambar dan keterangannya tidak bertolak belakang.
     items: [
-      { image: '', caption: 'Gedung kantor 8 lantai, Surabaya' },
-      { image: '', caption: 'Interior kantor regional, Malang' },
-      { image: '', caption: 'Ruang rapat direksi, Sidoarjo' },
-      { image: '', caption: 'Penataan lahan kawasan industri, Gresik' },
-      { image: '', caption: 'Laporan progres mingguan untuk klien' },
-      { image: '', caption: 'Moodboard material showroom, Denpasar' },
+      { image: templatePhoto('corporate-nexa-facade'), caption: 'Gedung kantor 8 lantai, Surabaya' },
+      { image: templatePhoto('corporate-nexa-lobby'), caption: 'Lobi & interior kantor regional, Malang' },
+      { image: templatePhoto('corporate-nexa-meeting-room'), caption: 'Ruang rapat direksi, Sidoarjo' },
+      { image: templatePhoto('corporate-nexa-steel'), caption: 'Rangka baja gudang distribusi, Gresik' },
+      { image: templatePhoto('corporate-nexa-warehouse'), caption: 'Gudang logistik bentang lebar, Pasuruan' },
+      { image: templatePhoto('corporate-nexa-site-team'), caption: 'Pengawasan lapangan harian oleh tim K3' },
     ],
   },
   testimonials: {
@@ -96,19 +103,19 @@ export const corporateNexaContent: SiteContent = {
         name: 'Budi Santoso',
         role: 'Direktur Operasional, PT Logistik Prima Nusantara',
         quote: 'Gudang distribusi kami selesai dua minggu lebih cepat dari jadwal. Laporan mingguannya sangat membantu kami memantau dari kantor pusat.',
-        photo: '',
+        photo: templatePhoto('corporate-nexa-portrait-1'),
       },
       {
         name: 'Rina Wulandari',
         role: 'Manajer Fasilitas, CV Sumber Rasa Jaya',
         quote: 'Renovasi pabrik berjalan tanpa menghentikan produksi. Timnya rapi, disiplin K3, dan komunikasinya jelas.',
-        photo: '',
+        photo: templatePhoto('corporate-nexa-portrait-2'),
       },
       {
         name: 'Hendra Wijaya',
         role: 'Pemilik, Wijaya Motor Group',
         quote: 'Desain showroom kami jadi lebih modern dan anggaran tetap sesuai kesepakatan awal. Sangat direkomendasikan.',
-        photo: '',
+        photo: templatePhoto('corporate-nexa-portrait-3'),
       },
     ],
   },
@@ -118,6 +125,7 @@ export const corporateNexaContent: SiteContent = {
     subtitle: 'Ceritakan kebutuhan proyek Anda. Tim kami akan menyiapkan estimasi awal tanpa biaya.',
     button_label: 'Jadwalkan Konsultasi',
     button_url: '',
+    image: templatePhoto('corporate-nexa-meeting'),
   },
   contact: {
     enabled: true,

@@ -60,7 +60,8 @@ describe('resolveContent', () => {
     expect(content.services.title).toBe(def.defaultContent.services.title);
     expect(content.about.title).toBe('5');
     expect(content.about.enabled).toBe(false);
-    expect(content.about.image).toBe('');
+    // null → nilai bawaan dipertahankan (bawaan Corporate Nexa kini foto demo)
+    expect(content.about.image).toBe(def.defaultContent.about.image);
     expect(content.gallery.items).toEqual([{ image: '1' }]);
   });
 
