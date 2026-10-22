@@ -1,5 +1,6 @@
 // Beranda / (docs/platform/SEO-PLAN.md Lampiran A). Title & description dari Lampiran A (tanpa angka harga, jadi tidak
 // basi). JSON-LD: Organization + WebSite (+ ItemList template bila section katalog tampil di beranda).
+import { heroPreloadImage } from '../../components/sections/hero/heroPreload';
 import { TITLE_SUFFIX } from '../defaults';
 import { latestDate } from '../format';
 import { itemList } from '../jsonld';
@@ -49,5 +50,7 @@ export default staticPage({
       description: HOME_DESCRIPTION,
       ogImage: 'default',
       jsonLd: homeJsonLd(data),
+      // Gambar terbesar di atas lipatan (latar hero atau slide pertama tayangan), sama dengan <img> di HTML prerender
+      preloadImage: heroPreloadImage(data.settings ?? {}, data.templates),
     }),
 });

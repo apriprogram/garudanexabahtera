@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, ChevronDown } from 'lucide-react';
+import { Presence } from '../../ui/Presence';
 
 interface SortMenuProps<T extends string> {
   value: T;
@@ -20,7 +20,6 @@ export function SortMenu<T extends string>({ value, options, onChange, label = '
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const menuId = useId();
-  const reduceMotion = useReducedMotion();
   const current = options.find((opt) => opt.value === value) ?? options[0];
 
   useEffect(() => {
@@ -111,44 +110,40 @@ export function SortMenu<T extends string>({ value, options, onChange, label = '
         />
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            id={menuId}
-            role="menu"
-            aria-label={`${label} template`}
-            onKeyDown={onMenuKeyDown}
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.16, ease: [0.2, 0.8, 0.2, 1] }}
-            className="absolute right-0 top-full z-30 mt-2 w-56 origin-top-right rounded-2xl bg-surface p-1.5 shadow-float ring-1 ring-line"
-          >
-            {options.map((opt, i) => {
-              const checked = opt.value === value;
-              return (
-                <button
-                  key={opt.value}
-                  ref={(el) => {
-                    itemRefs.current[i] = el;
-                  }}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={checked}
-                  tabIndex={-1}
-                  onClick={() => select(opt.value)}
-                  className={`flex h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-sm transition-colors hover:bg-alt focus:bg-alt focus-visible:outline-none max-sm:h-11 ${
-                    checked ? 'font-semibold text-fg' : 'text-muted hover:text-fg focus:text-fg'
-                  }`}
-                >
-                  <span className="min-w-0 flex-1 truncate">{opt.label}</span>
-                  {checked && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />}
-                </button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Presence
+        show={open}
+        id={menuId}
+        role="menu"
+        aria-label={`${label} template`}
+        onKeyDown={onMenuKeyDown}
+        // Reduced motion: hanya memudar
+        hiddenClassName="-translate-y-1 scale-[0.98] opacity-0 motion-reduce:translate-y-0 motion-reduce:scale-100"
+        exitMs={160}
+        className="absolute right-0 top-full z-30 mt-2 w-56 origin-top-right rounded-2xl bg-surface p-1.5 shadow-float ring-1 ring-line transition-[opacity,translate,scale] duration-[160ms] ease-calm"
+      >
+        {options.map((opt, i) => {
+          const checked = opt.value === value;
+          return (
+            <button
+              key={opt.value}
+              ref={(el) => {
+                itemRefs.current[i] = el;
+              }}
+              type="button"
+              role="menuitemradio"
+              aria-checked={checked}
+              tabIndex={-1}
+              onClick={() => select(opt.value)}
+              className={`flex h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-sm transition-colors hover:bg-alt focus:bg-alt focus-visible:outline-none max-sm:h-11 ${
+                checked ? 'font-semibold text-fg' : 'text-muted hover:text-fg focus:text-fg'
+              }`}
+            >
+              <span className="min-w-0 flex-1 truncate">{opt.label}</span>
+              {checked && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />}
+            </button>
+          );
+        })}
+      </Presence>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Code2, Fingerprint, LayoutTemplate, ScanBarcode, Smartphone, type LucideIcon } from 'lucide-react';
 import { readList, useSiteSettings } from '../../hooks/useSiteSettings';
 import { LogoMark } from '../ui/LogoMark';
@@ -74,35 +74,67 @@ const ItemMark: React.FC<{ logo: Logo }> = ({ logo }) => {
   return Icon ? <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} /> : <LogoMark className="h-3 shrink-0" />;
 };
 
+/** true selama elemen terlihat di viewport (belum ada callback / tanpa IntersectionObserver = dianggap terlihat). */
+const useOnScreen = (ref: React.RefObject<Element | null>, enabled: boolean): boolean => {
+  const [onScreen, setOnScreen] = useState(true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!enabled || !el || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      if (entry) setOnScreen(entry.isIntersecting);
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, enabled]);
+
+  return onScreen;
+};
+
 /**
  * Strip nama produk/layanan di bawah hero: terang & datar (garis rambut atas-bawah, tanpa latar),
- * label di kiri pada layar lebar, isi bergeser pelan (diam bila reduced motion). Satu perlakuan untuk semua item:
- * ikon layanan lucide atau tanda produk SVG satu warna (`text-subtle`) + nama dengan ejaan aslinya (tanpa huruf besar).
+ * label di kiri pada layar lebar, isi bergeser pelan (diam bila reduced motion, dijeda saat di luar layar; hanya
+ * transform). Satu perlakuan untuk semua item: ikon layanan lucide atau tanda produk SVG satu warna (`text-subtle`)
+ * + nama dengan ejaan aslinya (tanpa huruf besar). Selama setting belum dimuat, strip kosong setinggi aslinya
+ * tetap dipasang agar konten di bawahnya tidak bergeser (CLS).
  */
 const LogoTicker: React.FC = () => {
   const { settings, loaded } = useSiteSettings();
+  const stripRef = useRef<HTMLDivElement>(null);
   const logos = readList<Logo>(settings.hero_logos, DEFAULT_LOGOS, { allowEmpty: false })
     .filter((logo) => logo && typeof logo.name === 'string' && logo.name.trim())
     .map((logo) => ({ ...logo, name: displayName(logo.name) }));
+  const onScreen = useOnScreen(stripRef, loaded && logos.length > 0);
 
-  if (!loaded || logos.length === 0) return null;
+  if (loaded && logos.length === 0) return null;
 
   // Isi digandakan 3x agar putaran tanpa celah (animasi menggeser sepertiga lebar)
-  const tickerLogos = [...logos, ...logos, ...logos];
+  const tickerLogos = loaded ? [...logos, ...logos, ...logos] : [];
 
   return (
-    <div className="border-y border-line">
+    <div ref={stripRef} className="border-y border-line">
       <div className="container-site flex items-center gap-6 py-4 sm:py-5 lg:gap-10">
         <p className="eyebrow hidden shrink-0 lg:block">
           Produk &amp; layanan <span className="text-fg">Garuda Nexa</span>
         </p>
         <span className="hidden h-6 w-px shrink-0 bg-line lg:block" aria-hidden />
-        <p className="sr-only">Produk dan layanan kami: {logos.map((logo) => logo.name).join(', ')}.</p>
+        {loaded && <p className="sr-only">Produk dan layanan kami: {logos.map((logo) => logo.name).join(', ')}.</p>}
         <div
           className="min-w-0 flex-1 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]"
           aria-hidden
         >
-          <div className="flex w-max animate-ticker items-center gap-10 motion-reduce:animate-none lg:gap-14">
+          <div
+            className="flex w-max animate-ticker items-center gap-10 motion-reduce:animate-none lg:gap-14"
+            style={onScreen ? undefined : { animationPlayState: 'paused' }}
+          >
+            {/* Belum dimuat: satu baris kosong setinggi item (ikon 16px + teks 13px) sebagai pengganti */}
+            {!loaded && (
+              <div className="invisible flex items-center gap-2 whitespace-nowrap">
+                <span className="h-4 w-4 shrink-0" />
+                <span className="text-[13px] font-medium">&nbsp;</span>
+              </div>
+            )}
             {tickerLogos.map((logo, index) => (
               <div key={index} className="flex items-center gap-2 whitespace-nowrap text-subtle" data-ticker-item>
                 <ItemMark logo={logo} />

@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { formatRupiah } from '../../../types/platform';
 import { prefersReducedMotion } from '../../../hooks/useInView';
+import { useHydrated } from '../../../lib/preload';
 import { LogoBadge, LogoMark } from '../../ui/LogoMark';
 import { SmartLink } from '../../layout/SmartLink';
 import { HERO_FLOWS, STEP_MS, type HeroMode, type ShowcaseItem } from './showcase';
@@ -23,6 +24,11 @@ interface HeroShowcaseProps {
   templatesHidden: boolean;
   /** Berhenti sementara tanpa mengubah tombol jeda (mis. selama "Lihat Demo" di-hover / difokus) */
   hold?: boolean;
+  /**
+   * Slide pertama = gambar terbesar di atas lipatan → fetchpriority="high" (bawaan). false bila hero memakai latar
+   * gambar/video: latar itu kandidat LCP-nya, jadi slide pertama tetap eager tanpa merebut bandwidth CSS & latar.
+   */
+  priority?: boolean;
 }
 
 const DOMAIN = 'bisnisanda.com';
@@ -48,9 +54,13 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
   onNext,
   templatesHidden,
   hold = false,
+  priority = true,
 }) => {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [playing, setPlaying] = useState(() => !prefersReducedMotion());
+  // Preferensi browser baru dibaca setelah hidrasi (HTML prerender = berputar); null = belum dipilih pengunjung
+  const hydrated = useHydrated();
+  const [userPlaying, setUserPlaying] = useState<boolean | null>(null);
+  const playing = userPlaying ?? !(hydrated && prefersReducedMotion());
   const [onScreen, setOnScreen] = useState(true);
 
   // Jeda otomatis saat tayangan tidak terlihat (digulir lewat / tab lain)
@@ -167,6 +177,8 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
                 <ShowcaseImage
                   key={item.key}
                   item={item}
+                  first={index === 0}
+                  priority={index === 0 && priority}
                   active={index === slide}
                   alt={custom ? `Contoh tampilan website (${item.name})` : `Pratinjau template ${item.name}`}
                 />
@@ -210,7 +222,7 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
             // Tombol toggle: label tetap + aria-pressed (ditekan = dijeda); hanya ikonnya yang berganti
             <button
               type="button"
-              onClick={() => setPlaying((value) => !value)}
+              onClick={() => setUserPlaying(!playing)}
               className="absolute right-2.5 top-2.5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface/90 text-fg ring-1 ring-inset ring-line backdrop-blur transition-colors hover:bg-surface max-sm:after:absolute max-sm:after:-inset-1 sm:right-3 sm:top-3 sm:h-9 sm:w-9"
               aria-label="Jeda tayangan"
               aria-pressed={!playing}
@@ -250,9 +262,10 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
                   on ? 'bg-surface pr-3 ring-line sm:pr-4 xl:pr-2' : 'bg-alt ring-transparent hover:bg-line/70 xl:pr-2'
                 }`}
               >
-                {/* Progres langkah = isian biru muda di belakang label */}
+                {/* Progres langkah = isian biru muda di belakang label. Baru dipasang setelah hidrasi: animationend
+                    yang selesai sebelum React siap tidak menggerakkan tayangan, jadi animasinya mulai dari awal di sini. */}
                 <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-full" aria-hidden>
-                  {on && ready && (
+                  {on && ready && hydrated && (
                     <span
                       key={`${mode}-${slide}-${step}`}
                       className="step-progress absolute inset-0 bg-brand-50"
@@ -287,8 +300,23 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
   );
 };
 
-/** Gambar pratinjau dengan cadangan: preview_image → SVG bawaan template → logo. Berganti dengan crossfade. */
-const ShowcaseImage: React.FC<{ item: ShowcaseItem; active: boolean; alt: string }> = ({ item, active, alt }) => {
+/** Ukuran intrinsik pratinjau template (16:10, sama dengan bingkai layar); tampilannya diatur CSS. */
+const SHOT_WIDTH = 1600;
+const SHOT_HEIGHT = 1000;
+
+/**
+ * Gambar pratinjau dengan cadangan: preview_image → SVG bawaan template → logo. Berganti dengan crossfade.
+ * Slide pertama ada di HTML prerender dan dimuat segera (eager); dengan `priority` (hero tanpa latar gambar/video) juga
+ * fetchpriority="high" dan dipreload head beranda (src/components/sections/hero/heroPreload.ts). Slide lain lazy dan
+ * baru segera dimuat saat tampil.
+ */
+const ShowcaseImage: React.FC<{ item: ShowcaseItem; first: boolean; priority?: boolean; active: boolean; alt: string }> = ({
+  item,
+  first,
+  priority = false,
+  active,
+  alt,
+}) => {
   const [stage, setStage] = useState(0); // 0 = utama, 1 = cadangan, 2 = gagal semua
   const src = stage === 0 ? item.image : stage === 1 ? item.fallbackImage : null;
   const layer = `absolute inset-0 h-full w-full transition-[opacity,transform] duration-700 ease-calm ${
@@ -307,9 +335,11 @@ const ShowcaseImage: React.FC<{ item: ShowcaseItem; active: boolean; alt: string
       src={src}
       alt={active ? alt : ''}
       aria-hidden={!active}
-      // Pratinjau pertama dimuat segera (LCP), lainnya belakangan
-      loading={active ? 'eager' : 'lazy'}
-      decoding="async"
+      width={SHOT_WIDTH}
+      height={SHOT_HEIGHT}
+      loading={first || active ? 'eager' : 'lazy'}
+      fetchPriority={priority ? 'high' : undefined}
+      decoding={first ? undefined : 'async'}
       onError={() => setStage((value) => (value === 0 && item.fallbackImage ? 1 : 2))}
       className={`${layer} object-cover object-top`}
     />

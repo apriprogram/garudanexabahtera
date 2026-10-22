@@ -1,5 +1,5 @@
 import React from 'react';
-import { useInView } from '../../hooks/useInView';
+import { useReveal } from './useReveal';
 
 interface RevealProps {
   children: React.ReactNode;
@@ -17,8 +17,10 @@ interface RevealProps {
 }
 
 /**
- * Animasi muncul saat digulir, gaya BELAJAR CPNS: memudar + naik + blur halus (HP: tanpa blur, geser 16px;
- * reduced motion: langsung tampil). Murni CSS (`.reveal` di src/index.css) + IntersectionObserver.
+ * Animasi muncul saat digulir, gaya BELAJAR CPNS: memudar + naik + blur halus (HP: tanpa blur, geser 16px).
+ * Murni CSS (`.reveal` di src/index.css) + IntersectionObserver lewat useReveal: isi SELALU terlihat di HTML
+ * prerender dan di atas lipatan; hanya bagian di bawah lipatan yang disembunyikan setelah dipasang lalu muncul saat
+ * digulir. Reduced motion: langsung tampil.
  */
 export const Reveal: React.FC<RevealProps> = ({
   children,
@@ -29,13 +31,14 @@ export const Reveal: React.FC<RevealProps> = ({
   variant,
   className = '',
 }) => {
-  const [ref, inView] = useInView<HTMLDivElement>();
+  const [ref, state] = useReveal<HTMLDivElement>();
+  const stateClass = state === 'armed' ? 'is-armed' : state === 'in' ? 'is-in' : '';
 
   return (
     <div
       ref={ref}
       data-variant={variant ?? direction}
-      className={`reveal ${inView ? 'is-in' : ''} ${className}`}
+      className={['reveal', stateClass, className].filter(Boolean).join(' ')}
       style={{ width, height, '--d': `${Math.round(delay * 1000)}ms` } as React.CSSProperties}
     >
       {children}

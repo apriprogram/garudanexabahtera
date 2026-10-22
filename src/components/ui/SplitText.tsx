@@ -1,5 +1,5 @@
 import React, { Fragment } from 'react';
-import { useInView } from '../../hooks/useInView';
+import { useReveal } from './useReveal';
 
 export interface SplitPart {
   text: string;
@@ -21,8 +21,11 @@ interface SplitTextProps {
 }
 
 /**
- * Teks yang muncul kata per kata dari balik "masker" saat terlihat (port SplitText BELAJAR CPNS).
- * Teks tetap utuh untuk pembaca layar (spasi asli dipertahankan); reduced motion = langsung tampil.
+ * Teks yang muncul kata per kata dari balik "masker" saat digulir ke dalam layar (port SplitText BELAJAR CPNS).
+ * - HTML prerender dan render hidrasi: kata-kata langsung terlihat (judul di atas lipatan, mis. H1 hero, tidak pernah
+ *   disembunyikan); hanya judul di bawah lipatan yang disembunyikan setelah dipasang lalu muncul saat digulir
+ *   (useReveal). Reduced motion = langsung tampil.
+ * - Antarkata ada spasi asli (node teks), jadi pembaca layar dan crawler membaca "kata kata", bukan "katakata".
  */
 export const SplitText: React.FC<SplitTextProps> = ({
   as: Tag = 'span',
@@ -33,7 +36,8 @@ export const SplitText: React.FC<SplitTextProps> = ({
   className = '',
   id,
 }) => {
-  const [ref, inView] = useInView<HTMLElement>({ rootMargin: '0px 0px -5% 0px' });
+  const [ref, state] = useReveal<HTMLElement>({ rootMargin: '0px 0px -5% 0px' });
+  const hidden = !active || state === 'armed';
   const segments = typeof parts === 'string' ? [{ text: parts }] : parts;
   let index = 0;
 
@@ -42,7 +46,7 @@ export const SplitText: React.FC<SplitTextProps> = ({
       // ref generik: semua tag di atas adalah HTMLElement
       ref={ref as React.Ref<never>}
       id={id}
-      className={`split ${inView && active ? 'is-in' : ''} ${className}`}
+      className={['split', hidden ? 'is-hidden' : '', className].filter(Boolean).join(' ')}
       style={{ '--d': `${delay}ms`, '--s': `${stagger}ms` } as React.CSSProperties}
     >
       {segments.map((segment, si) =>

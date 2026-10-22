@@ -6,7 +6,7 @@ import { heroBackgroundKey, parseHeroBackground, parseHeroText } from './hero/he
 import { HeroIntro } from './hero/HeroIntro';
 import { HeroMedia } from './hero/HeroMedia';
 import { HeroShowcase } from './hero/HeroShowcase';
-import { loadShowcase, type HeroMode, type ShowcaseData } from './hero/showcase';
+import { loadShowcase, peekShowcase, type HeroMode, type ShowcaseData } from './hero/showcase';
 import { useHeroLegibility } from './hero/useHeroLegibility';
 
 /**
@@ -40,7 +40,8 @@ const Hero: React.FC = () => {
   const backgroundKey = heroBackgroundKey(background);
   const media = loaded && background.mode !== 'default' && exhaustedKey !== backgroundKey ? background : null;
   const onExhausted = useCallback(() => setExhaustedKey(backgroundKey), [backgroundKey]);
-  const [showcase, setShowcase] = useState<ShowcaseData | null>(null);
+  // HTML prerender: template dari data preload, jadi slide pertama (kandidat LCP) sudah ada di HTML server
+  const [showcase, setShowcase] = useState<ShowcaseData | null>(peekShowcase);
   const [slide, setSlide] = useState(0);
   // null = pengunjung belum memilih → bawaan Template, atau Custom bila katalog disembunyikan admin
   const [chosenMode, setChosenMode] = useState<HeroMode | null>(null);
@@ -152,6 +153,8 @@ const Hero: React.FC = () => {
               onNext={nextSlide}
               templatesHidden={templatesHidden}
               hold={hold}
+              // Latar gambar/video = kandidat LCP; tanpa itu slide pertama tayangan yang terbesar
+              priority={!media}
             />
           </div>
         </Reveal>

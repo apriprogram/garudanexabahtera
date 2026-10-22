@@ -3,6 +3,20 @@
 
 @variant light-theme (&:where(.light-theme, .light-theme *));
 
+/*
+ * Huruf cadangan selama Inter (Google Fonts, dimuat tanpa menahan render, lihat index.html) belum siap: Arial yang
+ * metriknya disetel ke Inter (lebar rata-rata & tinggi naik/turun huruf, hasil hitung yang sama dengan next/font),
+ * jadi saat Inter masuk (font-display: swap) baris teks hampir tidak bergeser (CLS).
+ */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial"), local("ArialMT");
+  ascent-override: 90.44%;
+  descent-override: 22.52%;
+  line-gap-override: 0%;
+  size-adjust: 107.12%;
+}
+
 @theme {
   /* Aksi utama = brand-600 (warna logo), hover = brand-700 */
   --color-primary: #211FFE;
@@ -46,7 +60,7 @@
    */
   --shadow-soft: 0 0 #0000;
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Kurva gerak tenang (CPNS): mulai cepat, berhenti halus. Kelas: ease-calm */
@@ -58,7 +72,13 @@
   --animate-fade-up: fade-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-scale-in: scale-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-fade-in: fade-in 0.3s ease-out both;
+  /* Kilau berjalan di skeleton kartu template (TemplateShotSkeleton) */
+  --animate-shimmer: shimmer 1.4s ease-in-out infinite;
 
+  @keyframes shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+  }
   @keyframes ticker-scroll {
     from { transform: translateX(0); }
     to { transform: translateX(calc(-100% / 3)); }
@@ -181,6 +201,17 @@
  */
 @utility section-screen {
   @apply relative flex flex-col justify-center py-12 sm:py-20 lg:min-h-[100svh] lg:pb-16 lg:pt-24;
+  /*
+   * Section beranda di bawah lipatan tidak ditata letak/dilukis sampai mendekati layar: frame pertama HTML prerender
+   * jauh lebih ringan (LCP HP). `auto` = setelah pernah tampil, tinggi aslinya yang dipakai; perkiraan awal mendekati
+   * tinggi rata-rata section (HP ±1.600px, desktop ±1.100px). Isinya tetap ada di DOM (crawler, cari di halaman,
+   * pembaca layar); scrollToSection menghitung ulang target tiap frame, jadi tautan #section tetap tepat.
+   */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1600px;
+  @media (min-width: 1024px) {
+    contain-intrinsic-size: auto 1100px;
+  }
   scroll-margin-top: calc(var(--nav-offset) + 2rem - 3rem);
   @media (min-width: 640px) {
     scroll-margin-top: calc(var(--nav-offset) + 2rem - 5rem);
@@ -383,39 +414,45 @@
     box-shadow: inset 0 0 0 1px rgba(33, 31, 254, 0.35);
   }
 
-  /* Muncul saat digulir (komponen <Reveal>, kelas .is-in dari IntersectionObserver) */
-  .reveal {
+  /*
+   * Muncul saat digulir (komponen <Reveal>, keadaan dari useReveal). Bawaan = TERLIHAT: HTML prerender, isi di atas
+   * lipatan, dan reduced motion tidak pernah disembunyikan. .is-armed = di bawah lipatan, disembunyikan setelah
+   * dipasang (tanpa transisi, belum terlihat pengunjung); .is-in = masuk viewport, transisi ke keadaan bawaan.
+   * Hanya opacity/transform/filter (tanpa properti tata letak, jadi tidak menggeser halaman).
+   */
+  .reveal.is-armed {
     opacity: 0;
     transform: translate3d(0, 32px, 0);
     filter: blur(8px);
+  }
+  .reveal.is-armed[data-variant='down'] {
+    transform: translate3d(0, -24px, 0);
+  }
+  .reveal.is-armed[data-variant='scale'] {
+    transform: translate3d(0, 24px, 0) scale(0.96);
+  }
+  .reveal.is-armed[data-variant='left'] {
+    transform: translate3d(36px, 0, 0);
+  }
+  .reveal.is-armed[data-variant='right'] {
+    transform: translate3d(-36px, 0, 0);
+  }
+  .reveal.is-armed[data-variant='fade'] {
+    transform: none;
+  }
+  .reveal.is-in {
     transition:
       opacity 0.8s var(--ease-calm),
       transform 0.9s var(--ease-calm),
       filter 0.8s var(--ease-calm);
     transition-delay: var(--d, 0ms);
   }
-  .reveal[data-variant='down'] {
-    transform: translate3d(0, -24px, 0);
-  }
-  .reveal[data-variant='scale'] {
-    transform: translate3d(0, 24px, 0) scale(0.96);
-  }
-  .reveal[data-variant='left'] {
-    transform: translate3d(36px, 0, 0);
-  }
-  .reveal[data-variant='right'] {
-    transform: translate3d(-36px, 0, 0);
-  }
-  .reveal[data-variant='fade'] {
-    transform: none;
-  }
-  .reveal.is-in {
-    opacity: 1;
-    transform: none;
-    filter: none;
-  }
 
-  /* Judul kata per kata dari balik "masker" (komponen <SplitText>) */
+  /*
+   * Judul kata per kata dari balik "masker" (komponen <SplitText>). Bawaan = terlihat; .is-hidden (panel tab tidak
+   * aktif, atau judul di bawah lipatan yang belum digulir) langsung menyembunyikan kata, melepasnya = kata naik
+   * satu per satu.
+   */
   .split-word {
     display: inline-block;
     overflow: hidden;
@@ -425,26 +462,12 @@
   }
   .split-word > span {
     display: inline-block;
-    transform: translate3d(0, 110%, 0);
     transition: transform 0.9s var(--ease-calm);
     transition-delay: calc(var(--d, 0ms) + var(--i, 0) * var(--s, 45ms));
   }
-  .split.is-in .split-word > span {
-    transform: none;
-  }
-
-  /* Isi panel yang muncul berurutan saat panel aktif (hero: checklist & tombol) */
-  .stagger-item {
-    opacity: 0;
-    transform: translate3d(0, 8px, 0);
-    transition:
-      opacity 0.5s var(--ease-calm),
-      transform 0.6s var(--ease-calm);
-    transition-delay: var(--d, 0ms);
-  }
-  .is-in .stagger-item {
-    opacity: 1;
-    transform: none;
+  .split.is-hidden .split-word > span {
+    transform: translate3d(0, 110%, 0);
+    transition: none;
   }
 
   /* Progres langkah di rail hero: mengisi selama satu langkah, berhenti saat dijeda */
@@ -614,25 +637,24 @@
     transform: none !important;
   }
   /* Reveal tanpa blur (mahal di GPU ponsel) & jarak geser pendek */
-  .reveal {
+  .reveal.is-armed {
     filter: none;
     transform: translate3d(0, 16px, 0);
+  }
+  .reveal.is-armed[data-variant='scale'] {
+    transform: translate3d(0, 12px, 0) scale(0.98);
+  }
+  .reveal.is-armed[data-variant='left'],
+  .reveal.is-armed[data-variant='right'],
+  .reveal.is-armed[data-variant='down'],
+  .reveal.is-armed[data-variant='fade'] {
+    transform: none;
+  }
+  .reveal.is-in {
     transition:
       opacity 0.6s var(--ease-calm),
       transform 0.7s var(--ease-calm);
     transition-delay: var(--d, 0ms);
-  }
-  .reveal[data-variant='scale'] {
-    transform: translate3d(0, 12px, 0) scale(0.98);
-  }
-  .reveal[data-variant='left'],
-  .reveal[data-variant='right'],
-  .reveal[data-variant='down'],
-  .reveal[data-variant='fade'] {
-    transform: none;
-  }
-  .reveal.is-in {
-    transform: none;
   }
   /* Cahaya CTA diam; angkat saat hover tidak relevan di layar sentuh */
   .cta-orb {
@@ -645,8 +667,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .reveal,
-  .split-word > span,
-  .stagger-item {
+  .split-word > span {
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;

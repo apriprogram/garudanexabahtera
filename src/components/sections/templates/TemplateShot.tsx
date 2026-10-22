@@ -1,5 +1,4 @@
 import { useState, type ReactNode } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
 import { Eye, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatRupiah, type Template } from '../../../types/platform';
@@ -142,17 +141,12 @@ export function TemplateShot({ template, index, isNew = false, showCategory = fa
   );
 }
 
-/** Kilau berjalan untuk skeleton (diam bila pengguna memilih kurangi gerak). */
+/** Kilau berjalan untuk skeleton (animasi CSS `animate-shimmer`; tidak tampil bila pengguna memilih kurangi gerak). */
 function Shimmer() {
-  const reduceMotion = useReducedMotion();
-  if (reduceMotion) return null;
   return (
-    <motion.span
+    <span
       aria-hidden
-      className="pointer-events-none absolute inset-0 bg-linear-to-r from-transparent via-white/60 to-transparent"
-      initial={{ x: '-100%' }}
-      animate={{ x: '100%' }}
-      transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+      className="pointer-events-none absolute inset-0 animate-shimmer bg-linear-to-r from-transparent via-white/60 to-transparent motion-reduce:hidden"
     />
   );
 }

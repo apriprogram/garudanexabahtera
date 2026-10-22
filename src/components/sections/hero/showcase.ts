@@ -1,5 +1,5 @@
 // Data tayangan hero: template asli dari API (get_templates), dengan cadangan pratinjau statis bila gagal/kosong.
-import { apiGet } from '../../../lib/api';
+import { apiGet, peekApiGet } from '../../../lib/api';
 import type { Template } from '../../../types/platform';
 
 export interface ShowcaseItem {
@@ -106,17 +106,35 @@ const toItem = (tpl: Template): ShowcaseItem => {
   };
 };
 
+/** Daftar `templates` dari respons get_templates → tayangan (maks 6). Kosong / tanpa gambar → contoh tampilan. */
+export const showcaseFromTemplates = (templates: unknown): ShowcaseData => {
+  const items = (Array.isArray(templates) ? (templates as Template[]) : [])
+    .filter((tpl) => tpl && tpl.slug && tpl.name)
+    .slice(0, MAX_ITEMS)
+    .map(toItem)
+    .filter((item) => item.image);
+  return items.length > 0 ? { items, sample: false } : { items: SAMPLE, sample: true };
+};
+
+/**
+ * Tayangan dari data preload halaman prerender (src/lib/preload.ts), dibaca sinkron untuk render pertama: slide
+ * pertama ikut di HTML server dan hidrasi memakai data yang sama. null = tidak ada preload (dev, render klien biasa).
+ */
+export const peekShowcase = (): ShowcaseData | null => {
+  const data = peekApiGet<{ templates?: unknown }>('get_templates');
+  return data ? showcaseFromTemplates(data.templates) : null;
+};
+
+/** URL gambar slide pertama tayangan hero (kandidat LCP beranda): dipakai head beranda sebagai `preloadImage`. */
+export const firstShowcaseImage = (templates: unknown): string | undefined =>
+  showcaseFromTemplates(templates).items[0]?.image || undefined;
+
 /** Muat template untuk tayangan hero. Tidak pernah gagal: error/kosong/timeout → contoh tampilan. */
 export const loadShowcase = async (): Promise<ShowcaseData> => {
   try {
     const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS));
     const data = await Promise.race([apiGet<{ templates?: Template[] }>('get_templates'), timeout]);
-    const items = (Array.isArray(data.templates) ? data.templates : [])
-      .filter((tpl) => tpl && tpl.slug && tpl.name)
-      .slice(0, MAX_ITEMS)
-      .map(toItem)
-      .filter((item) => item.image);
-    return items.length > 0 ? { items, sample: false } : { items: SAMPLE, sample: true };
+    return showcaseFromTemplates(data.templates);
   } catch {
     return { items: SAMPLE, sample: true };
   }

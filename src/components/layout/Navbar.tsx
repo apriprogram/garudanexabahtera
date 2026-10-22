@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, X, ChevronDown, Globe, Globe2, ArrowRight, UserRound,
   ShoppingCart, GraduationCap, Users2, ShieldCheck, HeartHandshake, Moon,
@@ -8,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
+import { Presence } from '../ui/Presence';
 import { getHiddenSections, useSiteSettings } from '../../hooks/useSiteSettings';
 import { useNavbarMenus, type NavbarMenuRow } from '../../hooks/useNavbarMenus';
 import { useSectionSpy } from '../../hooks/useSectionSpy';
@@ -382,37 +382,32 @@ const DropdownItem: React.FC<{
         <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} />
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className={`absolute top-full z-20 pt-3 ${wide ? 'left-0' : 'left-1/2 -translate-x-1/2'}`}
-          >
-            {/* Lapisan melayang: satu-satunya tempat shadow-float di navbar */}
-            <div className={`rounded-[20px] bg-surface p-2 shadow-float ring-1 ring-inset ring-line ${wide ? 'grid w-[600px] grid-cols-2 gap-1' : 'grid w-[300px] gap-1'}`}>
-              {entries.map((entry, index) => (
-                <SmartLink
-                  key={`${index}-${entry.title}`}
-                  href={entry.href}
-                  onClick={() => setActive(null)}
-                  className="group/item flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-alt"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-primary transition-colors group-hover/item:bg-primary group-hover/item:text-white [&>svg]:h-[18px] [&>svg]:w-[18px]">
-                    {entry.icon}
-                  </span>
-                  <span className="pt-0.5">
-                    <span className="block text-[13px] font-semibold text-fg">{entry.title}</span>
-                    <span className="block text-xs leading-snug text-subtle">{entry.desc}</span>
-                  </span>
-                </SmartLink>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Presence
+        show={open}
+        hiddenClassName="translate-y-2 opacity-0"
+        exitMs={180}
+        className={`absolute top-full z-20 pt-3 transition-[opacity,translate] duration-[180ms] ease-out motion-reduce:transition-none ${wide ? 'left-0' : 'left-1/2 -translate-x-1/2'}`}
+      >
+        {/* Lapisan melayang: satu-satunya tempat shadow-float di navbar */}
+        <div className={`rounded-[20px] bg-surface p-2 shadow-float ring-1 ring-inset ring-line ${wide ? 'grid w-[600px] grid-cols-2 gap-1' : 'grid w-[300px] gap-1'}`}>
+          {entries.map((entry, index) => (
+            <SmartLink
+              key={`${index}-${entry.title}`}
+              href={entry.href}
+              onClick={() => setActive(null)}
+              className="group/item flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-alt"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-primary transition-colors group-hover/item:bg-primary group-hover/item:text-white [&>svg]:h-[18px] [&>svg]:w-[18px]">
+                {entry.icon}
+              </span>
+              <span className="pt-0.5">
+                <span className="block text-[13px] font-semibold text-fg">{entry.title}</span>
+                <span className="block text-xs leading-snug text-subtle">{entry.desc}</span>
+              </span>
+            </SmartLink>
+          ))}
+        </div>
+      </Presence>
     </li>
   );
 };

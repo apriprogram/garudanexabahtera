@@ -267,6 +267,9 @@ export const HeroMedia: React.FC<HeroMediaProps> = ({ config, scrim = null, fade
   const onScreen = useOnScreen(layerRef);
   // Preferensi browser baru dibaca setelah hidrasi (HTML prerender = bergerak); null = belum dipilih pengunjung
   const hydrated = useHydrated();
+  // Memudar masuk hanya bila dipasang di klien (setting baru dimuat / latar diganti). HTML prerender & hidrasi: latar
+  // langsung tampil, karena gambar pertama = kandidat LCP dan animasi opacity dari 0 menunda LCP-nya.
+  const [fadeIn] = useState(hydrated);
   const reduced = hydrated && prefersReducedMotion();
   const [pausedByUser, setPaused] = useState<boolean | null>(null);
   const paused = pausedByUser ?? (reduced || (hydrated && prefersSaveData()));
@@ -322,7 +325,7 @@ export const HeroMedia: React.FC<HeroMediaProps> = ({ config, scrim = null, fade
     <>
       <div
         ref={layerRef}
-        className="pointer-events-none absolute inset-0 -z-10 animate-fade-in motion-reduce:animate-none"
+        className={`pointer-events-none absolute inset-0 -z-10 ${fadeIn ? 'animate-fade-in motion-reduce:animate-none' : ''}`}
         aria-hidden
       >
         {config.mode === 'image' && (
