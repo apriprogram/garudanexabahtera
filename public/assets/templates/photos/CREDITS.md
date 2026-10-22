@@ -98,3 +98,21 @@ persegi `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash Licens
 | `aura-studio-portrait-1-*` | Perempuan berhijab krem tersenyum | https://unsplash.com/photos/14V7fly4Vz0 | Nadia Assabella |
 | `aura-studio-portrait-2-*` | Perempuan berambut panjang tersenyum | https://unsplash.com/photos/jGZITdFhmts | Le Minh Phuong |
 | `aura-studio-portrait-3-*` | Perempuan tersenyum menoleh ke samping | https://unsplash.com/photos/_DlHQIvieJA | Conikal |
+
+## Finova (Lumbung Arta, fiktif)
+
+Foto mendatar `-1600.webp` + `-800.webp`; foto tegak 4:5 (`finova-hero`, `finova-app`) `-1200.webp` + `-800.webp`;
+potret testimoni 4:5 `-1200.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash License, bukan Unsplash+)
+2026-10-23.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `finova-hero-*` | Tangan memegang ponsel berkode QR, latar gelap dengan lingkaran hijau mint | https://unsplash.com/photos/IPe4SIIKuno | sentidos humanos |
+| `finova-card-*` | Tangan memegang kartu hitam polos | https://unsplash.com/photos/qlNNYxkKoDc | Giorgio Trovato |
+| `finova-owner-*` | Penjahit tersenyum di samping mesin jahit | https://unsplash.com/photos/F6KIFMCCBpo | Hobi industri |
+| `finova-community-*` | Tim berdiskusi di sekeliling meja rapat putih | https://unsplash.com/photos/Mq4wJuX1-OQ | Edi Kurniawan |
+| `finova-app-*` | Perempuan berhijab abu menunjukkan ponsel, latar toska | https://unsplash.com/photos/OvADVOVi7ww | Irham Setyaki |
+| `finova-portrait-1-*` | Perempuan berhijab memakai blazer abu, latar toska | https://unsplash.com/photos/qjIjjAV4j7E | Muhammad Faiz Zulkeflee |
+| `finova-portrait-2-*` | Pria muda berkemeja garis, dinding hijau mint | https://unsplash.com/photos/gutlccGLXKI | JD Chow |
+| `finova-portrait-3-*` | Perempuan berhijab memakai blazer kotak-kotak | https://unsplash.com/photos/CnM3_sO616Y | Fajar Herlambang STUDIO |
+| `finova-portrait-4-*` | Pria berkemeja denim duduk di meja kerja | https://unsplash.com/photos/WC7KIHo13Fc | Juan Encalada |

@@ -1,0 +1,93 @@
+/*
+ * CSS lokal Finova (diimpor ./Finova.tsx). Tekstur panel gelap (kisi 64px bermasker + cahaya lembut) dan gerak khas:
+ * kisi memudar masuk, grafik garis "digambar", FAQ buka-tutup. Gerak hanya bila root template ber-data-tpl-motion="on"
+ * (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak → statis.
+ */
+
+@layer components {
+  /* Panel gelap: gradasi dari hampir hitam (kiri atas) ke hijau dalam (kanan bawah) */
+  .fin-panel {
+    background:
+      radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, var(--fin-deep) 100%, transparent) 0%, transparent 70%),
+      linear-gradient(160deg, var(--fin-top) 0%, var(--fin-top) 28%, var(--fin-deep) 100%);
+  }
+
+  /* Kisi tipis 64px, memudar ke tepi */
+  .fin-grid {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+    background-size: 64px 64px;
+    background-position: -1px -1px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 78%);
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 78%);
+  }
+
+  /* Cahaya limau lembut: SELALU di belakang foto / tepi, tidak di belakang teks */
+  .fin-glow {
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--fin-hl) 30%, transparent), transparent);
+    filter: blur(8px);
+  }
+
+  [data-tpl-motion='on'] .fin-grid {
+    animation: fin-fade-in 1s var(--tpl-ease, ease) both;
+  }
+
+  /* Grafik garis: digambar saat kartu pembungkusnya (<Reveal>) muncul */
+  .fin-draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  [data-reveal='pending'] .fin-draw {
+    stroke-dashoffset: 1;
+  }
+
+  [data-reveal='shown'] .fin-draw {
+    transition: stroke-dashoffset 1.2s var(--tpl-ease, ease) 0.3s;
+  }
+
+  /* FAQ: tinggi panel jawaban 0fr → 1fr (transisi hanya bila gerak menyala) */
+  .fin-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .fin-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .fin-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .fin-grid {
+      animation: none;
+    }
+
+    [data-reveal] .fin-draw {
+      stroke-dashoffset: 0;
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .fin-collapse {
+      transition: none;
+    }
+  }
+
+  @media print {
+    .fin-draw {
+      stroke-dashoffset: 0 !important;
+    }
+  }
+}
+
+@keyframes fin-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
