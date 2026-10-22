@@ -99,8 +99,9 @@ Derived stage (computed by the backend on every read; `stage_override` wins when
 4. not all milestones `selesai` and UAT not submitted → `pengerjaan`
 5. UAT not `selesai` → `uji`
 6. BAST not `selesai` → `serah_terima`
-7. any non-cancelled invoice not `lunas` → `pelunasan`
-8. `has_maintenance` and SLA `selesai` and maintenance end date in the future → `maintenance`
+7. any non-cancelled invoice not `lunas`, or (contract value > 0) a payment term with percent > 0 that has no `lunas`
+   invoice of its `term_key` → `pelunasan` (a contract is settled only when every termin is billed and paid)
+8. `has_maintenance` and (SLA not `selesai`, or maintenance end date in the future) → `maintenance`
 9. otherwise `selesai`
 
 `progress` (0–100) = Σ(weight × milestone progress) / Σ weight over milestones (0 when none).
@@ -287,7 +288,7 @@ Invoice math (integers, rupiah, round half up at each step; identical in PHP, No
 PPN on: `dpp = round(base × dpp_numerator / dpp_denominator)`, `ppn_amount = round(dpp × ppn_rate / 100)`; off: `dpp = base`, `ppn = 0`;
 `total = base + ppn_amount`; PPh 23 on (per invoice): `pph23_amount = round(base × pph23_rate / 100)`, else 0;
 `amount_due = total − pph23_amount`. Payment status: `lunas` when `amount_paid ≥ amount_due`, `sebagian` when > 0, else
-`belum_dibayar`. **Jatuh tempo** (overdue) is derived: `due_date < today` and not `lunas`/`dibatalkan`.
+`belum_dibayar`. **Jatuh tempo** (overdue) is derived: issued (not `draft`), `due_date < today` and not `lunas`/`dibatalkan`.
 
 ### 4.3 MergeData (what documents render from)
 

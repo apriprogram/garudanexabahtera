@@ -18,6 +18,7 @@ services:
     container_name: garudanexabahtera-api
     volumes:
       - ./dist:/var/www/html:rw
+      - pd_storage:/data/project-docs
     # Secrets come from .env next to this file (see .env.example)
     environment:
       - MYSQL_HOST=mysql
@@ -49,6 +50,8 @@ services:
       - MIDTRANS_IS_PRODUCTION=${MIDTRANS_IS_PRODUCTION:-0}
       - MIDTRANS_SIMULATOR=${MIDTRANS_SIMULATOR:-0}
       - APP_URL=${APP_URL:-}
+      # Private project-document files (e-signatures, payment proofs): outside the web root, kept in a volume
+      - PD_STORAGE_DIR=/data/project-docs
       - NODE_ENV=production
     depends_on:
       - mysql
@@ -74,3 +77,4 @@ services:
 
 volumes:
   mysql_data:
+  pd_storage:

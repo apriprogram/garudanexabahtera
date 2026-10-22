@@ -67,7 +67,8 @@ export function DocumentsTab({ ctx }: { ctx: WorkspaceContext }) {
     if (type === 'invoice' || type === 'receipt') {
       return (
         <Button size="sm" variant={item.missing ? 'primary' : 'secondary'} iconRight={<ArrowRight />} onClick={() => ctx.openTab('invoice')}>
-          {type === 'receipt' ? 'Lihat kuitansi' : doc ? 'Kelola invoice' : 'Buat invoice'}
+          {/* Developer: finance is read-only, the tab only lists invoices */}
+          {type === 'receipt' ? 'Lihat kuitansi' : !ctx.isAdmin ? 'Lihat invoice' : doc ? 'Kelola invoice' : 'Buat invoice'}
         </Button>
       );
     }

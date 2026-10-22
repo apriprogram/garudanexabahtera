@@ -521,7 +521,7 @@ export interface InvoiceSummary {
   /** amount_due − amount_paid (≥ 0) */
   remaining: number;
   payment_status: PaymentStatus;
-  /** due_date < today and not lunas/dibatalkan */
+  /** issued (document not draft), due_date < today and not lunas/dibatalkan */
   overdue: boolean;
 }
 

@@ -142,9 +142,19 @@ function pdDerivedStage(b, today) {
   if (uat !== 'selesai') return 'uji';
   if (status('bast') !== 'selesai') return 'serah_terima';
   if (b.invoices.some((i) => i.payment_status !== 'lunas' && i.payment_status !== 'dibatalkan')) return 'pelunasan';
+  if (pdUnpaidTerm(b)) return 'pelunasan';
+  // A maintenance contract keeps the project in maintenance until its SLA is signed and while its period runs
   const end = p.maintenance_end;
-  if (Number(p.has_maintenance) === 1 && status('sla') === 'selesai' && end !== null && end > today) return 'maintenance';
+  if (Number(p.has_maintenance) === 1 && (status('sla') !== 'selesai' || (end !== null && end > today))) return 'maintenance';
   return 'selesai';
+}
+
+// A payment term of the project (value > 0, term > 0 %) that has no paid invoice yet: the contract is not settled
+function pdUnpaidTerm(b) {
+  const { p } = b;
+  if (pdNum(p.price) <= 0 || (p.payment_terms ?? null) === null) return false;
+  const terms = pdValidTerms(jsonDecode(p.payment_terms), 'payment_terms', {}) ?? [];
+  return terms.some((term) => term.percent > 0 && !b.invoices.some((i) => i.term_key === term.key && i.payment_status === 'lunas'));
 }
 
 // Effective stage: the admin override wins
@@ -188,8 +198,8 @@ export function pdMissingDocs(b, stage) {
 // Issued invoice that still waits for money
 export const pdInvoiceUnpaid = (i) => i.doc_status !== 'draft' && (i.payment_status === 'belum_dibayar' || i.payment_status === 'sebagian');
 
-// Jatuh tempo: due_date < today and not lunas/dibatalkan (§4.2)
-const pdInvoiceOverdue = (i, today) => i.due_date < today && i.payment_status !== 'lunas' && i.payment_status !== 'dibatalkan';
+// Jatuh tempo: issued (a draft is not billed yet), due_date < today and not lunas/dibatalkan (§4.2)
+const pdInvoiceOverdue = (i, today) => pdInvoiceUnpaid(i) && i.due_date < today;
 
 export function pdPaymentStatus(paid, due) {
   if (paid >= due) return 'lunas';

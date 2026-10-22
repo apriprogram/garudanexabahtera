@@ -314,7 +314,8 @@ export function OverviewTab({ ctx }: { ctx: WorkspaceContext }) {
               {project.service_label}
             </InfoRow>
             <InfoRow icon={CalendarDays} label="Jadwal">
-              <span className="inline-flex flex-wrap items-center gap-x-2">
+              {/* whitespace-normal: InfoRow truncates its value, which would clip the end date in the 340px column */}
+              <span className="inline-flex flex-wrap items-center gap-x-2 whitespace-normal">
                 {project.start_date || project.end_date ? `${tanggal(project.start_date)} – ${tanggal(project.end_date)}` : '-'}
                 {/* Tanggal mulai/selesai milik data proyek di Project Clients (dipakai "jangka waktu" di PKS & jadwal) */}
                 <Link to={`/admin/project-clients?edit=${project.id}`} className="text-xs font-medium text-adm-link hover:underline">

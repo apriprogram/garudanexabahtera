@@ -116,9 +116,27 @@ function pd_derived_stage(array $b, string $today): string {
     foreach ($b['invoices'] as $i) {
         if (!in_array($i['payment_status'], ['lunas', 'dibatalkan'], true)) return 'pelunasan';
     }
+    if (pd_unpaid_term($b)) return 'pelunasan';
+    // A maintenance contract keeps the project in maintenance until its SLA is signed and while its period runs
     $end = $p['maintenance_end'];
-    if ((int)$p['has_maintenance'] === 1 && $status('sla') === 'selesai' && $end !== null && $end > $today) return 'maintenance';
+    if ((int)$p['has_maintenance'] === 1 && ($status('sla') !== 'selesai' || ($end !== null && $end > $today))) return 'maintenance';
     return 'selesai';
+}
+
+// A payment term of the project (value > 0, term > 0 %) that has no paid invoice yet: the contract is not settled
+function pd_unpaid_term(array $b): bool {
+    $p = $b['p'];
+    if (pd_num($p['price'] ?? 0) <= 0 || ($p['payment_terms'] ?? null) === null) return false;
+    $ignored = [];
+    foreach (pd_valid_terms(json_decode((string)$p['payment_terms'], true), 'payment_terms', $ignored) ?? [] as $term) {
+        if ($term['percent'] <= 0) continue;
+        $paid = false;
+        foreach ($b['invoices'] as $i) {
+            if ($i['term_key'] === $term['key'] && $i['payment_status'] === 'lunas') $paid = true;
+        }
+        if (!$paid) return true;
+    }
+    return false;
 }
 
 // Effective stage: the admin override wins
@@ -173,9 +191,9 @@ function pd_invoice_unpaid(array $i): bool {
     return $i['doc_status'] !== 'draft' && in_array($i['payment_status'], ['belum_dibayar', 'sebagian'], true);
 }
 
-// Jatuh tempo: due_date < today and not lunas/dibatalkan (§4.2)
+// Jatuh tempo: issued (a draft is not billed yet), due_date < today and not lunas/dibatalkan (§4.2)
 function pd_invoice_overdue(array $i, string $today): bool {
-    return $i['due_date'] < $today && !in_array($i['payment_status'], ['lunas', 'dibatalkan'], true);
+    return pd_invoice_unpaid($i) && $i['due_date'] < $today;
 }
 
 function pd_payment_status(float $paid, float $due): string {

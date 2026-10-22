@@ -309,7 +309,15 @@ describe('derived stage', () => {
     const maintenance = { has_maintenance: 1, maintenance_end: '2027-10-01' };
     expect(stageOf({ p: project(maintenance), docs: docs({ ...done, sla: 'selesai' }), milestones: [], invoices: [] })).toBe('maintenance');
     expect(stageOf({ p: project({ ...maintenance, maintenance_end: TODAY }), docs: docs({ ...done, sla: 'selesai' }), milestones: [], invoices: [] })).toBe('selesai');
-    expect(stageOf({ p: project(maintenance), docs: docs({ ...done, sla: 'disetujui' }), milestones: [], invoices: [] })).toBe('selesai');
+    // maintenance contract without a signed SLA yet: still the maintenance stage (the SLA is the missing document)
+    expect(stageOf({ p: project(maintenance), docs: docs({ ...done, sla: 'disetujui' }), milestones: [], invoices: [] })).toBe('maintenance');
+    expect(stageOf({ p: project({ has_maintenance: 1 }), docs: docs(done), milestones: [], invoices: [] })).toBe('maintenance');
+    // every payment term of a priced contract needs a paid invoice
+    const terms = JSON.stringify([{ key: 'dp', label: 'DP', percent: 60, trigger: 'kontrak', due_days: 7 }, { key: 'akhir', label: 'Akhir', percent: 40, trigger: 'manual', due_days: 7 }]);
+    const paid = (term_key: string) => ({ id: term_key.length, term_key, payment_status: 'lunas', doc_status: 'selesai' });
+    expect(stageOf({ p: project({ price: '1000000.00', payment_terms: terms }), docs: docs(done), milestones: [], invoices: [paid('dp')] })).toBe('pelunasan');
+    expect(stageOf({ p: project({ price: '1000000.00', payment_terms: terms }), docs: docs(done), milestones: [], invoices: [paid('dp'), paid('akhir')] })).toBe('selesai');
+    expect(stageOf({ p: project({ price: null, payment_terms: terms }), docs: docs(done), milestones: [], invoices: [] })).toBe('selesai');
   });
 
   it('lets a valid admin override win and ignores an unknown one', () => {
