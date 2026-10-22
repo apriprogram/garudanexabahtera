@@ -43,3 +43,28 @@ dan tidak berhubungan dengan orang di foto.
 | `startup-clean-portrait-1-*` | Potret wanita tersenyum | https://unsplash.com/photos/ZoSb5J3jU28 | Vitaly Gariev |
 | `startup-clean-portrait-2-*` | Potret pria berkemeja denim | https://unsplash.com/photos/WC7KIHo13Fc | Juan Encalada |
 | `startup-clean-portrait-3-*` | Potret wanita berkacamata | https://unsplash.com/photos/s3aDHKxHZSc | Vitaly Gariev |
+
+## Arena Club (Lintang Padel & Tenis Club, fiktif)
+
+Foto suasana `-1600.webp` + `-800.webp` (foto tegak 4:5: `-1200.webp` + `-800.webp`); potret pelatih 4:5
+`-960.webp` + `-240.webp`; potret member persegi `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya 2026-10-23.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `arena-club-hero-*` | Pemain tenis melompat servis di lapangan biru, langit cerah | https://unsplash.com/photos/Io3TrQ6P2hc | Julie Sd |
+| `arena-club-coach-lesson-*` | Pemain mengangkat raket padel di lapangan biru | https://unsplash.com/photos/cosoQpE-4iM | erjola qerimi |
+| `arena-club-serve-*` | Pemain tenis melempar bola untuk servis | https://unsplash.com/photos/uF8Mv9ufkZs | Wilson Stratton |
+| `arena-club-private-*` | Pemain muda memukul backhand | https://unsplash.com/photos/r8EUf9oOtlQ | Fei Chao |
+| `arena-club-balls-*` | Dua raket padel dan bola di lapangan biru | https://unsplash.com/photos/Cj35lHL4atY | Vincenzo Morelli |
+| `arena-club-junior-*` | Anak berlatih tenis | https://unsplash.com/photos/67UDsuEVI8A | Fei Chao |
+| `arena-club-match-*` | Pertandingan tenis dengan wasit kursi | https://unsplash.com/photos/2ZkasJh1l7E | Invisible |
+| `arena-club-night-*` | Lapangan tenis outdoor di malam hari | https://unsplash.com/photos/FChU6hernp8 | AJ Alao |
+| `arena-club-gym-*` | Latihan angkat beban didampingi pelatih | https://unsplash.com/photos/rD0poLlu57M | Vitaly Gariev |
+| `arena-club-court-*` | Lapangan biru outdoor dikelilingi pepohonan | https://unsplash.com/photos/Crz3wR8uKZs | Irish83 |
+| `arena-club-coach-1-*` | Potret pria berkaus olahraga biru | https://unsplash.com/photos/liUWmSN017I | Thi Nguyen Duc |
+| `arena-club-coach-2-*` | Potret wanita berkaus polo | https://unsplash.com/photos/oTtMO-kko98 | MD Duran |
+| `arena-club-coach-3-*` | Potret pria berkaus abu-abu | https://unsplash.com/photos/LTlFk5gYsgs | Alex Harmuth |
+| `arena-club-coach-4-*` | Potret wanita berpakaian olahraga | https://unsplash.com/photos/gRSrAap_0pI | Michael B. Luong |
+| `arena-club-portrait-1-*` | Potret pria tersenyum | https://unsplash.com/photos/OFSQ6bHjFjs | Hà Nguyễn |
+| `arena-club-portrait-2-*` | Potret wanita tersenyum | https://unsplash.com/photos/jBqMJdzTcgA | Phước Sang |
+| `arena-club-portrait-3-*` | Potret wanita tersenyum | https://unsplash.com/photos/OuxJHYeUYpk | panitan punpuang |
