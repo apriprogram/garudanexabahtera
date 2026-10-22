@@ -1,4 +1,8 @@
-// Konten bawaan Startup Clean (startup fiktif). Dipakai di demo dan sebagai isi awal CMS pembeli.
+// Konten bawaan Startup Clean (Kirana Labs, startup fiktif). Dipakai di demo dan sebagai isi awal CMS pembeli.
+// Foto asli (public/assets/templates/photos/startup-clean-*, kredit di CREDITS.md) dan logo klien fiktif.
+// brand.logo sengaja kosong: header memakai simbol bawaan template + nama perusahaan (bukan logo perusahaan lain).
+// Section `clients` baru (2026-10): situs yang sudah tersimpan tidak mendapatkannya otomatis (shared/compat.ts).
+import { demoClients, templatePhoto } from '../shared/assets';
 import type { SiteContent } from '../types';
 
 export const STARTUP_CLEAN_ACCENT = '#7C3AED';
@@ -21,7 +25,12 @@ export const startupCleanContent: SiteContent = {
     primary_url: '',
     secondary_label: 'Lihat Fitur',
     secondary_url: '',
-    image: '',
+    image: templatePhoto('startup-clean-hero'),
+  },
+  clients: {
+    enabled: true,
+    title: 'Dipakai lebih dari 12.000 UMKM di 35 kota',
+    items: demoClients('startup-clean'),
   },
   about: {
     enabled: true,
@@ -29,7 +38,7 @@ export const startupCleanContent: SiteContent = {
     title: 'Dibuat oleh pelaku usaha, untuk pelaku usaha',
     body:
       'Kirana lahir di Yogyakarta pada 2021 dari pengalaman kami mengelola toko keluarga yang masih mencatat semuanya di buku. Kami ingin setiap UMKM punya alat yang sama canggihnya dengan bisnis besar, tanpa harus rumit dan mahal.\n\nKini ribuan warung, kedai kopi, toko kelontong, dan butik di seluruh Indonesia memakai Kirana setiap hari untuk berjualan dengan lebih tenang.',
-    image: '',
+    image: templatePhoto('startup-clean-owner'),
     badge_value: '4,8/5',
     badge_label: 'Rating dari pengguna',
     points: [
@@ -48,12 +57,20 @@ export const startupCleanContent: SiteContent = {
       {
         title: 'Kasir cepat di HP & laptop',
         description: 'Catat transaksi dalam hitungan detik, terima pembayaran tunai maupun QRIS, lalu cetak atau kirim struk lewat WhatsApp.',
-        image: '',
+        image: templatePhoto('startup-clean-pos'),
       },
-      { title: 'Stok real-time', description: 'Stok berkurang otomatis setiap ada penjualan, lengkap dengan peringatan stok menipis.', image: '' },
+      {
+        title: 'Stok real-time',
+        description: 'Stok berkurang otomatis setiap ada penjualan, lengkap dengan peringatan stok menipis.',
+        image: templatePhoto('startup-clean-stock'),
+      },
       { title: 'Laporan otomatis', description: 'Laba, omzet, dan produk terlaris tersaji rapi setiap hari tanpa hitung manual.', image: '' },
       { title: 'Multi-cabang', description: 'Pantau semua cabang dari satu akun, kapan pun dan di mana pun.', image: '' },
-      { title: 'Pembayaran QRIS', description: 'Terima pembayaran non-tunai dari semua dompet digital dan mobile banking.', image: '' },
+      {
+        title: 'Pembayaran QRIS',
+        description: 'Terima pembayaran non-tunai dari semua dompet digital dan mobile banking.',
+        image: templatePhoto('startup-clean-qris'),
+      },
       { title: 'Katalog online', description: 'Bagikan katalog produk dan terima pesanan pelanggan langsung dari tautan toko Anda.', image: '' },
       { title: 'Dukungan 7 hari', description: 'Tim kami siap membantu lewat chat setiap hari, termasuk akhir pekan.', image: '' },
     ],
@@ -81,15 +98,11 @@ export const startupCleanContent: SiteContent = {
     eyebrow: 'Galeri',
     title: 'Kirana di lapangan',
     subtitle: 'Momen bersama mitra UMKM dan tim kami.',
-    // Foto demo belum ada: keterangan disamakan dengan ilustrasi pengganti (urutan ART_SEQUENCE: kota, ruang kerja,
-    // tim, lanskap, produk, abstrak) agar gambar dan keterangannya tidak bertolak belakang.
     items: [
-      { image: '', caption: 'Kantor Kirana di Yogyakarta' },
-      { image: '', caption: 'Meja kerja tim produk' },
-      { image: '', caption: 'Pelatihan UMKM di Bandung' },
-      { image: '', caption: 'Gathering mitra di Kaliurang' },
-      { image: '', caption: 'Dasbor laporan di aplikasi' },
-      { image: '', caption: 'Identitas visual Kirana' },
+      { image: templatePhoto('startup-clean-team'), caption: 'Tim produk Kirana di Yogyakarta' },
+      { image: templatePhoto('startup-clean-boutique'), caption: 'Butik mitra di Bandung memakai kasir tablet' },
+      { image: templatePhoto('startup-clean-cafe'), caption: 'Kedai kopi mitra di Kaliurang' },
+      { image: templatePhoto('startup-clean-report'), caption: 'Laporan harian dibaca langsung dari laptop' },
     ],
   },
   testimonials: {
@@ -101,19 +114,19 @@ export const startupCleanContent: SiteContent = {
         name: 'Sari Rahmawati',
         role: 'Pemilik Kedai Kopi Senja, Yogyakarta',
         quote: 'Dulu tutup buku butuh dua jam setiap malam. Sekarang laporan langsung jadi, saya tinggal cek dari HP.',
-        photo: '',
+        photo: templatePhoto('startup-clean-portrait-1'),
       },
       {
         name: 'Agus Prasetyo',
         role: 'Pemilik Toko Berkah Jaya, Medan',
         quote: 'Stok tidak pernah selisih lagi. Peringatan stok menipisnya sangat membantu saat belanja ke grosir.',
-        photo: '',
+        photo: templatePhoto('startup-clean-portrait-2'),
       },
       {
         name: 'Dewi Lestari',
         role: 'Pendiri Butik Lestari, Bandung',
         quote: 'Tiga cabang bisa saya pantau sekaligus. Timnya juga cepat membalas kalau ada pertanyaan.',
-        photo: '',
+        photo: templatePhoto('startup-clean-portrait-3'),
       },
     ],
   },
