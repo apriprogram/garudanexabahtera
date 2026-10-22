@@ -74,6 +74,9 @@ require_once __DIR__ . '/modules/templates.php';
 require_once __DIR__ . '/modules/list_products.php';
 // Client project files: staff-only download, the folder itself is closed to the web (handle_project_file_action)
 require_once __DIR__ . '/modules/project_files.php';
+// Home page hero background: raw video upload, upload limits and the hero_bg_* / hero_images settings
+// (handle_hero_media_action, hero_media_prepare_settings)
+require_once __DIR__ . '/modules/hero_media.php';
 
 load_env_file();
 
@@ -100,7 +103,9 @@ $conn = new mysqli($host, $user, $pass, $db);
 $conn->set_charset('utf8mb4');
 
 $method = $_SERVER['REQUEST_METHOD'];
-$input = json_decode(file_get_contents('php://input'), true);
+// upload_hero_video posts the raw video file (not JSON): hero_media.php streams php://input itself
+$rawBody = ($_GET['action'] ?? '') === 'upload_hero_video';
+$input = $rawBody ? null : json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) $input = [];
 // Read actions may be called with a query string (GET); the body wins over the query
 if ($method === 'GET') $input = $input + $_GET;
@@ -127,6 +132,11 @@ if (handle_list_product_action($conn, $action, $input, $authUser)) {
 }
 // Client project files (dokumen-client/dokumen): staff download (backend/modules/project_files.php)
 if (handle_project_file_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Hero background video upload and the admin page's limits, staff only (backend/modules/hero_media.php)
+if (handle_hero_media_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }
@@ -194,100 +204,98 @@ switch ($action) {
         foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings") as $row) {
             $settings[$row['setting_key']] = $row['setting_value'];
         }
-        echo json_encode($settings);
+        // Always a JSON object like server.js: {} for an empty table (never []), numeric keys stay keys
+        echo json_encode((object)$settings);
         break;
 
     case 'update_settings':
         $settings = is_array($input['settings'] ?? null) ? $input['settings'] : [];
-
-        // Special handling for products_data
-        // Gambar disimpan sebagai base64 langsung di DB (tidak ke disk)
-        // agar tidak bergantung pada path file server yang berbeda-beda
-        if (isset($settings['products_data'])) {
-            $newItems = json_decode((string)$settings['products_data'], true);
-            if (is_array($newItems)) {
-                // Ambil data existing untuk preserve gambar yang sudah ada
-                $existingRow = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = 'products_data'");
-                $existingByID = [];
-                $existingParsed = $existingRow ? json_decode($existingRow['setting_value'], true) : null;
-                if (is_array($existingParsed)) {
-                    foreach ($existingParsed as $ep) {
-                        if (!empty($ep['id'])) $existingByID[$ep['id']] = $ep;
+        // hero_bg_mode, hero_bg_video, hero_bg_video_poster, hero_images (backend/modules/hero_media.php). First, so a
+        // refused hero value (stale tab, data: video, SVG poster) stops the save before any upload; hero_media_base is
+        // the hero video/poster the admin page loaded (compare-and-swap, never stored as a setting)
+        $finishHeroMedia = hero_media_prepare_settings($conn, $settings, $input['hero_media_base'] ?? null);
+        try {
+            // Special handling for products_data
+            // Gambar disimpan sebagai base64 langsung di DB (tidak ke disk)
+            // agar tidak bergantung pada path file server yang berbeda-beda
+            if (isset($settings['products_data'])) {
+                $newItems = json_decode((string)$settings['products_data'], true);
+                if (is_array($newItems)) {
+                    // Ambil data existing untuk preserve gambar yang sudah ada
+                    $existingRow = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = 'products_data'");
+                    $existingByID = [];
+                    $existingParsed = $existingRow ? json_decode($existingRow['setting_value'], true) : null;
+                    if (is_array($existingParsed)) {
+                        foreach ($existingParsed as $ep) {
+                            if (!empty($ep['id'])) $existingByID[$ep['id']] = $ep;
+                        }
                     }
+                    foreach ($newItems as &$item) {
+                        $existID = $item['id'] ?? '';
+                        // Jika image/logo kosong, gunakan yang sudah ada
+                        if (empty($item['image']) && !empty($existingByID[$existID]['image'])) $item['image'] = $existingByID[$existID]['image'];
+                        if (empty($item['logo']) && !empty($existingByID[$existID]['logo'])) $item['logo'] = $existingByID[$existID]['logo'];
+                    }
+                    unset($item);
+                    $settings['products_data'] = json_encode($newItems);
                 }
-                foreach ($newItems as &$item) {
-                    $existID = $item['id'] ?? '';
-                    // Jika image/logo kosong, gunakan yang sudah ada
-                    if (empty($item['image']) && !empty($existingByID[$existID]['image'])) $item['image'] = $existingByID[$existID]['image'];
-                    if (empty($item['logo']) && !empty($existingByID[$existID]['logo'])) $item['logo'] = $existingByID[$existID]['logo'];
-                }
-                unset($item);
-                $settings['products_data'] = json_encode($newItems);
             }
-        }
 
-        // Special handling for portfolio_data - sama seperti products
-        if (isset($settings['portfolio_data'])) {
-            $newItems = json_decode((string)$settings['portfolio_data'], true);
-            if (is_array($newItems)) {
-                $existingRow = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data'");
-                $existingArr = $existingRow ? (json_decode($existingRow['setting_value'], true) ?: []) : [];
-                foreach ($newItems as $idx => &$item) {
-                    // Jika image kosong, gunakan image yang sudah ada berdasarkan posisi
-                    if (empty($item['image']) && !empty($existingArr[$idx]['image'])) $item['image'] = $existingArr[$idx]['image'];
+            // Special handling for portfolio_data - sama seperti products
+            if (isset($settings['portfolio_data'])) {
+                $newItems = json_decode((string)$settings['portfolio_data'], true);
+                if (is_array($newItems)) {
+                    $existingRow = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data'");
+                    $existingArr = $existingRow ? (json_decode($existingRow['setting_value'], true) ?: []) : [];
+                    foreach ($newItems as $idx => &$item) {
+                        // Jika image kosong, gunakan image yang sudah ada berdasarkan posisi
+                        if (empty($item['image']) && !empty($existingArr[$idx]['image'])) $item['image'] = $existingArr[$idx]['image'];
+                    }
+                    unset($item);
+                    $settings['portfolio_data'] = json_encode($newItems);
                 }
-                unset($item);
-                $settings['portfolio_data'] = json_encode($newItems);
             }
-        }
 
-        // Special handling for services_data
-        if (isset($settings['services_data'])) {
-            $items = json_decode((string)$settings['services_data'], true);
-            if (is_array($items)) {
-                foreach ($items as &$item) {
-                    if (isset($item['image'])) $item['image'] = save_base64_asset($item['image'], 'services');
-                    if (isset($item['icon'])) $item['icon'] = save_base64_asset($item['icon'], 'services');
+            // Special handling for services_data
+            if (isset($settings['services_data'])) {
+                $items = json_decode((string)$settings['services_data'], true);
+                if (is_array($items)) {
+                    foreach ($items as &$item) {
+                        if (isset($item['image'])) $item['image'] = save_base64_asset($item['image'], 'services');
+                        if (isset($item['icon'])) $item['icon'] = save_base64_asset($item['icon'], 'services');
+                    }
+                    unset($item);
+                    $settings['services_data'] = json_encode($items);
                 }
-                unset($item);
-                $settings['services_data'] = json_encode($items);
             }
-        }
 
-        // Special handling for hero_images
-        if (isset($settings['hero_images'])) {
-            $images = json_decode((string)$settings['hero_images'], true);
-            if (is_array($images)) {
-                // Removed images are not deleted from disk (same as server.js): the folder also holds
-                // files committed to the repo, and every settings save resends this list
-                $final_paths = [];
-                foreach ($images as $imgData) {
-                    if (is_string($imgData)) $final_paths[] = save_base64_asset($imgData, 'bg', 'hero');
+            // Special handling for hero_logos
+            if (isset($settings['hero_logos'])) {
+                $logos = json_decode((string)$settings['hero_logos'], true);
+                if (is_array($logos)) {
+                    // Like hero_images: removed logos stay on disk
+                    $final_logos = [];
+                    foreach ($logos as $logo) {
+                        if (is_array($logo)) $final_logos[] = array_merge($logo, ["src" => save_base64_asset($logo['src'] ?? '', 'logo-product', 'logo')]);
+                    }
+                    $settings['hero_logos'] = json_encode($final_logos);
                 }
-                $settings['hero_images'] = json_encode($final_paths);
             }
-        }
 
-        // Special handling for hero_logos
-        if (isset($settings['hero_logos'])) {
-            $logos = json_decode((string)$settings['hero_logos'], true);
-            if (is_array($logos)) {
-                // Like hero_images: removed logos stay on disk
-                $final_logos = [];
-                foreach ($logos as $logo) {
-                    if (is_array($logo)) $final_logos[] = array_merge($logo, ["src" => save_base64_asset($logo['src'] ?? '', 'logo-product', 'logo')]);
-                }
-                $settings['hero_logos'] = json_encode($final_logos);
+            foreach ($settings as $key => $value) {
+                if (!preg_match('/^[A-Za-z0-9_]{1,100}$/', (string)$key)) throw new ApiError("Nama setting tidak valid: $key");
+                $value = is_string($value) ? $value : json_encode($value);
+                db_run($conn, "INSERT INTO hero_settings (setting_key, setting_value) VALUES (?, ?)
+                               ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [(string)$key, $value]);
             }
-        }
-
-        foreach ($settings as $key => $value) {
-            if (!preg_match('/^[A-Za-z0-9_]{1,100}$/', (string)$key)) throw new ApiError("Nama setting tidak valid: $key");
-            $value = is_string($value) ? $value : json_encode($value);
-            db_run($conn, "INSERT INTO hero_settings (setting_key, setting_value) VALUES (?, ?)
-                           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [(string)$key, $value]);
+        } catch (Throwable $e) {
+            // Removes the hero files this request stored that no saved setting points to
+            $finishHeroMedia(false);
+            throw $e;
         }
         echo json_encode(["success" => true, "error" => null]);
+        // Garbage-collect sweep of unused hero videos/posters, after the reply; it never changes it
+        $finishHeroMedia(true);
         break;
 
     case 'get_projects':

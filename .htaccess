@@ -10,6 +10,12 @@
 Options -Indexes
 DirectoryIndex index.html
 
+# Video latar hero (assets/bg/hero_video_*, diunggah lewat api.php?action=upload_hero_video)
+<IfModule mod_mime.c>
+  AddType video/mp4 .mp4
+  AddType video/webm .webm
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
@@ -59,9 +65,13 @@ DirectoryIndex index.html
   ExpiresByType image/png "access plus 30 days"
   ExpiresByType image/jpeg "access plus 30 days"
   ExpiresByType image/webp "access plus 30 days"
+  # Nama video hero acak per unggahan (hero_video_<hex>), jadi boleh disimpan lama
+  ExpiresByType video/mp4 "access plus 1 year"
+  ExpiresByType video/webm "access plus 1 year"
 </IfModule>
 
-# Batas upload untuk api.php (gambar & dokumen dikirim base64)
+# Batas upload untuk api.php (gambar & dokumen dikirim base64, video hero sebagai body mentah:
+# UPLOAD_MAX_VIDEO_MB di .env harus di bawah post_max_size)
 <IfModule mod_php.c>
   php_value post_max_size 64M
   php_value upload_max_filesize 32M
