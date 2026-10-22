@@ -14,8 +14,11 @@ SET NAMES utf8mb4;
 
 -- Landing page defaults (everything else is edited from the admin panel).
 INSERT IGNORE INTO hero_settings (setting_key, setting_value) VALUES
-  ('hero_title',       'Leading With Vision, Moving With Purpose'),
-  ('hero_subtitle',    'We don''t just build apps and websites. We build digital systems that help your business and institution grow faster, more efficiently, and more professionally.'),
+  -- Empty = the home page uses its built-in keyword headline (src/components/sections/hero/heroHeadline.ts).
+  ('hero_title',       ''),
+  ('hero_subtitle',    ''),
+  ('cta_title',        'Konsultasi gratis untuk
+website atau aplikasi Anda'),
   ('contact_email',    'info@garudanexa.com'),
   ('site_logo',        '/assets/logo/logogarudanexa.png'),
   ('hero_logos',       '[]'),

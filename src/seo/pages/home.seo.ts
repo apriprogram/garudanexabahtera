@@ -1,9 +1,11 @@
 // Beranda / (docs/platform/SEO-PLAN.md Lampiran A). Title & description dari Lampiran A (tanpa angka harga, jadi tidak
-// basi). JSON-LD: Organization + WebSite (+ ItemList template bila section katalog tampil di beranda).
+// basi). JSON-LD: Organization + WebSite + WebPage (+ ItemList template bila section katalog tampil, + FAQPage dengan teks
+// yang sama persis dengan section #faq bila section itu tampil).
 import { heroPreloadImage } from '../../components/sections/hero/heroPreload';
 import { TITLE_SUFFIX } from '../defaults';
 import { latestDate } from '../format';
-import { itemList } from '../jsonld';
+import { faqContext, homeFaqs } from '../../content/faq';
+import { faqPage, itemList, webPage } from '../jsonld';
 import { pageHead, staticPage } from '../page';
 import { HUB_PATHS, templatePath } from '../paths';
 import { publishedTemplates } from '../templateSeo';
@@ -16,26 +18,33 @@ export const HOME_TITLE = `Template Website Siap Pakai & Jasa Website${TITLE_SUF
 export const HOME_DESCRIPTION =
   'Beli template website siap pakai, sudah termasuk domain, hosting & SSL tahun pertama. Juga jasa pembuatan website & aplikasi Android/iOS custom.';
 
-/** Section katalog beranda disembunyikan admin lewat setting disabled_sections. */
-function templatesHidden(settings: Record<string, unknown>): boolean {
+/** Section beranda `id` disembunyikan admin lewat setting disabled_sections. */
+function sectionHidden(settings: Record<string, unknown>, id: string): boolean {
   try {
     const list: unknown = JSON.parse(String(settings.disabled_sections ?? '[]'));
-    return Array.isArray(list) && list.some((id) => String(id).trim().toLowerCase() === 'templates');
+    return Array.isArray(list) && list.some((item) => String(item).trim().toLowerCase() === id);
   } catch {
     return false;
   }
 }
 
 function homeJsonLd(data: SeoData): object[] {
+  const settings = data.settings ?? {};
   const templates = publishedTemplates(data);
-  if (templates.length === 0 || templatesHidden(data.settings ?? {})) return [];
-  return [
-    itemList({
-      path: HUB_PATHS.home,
-      name: 'Template website siap pakai',
-      items: templates.map((t) => ({ name: t.name, path: templatePath(t.slug) })),
-    }),
+  const nodes: object[] = [
+    webPage({ path: HUB_PATHS.home, name: HOME_TITLE, description: HOME_DESCRIPTION, dateModified: HOME_UPDATED }),
   ];
+  if (templates.length > 0 && !sectionHidden(settings, 'templates')) {
+    nodes.push(
+      itemList({
+        path: HUB_PATHS.home,
+        name: 'Template website siap pakai',
+        items: templates.map((t) => ({ name: t.name, path: templatePath(t.slug) })),
+      }),
+    );
+  }
+  if (!sectionHidden(settings, 'faq')) nodes.push(faqPage({ path: HUB_PATHS.home, items: homeFaqs(settings, faqContext(templates)) }));
+  return nodes;
 }
 
 export default staticPage({

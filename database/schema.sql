@@ -904,7 +904,9 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-19_003', 'baseline: navbar top-level links (no navbar rows)'),
   ('2026-10-19_004', 'baseline: template marketplace tables, customer role, project_client show_on_website/source'),
   ('2026-10-21_006', 'baseline: project documents pd_* tables, project_client workspace columns (settings: seed.sql)'),
-  ('2026-10-22_007', 'baseline: template preview images (no template rows; seed.templates.sql uses .webp)');
+  ('2026-10-22_007', 'baseline: template preview images (no template rows; seed.templates.sql uses .webp)'),
+  ('2026-10-23_009', 'baseline: SEO FAQ/contact data fix (no faq_data rows; seed.sql has the new hero/CTA values)'),
+  ('2026-10-23_011', 'baseline: navbar page links (no navbar rows; the built-in menu is Template, Jasa, Harga, Panduan)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

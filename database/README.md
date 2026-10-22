@@ -17,7 +17,9 @@ database/
 │   ├── 2026-10-19_005_drop_monitoring_tables.sql   # BELUM DISETUJUI, jangan dijalankan (lihat bawah)
 │   ├── 2026-10-21_006_project_documents.sql        # dokumen proyek (pd_*), lihat bawah
 │   ├── 2026-10-22_007_template_previews.sql        # data: pratinjau template .webp (tangkapan layar asli)
-│   └── 2026-10-22_008_new_templates.sql            # data: katalog Arena Club, Aura Studio, Finova (DB lama)
+│   ├── 2026-10-22_008_new_templates.sql            # data: katalog Arena Club, Aura Studio, Finova (DB lama)
+│   ├── 2026-10-23_009_seo_faq_contact.sql          # data: FAQ (hosting/SSL/waktu), placeholder WhatsApp, hero & CTA lama
+│   └── 2026-10-23_011_seo_navbar.sql               # data: navbar Template, Jasa ▾, Harga, Panduan (halaman nyata)
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -85,7 +87,20 @@ C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/seed.templa
 C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-21_006_project_documents.sql
 C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-22_007_template_previews.sql
 C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-22_008_new_templates.sql
+C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-23_009_seo_faq_contact.sql
+C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-23_011_seo_navbar.sql
 ```
+
+`2026-10-23_011` (data saja, SEO WP5) sekali jalan: menu atas menjadi Template (`/template`) · Jasa ▾ (Website custom,
+Aplikasi mobile) · Harga (`/harga`) · Panduan (`/panduan`). Baris hanya diubah selama label dan URL-nya masih bawaan 004/003
+(Projects, Proses, FAQ dinonaktifkan, tidak dihapus); baris baru hanya ditambah bila belum ada. Navbar kosong dibiarkan
+kosong (menu bawaan frontend sudah berstruktur sama). Dijalankan ulang = tidak mengubah apa pun.
+
+`2026-10-23_009` (data saja, SEO WP6) hanya mengubah nilai yang masih sama persis dengan teks bawaan lama: jawaban FAQ
+`faq_data` (hosting/domain, SSL, waktu aktif, edit, kepemilikan) disamakan dengan `src/content/faq.ts`,
+`contact_whatsapp=628123456789` menjadi `6285188009152`, `hero_title`/`hero_subtitle` bahasa Inggris dikosongkan (beranda
+memakai judul bawaan), dan `cta_title` lama menjadi "Konsultasi gratis untuk website atau aplikasi Anda". Nilai yang sudah
+diubah admin tidak disentuh; aman diulang.
 
 `2026-10-22_008` (data saja) membuat/menyamakan baris katalog `arena-club`, `aura-studio`, `finova` berdasarkan slug;
 menjalankan ulang MENIMPA perubahan admin pada tiga baris itu. Jalankan setelah kode yang mendaftarkan ketiga

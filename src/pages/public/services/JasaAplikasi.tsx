@@ -1,16 +1,7 @@
-// /jasa-pembuatan-aplikasi-mobile. STUB WP1 (head noindex di JasaAplikasi.seo.ts); isinya dibuat WP6.
-import PageStub from '../../../components/layout/PageStub';
-import { COMPANY_FACTS } from '../../../lib/companyFacts';
+// /jasa-pembuatan-aplikasi-mobile (docs/platform/SEO-PLAN.md §5.6 langkah 5). Isi: src/content/services.ts (MOBILE_SERVICE).
+import { MOBILE_SERVICE } from '../../../content/services';
+import { ServicePage } from './ServicePage';
 
 export default function JasaAplikasi() {
-  return (
-    <PageStub
-      badge="Jasa"
-      title="Jasa pembuatan aplikasi Android & iOS custom"
-      documentTitle="Jasa pembuatan aplikasi mobile"
-      crumb="Jasa pembuatan aplikasi mobile"
-      intro={`Kami membuat aplikasi Android dan iOS sesuai alur bisnis Anda. ${COMPANY_FACTS.customPricing}`}
-      whatsappMessage="Halo Admin, saya ingin konsultasi pembuatan aplikasi mobile Android/iOS."
-    />
-  );
+  return <ServicePage service={MOBILE_SERVICE} />;
 }

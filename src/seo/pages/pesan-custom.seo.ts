@@ -6,7 +6,7 @@ import { pageHead, staticPage } from '../page';
 import { HUB_PATHS } from '../paths';
 
 /** Tanggal terakhir isi /pesan-custom berubah (CustomOrder.tsx, custom-order/). Ubah setiap kali isinya diubah. */
-export const CUSTOM_ORDER_UPDATED = '2026-10-22';
+export const CUSTOM_ORDER_UPDATED = '2026-10-23';
 
 export const CUSTOM_ORDER_TITLE = `Pesan Website / Aplikasi Mobile Custom${TITLE_SUFFIX}`;
 export const CUSTOM_ORDER_DESCRIPTION =

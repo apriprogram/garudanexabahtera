@@ -1,4 +1,4 @@
-import React, { useId, useRef } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { Check, LayoutTemplate, MessageCircle, Play, Smartphone, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation, type TranslationKey } from '../../../hooks/useTranslation';
@@ -6,6 +6,8 @@ import { SplitText } from '../../ui/SplitText';
 import { SmartLink } from '../../layout/SmartLink';
 import type { HeroMode, ShowcaseItem } from './showcase';
 import { HERO_TONE_CLASSES, type HeroTextLook } from './heroTone';
+import { heroHeadline } from './heroHeadline';
+import { useSiteSettings } from '../../../hooks/useSiteSettings';
 
 interface Mode {
   key: HeroMode;
@@ -49,6 +51,10 @@ const TITLE_CLASS =
  * yang sama, jadi tinggi hero tidak melompat saat mode berganti. State mode dipegang Hero agar visual kanan ikut
  * berganti alur. Warna mengikuti `look` (heroTone.ts): bawaan, atau teks terang / gelap di atas lapisan latar
  * gambar/video (nadanya dipilih Hero lewat useHeroLegibility).
+ *
+ * SEO (heroHeadline.ts): judul mode Template SELALU elemen H1 yang sama (statis, juga saat mode Custom aktif), judul
+ * mode Custom selalu <p>. Kedua judul ada sebagai teks di HTML prerender. Animasi masuk poin & tombol hanya diputar
+ * setelah pengunjung mengganti mode, jadi isi hero langsung terlihat di HTML prerender (tanpa menunggu animasi).
  */
 interface HeroIntroProps {
   mode: HeroMode;
@@ -72,10 +78,17 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
   look = 'default',
 }) => {
   const { t } = useTranslation();
+  const { settings } = useSiteSettings();
+  const headline = heroHeadline(settings, { lead: t('home-hero-template-lead'), accent: t('home-hero-template-accent') });
   const tone = HERO_TONE_CLASSES[look];
   const secondaryBtn = `btn ${tone.secondary} ${SECONDARY_SIZE}`;
   const mode = Math.max(0, MODES.findIndex((item) => item.key === modeKey));
-  const setMode = (index: number) => onModeChange(MODES[index].key);
+  // true setelah pengunjung mengganti mode: baru saat itu panel diberi animasi masuk
+  const [switched, setSwitched] = useState(false);
+  const setMode = (index: number) => {
+    setSwitched(true);
+    onModeChange(MODES[index].key);
+  };
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const baseId = useId();
 
@@ -96,12 +109,18 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
 
   return (
     <div className="max-w-[640px]">
+      {/* Judul admin tanpa kata kunci: H1 kata kunci tampil kecil di atas toggle (heroHeadline.ts) */}
+      {headline.keywordH1 && (
+        <h1 id="hero-title" className={`mb-4 text-[13px] font-semibold leading-snug sm:mb-6 sm:text-[15px] ${tone.point}`}>
+          {headline.keywordH1}
+        </h1>
+      )}
       {/* Toggle mode */}
       <div
         role="tablist"
         aria-label="Pilih layanan"
         onKeyDown={onTabKey}
-        className={`relative inline-grid animate-fade-up grid-cols-2 rounded-full p-1 ring-1 ring-inset motion-reduce:animate-none ${tone.toggle}`}
+        className={`relative inline-grid grid-cols-2 rounded-full p-1 ring-1 ring-inset ${tone.toggle}`}
       >
         <span
           aria-hidden
@@ -140,6 +159,13 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
       <div className="mt-4 grid sm:mt-8">
         {MODES.map((item, index) => {
           const active = index === mode;
+          const animate = active && switched;
+          // Judul mode Template = H1 statis (atau <p> bila H1 kata kunci tampil di atas); mode Custom = <p>
+          const isH1 = item.key === 'template' && headline.isH1;
+          const titleParts =
+            item.key === 'template'
+              ? [{ text: headline.lead }, ...(headline.accent ? [{ text: headline.accent, className: tone.accent }] : [])]
+              : [{ text: t(item.lead) }, { text: t(item.accent), className: tone.accent }];
           return (
             <div
               // Kunci berubah saat aktif → isi dipasang ulang dan animasinya diputar lagi
@@ -153,12 +179,12 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
               className={`col-start-1 row-start-1 ${active ? '' : 'invisible max-sm:hidden'}`}
             >
               <SplitText
-                as={active ? 'h1' : 'p'}
-                id={active ? 'hero-title' : undefined}
+                as={isH1 ? 'h1' : 'p'}
+                id={isH1 ? 'hero-title' : undefined}
                 delay={100}
                 stagger={70}
                 className={`${TITLE_CLASS} ${tone.title}`}
-                parts={[{ text: t(item.lead) }, { text: t(item.accent), className: tone.accent }]}
+                parts={titleParts}
               />
 
               <ul className="mt-5 space-y-2.5 sm:mt-9 sm:space-y-4">
@@ -166,9 +192,9 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
                   <li
                     key={point}
                     className={`flex items-center gap-2 text-[14px] leading-snug sm:gap-3 sm:text-[17px] sm:leading-normal ${tone.point} ${
-                      active ? 'animate-fade-up motion-reduce:animate-none' : ''
+                      animate ? 'animate-fade-up motion-reduce:animate-none' : ''
                     }`}
-                    style={{ animationDelay: `${450 + i * 90}ms` }}
+                    style={animate ? { animationDelay: `${450 + i * 90}ms` } : undefined}
                   >
                     <span className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full sm:h-6 sm:w-6 ${tone.check}`}>
                       <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" strokeWidth={3} aria-hidden />
@@ -179,8 +205,8 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
               </ul>
 
               <div
-                className={`mt-7 flex flex-wrap items-center gap-3 sm:mt-11 ${active ? 'animate-fade-up motion-reduce:animate-none' : ''}`}
-                style={{ animationDelay: '750ms' }}
+                className={`mt-7 flex flex-wrap items-center gap-3 sm:mt-11 ${animate ? 'animate-fade-up motion-reduce:animate-none' : ''}`}
+                style={animate ? { animationDelay: '750ms' } : undefined}
               >
                 {item.key === 'template' ? (
                   <>

@@ -66,11 +66,6 @@ const STUBS: [string, string][] = [
   ['/template/kategori/kecantikan-klinik', 'Template website klinik kecantikan & salon'],
   ['/template/kategori/olahraga-komunitas', 'Template website klub olahraga'],
   ['/template/kategori/fintech-startup', 'Template website fintech & startup'],
-  ['/jasa-pembuatan-website', 'Jasa pembuatan website custom untuk bisnis & instansi'],
-  ['/jasa-pembuatan-aplikasi-mobile', 'Jasa pembuatan aplikasi Android & iOS custom'],
-  ['/harga', 'Harga template website & jasa pembuatan website'],
-  ['/tentang', 'Tentang Garuda Nexa'],
-  ['/kontak', 'Hubungi Garuda Nexa'],
   ['/panduan', 'Panduan website untuk bisnis'],
 ];
 

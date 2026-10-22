@@ -31,17 +31,15 @@ const DATA: SeoData = {
   builtAt: '2026-10-23T00:00:00.000Z',
 };
 
-/** Semua rute stub WP1 (rencana §5.1). */
+/** Rute stub WP1 (rencana §5.1) yang isinya belum jadi. Halaman WP6 (jasa, harga, tentang, kontak) sudah terisi. */
 const STUB_PATHS = [
   '/template',
   ...CATEGORY_SLUGS.map(categoryPath),
-  '/jasa-pembuatan-website',
-  '/jasa-pembuatan-aplikasi-mobile',
-  '/harga',
-  '/tentang',
-  '/kontak',
   '/panduan',
 ];
+
+/** Halaman WP6 yang sudah terisi: index,follow dan masuk sitemap. */
+const WP6_PATHS = ['/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/harga', '/tentang', '/kontak'];
 
 describe('paths', () => {
   it('memuat semua hub, 4 kategori, dan 4 artikel rencana §5.8', () => {
@@ -125,8 +123,9 @@ describe('routes: modul *.seo.ts', () => {
 });
 
 describe('getHead', () => {
-  it("getHead('/harga') noindex,follow selama halamannya stub (kriteria WP1)", () => {
-    expect(getHead('/harga', DATA).robots).toBe('noindex,follow');
+  it("getHead('/harga') index,follow sejak halamannya terisi (WP6; kriteria WP1 berlaku untuk stub yang tersisa)", () => {
+    expect(getHead('/harga', DATA).robots).toBe('index,follow');
+    expect(getHead('/panduan', DATA).robots).toBe('noindex,follow');
   });
 
   it('semua rute stub: noindex,follow, tanpa canonical, judul unik dan berisi', () => {
@@ -165,9 +164,10 @@ describe('getHead', () => {
 });
 
 describe('getIndexableRoutes', () => {
-  it('kosong selama semua halaman baru masih stub (tidak ada yang masuk sitemap)', () => {
+  it('stub tidak masuk sitemap; halaman WP6 yang sudah terisi masuk', () => {
     const paths = getIndexableRoutes(DATA).map((entry) => entry.path);
     for (const path of STUB_PATHS) expect(paths).not.toContain(path);
+    for (const path of WP6_PATHS) expect(paths).toContain(path);
   });
 });
 

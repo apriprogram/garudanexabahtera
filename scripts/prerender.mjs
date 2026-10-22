@@ -496,7 +496,9 @@ export async function prerender({ root, outDir, deployDir, strict }) {
     // Argumen opsional WP4: judul/deskripsi halaman dari head, dan artikel panduan (hanya yang index yang ditulis)
     const pages = Object.fromEntries(entries.map(({ path }) => [path, pick(ssr.getHead(path, data), ['title', 'description'])]));
     const guides = (ssr.listArticles?.() ?? []).map((a) => pick(a, ['slug', 'title', 'description', 'dateModified']));
-    const input = { facts: ssr.COMPANY_FACTS, templates: data.templates, entries, builtAt, pages, guides };
+    // FAQ gabungan dengan teks yang sama persis dengan di situs (WP6, src/content/faq.ts)
+    const faqs = ssr.faqForLlms?.(data) ?? [];
+    const input = { facts: ssr.COMPANY_FACTS, templates: data.templates, entries, builtAt, pages, guides, faqs };
     writeFileSync(join(outDir, 'llms.txt'), await llmsMod.buildLlmsTxt(input));
     writeFileSync(join(outDir, 'llms-full.txt'), await llmsMod.buildLlmsFullTxt(input));
     log('llms.txt, llms-full.txt');

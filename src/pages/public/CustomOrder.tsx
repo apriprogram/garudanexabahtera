@@ -1,12 +1,13 @@
 // /pesan-custom: formulir jasa pembuatan website / aplikasi mobile custom (tombol kedua di Hero).
 // Tanpa harga: biaya dibahas lewat penawaran (SPEC §8). Kirim → submit_custom_order → layar sukses + nomor referensi.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronRight, ClipboardList, FileText, MessagesSquare, Rocket } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
 import { getCurrentUser } from '../../lib/auth';
+import { HUB_PATHS } from '../../seo/paths';
 import { useHydrated } from '../../lib/preload';
 import { AccountOffer } from './custom-order/AccountOffer';
 import { CustomOrderForm, type CustomOrderResult } from './custom-order/CustomOrderForm';
@@ -59,14 +60,6 @@ export default function CustomOrder() {
     };
   }, [hydrated]);
 
-  useEffect(() => {
-    const previous = document.title;
-    document.title = 'Pesan Website / Aplikasi Mobile Custom | Garuda Nexa';
-    return () => {
-      document.title = previous;
-    };
-  }, []);
-
   const scrollToPanel = () =>
     requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 
@@ -99,6 +92,18 @@ export default function CustomOrder() {
                 <p className="mt-4 max-w-xl text-[14px] leading-relaxed text-muted sm:mt-5 sm:text-lg">
                   Punya ide yang tidak cukup dengan template? Ceritakan kebutuhan Anda. Kami akan menghubungi Anda untuk berdiskusi, lalu mengirim
                   penawaran harga dan jadwal yang sesuai dengan cakupan proyek Anda.
+                </p>
+                <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-muted sm:text-lg">
+                  Kami membuat website custom, dari company profile sampai toko online dan sistem informasi, serta aplikasi Android dan iOS
+                  seperti kasir dan absensi. Lihat detail{' '}
+                  <Link to={HUB_PATHS.webService} className="link-site font-medium">
+                    jasa pembuatan website
+                  </Link>{' '}
+                  dan{' '}
+                  <Link to={HUB_PATHS.mobileService} className="link-site font-medium">
+                    jasa pembuatan aplikasi mobile
+                  </Link>
+                  .
                 </p>
                 {/* HP: chip disembunyikan agar form lebih cepat terlihat; poinnya ada lagi di kartu proses & konsultasi */}
                 <ul className="mt-5 flex flex-wrap gap-2 text-[13px] text-muted max-sm:hidden">
@@ -186,7 +191,7 @@ export default function CustomOrder() {
 
                 <p className="text-sm text-muted">
                   Butuh website cepat dengan harga pasti?{' '}
-                  <Link to="/#templates" className="link-site inline-flex items-center gap-1">
+                  <Link to={HUB_PATHS.catalog} className="link-site inline-flex items-center gap-1">
                     Lihat template siap pakai
                     <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                   </Link>

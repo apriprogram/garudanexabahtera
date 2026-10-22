@@ -1,16 +1,57 @@
-// /harga (STUB WP1, noindex sampai WP6 mengisi halamannya). Angka harga hanya dari data template, tidak ditulis di sini.
-import { stubHead, TITLE_SUFFIX } from '../../../seo/defaults';
-import { HUB_PATHS } from '../../../seo/paths';
-import type { PageSeo } from '../../../seo/types';
+// /harga (Lampiran A): menargetkan "harga template website". Angka harga dan tahun hanya dari data (template, waktu
+// build), tidak ditulis di sini. JSON-LD: WebPage + ItemList template + BreadcrumbList + FAQPage (teks = FAQ terlihat).
+import { faqContext, faqItems, PRICING_FAQ_IDS } from '../../../content/faq';
+import { minTemplatePrice, wibDate } from '../../../content/pricing';
+import { TITLE_SUFFIX } from '../../../seo/defaults';
+import { formatPriceShort, latestDate } from '../../../seo/format';
+import { breadcrumb, faqPage, itemList, webPage } from '../../../seo/jsonld';
+import { pageHead, staticPage } from '../../../seo/page';
+import { HUB_PATHS, templatePath } from '../../../seo/paths';
+import { publishedTemplates } from '../../../seo/templateSeo';
+import type { SeoData } from '../../../seo/types';
 
-const seo: PageSeo = {
-  match: (pathname) => pathname === HUB_PATHS.pricing,
-  head: () =>
-    stubHead({
-      title: `Harga Template Website & Jasa Website${TITLE_SUFFIX}`,
-      description:
-        'Harga template website Garuda Nexa sudah termasuk domain, hosting & SSL tahun pertama. Website dan aplikasi custom lewat penawaran setelah konsultasi gratis.',
-    }),
-};
+/** Tanggal terakhir teks halaman /harga berubah (Harga.tsx, pricing.ts, FAQ-nya). Harga template ikut lastmod data. */
+export const PRICING_UPDATED = '2026-10-23';
 
-export default seo;
+/** Tahun di judul: tahun data harga (WIB), supaya judul tidak basi saat tahun berganti. */
+const priceYear = (data: SeoData): string => (wibDate(data.builtAt) ?? PRICING_UPDATED).slice(0, 4);
+
+export function pricingTitle(data: SeoData): string {
+  return `Harga Template Website & Jasa Website ${priceYear(data)}${TITLE_SUFFIX}`;
+}
+
+export function pricingDescription(data: SeoData): string {
+  const min = minTemplatePrice(publishedTemplates(data));
+  return min
+    ? `Harga template website Garuda Nexa mulai ${formatPriceShort(min)} termasuk domain, hosting & SSL tahun pertama. Bandingkan dengan website custom & biaya per tahun.`
+    : 'Harga template website Garuda Nexa termasuk domain, hosting & SSL tahun pertama. Bandingkan dengan website custom & biaya per tahun.';
+}
+
+export default staticPage({
+  path: HUB_PATHS.pricing,
+  updated: PRICING_UPDATED,
+  // Harga ikut berubah saat template diperbarui
+  lastmod: (data) => latestDate([PRICING_UPDATED, ...publishedTemplates(data).map((t) => t.updated_at)]) ?? PRICING_UPDATED,
+  head: (data) => {
+    const templates = publishedTemplates(data);
+    const description = pricingDescription(data);
+    return pageHead(data, {
+      path: HUB_PATHS.pricing,
+      title: pricingTitle(data),
+      description,
+      ogImage: 'harga',
+      ogImageAlt: 'Harga template website dan jasa pembuatan website Garuda Nexa',
+      jsonLd: [
+        webPage({ path: HUB_PATHS.pricing, name: 'Harga template website & jasa pembuatan website', description, dateModified: PRICING_UPDATED }),
+        ...(templates.length
+          ? [itemList({ path: HUB_PATHS.pricing, name: 'Harga template website', items: templates.map((t) => ({ name: t.name, path: templatePath(t.slug) })) })]
+          : []),
+        breadcrumb([
+          { name: 'Beranda', path: '/' },
+          { name: 'Harga', path: HUB_PATHS.pricing },
+        ]),
+        faqPage({ path: HUB_PATHS.pricing, items: faqItems(PRICING_FAQ_IDS, faqContext(templates)) }),
+      ],
+    });
+  },
+});

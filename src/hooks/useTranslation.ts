@@ -22,18 +22,19 @@ export const translations = {
   "home-hero-mode-custom": "Website & aplikasi custom",
   "home-hero-mode-custom-short": "Jasa custom",
 
-  // Hero mode Template
-  "home-hero-template-lead": "Website profesional,",
-  "home-hero-template-accent": "siap online tanpa ribet.",
+  // Hero mode Template. Judul bawaan = H1 beranda (wajib memuat "template website", heroHeadline.ts); admin bisa
+  // menggantinya lewat setting hero_title.
+  "home-hero-template-lead": "Template website siap pakai,",
+  "home-hero-template-accent": "termasuk domain & hosting.",
   "home-hero-template-point-1": "Pilih desain siap pakai, lihat demonya dulu",
   "home-hero-template-point-2": "Harga jelas, bayar aman lewat Midtrans",
   "home-hero-template-point-3": "Domain kami urus, isi Anda kelola lewat CMS",
   "home-hero-btn-templates": "Pilih Template",
   "home-hero-demo": "Lihat Demo",
 
-  // Hero mode Custom
-  "home-hero-custom-lead": "Website & aplikasi mobile,",
-  "home-hero-custom-accent": "dibuat khusus untuk Anda.",
+  // Hero mode Custom (judulnya <p>, bukan H1)
+  "home-hero-custom-lead": "Jasa pembuatan website",
+  "home-hero-custom-accent": "& aplikasi mobile custom.",
   "home-hero-custom-point-1": "Website atau aplikasi Android/iOS sesuai alur bisnis Anda",
   "home-hero-custom-point-2": "Konsultasi gratis, penawaran jelas sebelum mulai",
   "home-hero-custom-point-3": "Didampingi dari desain sampai rilis",

@@ -946,8 +946,8 @@ describe('HeroSettings: teks di atas latar', () => {
     const scrim = preview.querySelector<HTMLElement>('[data-preview-scrim="light"]')!;
     expect(scrim.className).toContain('hero-scrim');
     expect(Number(scrim.style.getPropertyValue('--scrim-a'))).toBeCloseTo(expected.overlayAlpha, 3);
-    expect(preview.querySelector('.text-on-media')).toHaveTextContent('Website profesional,');
-    expect(preview.querySelector('.text-on-media-accent')).toHaveTextContent('siap online tanpa ribet.');
+    expect(preview.querySelector('.text-on-media')).toHaveTextContent('Template website siap pakai,');
+    expect(preview.querySelector('.text-on-media-accent')).toHaveTextContent('termasuk domain & hosting.');
     const summary = `teks terang dengan lapisan ${percent}% (dinaikkan dari 40% agar tetap terbaca)`;
     expect(screen.getByText(new RegExp(escapeRegExp(summary)))).toBeInTheDocument();
     expect(screen.getByText(/Dihitung dari 2 gambar/)).toBeInTheDocument();

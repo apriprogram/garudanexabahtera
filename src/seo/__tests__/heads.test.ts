@@ -87,10 +87,11 @@ describe('beranda, /pesan-custom, legal (Lampiran A)', () => {
     expect(head.title).toBe(HOME_TITLE);
     expect(head.description).toBe(HOME_DESCRIPTION);
     expect(head.ogImage).toBe(`${SITE_ORIGIN}/og/default.jpg`);
-    expect(types(head)).toEqual(['Organization', 'WebSite', 'ItemList']);
-    // section katalog disembunyikan admin → tanpa ItemList
+    expect(types(head)).toEqual(['Organization', 'WebSite', 'WebPage', 'ItemList', 'FAQPage']);
+    // section katalog disembunyikan admin → tanpa ItemList; FAQ disembunyikan → tanpa FAQPage
     const hidden = seoData(TEMPLATES, { disabled_sections: '["templates"]' });
-    expect(types(getHead('/', hidden))).toEqual(['Organization', 'WebSite']);
+    expect(types(getHead('/', hidden))).toEqual(['Organization', 'WebSite', 'WebPage', 'FAQPage']);
+    expect(types(getHead('/', seoData(TEMPLATES, { disabled_sections: '["templates","faq"]' })))).toEqual(['Organization', 'WebSite', 'WebPage']);
   });
 
   it('/pesan-custom: Lampiran A, tanpa angka harga', () => {
