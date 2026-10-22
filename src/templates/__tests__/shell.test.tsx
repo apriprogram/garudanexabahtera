@@ -7,6 +7,7 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEMPLATES, resolveContent } from '../index';
 import { ActionLink, TemplateShell } from '../shared/Shell';
+import { sectionFromAnchor } from '../shared/utils';
 import type { SiteContent } from '../types';
 
 const defs = Object.values(TEMPLATES);
@@ -39,9 +40,15 @@ describe('menu HP template (D-02)', () => {
       const navs = screen.getAllByRole('navigation', { name: 'Menu utama' });
       expect(navs).toHaveLength(2);
 
-      fireEvent.click(within(navs[1]).getByRole('link', { name: 'Galeri' }));
+      // Galeri bila ada; template tanpa galeri (mis. Finova) memakai tautan section terakhir di menu
+      const links = within(navs[1])
+        .getAllByRole('link')
+        .filter((a) => /^#/.test(a.getAttribute('href') ?? '') && a.getAttribute('href') !== '#beranda');
+      const target = links.find((a) => a.textContent?.trim() === 'Galeri') ?? links[links.length - 1];
+      expect(target).toBeDefined();
+      fireEvent.click(target);
 
-      expect(scrolls).toEqual([{ section: 'gallery', menusOpen: 0 }]);
+      expect(scrolls).toEqual([{ section: sectionFromAnchor(target.getAttribute('href') ?? ''), menusOpen: 0 }]);
       expect(screen.getByRole('button', { name: 'Buka menu' })).toHaveAttribute('aria-expanded', 'false');
     });
   }

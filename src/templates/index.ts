@@ -1,14 +1,22 @@
 // Registry template situs pembeli. Kontrak: docs/platform/SPEC.md §7.
 // Kunci = `template_code` di tabel templates / template_orders / template_sites.
+import { arenaClub } from './arena-club';
+import { auraStudio } from './aura-studio';
 import { corporateNexa } from './corporate-nexa';
+import { finova } from './finova';
 import { startupClean } from './startup-clean';
 import { applyIntroduced } from './shared/compat';
 import { isPlainObject, toListItem } from './shared/utils';
 import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from './types';
 
+// Urutan = urutan pilihan "Kode template" di admin (sama dengan sort_order katalog).
+// Template 2026-10-22 (arena-club, aura-studio, finova): brief di docs/platform/TEMPLATE-BRIEFS-2026-10.md.
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
+  [arenaClub.code]: arenaClub,
+  [auraStudio.code]: auraStudio,
+  [finova.code]: finova,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */

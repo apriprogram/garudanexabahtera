@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" role="img" aria-label="Pratinjau sementara template Finova">
+<!-- Placeholder fondasi 2026-10-22: diganti tangkapan layar demo asli oleh verifier. Tata letak = brief §4.3
+     (panel hero gelap berkisi dengan menu di dalamnya, foto tangan + kartu dengan kartu UI melayang, bukti sosial
+     dan strip mitra di dalam panel). Simbol = FinovaMark (atap lumbung menaungi koin), bukan logo referensi. -->
+<defs>
+  <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B0F0E"/><stop offset="0.6" stop-color="#14302A"/><stop offset="1" stop-color="#1F4D43"/></linearGradient>
+  <radialGradient id="glow" cx="0.72" cy="0.42" r="0.45"><stop offset="0" stop-color="#D4F27A" stop-opacity="0.22"/><stop offset="1" stop-color="#D4F27A" stop-opacity="0"/></radialGradient>
+  <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M64 0 L0 0 0 64" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="2"/></pattern>
+  <linearGradient id="photo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A3B36"/><stop offset="1" stop-color="#17231F"/></linearGradient>
+  <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E4EED8"/><stop offset="1" stop-color="#C9D6C0"/></linearGradient>
+  <clipPath id="win"><rect x="80" y="60" width="1440" height="880" rx="24"/></clipPath>
+  <clipPath id="hero"><rect x="100" y="80" width="1400" height="610" rx="32"/></clipPath>
+  <clipPath id="frame"><rect x="930" y="170" width="400" height="430" rx="24"/></clipPath>
+</defs>
+<rect width="1600" height="1000" fill="#D1DBE4"/>
+<rect x="80" y="60" width="1440" height="880" rx="24" fill="#FFFFFF"/>
+<g clip-path="url(#win)">
+  <g clip-path="url(#hero)">
+    <rect x="100" y="80" width="1400" height="610" fill="url(#panel)"/>
+    <rect x="100" y="80" width="1400" height="610" fill="url(#grid)"/>
+    <rect x="100" y="80" width="1400" height="610" fill="url(#glow)"/>
+  </g>
+  <!-- menu di dalam panel -->
+  <path d="M140 118 L156 104 L172 118 Z" fill="#D4F27A" stroke="#D4F27A" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="156" cy="126" r="7" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+  <rect x="186" y="108" width="110" height="16" rx="8" fill="#FFFFFF"/>
+  <rect x="580" y="96" width="440" height="44" rx="22" fill="#FFFFFF" fill-opacity="0.05" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="2"/>
+  <rect x="588" y="102" width="92" height="32" rx="16" fill="#FFFFFF" fill-opacity="0.12"/>
+  <g fill="#FFFFFF" fill-opacity="0.55"><rect x="604" y="112" width="60" height="12" rx="6"/><rect x="700" y="112" width="60" height="12" rx="6"/><rect x="790" y="112" width="60" height="12" rx="6"/><rect x="880" y="112" width="60" height="12" rx="6"/></g>
+  <rect x="1340" y="96" width="120" height="44" rx="22" fill="#D4F27A"/>
+  <!-- judul & tombol -->
+  <rect x="150" y="220" width="560" height="60" rx="12" fill="#FFFFFF"/>
+  <rect x="150" y="296" width="640" height="60" rx="12" fill="#FFFFFF"/>
+  <rect x="150" y="384" width="440" height="14" rx="7" fill="#B9C6C1"/>
+  <rect x="150" y="408" width="380" height="14" rx="7" fill="#B9C6C1"/>
+  <rect x="150" y="452" width="160" height="48" rx="24" fill="#D4F27A"/>
+  <circle cx="336" cy="476" r="24" fill="#FFFFFF"/>
+  <path d="M328 484 L344 468 M334 468 H344 V478" stroke="#0B0F0E" stroke-width="3" fill="none"/>
+  <!-- foto tangan memegang kartu -->
+  <rect x="930" y="170" width="400" height="430" rx="24" fill="url(#photo)"/>
+  <g clip-path="url(#frame)">
+    <g transform="rotate(-10 1120 300)"><rect x="990" y="230" width="260" height="160" rx="18" fill="url(#card)"/><rect x="1015" y="320" width="150" height="14" rx="7" fill="#1F4D43" fill-opacity="0.7"/><rect x="1015" y="256" width="70" height="12" rx="6" fill="#1F4D43" fill-opacity="0.5"/></g>
+    <path d="M1150 380 C1220 320 1300 330 1340 420 L1360 620 L1170 620 Z" fill="#C9A68A"/>
+  </g>
+  <!-- kartu UI melayang -->
+  <rect x="840" y="440" width="250" height="126" rx="16" fill="#FFFFFF"/>
+  <rect x="862" y="462" width="90" height="12" rx="6" fill="#5A6863" fill-opacity="0.6"/>
+  <rect x="862" y="486" width="150" height="26" rx="8" fill="#0B0F0E"/>
+  <path d="M862 548 C900 530 930 544 960 528 C990 512 1030 530 1068 508" stroke="#1F4D43" stroke-width="3" fill="none"/>
+  <rect x="1280" y="220" width="190" height="56" rx="28" fill="#FFFFFF" fill-opacity="0.94"/>
+  <circle cx="1308" cy="248" r="16" fill="#D4F27A"/>
+  <rect x="1332" y="240" width="110" height="14" rx="7" fill="#0B0F0E" fill-opacity="0.7"/>
+  <rect x="1300" y="300" width="160" height="48" rx="24" fill="#FFFFFF" fill-opacity="0.94"/>
+  <rect x="1320" y="318" width="110" height="12" rx="6" fill="#1F4D43" fill-opacity="0.7"/>
+  <!-- bukti sosial & mitra (masih di dalam panel) -->
+  <rect x="140" y="610" width="1320" height="2" fill="#FFFFFF" fill-opacity="0.1"/>
+  <circle cx="166" cy="652" r="20" fill="#D9D3CC" stroke="#0B0F0E" stroke-width="3"/><circle cx="196" cy="652" r="20" fill="#BFB4A8" stroke="#0B0F0E" stroke-width="3"/><circle cx="226" cy="652" r="20" fill="#E6DED6" stroke="#0B0F0E" stroke-width="3"/>
+  <rect x="264" y="634" width="130" height="24" rx="8" fill="#FFFFFF"/>
+  <rect x="264" y="664" width="180" height="10" rx="5" fill="#B9C6C1"/>
+  <g fill="#FFFFFF" fill-opacity="0.45"><rect x="860" y="646" width="80" height="14" rx="7"/><rect x="960" y="646" width="80" height="14" rx="7"/><rect x="1060" y="646" width="80" height="14" rx="7"/><rect x="1160" y="646" width="80" height="14" rx="7"/><rect x="1260" y="646" width="80" height="14" rx="7"/><rect x="1360" y="646" width="80" height="14" rx="7"/></g>
+  <!-- angka besar dengan superskrip, pemisah vertikal -->
+  <rect x="140" y="750" width="170" height="56" rx="10" fill="#0B0F0E"/><rect x="316" y="746" width="26" height="22" rx="6" fill="#1F4D43"/>
+  <rect x="140" y="822" width="140" height="14" rx="7" fill="#0B0F0E" fill-opacity="0.4"/>
+  <rect x="440" y="750" width="2" height="90" fill="#0B0F0E" fill-opacity="0.12"/>
+  <rect x="500" y="750" width="150" height="56" rx="10" fill="#0B0F0E"/><rect x="500" y="822" width="110" height="14" rx="7" fill="#0B0F0E" fill-opacity="0.4"/>
+  <rect x="800" y="750" width="2" height="90" fill="#0B0F0E" fill-opacity="0.12"/>
+  <rect x="860" y="750" width="170" height="56" rx="10" fill="#0B0F0E"/><rect x="1036" y="746" width="26" height="22" rx="6" fill="#1F4D43"/>
+  <rect x="860" y="822" width="140" height="14" rx="7" fill="#0B0F0E" fill-opacity="0.4"/>
+  <rect x="1180" y="730" width="300" height="190" rx="24" fill="#F1F3F2"/>
+  <rect x="1210" y="760" width="120" height="40" rx="10" fill="#0B0F0E"/>
+  <rect x="1210" y="820" width="200" height="14" rx="7" fill="#5A6863" fill-opacity="0.6"/>
+</g>
+</svg>

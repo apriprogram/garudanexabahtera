@@ -11,8 +11,8 @@ afterEach(cleanup);
 const defs = Object.values(TEMPLATES);
 
 describe('registry', () => {
-  it('memuat dua template company profile', () => {
-    expect(Object.keys(TEMPLATES).sort()).toEqual(['corporate-nexa', 'startup-clean']);
+  it('memuat semua template katalog', () => {
+    expect(Object.keys(TEMPLATES).sort()).toEqual(['arena-club', 'aura-studio', 'corporate-nexa', 'finova', 'startup-clean']);
     for (const def of defs) {
       expect(def.code).toBeTruthy();
       expect(def.sections.length).toBeGreaterThan(5);
@@ -23,6 +23,9 @@ describe('registry', () => {
   it('getTemplate aman untuk kode aneh', () => {
     expect(getTemplate('corporate-nexa')?.name).toBe('Corporate Nexa');
     expect(getTemplate(' Startup-Clean ')?.code).toBe('startup-clean');
+    expect(getTemplate('arena-club')?.name).toBe('Arena Club');
+    expect(getTemplate('AURA-STUDIO')?.name).toBe('Aura Studio');
+    expect(getTemplate('finova')?.name).toBe('Finova');
     for (const code of ['constructor', '__proto__', 'toString', '', null, undefined, 'tidak-ada']) expect(getTemplate(code)).toBeUndefined();
   });
 });

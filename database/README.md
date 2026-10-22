@@ -7,7 +7,7 @@ Backend: `backend/server.js` (produksi, MySQL 8 di docker) dan `backend/api.php`
 database/
 ├── schema.sql          # SKEMA KANONIK: satu-satunya sumber kebenaran struktur tabel
 ├── seed.sql            # data awal minimal untuk DB baru (idempoten, tanpa akun admin)
-├── seed.templates.sql  # CONTOH katalog: 2 template Company Profile (harga contoh, idempoten)
+├── seed.templates.sql  # CONTOH katalog: 2 Company Profile + Arena Club, Aura Studio, Finova (harga contoh, idempoten)
 ├── seed.local.sql      # KHUSUS LOKAL, di-gitignore (database/*.local.sql): akun uji XAMPP
 ├── migrations/         # perubahan untuk DB yang SUDAH ada, dijalankan berurutan
 │   ├── 2026-10-19_001_align_schema_with_backend.sql
@@ -16,7 +16,8 @@ database/
 │   ├── 2026-10-19_004_template_marketplace.sql
 │   ├── 2026-10-19_005_drop_monitoring_tables.sql   # BELUM DISETUJUI, jangan dijalankan (lihat bawah)
 │   ├── 2026-10-21_006_project_documents.sql        # dokumen proyek (pd_*), lihat bawah
-│   └── 2026-10-22_007_template_previews.sql        # data: pratinjau template .webp (tangkapan layar asli)
+│   ├── 2026-10-22_007_template_previews.sql        # data: pratinjau template .webp (tangkapan layar asli)
+│   └── 2026-10-22_008_new_templates.sql            # data: katalog Arena Club, Aura Studio, Finova (DB lama)
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -83,7 +84,13 @@ C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/
 C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/seed.templates.sql   # opsional, contoh katalog
 C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-21_006_project_documents.sql
 C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-22_007_template_previews.sql
+C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-22_008_new_templates.sql
 ```
+
+`2026-10-22_008` (data saja) membuat/menyamakan baris katalog `arena-club`, `aura-studio`, `finova` berdasarkan slug;
+menjalankan ulang MENIMPA perubahan admin pada tiga baris itu. Jalankan setelah kode yang mendaftarkan ketiga
+`template_code` ter-deploy. DB baru tidak membutuhkannya: barisnya sudah ada di `seed.templates.sql` (karena itu 008
+tidak dicatat sebagai baseline di `schema.sql`).
 
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
