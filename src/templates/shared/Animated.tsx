@@ -174,7 +174,12 @@ export function CountUp({ value, className = '', duration = 1600 }: CountUpProps
     if (!enabled || !parts || parts.value <= 0 || !final || !run || document.visibilityState === 'hidden') return;
     let frame = 0;
     let safety = 0;
+    // Berhenti total: batalkan frame berikutnya juga, agar pengaman (tab latar) tidak disusul tick yang menulis
+    // angka berjalan lagi di atas nilai akhir yang sudah tampil
     const reset = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = 0;
+      window.clearTimeout(safety);
       run.removeAttribute('data-count');
       final.style.opacity = '';
     };

@@ -134,7 +134,8 @@ export function Story({ m }: { m: CompanyProfileModel }) {
           <Photo
             src={image}
             alt={photoAlt(image, title || m.companyName)}
-            sizes="(min-width: 1024px) 42vw, 100vw"
+            // Foto mendatar dipotong 4:5 di desktop → lebar gambar ±1,9× lebar kotak
+            sizes="(min-width: 1024px) 80vw, 115vw"
             zoom
             position="58% 50%"
             className="aspect-[4/3] rounded-[28px] @3xl:aspect-[16/10] @5xl:aspect-[4/5] @5xl:rounded-[32px]"
@@ -297,7 +298,8 @@ export function Gallery({ m }: { m: CompanyProfileModel }) {
                     <Photo
                       src={image}
                       alt={photoAlt(image, caption || `Foto ${i + 1}`)}
-                      sizes="(min-width: 1024px) 25vw, (min-width: 672px) 46vw, 80vw"
+                      // Kotak 4:5 dari foto mendatar → lebar gambar ±1,9× lebar kotak
+                      sizes="(min-width: 1024px) 47vw, (min-width: 672px) 86vw, 150vw"
                       zoom
                       imgClassName={PHOTO_HOVER}
                       className="aspect-[4/5] rounded-[28px]"
@@ -375,8 +377,10 @@ export function Cta({ m }: { m: CompanyProfileModel }) {
         >
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute inset-0" style={CTA_GRID} />
-            <div className="absolute -left-28 -top-44 h-[420px] w-[420px] rounded-full bg-white/10" />
-            <div className="absolute -bottom-52 -right-24 h-[460px] w-[460px] rounded-full bg-white/10" />
+            {/* Lingkaran garis tipis tanpa isi: di HP keduanya menumpuk di belakang teks, dan isi putih transparan
+                menurunkan kontras teks putih di bawah 4,5:1 */}
+            <div className="absolute -left-28 -top-44 h-[420px] w-[420px] rounded-full ring-1 ring-inset ring-white/20" />
+            <div className="absolute -bottom-52 -right-24 h-[460px] w-[460px] rounded-full ring-1 ring-inset ring-white/20" />
           </div>
           <div className={MEASURE}>
             <h2 className={`text-balance ${FONT_DISPLAY} ${TYPE.h2} font-bold`}>{title}</h2>

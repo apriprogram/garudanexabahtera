@@ -180,8 +180,9 @@ export function Footer({ m }: { m: CompanyProfileModel }) {
       </div>
       <div className="border-t border-black/[0.06]">
         <div className={`${CONTAINER} flex flex-col gap-1.5 py-6 text-[13px] text-subtle @3xl:flex-row @3xl:items-center @3xl:justify-between`}>
-          <p>{copyright}</p>
-          {m.tagline && <p>{m.tagline}</p>}
+          {/* Ruang kanan untuk tombol WhatsApp melayang (pojok kanan bawah) agar tidak menutupi teks di ujung halaman */}
+          <p className="pr-16 @3xl:pr-0">{copyright}</p>
+          {m.tagline && <p className="pr-16 @3xl:pr-24">{m.tagline}</p>}
         </div>
       </div>
     </footer>

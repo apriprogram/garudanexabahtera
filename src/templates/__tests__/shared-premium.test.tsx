@@ -167,6 +167,39 @@ describe('gerak', () => {
       rect.mockRestore();
     }
   });
+
+  it('CountUp: pengaman saat frame ditahan browser menampilkan nilai akhir dan menghentikan hitungan', () => {
+    vi.useFakeTimers();
+    // Tab latar: frame animasi tertahan (tidak dijalankan sampai kita panggil manual)
+    const frames = new Map<number, FrameRequestCallback>();
+    let nextId = 1;
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      frames.set(nextId, cb);
+      return nextId++;
+    });
+    const caf = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => {
+      frames.delete(id);
+    });
+    const rect = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(DOMRect.fromRect({ x: 0, y: 100, width: 120, height: 40 }));
+    try {
+      const { container } = shell(<CountUp value="350+" duration={1000} />);
+      const run = container.querySelector('.tpl-count')!;
+      expect(run.getAttribute('data-count')).toBe('0+');
+      vi.advanceTimersByTime(2500); // pengaman watchEntrance → mulai hitung (observer jsdom tidak pernah memanggil)
+      expect(frames.size).toBe(1);
+      vi.advanceTimersByTime(1600); // pengaman CountUp: frame masih tertahan → nilai akhir tampil
+      expect(run.hasAttribute('data-count')).toBe(false);
+      // Frame tertahan (cap waktu di tengah hitungan) tidak boleh menulis angka berjalan lagi di atas nilai akhir
+      for (const cb of [...frames.values()]) cb(performance.now() - 1500);
+      expect(run.hasAttribute('data-count')).toBe(false);
+      expect(container.textContent).toBe('350+');
+    } finally {
+      rect.mockRestore();
+      raf.mockRestore();
+      caf.mockRestore();
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('Photo', () => {

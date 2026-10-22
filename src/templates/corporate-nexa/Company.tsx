@@ -37,7 +37,8 @@ export function About({ m }: { m: CompanyProfileModel }) {
               src={main}
               alt={photoAlt(main, title || `Tentang ${m.companyName}`)}
               zoom
-              sizes="(min-width: 1024px) 40vw, 100vw"
+              // Foto mendatar dipotong 4:5 di desktop → lebar gambar ±1,9× lebar kotak
+              sizes="(min-width: 1024px) 75vw, 115vw"
               className="aspect-[4/3] rounded-[24px] @3xl:rounded-[28px] @5xl:aspect-[4/5]"
             />
           </Reveal>

@@ -153,7 +153,7 @@ ALTER TABLE project_client
   (`#projects`), **Proses** (`#process`), **FAQ** (`#faq`). Menu lain (Harga, Perusahaan + anaknya, anak-anak Produk)
   dinonaktifkan (`is_active = 0`), JANGAN dihapus. Kolom: `label_id`, `label_en`, `url`, `sort_order`, `is_active`.
 - `faq_data` di `hero_settings`: hapus kalimat yang menyebut harga/paket jasa custom (lihat §8).
-- Gambar seed: `preview_image` = `/assets/templates/<code>-preview.svg`, `gallery` = `/assets/templates/<code>-1.svg`, `/assets/templates/<code>-2.svg` (file SVG mockup dibuat agen templates-public di `public/assets/templates/`).
+- Gambar seed: `preview_image` = `/assets/templates/<code>-preview.webp`, `gallery` = `/assets/templates/<code>-1.webp`, `/assets/templates/<code>-2.webp` (tangkapan layar asli demo, WebP 1600×1000 di `public/assets/templates/`; DB lama: migrasi `2026-10-22_007`). Mockup SVG lama (`<code>-preview.svg`, `-1.svg`, `-2.svg`) tetap ada sebagai cadangan kode.
 - Seed lokal `database/seed.templates.sql` (contoh, idempoten): 2 template kategori "Company Profile"
   `corporate-nexa` dan `startup-clean`, status `published`, harga contoh (tandai "contoh" di laporan).
 - Migrasi terpisah **TIDAK dijalankan**: `database/migrations/2026-10-19_005_drop_monitoring_tables.sql` berisi

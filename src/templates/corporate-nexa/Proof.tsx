@@ -191,7 +191,8 @@ export function Cta({ m }: { m: CompanyProfileModel }) {
           >
             {photo ? (
               <>
-                <Photo src={image} alt="" parallax fallback="none" sizes="100vw" className="absolute inset-0 -z-10" />
+                {/* HP: blok ajakan tegak, foto mendatar dipotong + parallax → butuh ±2× lebar layar */}
+                <Photo src={image} alt="" parallax fallback="none" sizes="(min-width: 1024px) 100vw, 200vw" className="absolute inset-0 -z-10" />
                 <div aria-hidden className="absolute inset-0 -z-10 bg-[#0B1220]/65" />
                 <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,rgba(11,18,32,0.55),rgba(11,18,32,0)_65%)]" />
                 <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-bl from-(--tpl-accent)/30 via-transparent to-transparent" />

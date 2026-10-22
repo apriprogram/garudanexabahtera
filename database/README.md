@@ -15,7 +15,8 @@ database/
 │   ├── 2026-10-19_003_navbar_top_level_links.sql
 │   ├── 2026-10-19_004_template_marketplace.sql
 │   ├── 2026-10-19_005_drop_monitoring_tables.sql   # BELUM DISETUJUI, jangan dijalankan (lihat bawah)
-│   └── 2026-10-21_006_project_documents.sql        # dokumen proyek (pd_*), lihat bawah
+│   ├── 2026-10-21_006_project_documents.sql        # dokumen proyek (pd_*), lihat bawah
+│   └── 2026-10-22_007_template_previews.sql        # data: pratinjau template .webp (tangkapan layar asli)
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -81,6 +82,7 @@ C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/
 C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-19_004_template_marketplace.sql
 C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/seed.templates.sql   # opsional, contoh katalog
 C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-21_006_project_documents.sql
+C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-22_007_template_previews.sql
 ```
 
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).

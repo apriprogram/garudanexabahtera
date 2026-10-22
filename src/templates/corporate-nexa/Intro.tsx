@@ -108,7 +108,8 @@ export function Hero({ m }: { m: CompanyProfileModel }) {
             alt={photoAlt(image, m.companyName)}
             priority
             parallax
-            sizes="(min-width: 1024px) 40vw, 100vw"
+            // Foto mendatar dipotong 4:5 (desktop) / 4:3 (HP) + skala parallax → lebar gambar ±2× lebar kotak
+            sizes="(min-width: 1024px) 80vw, 125vw"
             className="aspect-[4/3] rounded-[24px] @3xl:aspect-[16/10] @3xl:rounded-[28px] @5xl:aspect-[4/5]"
           />
           {point && (
