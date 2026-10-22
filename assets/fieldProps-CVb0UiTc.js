@@ -1,0 +1,1 @@
+function e(e,t,n=!1,r=!1){return{id:e,name:e,"aria-invalid":t?!0:void 0,"aria-describedby":t?`${e}-error`:n?`${e}-help`:void 0,"aria-required":r?!0:void 0}}export{e as t};

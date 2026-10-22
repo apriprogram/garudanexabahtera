@@ -1,1 +1,0 @@
-import{_n as e,gn as t}from"./index-Bcs83Pa7.js";var n=e(t(),1);function r(e){(0,n.useEffect)(()=>{if(!e)return;let t=document.title;return document.title=e,()=>{document.title=t}},[e])}export{r as t};
