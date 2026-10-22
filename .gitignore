@@ -46,6 +46,9 @@ public/assets/sites/
 public/assets/bg/hero_video_*
 public/assets/bg/hero_poster_*
 public/assets/bg/.hero_video_*
+# Gambar latar hero yang diunggah dari admin saat uji lokal (hero_<12 hex>.<ext>): konten, bukan kode. Gambar bawaan
+# hero_6a07…_N.jpg, hero.png, hero1.png, hero2.png tetap terlacak.
+public/assets/bg/hero_????????????.*
 
 # Dokumen & logo klien (upload dari admin): tetap di server/disk lokal, jangan masuk repo publik.
 # File lama yang sudah ter-track tidak ikut terhapus oleh aturan ini.

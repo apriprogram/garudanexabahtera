@@ -124,8 +124,9 @@ atau tombol WhatsApp melayang; offset anchor section tetap lewat `scroll-mt-*`.
 
 - `Navbar` (fixed, bar **`--nav-h` = 56px HP & tablet / 64px ≥ 1024px**; tinggi total header **`--nav-offset`** = bar +
   `env(safe-area-inset-top)` untuk mode PWA; keduanya di `src/index.css`): transparan di puncak, putih kaca
-  (`bg-canvas/85` + blur) saat digulir, **tanpa garis bawah, shadow, atau bar progres di semua state** (juga saat menu HP
-  terbuka). Menu tengah dengan sorotan pill yang meluncur saat hover (36px), titik biru = section aktif di beranda. Logo
+  (`bg-canvas/85` + blur) saat digulir, dan sejak di puncak bila hero beranda memakai latar gambar/video (media tampil
+  penuh dan bisa gelap, jadi logo & menu harus tetap terbaca), **tanpa garis bawah, shadow, atau bar progres di semua
+  state** (juga saat menu HP terbuka). Menu tengah dengan sorotan pill yang meluncur saat hover (36px), titik biru = section aktif di beranda. Logo
   `BrandLogo size="sm"`, tombol akun 36px, CTA "Konsultasi Gratis" 40px (HP 32px, "Konsultasi").
   **Offset navbar selalu lewat variabel**, jangan menulis angka: konten pertama halaman lain `pt-nav` (= `--nav-offset`),
   bar `h-(--nav-h)`, anchor `scroll-mt-[calc(var(--nav-offset)+1rem)]`, kolom sticky
@@ -211,7 +212,8 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
     gambar valid / mode video tanpa video valid → bawaan.
   - Media tampil penuh: TANPA lapisan putih/transparan di atasnya dan tanpa pudar atas (keputusan pemilik, 2026-10-22);
     hanya pudar bawah `h-40` ke `canvas` agar menyatu dengan strip layanan. Teks hero tetap gelap, jadi pakai
-    gambar/video yang cukup terang di sisi kiri (kolom teks) dan di bagian atas (navbar transparan di puncak halaman).
+    gambar/video yang cukup terang di sisi kiri (kolom teks). Navbar memakai putih kaca sejak di puncak beranda selama
+    latar hero berupa gambar/video.
   - Tombol jeda bulat 40px (`bg-surface/90` + garis tipis, ikon `Pause`/`Play`, label "Jeda latar" / "Putar latar",
     WCAG 2.2.2) selama masih ada 2+ gambar yang bisa tampil, atau video yang masih bisa diputar, di kiri bawah
     `container-site` (kanan bawah tertutup tombol WhatsApp melayang di ≥ 640px). Berhenti otomatis saat hero di luar

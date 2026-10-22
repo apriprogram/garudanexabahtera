@@ -14,6 +14,7 @@ import { useSectionSpy } from '../../hooks/useSectionSpy';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { accountLinkFor, useSessionRole } from '../../hooks/useSessionRole';
 import { BrandLogo } from '../ui/LogoMark';
+import { parseHeroBackground } from '../sections/hero/heroBgConfig';
 import { SkipLink } from '../ui/SkipLink';
 import { SmartLink } from './SmartLink';
 
@@ -87,15 +88,16 @@ interface Pill {
 
 /**
  * Navbar publik gaya BELAJAR CPNS: transparan di puncak halaman, jadi putih kaca saat digulir, tanpa garis bawah
- * maupun shadow di semua state. Menu di tengah dengan sorotan pill yang meluncur mengikuti hover, titik biru menandai
- * section aktif di beranda. Tinggi = `--nav-h` (56px HP / 64px ≥ 1024px, di index.css): halaman lain memberi `pt-nav`
+ * maupun shadow di semua state. Bila hero beranda memakai latar gambar/video (tampil penuh, bisa gelap), putih kaca
+ * sejak di puncak supaya logo dan menu selalu terbaca. Menu di tengah dengan sorotan pill yang meluncur mengikuti
+ * hover, titik biru menandai section aktif di beranda. Tinggi = `--nav-h` (56px HP / 64px ≥ 1024px, di index.css): halaman lain memberi `pt-nav`
  * pada konten pertamanya.
  */
 const Navbar: React.FC = () => {
   const { t } = useTranslation();
   // Berlangganan perubahan rute: navbar dirender ulang saat pindah halaman (tombol akun ikut diperbarui)
   const { pathname } = useLocation();
-  const { settings } = useSiteSettings();
+  const { settings, loaded: settingsLoaded } = useSiteSettings();
   const { menus, loaded: menusLoaded } = useNavbarMenus();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -153,6 +155,9 @@ const Navbar: React.FC = () => {
 
   // Scroll-spy hanya di beranda: titik biru di bawah menu section yang sedang dibaca
   const onHome = pathname === '/';
+  // Hero beranda berlatar gambar/video: putih kaca walau belum digulir
+  const mediaHero = onHome && settingsLoaded && parseHeroBackground(settings).mode !== 'default';
+  const glass = scrolled || mediaHero;
   const spyIds = navItems.map((item) => anchorId(item.href)).filter((id): id is string => Boolean(id));
   const { activeId } = useSectionSpy(spyIds, { enabled: onHome });
 
@@ -190,7 +195,7 @@ const Navbar: React.FC = () => {
       // Safe-area atas untuk mode standalone/PWA (di browser biasa nilainya 0); kiri-kanan diurus container-site.
       // Tinggi total header = --nav-offset (bar --nav-h + safe-area), tanpa garis bawah / shadow di state mana pun.
       className={`fixed inset-x-0 top-0 z-50 pt-[env(safe-area-inset-top)] transition-colors duration-300 ${
-        isMenuOpen ? 'bg-canvas' : scrolled ? 'bg-canvas/85 backdrop-blur-xl backdrop-saturate-150' : 'bg-transparent'
+        isMenuOpen ? 'bg-canvas' : glass ? 'bg-canvas/85 backdrop-blur-xl backdrop-saturate-150' : 'bg-transparent'
       }`}
     >
       {/* Tautan pertama di urutan Tab: lompat ke <main> (id="konten" di beranda, <main> pertama di halaman lain) */}
