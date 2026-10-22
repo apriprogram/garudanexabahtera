@@ -1,0 +1,63 @@
+// Alamat halaman publik host utama (docs/platform/SEO-PLAN.md §2, §5.8) untuk tautan internal, sitemap, dan *.seo.ts.
+// Tulis tautan lewat konstanta ini, jangan string lepas, supaya satu URL tidak punya dua ejaan.
+// Modul murni (tanpa React), aman diimpor dari skrip Node, prerender, dan *.seo.ts.
+import { LEGAL_PATHS } from '../lib/legal';
+
+/** Origin kanonis: https, tanpa www, tanpa garis miring di akhir. */
+export const SITE_ORIGIN = 'https://garudanexa.com';
+
+/** Halaman hub (diindeks setelah isinya jadi). */
+export const HUB_PATHS = {
+  home: '/',
+  catalog: '/template',
+  webService: '/jasa-pembuatan-website',
+  mobileService: '/jasa-pembuatan-aplikasi-mobile',
+  pricing: '/harga',
+  about: '/tentang',
+  contact: '/kontak',
+  guides: '/panduan',
+  customOrder: '/pesan-custom',
+} as const;
+
+export type HubKey = keyof typeof HUB_PATHS;
+
+/**
+ * Slug halaman kategori /template/kategori/{slug}. Nama kategori di DB dipetakan ke slug ini oleh
+ * src/content/categories.ts (WP5). "kategori" sendiri tidak boleh menjadi slug template (ditolak kedua backend).
+ */
+export const CATEGORY_SLUGS = ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup'] as const;
+
+export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
+
+export const isCategorySlug = (value: string): value is CategorySlug => (CATEGORY_SLUGS as readonly string[]).includes(value);
+
+/**
+ * Slug 4 artikel panduan pertama (rencana §5.8). Artikel baru ada setelah file .md-nya ada di src/content/panduan;
+ * tautkan hanya artikel yang sudah terbit (cek dengan getArticle(slug)).
+ */
+export const ARTICLE_SLUGS = {
+  websiteCost: 'biaya-website-company-profile',
+  templateVsCustom: 'template-vs-jasa-website-custom',
+  appCost: 'biaya-aplikasi-android-ios',
+  beautyClinicWebsite: 'website-klinik-kecantikan',
+} as const;
+
+export type PlannedArticleSlug = (typeof ARTICLE_SLUGS)[keyof typeof ARTICLE_SLUGS];
+
+export const PLANNED_ARTICLE_SLUGS: readonly PlannedArticleSlug[] = Object.values(ARTICLE_SLUGS);
+
+/** Prefix rute yang dibagi beberapa halaman. */
+export const CATEGORY_PREFIX = '/template/kategori/';
+export const TEMPLATE_PREFIX = '/template/';
+export const GUIDE_PREFIX = '/panduan/';
+
+export const templatePath = (slug: string) => `${TEMPLATE_PREFIX}${slug}`;
+export const categoryPath = (slug: CategorySlug) => `${CATEGORY_PREFIX}${slug}`;
+export const articlePath = (slug: string) => `${GUIDE_PREFIX}${slug}`;
+export const demoPath = (slug: string) => `/demo/${slug}`;
+export const orderPath = (slug: string) => `/pesan/${slug}`;
+
+export { LEGAL_PATHS };
+
+/** URL absolut kanonis dari path situs ("/harga" → "https://garudanexa.com/harga"). */
+export const absoluteUrl = (path: string) => (path === '/' ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${path}`);

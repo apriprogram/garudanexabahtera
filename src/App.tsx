@@ -1,14 +1,24 @@
 import { Suspense, lazy, useEffect, type ReactNode } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useStore } from './store/useStore';
-import Auth from './pages/Auth';
 import Home from './pages/public/Home';
 import { adminRoutes } from './pages/admin/routes';
 import SiteHostGate from './templates/SiteHostGate';
 import { isMainHost } from './templates/siteHosts';
 import { LEGAL_PATHS } from './lib/legal';
+import { HUB_PATHS } from './seo/paths';
 
 // Halaman di luar beranda dimuat saat dibuka agar bundel beranda tetap ringan
+const Auth = lazy(() => import('./pages/Auth'));
+const CatalogPage = lazy(() => import('./pages/public/catalog/CatalogPage'));
+const CategoryPage = lazy(() => import('./pages/public/catalog/CategoryPage'));
+const JasaWebsite = lazy(() => import('./pages/public/services/JasaWebsite'));
+const JasaAplikasi = lazy(() => import('./pages/public/services/JasaAplikasi'));
+const Harga = lazy(() => import('./pages/public/info/Harga'));
+const Tentang = lazy(() => import('./pages/public/info/Tentang'));
+const Kontak = lazy(() => import('./pages/public/info/Kontak'));
+const PanduanIndex = lazy(() => import('./pages/public/panduan/PanduanIndex'));
+const PanduanArticle = lazy(() => import('./pages/public/panduan/PanduanArticle'));
 const TemplateDetail = lazy(() => import('./pages/public/TemplateDetail'));
 const TemplateDemo = lazy(() => import('./pages/public/TemplateDemo'));
 const SitePreview = lazy(() => import('./pages/public/SitePreview'));
@@ -83,6 +93,10 @@ function App() {
         <Routes>
           {/* Website publik */}
           <Route path="/" element={<Home />} />
+          {/* Katalog & kategori (docs/platform/SEO-PLAN.md §2). "kategori" bukan slug template (ditolak kedua backend),
+              dan /template/kategori/:category lebih spesifik dari /template/:slug, jadi slug template tetap menang. */}
+          <Route path={HUB_PATHS.catalog} element={lazyPage(<CatalogPage />)} />
+          <Route path="/template/kategori/:category" element={lazyPage(<CategoryPage />)} />
           <Route path="/template/:slug" element={lazyPage(<TemplateDetail />)} />
           <Route path="/demo/:slug" element={lazyPage(<TemplateDemo />)} />
           <Route path="/situs/:siteId" element={lazyPage(<SitePreview />)} />
@@ -90,6 +104,15 @@ function App() {
           <Route path="/pesan-custom" element={lazyPage(<CustomOrder />)} />
           <Route path="/masuk" element={lazyPage(<CustomerLogin />)} />
           <Route path="/daftar" element={lazyPage(<CustomerRegister />)} />
+
+          {/* Jasa custom, harga, perusahaan, panduan */}
+          <Route path={HUB_PATHS.webService} element={lazyPage(<JasaWebsite />)} />
+          <Route path={HUB_PATHS.mobileService} element={lazyPage(<JasaAplikasi />)} />
+          <Route path={HUB_PATHS.pricing} element={lazyPage(<Harga />)} />
+          <Route path={HUB_PATHS.about} element={lazyPage(<Tentang />)} />
+          <Route path={HUB_PATHS.contact} element={lazyPage(<Kontak />)} />
+          <Route path={HUB_PATHS.guides} element={lazyPage(<PanduanIndex />)} />
+          <Route path="/panduan/:slug" element={lazyPage(<PanduanArticle />)} />
 
           {/* Dokumen legal (ditautkan di Footer, checkout, dan form daftar) */}
           <Route path={LEGAL_PATHS.terms} element={lazyPage(<SyaratKetentuan />)} />
@@ -108,8 +131,8 @@ function App() {
           </Route>
 
           {/* Login staf & panel admin */}
-          <Route path="/login" element={<Auth />} />
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/login" element={lazyPage(<Auth />)} />
+          <Route path="/auth" element={lazyPage(<Auth />)} />
           {adminRoutes}
 
           <Route path="*" element={lazyPage(<NotFound />)} />
