@@ -445,7 +445,8 @@ app.post('/api.php', async (req, res) => {
           return;
         }
         const errors = [];
-        // ── hero_bg_mode, hero_bg_video, hero_bg_video_poster, hero_images ── (modules/hero_media.js)
+        // ── hero_bg_mode, hero_text_tone, hero_overlay, hero_bg_video, hero_bg_video_poster, hero_images ──
+        // (modules/hero_media.js)
         // First, so a refused hero value (stale tab, data: video, SVG poster) stops the save before any upload;
         // hero_media_base is the hero video/poster the admin page loaded (compare-and-swap, never stored as a setting)
         const finishHeroMedia = await prepareHeroMediaSettings(settings, pool, input.hero_media_base);

@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import HeroSettings from './HeroSettings';
+import { parseHeroOverlay, parseHeroTextTone } from '../../components/sections/hero/heroBgConfig';
+import type { HeroTextTone } from '../../components/sections/hero/heroContrast';
 import {
   heroMediaBaseline,
   omitUnchangedHeroMedia,
@@ -208,6 +210,9 @@ const SiteSettings: React.FC = () => {
   const [heroBgMode, setHeroBgMode] = useState<HeroBgMode>('default');
   const [heroVideo, setHeroVideo] = useState('');
   const [heroVideoPoster, setHeroVideoPoster] = useState('');
+  // Teks hero di atas gambar/video: warna (hero_text_tone) dan lapisan minimum dalam persen (hero_overlay)
+  const [heroTextTone, setHeroTextTone] = useState<HeroTextTone>('auto');
+  const [heroOverlay, setHeroOverlay] = useState(() => parseHeroOverlay(undefined));
   // true selama video diunggah sampai sampulnya terpasang (juga setelah tab Hero ditutup): tombol simpan ditahan
   // supaya video setengah jadi atau video tanpa sampulnya tidak ikut tersimpan
   const [heroBusy, setHeroBusy] = useState(false);
@@ -305,6 +310,9 @@ const SiteSettings: React.FC = () => {
       setHeroBgMode(heroBaseline.hero_bg_mode);
       setHeroVideo(heroBaseline.hero_bg_video);
       setHeroVideoPoster(heroBaseline.hero_bg_video_poster);
+      // Dinormalkan sama dengan website & backend (tidak dikenal → Otomatis, bukan angka → 40%)
+      setHeroTextTone(parseHeroTextTone(data.hero_text_tone));
+      setHeroOverlay(parseHeroOverlay(data.hero_overlay));
 
       // Load Products tab data
       if (data.products_categories) {
@@ -500,6 +508,8 @@ const SiteSettings: React.FC = () => {
       hero_bg_mode: heroBgMode,
       hero_bg_video: heroVideo,
       hero_bg_video_poster: heroVideoPoster,
+      hero_text_tone: heroTextTone,
+      hero_overlay: String(heroOverlay),
 
       // Products data
       products_categories: JSON.stringify(productsCategories),
@@ -780,6 +790,10 @@ const SiteSettings: React.FC = () => {
             imagesPending={heroImagesPending}
             onImageNotice={handleHeroImageNotice}
             saving={isSaving}
+            heroTextTone={heroTextTone}
+            setHeroTextTone={setHeroTextTone}
+            heroOverlay={heroOverlay}
+            setHeroOverlay={setHeroOverlay}
           />
         );
 

@@ -1,6 +1,7 @@
 // Latar hero beranda dari setting admin (Pengaturan website → Hero → "Latar hero"). Murni (tanpa DOM) agar mudah diuji;
 // tampilannya ada di HeroBackground.tsx (bawaan) dan HeroMedia.tsx (gambar / video).
 import { readList, type SiteSettings } from '../../../hooks/useSiteSettings';
+import { HERO_OVERLAY_DEFAULT, HERO_OVERLAY_MAX, HERO_TEXT_TONES, type HeroTextTone } from './heroContrast';
 
 /**
  * - default: kanvas medan titik bawaan (HeroBackground);
@@ -73,3 +74,38 @@ export const heroBackgroundKey = (config: HeroBackgroundConfig): string => {
   if (config.mode === 'video') return `video:${config.src}\n${config.poster ?? ''}`;
   return 'default';
 };
+
+/* ─── Keterbacaan teks di atas gambar/video (hero_text_tone, hero_overlay) ─── */
+
+/** Setting teks hero di atas media: nada (auto/light/dark) + lapisan minimum dalam persen (0..80). */
+export interface HeroTextSettings {
+  tone: HeroTextTone;
+  overlay: number;
+}
+
+/** `hero_text_tone` dicocokkan persis (sama dengan backend); kosong / tidak dikenal → 'auto'. */
+export const parseHeroTextTone = (raw: unknown): HeroTextTone =>
+  typeof raw === 'string' && (HERO_TEXT_TONES as readonly string[]).includes(raw) ? (raw as HeroTextTone) : 'auto';
+
+/** Angka desimal biasa dengan spasi/tab/baris baru di tepinya (tanpa +, eksponen, atau pemisah ribuan). */
+const OVERLAY_NUMBER = /^[ \t\n\r]*(-?[0-9]+(?:\.[0-9]+)?)[ \t\n\r]*$/;
+
+/**
+ * `hero_overlay` → bilangan bulat 0..80, sama persis dengan hm_overlay() / heroOverlay() di backend: angka
+ * (atau teks angka) dibulatkan lalu dibatasi 0..80; selain itu (kosong, teks lain, bukan angka) → 40.
+ */
+export const parseHeroOverlay = (raw: unknown): number => {
+  let value: number;
+  const match = typeof raw === 'string' ? OVERLAY_NUMBER.exec(raw) : null;
+  if (typeof raw === 'number' && !Number.isNaN(raw)) value = raw;
+  else if (match) value = Number(match[1]);
+  else return HERO_OVERLAY_DEFAULT;
+  // `|| 0`: -0 (dari -0,4) jadi 0
+  return Math.min(HERO_OVERLAY_MAX, Math.max(0, Math.round(value))) || 0;
+};
+
+/** Setting teks hero dari get_settings. */
+export const parseHeroText = (settings: SiteSettings): HeroTextSettings => ({
+  tone: parseHeroTextTone(settings.hero_text_tone),
+  overlay: parseHeroOverlay(settings.hero_overlay),
+});

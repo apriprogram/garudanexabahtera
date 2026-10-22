@@ -4,6 +4,8 @@ import { X, Plus, Sparkles, Image as ImageIcon, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Chip, Field, Input, Notice, PanelHeader, Segmented, Spinner, Textarea, cn, FOCUS } from '../../components/admin/ui';
 import { HERO_MAX_IMAGES } from '../../components/sections/hero/heroBgConfig';
+import { HERO_OVERLAY_DEFAULT, type HeroTextTone } from '../../components/sections/hero/heroContrast';
+import HeroLegibilityField from './hero/HeroLegibilityField';
 import HeroVideoField from './hero/HeroVideoField';
 import { resizeHeroImage } from './hero/heroImage';
 import {
@@ -72,6 +74,12 @@ interface HeroSettingsProps {
   onImageNotice?: (message: string) => void;
   /** true selama halaman menyimpan: pilihan latar dan unggah/hapus media dikunci supaya tidak tertimpa hasil muat ulang. */
   saving?: boolean;
+  /** hero_text_tone: warna teks hero di atas gambar/video (Otomatis / Terang / Gelap). */
+  heroTextTone?: HeroTextTone;
+  setHeroTextTone?: (tone: HeroTextTone) => void;
+  /** hero_overlay: lapisan minimum di belakang teks hero, persen 0-80. */
+  heroOverlay?: number;
+  setHeroOverlay?: (value: number) => void;
 }
 
 const HeroSettings: React.FC<HeroSettingsProps> = ({
@@ -92,6 +100,10 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   imagesPending = 0,
   onImageNotice,
   saving = false,
+  heroTextTone = 'auto',
+  setHeroTextTone,
+  heroOverlay = HERO_OVERLAY_DEFAULT,
+  setHeroOverlay,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [videoBusy, setVideoBusy] = useState(false);
@@ -113,6 +125,16 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   const imagesProcessing = Math.max(imagesPending, processingImages);
   // Unggahan video dari tampilan Hero sebelumnya belum selesai (sampul belum terpasang)
   const videoBusyElsewhere = videoUploading && !videoBusy;
+  // Sumber pratinjau keterbacaan: gambar yang dipakai website (maks. HERO_MAX_IMAGES, tanpa duplikat) atau sampul video
+  const legibilitySources = useMemo(
+    () =>
+      heroBgMode === 'image'
+        ? [...new Set(heroImages.filter((src) => src.trim() !== ''))].slice(0, HERO_MAX_IMAGES)
+        : heroBgMode === 'video' && heroVideoPoster.trim()
+          ? [heroVideoPoster]
+          : [],
+    [heroBgMode, heroImages, heroVideoPoster],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -427,6 +449,18 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
               setPoster={setHeroVideoPoster}
               onBusyChange={handleVideoBusy}
               pendingUpload={videoBusyElsewhere}
+              disabled={saving}
+            />
+          )}
+
+          {heroBgMode !== 'default' && (
+            <HeroLegibilityField
+              sources={legibilitySources}
+              videoWithoutPoster={heroBgMode === 'video' && Boolean(heroVideo) && !heroVideoPoster.trim()}
+              tone={heroTextTone}
+              onToneChange={(tone) => setHeroTextTone?.(tone)}
+              overlay={heroOverlay}
+              onOverlayChange={(value) => setHeroOverlay?.(value)}
               disabled={saving}
             />
           )}

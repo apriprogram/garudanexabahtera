@@ -5,7 +5,8 @@
 //
 // Hero background of the home page: upload_hero_video takes the raw video bytes (MP4/WebM by magic bytes only, capped
 // at UPLOAD_MAX_VIDEO_MB), get_hero_media_limits tells the admin page the limits, and update_settings normalizes
-// hero_bg_mode / hero_bg_video / hero_bg_video_poster / hero_images, refuses a stale tab (hero_media_base, 409) and a
+// hero_bg_mode / hero_text_tone / hero_overlay / hero_bg_video / hero_bg_video_poster / hero_images, refuses a stale
+// tab (hero_media_base, 409) and a
 // link to a file that is gone, and leaves deleting to a garbage-collect sweep (generated, unused, older than a day).
 // The Node module (backend/modules/hero_media.js) and the PHP module (backend/modules/hero_media.php) must answer the
 // same; the PHP half runs the real module in the CLI (settings, sniffing, names, sweep, access) and behind `php -S`
@@ -132,6 +133,17 @@ const SNIFF_CASES: [string, Buffer, 'mp4' | 'webm' | null][] = [
 ];
 
 const MIME = { mp4: 'video/mp4', webm: 'video/webm' } as const;
+
+// hero_text_tone / hero_overlay: [sent value, stored tone, stored overlay] (same table as heroContrast.test.ts)
+const TEXT_CASES: [unknown, string, string][] = [
+  ['auto', 'auto', '40'], ['light', 'light', '40'], ['dark', 'dark', '40'], ['', 'auto', '40'], ['LIGHT', 'auto', '40'],
+  [' dark', 'auto', '40'], [null, 'auto', '40'], [true, 'auto', '40'], [['light'], 'auto', '40'], [{}, 'auto', '40'],
+  ['40', 'auto', '40'], ['0', 'auto', '0'], ['80', 'auto', '80'], ['55', 'auto', '55'], [' 40.5 ', 'auto', '41'],
+  ['\t12\n', 'auto', '12'], ['0.5', 'auto', '1'], ['80.49', 'auto', '80'], ['-3', 'auto', '0'], ['-0.4', 'auto', '0'],
+  ['81', 'auto', '80'], ['999999999999999999999', 'auto', '80'], [42.5, 'auto', '43'], [-0.4, 'auto', '0'], [1e21, 'auto', '80'],
+  [0, 'auto', '0'], [80, 'auto', '80'], [81, 'auto', '80'], [-1, 'auto', '0'], ['abc', 'auto', '40'], ['1e2', 'auto', '40'],
+  ['+5', 'auto', '40'], ['5%', 'auto', '40'], ['4,5', 'auto', '40'],
+];
 
 // SVGs for the active-content check (s3-client.js ↔ svg_has_active_content() in api.php): [name, text, active]
 const svgWith = (inner: string, head = '') =>
@@ -553,6 +565,17 @@ describe('update_settings hero keys (Node)', () => {
       expect(pool.query).not.toHaveBeenCalled();
     }
     expect((await prepareNode({ hero_title: 'x' })).settings).toEqual({ hero_title: 'x' });
+  });
+
+  it('normalizes hero_text_tone and hero_overlay (strings, integers 0..80) and leaves unsent keys alone', async () => {
+    for (const [value, tone, overlay] of TEXT_CASES) {
+      expect([hm.heroTextTone(value), hm.heroOverlay(value)], JSON.stringify(value)).toEqual([tone, overlay]);
+      const { settings, pool } = await prepareNode({ hero_text_tone: value, hero_overlay: value, hero_title: 'Judul' });
+      expect(settings, JSON.stringify(value)).toEqual({ hero_text_tone: tone, hero_overlay: overlay, hero_title: 'Judul' });
+      expect(pool.query).not.toHaveBeenCalled();
+    }
+    expect(await prepareNode({ hero_overlay: '25' }).then((r) => r.settings)).toEqual({ hero_overlay: '25' });
+    expect(await prepareNode({ hero_text_tone: 'dark' }).then((r) => r.settings)).toEqual({ hero_text_tone: 'dark' });
   });
 
   it('refuses a data: video before storing anything', async () => {
@@ -1040,6 +1063,9 @@ switch ($req['op']) {
     case 'mode':
         $out = array_map('hm_bg_mode', $req['inputs']);
         break;
+    case 'text':
+        $out = array_map(function ($v) { return [hm_text_tone($v), hm_overlay($v)]; }, $req['inputs']);
+        break;
     case 'link_names':
         $out = array_map('hm_link_name', $req['inputs']);
         break;
@@ -1225,6 +1251,20 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
   it('normalizes hero_bg_mode the same way', () => {
     const values = ['default', 'image', 'video', '', 'slideshow', 'VIDEO', ' video', null, 3, ['video'], true];
     expect(runCli({ op: 'mode', inputs: values })).toEqual(values.map((v) => hm.heroBgMode(v)));
+  });
+
+  it('normalizes hero_text_tone and hero_overlay the same way', () => {
+    const values = TEXT_CASES.map(([value]) => value);
+    const phpOut: [string, string][] = runCli({ op: 'text', inputs: values });
+    expect(phpOut).toEqual(values.map((v) => [hm.heroTextTone(v), hm.heroOverlay(v)]));
+    expect(phpOut).toEqual(TEXT_CASES.map(([, tone, overlay]) => [tone, overlay]));
+    // Through update_settings: same stored strings, no database read, other keys untouched
+    const settings = { hero_text_tone: 'gelap', hero_overlay: ' 66.6 ', hero_title: 'Judul' };
+    const phpSave = savePhp(settings, {}, { prepareOnly: true });
+    expect(phpSave.status).toBe(200);
+    expect(phpSave.settings).toEqual({ hero_text_tone: 'auto', hero_overlay: '67', hero_title: 'Judul' });
+    expect(phpSave.queries).toEqual([]);
+    expect(savePhp({ hero_text_tone: 'light', hero_overlay: 12 }, {}, { prepareOnly: true }).settings).toEqual({ hero_text_tone: 'light', hero_overlay: '12' });
   });
 
   it('finds the same active SVG content', () => {

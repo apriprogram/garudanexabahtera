@@ -224,7 +224,8 @@ describe('HeroMedia mode gambar', () => {
     expect(img.className).toContain('object-cover');
   });
 
-  it('media tampil penuh: tanpa lapisan putih & pudar atas, hanya pudar bawah ke canvas', () => {
+  // Lapisan keterbacaan (prop scrim dari Hero) diuji di heroLegibility.test.tsx
+  it('tanpa prop scrim: media polos, tanpa cuci putih & pudar atas, hanya pudar bawah ke canvas', () => {
     const { container } = renderMedia({ mode: 'image', images: [IMAGES[0]] });
     const overlays = Array.from((container.firstElementChild as HTMLElement).querySelectorAll('div'));
     expect(overlays.some((el) => /bg-canvas\/\d+|from-canvas\/\d+/.test(el.className))).toBe(false);

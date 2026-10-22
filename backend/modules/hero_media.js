@@ -7,6 +7,9 @@
 //   hero_images           JSON array of image URLs in slide order; new images arrive as data:image/... URIs
 //   hero_bg_video         URL of a video stored by upload_hero_video, '' = none; never a data: URI
 //   hero_bg_video_poster  URL of the poster image, '' = none; a new poster arrives as a data:image/... URI
+//   hero_text_tone        hero text over an image/video: 'auto' (default) | 'light' | 'dark'; anything else → 'auto'
+//   hero_overlay          minimum overlay behind the hero text in percent, an integer 0..80 as a string (default 40):
+//                         a number or plain decimal text ("55", " 40.6") is rounded and clamped, anything else → '40'
 //
 // upload_hero_video (POST /api.php?action=upload_hero_video, staff token): the body is the raw file, not JSON, base64
 // or multipart, so express.json leaves the request stream unread for this module. The type comes from the magic bytes
@@ -39,6 +42,12 @@ import {
 
 export const HERO_MEDIA_ACTIONS = Object.freeze(['upload_hero_video', 'get_hero_media_limits']);
 export const HERO_BG_MODES = Object.freeze(['default', 'image', 'video']);
+// hero_text_tone values (HERO_TEXT_TONES in src/components/sections/hero/heroContrast.ts) and hero_overlay limits
+export const HERO_TEXT_TONES = Object.freeze(['auto', 'light', 'dark']);
+export const HERO_OVERLAY_DEFAULT = 40;
+export const HERO_OVERLAY_MAX = 80;
+// Plain decimal number with spaces/tabs/newlines around it: no sign other than '-', no exponent, no thousands separator
+const OVERLAY_NUMBER = /^[ \t\n\r]*(-?[0-9]+(?:\.[0-9]+)?)[ \t\n\r]*$/;
 // ISO-BMFF major brands of MP4 files that browsers play; 'qt  ' (QuickTime .mov) is deliberately not one of them
 export const MP4_BRANDS = Object.freeze(['isom', 'iso2', 'iso3', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'dash', 'M4V ', 'mmp4', 'MSNV']);
 // Names this module gives its files (file name only, directly in assets/bg/); the sweep deletes nothing else
@@ -217,6 +226,25 @@ export function heroBgMode(value) {
   return typeof value === 'string' && HERO_BG_MODES.includes(value) ? value : 'default';
 }
 
+/** hero_text_tone as stored: one of HERO_TEXT_TONES, anything else (missing, empty, unknown, not a string) → 'auto'. */
+export function heroTextTone(value) {
+  return typeof value === 'string' && HERO_TEXT_TONES.includes(value) ? value : 'auto';
+}
+
+/**
+ * hero_overlay as stored: a JSON number (not NaN) or plain decimal text, rounded half away from zero (like PHP's
+ * round(); the value is clamped at 0, so negative halves never matter) and clamped to 0..HERO_OVERLAY_MAX, as an
+ * integer string; anything else → HERO_OVERLAY_DEFAULT. Same as hm_overlay() in hero_media.php.
+ */
+export function heroOverlay(value) {
+  let number;
+  const match = typeof value === 'string' ? OVERLAY_NUMBER.exec(value) : null;
+  if (typeof value === 'number' && !Number.isNaN(value)) number = value;
+  else if (match) number = Number(match[1]);
+  else return String(HERO_OVERLAY_DEFAULT);
+  return String(Math.min(HERO_OVERLAY_MAX, Math.max(0, Math.round(number))) || 0);
+}
+
 const isDataUri = (value) => typeof value === 'string' && /^\s*data:/i.test(value);
 // Text link: not a string → '', javascript:/vbscript:/data: → '' (passThrough in s3-client.js, safe_link in api.php)
 const link = (value) => (typeof value === 'string' ? passThrough(value) : '');
@@ -336,8 +364,9 @@ const removeAll = async (keys) => {
 
 /**
  * Normalizes the hero keys of an update_settings payload in place, before anything is saved: hero_bg_mode → one of
- * HERO_BG_MODES, hero_bg_video → a link (a data: URI is refused with 400), hero_bg_video_poster → a new data: image is
- * stored as assets/bg/hero_poster_<hex>.<ext>, other values pass the link check, hero_images → stored URLs.
+ * HERO_BG_MODES, hero_text_tone → one of HERO_TEXT_TONES, hero_overlay → '0'..'80', hero_bg_video → a link (a data:
+ * URI is refused with 400), hero_bg_video_poster → a new data: image is stored as assets/bg/hero_poster_<hex>.<ext>,
+ * other values pass the link check, hero_images → stored URLs.
  * Keys that were not sent stay absent.
  * @param {Record<string, unknown>} settings
  * @param {{ query: Function }} pool - reads the stored hero_bg_video / hero_bg_video_poster
@@ -354,6 +383,8 @@ export async function prepareHeroMediaSettings(settings, pool, base) {
   // and checked, then the stale-tab and existence checks against the stored values
   if (has('hero_bg_video')) settings.hero_bg_video = videoLink(settings.hero_bg_video);
   if (has('hero_bg_mode')) settings.hero_bg_mode = heroBgMode(settings.hero_bg_mode);
+  if (has('hero_text_tone')) settings.hero_text_tone = heroTextTone(settings.hero_text_tone);
+  if (has('hero_overlay')) settings.hero_overlay = heroOverlay(settings.hero_overlay);
   let poster = null;
   if (has('hero_bg_video_poster')) {
     if (isDataUri(settings.hero_bg_video_poster)) poster = rasterImage(settings.hero_bg_video_poster, POSTER_EXTS);

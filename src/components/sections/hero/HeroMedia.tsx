@@ -3,11 +3,9 @@ import { Pause, Play } from 'lucide-react';
 import { prefersReducedMotion } from '../../../hooks/useInView';
 import { HeroBackground } from './HeroBackground';
 import { HERO_FADE_MS, HERO_SLIDE_MS, type HeroMediaConfig } from './heroBgConfig';
-
-/** Mode hemat data browser (header Save-Data / "Lite mode"): video & gambar berikutnya tidak dimuat otomatis. */
-const prefersSaveData = (): boolean =>
-  typeof navigator !== 'undefined' &&
-  Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
+import { scrimRgb, type HeroTone } from './heroContrast';
+// Mode hemat data browser (header Save-Data / "Lite mode"): video & gambar berikutnya tidak dimuat otomatis
+import { prefersSaveData } from './heroSampling';
 
 /**
  * play() yang tidak pernah melempar. Ditolak bila browser memblokir pemutaran (mis. iOS Low Power Mode).
@@ -224,6 +222,27 @@ const HeroSlides: React.FC<HeroSlidesProps> = ({ images, slides, upcoming, prelo
 
 /* ─── Lapisan latar + tombol jeda ─────────────────────────────────────────── */
 
+/** Lapisan keterbacaan di atas media (dari useHeroLegibility): warna per nada, alpha di sisi teks, tepi blok teks. */
+export interface HeroScrim {
+  tone: HeroTone;
+  /** Alpha di belakang blok teks (0..0,85) */
+  alpha: number;
+  /** Tepi blok teks dalam px (kiri pada ≥ 1024px, atas di bawahnya); null = bawaan CSS (50% / 60%) */
+  end: number | null;
+}
+
+interface HeroMediaProps {
+  config: HeroMediaConfig;
+  /** Lapisan di antara media dan isi hero; tanpa ini media tampil polos */
+  scrim?: HeroScrim | null;
+  /** Tinggi pudar bawah ke canvas (px) agar tidak sampai ke blok teks; bawaan 160px (h-40) */
+  fadeHeight?: number | null;
+  /** Frame video pertama siap (loadeddata): untuk mengukur kecerahannya */
+  onVideoFrame?: (video: HTMLVideoElement) => void;
+  /** Tidak ada lagi media yang bisa tampil (latar bawaan dipasang): teks hero kembali ke tampilan bawaan */
+  onExhausted?: () => void;
+}
+
 /**
  * Latar hero dari admin (mode Gambar / Video; mode Bawaan = HeroBackground):
  * - gambar: satu gambar statis, 2+ gambar bergantian minimal tiap 6 detik (selalu memudar masuk dari 0 selama 1,2 detik,
@@ -231,8 +250,9 @@ const HeroSlides: React.FC<HeroSlidesProps> = ({ images, slides, upcoming, prelo
  * - video: berulang tanpa suara, inline, tanpa kontrol bawaan; poster tampil sampai video berjalan. Video rusak /
  *   gagal dimuat → disembunyikan (poster tetap tampil sebagai gambar bila ada).
  * Tidak ada lagi yang bisa tampil (semua gambar gagal, atau video gagal tanpa poster yang bisa dimuat) → kanvas bawaan.
- * Media tampil penuh tanpa lapisan penutup (permintaan pemilik: gambar harus jelas); hanya pudar di bawah agar menyatu
- * dengan strip layanan. Jadi pilih gambar/video yang cukup terang di sisi kiri agar teks gelap tetap terbaca.
+ * Di atas media ada lapisan keterbacaan `scrim` (.hero-scrim: obsidian untuk teks terang, putih untuk teks gelap;
+ * paling pekat di sisi teks, lebih tipis di tempat lain agar gambar tetap terlihat), lalu pudar bawah ke canvas agar
+ * menyatu dengan strip layanan (tingginya `fadeHeight`, tidak pernah sampai ke blok teks).
  * Berhenti saat hero tidak terlihat atau tab disembunyikan; tombol jeda (WCAG 2.2.2) selama masih ada 2+ gambar yang
  * bisa tampil, atau video yang masih bisa diputar.
  * Reduced motion atau hemat data (Save-Data): mulai dijeda (gambar pertama / poster saja), pengunjung bisa memutar;
@@ -240,7 +260,7 @@ const HeroSlides: React.FC<HeroSlidesProps> = ({ images, slides, upcoming, prelo
  * Autoplay yang diblokir browser → status dijeda, poster / frame pertama tetap tampil (play() yang dibatalkan tidak).
  * Dirender di dalam section hero yang `relative isolate` (lapisan -z-10 di belakang isi, tombol z-10 di atasnya).
  */
-export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => {
+export const HeroMedia: React.FC<HeroMediaProps> = ({ config, scrim = null, fadeHeight = null, onVideoFrame, onExhausted }) => {
   const layerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const onScreen = useOnScreen(layerRef);
@@ -255,6 +275,10 @@ export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => 
   // Tombol jeda hanya bila ada yang bergerak: 2+ gambar yang masih bisa tampil, atau video yang masih bisa diputar
   const controllable = config.mode === 'image' ? slides.usable > 1 : !broken;
   const exhausted = config.mode === 'image' ? slides.usable === 0 : broken && (!config.poster || posterBroken);
+
+  useEffect(() => {
+    if (exhausted) onExhausted?.();
+  }, [exhausted, onExhausted]);
 
   // Video diputar hanya selama boleh bergerak; diblokir browser → dijeda (poster / frame pertama tetap tampil)
   useEffect(() => {
@@ -324,6 +348,7 @@ export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => 
               tabIndex={-1}
               aria-hidden
               onError={() => setBroken(true)}
+              onLoadedData={(event) => onVideoFrame?.(event.currentTarget)}
               className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
@@ -339,8 +364,26 @@ export const HeroMedia: React.FC<{ config: HeroMediaConfig }> = ({ config }) => 
             )
           ))}
 
-        {/* Media tampil penuh (tanpa lapisan penutup); hanya pudar di bawah agar menyatu dengan strip layanan */}
-        <div className="absolute inset-x-0 bottom-0 z-[3] h-40 bg-gradient-to-b from-transparent to-canvas" />
+        {/* Lapisan keterbacaan: di atas media, di bawah pudar bawah (warna & alpha lewat variabel CSS, lihat index.css) */}
+        {scrim && (
+          <div
+            data-hero-scrim={scrim.tone}
+            className="hero-scrim absolute inset-0 z-[3]"
+            style={
+              {
+                '--scrim-rgb': scrimRgb(scrim.tone).join(' '),
+                '--scrim-a': scrim.alpha.toFixed(3),
+                ...(scrim.end !== null ? { '--scrim-end': `${scrim.end}px` } : {}),
+              } as React.CSSProperties
+            }
+          />
+        )}
+
+        {/* Pudar bawah agar menyatu dengan strip layanan; tidak pernah sampai ke blok teks (fadeHeight) */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-[4] h-40 bg-gradient-to-b from-transparent to-canvas"
+          style={fadeHeight !== null ? { height: fadeHeight } : undefined}
+        />
       </div>
 
       {controllable && (

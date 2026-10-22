@@ -1,19 +1,23 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Reveal } from '../ui/Reveal';
 import { getHiddenSections, useSiteSettings } from '../../hooks/useSiteSettings';
 import { HeroBackground } from './hero/HeroBackground';
-import { heroBackgroundKey, parseHeroBackground } from './hero/heroBgConfig';
+import { heroBackgroundKey, parseHeroBackground, parseHeroText } from './hero/heroBgConfig';
 import { HeroIntro } from './hero/HeroIntro';
 import { HeroMedia } from './hero/HeroMedia';
 import { HeroShowcase } from './hero/HeroShowcase';
 import { loadShowcase, type HeroMode, type ShowcaseData } from './hero/showcase';
+import { useHeroLegibility } from './hero/useHeroLegibility';
 
 /**
  * Hero beranda gaya BELAJAR CPNS (terang):
  * - latar dari setting admin `hero_bg_mode` (Pengaturan website → Hero → "Latar hero", lihat hero/heroBgConfig.ts):
  *   Bawaan = kanvas medan titik interaktif + cahaya biru brand yang mengikuti kursor; Gambar (1 statis / 2+ bergantian)
- *   atau Video = HeroMedia dengan cuci putih agar teks tetap terbaca. Setting tidak lengkap/tidak aman → Bawaan. Sebelum
- *   setting dimuat tidak ada latar sama sekali, jadi kanvas tidak sempat berkedip berganti gambar/video;
+ *   atau Video = HeroMedia. Setting tidak lengkap/tidak aman → Bawaan. Sebelum setting dimuat tidak ada latar sama
+ *   sekali, jadi kanvas tidak sempat berkedip berganti gambar/video;
+ * - teks di atas gambar/video selalu terbaca (useHeroLegibility): kecerahan latar di belakang blok teks diukur, lalu
+ *   dipilih teks terang (lapisan obsidian) atau gelap (lapisan putih) dengan lapisan setebal yang diperlukan, minimal
+ *   `hero_overlay` dari admin; `hero_text_tone` bisa memaksa nadanya. Selama mengukur: teks terang + lapisan aman;
  * - kiri: toggle mode Template / Custom, judul dua warna kata per kata, checklist, tombol
  *   ("Pilih Template" → #templates, "Pesan Website / Aplikasi Mobile Custom" → /pesan-custom);
  * - kanan (di HP: di bawah): bingkai browser yang menayangkan pratinjau template asli + rail langkah yang MENGIKUTI
@@ -29,6 +33,14 @@ const Hero: React.FC = () => {
   const templatesHidden = getHiddenSections(settings).has('templates');
   // Dihitung sekali per setting: Hero render ulang tiap langkah tayangan, latar tidak perlu ikut berubah
   const background = useMemo(() => parseHeroBackground(settings), [settings]);
+  const textSettings = useMemo(() => parseHeroText(settings), [settings]);
+  const textRef = useRef<HTMLDivElement>(null);
+  // Kunci latar yang medianya habis (semua gambar / video + poster gagal → kanvas bawaan): teks kembali bawaan
+  const [exhaustedKey, setExhaustedKey] = useState<string | null>(null);
+  const backgroundKey = heroBackgroundKey(background);
+  const media = loaded && background.mode !== 'default' && exhaustedKey !== backgroundKey ? background : null;
+  const { legibility, onVideoFrame } = useHeroLegibility({ media, text: textSettings, sectionRef, textRef });
+  const onExhausted = useCallback(() => setExhaustedKey(backgroundKey), [backgroundKey]);
   const [showcase, setShowcase] = useState<ShowcaseData | null>(null);
   const [slide, setSlide] = useState(0);
   // null = pengunjung belum memilih → bawaan Template, atau Custom bila katalog disembunyikan admin
@@ -93,15 +105,26 @@ const Hero: React.FC = () => {
         (background.mode === 'default' ? (
           <HeroBackground className="absolute inset-0 -z-10" />
         ) : (
-          <HeroMedia key={heroBackgroundKey(background)} config={background} />
+          <HeroMedia
+            key={backgroundKey}
+            config={background}
+            scrim={legibility && { tone: legibility.tone, alpha: legibility.overlayAlpha, end: legibility.scrimEnd }}
+            fadeHeight={legibility?.fadeHeight}
+            onVideoFrame={onVideoFrame}
+            onExhausted={onExhausted}
+          />
         ))}
 
       <div className="container-site grid items-center gap-8 pb-12 pt-20 sm:min-h-[100svh] sm:gap-12 sm:pb-16 sm:pt-28 lg:grid-cols-2 lg:gap-12 lg:pb-20 lg:pt-28 xl:gap-16 2xl:gap-24">
         <div
+          ref={textRef}
           className="hero-parallax lg:pl-[2%]"
+          // Nada teks (cincin fokus putih untuk 'light', lihat index.css); tidak ada = latar bawaan
+          data-hero-tone={legibility?.tone}
           style={{ opacity: 'calc(1 - var(--p) * 1.2)', transform: 'translate3d(0, calc(var(--p) * -70px), 0)' }}
         >
           <HeroIntro
+            look={legibility?.tone ?? 'default'}
             mode={mode}
             onModeChange={setChosenMode}
             current={current}

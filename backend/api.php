@@ -233,7 +233,8 @@ switch ($action) {
         foreach (array_keys($settings) as $key) {
             if (stripos((string)$key, 'pd_') === 0) throw new ApiError('Pengaturan dokumen proyek hanya bisa diubah lewat Pengaturan dokumen.', 403, 'FORBIDDEN');
         }
-        // hero_bg_mode, hero_bg_video, hero_bg_video_poster, hero_images (backend/modules/hero_media.php). First, so a
+        // hero_bg_mode, hero_text_tone, hero_overlay, hero_bg_video, hero_bg_video_poster, hero_images
+        // (backend/modules/hero_media.php). First, so a
         // refused hero value (stale tab, data: video, SVG poster) stops the save before any upload; hero_media_base is
         // the hero video/poster the admin page loaded (compare-and-swap, never stored as a setting)
         $finishHeroMedia = hero_media_prepare_settings($conn, $settings, $input['hero_media_base'] ?? null);

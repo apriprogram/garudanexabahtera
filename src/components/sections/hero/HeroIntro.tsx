@@ -5,6 +5,7 @@ import { useTranslation, type TranslationKey } from '../../../hooks/useTranslati
 import { SplitText } from '../../ui/SplitText';
 import { SmartLink } from '../../layout/SmartLink';
 import type { HeroMode, ShowcaseItem } from './showcase';
+import { HERO_TONE_CLASSES, type HeroTextLook } from './heroTone';
 
 interface Mode {
   key: HeroMode;
@@ -39,14 +40,15 @@ const MODES: Mode[] = [
 ];
 
 const TITLE_CLASS =
-  'block text-[26px] font-semibold leading-[1.18] tracking-[-0.02em] text-fg sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em] lg:text-[48px] xl:text-[60px] 2xl:text-[72px]';
+  'block text-[26px] font-semibold leading-[1.18] tracking-[-0.02em] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em] lg:text-[48px] xl:text-[60px] 2xl:text-[72px]';
 
 /**
  * Sisi kiri hero (port HeroIntro BELAJAR CPNS): toggle mode berindikator meluncur
  * [Template siap pakai | Website & aplikasi custom] (bentuk & huruf sama dengan segmen alur di section Proses) yang
  * mengganti judul dua warna (muncul kata per kata), tiga poin checklist, dan tombol. Kedua panel ditumpuk di sel grid
  * yang sama, jadi tinggi hero tidak melompat saat mode berganti. State mode dipegang Hero agar visual kanan ikut
- * berganti alur.
+ * berganti alur. Warna mengikuti `look` (heroTone.ts): bawaan, atau teks terang / gelap di atas lapisan latar
+ * gambar/video (nadanya dipilih Hero lewat useHeroLegibility).
  */
 interface HeroIntroProps {
   mode: HeroMode;
@@ -57,10 +59,21 @@ interface HeroIntroProps {
   templatesHidden: boolean;
   /** true selama "Lihat Demo" di-hover / difokus: tayangan berhenti agar template yang dibuka tidak berganti. */
   onHoldChange?: (hold: boolean) => void;
+  /** Warna teks: 'default' (latar bawaan), 'light' / 'dark' (di atas lapisan gambar/video). */
+  look?: HeroTextLook;
 }
 
-export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChange, current, templatesHidden, onHoldChange }) => {
+export const HeroIntro: React.FC<HeroIntroProps> = ({
+  mode: modeKey,
+  onModeChange,
+  current,
+  templatesHidden,
+  onHoldChange,
+  look = 'default',
+}) => {
   const { t } = useTranslation();
+  const tone = HERO_TONE_CLASSES[look];
+  const secondaryBtn = `btn ${tone.secondary} ${SECONDARY_SIZE}`;
   const mode = Math.max(0, MODES.findIndex((item) => item.key === modeKey));
   const setMode = (index: number) => onModeChange(MODES[index].key);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -88,7 +101,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
         role="tablist"
         aria-label="Pilih layanan"
         onKeyDown={onTabKey}
-        className="relative inline-grid animate-fade-up grid-cols-2 rounded-full bg-surface p-1 ring-1 ring-inset ring-line motion-reduce:animate-none"
+        className={`relative inline-grid animate-fade-up grid-cols-2 rounded-full p-1 ring-1 ring-inset motion-reduce:animate-none ${tone.toggle}`}
       >
         <span
           aria-hidden
@@ -111,7 +124,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
               tabIndex={selected ? 0 : -1}
               onClick={() => setMode(index)}
               className={`relative z-10 inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-xs font-semibold transition-colors duration-300 after:absolute after:inset-x-0 after:-inset-y-1.5 sm:h-10 sm:px-5 sm:text-sm sm:after:hidden ${
-                selected ? 'text-white' : 'text-muted hover:text-fg'
+                selected ? 'text-white' : tone.toggleIdle
               }`}
             >
               <item.icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
@@ -144,20 +157,20 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
                 id={active ? 'hero-title' : undefined}
                 delay={100}
                 stagger={70}
-                className={TITLE_CLASS}
-                parts={[{ text: t(item.lead) }, { text: t(item.accent), className: 'text-primary' }]}
+                className={`${TITLE_CLASS} ${tone.title}`}
+                parts={[{ text: t(item.lead) }, { text: t(item.accent), className: tone.accent }]}
               />
 
               <ul className="mt-5 space-y-2.5 sm:mt-9 sm:space-y-4">
                 {item.points.map((point, i) => (
                   <li
                     key={point}
-                    className={`flex items-center gap-2 text-[14px] leading-snug text-muted sm:gap-3 sm:text-[17px] sm:leading-normal ${
+                    className={`flex items-center gap-2 text-[14px] leading-snug sm:gap-3 sm:text-[17px] sm:leading-normal ${tone.point} ${
                       active ? 'animate-fade-up motion-reduce:animate-none' : ''
                     }`}
                     style={{ animationDelay: `${450 + i * 90}ms` }}
                   >
-                    <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-brand-50 text-primary sm:h-6 sm:w-6">
+                    <span className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full sm:h-6 sm:w-6 ${tone.check}`}>
                       <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" strokeWidth={3} aria-hidden />
                     </span>
                     {t(point)}
@@ -172,7 +185,14 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
                 {item.key === 'template' ? (
                   <>
                     <TemplateCta current={current} templatesHidden={templatesHidden} />
-                    <DemoLink current={current} label={t('home-hero-demo')} templatesHidden={templatesHidden} onHoldChange={onHoldChange} />
+                    <DemoLink
+                      current={current}
+                      label={t('home-hero-demo')}
+                      templatesHidden={templatesHidden}
+                      onHoldChange={onHoldChange}
+                      className={secondaryBtn}
+                      noteClassName={tone.note}
+                    />
                   </>
                 ) : (
                   <>
@@ -182,7 +202,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
                     >
                       {t('home-hero-btn-custom')}
                     </Link>
-                    <SmartLink href="#kontak" className={SECONDARY_BTN}>
+                    <SmartLink href="#kontak" className={secondaryBtn}>
                       <MessageCircle className={SECONDARY_ICON} aria-hidden />
                       {t('nav-consult')}
                     </SmartLink>
@@ -203,7 +223,8 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({ mode: modeKey, onModeChang
  * ke baris baru (selebar kolom) bila tidak muat.
  */
 const PRIMARY_BTN = 'btn btn-primary btn-xl max-sm:flex-1 sm:px-6';
-const SECONDARY_BTN = 'btn btn-outline-clear btn-xl max-sm:flex-1 sm:px-6';
+/** Ukuran tombol kedua; warnanya (btn-outline-clear / btn-outline-on-media) mengikuti nada teks hero */
+const SECONDARY_SIZE = 'btn-xl max-sm:flex-1 sm:px-6';
 const ICON = 'h-5 w-5 max-sm:h-4 max-sm:w-4';
 const SECONDARY_ICON = 'h-4 w-4';
 
@@ -236,14 +257,17 @@ const TemplateCta: React.FC<{ current: ShowcaseItem | null; templatesHidden: boo
  * polos (tanpa lingkaran, tanpa panah ↗). Nama template terlihat mulai 640px; di HP cukup "Lihat Demo" agar tetap
  * sebaris dengan tombol utama (nama lengkap & "(tab baru)" tetap ada di nama aksesibel). Tanpa template → ke katalog
  * (tidak tampil bila katalog disembunyikan). Selama di-hover (mouse) atau difokus, tayangan hero berhenti
- * (`onHoldChange`) agar template tidak berganti tepat sebelum diklik.
+ * (`onHoldChange`) agar template tidak berganti tepat sebelum diklik. `className` = kelas tombol kedua, `noteClassName`
+ * = warna nama template (keduanya mengikuti nada teks hero).
  */
 const DemoLink: React.FC<{
   current: ShowcaseItem | null;
   label: string;
   templatesHidden: boolean;
   onHoldChange?: (hold: boolean) => void;
-}> = ({ current, label, templatesHidden, onHoldChange }) => {
+  className: string;
+  noteClassName: string;
+}> = ({ current, label, templatesHidden, onHoldChange, className, noteClassName }) => {
   // Nama aksesibel lengkap (diawali label yang terlihat): "Lihat Demo template Corporate Nexa (tab baru)"
   const linkProps = {
     'aria-label': current?.demoHref ? `${label} template ${current.name} (tab baru)` : undefined,
@@ -261,7 +285,9 @@ const DemoLink: React.FC<{
       <Play className={`${SECONDARY_ICON} shrink-0 max-sm:h-3.5 max-sm:w-3.5`} fill="currentColor" aria-hidden />
       <span className="flex min-w-0 items-baseline">
         <span className="shrink-0">{label}</span>
-        {current?.demoHref && <span className="ml-1 max-w-[9rem] truncate font-medium text-subtle max-sm:hidden">· {current.name}</span>}
+        {current?.demoHref && (
+          <span className={`ml-1 max-w-[9rem] truncate font-medium max-sm:hidden ${noteClassName}`}>· {current.name}</span>
+        )}
       </span>
     </>
   );
@@ -269,20 +295,20 @@ const DemoLink: React.FC<{
   if (!current?.demoHref) {
     if (templatesHidden) return null;
     return (
-      <SmartLink href="#templates" className={SECONDARY_BTN}>
+      <SmartLink href="#templates" className={className}>
         {content}
       </SmartLink>
     );
   }
   if (current.demoExternal) {
     return (
-      <a href={current.demoHref} target="_blank" rel="noopener noreferrer" className={SECONDARY_BTN} {...linkProps}>
+      <a href={current.demoHref} target="_blank" rel="noopener noreferrer" className={className} {...linkProps}>
         {content}
       </a>
     );
   }
   return (
-    <Link to={current.demoHref} target="_blank" rel="noopener" className={SECONDARY_BTN} {...linkProps}>
+    <Link to={current.demoHref} target="_blank" rel="noopener" className={className} {...linkProps}>
       {content}
     </Link>
   );

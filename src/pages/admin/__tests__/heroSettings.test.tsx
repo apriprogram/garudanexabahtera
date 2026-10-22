@@ -30,6 +30,15 @@ import {
 } from '../hero/heroMedia';
 import { resizeHeroImage } from '../hero/heroImage';
 import { HeroUploadError, captureVideoPoster, uploadHeroVideo, type PosterResult } from '../hero/heroVideo';
+import {
+  backgroundSample,
+  decideHeroLegibility,
+  formatRatio,
+  hexToRgb,
+  type BackgroundSample,
+  type HeroTextTone,
+} from '../../../components/sections/hero/heroContrast';
+import { sampleImage } from '../../../components/sections/hero/heroSampling';
 
 const POSTER = 'data:image/jpeg;base64,AAAA';
 const VIDEO_URL = '/assets/bg/hero_video_0123456789ab.mp4';
@@ -50,6 +59,12 @@ vi.mock('../hero/heroVideo', async (importOriginal) => {
 
 // Gambar latar dikecilkan lewat canvas (tidak ada di jsdom): diganti data URI tiruan dari nama file
 vi.mock('../hero/heroImage', () => ({ resizeHeroImage: vi.fn() }));
+
+// Pratinjau keterbacaan mengukur gambar lewat canvas (tidak ada di jsdom): sampel diatur per tes, bawaan = belum selesai
+vi.mock('../../../components/sections/hero/heroSampling', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../components/sections/hero/heroSampling')>()),
+  sampleImage: vi.fn(),
+}));
 
 const defaultPoster = async (): Promise<PosterResult> => ({ poster: POSTER, duration: 12 });
 const defaultResize = async (file: Blob) => `data:image/jpeg;base64,${(file as File).name}`;
@@ -107,6 +122,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))));
   vi.mocked(captureVideoPoster).mockReset().mockImplementation(defaultPoster);
   vi.mocked(resizeHeroImage).mockReset().mockImplementation(defaultResize);
+  vi.mocked(sampleImage).mockReset().mockImplementation(() => new Promise(() => {}));
 });
 
 afterEach(() => {
@@ -297,6 +313,8 @@ function Harness({
   initialLogos = [],
   initialVideo = '',
   initialPoster = '',
+  initialTone = 'auto',
+  initialOverlay = 40,
   saving,
   onBusyChange,
   onImagesProcessing,
@@ -307,6 +325,8 @@ function Harness({
   initialLogos?: { name: string; src: string }[];
   initialVideo?: string;
   initialPoster?: string;
+  initialTone?: HeroTextTone;
+  initialOverlay?: number;
   saving?: boolean;
   onBusyChange?: (busy: boolean) => void;
   onImagesProcessing?: (delta: number) => void;
@@ -317,6 +337,8 @@ function Harness({
   const [logos, setLogos] = useState<{ name: string; src: string }[]>(initialLogos);
   const [video, setVideo] = useState(initialVideo);
   const [poster, setPoster] = useState(initialPoster);
+  const [tone, setTone] = useState<HeroTextTone>(initialTone);
+  const [overlay, setOverlay] = useState(initialOverlay);
   const [pending, setPending] = useState(0);
   const [busy, setBusy] = useState(false);
   const [shown, setShown] = useState(true);
@@ -347,6 +369,10 @@ function Harness({
             onImagesProcessing?.(delta);
           }}
           onImageNotice={onImageNotice}
+          heroTextTone={tone}
+          setHeroTextTone={setTone}
+          heroOverlay={overlay}
+          setHeroOverlay={setOverlay}
         />
       )}
       <button type="button" onClick={() => setShown((s) => !s)}>
@@ -356,6 +382,7 @@ function Harness({
         Tambah gambar dari luar
       </button>
       <output data-testid="state">{JSON.stringify({ mode, video, poster })}</output>
+      <output data-testid="text">{JSON.stringify({ tone, overlay })}</output>
       <output data-testid="images">{JSON.stringify(images)}</output>
       <output data-testid="logos">{JSON.stringify(logos)}</output>
     </>
@@ -363,6 +390,8 @@ function Harness({
 }
 
 const state = () => JSON.parse(screen.getByTestId('state').textContent || '{}') as { mode: string; video: string; poster: string };
+/** hero_text_tone & hero_overlay di halaman tiruan */
+const textState = () => JSON.parse(screen.getByTestId('text').textContent || '{}') as { tone: string; overlay: number };
 const images = () => JSON.parse(screen.getByTestId('images').textContent || '[]') as string[];
 const logos = () => JSON.parse(screen.getByTestId('logos').textContent || '[]') as { name: string; src: string }[];
 /** Input file gambar latar (teks kotaknya "Tambah", atau "Memproses..." selama ada gambar yang diproses). */
@@ -857,6 +886,114 @@ describe('HeroVideoField: status unggahan', () => {
   });
 });
 
+// ─── HeroSettings: teks di atas latar (hero_text_tone, hero_overlay) ──────────
+
+const pixelsOf = (...groups: [number, string][]): BackgroundSample =>
+  backgroundSample(groups.flatMap(([n, hex]) => Array.from({ length: n }, () => [...hexToRgb(hex), 255]).flat()))!;
+const DARK_BG = pixelsOf([90, '#0B1430'], [10, '#1D3A8A']);
+const MIXED_BG = pixelsOf([55, '#06102C'], [15, '#1A6BFF'], [30, '#F2F6FF']);
+const toneTab = (name: string) => screen.getByRole('tab', { name });
+const overlaySlider = () => screen.getByRole('slider', { name: 'Lapisan' });
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+describe('HeroSettings: teks di atas latar', () => {
+  it('hanya di mode Gambar & Video: warna teks Otomatis / Terang / Gelap dan lapisan 0-80%', () => {
+    render(<Harness />);
+    expect(screen.queryByText('Teks di atas latar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tablist', { name: 'Warna teks hero' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Gambar' }));
+    expect(screen.getByText('Teks di atas latar')).toBeInTheDocument();
+    expect(screen.getByRole('tablist', { name: 'Warna teks hero' })).toBeInTheDocument();
+    expect(toneTab('Otomatis')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText(/Dipilih otomatis dari kecerahan latar/)).toBeInTheDocument();
+    expect(overlaySlider()).toHaveAttribute('min', '0');
+    expect(overlaySlider()).toHaveAttribute('max', '80');
+    expect(overlaySlider()).toHaveValue('40');
+    expect(overlaySlider()).toHaveAttribute('aria-valuetext', '40%');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Video' }));
+    expect(screen.getByRole('tablist', { name: 'Warna teks hero' })).toBeInTheDocument();
+  });
+
+  it('memilih warna teks dan menggeser lapisan mengubah setting halaman', () => {
+    render(<Harness initialMode="image" initialImages={['/assets/bg/hero_1.jpg']} />);
+    fireEvent.click(toneTab('Terang'));
+    expect(textState().tone).toBe('light');
+    expect(screen.getByText(/Teks putih dengan lapisan gelap/)).toBeInTheDocument();
+    fireEvent.click(toneTab('Gelap'));
+    expect(textState().tone).toBe('dark');
+    fireEvent.change(overlaySlider(), { target: { value: '65' } });
+    expect(textState().overlay).toBe(65);
+    expect(screen.getByText('65%')).toBeInTheDocument();
+    expect(overlaySlider()).toHaveAttribute('aria-valuetext', '65%');
+  });
+
+  it('pratinjau: gambar pertama + lapisan + contoh judul; kontras dihitung dari semua gambar (kasus terburuk)', async () => {
+    const images = ['/assets/bg/hero_1.jpg', '/assets/bg/hero_2.jpg', '/assets/bg/hero_1.jpg'];
+    vi.mocked(sampleImage).mockImplementation(async (src) => ({ kind: 'sample', sample: src.endsWith('1.jpg') ? DARK_BG : MIXED_BG }));
+    const expected = decideHeroLegibility([DARK_BG, MIXED_BG], 'auto', 40);
+    render(<Harness initialMode="image" initialImages={images} />);
+
+    expect(await screen.findByText(`Kontras ${formatRatio(expected.contrast!.body)} · Terbaca`)).toBeInTheDocument();
+    // Tanpa duplikat, maks. 12 gambar seperti website, dengan area kolom teks desktop
+    expect(vi.mocked(sampleImage).mock.calls.map(([src]) => src)).toEqual(['/assets/bg/hero_1.jpg', '/assets/bg/hero_2.jpg']);
+    expect(vi.mocked(sampleImage).mock.calls[0][1]).toEqual({ box: { w: 1366, h: 900 }, region: { x: 32, y: 196, w: 628, h: 540 } });
+
+    const percent = Math.round(expected.overlayAlpha * 100);
+    const preview = screen.getByRole('img', { name: `Pratinjau teks hero: teks terang, lapisan ${percent}%` });
+    expect(preview.querySelector('img')).toHaveAttribute('src', '/assets/bg/hero_1.jpg');
+    const scrim = preview.querySelector<HTMLElement>('[data-preview-scrim="light"]')!;
+    expect(scrim.className).toContain('hero-scrim');
+    expect(Number(scrim.style.getPropertyValue('--scrim-a'))).toBeCloseTo(expected.overlayAlpha, 3);
+    expect(preview.querySelector('.text-on-media')).toHaveTextContent('Website profesional,');
+    expect(preview.querySelector('.text-on-media-accent')).toHaveTextContent('siap online tanpa ribet.');
+    const summary = `teks terang dengan lapisan ${percent}% (dinaikkan dari 40% agar tetap terbaca)`;
+    expect(screen.getByText(new RegExp(escapeRegExp(summary)))).toBeInTheDocument();
+    expect(screen.getByText(/Dihitung dari 2 gambar/)).toBeInTheDocument();
+
+    // Gelap dipaksa: lapisan putih, tetap terbaca (lapisan dinaikkan)
+    fireEvent.click(toneTab('Gelap'));
+    const dark = decideHeroLegibility([DARK_BG, MIXED_BG], 'dark', 40);
+    expect(dark.readable).toBe(true);
+    expect(screen.getByText(`Kontras ${formatRatio(dark.contrast!.body)} · Terbaca`)).toBeInTheDocument();
+    expect(preview.querySelector('[data-preview-scrim="dark"]')).not.toBeNull();
+    expect(preview.querySelector('.text-fg')).not.toBeNull();
+    // Pengukuran tidak diulang saat nada / lapisan berubah
+    fireEvent.change(overlaySlider(), { target: { value: '80' } });
+    expect(sampleImage).toHaveBeenCalledTimes(2);
+  });
+
+  it('status pratinjau: belum ada gambar, sedang menghitung, tidak terukur, video tanpa sampul', async () => {
+    const empty = render(<Harness initialMode="image" />);
+    expect(screen.getByText('Belum ada pratinjau')).toBeInTheDocument();
+    expect(screen.getByText('Tambahkan gambar dulu untuk melihat pratinjau.')).toBeInTheDocument();
+    empty.unmount();
+
+    const pending = render(<Harness initialMode="image" initialImages={['/assets/bg/hero_1.jpg']} />);
+    expect(screen.getByText('Menghitung kontras...')).toBeInTheDocument();
+    pending.unmount();
+
+    vi.mocked(sampleImage).mockResolvedValue({ kind: 'unmeasurable' });
+    const cross = render(<Harness initialMode="image" initialImages={['https://s3.test/bucket/assets/bg/a.jpg']} />);
+    expect(await screen.findByText('Kontras tidak terukur')).toBeInTheDocument();
+    expect(screen.getByText(/teks terang dengan lapisan aman 62%/)).toBeInTheDocument();
+    cross.unmount();
+
+    render(<Harness initialMode="video" initialVideo={VIDEO_URL} />);
+    expect(screen.getByText(/Video belum punya sampul. Website mengukur frame pertama video/)).toBeInTheDocument();
+  });
+
+  it('sampul video yang diukur; terkunci selama menyimpan', async () => {
+    vi.mocked(sampleImage).mockResolvedValue({ kind: 'sample', sample: DARK_BG });
+    render(<Harness initialMode="video" initialVideo={VIDEO_URL} initialPoster={POSTER_URL} saving />);
+    expect(await screen.findByText(/Kontras .* · Terbaca/)).toBeInTheDocument();
+    expect(vi.mocked(sampleImage).mock.calls[0][0]).toBe(POSTER_URL);
+    for (const name of ['Otomatis', 'Terang', 'Gelap']) expect(toneTab(name)).toBeDisabled();
+    expect(overlaySlider()).toBeDisabled();
+  });
+});
+
 // ─── SiteSettings: muat & simpan setting latar ────────────────────────────────
 
 type SavedBody = { action: string; settings: Record<string, string>; hero_media_base?: { video: string; poster: string } };
@@ -974,6 +1111,29 @@ describe('SiteSettings: setting latar hero', () => {
     expect(posts[0].settings).toMatchObject({ hero_bg_video: NEW_URL, hero_bg_video_poster: POSTER });
     expect(posts[0].settings).not.toHaveProperty('hero_bg_mode');
     expect(posts[0].hero_media_base).toEqual({ video: VIDEO_URL, poster: POSTER_URL });
+  });
+
+  it('warna teks & lapisan: dimuat (dinormalkan), dikirim saat simpan, perubahan ikut tersimpan', async () => {
+    const { posts } = mockSiteApi({ stored: { ...STORED_VIDEO, hero_text_tone: 'TERANG', hero_overlay: '55.4' } });
+    renderSite();
+    await readySave();
+    // Nilai tidak dikenal → Otomatis, desimal → dibulatkan (sama dengan website & backend)
+    expect(screen.getByRole('tab', { name: 'Otomatis' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('slider', { name: 'Lapisan' })).toHaveValue('55');
+
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0].settings).toMatchObject({ hero_text_tone: 'auto', hero_overlay: '55' });
+
+    await readySave();
+    fireEvent.click(screen.getByRole('tab', { name: 'Terang' }));
+    fireEvent.change(screen.getByRole('slider', { name: 'Lapisan' }), { target: { value: '30' } });
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(2));
+    expect(posts[1].settings).toMatchObject({ hero_text_tone: 'light', hero_overlay: '30' });
+    // Penanganan tab basi latar media tidak berubah
+    for (const key of HERO_MEDIA_KEYS) expect(posts[1].settings).not.toHaveProperty(key);
+    expect(posts[1].hero_media_base).toEqual({ video: VIDEO_URL, poster: POSTER_URL });
   });
 
   it('409 dari update_settings: pesan server tampil di toast error', async () => {

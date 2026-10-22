@@ -30,6 +30,15 @@
   --color-success-700: #067647;
 
   /*
+   * Teks hero di atas gambar/video latar bernada TERANG (lapisan obsidian di belakangnya, lihat .hero-scrim).
+   * Nilai sama persis dengan COLORS di src/components/sections/hero/heroContrast.ts (dicek heroContrast.test.ts).
+   * on-media = judul & teks tombol garis; on-media-muted = poin; on-media-accent = kata aksen judul (= brand-200).
+   */
+  --color-on-media: #ffffff;
+  --color-on-media-muted: #eef0f5;
+  --color-on-media-accent: #c2c1ff;
+
+  /*
    * Gaya "Calm Workspace" (BELAJAR CPNS): permukaan DATAR (ring-1 ring-inset ring-line), hampir tanpa shadow.
    * shadow-soft DINETRALKAN (tanpa bayangan sama sekali); nama tetap ada agar kelas lama tidak rusak. Elemen yang
    * memakainya sudah punya garis sendiri (ring-1 ring-inset ring-line) atau cukup kontras di atas latarnya.
@@ -240,6 +249,11 @@
     outline-offset: 2px;
   }
 
+  /* Teks hero bernada terang (di atas lapisan gelap): cincin fokus putih, biru brand tidak terlihat di sana */
+  [data-hero-tone='light'] :focus-visible {
+    outline-color: var(--color-on-media);
+  }
+
   /*
    * Fokus keyboard tidak boleh tertutup navbar fixed (--nav-offset) atau tombol WhatsApp melayang (WCAG 2.4.11).
    * Hanya elemen yang bisa difokus; offset anchor section (scroll-mt-*, section-screen) tetap dari utilitasnya.
@@ -306,6 +320,14 @@
    */
   .btn-outline-clear {
     @apply bg-transparent text-fg ring-1 ring-inset ring-fg/20 hover:ring-fg/45 active:ring-fg/60;
+  }
+
+  /*
+   * Versi btn-outline-clear untuk teks hero bernada terang (gambar/video gelap + lapisan obsidian): garis & teks putih,
+   * tanpa latar; hover sedikit menerangi.
+   */
+  .btn-outline-on-media {
+    @apply bg-transparent text-on-media ring-1 ring-inset ring-on-media/45 hover:bg-on-media/10 hover:ring-on-media/70 active:bg-on-media/15;
   }
 
   /* Netral tanpa garis (latar abu lembut), mis. aksi tersier di kartu = CPNS "soft" */
@@ -530,6 +552,58 @@
  */
 .page-chrome > section {
   background-color: transparent;
+}
+
+/*
+ * Lapisan keterbacaan hero di atas gambar/video (dirender HeroMedia di atas media, di bawah pudar bawah; nilai dari
+ * useHeroLegibility / heroContrast.ts): --scrim-rgb = warna (obsidian "18 22 32" untuk teks terang, putih untuk teks
+ * gelap), --scrim-a = alpha di belakang blok teks, --scrim-end = tepi blok teks (px dari kiri / atas section).
+ * Paling pekat di sisi teks (HP & tablet: atas; >= 1024px: kiri), lalu melandai tenang ke alpha x 0,4 agar gambar
+ * tetap terlihat. Datar: tanpa blur, tanpa bayangan. Alpha berubah halus (0,6 detik), langsung untuk reduced motion.
+ */
+@property --scrim-a {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.hero-scrim {
+  --scrim-far: calc(var(--scrim-a) * 0.4);
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--scrim-rgb) / var(--scrim-a)) 0,
+    rgb(var(--scrim-rgb) / var(--scrim-a)) var(--scrim-end, 60%),
+    rgb(var(--scrim-rgb) / var(--scrim-far)) calc(var(--scrim-end, 60%) + 12rem),
+    rgb(var(--scrim-rgb) / var(--scrim-far)) 100%
+  );
+  transition: --scrim-a 0.6s var(--ease-calm);
+}
+
+/* Kolom teks di kiri: pekat sampai tepi kanan kolom teks, melandai ke kanan (juga pratinjau admin: .hero-scrim-x) */
+.hero-scrim-x {
+  background: linear-gradient(
+    to right,
+    rgb(var(--scrim-rgb) / var(--scrim-a)) 0,
+    rgb(var(--scrim-rgb) / var(--scrim-a)) var(--scrim-end, 50%),
+    rgb(var(--scrim-rgb) / var(--scrim-far)) 100%
+  );
+}
+
+@media (min-width: 1024px) {
+  .hero-scrim {
+    background: linear-gradient(
+      to right,
+      rgb(var(--scrim-rgb) / var(--scrim-a)) 0,
+      rgb(var(--scrim-rgb) / var(--scrim-a)) var(--scrim-end, 50%),
+      rgb(var(--scrim-rgb) / var(--scrim-far)) 100%
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-scrim {
+    transition: none;
+  }
 }
 
 /* ===== HP (< 640px): gerak lebih ringan ===== */
