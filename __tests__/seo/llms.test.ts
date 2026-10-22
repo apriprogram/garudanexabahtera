@@ -26,7 +26,7 @@ describe('llms.txt', () => {
   it('harga dari data dengan tanggal, sudah termasuk dari COMPANY_FACTS, kontak resmi', () => {
     expect(txt).toContain('- Harga template: Rp990.000–Rp1.790.000 (per 23 Oktober 2026)');
     expect(txt).toContain('Diperbarui 23 Oktober 2026.');
-    expect(txt).toContain('template website + setup awal, Domain tahun pertama');
+    expect(txt).toContain('- Sudah termasuk: template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama');
     expect(txt).toContain(`WhatsApp ${COMPANY_FACTS.whatsappDisplay}, ${COMPANY_FACTS.email}`);
     expect(txt).toContain('Midtrans');
     // harga berubah di DB → llms.txt ikut berubah
@@ -74,7 +74,8 @@ describe('llms-full.txt', () => {
     expect(block).toContain('- Demo: https://garudanexa.com/demo/arena-club (konten demo fiktif)');
     expect(block).toContain('Arena Club dirancang untuk klub dan tempat olahraga.');
     const withCms = buildLlmsFullTxt({ ...input, cmsSections: { 'arena-club': ['Hero', 'Membership'] } });
-    expect(withCms).toContain('- Bisa diubah sendiri lewat CMS: Hero, Membership');
+    expect(withCms).toContain('- Bagian yang bisa diubah sendiri lewat CMS: Hero, Membership');
+    expect(block).toContain(`- Pengelolaan isi: ${COMPANY_FACTS.templatePackage.contentManagement}`);
   });
 
   it('jasa custom tanpa angka harga; tanya jawab dari COMPANY_FACTS bila FAQ situs tidak diberikan', () => {
@@ -101,6 +102,8 @@ describe('penolong', () => {
     expect(priceRange([TEMPLATES[0]])).toBe('Rp1.500.000');
     expect(priceRange([])).toBeNull();
     expect(formatDateId('2026-01-05')).toBe('5 Januari 2026');
+    // builtAt prerender (UTC) ditulis sebagai tanggal WIB: 22 Okt 21.38 UTC = 23 Okt 04.38 WIB
+    expect(buildLlmsTxt({ ...input, builtAt: '2026-10-22T21:38:32.247Z' })).toContain('(per 23 Oktober 2026)');
   });
 
   it('tanpa template terbit: tidak ada baris harga', () => {

@@ -106,7 +106,9 @@ function DemoBar({
                 <span aria-hidden className="shrink-0">
                   ·
                 </span>
-                <span className="truncate">Konten demo (fiktif)</span>
+                {/* Layar < 380px (mis. 360px) tidak muat label panjang di samping harga */}
+                <span className="truncate max-[379px]:hidden">Konten demo (fiktif)</span>
+                <span className="truncate min-[380px]:hidden">Konten fiktif</span>
               </p>
             </>
           ) : (

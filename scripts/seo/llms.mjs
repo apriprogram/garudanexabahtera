@@ -24,8 +24,19 @@ export function formatDateId(iso) {
   return `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${match[1]}`;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
-const toDate = (value) => /^(\d{4}-\d{2}-\d{2})/.exec(String(value ?? ''))?.[1] ?? null;
+/** Zona waktu tanggal yang ditulis: WIB (UTC+7, tanpa DST), sama dengan waktu kantor & DB. */
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+const wibDate = (ms) => new Date(ms + WIB_OFFSET_MS).toISOString().slice(0, 10);
+const today = () => wibDate(Date.now());
+/** Tanggal YYYY-MM-DD: stempel waktu ISO berzona (mis. builtAt "…Z") dikonversi ke WIB; tanggal/datetime DB apa adanya. */
+const toDate = (value) => {
+  const text = String(value ?? '').trim();
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(text)) {
+    const ms = Date.parse(text);
+    if (!Number.isNaN(ms)) return wibDate(ms);
+  }
+  return /^(\d{4}-\d{2}-\d{2})/.exec(text)?.[1] ?? null;
+};
 const latest = (values) => values.map(toDate).filter(Boolean).sort().pop() ?? null;
 
 /** 1390000 → "Rp1.390.000" (sama dengan formatPriceFull di src/seo/format.ts). */
@@ -54,9 +65,12 @@ export function priceRange(templates) {
   return min === max ? formatPrice(min) : `${formatPrice(min)}–${formatPrice(max)}`;
 }
 
-/** "Template website + setup awal, Domain tahun pertama, …" → kalimat daftar dengan "dan". */
+/** Huruf pertama kecil, kecuali singkatan ("SSL", "CMS"). */
+const lowerWord = (value) => (/^[A-Z][a-z]/.test(value) ? value.charAt(0).toLowerCase() + value.slice(1) : value);
+
+/** ["Template website + setup awal", "Domain tahun pertama", …] → "template website + setup awal, domain …, dan …". */
 const joinList = (items) => {
-  const list = items.map(clean).filter(Boolean);
+  const list = items.map(clean).filter(Boolean).map(lowerWord);
   if (list.length <= 1) return list.join('');
   return `${list.slice(0, -1).join(', ')}, dan ${list[list.length - 1]}`;
 };
@@ -173,7 +187,7 @@ export function factFaqs(facts, list) {
   if (Array.isArray(pkg.includes) && pkg.includes.length) {
     faqs.push({
       question: 'Apa saja yang sudah termasuk dalam harga template?',
-      answer: `${joinList(pkg.includes)}.${range ? ` Harga template saat ini ${range}.` : ''}`,
+      answer: `Harga template sudah termasuk ${joinList(pkg.includes)}.${range ? ` Harga template saat ini ${range}.` : ''}`,
     });
   }
   if (pkg.renewalCost) faqs.push({ question: 'Berapa biaya mulai tahun ke-2?', answer: sentence(pkg.renewalCost) });
@@ -222,7 +236,8 @@ export function buildLlmsFullTxt(input) {
       }
       if (t.short_description) out.push(`- Ringkasan: ${sentence(t.short_description)}`);
       if (features.length) out.push(`- Fitur: ${features.join('; ')}`);
-      out.push(`- Bisa diubah sendiri lewat CMS: ${sections.length ? sections.join(', ') : lowerFirst(sentence(pkg.contentManagement || 'isi website'))}`);
+      if (sections.length) out.push(`- Bagian yang bisa diubah sendiri lewat CMS: ${sections.join(', ')}`);
+      else if (pkg.contentManagement) out.push(`- Pengelolaan isi: ${sentence(pkg.contentManagement)}`);
       out.push(`- Demo: ${demo} (konten demo fiktif)`);
       const paragraphs = String(t.description ?? '')
         .split(/\n\s*\n/)
