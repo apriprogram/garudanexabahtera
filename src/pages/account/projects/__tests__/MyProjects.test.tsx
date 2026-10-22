@@ -71,7 +71,10 @@ describe('Proyek saya', () => {
     api.pdMyProjects.mockResolvedValue({ success: true, projects: [] });
     renderAt('/akun/proyek');
     expect(await screen.findByRole('heading', { name: 'Belum ada proyek' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Pesan Website \/ Aplikasi Custom/ })).toHaveAttribute('href', '/pesan-custom');
+    // Label glosarium design.md, tanpa ikon panah
+    const order = screen.getByRole('link', { name: 'Pesan Custom' });
+    expect(order).toHaveAttribute('href', '/pesan-custom');
+    expect(order.querySelector('svg')).toBeNull();
   });
 
   it('gagal memuat menampilkan error dengan Coba lagi', async () => {

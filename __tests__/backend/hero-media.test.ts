@@ -1449,7 +1449,8 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
         if (role === 'user' || role === 'admin') expect(node.body).toEqual({ success: true, video_max_mb: mb, max_images: 12 });
       }
     }
-  });
+    // 20 PHP CLI runs: ~2 s alone, past the 5 s default when the full suite loads the machine
+  }, 20_000);
 
   // ── upload_hero_video behind php -S (UPLOAD_MAX_VIDEO_MB = 0.01) ──
   type UploadOutcome = { status: number; body: Record<string, unknown> };

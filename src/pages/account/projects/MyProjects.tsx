@@ -113,9 +113,9 @@ export default function MyProjects() {
             description="Proyek website atau aplikasi custom Anda tampil di sini setelah tim kami menyiapkannya, lengkap dengan dokumen dan tagihannya."
             action={
               <>
+                {/* Label glosarium "Pesan Custom" (versi panjang hanya di hero & /pesan-custom), tanpa panah (design.md) */}
                 <Link to="/pesan-custom" className="btn btn-primary">
-                  Pesan Website / Aplikasi Custom
-                  <ArrowRight className="h-4 w-4" aria-hidden />
+                  Pesan Custom
                 </Link>
                 <Link to="/#kontak" className="btn btn-outline">
                   <MessageCircle className="h-4 w-4" aria-hidden />
