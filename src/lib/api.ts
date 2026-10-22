@@ -38,8 +38,36 @@ async function parse<T>(res: Response): Promise<T> {
 const SHARED_GET_ACTIONS = new Set(['get_templates']);
 const sharedGets = new Map<string, Promise<unknown>>();
 
+/**
+ * Respons API yang ikut di HTML prerender (src/lib/preload.ts → primePreload), per URL request. Dibaca sinkron lewat
+ * peekApiGet di initializer useState, supaya render pertama di klien (hidrasi) sama persis dengan HTML dari server.
+ * apiGet sendiri tidak memakainya: effect komponen tetap meminta data terbaru ke server.
+ */
+const primedGets = new Map<string, unknown>();
+
 /** Kosongkan cache apiGet bersama (untuk tes, atau setelah admin mengubah data di tab yang sama). */
-export const clearApiCache = () => sharedGets.clear();
+export const clearApiCache = () => {
+  sharedGets.clear();
+  primedGets.clear();
+};
+
+/** URL request GET: apiUrl('get_template', { slug: 'finova' }) → "/api.php?action=get_template&slug=finova". */
+export function apiUrl(action: string, params: Record<string, string | number | undefined> = {}): string {
+  const query = new URLSearchParams({ action });
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') query.set(key, String(value));
+  }
+  return `${API_URL}?${query.toString()}`;
+}
+
+/** Simpan respons mentah dari preload untuk URL ini (lihat primedGets). */
+export const primeApiGet = (url: string, data: unknown) => {
+  primedGets.set(url, data);
+};
+
+/** Respons preload untuk aksi ini, atau undefined. Hanya-baca. */
+export const peekApiGet = <T,>(action: string, params: Record<string, string | number | undefined> = {}): T | undefined =>
+  primedGets.get(apiUrl(action, params)) as T | undefined;
 
 async function requestGet<T>(url: string): Promise<T> {
   let res: Response;
@@ -53,11 +81,7 @@ async function requestGet<T>(url: string): Promise<T> {
 
 /** GET untuk aksi baca publik: apiGet('get_templates', { category: 'Company Profile' }) */
 export async function apiGet<T>(action: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
-  const query = new URLSearchParams({ action });
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== '') query.set(key, String(value));
-  }
-  const url = `${API_URL}?${query.toString()}`;
+  const url = apiUrl(action, params);
   if (!SHARED_GET_ACTIONS.has(action)) return requestGet<T>(url);
 
   let shared = sharedGets.get(url) as Promise<T> | undefined;

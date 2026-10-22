@@ -1,0 +1,278 @@
+// @vitest-environment node
+// Prerender saat deploy (docs/platform/SEO-PLAN.md §5.2, WP2): scripts/prerender.mjs, src/entry-server.tsx dan blok
+// routing host utama di deploy/cpanel/htaccess. Aturan .htaccess juga sudah dicoba di Apache sungguhan (laporan WP2);
+// di sini strukturnya dikunci dan pola regex-nya diuji.
+import { readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  USER_AGENT,
+  checkPage,
+  chunksFor,
+  composePage,
+  fetchJson,
+  fillHtaccess,
+  hoistLeadingTags,
+  htaccessRoutes,
+  injectHead,
+  preFileFor,
+  scriptJson,
+  seoFallbackContext,
+  stripPageHead,
+  validateCatalog,
+} from '../../scripts/prerender.mjs';
+import * as ssr from '../../src/entry-server';
+import { FIXTURE_API, FIXTURE_BUILT_AT, FIXTURE_TEMPLATES, fixturePreload } from '../../src/lib/__tests__/preloadFixture';
+
+const ROOT = resolve(__dirname, '..', '..');
+const HTACCESS = readFileSync(join(ROOT, 'deploy', 'cpanel', 'htaccess'), 'utf8').replace(/\r\n/g, '\n');
+
+const SHELL = `<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Memuat situs…</title>
+    <meta name="description" content="lama" />
+    <meta property="og:title" content="lama" />
+    <link rel="canonical" href="https://contoh.test/" />
+    <script type="module" crossorigin src="/assets/index-AbCdEf12.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Zz9Yy8Xx.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`;
+
+describe('page assembly', () => {
+  it('maps paths to _pre files', () => {
+    expect(preFileFor('/')).toBe('index.html');
+    expect(preFileFor('/pesan-custom')).toBe('pesan-custom.html');
+    expect(preFileFor('/template/finova')).toBe('template/finova.html');
+  });
+
+  it('escapes "<" in the inline JSON so data can never close the <script>', () => {
+    const value = { a: '</script><script>alert(1)</script>', b: '<!-- x -->' };
+    const json = scriptJson(value);
+    expect(json).not.toContain('<');
+    expect(JSON.parse(json)).toEqual(value);
+  });
+
+  it('strips the per-page head of the shell but keeps charset, viewport, scripts and styles', () => {
+    const head = stripPageHead(SHELL);
+    expect(head).not.toMatch(/<title>|name="description"|og:title|rel="canonical"/);
+    expect(head).toContain('<meta charset="UTF-8" />');
+    expect(head).toContain('name="viewport"');
+    expect(head).toContain('src="/assets/index-AbCdEf12.js"');
+    expect(head).toContain('href="/assets/index-Zz9Yy8Xx.css"');
+  });
+
+  it('puts the page head right after the viewport, before scripts and styles', () => {
+    const html = injectHead(stripPageHead(SHELL), '<title>Baru</title>');
+    expect(html.indexOf('<title>Baru</title>')).toBeGreaterThan(html.indexOf('name="viewport"'));
+    expect(html.indexOf('<title>Baru</title>')).toBeLessThan(html.indexOf('<script type="module"'));
+  });
+
+  it('fills #root, adds the preload data after it, and moves React hoisted tags into the head', () => {
+    const page = composePage(SHELL, {
+      headTags: '<title>Halaman</title>\n<link rel="preload" as="image" href="/a.webp" fetchpriority="high">',
+      appHtml: '<link rel="preload" as="image" href="/a.webp"/><link rel="preload" as="image" href="/b.webp"/><main><h1>Judul $& $1</h1></main>',
+      preload: { path: '/', builtAt: FIXTURE_BUILT_AT, api: { x: '</script>' } },
+    });
+    expect(page).toContain('<div id="root"><main><h1>Judul $& $1</h1></main></div>');
+    expect(page.match(/href="\/a\.webp"/g)).toHaveLength(1);
+    expect(page.indexOf('href="/b.webp"')).toBeLessThan(page.indexOf('</head>'));
+    const json = /<script id="gn-preload" type="application\/json">(.*?)<\/script>/.exec(page)?.[1];
+    expect(JSON.parse(json!)).toMatchObject({ path: '/', api: { x: '</script>' } });
+    expect(page.indexOf('id="gn-preload"')).toBeGreaterThan(page.indexOf('<div id="root">'));
+  });
+
+  it('only hoists the leading run of link/meta tags', () => {
+    const out = hoistLeadingTags('<div><link rel="x" href="/in-body"></div>', '<title>t</title>');
+    expect(out.appHtml).toBe('<div><link rel="x" href="/in-body"></div>');
+  });
+
+  it('lists the route chunks (and their static imports) that the entry does not load already', () => {
+    const manifest = {
+      'index.html': { file: 'assets/index-a.js', isEntry: true, imports: ['_vendor'], css: ['assets/index-a.css'] },
+      _vendor: { file: 'assets/vendor-b.js' },
+      'src/pages/public/TemplateDetail.tsx': {
+        file: 'assets/TemplateDetail-c.js',
+        isDynamicEntry: true,
+        imports: ['_vendor', '_icon'],
+        css: ['assets/TemplateDetail-c.css'],
+      },
+      _icon: { file: 'assets/icon-d.js' },
+    };
+    expect(chunksFor(manifest, ['src/pages/public/TemplateDetail.tsx'])).toEqual({
+      js: ['/assets/TemplateDetail-c.js', '/assets/icon-d.js'],
+      css: ['/assets/TemplateDetail-c.css'],
+    });
+    expect(chunksFor(manifest, ['src/tidak/ada.tsx'])).toEqual({ js: [], css: [] });
+  });
+});
+
+describe('sanity checks', () => {
+  const page = (root: string, head = '<title>T</title><link rel="canonical" href="https://garudanexa.com/x">') =>
+    `<html><head>${head}</head><body><div id="root">${root}</div></body></html>`;
+
+  it('accepts a complete page', () => {
+    expect(checkPage('ok', page('<main><h1>Judul</h1></main>'))).toEqual([]);
+  });
+
+  it('rejects missing/extra h1, unfinished Suspense, spinner fallbacks and broken JSON-LD', () => {
+    const messages = (html: string) => checkPage('p', html).map((p: { message: string }) => p.message).join('\n');
+    expect(messages(page('<p>tanpa judul</p>'))).toMatch(/0 <h1>/);
+    expect(messages(page('<h1>a</h1><h1>b</h1>'))).toMatch(/2 <h1>/);
+    expect(messages(page('<h1>a</h1><!--$?--><template id="B:0"></template><!--/$-->'))).toMatch(/Suspense/);
+    expect(messages(page('<h1>a</h1><div role="status" aria-label="Memuat halaman"></div>'))).toMatch(/spinner/);
+    expect(messages(page('<h1>a</h1>', '<title>T</title><link rel="canonical" href="x"><script type="application/ld+json">{x</script>'))).toMatch(
+      /JSON-LD/,
+    );
+  });
+
+  it('reports a missing canonical as a head problem (a warning only in --build-only)', () => {
+    expect(checkPage('p', page('<h1>a</h1>', '<title>T</title>'))).toEqual([{ level: 'head', message: 'p: 0 canonical (harus tepat 1)' }]);
+  });
+});
+
+describe('API data', () => {
+  it('rejects an empty, short or broken catalog', () => {
+    const body = FIXTURE_API['/api.php?action=get_templates'];
+    expect(validateCatalog(body, 5)).toEqual(FIXTURE_TEMPLATES.map((t) => t.slug));
+    expect(() => validateCatalog(body, 6)).toThrow(/minimal 6/);
+    expect(() => validateCatalog({ templates: [] }, 1)).toThrow(/minimal 1/);
+    expect(() => validateCatalog({}, 1)).toThrow(/daftar templates/);
+    expect(() => validateCatalog({ templates: [{ ...FIXTURE_TEMPLATES[0], slug: 'kategori' }] }, 1)).toThrow(/Slug/);
+    expect(() => validateCatalog({ templates: [{ ...FIXTURE_TEMPLATES[0], price: 0 }] }, 1)).toThrow(/harga/);
+    expect(() => validateCatalog({ templates: [FIXTURE_TEMPLATES[0], FIXTURE_TEMPLATES[0]] }, 1)).toThrow(/ganda/);
+  });
+
+  it('fetches sequentially with the prerender user agent and retries twice', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('reset'))
+      .mockResolvedValueOnce(new Response('<html>WAF</html>', { status: 403 }))
+      .mockResolvedValueOnce(new Response('{"ok":1}', { status: 200 }));
+    await expect(fetchJson('https://contoh.test/api', { fetchImpl, retryDelayMs: 0 })).resolves.toEqual({ ok: 1 });
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(fetchImpl.mock.calls[0][1].headers['User-Agent']).toBe(USER_AGENT);
+    expect(USER_AGENT).toBe('GarudaNexaPrerender/1.0');
+  });
+
+  it('fails after 3 attempts, on {error} bodies, on non-JSON and on timeouts', async () => {
+    const always = (make: () => Promise<Response>) => vi.fn(make);
+    const error = always(async () => new Response('{"error":"rusak"}', { status: 200 }));
+    await expect(fetchJson('u', { fetchImpl: error, retryDelayMs: 0 })).rejects.toThrow(/3 percobaan: error API: rusak/);
+    expect(error).toHaveBeenCalledTimes(3);
+    const html = always(async () => new Response('<!doctype html>', { status: 200 }));
+    await expect(fetchJson('u', { fetchImpl: html, retryDelayMs: 0 })).rejects.toThrow(/bukan JSON/);
+    const hang = vi.fn(
+      (_url: string, init: { signal: AbortSignal }) =>
+        new Promise<Response>((_, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason))),
+    );
+    await expect(fetchJson('u', { fetchImpl: hang, retries: 0, timeoutMs: 20 })).rejects.toThrow(/1 percobaan/);
+  });
+});
+
+describe('.htaccess routing (main host only)', () => {
+  const pos = (needle: string) => {
+    const at = HTACCESS.indexOf(needle);
+    expect(at, needle).toBeGreaterThan(-1);
+    return at;
+  };
+
+  it('keeps the rule order: internal files blocked → ai-chat → trailing slash → prerender → seo.php → app → buyer SPA → 404', () => {
+    const order = [
+      pos('RewriteCond %{THE_REQUEST} \\s/+(_pre([/?\\s]|$)|app\\.html|404\\.html|seo\\.php) [NC]'),
+      pos('RewriteRule ^api/ai-chat/?$ api.php?action=ai_chat [QSA,L]'),
+      pos('RewriteRule ^(.+?)/+$ https://garudanexa.com/$1 [R=301,L]'),
+      pos('# BEGIN gn-prerender'),
+      pos('RewriteRule ^template/([a-z0-9-]{1,80})$ seo.php?slug=$1 [L]'),
+      pos('RewriteRule ^(akun|admin|pesan|demo|situs|masuk|daftar|login|auth)(/.*)?$ app.html [L]'),
+      pos('RewriteCond %{HTTP_HOST} !^garudanexa\\.com$ [NC]'),
+      // yang pertama R=404 = blok file internal; yang terakhir = 404 asli host utama
+      HTACCESS.lastIndexOf('RewriteRule ^ - [R=404,L]'),
+    ];
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(pos('ErrorDocument 404 /404.html')).toBeLessThan(pos('# php -- BEGIN cPanel-generated handler'));
+    expect(HTACCESS).toMatch(/AddType "text\/plain; charset=utf-8" \.txt/);
+    expect(HTACCESS).toMatch(/<FilesMatch "\\\.html\$">\n\s*Header set Cache-Control "no-cache"/);
+  });
+
+  it('blocks direct requests for internal files but not similar public paths', () => {
+    const rule = new RegExp(String.raw`\s/+(_pre([/?\s]|$)|app\.html|404\.html|seo\.php)`, 'i');
+    const line = (path: string) => `GET ${path} HTTP/1.1`;
+    for (const path of ['/_pre/index.html', '/_pre', '/_pre?x', '//_pre/template/finova.html', '/app.html', '/404.html', '/seo.php?slug=finova']) {
+      expect(rule.test(line(path)), path).toBe(true);
+    }
+    for (const path of ['/', '/template/finova', '/pesan-custom', '/_preview', '/api.php?action=get_settings', '/assets/app.js']) {
+      expect(rule.test(line(path)), path).toBe(false);
+    }
+  });
+
+  it('sends app routes to app.html, but never /pesan-custom', () => {
+    const app = /^(akun|admin|pesan|demo|situs|masuk|daftar|login|auth)(\/.*)?$/;
+    for (const path of ['akun', 'akun/pesanan/GN-1', 'pesan/aura-studio', 'demo/finova', 'situs/12', 'masuk', 'daftar', 'admin', 'login', 'auth']) {
+      expect(app.test(path), path).toBe(true);
+    }
+    for (const path of ['pesan-custom', 'akunku', 'template/finova', 'demo-x']) expect(app.test(path), path).toBe(false);
+  });
+
+  it('writes the prerendered routes into the gn-prerender block without -f checks on DOCUMENT_ROOT', () => {
+    const block = htaccessRoutes(['/', '/template/finova', '/pesan-custom']);
+    expect(block).toContain('RewriteRule ^$ _pre/index.html [L]');
+    expect(block).toContain('RewriteRule ^(pesan-custom|template/finova)$ _pre/$1.html [L]');
+    expect(block).not.toContain('DOCUMENT_ROOT');
+    const filled = fillHtaccess(HTACCESS, block);
+    expect(filled).toContain(block);
+    expect(filled.match(/# BEGIN gn-prerender/g)).toHaveLength(1);
+    expect(filled.trimEnd().endsWith('# php -- END cPanel-generated handler, do not edit')).toBe(true);
+    expect(() => fillHtaccess('RewriteEngine On\n', block)).toThrow(/gn-prerender/);
+    expect(() => htaccessRoutes(['/', '/a b'])).toThrow(/tidak aman/);
+    expect(() => htaccessRoutes(['/', '/x|y'])).toThrow(/tidak aman/);
+  });
+});
+
+describe('server render (src/entry-server.tsx)', () => {
+  const render = async (path: string) => {
+    const result = await ssr.render(path, fixturePreload(path));
+    expect(result.errors).toEqual([]);
+    expect(result.html).not.toMatch(/<!--\$[!?]-->/);
+    expect(result.html).not.toContain('aria-label="Memuat halaman"');
+    return result.html;
+  };
+  const h1Count = (html: string) => (html.match(/<h1[\s>]/g) ?? []).length;
+
+  it('renders the home page with the catalog from the preload: every template linked, one h1', async () => {
+    const html = await render('/');
+    expect(h1Count(html)).toBe(1);
+    for (const t of FIXTURE_TEMPLATES) expect(html).toContain(`href="/template/${t.slug}"`);
+  }, 30_000);
+
+  it('renders a template page with its price instead of a skeleton', async () => {
+    const html = await render('/template/aura-studio');
+    expect(h1Count(html)).toBe(1);
+    expect(html.replace(/<[^>]+>/g, ' ')).toContain('1.390.000');
+  }, 30_000);
+
+  it('renders /pesan-custom and a legal page without touching browser-only APIs', async () => {
+    expect(h1Count(await render('/pesan-custom'))).toBe(1);
+    expect(h1Count(await render('/syarat-ketentuan'))).toBe(1);
+  }, 30_000);
+
+  it('gives the HTML only to the data it was given (caches are reset between pages)', async () => {
+    const empty = { path: '/', builtAt: FIXTURE_BUILT_AT, api: {} };
+    const html = (await ssr.render('/', empty)).html;
+    expect(html).not.toContain('href="/template/finova"');
+  }, 30_000);
+
+  it('builds the seo.php context from the same TypeScript head (Organization/WebSite nodes)', () => {
+    const data = ssr.seoDataFromApi(FIXTURE_API, FIXTURE_BUILT_AT);
+    const ctx = seoFallbackContext(ssr, data, 'finova', FIXTURE_BUILT_AT);
+    expect(ctx.origin).toBe('https://garudanexa.com');
+    expect(ctx.globalJsonLd.map((node: { '@type': string }) => node['@type'])).not.toContain('Product');
+    expect(ctx.categorySlugs).toContain('kecantikan-klinik');
+    expect(ctx.pricingIncludes.length).toBeGreaterThan(0);
+  });
+});

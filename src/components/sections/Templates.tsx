@@ -1,7 +1,8 @@
 import React, { useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowRight, LayoutTemplate, RotateCw, Search, SearchX, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ApiError, apiGet } from '../../lib/api';
+import { ApiError, apiGet, peekApiGet } from '../../lib/api';
+import { preloadNow } from '../../lib/preload';
 import type { Template } from '../../types/platform';
 import { SectionHeading } from '../ui/SectionHeading';
 import {
@@ -34,6 +35,27 @@ const NO_TEMPLATES: Template[] = [];
 const NO_CATEGORIES: string[] = [];
 /** Baris yang bisa digeser ke samping di HP tanpa scrollbar terlihat */
 const NO_SCROLLBAR = '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+/**
+ * Respons get_templates → status siap. Kategori dari API (urutannya dipertahankan) + kategori template, hanya yang
+ * punya template. `now` menentukan lencana "Baru".
+ */
+const readyState = (data: TemplatesResponse, now: number): LoadState => {
+  const templates = Array.isArray(data.templates) ? data.templates.filter((tpl) => tpl && tpl.slug) : [];
+  const used = new Set(templates.map((tpl) => tpl.category).filter(Boolean));
+  const categories = Array.from(
+    new Set([...(Array.isArray(data.categories) ? data.categories : []), ...templates.map((tpl) => tpl.category)]),
+  ).filter((name) => Boolean(name) && used.has(name));
+  return { status: 'ready', templates, categories, newestSlug: findNewestSlug(templates, now) };
+};
+
+/**
+ * Data dari HTML prerender (src/lib/preload.ts): render pertama langsung berisi katalog, sama dengan HTML server.
+ * "Sekarang" = waktu data diambil, supaya lencana "Baru" di hidrasi sama dengan server; effect lalu memuat data terbaru.
+ */
+const initialState = (): LoadState => {
+  const primed = peekApiGet<TemplatesResponse>('get_templates');
+  return primed ? readyState(primed, preloadNow()) : { status: 'loading' };
+};
 /** Jarak grid kartu, lega seperti galeri Dribbble */
 const GRID_GAP = 'grid grid-cols-1 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:gap-x-8 2xl:gap-x-9 2xl:gap-y-12';
 /**
@@ -58,7 +80,7 @@ const CUSTOM_HREF = '/pesan-custom?layanan=website';
  * Data: `get_templates`. Klik gambar/nama → /template/:slug, demo → demo_url atau /demo/:slug, pesan → /pesan/:slug.
  */
 const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, number = '01' }) => {
-  const [state, setState] = useState<LoadState>({ status: 'loading' });
+  const [state, setState] = useState<LoadState>(initialState);
   const [attempt, setAttempt] = useState(0);
   const [category, setCategory] = useState(ALL);
   const [query, setQuery] = useState('');
@@ -73,14 +95,7 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
     let alive = true;
     apiGet<TemplatesResponse>('get_templates')
       .then((data) => {
-        if (!alive) return;
-        const templates = Array.isArray(data.templates) ? data.templates.filter((tpl) => tpl && tpl.slug) : [];
-        // Kategori dari API (urutannya dipertahankan) + kategori template, hanya yang punya template
-        const used = new Set(templates.map((tpl) => tpl.category).filter(Boolean));
-        const categories = Array.from(
-          new Set([...(Array.isArray(data.categories) ? data.categories : []), ...templates.map((tpl) => tpl.category)]),
-        ).filter((name) => Boolean(name) && used.has(name));
-        setState({ status: 'ready', templates, categories, newestSlug: findNewestSlug(templates, Date.now()) });
+        if (alive) setState(readyState(data, Date.now()));
       })
       .catch((err: unknown) => {
         if (!alive) return;
@@ -89,7 +104,8 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
           err instanceof ApiError && err.code === 'NETWORK'
             ? err.message
             : 'Terjadi kendala saat memuat template. Silakan coba lagi beberapa saat lagi.';
-        setState({ status: 'error', message });
+        // Katalog dari preload sudah tampil: gagal menyegarkan tidak menggantinya dengan pesan error
+        setState((prev) => (prev.status === 'ready' ? prev : { status: 'error', message }));
       });
     return () => {
       alive = false;

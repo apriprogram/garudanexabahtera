@@ -3,10 +3,12 @@
 // Pembeli yang sudah login melihat "Akun Saya"; staf tidak melihat apa pun.
 import { Link } from 'react-router-dom';
 import { ArrowRight, UserRoundPlus, UserRound } from 'lucide-react';
-import { customerLoginPath, getRole } from '../../../lib/auth';
+import { customerLoginPath } from '../../../lib/auth';
+import { useSessionRole } from '../../../hooks/useSessionRole';
 
 export function AccountOffer({ className = '' }: { className?: string }) {
-  const role = getRole();
+  // Sesi dari localStorage: null saat prerender & hidrasi (= HTML server), lalu peran sebenarnya
+  const role = useSessionRole();
   if (role && role !== 'customer') return null;
 
   if (role === 'customer') {

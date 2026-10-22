@@ -9,6 +9,10 @@ DirectoryIndex index.html
 <IfModule mod_mime.c>
   AddType video/mp4 .mp4
   AddType video/webm .webm
+  # llms.txt / llms-full.txt (dan robots.txt) berbahasa Indonesia: UTF-8 eksplisit
+  AddType "text/plain; charset=utf-8" .txt
+  # site.webmanifest (ikon PWA, WP3): tidak semua server mengenal ekstensinya
+  AddType application/manifest+json .webmanifest
 </IfModule>
 
 <IfModule mod_rewrite.c>
@@ -43,14 +47,53 @@ DirectoryIndex index.html
   # Gambar proyek di assets/dokumen-client/logo/ tetap publik (beranda).
   RewriteRule ^/*assets/+dokumen-client/+dokumen(/|$) - [F,L,NC]
 
-  # Frontend memanggil /api/ai-chat (jalur Node); di PHP itu action=ai_chat
+  # File internal hasil prerender tidak bisa dibuka langsung (semua host): _pre/, app.html, 404.html, seo.php hanya
+  # dipakai lewat rewrite di bawah. THE_REQUEST = baris request asli dari browser, jadi rewrite internal ke file-file
+  # ini tidak ikut tertolak (di Apache maupun LiteSpeed). REDIRECT_STATUS kosong = bukan ErrorDocument /404.html.
+  RewriteCond %{ENV:REDIRECT_STATUS} ^$
+  RewriteCond %{THE_REQUEST} \s/+(_pre([/?\s]|$)|app\.html|404\.html|seo\.php) [NC]
+  RewriteRule ^ - [R=404,L]
+
+  # Frontend memanggil /api/ai-chat (jalur Node); di PHP itu action=ai_chat. Sebelum aturan garis miring di bawah,
+  # supaya POST ke /api/ai-chat/ tidak dialihkan.
   RewriteRule ^api/ai-chat/?$ api.php?action=ai_chat [QSA,L]
 
-  # Aplikasi satu halaman (React Router): rute yang bukan file/folder → index.html
+  # ── Host utama garudanexa.com (docs/platform/SEO-PLAN.md §5.2). Domain pembeli tidak terkena aturan ini. ──
+
+  # Garis miring di akhir → tanpa garis miring (301, satu lompatan), kecuali folder nyata (assets/, …)
+  RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.+?)/+$ https://garudanexa.com/$1 [R=301,L]
+
+  # Halaman hasil prerender: / → _pre/index.html, /template/finova → _pre/template/finova.html. Daftar rutenya ditulis
+  # scripts/prerender.mjs saat build (tanpa cek -f ke %{DOCUMENT_ROOT}, yang bisa berbeda di cPanel/LiteSpeed).
+  # BEGIN gn-prerender (diisi scripts/prerender.mjs saat build; jangan diedit manual)
+  # END gn-prerender
+
+  # Template yang terbit setelah deploy terakhir: seo.php merender halamannya dari DB, atau 404 bila tidak ada /
+  # belum terbit. Template yang sudah diprerender tertangkap aturan di atas lebih dulu.
+  RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
+  RewriteRule ^template/([a-z0-9-]{1,80})$ seo.php?slug=$1 [L]
+
+  # Rute aplikasi (akun, checkout, login, demo, pratinjau situs, admin) → cangkang SPA dengan robots noindex,follow.
+  # ^pesan(/…)? tidak menangkap /pesan-custom (halaman publik yang diprerender).
+  RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
+  RewriteRule ^(akun|admin|pesan|demo|situs|masuk|daftar|login|auth)(/.*)?$ app.html [L]
+
+  # Domain pembeli (dan host lain): aplikasi satu halaman seperti sebelumnya, rute yang bukan file/folder → index.html
+  RewriteCond %{HTTP_HOST} !^garudanexa\.com$ [NC]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ index.html [L]
+
+  # Host utama: selebihnya 404 asli (ErrorDocument di bawah menampilkan 404.html)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ - [R=404,L]
 </IfModule>
+
+# Halaman 404 hasil prerender (noindex). Hanya untuk error dari server; 404 dari seo.php/api.php ditulis sendiri.
+ErrorDocument 404 /404.html
 
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
@@ -59,9 +102,14 @@ DirectoryIndex index.html
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
   Header always set Strict-Transport-Security "max-age=31536000" env=HTTPS
 
-  # index.html selalu dicek ulang; file build bernama hash boleh disimpan lama
-  <FilesMatch "^index\.html$">
+  # Semua HTML (index.html, _pre/*.html, app.html, 404.html) selalu dicek ulang; file build bernama hash boleh
+  # disimpan lama
+  <FilesMatch "\.html$">
     Header set Cache-Control "no-cache"
+  </FilesMatch>
+  # Cangkang aplikasi & halaman 404 tidak pernah diindeks (meta robots di HTML-nya juga noindex)
+  <FilesMatch "^(app|404)\.html$">
+    Header set X-Robots-Tag "noindex, follow"
   </FilesMatch>
   # File build Vite bernama hash (assets/<nama>-<hash 8 karakter>.js/.css) tidak pernah berubah isinya:
   # simpan setahun tanpa dicek ulang. Nama baru = isi baru, jadi tidak ada versi basi.

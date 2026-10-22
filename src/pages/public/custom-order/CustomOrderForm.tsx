@@ -3,6 +3,7 @@
 // honeypot "website" tersembunyi, tombol kirim dengan status memuat. `?layanan=website|mobile` memilih jenis layanan.
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useHydrated } from '../../../lib/preload';
 import { CircleAlert, Loader2, Send } from 'lucide-react';
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
 import { Field } from '../../account/components/Field';
@@ -40,8 +41,10 @@ const fid = (field: string) => `co-${field.replace(/_/g, '-')}`;
 
 export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormProps) {
   // Tautan Footer "Website custom" / "Aplikasi mobile custom" → /pesan-custom?layanan=website|mobile
+  // Query string tidak ada di HTML prerender: dibaca setelah hidrasi (perubahan diikuti oleh seenLayanan di bawah)
   const [searchParams] = useSearchParams();
-  const layanan = serviceFromParam(searchParams.get('layanan'));
+  const hydrated = useHydrated();
+  const layanan = serviceFromParam(hydrated ? searchParams.get('layanan') : null);
   const [values, setValues] = useState<CustomOrderValues>(() => ({
     ...EMPTY_VALUES,
     service_type: layanan,

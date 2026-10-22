@@ -2,10 +2,15 @@
 // Build the site and publish it to the `cpanel-deploy` branch, which cPanel "Git Version Control" pulls
 // and deploys into public_html with .cpanel.yml. See deploy/cpanel/README.md.
 //
-//   node scripts/deploy-cpanel.mjs            build + commit to cpanel-deploy (no push)
-//   node scripts/deploy-cpanel.mjs --push     ...and push it to origin
+//   node scripts/deploy-cpanel.mjs              build + prerender + commit to cpanel-deploy (no push)
+//   node scripts/deploy-cpanel.mjs --push       ...and push it to origin
+//   node scripts/deploy-cpanel.mjs --build-only build + prerender into DEPLOY_DIR/build, then stop (no git at all).
+//                                               WP3/WP4 builders that are still missing are skipped with a warning.
+//                                               --skip-typecheck (only with --build-only) skips `tsc -b`.
 //
 // The branch holds only the built site + the PHP API; source code stays on main.
+// Prerender (scripts/prerender.mjs) reads its data from PRERENDER_API (default https://garudanexa.com) and aborts the
+// deploy when that fails or fewer than MIN_TEMPLATES (default 5) templates are published.
 
 import { execSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -20,6 +25,10 @@ const WORKTREE = join(DEPLOY_DIR, 'cpanel-branch');
 const BRANCH = 'cpanel-deploy';
 const CPANEL_HOME = process.env.CPANEL_HOME || '/home/garudanexa';
 const push = process.argv.includes('--push');
+const buildOnly = process.argv.includes('--build-only');
+const skipTypecheck = process.argv.includes('--skip-typecheck');
+if (buildOnly && push) throw new Error('--build-only dan --push tidak bisa dipakai bersamaan');
+if (skipTypecheck && !buildOnly) throw new Error('--skip-typecheck hanya untuk --build-only');
 
 // Upload folders that hold user content: never published from git (they live only on the server).
 // assets/dokumen-client = client documents and project logos uploaded from the admin; the deploy branch is public.
@@ -27,7 +36,11 @@ const EXCLUDE = ['assets/sites', 'assets/documents', 'assets/list-products', 'as
 // File upload di folder yang juga berisi file ter-commit: video & poster latar hero (backend/modules/hero_media.php)
 // di assets/bg, di samping gambar slider bawaan. Dikecualikan per nama file (path relatif terhadap public/, pakai /).
 const EXCLUDE_FILES = ['assets/bg/hero_video_*', 'assets/bg/hero_poster_*', 'assets/bg/.hero_video_*'];
+// File public/ yang dibuat ulang saat build, jadi versi lama di repo tidak ikut tersalin (tetap di-commit ke branch
+// deploy, tidak seperti EXCLUDE_FILES): sitemap.xml dibuat dari database oleh prerender (WP4).
+const GENERATED_FILES = ['sitemap.xml'];
 const excludedFile = (rel) =>
+  GENERATED_FILES.includes(rel) ||
   EXCLUDE_FILES.some((glob) => new RegExp(`^${glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')}$`).test(rel));
 
 const run = (cmd, cwd = ROOT) => execSync(cmd, { cwd, stdio: 'inherit' });
@@ -39,8 +52,10 @@ const gitwOut = (args) => out(`git ${SAFE} ${args}`, WORKTREE);
 
 // 1. Build the frontend. public/ is copied by hand so user-upload folders never enter the build.
 rmSync(OUT, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
-run('npx tsc -b');
-await build({ root: ROOT, publicDir: false, logLevel: 'warn', build: { outDir: OUT, emptyOutDir: true } });
+mkdirSync(DEPLOY_DIR, { recursive: true });
+if (!skipTypecheck) run('npx tsc -b');
+// manifest: true → prerender tahu chunk tiap rute (manifest dipindah keluar dari OUT oleh prerender.mjs)
+await build({ root: ROOT, publicDir: false, logLevel: 'warn', build: { outDir: OUT, emptyOutDir: true, manifest: true } });
 const excluded = new Set(EXCLUDE.map((rel) => join(ROOT, 'public', rel)));
 const publicRel = (src) => relative(join(ROOT, 'public'), src).split(sep).join('/');
 cpSync(join(ROOT, 'public'), OUT, { recursive: true, filter: (src) => !excluded.has(src) && !excludedFile(publicRel(src)) });
@@ -62,6 +77,11 @@ cpSync(join(ROOT, 'backend', 'modules'), join(OUT, 'modules'), {
 writeFileSync(join(OUT, 'modules', '.htaccess'), 'Require all denied\n');
 cpSync(join(ROOT, 'deploy', 'cpanel', 'htaccess'), join(OUT, '.htaccess'));
 
+// 2b. Prerender halaman publik host utama: OUT/_pre/*.html, app.html, 404.html, seo.php, sitemap.xml, llms*.txt, dan
+//     daftar rute di blok gn-prerender .htaccess (docs/platform/SEO-PLAN.md §5.2). Gagal = deploy dibatalkan.
+const { prerender } = await import('./prerender.mjs');
+await prerender({ root: ROOT, outDir: OUT, deployDir: DEPLOY_DIR, strict: !buildOnly });
+
 // 3. cPanel: repo ini di-clone langsung ke public_html dan branch cpanel-deploy yang di-checkout,
 //    jadi "Update from Remote" sudah cukup. Deploy task hanya mencatat waktu (tidak menyalin apa pun).
 writeFileSync(
@@ -79,6 +99,11 @@ writeFileSync(
 // public_html adalah checkout branch ini: upload di folder EXCLUDE tetap file untracked di server.
 // Di-ignore agar working tree cPanel tetap bersih dan `git clean -fd` tidak menghapusnya.
 writeFileSync(join(OUT, '.gitignore'), [...EXCLUDE.map((rel) => `/${rel}/`), ...EXCLUDE_FILES.map((rel) => `/${rel}`)].join('\n') + '\n');
+
+if (buildOnly) {
+  console.log(`\nBuild selesai di ${OUT} (--build-only: tanpa git, worktree, maupun commit).`);
+  process.exit(0);
+}
 
 // 4. Commit the build to the deploy branch through a separate worktree
 const sourceSha = out('git rev-parse --short HEAD');

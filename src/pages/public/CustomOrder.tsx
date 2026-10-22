@@ -7,6 +7,7 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
 import { getCurrentUser } from '../../lib/auth';
+import { useHydrated } from '../../lib/preload';
 import { AccountOffer } from './custom-order/AccountOffer';
 import { CustomOrderForm, type CustomOrderResult } from './custom-order/CustomOrderForm';
 import { SuccessPanel } from './custom-order/SuccessPanel';
@@ -44,8 +45,11 @@ export default function CustomOrder() {
   const [formKey, setFormKey] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Pembeli yang sudah login: nama, email, dan nomor terisi otomatis
+  // Pembeli yang sudah login: nama, email, dan nomor terisi otomatis. Sesi ada di localStorage, jadi baru dibaca
+  // setelah hidrasi (HTML prerender = tamu); form dipasang ulang lewat key bila isian awalnya berubah.
+  const hydrated = useHydrated();
   const initialValues = useMemo<Partial<CustomOrderValues>>(() => {
+    if (!hydrated) return {};
     const user = getCurrentUser();
     if (!user || user.role !== 'customer') return {};
     return {
@@ -53,7 +57,7 @@ export default function CustomOrder() {
       email: typeof user.email === 'string' ? user.email : '',
       phone: typeof user.phone === 'string' ? user.phone : '',
     };
-  }, []);
+  }, [hydrated]);
 
   useEffect(() => {
     const previous = document.title;
@@ -126,7 +130,7 @@ export default function CustomOrder() {
                         <p className="mt-1 text-sm text-muted">Semua isian wajib, kecuali yang bertanda opsional.</p>
                       </div>
                       <CustomOrderForm
-                        key={formKey}
+                        key={`${formKey}-${initialValues.email ?? ''}`}
                         initialValues={initialValues}
                         onSuccess={(res) => {
                           setResult(res);

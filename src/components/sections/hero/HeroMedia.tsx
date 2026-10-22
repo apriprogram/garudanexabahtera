@@ -1,6 +1,7 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { prefersReducedMotion } from '../../../hooks/useInView';
+import { useHydrated } from '../../../lib/preload';
 import { HeroBackground } from './HeroBackground';
 import { HERO_FADE_MS, HERO_SLIDE_MS, type HeroMediaConfig } from './heroBgConfig';
 import { scrimRgb, type HeroTone } from './heroContrast';
@@ -264,8 +265,11 @@ export const HeroMedia: React.FC<HeroMediaProps> = ({ config, scrim = null, fade
   const layerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const onScreen = useOnScreen(layerRef);
-  const [reduced] = useState(prefersReducedMotion);
-  const [paused, setPaused] = useState(() => reduced || prefersSaveData());
+  // Preferensi browser baru dibaca setelah hidrasi (HTML prerender = bergerak); null = belum dipilih pengunjung
+  const hydrated = useHydrated();
+  const reduced = hydrated && prefersReducedMotion();
+  const [pausedByUser, setPaused] = useState<boolean | null>(null);
+  const paused = pausedByUser ?? (reduced || (hydrated && prefersSaveData()));
   const [broken, setBroken] = useState(false); // video gagal dimuat / diputar
   const [posterBroken, setPosterBroken] = useState(false);
 

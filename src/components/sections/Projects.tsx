@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { apiGet } from '../../lib/api';
+import { apiGet, peekApiGet } from '../../lib/api';
 import type { PublicProject } from '../../types/platform';
 import { readList, useSiteSettings } from '../../hooks/useSiteSettings';
 import { Reveal } from '../ui/Reveal';
@@ -56,6 +56,19 @@ const gridCols = (n: number) => {
 
 type LoadState = { status: 'loading' } | { status: 'done'; projects: PublicProject[] };
 
+type ProjectsResponse = { projects?: PublicProject[] };
+
+const doneState = (data: ProjectsResponse): LoadState => ({
+  status: 'done',
+  projects: Array.isArray(data.projects) ? data.projects.filter((p) => p && p.name) : [],
+});
+
+/** Data dari HTML prerender (src/lib/preload.ts): render pertama sama dengan server; effect lalu memuat yang terbaru. */
+const initialState = (): LoadState => {
+  const primed = peekApiGet<ProjectsResponse>('get_public_projects');
+  return primed ? doneState(primed) : { status: 'loading' };
+};
+
 /**
  * Section "Projects" (#projects), gaya BELAJAR CPNS: kartu datar (garis tipis, tanpa shadow, tidak bereaksi saat
  * di-hover karena kartu bukan tautan) — proyek pertama jadi kartu sorotan lebar (gambar kiri, teks kanan), sisanya
@@ -65,17 +78,17 @@ type LoadState = { status: 'loading' } | { status: 'done'; projects: PublicProje
  */
 const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '02' }) => {
   const { settings } = useSiteSettings();
-  const [state, setState] = useState<LoadState>({ status: 'loading' });
+  const [state, setState] = useState<LoadState>(initialState);
 
   useEffect(() => {
     let alive = true;
-    apiGet<{ projects?: PublicProject[] }>('get_public_projects')
+    apiGet<ProjectsResponse>('get_public_projects')
       .then((data) => {
-        if (alive) setState({ status: 'done', projects: Array.isArray(data.projects) ? data.projects.filter((p) => p && p.name) : [] });
+        if (alive) setState(doneState(data));
       })
       .catch(() => {
-        // Gagal memuat: tetap tampilkan portofolio cadangan, tanpa pesan error di beranda
-        if (alive) setState({ status: 'done', projects: [] });
+        // Gagal memuat: tetap tampilkan data preload, atau portofolio cadangan, tanpa pesan error di beranda
+        if (alive) setState((prev) => (prev.status === 'done' ? prev : { status: 'done', projects: [] }));
       });
     return () => {
       alive = false;
