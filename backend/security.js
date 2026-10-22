@@ -332,11 +332,14 @@ export function corsOptions() {
   };
 }
 
+// X-Robots-Tag: API URLs never belong in search results (robots.txt lets crawlers fetch the public read actions,
+// pages need their data to render). api.php sends the same header on every response.
 export function securityHeaders(req, res, next) {
   res.set({
     'X-Content-Type-Options': 'nosniff',
     'Cache-Control': 'no-store',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'X-Robots-Tag': 'noindex',
   });
   next();
 }

@@ -242,7 +242,7 @@ function pngPixels(bytes: Buffer) {
   return `png:${crypto.createHash('sha256').update(zlib.inflateSync(Buffer.concat(parts))).digest('hex')}`;
 }
 
-const FILE_HEADERS = ['content-type', 'content-disposition', 'cache-control', 'content-security-policy', 'x-content-type-options'];
+const FILE_HEADERS = ['content-type', 'content-disposition', 'cache-control', 'content-security-policy', 'x-content-type-options', 'x-robots-tag'];
 
 async function send(backend: Backend, token: string, action: string, input: Json): Promise<Outcome> {
   const res = await fetch(`${backend.base}/api.php`, {
@@ -680,6 +680,7 @@ suite('pd_* actions: PHP api.php and Node server.js give the same answers', () =
         'cache-control: private, no-store',
         "content-security-policy: default-src 'none'; sandbox",
         'x-content-type-options: nosniff',
+        'x-robots-tag: noindex',
       ]);
     }
     expect((await both('admin', 'pd_file', { ref: `pdfile:sig:${companySig.id}` })).status).toBe(200);

@@ -35,6 +35,9 @@ const STATUS_LABEL = {
 };
 const DOMAIN_PATTERN = /^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/;
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// Slugs no template may use because the public page /template/{slug} belongs to something else:
+// /template/kategori/{category} are the category pages (docs/platform/SEO-PLAN.md §2). Same list in templates.php.
+export const RESERVED_SLUGS = new Set(['kategori']);
 const TEMPLATE_CODE_PATTERN = /^[a-z0-9][a-z0-9-]{1,59}$/;
 const CONTENT_MAX_BYTES = 524288; // site content JSON after images became paths (512 KB)
 const SITE_IMAGE_MAX_BYTES = 2097152; // one image inside site content (2 MB)
@@ -705,14 +708,16 @@ async function adminSaveTemplate(ctx) {
   let slug = phpTrim(inStr(input, 'slug')).toLowerCase();
   if (slug !== '' && (slug.length > 120 || !SLUG_PATTERN.test(slug))) {
     errors.slug = 'Slug hanya huruf kecil, angka, dan tanda hubung (contoh: company-profile-modern).';
+  } else if (RESERVED_SLUGS.has(slug)) {
+    errors.slug = `Slug "${slug}" tidak bisa dipakai karena alamat /template/${slug} sudah dipakai halaman lain. Pilih slug lain.`;
   }
   validate(errors);
 
   if (slug === '') {
-    // Automatic slug from the name, made unique with -2, -3, ...
+    // Automatic slug from the name, made unique with -2, -3, ... (a reserved slug also gets a number)
     const base = slugify(name);
     slug = base;
-    for (let n = 2; await dbOne(pool, 'SELECT id FROM templates WHERE slug = ? AND id <> ? LIMIT 1', [slug, id]); n++) {
+    for (let n = 2; RESERVED_SLUGS.has(slug) || await dbOne(pool, 'SELECT id FROM templates WHERE slug = ? AND id <> ? LIMIT 1', [slug, id]); n++) {
       slug = `${base.slice(0, 110)}-${n}`;
     }
   } else if (await dbOne(pool, 'SELECT id FROM templates WHERE slug = ? AND id <> ? LIMIT 1', [slug, id])) {

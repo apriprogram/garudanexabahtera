@@ -10,6 +10,10 @@ ini_set('memory_limit', '256M');
 ini_set('max_execution_time', '300');
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+// API URLs never belong in search results: robots.txt lets crawlers fetch the public read actions (pages need their
+// data to render), so every response, errors and file downloads included, says noindex. Same header in security.js.
+header('X-Robots-Tag: noindex');
+
 // An error whose message is safe to show to the client (validation, auth, rate limit).
 // $fieldErrors (field => message) is sent as `errors` so forms can show messages under each field.
 class ApiError extends Exception {

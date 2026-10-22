@@ -1,8 +1,13 @@
 User-agent: *
 Allow: /
+Allow: /api.php?action=get_settings
+Allow: /api.php?action=get_navbar_menus
+Allow: /api.php?action=get_templates
+Allow: /api.php?action=get_template&
+Allow: /api.php?action=get_public_projects
+Disallow: /api.php
 Disallow: /admin
 Disallow: /login
 Disallow: /auth
-Disallow: /api.php
 
 Sitemap: https://garudanexa.com/sitemap.xml

@@ -15,11 +15,24 @@ DirectoryIndex index.html
   RewriteEngine On
   RewriteBase /
 
+  # Satu host kanonis: www → https://garudanexa.com dalam satu lompatan. Harus SEBELUM aturan HTTPS, supaya
+  # http://www tidak lewat https://www dulu. Validasi AutoSSL (/.well-known/) tetap dilayani di host www.
+  RewriteCond %{HTTP_HOST} ^www\.garudanexa\.com$ [NC]
+  RewriteCond %{REQUEST_URI} !^/\.well-known/
+  RewriteRule ^ https://garudanexa.com%{REQUEST_URI} [R=301,L]
+
   # Paksa HTTPS (kecuali validasi AutoSSL)
   RewriteCond %{HTTPS} !=on
   RewriteCond %{HTTP:X-Forwarded-Proto} !=https
   RewriteCond %{REQUEST_URI} !^/\.well-known/
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # /index.html → / (host utama saja). THE_REQUEST = baris request asli dari browser, jadi rewrite internal ke
+  # index.html (aturan SPA di bawah, DirectoryIndex) tidak ikut dialihkan dan tidak berputar. Tujuan ditulis lengkap
+  # dengan https: di belakang proxy koneksi ke server bisa http, dan "/" saja akan jadi http://garudanexa.com/.
+  RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
+  RewriteCond %{THE_REQUEST} \s/index\.html[\s?]
+  RewriteRule ^index\.html$ https://garudanexa.com/ [R=301,L]
 
   # File sensitif tidak boleh diakses dari web
   RewriteRule (^|/)\.(?!well-known/) - [F,L]
@@ -50,11 +63,18 @@ DirectoryIndex index.html
   <FilesMatch "^index\.html$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
+  # File build Vite bernama hash (assets/<nama>-<hash 8 karakter>.js/.css) tidak pernah berubah isinya:
+  # simpan setahun tanpa dicek ulang. Nama baru = isi baru, jadi tidak ada versi basi.
+  <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
 </IfModule>
 
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType text/css "access plus 1 year"
+  # LiteSpeed menyajikan .js sebagai text/javascript; application/javascript tetap untuk server lain
+  ExpiresByType text/javascript "access plus 1 year"
   ExpiresByType application/javascript "access plus 1 year"
   ExpiresByType image/svg+xml "access plus 30 days"
   ExpiresByType image/png "access plus 30 days"
