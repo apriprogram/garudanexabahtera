@@ -990,18 +990,21 @@ const API_HELPERS = [
 ].map(apiPhpBlock).join('\n');
 // The real access check (lists and authorize_request); authenticate() is stubbed in the harness
 const GATE_HELPERS = [
-  ...['PUBLIC_ACTIONS', 'CUSTOMER_ACTIONS', 'ADMIN_ACTIONS', 'STAFF_ROLES', 'USER_ROLES'].map(apiPhpConst),
+  ...['PUBLIC_ACTIONS', 'ANY_ROLE_ACTIONS', 'CUSTOMER_ACTIONS', 'ADMIN_ACTIONS', 'STAFF_ROLES', 'USER_ROLES'].map(apiPhpConst),
   ...['in_int', 'contains_script_url', 'authorize_request'].map((name) => apiPhpBlock(`function ${name}\\(`)),
 ].join('\n');
 
 // hero_settings in memory ($GLOBALS['__store']): answers the module's SELECT ... WHERE setting_key IN ('a', 'b'), and
-// a SELECT without keys (get_settings) with every row
+// a SELECT without such a list (get_settings) with every row, minus the pd_* ones when it filters them like api.php
 const DB_STUB = String.raw`
 function db_all($conn, $sql, array $params = []) {
     $GLOBALS['__queries'][] = $sql;
-    preg_match_all("/'([a-z_]+)'/", $sql, $m);
+    $keys = preg_match('/setting_key IN \(([^)]*)\)/', $sql, $in) && preg_match_all("/'([a-z_]+)'/", $in[1], $m)
+        ? $m[1] : array_keys($GLOBALS['__store']);
+    $hidePd = strpos($sql, "LEFT(setting_key, 3) <> 'pd_'") !== false;
     $rows = [];
-    foreach ($m[1] ?: array_keys($GLOBALS['__store']) as $key) {
+    foreach ($keys as $key) {
+        if ($hidePd && stripos((string)$key, 'pd_') === 0) continue;
         if (array_key_exists($key, $GLOBALS['__store'])) $rows[] = ['setting_key' => $key, 'setting_value' => $GLOBALS['__store'][$key]];
     }
     return $rows;
@@ -1414,6 +1417,9 @@ describe.skipIf(!PHP_AVAILABLE)('hero media PHP ↔ Node parity', () => {
     expect(runCli({ op: 'get_settings', store: {} }).raw).toBe('{}');
     const store = { hero_title: 'Judul', hero_bg_mode: 'video' };
     expect(JSON.parse(runCli({ op: 'get_settings', store }).raw)).toEqual(store);
+    // Project-document settings (pd_*) are read through pd_settings_get only, in both backends
+    expect(nodeCase).toContain("WHERE LEFT(setting_key, 3) <> 'pd_'");
+    expect(JSON.parse(runCli({ op: 'get_settings', store: { ...store, pd_company: '{}', PD_TAX: '11' } }).raw)).toEqual(store);
     // Keys that look like list indexes stay an object too
     expect(JSON.parse(runCli({ op: 'get_settings', store: { 0: 'a', 1: 'b' } }).raw)).toEqual({ 0: 'a', 1: 'b' });
   });
