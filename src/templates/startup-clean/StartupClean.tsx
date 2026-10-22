@@ -49,12 +49,13 @@ import { STARTUP_CLEAN_ACCENT } from './defaultContent';
 
 const WRAP = 'mx-auto w-full max-w-[1120px] px-5 @2xl:px-8';
 const SECTION_Y = 'py-16 @3xl:py-24 @5xl:py-28';
-const H2 = 'text-[28px] font-bold leading-[1.1] tracking-[-0.03em] text-fg @3xl:text-[40px] @5xl:text-[46px]';
-const LEAD = 'text-[15px] leading-relaxed text-muted @3xl:text-[18px]';
+const H2 = 'text-[24px] font-bold leading-[1.1] tracking-[-0.03em] text-fg @3xl:text-[40px] @5xl:text-[46px]';
+const LEAD = 'text-[14px] leading-relaxed text-muted @3xl:text-[18px]';
 // Tanpa kelas display agar bisa digabung dengan `hidden @xl:inline-flex` tanpa bentrok
 const BTN_SHAPE = 'relative h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 text-[15px] font-semibold transition-colors';
 const ACCENT_FILL = 'bg-(--tpl-accent) text-(--tpl-on-accent) hover:bg-(--tpl-accent-hover)';
-const BTN = `inline-flex ${BTN_SHAPE}`;
+// Tombol besar (hero, CTA): ringkas di HP (44px, teks 14px), 48px/15px mulai lebar wadah @md
+const BTN = 'relative inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 text-[14px] font-semibold transition-colors @md:h-12 @md:px-6 @md:text-[15px]';
 const BTN_PRIMARY = `${BTN} ${ACCENT_FILL}`;
 const BTN_SECONDARY = `${BTN} bg-white text-fg ring-1 ring-inset ring-line-strong hover:bg-alt`;
 
@@ -192,7 +193,7 @@ function Hero({ m }: { m: CompanyProfileModel }) {
             <span className="truncate">{eyebrow}</span>
           </p>
         )}
-        <h1 className="mx-auto mt-6 max-w-4xl text-[34px] font-bold leading-[1.06] tracking-[-0.035em] text-fg [overflow-wrap:anywhere] @2xl:text-[48px] @5xl:text-[64px]">
+        <h1 className="mx-auto mt-6 max-w-4xl text-[28px] font-bold leading-[1.1] tracking-[-0.03em] text-fg [overflow-wrap:anywhere] @2xl:text-[48px] @2xl:leading-[1.06] @2xl:tracking-[-0.035em] @5xl:text-[64px]">
           {parts ? (
             <>
               {parts[0]}
@@ -336,7 +337,7 @@ function Services({ m }: { m: CompanyProfileModel }) {
                     <Img
                       src={image}
                       alt={field(item, 'title')}
-                      art={big ? 'product' : ART_SEQUENCE[i % ART_SEQUENCE.length]}
+                      art={big ? 'workspace' : ART_SEQUENCE[i % ART_SEQUENCE.length]}
                       className={`${big ? 'aspect-[16/10]' : 'mt-5 aspect-[16/10]'} rounded-2xl ring-1 ring-black/5`}
                     />
                   )}

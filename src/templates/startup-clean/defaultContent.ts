@@ -81,13 +81,15 @@ export const startupCleanContent: SiteContent = {
     eyebrow: 'Galeri',
     title: 'Kirana di lapangan',
     subtitle: 'Momen bersama mitra UMKM dan tim kami.',
+    // Foto demo belum ada: keterangan disamakan dengan ilustrasi pengganti (urutan ART_SEQUENCE: kota, ruang kerja,
+    // tim, lanskap, produk, abstrak) agar gambar dan keterangannya tidak bertolak belakang.
     items: [
+      { image: '', caption: 'Kantor Kirana di Yogyakarta' },
+      { image: '', caption: 'Meja kerja tim produk' },
       { image: '', caption: 'Pelatihan UMKM di Bandung' },
-      { image: '', caption: 'Tim produk saat sprint review' },
-      { image: '', caption: 'Kedai kopi mitra di Yogyakarta' },
-      { image: '', caption: 'Booth Kirana di pameran UMKM' },
+      { image: '', caption: 'Gathering mitra di Kaliurang' },
       { image: '', caption: 'Dasbor laporan di aplikasi' },
-      { image: '', caption: 'Workshop laporan keuangan' },
+      { image: '', caption: 'Identitas visual Kirana' },
     ],
   },
   testimonials: {

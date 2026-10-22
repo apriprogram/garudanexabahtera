@@ -1,5 +1,6 @@
 // Demo template (/demo/:slug): render template layar penuh dengan konten bawaan + bar tipis (kembali, nama, harga,
-// "Pesan template"). Di layar lebar ada pilihan tampilan Desktop / HP (template memakai container query).
+// "Pesan Template"). Di layar lebar ada pilihan tampilan Desktop / HP (template memakai container query); tampilan HP
+// = viewport 390px persis tanpa scrollbar desktop di dalam bingkai.
 import { ArrowLeft, ExternalLink, LayoutTemplate, Monitor, ShoppingBag, Smartphone } from 'lucide-react';
 import { useState, useSyncExternalStore } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -51,8 +52,8 @@ export default function TemplateDemo() {
 
       {template && def && device === 'mobile' && (
         <div className="flex justify-center bg-alt px-6 py-8">
-          <div className="w-[390px] max-w-full overflow-hidden rounded-[36px] bg-surface p-2 shadow-float ring-1 ring-line">
-            <div className="custom-scrollbar h-[min(844px,calc(100svh-64px-80px))] overflow-y-auto overscroll-contain rounded-[28px] ring-1 ring-line [--tpl-sticky-top:0px]">
+          <div className="w-[406px] max-w-full overflow-hidden rounded-[36px] bg-surface p-2 shadow-float ring-1 ring-line">
+            <div className="no-scrollbar h-[min(844px,calc(100svh-64px-88px))] w-[390px] max-w-full overflow-y-auto overscroll-contain rounded-[28px] ring-1 ring-line [--tpl-sticky-top:0px]">
               <SiteRenderer templateCode={template.template_code} content={null} preview />
             </div>
           </div>
@@ -81,7 +82,7 @@ function DemoBar({
       <div className="flex h-14 items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-5">
         <Link
           to={backHref}
-          className="relative flex h-10 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-sm font-medium text-muted transition-colors hover:bg-alt hover:text-fg sm:px-3"
+          className="relative flex h-10 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-sm font-medium text-muted transition-colors after:absolute after:-inset-1 hover:bg-alt hover:text-fg max-sm:w-10 max-sm:justify-center max-sm:px-0 sm:px-3"
           aria-label={template ? 'Kembali ke detail template' : 'Kembali ke katalog template'}
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
@@ -121,7 +122,7 @@ function DemoBar({
                 type="button"
                 onClick={() => onDevice(value)}
                 aria-pressed={device === value}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg aria-pressed:bg-surface aria-pressed:text-fg aria-pressed:shadow-soft"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg aria-pressed:bg-surface aria-pressed:font-semibold aria-pressed:text-fg aria-pressed:ring-1 aria-pressed:ring-inset aria-pressed:ring-line-strong"
               >
                 <Icon className="h-4 w-4" aria-hidden />
                 {label}
@@ -131,9 +132,9 @@ function DemoBar({
         )}
 
         {template && (
-          <Link to={`/pesan/${slug}`} className="btn btn-primary btn-sm shrink-0" aria-label={`Pesan template ${template.name}`}>
+          <Link to={`/pesan/${slug}`} className="btn btn-primary btn-sm shrink-0" aria-label={`Pesan Template ${template.name}`}>
             <ShoppingBag className="h-3.5 w-3.5" aria-hidden />
-            Pesan<span className="max-sm:hidden"> template</span>
+            Pesan<span className="max-sm:hidden"> Template</span>
           </Link>
         )}
       </div>
@@ -153,7 +154,7 @@ function DemoNotFound() {
           Template yang Anda cari tidak ada atau sudah tidak tersedia. Silakan pilih template lain dari katalog kami.
         </p>
         <Link to="/#templates" className="btn btn-primary mt-7">
-          Lihat semua template
+          Lihat Semua Template
         </Link>
       </div>
     </div>
@@ -178,15 +179,16 @@ function DemoUnavailable({ template }: { template: Template }) {
           {external ? (
             <a href={template.demo_url as string} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
               <ExternalLink className="h-4 w-4" aria-hidden />
-              Buka demo
+              Buka Demo
+              <span className="sr-only"> (tab baru)</span>
             </a>
           ) : (
             <Link to={`/template/${encodeURIComponent(template.slug)}`} className="btn btn-primary">
-              Lihat detail template
+              Lihat Detail Template
             </Link>
           )}
           <Link to={`/pesan/${encodeURIComponent(template.slug)}`} className="btn btn-outline">
-            Pesan template
+            Pesan Template
           </Link>
         </div>
       </div>
