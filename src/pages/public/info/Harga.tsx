@@ -12,8 +12,9 @@ import { buildOptionsTable, CMS_INCLUDE, CUSTOM_COST_FACTORS, shortPriceRange, t
 import { getTemplatePricing, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../../hooks/useSiteSettings';
 import { usePriceDate, usePublishedTemplates } from '../../../hooks/usePublishedTemplates';
 import { formatDateId, formatPriceFull, formatPriceRange, isPrice } from '../../../seo/format';
-import { HUB_PATHS, LEGAL_PATHS, categoryPath, templatePath } from '../../../seo/paths';
+import { ARTICLE_SLUGS, HUB_PATHS, LEGAL_PATHS, categoryPath, templatePath } from '../../../seo/paths';
 import { categorySlugOf } from '../../../seo/templateSeo';
+import { guideLink } from '../catalog/guideLink';
 import { ComparisonTable } from './ComparisonTable';
 import { InfoPage, InfoSection, Prose } from './InfoPage';
 
@@ -22,6 +23,30 @@ const TextLink: React.FC<{ to: string; children: React.ReactNode }> = ({ to, chi
     {children}
   </Link>
 );
+
+/** Panduan biaya di pasar (Lampiran A.3); hanya artikel yang sudah terbit yang ditautkan. */
+const COST_GUIDES = [
+  { slug: ARTICLE_SLUGS.websiteCost, anchor: 'biaya pembuatan website company profile' },
+  { slug: ARTICLE_SLUGS.appCost, anchor: 'biaya pembuatan aplikasi Android & iOS' },
+] as const;
+
+const CostGuides: React.FC = () => {
+  const guides = COST_GUIDES.map((guide) => ({ ...guide, link: guideLink([guide.slug]) })).filter((guide) => guide.link.article);
+  if (guides.length === 0) return null;
+  return (
+    <>
+      {' '}
+      Kisaran biaya di pasar kami bahas di panduan{' '}
+      {guides.map((guide, index) => (
+        <React.Fragment key={guide.slug}>
+          {index > 0 && ' dan '}
+          <TextLink to={guide.link.href}>{guide.anchor}</TextLink>
+        </React.Fragment>
+      ))}
+      .
+    </>
+  );
+};
 
 export default function Harga() {
   const { settings } = useSiteSettings();
@@ -195,6 +220,7 @@ export default function Harga() {
           Detail layanannya ada di halaman <TextLink to={HUB_PATHS.webService}>jasa pembuatan website</TextLink> dan{' '}
           <TextLink to={HUB_PATHS.mobileService}>jasa pembuatan aplikasi Android & iOS</TextLink>, atau langsung ceritakan kebutuhan Anda
           lewat <TextLink to={HUB_PATHS.customOrder}>formulir Pesan Custom</TextLink>.
+          <CostGuides />
         </p>
       </InfoSection>
 

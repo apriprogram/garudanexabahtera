@@ -2,6 +2,7 @@
 // /jasa-pembuatan-aplikasi-mobile. Hanya layanan yang benar-benar ditawarkan (form Pesan Custom, strip layanan beranda,
 // Syarat & Ketentuan); proses dan hasil hanya sejauh yang sudah dijanjikan situs dan dokumen legal. Tanpa angka harga.
 // Modul murni (tanpa React): dipakai halaman, *.seo.ts dan tes.
+import { ARTICLE_SLUGS, type PlannedArticleSlug } from '../seo/paths';
 import { MOBILE_SERVICE_META, WEB_SERVICE_META, type ServiceKey, type ServiceMeta } from './servicesMeta';
 
 export type { ServiceKey, ServiceMeta } from './servicesMeta';
@@ -23,6 +24,15 @@ export interface ServiceSection {
   paragraphs: readonly string[];
 }
 
+/** Kalimat penutup dengan tautan ke artikel panduan; tampil hanya bila artikelnya sudah terbit (guideLink). */
+export interface ServiceGuide {
+  slug: PlannedArticleSlug;
+  /** Teks sebelum tautan, mis. "Perbandingan lengkapnya ada di panduan". */
+  lead: string;
+  /** Teks tautan (anchor kontekstual). */
+  anchor: string;
+}
+
 export interface ServiceContent extends ServiceMeta {
   badge: string;
   /** Nilai ?layanan= di /pesan-custom. */
@@ -35,6 +45,8 @@ export interface ServiceContent extends ServiceMeta {
   deliverables: { title: string; intro: string; items: readonly string[] };
   costTitle: string;
   costIntro: string;
+  /** Panduan terkait: `about` di bagian pertama `sections`, `cost` di bagian biaya. */
+  guides: { about?: ServiceGuide; cost?: ServiceGuide };
   faqTitle: string;
   cta: { title: string; text: string };
 }
@@ -123,6 +135,18 @@ export const WEB_SERVICE: ServiceContent = {
   costTitle: 'Faktor yang menentukan biaya website custom',
   costIntro:
     'Kami tidak memasang daftar harga untuk website custom, karena dua website dengan jumlah halaman yang sama bisa sangat berbeda isinya. Biaya disusun dari faktor berikut dan dituliskan di penawaran:',
+  guides: {
+    about: {
+      slug: ARTICLE_SLUGS.templateVsCustom,
+      lead: 'Perbandingan lengkapnya, dari biaya, waktu, fitur, sampai perawatan, ada di panduan',
+      anchor: 'template vs jasa website custom',
+    },
+    cost: {
+      slug: ARTICLE_SLUGS.websiteCost,
+      lead: 'Kisaran biaya di pasar, termasuk domain, hosting, SSL, dan perawatan per tahun, kami rangkum di panduan',
+      anchor: 'biaya membuat website company profile',
+    },
+  },
   faqTitle: 'Pertanyaan tentang jasa pembuatan website',
   cta: {
     title: 'Ceritakan website yang Anda butuhkan',
@@ -152,12 +176,12 @@ export const MOBILE_SERVICE: ServiceContent = {
       },
       {
         title: 'Aplikasi sekolah',
-        text: 'Administrasi dan informasi akademik sekolah dalam satu sistem, seperti i-School.',
+        text: 'Administrasi dan informasi akademik sekolah dalam satu sistem, dari data siswa sampai pengumuman.',
         points: ['Data siswa dan guru', 'Pengumuman untuk orang tua', 'Panel admin sekolah'],
       },
       {
         title: 'Aplikasi pesantren',
-        text: 'Manajemen pesantren yang lebih terstruktur, seperti i-Santri.',
+        text: 'Manajemen data dan informasi pesantren yang lebih terstruktur, untuk pengelola dan wali santri.',
         points: ['Data santri', 'Informasi untuk wali santri', 'Panel pengelola'],
       },
       {
@@ -212,6 +236,13 @@ export const MOBILE_SERVICE: ServiceContent = {
   costTitle: 'Faktor yang menentukan biaya aplikasi',
   costIntro:
     'Biaya aplikasi mobile bergantung pada fitur dan platformnya, jadi kami tidak memasang daftar harga. Faktor berikut menentukan biaya dan dituliskan di penawaran:',
+  guides: {
+    cost: {
+      slug: ARTICLE_SLUGS.appCost,
+      lead: 'Kisaran biaya di pasar dan biaya rutin setelah rilis, seperti akun Google Play dan Apple, kami rangkum di panduan',
+      anchor: 'biaya pembuatan aplikasi Android & iOS',
+    },
+  },
   faqTitle: 'Pertanyaan tentang jasa pembuatan aplikasi',
   cta: {
     title: 'Ceritakan aplikasi yang Anda butuhkan',

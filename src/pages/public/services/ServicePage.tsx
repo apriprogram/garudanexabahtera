@@ -6,9 +6,10 @@ import { Link } from 'react-router-dom';
 import { FaqAccordion } from '../../../components/sections/faq/FaqAccordion';
 import { faqItems } from '../../../content/faq';
 import { CUSTOM_COST_FACTORS } from '../../../content/pricing';
-import { SERVICES, type ServiceContent } from '../../../content/services';
+import { SERVICES, type ServiceContent, type ServiceGuide } from '../../../content/services';
 import { getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../../hooks/useSiteSettings';
 import { HUB_PATHS } from '../../../seo/paths';
+import { guideLink } from '../catalog/guideLink';
 import { InfoPage, InfoSection, Prose } from '../info/InfoPage';
 
 const STEP_ICONS = [MessagesSquare, FileText, ClipboardList, Rocket] as const;
@@ -19,6 +20,18 @@ const TextLink: React.FC<{ to: string; children: React.ReactNode }> = ({ to, chi
     {children}
   </Link>
 );
+
+/** " {lead} {tautan}." ke artikel panduan, atau tidak ada apa-apa selama artikelnya belum terbit. */
+const GuideSentence: React.FC<{ guide?: ServiceGuide }> = ({ guide }) => {
+  const link = guide ? guideLink([guide.slug]) : null;
+  if (!guide || !link?.article) return null;
+  return (
+    <>
+      {' '}
+      {guide.lead} <TextLink to={link.href}>{guide.anchor}</TextLink>.
+    </>
+  );
+};
 
 export const ServicePage: React.FC<{ service: ServiceContent }> = ({ service }) => {
   const { settings } = useSiteSettings();
@@ -72,11 +85,13 @@ export const ServicePage: React.FC<{ service: ServiceContent }> = ({ service }) 
                 <>
                   Lihat dulu <TextLink to={HUB_PATHS.catalog}>template website siap pakai</TextLink> beserta harganya, atau bandingkan
                   biayanya di halaman <TextLink to={HUB_PATHS.pricing}>Harga</TextLink>.
+                  <GuideSentence guide={service.guides.about} />
                 </>
               ) : (
                 <>
                   Butuh website juga? Lihat <TextLink to={HUB_PATHS.webService}>jasa pembuatan website</TextLink> atau{' '}
                   <TextLink to={HUB_PATHS.catalog}>template website siap pakai</TextLink>.
+                  <GuideSentence guide={service.guides.about} />
                 </>
               )}
             </p>
@@ -131,6 +146,7 @@ export const ServicePage: React.FC<{ service: ServiceContent }> = ({ service }) 
           <p>
             {service.costIntro} Harga template siap pakai, sebaliknya, tertera jelas di halaman{' '}
             <TextLink to={HUB_PATHS.pricing}>Harga</TextLink>.
+            <GuideSentence guide={service.guides.cost} />
           </p>
         }
       >

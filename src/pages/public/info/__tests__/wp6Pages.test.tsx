@@ -142,6 +142,28 @@ describe('halaman WP6: prerender + hidrasi', () => {
     expect(el.querySelector('main a[href^="https://wa.me/6285188009152"]')).not.toBeNull();
   });
 
+  it.each([
+    [
+      '/jasa-pembuatan-website',
+      [
+        ['/panduan/template-vs-jasa-website-custom', 'template vs jasa website custom'],
+        ['/panduan/biaya-website-company-profile', 'biaya membuat website company profile'],
+      ],
+    ],
+    ['/jasa-pembuatan-aplikasi-mobile', [['/panduan/biaya-aplikasi-android-ios', 'biaya pembuatan aplikasi Android & iOS']]],
+    [
+      '/harga',
+      [
+        ['/panduan/biaya-website-company-profile', 'biaya pembuatan website company profile'],
+        ['/panduan/biaya-aplikasi-android-ios', 'biaya pembuatan aplikasi Android & iOS'],
+      ],
+    ],
+  ])('%s menautkan artikel panduan terkait dengan anchor kontekstual (§5.8, Lampiran A.3)', async (path, expected) => {
+    const { problems, el } = await hydrate(path);
+    expect(problems).toEqual([]);
+    expect([...el.querySelectorAll('main a[href^="/panduan/"]')].map((a) => [a.getAttribute('href'), a.textContent])).toEqual(expected);
+  });
+
   it('/harga: tabel semua template dari data + "Harga berlaku per", dua tabel perbandingan, FAQ = JSON-LD', async () => {
     const { html, problems, el } = await hydrate('/harga');
     expect(problems).toEqual([]);
