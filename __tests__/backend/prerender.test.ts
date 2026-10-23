@@ -24,6 +24,7 @@ import {
   preloadSettings,
   prerenderApiBase,
   scriptJson,
+  unreviewedArticles,
   seoFallbackContext,
   stripPageHead,
   validateCatalog,
@@ -309,6 +310,13 @@ describe('data source', () => {
     );
     expect(prerenderApiBase({ strict: false, env: { PRERENDER_API: 'http://127.0.0.1:8000' } })).toBe('http://127.0.0.1:8000');
     expect(() => prerenderApiBase({ strict: false, env: { PRERENDER_API: 'bukan url' } })).toThrow(/bukan URL/);
+  });
+
+  it('finds unreviewed guide articles (a real deploy refuses them)', () => {
+    expect(unreviewedArticles([{ slug: 'a', reviewed: null }, { slug: 'b', reviewed: '2026-11-06' }, { slug: 'c', reviewed: '' }])).toEqual(['a', 'c']);
+    expect(unreviewedArticles([])).toEqual([]);
+    const source = readFileSync(join(ROOT, 'scripts', 'prerender.mjs'), 'utf8');
+    expect(source).toMatch(/if \(strict\) throw new Error\(`Artikel panduan belum ditinjau/);
   });
 
   it('the deploy commit records where the data came from', () => {

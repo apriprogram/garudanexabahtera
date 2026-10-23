@@ -16,7 +16,7 @@ export function renderSummariesModule(articles: readonly ArticleMeta[]): string 
   const summaries = sortArticles(articles.map(toSummary));
   if (summaries.length === 0) return [...HEADER, 'export const ARTICLE_SUMMARIES: readonly ArticleSummary[] = [];', ''].join('\n');
   const items = summaries.map((summary) =>
-    ['  {', ...SUMMARY_KEYS.map((key) => `    ${key}: ${quote(summary[key])},`), '  },'].join('\n'),
+    ['  {', ...SUMMARY_KEYS.map((key) => `    ${key}: ${summary[key] === null ? 'null' : quote(summary[key])},`), '  },'].join('\n'),
   );
   return [...HEADER, 'export const ARTICLE_SUMMARIES: readonly ArticleSummary[] = [', ...items, '];', ''].join('\n');
 }

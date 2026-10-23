@@ -13,7 +13,7 @@ import { articleHeadings, countWords, proseBeforeSources, readingMinutes, type A
 import { getFullArticle } from '../../../content/panduan/bodies';
 import { resolvePlaceholders } from '../../../content/panduan/placeholders';
 import { usePriceDate, usePublishedTemplates } from '../../../hooks/usePublishedTemplates';
-import { HUB_PATHS, TEMPLATE_PREFIX, CATEGORY_PREFIX } from '../../../seo/paths';
+import { HUB_PATHS, TEMPLATE_PREFIX, CATEGORY_PREFIX, GUIDE_PREFIX } from '../../../seo/paths';
 import NotFound from '../NotFound';
 import { ArticleMarkdown } from './ArticleMarkdown';
 import { ArticleCards, ArticleCtaBox, ArticleDates, AuthorBox } from './ui';
@@ -50,9 +50,14 @@ export default function PanduanArticle() {
 
   if (!summary || !article) return <NotFound />;
 
-  // Template yang tidak lagi terbit (setelah data siap) → katalog, supaya tautan di artikel tidak berakhir 404
+  // Template yang tidak lagi terbit (setelah data siap) → katalog, dan artikel lain yang belum terbit (draf) → /panduan,
+  // supaya tautan di artikel tidak berakhir 404
   const published = new Set(templates.map((t) => t.slug));
   const resolveHref = (href: string): string => {
+    if (href.startsWith(GUIDE_PREFIX)) {
+      const guideSlug = href.slice(GUIDE_PREFIX.length).split(/[/?#]/, 1)[0];
+      return getArticle(guideSlug) ? href : HUB_PATHS.guides;
+    }
     if (status !== 'ready' || !href.startsWith(TEMPLATE_PREFIX) || href.startsWith(CATEGORY_PREFIX)) return href;
     const templateSlug = href.slice(TEMPLATE_PREFIX.length).split(/[/?#]/, 1)[0];
     return templateSlug && !published.has(templateSlug) ? HUB_PATHS.catalog : href;

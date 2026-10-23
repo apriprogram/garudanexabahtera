@@ -2,11 +2,12 @@
 // Jalankan: npx vitest run src/content/panduan
 // Pemuat artikel panduan: frontmatter sederhana tanpa dependensi, validasi, urutan terbaru dulu, penolong Markdown.
 import { describe, expect, it } from 'vitest';
-import { getArticle, listArticles } from '..';
+import { getArticle, listArticles, SHOW_DRAFT_ARTICLES } from '..';
 import {
   articleHeadings,
   countWords,
   headingId,
+  isPublishedArticle,
   markdownLinks,
   parseArticle,
   parseFrontmatter,
@@ -95,6 +96,16 @@ describe('parseArticle', () => {
     expect(() => parseArticle(swap("'website-klinik-kecantikan'", 'Bukan Slug'))).toThrow(/related/);
   });
 
+  it('reviewed opsional: tanpa baris = draf (null), selain itu tanggal YYYY-MM-DD', () => {
+    expect(parseArticle(ARTICLE).reviewed).toBeNull();
+    const withReviewed = (value: string) => ARTICLE.replace('slug: biaya', `reviewed: ${value}\r\nslug: biaya`);
+    expect(parseArticle(withReviewed('2026-11-06')).reviewed).toBe('2026-11-06');
+    expect(parseArticle(withReviewed('"2026-11-06"')).reviewed).toBe('2026-11-06');
+    expect(() => parseArticle(withReviewed('ya'))).toThrow(/reviewed "ya"/);
+    expect(() => parseArticle(withReviewed('2026-02-30'))).toThrow(/reviewed/);
+    expect(() => parseArticle(withReviewed('[2026-11-06]'))).toThrow(/reviewed/);
+  });
+
   it('cta opsional: bawaan template, nilai lain harus template | website | mobile', () => {
     const withCta = (value: string) => ARTICLE.replace('slug: biaya', `cta: ${value}\r\nslug: biaya`);
     expect(parseArticle(withCta('mobile')).cta).toBe('mobile');
@@ -106,7 +117,7 @@ describe('parseArticle', () => {
 
 describe('sortArticles, listArticles, getArticle', () => {
   const make = (slug: string, datePublished: string, dateModified = datePublished): Article => ({
-    title: slug, description: slug, slug, author: 'Tim Garuda Nexa', datePublished, dateModified, cta: 'template', sources: [], related: [], body: '',
+    title: slug, description: slug, slug, author: 'Tim Garuda Nexa', datePublished, dateModified, reviewed: null, cta: 'template', sources: [], related: [], body: '',
   });
 
   it('terbaru dulu, seri → dateModified, lalu slug; slug ganda ditolak', () => {
@@ -131,9 +142,18 @@ describe('sortArticles, listArticles, getArticle', () => {
     expect(getArticle('tidak-ada')).toBeUndefined();
   });
 
+  it('draf (tanpa reviewed) tidak terbit di build production; server dev & tes menampilkannya', () => {
+    expect(isPublishedArticle({ reviewed: '2026-11-06' })).toBe(true);
+    expect(isPublishedArticle({ reviewed: null })).toBe(false);
+    expect(isPublishedArticle({ reviewed: '' })).toBe(false);
+    expect(isPublishedArticle({ reviewed: null }, true)).toBe(true);
+    // Vitest = mode dev: listArticles() memuat draf, sama seperti server dev Vite
+    expect(SHOW_DRAFT_ARTICLES).toBe(true);
+  });
+
   it('toSummary mengambil kunci ringkasan saja', () => {
     expect(toSummary(make('a', '2026-01-01'))).toEqual({
-      slug: 'a', title: 'a', description: 'a', author: 'Tim Garuda Nexa', datePublished: '2026-01-01', dateModified: '2026-01-01',
+      slug: 'a', title: 'a', description: 'a', author: 'Tim Garuda Nexa', datePublished: '2026-01-01', dateModified: '2026-01-01', reviewed: null,
     });
   });
 });

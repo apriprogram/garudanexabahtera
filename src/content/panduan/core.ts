@@ -17,6 +17,11 @@ export interface ArticleMeta {
   datePublished: string;
   /** YYYY-MM-DD, tidak sebelum datePublished */
   dateModified: string;
+  /**
+   * YYYY-MM-DD saat artikel selesai disunting dan dicek faktanya oleh manusia (SEO-PLAN §5.8). null = draf: tidak
+   * terbit di build production (lihat isPublishedArticle dan index.ts).
+   */
+  reviewed: string | null;
   /** Ajakan di akhir artikel. */
   cta: ArticleCta;
   /** URL sumber eksternal */
@@ -35,9 +40,24 @@ export interface Article extends ArticleMeta {
  * artikel terkait, supaya isi Markdown hanya dimuat chunk halaman artikel. Dibuat dari frontmatter ke
  * articles.generated.ts (lihat index.ts).
  */
-export type ArticleSummary = Pick<ArticleMeta, 'slug' | 'title' | 'description' | 'author' | 'datePublished' | 'dateModified'>;
+export type ArticleSummary = Pick<ArticleMeta, 'slug' | 'title' | 'description' | 'author' | 'datePublished' | 'dateModified' | 'reviewed'>;
 
-export const SUMMARY_KEYS = ['slug', 'title', 'description', 'author', 'datePublished', 'dateModified'] as const satisfies readonly (keyof ArticleSummary)[];
+export const SUMMARY_KEYS = [
+  'slug',
+  'title',
+  'description',
+  'author',
+  'datePublished',
+  'dateModified',
+  'reviewed',
+] as const satisfies readonly (keyof ArticleSummary)[];
+
+/**
+ * Artikel terbit = sudah ditinjau manusia (`reviewed` terisi). Draf hanya ikut bila `showDrafts` (server dev Vite, tes,
+ * atau build pratinjau dengan VITE_PANDUAN_DRAFTS=1, yang ditolak deploy sungguhan).
+ */
+export const isPublishedArticle = (article: Pick<ArticleMeta, 'reviewed'>, showDrafts = false): boolean =>
+  showDrafts || Boolean(article.reviewed);
 
 type Sortable = Pick<ArticleMeta, 'slug' | 'datePublished' | 'dateModified'>;
 

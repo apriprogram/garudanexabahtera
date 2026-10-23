@@ -11,12 +11,16 @@
 //   author: Tim Garuda Nexa
 //   datePublished: 2026-11-02
 //   dateModified: 2026-11-02
+//   reviewed: 2026-11-02
 //   cta: template
 //   sources:
 //     - https://contoh.go.id/data-harga
 //   related: [template-vs-jasa-website-custom, website-klinik-kecantikan]
 //   ---
 // `author` = nama di src/content/authors.ts. `cta` (opsional): template (bawaan) | website | mobile.
+// `reviewed` (opsional): tanggal artikel selesai disunting dan dicek faktanya oleh manusia (SEO-PLAN §5.8). Tanpa
+// `reviewed` artikel adalah draf: tampil di server dev dan tes, tetapi tidak terbit di build production (halaman,
+// daftar /panduan, beranda, sitemap, llms.txt, tautan dari halaman lain).
 // Nilai boleh diapit tanda kutip. Daftar: baris "- item" di bawah kuncinya, atau [a, b] dalam satu baris; [] = kosong.
 // Baris kosong dan baris komentar (#) diabaikan.
 import { ARTICLE_CTAS, type Article, type ArticleCta, type ArticleMeta } from './core';
@@ -107,6 +111,11 @@ export function parseArticle(raw: string, fileSlug?: string): Article {
   const cta = data.cta ?? 'template';
   if (typeof cta !== 'string' || !isCta(cta)) throw new Error(`${where}: cta "${String(cta)}" harus salah satu dari ${ARTICLE_CTAS.join(', ')}.`);
   meta.cta = cta;
+  const reviewed = data.reviewed;
+  if (reviewed !== undefined && (typeof reviewed !== 'string' || !isValidDate(reviewed.trim()))) {
+    throw new Error(`${where}: reviewed "${String(reviewed)}" harus tanggal YYYY-MM-DD (hapus barisnya selama artikel masih draf).`);
+  }
+  meta.reviewed = typeof reviewed === 'string' ? reviewed.trim() : null;
   const article = { ...(meta as ArticleMeta), body };
   if (!SLUG_PATTERN.test(article.slug)) throw new Error(`${where}: slug "${article.slug}" hanya boleh huruf kecil, angka, dan tanda hubung.`);
   if (fileSlug !== undefined && fileSlug !== article.slug) throw new Error(`${where}: slug "${article.slug}" harus sama dengan nama file.`);

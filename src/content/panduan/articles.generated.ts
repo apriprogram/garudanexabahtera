@@ -10,6 +10,7 @@ export const ARTICLE_SUMMARIES: readonly ArticleSummary[] = [
     author: 'Tim Garuda Nexa',
     datePublished: '2026-10-23',
     dateModified: '2026-10-23',
+    reviewed: null,
   },
   {
     slug: 'biaya-website-company-profile',
@@ -18,6 +19,7 @@ export const ARTICLE_SUMMARIES: readonly ArticleSummary[] = [
     author: 'Tim Garuda Nexa',
     datePublished: '2026-10-23',
     dateModified: '2026-10-23',
+    reviewed: null,
   },
   {
     slug: 'template-vs-jasa-website-custom',
@@ -26,6 +28,7 @@ export const ARTICLE_SUMMARIES: readonly ArticleSummary[] = [
     author: 'Tim Garuda Nexa',
     datePublished: '2026-10-23',
     dateModified: '2026-10-23',
+    reviewed: null,
   },
   {
     slug: 'website-klinik-kecantikan',
@@ -34,5 +37,6 @@ export const ARTICLE_SUMMARIES: readonly ArticleSummary[] = [
     author: 'Tim Garuda Nexa',
     datePublished: '2026-10-23',
     dateModified: '2026-10-23',
+    reviewed: null,
   },
 ];

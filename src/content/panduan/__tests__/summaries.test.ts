@@ -32,6 +32,7 @@ describe('summariesProblem', () => {
     author: 'Tim Garuda Nexa',
     datePublished: '2026-10-23',
     dateModified: '2026-10-23',
+    reviewed: null,
     cta: 'template',
     sources: [],
     related: [],

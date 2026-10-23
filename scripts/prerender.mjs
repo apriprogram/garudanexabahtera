@@ -423,6 +423,9 @@ async function optionalModule(root, rel, exportsNeeded, strict, { required = tru
 
 // ─── Utama ───────────────────────────────────────────────────────────────────
 
+/** Slug artikel panduan yang belum ditinjau manusia (frontmatter tanpa `reviewed`, SEO-PLAN §5.8). */
+export const unreviewedArticles = (articles) => articles.filter((article) => !article?.reviewed).map((article) => article.slug);
+
 /**
  * Sumber data prerender: PRERENDER_API, bawaan https://garudanexa.com. Deploy sungguhan (strict) hanya boleh memakai
  * API production: PRERENDER_API=http://127.0.0.1:8000 yang tertinggal di shell setelah uji --build-only akan menerbitkan
@@ -467,6 +470,14 @@ export async function prerender({ root, outDir, deployDir, strict }) {
 
   log('build SSR…');
   const ssr = await buildServerBundle(root, join(deployDir, 'ssr'));
+
+  // Artikel panduan yang belum disunting & dicek faktanya oleh manusia (draf, tanpa `reviewed`) tidak boleh terbit
+  // (SEO-PLAN §5.8). Build production sudah menyaringnya; yang sampai ke sini hanya draf dari VITE_PANDUAN_DRAFTS=1.
+  const drafts = unreviewedArticles(ssr.listArticles?.() ?? []);
+  if (drafts.length) {
+    if (strict) throw new Error(`Artikel panduan belum ditinjau (tanpa "reviewed"): ${drafts.join(', ')}. Deploy tanpa VITE_PANDUAN_DRAFTS=1.`);
+    warn(`draf panduan ikut build pratinjau (VITE_PANDUAN_DRAFTS=1): ${drafts.join(', ')}`);
+  }
 
   log(`data dari ${apiBase} (minimal ${minTemplates} template)…`);
   const { api, slugs } = await fetchSiteData(apiBase, ssr.PRELOAD_URLS, minTemplates);
