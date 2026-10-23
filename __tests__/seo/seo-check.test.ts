@@ -218,6 +218,8 @@ describe('tes negatif', () => {
       '/_pre/index.html',
       '/%5Fpre/index.html',
       '/app.html',
+      '/404.html',
+      '/404%2Ehtml',
       '/seo.php?slug=aura-studio',
       '/seo%2Ephp?slug=aura-studio',
       '/akun',
@@ -230,6 +232,11 @@ describe('tes negatif', () => {
       expect(paths).toContain(path);
     }
     expect(negativeCases(HOST, null).some((c: { path: string }) => c.path.includes('null'))).toBe(false);
+  });
+
+  it('404.html yang dibuka langsung harus 410, bukan 404 atau 500', () => {
+    expect(checkNegative(byPath('/404.html'), { status: 410, headers: {}, body: '' })).toEqual([]);
+    expect(checkNegative(byPath('/404.html'), { status: 500, headers: {}, body: '' })).toEqual(['HTTP 500 (harus 410)']);
   });
 
   it('301 harus satu lompatan ke https host utama', () => {
@@ -289,6 +296,8 @@ describe('runSeoCheck (server tiruan)', () => {
       [`${HOST} /llms.txt`]: plain('# Garuda Nexa'),
       [`${HOST} /llms-full.txt`]: plain('# Garuda Nexa'),
       [`${HOST} /robots.txt`]: plain('User-agent: *\nAllow: /\n\nSitemap: https://garudanexa.com/sitemap.xml\n'),
+      [`${HOST} /404.html`]: { status: 410, headers: { 'content-type': 'text/html' } },
+      [`${HOST} /404%2Ehtml`]: { status: 410, headers: { 'content-type': 'text/html' } },
       ...override,
     };
     const get = async ({ url, hostHeader }: { url: string; hostHeader: string | null }) => {

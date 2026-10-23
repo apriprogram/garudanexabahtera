@@ -218,7 +218,8 @@ describe('.htaccess routing (main host only)', () => {
 
   it('keeps the rule order: internal files blocked → ai-chat → trailing slash → prerender → seo.php → app → buyer SPA → 404', () => {
     const order = [
-      pos('RewriteCond %{THE_REQUEST} \\s/+(_pre([/?\\s]|$)|app\\.html|404\\.html|seo\\.php) [NC]'),
+      pos('RewriteCond %{THE_REQUEST} \\s/+(_pre([/?\\s]|$)|app\\.html|seo\\.php) [NC]'),
+      pos('RewriteCond %{THE_REQUEST} \\s/+404\\.html[\\s?] [NC]'),
       pos('RewriteRule ^api/ai-chat/?$ api.php?action=ai_chat [QSA,L]'),
       pos('RewriteRule ^(.+?)/+$ https://garudanexa.com/$1 [R=301,L]'),
       pos('# BEGIN gn-prerender'),
@@ -235,9 +236,10 @@ describe('.htaccess routing (main host only)', () => {
   });
 
   it('blocks direct requests for internal files but not similar public paths', () => {
-    const rule = new RegExp(String.raw`\s/+(_pre([/?\s]|$)|app\.html|404\.html|seo\.php)`, 'i');
+    expect(HTACCESS).toContain('RewriteCond %{THE_REQUEST} \\s/+(_pre([/?\\s]|$)|app\\.html|seo\\.php) [NC]');
+    const rule = new RegExp(String.raw`\s/+(_pre([/?\s]|$)|app\.html|seo\.php)`, 'i');
     const line = (path: string) => `GET ${path} HTTP/1.1`;
-    for (const path of ['/_pre/index.html', '/_pre', '/_pre?x', '//_pre/template/finova.html', '/app.html', '/404.html', '/seo.php?slug=finova']) {
+    for (const path of ['/_pre/index.html', '/_pre', '/_pre?x', '//_pre/template/finova.html', '/app.html', '/seo.php?slug=finova']) {
       expect(rule.test(line(path)), path).toBe(true);
     }
     for (const path of ['/', '/template/finova', '/pesan-custom', '/_preview', '/api.php?action=get_settings', '/assets/app.js']) {
@@ -245,23 +247,34 @@ describe('.htaccess routing (main host only)', () => {
     }
   });
 
+  it('answers a direct /404.html with 410, never R=404 (LiteSpeed returns 500 for a 404 on its own ErrorDocument)', () => {
+    const goneRule = ['RewriteCond %{ENV:REDIRECT_STATUS} ^$', 'RewriteCond %{THE_REQUEST} \\s/+404\\.html[\\s?] [NC]', 'RewriteRule ^ - [G,L]'].join('\n  ');
+    expect(HTACCESS).toContain(goneRule);
+    expect(HTACCESS).toContain('RewriteRule ^/*404\\.html$ - [G,L,NC]');
+    expect(HTACCESS).not.toMatch(/404\\\.html[^\n]*\[R=404/);
+    const rule = new RegExp(String.raw`\s/+404\.html[\s?]`, 'i');
+    for (const path of ['/404.html', '//404.html', '/404.html?x']) expect(rule.test(`GET ${path} HTTP/1.1`), path).toBe(true);
+    // The ErrorDocument subrequest of an ordinary 404 keeps the original request line, so it is never caught
+    for (const path of ['/halaman-tidak-ada', '/template/tidak-ada', '/x404.html']) expect(rule.test(`GET ${path} HTTP/1.1`), path).toBe(false);
+  });
+
   it('also blocks percent-encoded requests for internal files (matched on the decoded path)', () => {
     const encodedRule = [
       'RewriteCond %{ENV:REDIRECT_STATUS} ^$',
       'RewriteCond %{THE_REQUEST} ^\\S+\\s+[^?\\s]*%',
-      'RewriteRule ^/*(_pre(/|$)|app\\.html$|404\\.html$|seo\\.php$) - [R=404,L,NC]',
+      'RewriteRule ^/*(_pre(/|$)|app\\.html$|seo\\.php$) - [R=404,L,NC]',
     ].join('\n  ');
     expect(HTACCESS).toContain(encodedRule);
     // Sebelum aturan rute (garis miring, prerender, seo.php), sesudah blok file internal biasa
     expect(pos(encodedRule)).toBeGreaterThan(pos('RewriteCond %{THE_REQUEST} \\s/+(_pre'));
     expect(pos(encodedRule)).toBeLessThan(pos('# BEGIN gn-prerender'));
     const hasPercent = /^\S+\s+[^?\s]*%/;
-    const decodedPath = /^\/*(_pre(\/|$)|app\.html$|404\.html$|seo\.php$)/i;
+    const decodedPath = /^\/*(_pre(\/|$)|app\.html$|seo\.php$)/i;
     const blocked = (requestPath: string) => {
       const [path] = requestPath.split('?');
       return hasPercent.test(`GET ${requestPath} HTTP/1.1`) && decodedPath.test(decodeURIComponent(path).replace(/^\//, ''));
     };
-    for (const path of ['/%5Fpre/index.html', '/%5fpre/template/finova.html', '/%5Fpre/seo-fallback.json', '/seo%2Ephp?slug=finova', '/app%2Ehtml', '/404%2Ehtml', '/%61pp.html']) {
+    for (const path of ['/%5Fpre/index.html', '/%5fpre/template/finova.html', '/%5Fpre/seo-fallback.json', '/seo%2Ephp?slug=finova', '/app%2Ehtml', '/%61pp.html']) {
       expect(blocked(path), path).toBe(true);
     }
     for (const path of ['/harga', '/template/finova', '/template?q=%5Fpre', '/assets/foto%20baru.jpg', '/%5Fpreview']) {

@@ -13,8 +13,8 @@
 //    <main> untuk halaman template.
 // 2. Harga: Offer di JSON-LD Product setiap halaman template sama dengan harga get_templates, dan setiap template yang
 //    terbit ada di sitemap (kalau tidak: deploy ulang, lihat deploy/cpanel/README.md).
-// 3. Tes negatif (tabel §5.2): 404 untuk halaman yang tidak ada dan file internal (_pre/, app.html, 404.html,
-//    seo.php), 200 + noindex untuk rute aplikasi, 301 satu lompatan untuk www, /index.html dan garis miring di akhir,
+// 3. Tes negatif (tabel §5.2): 404 untuk halaman yang tidak ada dan file internal (_pre/, app.html, seo.php), 410
+//    untuk 404.html yang dibuka langsung, 200 + noindex untuk rute aplikasi, 301 satu lompatan untuk www, /index.html dan garis miring di akhir,
 //    llms.txt / llms-full.txt / robots.txt sebagai text/plain.
 //
 // Sopan: request berurutan dengan jeda, User-Agent jujur "GarudaNexaSeoCheck/1.0" (bukan UA crawler), tanpa coba
@@ -310,7 +310,9 @@ export function negativeCases(host, slug) {
     // Versi %-encoding (THE_REQUEST belum di-decode, deploy/cpanel/htaccess punya aturan khusus)
     { path: '/%5Fpre/index.html', expect: { status: 404 } },
     { path: '/app.html', expect: { status: 404 } },
-    { path: '/404.html', expect: { status: 404 } },
+    // 404.html = ErrorDocument: dibuka langsung dijawab 410, bukan 404 (LiteSpeed menjawab 500 untuk 404 atas dirinya)
+    { path: '/404.html', expect: { status: 410 } },
+    { path: '/404%2Ehtml', expect: { status: 410 } },
     { path: '/akun', expect: { status: 200, noindex: true } },
     { path: '/masuk', expect: { status: 200, noindex: true } },
     { path: '/daftar', expect: { status: 200, noindex: true } },

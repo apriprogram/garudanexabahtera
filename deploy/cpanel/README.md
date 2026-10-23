@@ -76,7 +76,8 @@ Aturan host utama hanya berlaku untuk `HTTP_HOST = garudanexa.com`. Domain situs
 | `/template/{slug}` yang belum diprerender | `seo.php`: 200 bila template terbit, selain itu 404 dengan isi `404.html` |
 | `/akun*`, `/admin*`, `/pesan/*`, `/demo/*`, `/situs/*`, `/masuk`, `/daftar`, `/login`, `/auth` | 200, `app.html` (`noindex,follow`). `/pesan-custom` tidak termasuk |
 | Path dengan garis miring di akhir (bukan folder nyata) | 301 ke versi tanpa garis miring |
-| `/_pre/…`, `/app.html`, `/404.html`, `/seo.php` (dibuka langsung) | 404 |
+| `/_pre/…`, `/app.html`, `/seo.php` (dibuka langsung) | 404 |
+| `/404.html` (dibuka langsung) | 410. Halaman itu sendiri adalah ErrorDocument 404; LiteSpeed menjawab 500 bila diminta menampilkannya untuk 404 atas dirinya |
 | Selebihnya (bukan file atau folder nyata) | 404 asli, isi `404.html` |
 | File nyata (`/assets/…`, `/api.php`, `/robots.txt`, `/llms.txt`, `/.well-known/…`) | tetap dilayani. `modules/` tetap 403 |
 
