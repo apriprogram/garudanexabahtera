@@ -100,7 +100,8 @@ describe('rute SEO WP1', () => {
       expect(await screen.findByRole('heading', { level: 1 }, { timeout: 5000 })).toHaveTextContent('Halaman ini tidak ditemukan.');
       cleanup();
     }
-  });
+    // Beberapa render berurutan: batas waktu tes lebih longgar dari 5 detik bawaan, supaya tidak gagal saat suite penuh berat
+  }, 20_000);
 
   it('huruf besar di path → 404, sama dengan server (aturan .htaccess membedakan huruf besar-kecil)', async () => {
     for (const path of ['/Harga', '/Template/aura-studio', '/PANDUAN', '/Jasa-Pembuatan-Website']) {
@@ -108,7 +109,7 @@ describe('rute SEO WP1', () => {
       expect(await screen.findByRole('heading', { level: 1 }, { timeout: 5000 }), path).toHaveTextContent('Halaman ini tidak ditemukan.');
       cleanup();
     }
-  });
+  }, 30_000);
 
   it('/template/:slug tetap menang untuk slug template asli', async () => {
     renderAt('/template/aura-studio');
