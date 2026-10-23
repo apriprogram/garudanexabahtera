@@ -34,13 +34,15 @@ const PF_SITE_IMAGE_MAX_BYTES = 2097152;  // one image inside site content (2 MB
 const PF_SITE_IMAGE_MAX_COUNT = 30;       // new images in one save
 const PF_SITE_IMAGE_EXTS = ['png', 'jpg', 'webp', 'gif']; // customer CMS images: raster only, never SVG
 const PF_MAX_PENDING_ORDERS = 5;          // unpaid orders one customer may have at the same time
+const PF_FIRST_ORDER_DISCOUNT_PERCENT = 20; // automatic discount on an account's first template order (owner 2026-10-23)
+const PF_FIRST_ORDER_DISCOUNT_CODE = 'PERTAMA20';
 const PF_SNAP_REUSE_HOURS = 23;           // a Snap token lives 24 hours
 const PF_GENERATED_ASSET = '/_[0-9a-f]{12}\.[a-z0-9]+$/'; // names made by save_base64_asset (never seed files)
 
 // Reads may use GET (query string) as well as POST; every other platform action is POST only
 const PF_GET_ACTIONS = [
     'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'get_payment_config',
-    'customer_get_orders', 'customer_get_order', 'customer_get_site',
+    'customer_get_orders', 'customer_get_order', 'customer_get_site', 'customer_get_order_quote',
     'admin_get_template_orders', 'admin_get_template_order', 'admin_get_templates', 'admin_get_active_sites',
     'admin_dashboard_summary',
 ];
@@ -58,6 +60,7 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
         'get_payment_config' => 'pf_get_payment_config',
         // customer (own data only)
         'customer_create_order' => 'pf_customer_create_order',
+        'customer_get_order_quote' => 'pf_customer_get_order_quote',
         'customer_pay_order' => 'pf_customer_pay_order',
         'customer_get_orders' => 'pf_customer_get_orders',
         'customer_get_order' => 'pf_customer_get_order',
@@ -307,13 +310,17 @@ function pf_customer_create_order(mysqli $conn, array $input, ?array $user): arr
         throw new ApiError('Anda masih punya ' . $pending . ' pesanan yang belum dibayar. Selesaikan atau batalkan dulu sebelum memesan lagi.', 409, 'TOO_MANY_PENDING');
     }
 
+    // Harga yang dibayar = harga template dikurangi diskon pesanan pertama (bila berlaku); harga katalog tetap dicatat
+    $quote = pf_first_order_quote($conn, (int)$user['id'], (float)$template['price']);
     $orderId = 0;
     for ($try = 0; $try < 5 && !$orderId; $try++) {
         try {
-            db_run($conn, "INSERT INTO template_orders (order_number, user_id, template_id, template_name, template_code, price,
-                               customer_name, customer_email, customer_phone, company_name, notes, domain_primary, domain_alternative)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-                pf_new_order_number(), $user['id'], (int)$template['id'], $template['name'], $template['template_code'], (float)$template['price'],
+            db_run($conn, "INSERT INTO template_orders (order_number, user_id, template_id, template_name, template_code, price, list_price,
+                               discount_amount, discount_code, customer_name, customer_email, customer_phone, company_name, notes,
+                               domain_primary, domain_alternative)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+                pf_new_order_number(), $user['id'], (int)$template['id'], $template['name'], $template['template_code'], $quote['price'],
+                $quote['list_price'], $quote['discount_amount'], $quote['discount_code'],
                 $customerName, $customerEmail, $customerPhone, $companyName, $notes, $domainPrimary, $domainAlternative,
             ]);
             $orderId = (int)$conn->insert_id;
@@ -339,6 +346,39 @@ function pf_customer_create_order(mysqli $conn, array $input, ?array $user): arr
     $out = ['order' => pf_order_out(pf_order_by_id($conn, $orderId), false), 'payment_url' => $paymentUrl];
     if ($paymentError !== null) $out['payment_error'] = $paymentError;
     return $out;
+}
+
+/**
+ * Diskon otomatis pesanan template pertama (PF_FIRST_ORDER_DISCOUNT_PERCENT): berlaku selama akun belum punya pesanan
+ * template lain yang tidak dibatalkan / ditolak. Dibulatkan ke rupiah utuh; template gratis tidak diberi diskon.
+ */
+function pf_first_order_quote(mysqli $conn, int $userId, float $listPrice): array {
+    $others = (int)db_one($conn, "SELECT COUNT(*) AS c FROM template_orders WHERE user_id = ? AND status NOT IN ('dibatalkan', 'ditolak')",
+        [$userId])['c'];
+    $percent = ($others === 0 && $listPrice > 0) ? PF_FIRST_ORDER_DISCOUNT_PERCENT : 0;
+    $discount = $percent > 0 ? round($listPrice * $percent / 100) : 0.0;
+    return [
+        'list_price' => $listPrice,
+        'discount_percent' => $percent,
+        'discount_amount' => (float)$discount,
+        'discount_code' => $percent > 0 ? PF_FIRST_ORDER_DISCOUNT_CODE : null,
+        'price' => $listPrice - $discount,
+    ];
+}
+
+// Harga yang akan dibayar akun ini untuk template (untuk halaman pesan, sebelum pesanan dibuat)
+function pf_customer_get_order_quote(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    $templateId = in_int($input, 'template_id');
+    $template = $templateId > 0 ? db_one($conn, "SELECT id, price FROM templates WHERE id = ? AND status = 'published' LIMIT 1", [$templateId]) : null;
+    if (!$template) throw new ApiError('Template tidak ditemukan atau belum tersedia.', 404, 'TEMPLATE_NOT_FOUND');
+    $quote = pf_first_order_quote($conn, (int)$user['id'], (float)$template['price']);
+    return ['quote' => [
+        'list_price' => pf_num($quote['list_price']),
+        'discount_percent' => $quote['discount_percent'],
+        'discount_amount' => pf_num($quote['discount_amount']),
+        'price' => pf_num($quote['price']),
+    ]];
 }
 
 function pf_customer_pay_order(mysqli $conn, array $input, ?array $user): array {
@@ -964,6 +1004,10 @@ function pf_order_out(array $r, bool $staff): array {
         'template_code' => $r['template_code'],
         'template_slug' => $r['template_slug'] ?? null,
         'price' => pf_num($r['price']),
+        // Harga katalog & diskon pesanan pertama; pesanan lama (sebelum kolom ini ada) = tanpa diskon
+        'list_price' => pf_num($r['list_price'] ?? $r['price']),
+        'discount_amount' => pf_num($r['discount_amount'] ?? 0),
+        'discount_code' => $r['discount_code'] ?? null,
         'customer_name' => $r['customer_name'],
         'customer_email' => $r['customer_email'],
         'customer_phone' => $r['customer_phone'],

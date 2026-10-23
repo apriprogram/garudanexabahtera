@@ -44,7 +44,7 @@ const ANY_ROLE_ACTIONS = [
 ];
 const CUSTOMER_ACTIONS = [
     'customer_create_order', 'customer_pay_order', 'customer_get_orders', 'customer_get_order',
-    'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment',
+    'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment', 'customer_get_order_quote',
     'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
 ];
 const ADMIN_ACTIONS = [

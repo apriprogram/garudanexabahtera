@@ -30,6 +30,8 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 let posted: string[] = [];
+// Jawaban customer_get_order_quote (bawaan: tanpa diskon)
+let quoteResponse = { list_price: 1500000, discount_percent: 0, discount_amount: 0, price: 1500000 };
 
 const tokenFor = (role: string) => `h.${btoa(JSON.stringify({ sub: 7, role, exp: Math.floor(Date.now() / 1000) + 3600 }))}.s`;
 const loginAs = (role: string) => {
@@ -40,13 +42,16 @@ const loginAs = (role: string) => {
 beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
   posted = [];
+  quoteResponse = { list_price: 1500000, discount_percent: 0, discount_amount: 0, price: 1500000 };
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input), 'http://localhost');
       const action = url.searchParams.get('action');
       if (init?.method === 'POST') {
-        posted.push(String(action));
+        const body = JSON.parse(String(init.body ?? '{}')) as { action?: string };
+        posted.push(String(action ?? body.action));
+        if ((action ?? body.action) === 'customer_get_order_quote') return json(200, { quote: quoteResponse });
         return json(500, { error: 'tidak boleh terkirim di tes ini' });
       }
       if (action === 'get_template') {
@@ -182,7 +187,22 @@ describe('halaman /pesan/:slug', () => {
     const phone = screen.getByLabelText('Nomor WhatsApp');
     fireEvent.change(phone, { target: { value: '0812' } });
     expect(screen.getByText('Nomor tidak valid. Gunakan 8–15 digit angka, contoh: 081234567890.')).toBeInTheDocument();
-    expect(posted).toEqual([]);
+    // Hanya permintaan harga (diskon pembelian pertama), tidak ada pesanan terkirim
+    expect(posted.filter((action) => action !== 'customer_get_order_quote')).toEqual([]);
+  });
+
+  it('pembeli pertama kali: harga dicoret, diskon 20% dan total setelah diskon; tamu melihat ajakan diskon', async () => {
+    quoteResponse = { list_price: 1500000, discount_percent: 20, discount_amount: 300000, price: 1200000 };
+    loginAs('customer');
+    const { unmount } = renderPage();
+    expect(await screen.findAllByText('Diskon pembelian pertama (20%)')).not.toHaveLength(0);
+    expect(screen.getAllByText(/1\.200\.000/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/sudah dipotong diskon 20%/)).toBeInTheDocument();
+    unmount();
+    localStorage.clear();
+
+    renderPage();
+    expect(await screen.findByText(/Akun baru: diskon 20% otomatis untuk pembelian template pertama Anda/)).toBeInTheDocument();
   });
 
   it('domain .co.id: teks bantuan menyebut dokumen perusahaan', async () => {

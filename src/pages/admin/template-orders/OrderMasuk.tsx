@@ -529,6 +529,15 @@ function OrderDetail({
             items={[
               { label: 'Status pembayaran', value: <PaymentStatusBadge status={order.payment_status} size="sm" /> },
               { label: 'Metode', value: paymentTypeLabel(order.payment_type) },
+              ...((order.discount_amount ?? 0) > 0
+                ? [
+                    { label: 'Harga template', value: <span className="tabular-nums">{formatRupiah(order.list_price ?? order.price)}</span> },
+                    {
+                      label: 'Diskon pembelian pertama',
+                      value: <span className="tabular-nums">-{formatRupiah(order.discount_amount ?? 0)}</span>,
+                    },
+                  ]
+                : []),
               { label: 'Total tagihan', value: <span className="tabular-nums">{formatRupiah(order.price)}</span> },
               { label: 'Dibayar pada', value: formatTanggal(order.paid_at, true) },
               { label: 'Disetujui pada', value: formatTanggal(order.approved_at, true) },

@@ -7,6 +7,7 @@ import { HeroIntro } from './hero/HeroIntro';
 import { HeroMedia } from './hero/HeroMedia';
 import { HERO_NAV_DEFAULT, setHeroNavState } from './hero/heroNavState';
 import { HeroShowcase } from './hero/HeroShowcase';
+import { PromoBanner } from './hero/PromoBanner';
 import { loadShowcase, peekShowcase, type HeroMode, type ShowcaseData } from './hero/showcase';
 import { useHeroLegibility } from './hero/useHeroLegibility';
 
@@ -128,8 +129,14 @@ const Hero: React.FC = () => {
           />
         ))}
 
-      {/* Isi hero lebih sempit dari navbar (seperti Dribbble): ±1500px di tengah layar lebar */}
-      <div className="container-site max-w-[1584px] grid items-center gap-8 pb-12 pt-20 sm:min-h-[100svh] sm:gap-12 sm:pb-16 sm:pt-28 lg:grid-cols-2 lg:gap-12 lg:pb-20 lg:pt-28 xl:gap-16 2xl:gap-24">
+      {/* Promo diskon pembelian pertama (gaya Dribbble): tepat di bawah navbar, selebar navbar */}
+      <div className="container-site relative pt-[calc(var(--nav-offset)+0.5rem)]">
+        <PromoBanner />
+      </div>
+
+      {/* Isi hero lebih sempit dari navbar (seperti Dribbble): ±1500px di tengah layar lebar. Tinggi minimum = layar
+          dikurangi navbar + banner promo, jadi isi tetap di tengah layar pertama */}
+      <div className="container-site max-w-[1584px] grid items-center gap-8 pb-12 pt-6 sm:min-h-[calc(100svh-var(--nav-offset)-4.5rem)] sm:gap-12 sm:pb-16 sm:pt-10 lg:grid-cols-2 lg:gap-12 lg:pb-20 lg:pt-8 xl:gap-16 2xl:gap-24">
         <div
           ref={textRef}
           className="hero-parallax lg:pl-[2%]"

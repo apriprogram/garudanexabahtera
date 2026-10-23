@@ -79,7 +79,13 @@ export interface Order {
   template_name: string;
   template_code: string;
   template_slug: string | null;
+  /** Harga yang dibayar (setelah diskon pembelian pertama bila ada). */
   price: number;
+  /** Harga katalog saat dipesan; = price untuk pesanan tanpa diskon / dari sebelum migrasi 012. */
+  list_price?: number;
+  /** Potongan diskon pembelian pertama (0 = tanpa diskon). */
+  discount_amount?: number;
+  discount_code?: string | null;
   customer_name: string;
   customer_email: string;
   customer_phone: string;

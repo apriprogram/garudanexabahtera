@@ -206,6 +206,9 @@ CREATE TABLE IF NOT EXISTS template_orders (
   template_name      VARCHAR(150) NOT NULL,       -- snapshot at order time
   template_code      VARCHAR(60) NOT NULL,
   price              DECIMAL(15,2) NOT NULL,      -- snapshot at order time
+  list_price         DECIMAL(15,2) DEFAULT NULL,  -- catalogue price before the first-order discount (migration 012)
+  discount_amount    DECIMAL(15,2) NOT NULL DEFAULT 0,
+  discount_code      VARCHAR(40) DEFAULT NULL,     -- 'PERTAMA20' = automatic first-order discount
   customer_name      VARCHAR(150) NOT NULL,
   customer_email     VARCHAR(150) NOT NULL,
   customer_phone     VARCHAR(30) NOT NULL,
@@ -912,7 +915,8 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-22_007', 'baseline: template preview images (no template rows; seed.templates.sql uses .webp)'),
   ('2026-10-23_009', 'baseline: SEO FAQ/contact data fix (no faq_data rows; seed.sql has the new hero/CTA values)'),
   ('2026-10-23_010', 'baseline: visitor_logs referrer_host, landing_path, utm_source (visit source)'),
-  ('2026-10-23_011', 'baseline: navbar page links (no navbar rows; the built-in menu is Template, Jasa, Harga, Panduan)');
+  ('2026-10-23_011', 'baseline: navbar page links (no navbar rows; the built-in menu is Template, Jasa, Harga, Panduan)'),
+  ('2026-10-24_012', 'baseline: template_orders list_price, discount_amount, discount_code (first-order discount)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

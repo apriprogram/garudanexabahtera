@@ -756,8 +756,13 @@ function InvoiceCard({
         </Row>
         <Row label="Template">{order.template_name}</Row>
         <Row label="Harga template">
-          <span className="tabular-nums">{formatRupiah(order.price)}</span>
+          <span className="tabular-nums">{formatRupiah(order.list_price ?? order.price)}</span>
         </Row>
+        {(order.discount_amount ?? 0) > 0 && (
+          <Row label="Diskon pembelian pertama">
+            <span className="tabular-nums text-success-700">-{formatRupiah(order.discount_amount ?? 0)}</span>
+          </Row>
+        )}
         {notCharged ? (
           <div className="flex items-baseline justify-between gap-4 py-3">
             <dt className="text-sm font-medium text-muted">Total (tidak ditagihkan)</dt>

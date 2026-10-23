@@ -44,6 +44,8 @@ const SITE_IMAGE_MAX_BYTES = 2097152; // one image inside site content (2 MB)
 const SITE_IMAGE_MAX_COUNT = 30; // new images in one save
 const SITE_IMAGE_EXTS = ['png', 'jpg', 'webp', 'gif']; // customer CMS images: raster only, never SVG
 const MAX_PENDING_ORDERS = 5; // unpaid orders one customer may have at the same time
+const FIRST_ORDER_DISCOUNT_PERCENT = 20; // automatic discount on an account's first template order (owner 2026-10-23)
+const FIRST_ORDER_DISCOUNT_CODE = 'PERTAMA20';
 const SNAP_REUSE_HOURS = 23; // a Snap token lives 24 hours
 // Names made by uploadBase64ToS3 (`<stem>_<ms timestamp>_<random>.<ext>`), never seed files
 const GENERATED_ASSET = /_\d{13}_[a-z0-9]{1,6}\.[a-z0-9]+$/;
@@ -52,7 +54,7 @@ const GENERIC_ERROR = 'Terjadi kesalahan pada server. Silakan coba lagi.';
 // Reads may use GET (query string) as well as POST; every other platform action is POST only
 const GET_ACTIONS = new Set([
   'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'get_payment_config',
-  'customer_get_orders', 'customer_get_order', 'customer_get_site',
+  'customer_get_orders', 'customer_get_order', 'customer_get_site', 'customer_get_order_quote',
   'admin_get_template_orders', 'admin_get_template_order', 'admin_get_templates', 'admin_get_active_sites',
   'admin_dashboard_summary',
 ]);
@@ -84,6 +86,7 @@ const HANDLERS = {
   get_payment_config: getPaymentConfig,
   // customer (own data only)
   customer_create_order: customerCreateOrder,
+  customer_get_order_quote: customerGetOrderQuote,
   customer_pay_order: customerPayOrder,
   customer_get_orders: customerGetOrders,
   customer_get_order: customerGetOrder,
@@ -385,13 +388,17 @@ async function customerCreateOrder(ctx) {
     throw new ApiError(`Anda masih punya ${pending} pesanan yang belum dibayar. Selesaikan atau batalkan dulu sebelum memesan lagi.`, 409, 'TOO_MANY_PENDING');
   }
 
+  // Harga yang dibayar = harga template dikurangi diskon pesanan pertama (bila berlaku); harga katalog tetap dicatat
+  const quote = await firstOrderQuote(pool, Number(user.id), Number(template.price));
   let orderId = 0;
   for (let attempt = 0; attempt < 5 && !orderId; attempt++) {
     try {
-      const result = await dbRun(pool, `INSERT INTO template_orders (order_number, user_id, template_id, template_name, template_code, price,
-                                            customer_name, customer_email, customer_phone, company_name, notes, domain_primary, domain_alternative)
-                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
-        newOrderNumber(), user.id, Number(template.id), template.name, template.template_code, Number(template.price),
+      const result = await dbRun(pool, `INSERT INTO template_orders (order_number, user_id, template_id, template_name, template_code, price, list_price,
+                                            discount_amount, discount_code, customer_name, customer_email, customer_phone, company_name, notes,
+                                            domain_primary, domain_alternative)
+                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+        newOrderNumber(), user.id, Number(template.id), template.name, template.template_code, quote.price,
+        quote.list_price, quote.discount_amount, quote.discount_code,
         customerName, customerEmail, customerPhone, companyName, notes, domainPrimary, domainAlternative,
       ]);
       orderId = Number(result.insertId);
@@ -417,6 +424,44 @@ async function customerCreateOrder(ctx) {
   const out = { order: orderOut(await orderById(pool, orderId), false), payment_url: paymentUrl };
   if (paymentError !== null) out.payment_error = paymentError;
   return out;
+}
+
+/**
+ * Diskon otomatis pesanan template pertama (FIRST_ORDER_DISCOUNT_PERCENT): berlaku selama akun belum punya pesanan
+ * template lain yang tidak dibatalkan / ditolak. Dibulatkan ke rupiah utuh; template gratis tidak diberi diskon.
+ * Sama dengan pf_first_order_quote() di templates.php.
+ */
+async function firstOrderQuote(pool, userId, listPrice) {
+  const others = Number((await dbOne(pool, "SELECT COUNT(*) AS c FROM template_orders WHERE user_id = ? AND status NOT IN ('dibatalkan', 'ditolak')",
+    [userId])).c);
+  const percent = others === 0 && listPrice > 0 ? FIRST_ORDER_DISCOUNT_PERCENT : 0;
+  // Math.round membulatkan .5 ke atas, sama dengan round() PHP untuk harga positif
+  const discount = percent > 0 ? Math.round((listPrice * percent) / 100) : 0;
+  return {
+    list_price: listPrice,
+    discount_percent: percent,
+    discount_amount: discount,
+    discount_code: percent > 0 ? FIRST_ORDER_DISCOUNT_CODE : null,
+    price: listPrice - discount,
+  };
+}
+
+// Harga yang akan dibayar akun ini untuk template (untuk halaman pesan, sebelum pesanan dibuat)
+async function customerGetOrderQuote(ctx) {
+  const { pool } = ctx;
+  const user = requireCustomer(ctx.user);
+  const templateId = inInt(ctx, 'template_id');
+  const template = templateId > 0 ? await dbOne(pool, "SELECT id, price FROM templates WHERE id = ? AND status = 'published' LIMIT 1", [templateId]) : null;
+  if (!template) throw new ApiError('Template tidak ditemukan atau belum tersedia.', 404, 'TEMPLATE_NOT_FOUND');
+  const quote = await firstOrderQuote(pool, Number(user.id), Number(template.price));
+  return {
+    quote: {
+      list_price: num(quote.list_price),
+      discount_percent: quote.discount_percent,
+      discount_amount: num(quote.discount_amount),
+      price: num(quote.price),
+    },
+  };
 }
 
 async function customerPayOrder(ctx) {
@@ -1078,6 +1123,10 @@ function orderOut(r, staff) {
     template_code: r.template_code,
     template_slug: r.template_slug ?? null,
     price: num(r.price),
+    // Harga katalog & diskon pesanan pertama; pesanan lama (sebelum kolom ini ada) = tanpa diskon
+    list_price: num(r.list_price ?? r.price),
+    discount_amount: num(r.discount_amount ?? 0),
+    discount_code: r.discount_code ?? null,
     customer_name: r.customer_name,
     customer_email: r.customer_email,
     customer_phone: r.customer_phone,

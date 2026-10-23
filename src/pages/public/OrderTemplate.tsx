@@ -21,6 +21,7 @@ import {
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { LogoMark } from '../../components/ui/LogoMark';
+import { FIRST_ORDER_DISCOUNT_PERCENT } from '../../components/sections/hero/PromoBanner';
 import { getWhatsappNumber, useSiteSettings, useTemplatePricing, whatsappUrl, type TemplatePricing } from '../../hooks/useSiteSettings';
 import { ApiError, apiGet, apiPost, errorMessage } from '../../lib/api';
 import { clearSession, customerLoginPath, getCurrentUser, getRole } from '../../lib/auth';
@@ -100,6 +101,25 @@ export default function OrderTemplate() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const role = getRole();
   const pricing = useTemplatePricing();
+  // Akun pembeli: harga yang akan dibayar (diskon pembelian pertama dihitung server); tamu & staf: tanpa quote
+  const [fetchedQuote, setFetchedQuote] = useState<{ templateId: number; quote: OrderQuote | null } | null>(null);
+  const readyTemplateId = state.status === 'ready' ? state.template.id : null;
+  const wantsQuote = readyTemplateId !== null && role === 'customer';
+  useEffect(() => {
+    if (!wantsQuote || readyTemplateId === null) return undefined;
+    let alive = true;
+    apiPost<{ quote?: OrderQuote }>('customer_get_order_quote', { template_id: readyTemplateId })
+      .then((data) => {
+        if (alive) setFetchedQuote({ templateId: readyTemplateId, quote: data.quote ?? null });
+      })
+      .catch(() => {
+        if (alive) setFetchedQuote({ templateId: readyTemplateId, quote: null });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [wantsQuote, readyTemplateId]);
+  const quote = wantsQuote && fetchedQuote?.templateId === readyTemplateId ? fetchedQuote.quote : null;
 
   useDocumentTitle(state.status === 'ready' ? `Pesan ${state.template.name}` : 'Pesan template');
 
@@ -199,11 +219,11 @@ export default function OrderTemplate() {
             {state.status === 'ready' && (
               <>
                 {/* HP & tablet: ringkasan satu baris di atas form, agar "Masuk" / field pertama terlihat di layar pertama */}
-                <CompactSummary template={state.template} />
+                <CompactSummary template={state.template} quote={quote} />
                 <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
                   <div className="min-w-0">
                     {role === 'customer' ? (
-                      <OrderForm template={state.template} pricing={pricing} onSessionLost={onSessionLost} />
+                      <OrderForm template={state.template} pricing={pricing} quote={quote} onSessionLost={onSessionLost} />
                     ) : role ? (
                       <StaffNotice orderPath={orderPath} onLogout={onSessionLost} />
                     ) : (
@@ -214,7 +234,7 @@ export default function OrderTemplate() {
                     )}
                   </div>
                   <StickySummary>
-                    <OrderSummary template={state.template} pricing={pricing} />
+                    <OrderSummary template={state.template} pricing={pricing} quote={quote} guest={!role} />
                   </StickySummary>
                 </div>
               </>
@@ -342,8 +362,38 @@ function TemplateLinks({ template }: { template: Template }) {
 
 const priceLabel = (template: Template) => (Number(template.price) <= 0 ? 'Gratis' : formatRupiah(template.price));
 
+/** Harga untuk akun yang masuk (customer_get_order_quote): diskon otomatis 20% pesanan template pertama. */
+interface OrderQuote {
+  list_price: number;
+  discount_percent: number;
+  discount_amount: number;
+  price: number;
+}
+
+const hasDiscount = (quote: OrderQuote | null): quote is OrderQuote => Boolean(quote && quote.discount_amount > 0);
+/** Harga yang dibayar: setelah diskon bila ada, selain itu harga template. */
+const payLabel = (template: Template, quote: OrderQuote | null) =>
+  hasDiscount(quote) ? (quote.price <= 0 ? 'Gratis' : formatRupiah(quote.price)) : priceLabel(template);
+
+/** Baris harga katalog (dicoret) + diskon pembelian pertama, di atas Total. */
+function DiscountLines({ quote }: { quote: OrderQuote | null }) {
+  if (!hasDiscount(quote)) return null;
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-4 text-muted">
+        <dt>Harga template</dt>
+        <dd className="tabular-nums line-through">{formatRupiah(quote.list_price)}</dd>
+      </div>
+      <div className="mt-1.5 flex items-baseline justify-between gap-4 text-success-700">
+        <dt>Diskon pembelian pertama ({quote.discount_percent}%)</dt>
+        <dd className="tabular-nums">-{formatRupiah(quote.discount_amount)}</dd>
+      </div>
+    </>
+  );
+}
+
 /** Ringkasan HP & tablet (< lg): gambar kecil, nama + harga sebaris, tautan demo. Rincian ada di dekat tombol bayar. */
-function CompactSummary({ template }: { template: Template }) {
+function CompactSummary({ template, quote }: { template: Template; quote: OrderQuote | null }) {
   return (
     <aside aria-label="Ringkasan pesanan" className="card-site mb-5 flex items-center gap-3 p-3 sm:gap-4 sm:p-4 lg:hidden">
       <TemplateThumb template={template} className="w-16 rounded-lg sm:w-32 sm:rounded-xl" />
@@ -352,7 +402,8 @@ function CompactSummary({ template }: { template: Template }) {
           <h2 className="truncate text-sm font-semibold text-fg sm:text-base">{template.name}</h2>
           <p className="shrink-0 text-sm font-semibold tabular-nums text-fg sm:text-base">
             <span className="sr-only">Harga: </span>
-            {priceLabel(template)}
+            {hasDiscount(quote) && <span className="mr-1.5 text-xs font-normal text-subtle line-through">{formatRupiah(quote.list_price)}</span>}
+            {payLabel(template, quote)}
           </p>
         </div>
         <div className="sm:mt-1">
@@ -448,7 +499,17 @@ function StickySummary({ children }: { children: ReactNode }) {
 }
 
 /** Ringkasan checkout (≥ lg, kolom kanan sticky): template, yang sudah termasuk, total, dan langkah setelah membayar. */
-function OrderSummary({ template, pricing }: { template: Template; pricing: TemplatePricing }) {
+function OrderSummary({
+  template,
+  pricing,
+  quote,
+  guest,
+}: {
+  template: Template;
+  pricing: TemplatePricing;
+  quote: OrderQuote | null;
+  guest: boolean;
+}) {
   const free = Number(template.price) <= 0;
 
   return (
@@ -468,11 +529,17 @@ function OrderSummary({ template, pricing }: { template: Template; pricing: Temp
       <div className="space-y-3 border-t border-line px-5 py-4 text-sm">
         <IncludesList includes={pricing.includes} />
         <dl className={pricing.includes.length > 0 ? 'border-t border-dashed border-line pt-3' : ''}>
-          <div className="flex items-baseline justify-between gap-4">
+          <DiscountLines quote={quote} />
+          <div className={`flex items-baseline justify-between gap-4 ${hasDiscount(quote) ? 'mt-2.5' : ''}`}>
             <dt className="font-semibold text-fg">Total</dt>
-            <dd className="text-2xl font-semibold tabular-nums tracking-tight text-fg">{priceLabel(template)}</dd>
+            <dd className="text-2xl font-semibold tabular-nums tracking-tight text-fg">{payLabel(template, quote)}</dd>
           </div>
         </dl>
+        {guest && !free && (
+          <p className="rounded-xl bg-success-50 px-3 py-2 text-xs leading-relaxed text-success-700">
+            Akun baru: diskon {FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama Anda.
+          </p>
+        )}
         {pricing.note && <p className="text-xs leading-relaxed text-muted">{pricing.note}</p>}
       </div>
 
@@ -608,10 +675,12 @@ function FormSection({ step, title, description, children }: { step: number; tit
 function OrderForm({
   template,
   pricing,
+  quote,
   onSessionLost,
 }: {
   template: Template;
   pricing: TemplatePricing;
+  quote: OrderQuote | null;
   onSessionLost: () => void;
 }) {
   const navigate = useNavigate();
@@ -959,8 +1028,10 @@ function OrderForm({
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs text-subtle">Total pembayaran</p>
-            <p className="text-xl font-semibold tabular-nums tracking-tight text-fg sm:text-2xl">{priceLabel(template)}</p>
+            <p className="text-xs text-subtle">
+              Total pembayaran{hasDiscount(quote) ? ` (sudah dipotong diskon ${quote.discount_percent}%)` : ''}
+            </p>
+            <p className="text-xl font-semibold tabular-nums tracking-tight text-fg sm:text-2xl">{payLabel(template, quote)}</p>
           </div>
           <button type="submit" className="btn btn-primary btn-lg w-full sm:w-auto" disabled={submitting}>
             {submitting ? (
