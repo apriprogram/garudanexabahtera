@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // .claude/worktrees and .deploy hold local copies of the repo (agent worktrees, cPanel deploy worktree); linting them
+  // makes typescript-eslint see several tsconfig roots and fail every file.
+  globalIgnores(['dist', '.claude', '.deploy']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
