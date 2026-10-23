@@ -248,10 +248,21 @@ function enoughPass(tone: HeroTone, sample: BackgroundSample, alpha: number): bo
   return true;
 }
 
-/** Bagian piksel (0..1) tempat teks nada ini lolos dengan lapisan `alpha`. */
-function passShare(tone: HeroTone, sample: BackgroundSample, alpha: number): number {
+/*
+ * Batas "masih terbaca" (3:1, teks besar WCAG) warna teks utama tiap nada: putih untuk terang, fg untuk gelap. Dipakai
+ * hanya untuk memilih nada bila tidak ada yang lolos penuh: putih di atas cahaya putih (1:1) hilang sama sekali,
+ * sedangkan teks gelap di atas biru terang (±3,8:1) masih terbaca.
+ */
+const READABLE_LIMIT: Record<HeroTone, number> = {
+  light: (relativeLuminance(hexToRgb(COLORS.onMedia)) + 0.05) / HEADLINE_TARGET - 0.05,
+  dark: (relativeLuminance(hexToRgb(COLORS.fg)) + 0.05) * HEADLINE_TARGET - 0.05,
+};
+
+/** Bagian piksel (0..1) tempat teks utama nada ini masih terbaca (≥ 3:1) dengan lapisan `alpha`. */
+function readableShare(tone: HeroTone, sample: BackgroundSample, alpha: number): number {
   if (sample.count === 0) return 0;
-  const { scrim, limit } = TONES[tone];
+  const { scrim } = TONES[tone];
+  const limit = READABLE_LIMIT[tone];
   let ok = 0;
   for (let i = 0; i < sample.count; i += 1) {
     const l = compositeLuminance(scrim, alpha, sample.rgb[i * 3], sample.rgb[i * 3 + 1], sample.rgb[i * 3 + 2]);
@@ -345,9 +356,9 @@ export function decideHeroLegibility(
     const light = worst('light');
     const dark = worst('dark');
     // Keduanya tidak lolos di seluruh area (mis. blok teks separuh di langit gelap, separuh di cahaya putih): pilih
-    // nada yang terbaca di bagian latar terbesar (gambar terburuk), bukan titik terburuk yang nyaris seri dan bisa
-    // berganti antar-muat halaman. Selain itu (atau bagiannya sama, mis. latar abu-abu polos) skor kontras; seri → terang.
-    const share = (t: HeroTone) => Math.min(...list.map((sample) => passShare(t, sample, alpha)));
+    // nada yang masih terbaca (≥ 3:1) di bagian latar terbesar (gambar terburuk), bukan titik terburuk yang nyaris
+    // seri dan bisa berganti antar-muat halaman. Selain itu (atau bagiannya sama) skor kontras; seri → terang.
+    const share = (t: HeroTone) => Math.min(...list.map((sample) => readableShare(t, sample, alpha)));
     const lightShare = passes(light) || passes(dark) ? 0 : share('light');
     const darkShare = passes(light) || passes(dark) ? 0 : share('dark');
     const darkWins = darkShare !== lightShare ? darkShare > lightShare : legibilityScore(dark) > legibilityScore(light);

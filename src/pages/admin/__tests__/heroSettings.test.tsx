@@ -940,32 +940,32 @@ describe('HeroSettings: teks di atas latar', () => {
   it('pratinjau = website: gambar pertama, lapisan persis, contoh judul datar; kontras dari semua gambar (kasus terburuk)', async () => {
     const images = ['/assets/bg/hero_1.jpg', '/assets/bg/hero_2.jpg', '/assets/bg/hero_1.jpg'];
     vi.mocked(sampleImage).mockImplementation(async (src) => ({ kind: 'sample', sample: src.endsWith('1.jpg') ? DARK_BG : MIXED_BG }));
-    const expected = decideHeroLegibility([DARK_BG, MIXED_BG], 'auto', 40);
-    // Lapisan 40% belum cukup untuk gambar campuran: website TIDAK menebalkannya, admin diberi peringatan
-    expect(expected).toMatchObject({ tone: 'light', overlayAlpha: 0.4, readable: false });
-    render(<Harness initialMode="image" initialImages={images} initialOverlay={40} />);
+    const expected = decideHeroLegibility([DARK_BG, MIXED_BG], 'auto', 30);
+    // Lapisan 30% belum cukup untuk gambar campuran: website TIDAK menebalkannya, admin diberi peringatan
+    expect(expected).toMatchObject({ tone: 'light', overlayAlpha: 0.3, readable: false });
+    render(<Harness initialMode="image" initialImages={images} initialOverlay={30} />);
 
     expect(await screen.findByText(`Kontras ${formatRatio(expected.contrast!.body)} · Kurang terbaca`)).toBeInTheDocument();
     // Tanpa duplikat, maks. 12 gambar seperti website, dengan area kolom teks desktop
     expect(vi.mocked(sampleImage).mock.calls.map(([src]) => src)).toEqual(['/assets/bg/hero_1.jpg', '/assets/bg/hero_2.jpg']);
     expect(vi.mocked(sampleImage).mock.calls[0][1]).toEqual({ box: { w: 1366, h: 900 }, region: { x: 32, y: 196, w: 628, h: 540 } });
 
-    const preview = screen.getByRole('img', { name: 'Pratinjau teks hero: teks terang, lapisan 40%' });
+    const preview = screen.getByRole('img', { name: 'Pratinjau teks hero: teks terang, lapisan 30%' });
     expect(preview.querySelector('img')).toHaveAttribute('src', '/assets/bg/hero_1.jpg');
     const scrim = preview.querySelector<HTMLElement>('[data-preview-scrim="light"]')!;
     expect(scrim.className).toContain('hero-scrim');
-    expect(scrim.style.getPropertyValue('--scrim-a')).toBe('0.400');
+    expect(scrim.style.getPropertyValue('--scrim-a')).toBe('0.300');
     expect(preview.querySelector('.text-on-media')).toHaveTextContent('Template website siap pakai,');
     expect(preview.querySelector('.text-on-media-accent')).toHaveTextContent('termasuk domain & hosting.');
     // Datar seperti website: tanpa kelas bayangan / pendar di pratinjau
     for (const el of preview.querySelectorAll('*')) expect(el.getAttribute('class') ?? '').not.toMatch(/shadow|glow/);
-    expect(screen.getByText(/Website memakai teks terang dengan lapisan 40%\./)).toBeInTheDocument();
+    expect(screen.getByText(/Website memakai teks terang dengan lapisan 30%\./)).toBeInTheDocument();
     expect(screen.getByText(/Dihitung dari 2 gambar/)).toBeInTheDocument();
     expect(screen.queryByText(/dinaikkan/)).not.toBeInTheDocument();
 
     // Peringatan jujur + saran lapisan yang cukup (dihitung dari semua gambar)
     const needed = readableOverlay([DARK_BG, MIXED_BG], 'light')!;
-    expect(needed).toBeGreaterThan(40);
+    expect(needed).toBeGreaterThan(30);
     expect(screen.getByText('Teks mungkin sulit dibaca')).toBeInTheDocument();
     expect(screen.getByText(new RegExp(escapeRegExp(`naikkan lapisan ke ${needed}%`)))).toBeInTheDocument();
 

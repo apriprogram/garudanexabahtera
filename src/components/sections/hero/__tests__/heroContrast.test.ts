@@ -236,15 +236,17 @@ describe('decideHeroLegibility', () => {
     expect(decideHeroLegibility(solidSample(WHITE), 'light', 0)).toMatchObject({ tone: 'light', overlayAlpha: 0, readable: false });
   });
 
-  it('otomatis memilih nada yang paling terbaca di lapisan admin (skor kontras ÷ target)', () => {
+  it('otomatis memilih nada yang paling terbaca di lapisan admin (bagian latar terbaca, lalu skor kontras ÷ target)', () => {
     for (const percent of [0, 20, 40, 70]) {
-      const alpha = percent / 100;
       const result = decideHeroLegibility(MIXED, 'auto', percent);
-      const light = score(toneContrast('light', MIXED, alpha));
-      const dark = score(toneContrast('dark', MIXED, alpha));
-      expect(result.tone, String(percent)).toBe(dark > light ? 'dark' : 'light');
-      expect(result.contrast).toEqual(toneContrast(result.tone, MIXED, alpha));
+      expect(result.contrast, String(percent)).toEqual(toneContrast(result.tone, MIXED, percent / 100));
     }
+    // MIXED tanpa lapisan: sebagian besar langit gelap → teks terang
+    expect(decideHeroLegibility(MIXED, 'auto', 0).tone).toBe('light');
+    // Separuh langit gelap, separuh cahaya putih, pita biru terang di tengah: teks gelap masih terbaca di biru, putih
+    // hilang di cahaya putih → gelap
+    const SKY = sampleOf([25, hexToRgb('#06102C')], [28, hexToRgb('#1A6BFF')], [47, hexToRgb('#F2F6FF')]);
+    expect(decideHeroLegibility(SKY, 'auto', 0).tone).toBe('dark');
     // Abu-abu menengah di 0%: nada dengan skor lebih tinggi menang, sama dengan perbandingan manual
     for (let i = 0; i <= 20; i += 1) {
       const sample = gray(i / 20);
