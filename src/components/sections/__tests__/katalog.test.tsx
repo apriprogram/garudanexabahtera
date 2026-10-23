@@ -122,8 +122,9 @@ describe('Templates (#templates), katalog kecil', SLOW, () => {
     expect(grid.className).not.toContain('xl:grid-cols-4');
   });
 
-  it('kartu gaya Dribbble: tanpa logo; hover = deskripsi + "Demo" & "Pesan"; judul, kategori, harga coret, ♥ suka & 👁 dilihat', async () => {
-    catalog = { templates: SMALL(), categories: ['Company Profile'] };
+  it('kartu gaya Dribbble: tanpa logo; hover = deskripsi + "Demo" & "Pesan"; judul, kategori · terjual, harga coret, ♥ suka & 👁 dilihat', async () => {
+    const [corporate, startup] = SMALL();
+    catalog = { templates: [corporate, { ...startup, sold_count: 12 }], categories: ['Company Profile'] };
     const section = await renderCatalog();
     const card = within(section).getByRole('heading', { level: 3, name: 'Corporate Nexa' }).closest('article') as HTMLElement;
 
@@ -158,6 +159,10 @@ describe('Templates (#templates), katalog kecil', SLOW, () => {
     expect(first.className).toContain('font-semibold');
     expect(first).toHaveTextContent(/^Harga pembelian pertama Rp 1\.200\.000$/);
     expect(within(card).getByText('−20% pembelian pertama')).toBeInTheDocument();
+    // Belum ada pesanan dibayar: jumlah terjual tidak ditulis; sudah ada: "Kategori · N terjual"
+    expect(card).not.toHaveTextContent(/terjual/);
+    const soldCard = within(section).getByRole('heading', { level: 3, name: 'Startup Clean' }).closest('article') as HTMLElement;
+    expect(within(soldCard).getByText('12 terjual').closest('p')).toHaveTextContent(/^Kategori Company Profile\s*·\s*,\s*12 terjual$/);
 
     // Tanpa logo/avatar di kartu; tombol suka + jumlah dilihat
     expect(card.querySelector('.bg-primary svg')).toBeNull();

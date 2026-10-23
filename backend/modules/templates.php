@@ -38,6 +38,10 @@ const PF_FIRST_ORDER_DISCOUNT_PERCENT = 20; // automatic discount on an account'
 const PF_FIRST_ORDER_DISCOUNT_CODE = 'PERTAMA20';
 const PF_LIKES_PER_HOUR = 60;             // like / unlike clicks per IP (kartu template, owner 2026-10-23)
 const PF_VIEWS_PER_HOUR = 300;            // counted template views per IP
+// Jumlah terjual per template (kartu katalog, owner 2026-10-24): pesanan yang sudah dibayar dan tidak dibatalkan/ditolak,
+// definisi yang sama dengan pendapatan template di dasbor admin. Same SQL in templates.js.
+const PF_SOLD_COUNT_SQL = "(SELECT COUNT(*) FROM template_orders o WHERE o.template_id = templates.id AND o.paid_at IS NOT NULL
+    AND o.status IN ('menunggu_approval', 'proses_domain', 'aktif')) AS sold_count";
 const PF_SNAP_REUSE_HOURS = 23;           // a Snap token lives 24 hours
 const PF_GENERATED_ASSET = '/_[0-9a-f]{12}\.[a-z0-9]+$/'; // names made by save_base64_asset (never seed files)
 
@@ -100,7 +104,7 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
 
 function pf_get_templates(mysqli $conn, array $input, ?array $user): array {
     $category = trim(in_str($input, 'category'));
-    $sql = "SELECT * FROM templates WHERE status = 'published'";
+    $sql = "SELECT *, " . PF_SOLD_COUNT_SQL . " FROM templates WHERE status = 'published'";
     $params = [];
     if ($category !== '') {
         $sql .= " AND category = ?";
@@ -114,7 +118,7 @@ function pf_get_templates(mysqli $conn, array $input, ?array $user): array {
 
 function pf_get_template(mysqli $conn, array $input, ?array $user): array {
     $slug = strtolower(trim(in_str($input, 'slug')));
-    $row = $slug === '' ? null : db_one($conn, "SELECT * FROM templates WHERE slug = ? AND status = 'published' LIMIT 1", [$slug]);
+    $row = $slug === '' ? null : db_one($conn, "SELECT *, " . PF_SOLD_COUNT_SQL . " FROM templates WHERE slug = ? AND status = 'published' LIMIT 1", [$slug]);
     if (!$row) throw new ApiError('Template tidak ditemukan.', 404, 'TEMPLATE_NOT_FOUND');
     return ['template' => pf_template_out($row)];
 }
@@ -1161,9 +1165,10 @@ function pf_template_out(array $r): array {
         'demo_url' => $r['demo_url'],
         'status' => $r['status'],
         'sort_order' => (int)$r['sort_order'],
-        // Suka & dilihat (kartu katalog); 0 sebelum migrasi 013
+        // Suka & dilihat (kartu katalog); 0 sebelum migrasi 013. Terjual hanya dihitung di daftar & detail publik.
         'like_count' => (int)($r['like_count'] ?? 0),
         'view_count' => (int)($r['view_count'] ?? 0),
+        'sold_count' => (int)($r['sold_count'] ?? 0),
         'created_at' => $r['created_at'],
         'updated_at' => $r['updated_at'],
     ];

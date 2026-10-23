@@ -65,6 +65,8 @@ export interface Template {
   /** Jumlah suka & dilihat di kartu katalog (migrasi 013); tidak ada di data lama = 0. */
   like_count?: number;
   view_count?: number;
+  /** Pesanan yang sudah dibayar & tidak dibatalkan/ditolak (dihitung server di daftar & detail publik). */
+  sold_count?: number;
   created_at?: string;
   updated_at?: string;
 }

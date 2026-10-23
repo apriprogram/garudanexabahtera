@@ -49,8 +49,8 @@ interface TemplateShotProps {
  * Kartu template gaya Dribbble (permintaan pemilik 2026-10-23): gambar 4:3 tanpa logo, garis & shadow. Saat di-hover
  * (atau difokus keyboard) muncul lapisan gradasi bawah berisi judul + deskripsi singkat dan tombol "Demo" & "Pesan";
  * di layar sentuh tombolnya selalu terlihat. Di bawah gambar: judul | ♥ suka (bisa diklik) · 👁 dilihat (dihitung saat
- * template dibuka dari kartu, lihat useTemplateEngagement), kategori, lalu harga normal dicoret + harga pembelian
- * pertama (−20%, lib/firstOrderDiscount) dengan label.
+ * template dibuka dari kartu, lihat useTemplateEngagement), kategori · jumlah terjual, lalu harga normal dicoret + harga
+ * pembelian pertama (−20%, lib/firstOrderDiscount) dengan label.
  */
 export function TemplateShot({ template, index, isNew = false, headingLevel = 3 }: TemplateShotProps) {
   const [imageBroken, setImageBroken] = useState(false);
@@ -59,6 +59,7 @@ export function TemplateShot({ template, index, isNew = false, headingLevel = 3 
   const orderHref = `/pesan/${slug}`;
   const showImage = Boolean(template.preview_image) && !imageBroken;
   const Heading = headingLevel === 4 ? 'h4' : 'h3';
+  const sold = template.sold_count ?? 0;
   const { liked, likes, views, toggleLike, recordView, busy } = useTemplateEngagement(
     template.slug,
     template.like_count ?? 0,
@@ -156,10 +157,22 @@ export function TemplateShot({ template, index, isNew = false, headingLevel = 3 
                 </span>
               </div>
             </div>
-            {template.category && (
-              <p className="mt-0.5 text-sm text-muted">
-                <span className="sr-only">Kategori </span>
-                {template.category}
+            {/* Kategori · jumlah terjual (pesanan dibayar dari server, permintaan pemilik 2026-10-24); 0 terjual tidak ditulis */}
+            {(template.category || sold > 0) && (
+              <p className="mt-0.5 truncate text-sm text-muted">
+                {template.category && (
+                  <>
+                    <span className="sr-only">Kategori </span>
+                    {template.category}
+                  </>
+                )}
+                {template.category && sold > 0 && (
+                  <>
+                    <span aria-hidden> · </span>
+                    <span className="sr-only">, </span>
+                  </>
+                )}
+                {sold > 0 && <span className="tabular-nums">{compactCount(sold)} terjual</span>}
               </p>
             )}
             {/* Harga jujur: harga template sebenarnya dicoret, harga pembelian pertama (−20%, sama dengan yang dibayar

@@ -65,6 +65,9 @@ const customerRegisterLimiter = createLimiter(3600 * 1000, 5);
 // Suka / dilihat di kartu template (sama dengan PF_LIKES_PER_HOUR / PF_VIEWS_PER_HOUR di templates.php)
 const templateLikeLimiter = createLimiter(3600 * 1000, 60);
 const templateViewLimiter = createLimiter(3600 * 1000, 300);
+// Jumlah terjual per template (sama dengan PF_SOLD_COUNT_SQL di templates.php): pesanan dibayar, tidak dibatalkan/ditolak
+const SOLD_COUNT_SQL = `(SELECT COUNT(*) FROM template_orders o WHERE o.template_id = templates.id AND o.paid_at IS NOT NULL
+    AND o.status IN ('menunggu_approval', 'proses_domain', 'aktif')) AS sold_count`;
 
 /** An error whose message is safe to show to the client. `errors` = per-field messages. */
 export class ApiError extends Error {
@@ -173,7 +176,7 @@ function sendError(res, err, action) {
 
 async function getTemplates({ pool, input }) {
   const category = phpTrim(inStr(input, 'category'));
-  let sql = "SELECT * FROM templates WHERE status = 'published'";
+  let sql = `SELECT *, ${SOLD_COUNT_SQL} FROM templates WHERE status = 'published'`;
   const params = [];
   if (category !== '') {
     sql += ' AND category = ?';
@@ -188,7 +191,7 @@ async function getTemplates({ pool, input }) {
 
 async function getTemplate({ pool, input }) {
   const slug = phpTrim(inStr(input, 'slug')).toLowerCase();
-  const row = slug === '' ? null : await dbOne(pool, "SELECT * FROM templates WHERE slug = ? AND status = 'published' LIMIT 1", [slug]);
+  const row = slug === '' ? null : await dbOne(pool, `SELECT *, ${SOLD_COUNT_SQL} FROM templates WHERE slug = ? AND status = 'published' LIMIT 1`, [slug]);
   if (!row) throw new ApiError('Template tidak ditemukan.', 404, 'TEMPLATE_NOT_FOUND');
   return { template: templateOut(row) };
 }
@@ -1280,9 +1283,10 @@ function templateOut(r) {
     demo_url: r.demo_url,
     status: r.status,
     sort_order: Math.trunc(Number(r.sort_order)),
-    // Suka & dilihat (kartu katalog); 0 sebelum migrasi 013
+    // Suka & dilihat (kartu katalog); 0 sebelum migrasi 013. Terjual hanya dihitung di daftar & detail publik.
     like_count: Math.trunc(Number(r.like_count ?? 0)),
     view_count: Math.trunc(Number(r.view_count ?? 0)),
+    sold_count: Math.trunc(Number(r.sold_count ?? 0)),
     created_at: r.created_at,
     updated_at: r.updated_at,
   };
