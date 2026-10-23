@@ -17,6 +17,7 @@ import {
   htaccessRoutes,
   injectHead,
   preFileFor,
+  preloadProjects,
   preloadSettings,
   scriptJson,
   seoFallbackContext,
@@ -282,6 +283,31 @@ describe('server render (src/entry-server.tsx)', () => {
     const empty = { path: '/', builtAt: FIXTURE_BUILT_AT, api: {} };
     const html = (await ssr.render('/', empty)).html;
     expect(html).not.toContain('href="/template/finova"');
+  }, 30_000);
+
+  it('keeps unpresentable projects out of gn-preload without changing the rendered home page', async () => {
+    const good = (id: number, name: string) => ({
+      id,
+      name,
+      service_type: 'website',
+      image: `/assets/dokumen-client/logo/p${id}.png`,
+      description: `Website profil untuk ${name} dengan halaman layanan, galeri, dan kontak WhatsApp.`,
+    });
+    const junk = { id: 9, name: '[TEST verif-ui] Aplikasi', service_type: 'mobile_app', image: '/x.png', description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do.' };
+    const body = { success: true, projects: [good(1, 'Koperasi Maju'), junk, good(2, 'Sekolah Harapan')] };
+    const trimmed = preloadProjects(body, ssr.isPresentableProject);
+    expect(trimmed.projects.map((p: { id: number }) => p.id)).toEqual([1, 2]);
+    expect(preloadProjects(undefined, ssr.isPresentableProject)).toBeUndefined();
+    const withProjects = (projects: unknown) => {
+      const preload = fixturePreload('/');
+      return { ...preload, api: { ...preload.api, [ssr.PRELOAD_URLS.projects]: projects } };
+    };
+    const full = await ssr.render('/', withProjects(body));
+    const lean = await ssr.render('/', withProjects(trimmed));
+    expect(full.errors).toEqual([]);
+    expect(lean.html).toBe(full.html);
+    expect(full.html).toContain('Koperasi Maju');
+    expect(full.html).not.toContain('[TEST verif-ui]');
   }, 30_000);
 
   it('builds the seo.php context from the same TypeScript head (Organization/WebSite nodes)', () => {

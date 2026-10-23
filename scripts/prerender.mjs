@@ -254,6 +254,14 @@ export const PRELOAD_OMIT_SETTINGS = [
 export const preloadSettings = (settings) =>
   Object.fromEntries(Object.entries(settings ?? {}).filter(([key]) => !PRELOAD_OMIT_SETTINGS.includes(key)));
 
+/**
+ * get_public_projects untuk gn-preload: hanya proyek yang memang boleh tampil (isPresentableProject, filter yang sama
+ * dengan Projects.tsx). Proyek berisi teks uji/Lorem ipsum yang dicentang "Tampilkan di website" tidak ikut ke HTML
+ * mentah. Hasil render sama: Projects.tsx menyaring daftar yang sama dengan fungsi yang sama.
+ */
+export const preloadProjects = (body, isPresentable) =>
+  body && Array.isArray(body.projects) ? { ...body, projects: body.projects.filter((project) => isPresentable(project)) } : body;
+
 /** Halaman utuh: head + isi #root + data preload. */
 export function composePage(shell, { headTags: pageHead, appHtml: rawApp, preload }) {
   if (!ROOT_DIV.test(shell)) throw new Error('index.html tanpa <div id="root"></div>');
@@ -449,9 +457,13 @@ export async function prerender({ root, outDir, deployDir, strict }) {
     if (path === '/') urls.push(ssr.PRELOAD_URLS.projects);
     const slug = /^\/template\/([a-z0-9-]+)$/.exec(path)?.[1];
     if (slug && api[ssr.PRELOAD_URLS.template(slug)]) urls.push(ssr.PRELOAD_URLS.template(slug));
-    return Object.fromEntries(
-      urls.map((url) => [url, url === ssr.PRELOAD_URLS.settings ? preloadSettings(api[url]) : api[url]]),
-    );
+    const trim = (url) =>
+      url === ssr.PRELOAD_URLS.settings
+        ? preloadSettings(api[url])
+        : url === ssr.PRELOAD_URLS.projects
+          ? preloadProjects(api[url], ssr.isPresentableProject)
+          : api[url];
+    return Object.fromEntries(urls.map((url) => [url, trim(url)]));
   };
 
   const renderPage = async (path, preloadPath) => {
