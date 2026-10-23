@@ -1,1 +1,0 @@
-import{c as e,jt as t,kt as n}from"./index-b-xmFIDp.js";function r(r=[]){for(let n of r){let r=e(n);if(r)return{href:t(r.slug),label:r.title,article:!0}}return{href:n.guides,label:`Panduan website untuk bisnis`,article:!1}}export{r as t};
