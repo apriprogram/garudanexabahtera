@@ -2,7 +2,7 @@
 // Chrome publik bersama (paket "fondasi"): Navbar (menu HP, skip link, tanpa sakelar bahasa), Footer (kolom halaman
 // hub SEO WP5, baris fakta, akun, media sosial), helper setting, cache apiGet, dan halaman legal.
 // Jalankan: npx vitest run --dir src/components/layout
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -129,7 +129,7 @@ describe('Navbar', () => {
     expect(screen.getAllByRole('link', { name: 'Akun Saya' })[0]).toHaveAttribute('href', '/akun');
   });
 
-  it('menu bawaan (SEO WP5): Template · Jasa ▾ · Harga · Panduan · Tentang · Kontak sebagai tautan halaman, halaman aktif ditandai', async () => {
+  it('menu bawaan (SEO WP5): Template · Jasa ▾ · Harga · Panduan · Tentang sebagai tautan halaman, halaman aktif ditandai', async () => {
     renderAt(<Navbar />, '/template/aura-studio');
     await act(async () => {});
     const desktop = screen.getByRole('navigation', { name: 'Navigasi utama' });
@@ -137,22 +137,23 @@ describe('Navbar', () => {
     expect(within(desktop).getByRole('link', { name: 'Template' })).toHaveAttribute('aria-current', 'page');
     expect(within(desktop).getByRole('link', { name: 'Harga' })).toHaveAttribute('href', '/harga');
     expect(within(desktop).getByRole('link', { name: 'Panduan' })).toHaveAttribute('href', '/panduan');
-    // Tentang & Kontak (pemilik 2026-10-24), sesudah Panduan
+    // Tentang sesudah Panduan (pemilik 2026-10-24); Kontak tidak di navbar (dihapus lagi, migrasi 015)
     expect(within(desktop).getByRole('link', { name: 'Tentang' })).toHaveAttribute('href', '/tentang');
-    expect(within(desktop).getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '/kontak');
+    expect(within(desktop).queryByRole('link', { name: 'Kontak' })).toBeNull();
     expect(
       within(desktop)
         .getAllByRole('link')
         .map((a) => a.textContent?.trim())
         .filter((t) => ['Harga', 'Panduan', 'Tentang', 'Kontak'].includes(t ?? '')),
-    ).toEqual(['Harga', 'Panduan', 'Tentang', 'Kontak']);
+    ).toEqual(['Harga', 'Panduan', 'Tentang']);
     expect(within(desktop).getByRole('button', { name: 'Jasa' })).toHaveAttribute('aria-expanded', 'false');
     // Menu HP selalu ada di HTML (inert saat tertutup): sub-menu Jasa terbaca crawler sebagai <a href>
     const mobile = document.getElementById('menu-hp') as HTMLElement;
     const hrefs = Array.from(mobile.querySelectorAll('a')).map((a) => a.getAttribute('href'));
     expect(hrefs).toEqual(
-      expect.arrayContaining(['/template', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/harga', '/panduan', '/tentang', '/kontak']),
+      expect.arrayContaining(['/template', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/harga', '/panduan', '/tentang']),
     );
+    expect(hrefs).not.toContain('/kontak');
     expect(hrefs.some((href) => href?.includes('#templates') || href?.includes('#faq'))).toBe(false);
     // Kanan (belum masuk): "Sign up" → /daftar dan "Log in" → /masuk (permintaan pemilik 2026-10-23)
     expect(screen.getAllByRole('link', { name: 'Sign up' })[0]).toHaveAttribute('href', '/daftar');
@@ -234,6 +235,28 @@ describe('Footer', () => {
     renderAt(<Footer />);
     const socials = await screen.findByRole('list', { name: 'Media sosial' });
     expect(within(socials).getAllByRole('link').map((a) => a.getAttribute('aria-label'))).toEqual(['Instagram']);
+    clearCachedJson();
+  });
+
+  it('saklar Panduan di Pengaturan website menyembunyikan tautan Panduan di navbar & footer', async () => {
+    clearCachedJson();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const action = new URL(String(input), 'http://localhost').searchParams.get('action');
+      if (action === 'get_settings') return json(200, { disabled_sections: '["panduan"]' });
+      return json(200, []);
+    });
+    renderAt(
+      <>
+        <Navbar />
+        <Footer />
+      </>,
+    );
+    const company = await screen.findByRole('navigation', { name: 'Perusahaan' });
+    await waitFor(() => expect(within(company).queryByRole('link', { name: 'Panduan' })).toBeNull());
+    expect(within(company).getByRole('link', { name: 'Tentang' })).toBeInTheDocument();
+    const desktop = screen.getByRole('navigation', { name: 'Navigasi utama' });
+    await waitFor(() => expect(within(desktop).getByRole('link', { name: 'Tentang' })).toBeInTheDocument());
+    expect(within(desktop).queryByRole('link', { name: 'Panduan' })).toBeNull();
     clearCachedJson();
   });
 

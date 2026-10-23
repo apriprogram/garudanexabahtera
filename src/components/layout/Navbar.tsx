@@ -43,6 +43,8 @@ const ICONS: Record<string, LucideIcon> = {
 const ANCHOR_ALIAS: Record<string, string> = { '#products': '#templates', '#portfolio': '#projects' };
 // Section yang sudah dihapus dari beranda: tautannya disembunyikan
 const REMOVED_SECTIONS = new Set(['pricing']);
+// Halaman yang tautannya ikut saklar di Pengaturan website (kunci disabled_sections): Panduan
+const PAGE_SECTION_KEY: Record<string, string> = { [HUB_PATHS.guides]: 'panduan' };
 
 const normalizeHref = (raw: string | null | undefined): string => {
   const href = (raw || '').trim() || '#';
@@ -115,9 +117,9 @@ const DEFAULT_ITEMS: NavItem[] = [
   },
   { key: 'harga', label: 'Harga', href: HUB_PATHS.pricing, children: [] },
   { key: 'panduan', label: 'Panduan', href: HUB_PATHS.guides, children: [] },
-  // Tentang & Kontak (pemilik 2026-10-24; baris yang sama dipasang migrasi 2026-10-24_014)
+  // Tentang (pemilik 2026-10-24, migrasi 2026-10-24_014). Kontak dihapus lagi dari navbar (migrasi 015); /kontak tetap
+  // ditautkan dari footer dan halaman Tentang
   { key: 'tentang', label: 'Tentang', href: HUB_PATHS.about, children: [] },
-  { key: 'kontak', label: 'Kontak', href: HUB_PATHS.contact, children: [] },
 ];
 
 interface Pill {
@@ -217,6 +219,8 @@ const Navbar: React.FC = () => {
   // Tautan ke section yang disembunyikan admin (setting disabled_sections) atau sudah dihapus ikut disembunyikan
   const hidden = getHiddenSections(settings);
   const visible = (href: string) => {
+    const pageKey = PAGE_SECTION_KEY[href.split(/[?#]/, 1)[0].replace(/(.)\/+$/, '$1')];
+    if (pageKey) return !hidden.has(pageKey);
     if (!href.startsWith('#')) return true;
     const id = href.slice(1).toLowerCase();
     return !REMOVED_SECTIONS.has(id) && !hidden.has(id);

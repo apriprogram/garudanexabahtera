@@ -2,18 +2,20 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Layout, 
   Image as ImageIcon, 
-  Package, 
   Briefcase, 
   CreditCard, 
   Activity, 
   HelpCircle, 
+  LayoutTemplate,
+  Table2,
+  BookOpen,
+  ExternalLink,
   Save,
   CheckCircle2,
   AlertCircle,
   Plus,
   Trash2,
   Edit2,
-  X,
   Upload,
   ChevronDown,
   RefreshCw
@@ -33,7 +35,6 @@ import {
 import {
   Button,
   Chip,
-  Eyebrow,
   Field,
   FLOAT_PANEL,
   FOCUS_INSET,
@@ -48,7 +49,6 @@ import {
   Switch,
   Tabs,
   Textarea,
-  checkboxClass,
   cn,
   controlClass,
   panelClass,
@@ -59,6 +59,10 @@ import {
   TEMPLATE_PRICE_INCLUDES_DEFAULT,
   TEMPLATE_PRICE_NOTE_DEFAULT,
 } from '../../hooks/useSiteSettings';
+import { ARTICLE_SUMMARIES } from '../../content/panduan/articles.generated';
+import { isPublishedArticle, sortArticles } from '../../content/panduan/core';
+import { GUIDES_INTRO_DEFAULT } from '../public/panduan/PanduanIndex.seo';
+import { formatDateId } from '../../seo/format';
 
 /** Judul CTA bawaan (sentence case; baris kedua tampil lebih lembut di website). */
 const CTA_TITLE_DEFAULT = 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!';
@@ -98,6 +102,11 @@ function UploadTile({
   );
 }
 
+/* Panel keterangan untuk tab yang isinya diatur otomatis / di kode (tanpa isian). */
+function InfoNote({ children }: { children: React.ReactNode }) {
+  return <Panel className="space-y-2 text-sm leading-relaxed text-adm-muted">{children}</Panel>;
+}
+
 /* Gaya toast notifikasi per jenis (ikut tema lewat token). */
 const NOTIFY_TONE = {
   success: { icon: <CheckCircle2 />, tone: 'mint' },
@@ -113,13 +122,26 @@ type SettingsMap = Record<string, string>;
  * `disabled_sections` (dibaca Home.tsx, Footer.tsx, Navbar). Disimpan bersama "Simpan semua perubahan".
  */
 const SECTION_KEY_OF_TAB: Partial<Record<string, string>> = {
+  templates: 'templates',
   portfolio: 'projects',
+  compare: 'perbandingan',
   process: 'keunggulan',
   faq: 'faq',
   services: 'cta',
+  // Bukan section beranda: menyembunyikan tautan Panduan di navbar & footer (halamannya tetap bisa dibuka)
+  guides: 'panduan',
 };
-/** Tab yang isinya belum tampil di website (tidak ada section di beranda): tanpa saklar, hanya keterangan. */
-const TABS_NOT_ON_SITE = new Set(['products', 'pricing']);
+
+/** Keterangan di bawah judul tab; tab lain memakai keterangan umum. */
+const TAB_SUBTITLE: Partial<Record<string, string>> = {
+  templates: 'Section "Pilih Template" di beranda. Katalognya diambil dari template yang terbit.',
+  compare: 'Tabel "Pilih sesuai kebutuhanmu" di beranda.',
+  pricing: 'Tampil di detail template, halaman pesan, akun pembeli, dan strip "Sudah termasuk" di beranda.',
+  guides: 'Halaman /panduan dan artikel panduan.',
+};
+
+/** Artikel panduan untuk tab Panduan: terbaru dulu, status terbit seperti build production (draf = belum ditinjau). */
+const GUIDE_ROWS = sortArticles(ARTICLE_SUMMARIES).map((article) => ({ ...article, published: isPublishedArticle(article, false) }));
 
 /** Error simpan dengan pesan dari server yang ditampilkan apa adanya (mis. 409 latar hero diubah di tab lain). */
 class SaveError extends Error {}
@@ -143,36 +165,12 @@ const SAVE_BLOCK_LABEL = {
   images: 'Memproses gambar...',
 } as const;
 
-/** Satu entri products_data. */
-interface ProductItem {
-  id: string;
-  category: string;
-  badge: string;
-  title: string;
-  description: string;
-  image: string;
-  logo?: string;
-  buttonText?: string;
-  buttonLink?: string;
-}
-
 /** Satu entri portfolio_data. */
 interface PortfolioItem {
   title: string;
   desc: string;
   image: string;
   span: string;
-}
-
-/** Satu entri pricing_data. */
-interface PricingItem {
-  name: string;
-  price: string;
-  period: string;
-  description: string;
-  features: string;
-  isPopular: boolean;
-  buttonText: string;
 }
 
 /** Satu entri faq_data. */
@@ -190,15 +188,20 @@ const SiteSettings: React.FC = () => {
     description: string;
   } | null>(null);
 
+  // Urutan = urutan di website (beranda: Hero → Template → Proyek → Perbandingan → Keunggulan → FAQ → Banner CTA → Footer),
+  // lalu halaman lain (harga template, Panduan). Produk & paket harga lama dihapus: tidak tampil di website (pemilik
+  // 2026-10-24). id tab lama (process, services) dipertahankan agar saklar section tetap sama.
   const tabs = [
     { id: 'hero', label: 'Hero', icon: ImageIcon },
-    { id: 'products', label: 'Produk', icon: Package },
-    { id: 'portfolio', label: 'Portofolio', icon: Briefcase },
+    { id: 'templates', label: 'Template', icon: LayoutTemplate },
+    { id: 'portfolio', label: 'Proyek', icon: Briefcase },
+    { id: 'compare', label: 'Perbandingan', icon: Table2 },
     { id: 'process', label: 'Keunggulan', icon: Activity },
-    { id: 'pricing', label: 'Harga', icon: CreditCard },
     { id: 'faq', label: 'FAQ', icon: HelpCircle },
     { id: 'services', label: 'Banner CTA', icon: HelpCircle },
     { id: 'footer', label: 'Footer', icon: Layout },
+    { id: 'pricing', label: 'Harga template', icon: CreditCard },
+    { id: 'guides', label: 'Panduan', icon: BookOpen },
   ];
 
   const showNotify = useCallback((type: 'success' | 'error' | 'warning', message: string, description: string) => {
@@ -236,24 +239,6 @@ const SiteSettings: React.FC = () => {
   // Latar hero dari muat terakhir yang berhasil: dasar hero_media_base dan pembanding kunci yang tidak diubah
   const heroBaselineRef = useRef<HeroMediaBaseline | null>(null);
 
-  // Products tab States
-  const [productsCategories, setProductsCategories] = useState<{ id: string; label: string }[]>([]);
-  const [productsList, setProductsList] = useState<ProductItem[]>([]);
-  const [editingProductIndex, setEditingProductIndex] = useState<number | null>(null);
-  const [productForm, setProductForm] = useState<ProductItem>({
-    id: '',
-    category: '',
-    badge: '',
-    title: '',
-    description: '',
-    image: '',
-    logo: '',
-    buttonText: 'Pesan Sekarang',
-    buttonLink: ''
-  });
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [newCategoryLabel, setNewCategoryLabel] = useState('');
-
   // Portfolio tab States
   const [portfolioList, setPortfolioList] = useState<PortfolioItem[]>([]);
   const [editingPortfolioIndex, setEditingPortfolioIndex] = useState<number | null>(null);
@@ -264,24 +249,7 @@ const SiteSettings: React.FC = () => {
     span: 'md:col-span-4'
   });
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
-  const [isProductCategoryDropdownOpen, setIsProductCategoryDropdownOpen] = useState(false);
   const [isPortfolioSpanDropdownOpen, setIsPortfolioSpanDropdownOpen] = useState(false);
-
-  // Process tab States
-
-  // Pricing tab States
-  const [pricingList, setPricingList] = useState<PricingItem[]>([]);
-  const [editingPricingIndex, setEditingPricingIndex] = useState<number | null>(null);
-  const [pricingForm, setPricingForm] = useState({
-    name: '',
-    price: '',
-    period: '',
-    description: '',
-    features: '',
-    isPopular: false,
-    buttonText: 'Pesan Sekarang'
-  });
-  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
 
   // FAQ tab States
   const [faqList, setFaqList] = useState<FaqItem[]>([]);
@@ -319,79 +287,6 @@ const SiteSettings: React.FC = () => {
       setHeroTextTone(parseHeroTextTone(data.hero_text_tone));
       setHeroOverlay(parseHeroOverlay(data.hero_overlay));
 
-      // Load Products tab data
-      if (data.products_categories) {
-        setProductsCategories(JSON.parse(data.products_categories));
-      } else {
-        setProductsCategories([
-          { id: 'all', label: 'Semua' },
-          { id: 'website', label: 'Website' },
-          { id: 'santri', label: 'I-Santri' },
-          { id: 'school', label: 'I-School' },
-          { id: 'pos', label: 'POS' },
-          { id: 'absensi', label: 'Absensi' },
-          { id: 'invitation', label: 'Undangan Digital' }
-        ]);
-      }
-      
-      if (data.products_data) {
-        setProductsList(JSON.parse(data.products_data));
-      } else {
-        setProductsList([
-          {
-            id: 'website',
-            category: 'website',
-            badge: 'Jasa Pembuatan Website',
-            title: 'Profil Perusahaan & Web Kustom',
-            description: 'Website sekolah/instansi, Landing Page Produk, dan Website Custom System.',
-            image: '/assets/portofolio/portfolio1.png'
-          },
-          {
-            id: 'santri',
-            category: 'santri',
-            logo: '/assets/logo/isantri-mark.svg',
-            badge: 'Aplikasi I-Santri',
-            title: 'Manajemen Pesantren Modern',
-            description: 'Manajemen pesantren yang lebih terstruktur dan modern dengan sistem digital terintegrasi.',
-            image: '/assets/product/isantri.png'
-          },
-          {
-            id: 'school',
-            category: 'school',
-            logo: '/assets/logo/ischool-mark.svg',
-            badge: 'Aplikasi I-School',
-            title: 'Digitalisasi Ekosistem Sekolah',
-            description: 'Manajemen sekolah berbasis digital tingkat lanjut untuk efisiensi administrasi dan akademik.',
-            image: '/assets/product/ischool.png'
-          },
-          {
-            id: 'pos',
-            category: 'pos',
-            badge: 'Aplikasi Kasir',
-            title: 'Sistem POS Cerdas untuk UMKM',
-            description: 'Sistem Point of Sale (POS) yang memudahkan transaksi dan manajemen stok untuk UMKM & retail.',
-            image: '/assets/product/pos.png'
-          },
-          {
-            id: 'absensi',
-            category: 'absensi',
-            badge: 'Aplikasi Absensi',
-            title: 'Kehadiran Digital Real-time',
-            description: 'Sistem absensi digital berbasis web dan mobile dengan verifikasi yang akurat dan aman.',
-            image: '/assets/product/absensi.png'
-          },
-          {
-            id: 'invitation',
-            category: 'invitation',
-            logo: '/assets/logo/invitation-mark.svg',
-            badge: 'Undangan Digital Premium',
-            title: 'Undangan Digital Interaktif',
-            description: 'Solusi undangan pernikahan dan acara spesial dalam bentuk website modern yang elegan dan mudah dibagikan.',
-            image: '/assets/product/undangan_digital.png'
-          }
-        ]);
-      }
-
       // Load Portfolio tab data
       if (data.portfolio_data) {
         setPortfolioList(JSON.parse(data.portfolio_data));
@@ -402,17 +297,6 @@ const SiteSettings: React.FC = () => {
           { title: "E-Commerce System", desc: "SHOPPING / WEB", image: "/assets/product/ischool.png", span: "md:col-span-4" },
           { title: "Corporate Website", desc: "BRANDING / MODERN", image: "/assets/product/isantri.png", span: "md:col-span-7" },
           { title: "Sistem Informasi Desa", desc: "GOVERNMENT / WEB", image: "/assets/product/pos.png", span: "md:col-span-5" }
-        ]);
-      }
-
-      // Load Pricing tab data
-      if (data.pricing_data) {
-        setPricingList(JSON.parse(data.pricing_data));
-      } else {
-        setPricingList([
-          { name: 'Basic Package', price: 'Rp 2.000.000', period: 'one-time', description: 'For SMEs & landing pages', features: 'Max 5 Pages, Form & WA Button, 1 Month Maintenance, Basic SEO, Duration: 4-7 Days', isPopular: false, buttonText: 'Pilih Paket' },
-          { name: 'Professional Package', price: 'Rp 4.500.000', period: 'one-time', description: 'Exclusive custom design', features: 'Max 10 Pages, Custom Branding Design, CMS & Blog, Advanced SEO Optimization, Duration: 10-14 Days', isPopular: true, buttonText: 'Pilih Paket' },
-          { name: 'Premium Package', price: 'Rp 8.500.000', period: 'one-time', description: 'E-commerce & Custom Systems', features: 'Dynamic Web / E-Commerce, Catalog & Cart, Payment Gateway, Membership / Account, 3 Months Maintenance', isPopular: false, buttonText: 'Pilih Paket' }
         ]);
       }
 
@@ -472,6 +356,8 @@ const SiteSettings: React.FC = () => {
     // barisnya di website); setting yang belum pernah disimpan memakai teks bawaan di useSiteSettings.
     const priceIncludesEl = document.getElementById('template_price_includes') as HTMLTextAreaElement | null;
     const priceNoteEl = document.getElementById('template_price_note') as HTMLTextAreaElement | null;
+    // Teks pembuka /panduan (hanya bila tab Panduan terbuka; kosong = teks bawaan)
+    const guidesIntroEl = document.getElementById('guides_intro') as HTMLTextAreaElement | null;
 
     // Read input values directly from DOM elements safely
     const updatedSettings = {
@@ -490,24 +376,18 @@ const SiteSettings: React.FC = () => {
       hero_text_tone: heroTextTone,
       hero_overlay: String(heroOverlay),
 
-      // Products data
-      products_categories: JSON.stringify(productsCategories),
-      products_data: JSON.stringify(productsList),
-
       // Portfolio data
       portfolio_data: JSON.stringify(portfolioList),
 
-      // Process data
-
-      // Pricing data
-      pricing_title: (document.getElementById('pricing_title') as HTMLInputElement)?.value || settings.pricing_title || "Paket Layanan Kami",
-      pricing_subtitle: (document.getElementById('pricing_subtitle') as HTMLTextAreaElement)?.value || settings.pricing_subtitle || "Pilih paket yang sesuai dengan skala bisnis dan kebutuhan Anda",
-      pricing_data: JSON.stringify(pricingList),
+      // Harga template
       ...(priceIncludesEl ? { template_price_includes: priceIncludesEl.value.trim() } : {}),
       ...(priceNoteEl ? { template_price_note: priceNoteEl.value.trim() } : {}),
 
       // FAQ data
       faq_data: JSON.stringify(faqList),
+
+      // Panduan
+      ...(guidesIntroEl ? { guides_intro: guidesIntroEl.value.trim() } : {}),
 
 
 
@@ -585,65 +465,6 @@ const SiteSettings: React.FC = () => {
 
   // =================== TABS ACTION HANDLERS ===================
   
-  // Category management
-  const handleAddCategory = () => {
-    if (!newCategoryLabel.trim()) return;
-    const catId = newCategoryLabel.toLowerCase().replace(/\s+/g, '-');
-    if (productsCategories.some(c => c.id === catId)) {
-      showNotify('warning', 'Kategori sudah ada', 'Kategori ini sudah ada. Pakai nama lain.');
-      return;
-    }
-    setProductsCategories(prev => [...prev, { id: catId, label: newCategoryLabel }]);
-    setNewCategoryLabel('');
-  };
-
-  const handleDeleteCategory = (catId: string) => {
-    if (catId === 'all') return;
-    setProductsCategories(prev => prev.filter(c => c.id !== catId));
-    setProductsList(prev => prev.filter(p => p.category !== catId));
-  };
-
-  // Product CRUD
-  const handleOpenProductModal = (index: number | null = null) => {
-    if (index !== null) {
-      setEditingProductIndex(index);
-      setProductForm({ 
-        buttonText: 'Pesan Sekarang',
-        buttonLink: '',
-        ...productsList[index] 
-      });
-    } else {
-      setEditingProductIndex(null);
-      setProductForm({
-        id: 'prod-' + Date.now(),
-        category: productsCategories[1]?.id || 'website',
-        badge: '',
-        title: '',
-        description: '',
-        image: '',
-        logo: '',
-        buttonText: 'Pesan Sekarang',
-        buttonLink: ''
-      });
-    }
-    setIsProductModalOpen(true);
-  };
-
-  const handleSaveProduct = () => {
-    if (!productForm.title || !productForm.description) {
-      showNotify('warning', 'Data belum lengkap', 'Judul dan deskripsi wajib diisi.');
-      return;
-    }
-    if (editingProductIndex !== null) {
-      const updated = [...productsList];
-      updated[editingProductIndex] = productForm;
-      setProductsList(updated);
-    } else {
-      setProductsList(prev => [...prev, productForm]);
-    }
-    setIsProductModalOpen(false);
-  };
-
   // Portfolio CRUD
   const handleOpenPortfolioModal = (index: number | null = null) => {
     if (index !== null) {
@@ -674,41 +495,6 @@ const SiteSettings: React.FC = () => {
       setPortfolioList(prev => [...prev, portfolioForm]);
     }
     setIsPortfolioModalOpen(false);
-  };
-
-  // Pricing CRUD
-  const handleOpenPricingModal = (index: number | null = null) => {
-    if (index !== null) {
-      setEditingPricingIndex(index);
-      setPricingForm({ ...pricingList[index] });
-    } else {
-      setEditingPricingIndex(null);
-      setPricingForm({
-        name: '',
-        price: '',
-        period: 'one-time',
-        description: '',
-        features: '',
-        isPopular: false,
-        buttonText: 'Pesan Sekarang'
-      });
-    }
-    setIsPricingModalOpen(true);
-  };
-
-  const handleSavePricing = () => {
-    if (!pricingForm.name || !pricingForm.price) {
-      showNotify('warning', 'Data belum lengkap', 'Nama paket dan harga wajib diisi.');
-      return;
-    }
-    if (editingPricingIndex !== null) {
-      const updated = [...pricingList];
-      updated[editingPricingIndex] = pricingForm;
-      setPricingList(updated);
-    } else {
-      setPricingList(prev => [...prev, pricingForm]);
-    }
-    setIsPricingModalOpen(false);
   };
 
   // FAQ CRUD
@@ -773,95 +559,19 @@ const SiteSettings: React.FC = () => {
           />
         );
 
-      case 'products':
+      case 'templates':
         return (
-          <div className="space-y-4 sm:space-y-6">
-            {/* Categories Management Panel */}
-            <Panel>
-              <PanelHeader title="Kategori produk" subtitle="Atur kategori filter untuk bagian etalase produk." />
-              <div className="flex max-w-md gap-2">
-                <Input
-                  type="text"
-                  value={newCategoryLabel}
-                  onChange={(e) => setNewCategoryLabel(e.target.value)}
-                  placeholder="mis. Jasa Desain, Custom App"
-                  wrapperClassName="flex-1"
-                />
-                <Button icon={<Plus />} onClick={handleAddCategory} className="shrink-0 max-sm:h-11">
-                  Tambah
-                </Button>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {productsCategories.map(cat => (
-                  <span
-                    key={cat.id}
-                    className={cn(
-                      'inline-flex h-8 max-w-full items-center gap-1 rounded-lg bg-adm-ghost text-xs font-medium text-adm-fg',
-                      cat.id !== 'all' ? 'pl-2.5 pr-0.5' : 'px-2.5',
-                    )}
-                  >
-                    <span className="truncate">{cat.label}</span>
-                    {cat.id !== 'all' && (
-                      <IconButton
-                        icon={<X />}
-                        label={`Hapus ${cat.label}`}
-                        size="xs"
-                        variant="danger-ghost"
-                        onClick={() => handleDeleteCategory(cat.id)}
-                      />
-                    )}
-                  </span>
-                ))}
-              </div>
-            </Panel>
-
-            {/* Products CRUD Panel */}
-            <div>
-              <PanelHeader
-                title="Daftar produk"
-                subtitle="Kelola produk yang tampil di carousel solusi digital."
-                action={
-                  <Button size="sm" icon={<Plus />} onClick={() => handleOpenProductModal()}>
-                    Tambah kartu produk
-                  </Button>
-                }
-              />
-
-              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
-                {productsList.map((prod, index) => (
-                  <Panel key={index} padding="none" className="flex flex-col overflow-hidden sm:flex-row">
-                    <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-adm-ghost sm:aspect-square sm:w-36">
-                      {prod.image ? (
-                        <img src={prod.image} className="h-full w-full object-cover" alt="" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-adm-subtle"><ImageIcon className="h-7 w-7" strokeWidth={1.75} /></div>
-                      )}
-                      <span className="absolute left-2 top-2 max-w-[calc(100%-16px)] truncate rounded-full bg-cobalt px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-white">
-                        {prod.category}
-                      </span>
-                    </div>
-                    <div className="flex min-w-0 flex-1 flex-col justify-between p-4">
-                      <div className="min-w-0">
-                        <Eyebrow className="truncate">{prod.badge || 'PRODUK'}</Eyebrow>
-                        <h4 className="mt-1 line-clamp-1 text-sm font-semibold text-adm-fg sm:text-[15px]">{prod.title}</h4>
-                        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-adm-muted sm:text-[13px]">{prod.description}</p>
-                      </div>
-                      <div className="mt-auto flex justify-end gap-1 pt-3">
-                        <IconButton icon={<Edit2 />} label={`Edit ${prod.title}`} size="sm" onClick={() => handleOpenProductModal(index)} />
-                        <IconButton
-                          icon={<Trash2 />}
-                          label={`Hapus ${prod.title}`}
-                          size="sm"
-                          variant="danger-ghost"
-                          onClick={() => setProductsList(prev => prev.filter((_, i) => i !== index))}
-                        />
-                      </div>
-                    </div>
-                  </Panel>
-                ))}
-              </div>
-            </div>
-          </div>
+          <InfoNote>
+            <p>
+              Katalog di section ini diambil otomatis dari template yang sudah terbit: kartu, harga, gambar pratinjau, dan
+              jumlah terjual. Tambah atau ubah template di menu{' '}
+              <a href="/admin/pesanan-template/kelola-template" className="font-medium text-adm-cobalt-fg hover:underline">
+                Pesanan Template → Kelola template
+              </a>
+              .
+            </p>
+            <p>Daftar &ldquo;Sudah termasuk&rdquo; di bawah kolom cari diatur di tab Harga template.</p>
+          </InfoNote>
         );
 
       case 'portfolio':
@@ -869,7 +579,7 @@ const SiteSettings: React.FC = () => {
           <div>
             <PanelHeader
               title="Proyek portofolio"
-              subtitle="Kelola galeri portofolio klien yang tampil di bawah bagian produk."
+              subtitle="Cadangan section Proyek: tampil bila belum ada minimal 2 proyek klien yang layak di Project Clients."
               action={
                 <Button size="sm" icon={<Plus />} onClick={() => handleOpenPortfolioModal()}>
                   Tambah portofolio
@@ -912,6 +622,16 @@ const SiteSettings: React.FC = () => {
           </div>
         );
 
+      case 'compare':
+        return (
+          <InfoNote>
+            <p>
+              Tabel membandingkan template siap pakai, website custom, dan aplikasi mobile custom. Rentang harga template diambil
+              otomatis dari template yang terbit; isi baris lainnya diatur di kode situs, jadi tidak ada isian di sini.
+            </p>
+          </InfoNote>
+        );
+
       case 'process':
         return (
           <div>
@@ -932,7 +652,7 @@ const SiteSettings: React.FC = () => {
       case 'pricing':
         return (
           <div className="space-y-4 sm:space-y-6">
-            {/* Isi harga template: tampil di detail template, halaman pesan, dan akun pembeli */}
+            {/* Isi harga template: tampil di detail template, halaman pesan, akun pembeli, dan strip beranda */}
             <Panel className="space-y-4">
               <PanelHeader
                 title="Harga template"
@@ -961,67 +681,6 @@ const SiteSettings: React.FC = () => {
               </Field>
             </Panel>
 
-            {/* Section Headers */}
-            <Panel className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Field label="Judul bagian" htmlFor="pricing_title">
-                <Input id="pricing_title" type="text" defaultValue={settings.pricing_title || "Paket Layanan Kami"} />
-              </Field>
-              <Field label="Deskripsi bagian" htmlFor="pricing_subtitle">
-                <Textarea id="pricing_subtitle" className="min-h-[60px] resize-y" defaultValue={settings.pricing_subtitle || "Pilih paket yang sesuai dengan skala bisnis dan kebutuhan Anda"} />
-              </Field>
-            </Panel>
-
-            <div>
-              <PanelHeader
-                title="Paket harga"
-                subtitle="Kelola paket harga beserta daftar fiturnya."
-                action={
-                  <Button size="sm" icon={<Plus />} onClick={() => handleOpenPricingModal()}>
-                    Tambah paket
-                  </Button>
-                }
-              />
-
-              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
-                {pricingList.map((tier, index) => (
-                  <Panel key={index} tone={tier.isPopular ? 'cobalt' : 'surface'} className="flex flex-col justify-between">
-                    <div className="min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <h4 className="min-w-0 break-words text-sm font-semibold text-adm-fg sm:text-[15px]">{tier.name}</h4>
-                        {tier.isPopular && (
-                          <span className="shrink-0 rounded-full bg-cobalt px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-white">
-                            Populer
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-2 flex items-baseline gap-1">
-                        <span className="text-lg font-semibold tabular-nums tracking-tight text-adm-fg sm:text-xl">
-                          {tier.price.toLowerCase().startsWith('rp') ? tier.price : `Rp ${tier.price}`}
-                        </span>
-                      </div>
-                      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-adm-muted sm:text-[13px]">{tier.description}</p>
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {tier.features?.split(',').map((f: string, fi: number) => (
-                          <Chip key={fi} className="h-auto min-h-6 max-w-full whitespace-normal break-words py-0.5">
-                            ✓ {f.trim()}
-                          </Chip>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="mt-4 flex justify-end gap-1 border-t border-adm-line pt-3">
-                      <IconButton icon={<Edit2 />} label={`Edit ${tier.name}`} size="sm" onClick={() => handleOpenPricingModal(index)} />
-                      <IconButton
-                        icon={<Trash2 />}
-                        label={`Hapus ${tier.name}`}
-                        size="sm"
-                        variant="danger-ghost"
-                        onClick={() => setPricingList(prev => prev.filter((_, i) => i !== index))}
-                      />
-                    </div>
-                  </Panel>
-                ))}
-              </div>
-            </div>
           </div>
         );
 
@@ -1079,6 +738,62 @@ const SiteSettings: React.FC = () => {
                 </Field>
               </div>
             </Panel>
+          </div>
+        );
+
+      case 'guides':
+        return (
+          <div className="space-y-4 sm:space-y-6">
+            <Panel className="space-y-4">
+              <PanelHeader
+                title="Halaman /panduan"
+                titleAs="h4"
+                subtitle="Saklar di kanan atas menampilkan atau menyembunyikan tautan Panduan di navbar dan footer; halamannya tetap bisa dibuka."
+              />
+              <Field label="Teks pembuka" htmlFor="guides_intro" hint="Paragraf di bawah judul /panduan. Kosongkan untuk memakai teks bawaan.">
+                <Textarea
+                  id="guides_intro"
+                  className="min-h-[96px] resize-y"
+                  placeholder={GUIDES_INTRO_DEFAULT}
+                  defaultValue={settings.guides_intro ?? ''}
+                />
+              </Field>
+            </Panel>
+
+            <div>
+              <PanelHeader
+                title={`Artikel (${GUIDE_ROWS.length})`}
+                titleAs="h4"
+                subtitle="Artikel ditulis sebagai file Markdown oleh pengembang (src/content/panduan) dan terbit setelah ditinjau manusia."
+              />
+              <ul className="divide-y divide-adm-line overflow-hidden rounded-2xl ring-1 ring-inset ring-adm-line">
+                {GUIDE_ROWS.map((article) => (
+                  <li key={article.slug} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-sm font-semibold text-adm-fg">{article.title}</p>
+                      <p className="mt-0.5 text-xs text-adm-muted">
+                        {article.author} · Diperbarui {formatDateId(article.dateModified)}
+                      </p>
+                    </div>
+                    <Chip className={article.published ? 'bg-adm-mint-soft text-adm-mint-fg' : undefined}>
+                      {article.published ? 'Terbit' : 'Draf, menunggu tinjauan'}
+                    </Chip>
+                    {article.published && (
+                      <a
+                        href={`/panduan/${article.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-adm-cobalt-fg hover:underline"
+                      >
+                        Lihat
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                        <span className="sr-only"> {article.title} (tab baru)</span>
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         );
 
@@ -1247,11 +962,7 @@ const SiteSettings: React.FC = () => {
             icon={tabs.find(t => t.id === activeTab)?.icon || ImageIcon}
             iconTone="cobalt"
             title={tabs.find(t => t.id === activeTab)?.label}
-            subtitle={
-              TABS_NOT_ON_SITE.has(activeTab)
-                ? 'Bagian ini belum ditampilkan di beranda website.'
-                : 'Perbarui isi dan tampilan bagian ini di website kamu.'
-            }
+            subtitle={TAB_SUBTITLE[activeTab] ?? 'Perbarui isi dan tampilan bagian ini di website kamu.'}
             action={(() => {
               const key = SECTION_KEY_OF_TAB[activeTab];
               if (!key) return undefined;
@@ -1276,154 +987,6 @@ const SiteSettings: React.FC = () => {
       </div>
 
       {/* =================== MODAL OVERLAYS FOR CRUD =================== */}
-
-      {/* 1. PRODUCT CRUD MODAL */}
-      <Modal
-        open={isProductModalOpen}
-        onClose={() => { setIsProductModalOpen(false); setIsProductCategoryDropdownOpen(false); }}
-        title={editingProductIndex !== null ? 'Edit produk' : 'Tambah produk'}
-        icon={<Package />}
-        size="md"
-        bodyClassName="space-y-5"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setIsProductModalOpen(false)}>Batal</Button>
-            <Button onClick={handleSaveProduct}>Simpan produk</Button>
-          </>
-        }
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Kategori produk" className="relative">
-            <button
-              type="button"
-              onClick={() => setIsProductCategoryDropdownOpen(!isProductCategoryDropdownOpen)}
-              aria-haspopup="listbox"
-              aria-expanded={isProductCategoryDropdownOpen}
-              className={controlClass('md', false, 'flex cursor-pointer items-center justify-between gap-2 text-left')}
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cobalt" aria-hidden />
-                <span className="truncate capitalize">
-                  {productsCategories.find(c => c.id === productForm.category)?.label || 'Pilih kategori'}
-                </span>
-              </span>
-              <ChevronDown className={cn('h-4 w-4 shrink-0 text-adm-subtle transition-transform duration-200', isProductCategoryDropdownOpen && 'rotate-180')} strokeWidth={1.75} aria-hidden />
-            </button>
-
-            <AnimatePresence>
-              {isProductCategoryDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsProductCategoryDropdownOpen(false)} />
-                  <motion.div
-                    role="listbox"
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    transition={{ duration: 0.15 }}
-                    className={cn(FLOAT_PANEL, 'absolute left-0 right-0 top-full z-50 mt-1 flex flex-col gap-0.5')}
-                  >
-                    {productsCategories.filter(c => c.id !== 'all').map((opt) => (
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={productForm.category === opt.id}
-                        key={opt.id}
-                        onClick={() => {
-                          setProductForm(prev => ({ ...prev, category: opt.id }));
-                          setIsProductCategoryDropdownOpen(false);
-                        }}
-                        className={cn(MENU_ITEM, 'justify-between', productForm.category === opt.id && 'bg-adm-hover')}
-                      >
-                        <span className="flex min-w-0 items-center gap-2.5">
-                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cobalt" aria-hidden />
-                          <span className={cn('truncate', productForm.category === opt.id ? 'text-adm-fg' : 'text-adm-muted')}>{opt.label}</span>
-                        </span>
-                        {productForm.category === opt.id && <CheckCircle2 className="h-4 w-4 shrink-0 text-cobalt" strokeWidth={1.75} aria-hidden />}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </Field>
-          <Field label="Teks badge">
-            <Input
-              type="text"
-              value={productForm.badge}
-              onChange={(e) => setProductForm(prev => ({ ...prev, badge: e.target.value }))}
-              placeholder="mis. Jasa Pembuatan Website"
-            />
-          </Field>
-        </div>
-        <Field label="Judul produk">
-          <Input
-            type="text"
-            value={productForm.title}
-            onChange={(e) => setProductForm(prev => ({ ...prev, title: e.target.value }))}
-            placeholder="mis. Profil Perusahaan & Web Kustom"
-          />
-        </Field>
-        <Field label="Deskripsi produk">
-          <Textarea
-            value={productForm.description}
-            onChange={(e) => setProductForm(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Tulis deskripsi singkat..."
-            className="min-h-[80px] resize-y"
-          />
-        </Field>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Teks tombol">
-            <Input
-              type="text"
-              value={productForm.buttonText || ''}
-              onChange={(e) => setProductForm(prev => ({ ...prev, buttonText: e.target.value }))}
-              placeholder="Pesan Sekarang"
-            />
-          </Field>
-          <Field label="Link tombol (opsional)">
-            <Input
-              type="text"
-              autoCapitalize="none"
-              value={productForm.buttonLink || ''}
-              onChange={(e) => setProductForm(prev => ({ ...prev, buttonLink: e.target.value }))}
-              placeholder="mis. link WhatsApp atau URL lain"
-            />
-          </Field>
-        </div>
-
-        {/* Hero-Styled Image Upload Cards */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <Field label="Gambar sampul">
-            <UploadTile
-              preview={productForm.image ? <img src={productForm.image} className="h-full w-full object-cover" alt="" /> : undefined}
-              emptyLabel="Tambah sampul"
-              changeLabel="Ganti gambar"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImageFileLoad(file, (base64) => setProductForm(prev => ({ ...prev, image: base64 })));
-              }}
-            />
-          </Field>
-          <Field label="Logo brand (opsional)">
-            <UploadTile
-              preview={
-                productForm.logo ? (
-                  <div className="flex h-full w-full items-center justify-center bg-obsidian p-2">
-                    <img src={productForm.logo} className="max-h-full max-w-full object-contain brightness-0 invert" alt="" />
-                  </div>
-                ) : undefined
-              }
-              emptyLabel="Tambah logo"
-              changeLabel="Ganti logo"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImageFileLoad(file, (base64) => setProductForm(prev => ({ ...prev, logo: base64 })));
-              }}
-            />
-          </Field>
-        </div>
-      </Modal>
 
       {/* 2. PORTFOLIO CRUD MODAL */}
       <Modal
@@ -1550,84 +1113,6 @@ const SiteSettings: React.FC = () => {
             }}
           />
         </Field>
-      </Modal>
-
-      {/* 3. PRICING CRUD MODAL */}
-      <Modal
-        open={isPricingModalOpen}
-        onClose={() => setIsPricingModalOpen(false)}
-        title={editingPricingIndex !== null ? 'Edit paket harga' : 'Tambah paket harga'}
-        icon={<CreditCard />}
-        size="md"
-        bodyClassName="space-y-4"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setIsPricingModalOpen(false)}>Batal</Button>
-            <Button onClick={handleSavePricing}>Simpan paket</Button>
-          </>
-        }
-      >
-        <Field label="Nama paket">
-          <Input
-            type="text"
-            value={pricingForm.name}
-            onChange={(e) => setPricingForm(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="mis. Paket Bisnis Pro"
-          />
-        </Field>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Harga (format: 3.499.000)">
-            <Input
-              type="text"
-              value={pricingForm.price}
-              onChange={(e) => setPricingForm(prev => ({ ...prev, price: e.target.value }))}
-              placeholder="mis. 3.499.000"
-            />
-          </Field>
-          <Field label="Periode tagihan">
-            <Input
-              type="text"
-              value={pricingForm.period}
-              onChange={(e) => setPricingForm(prev => ({ ...prev, period: e.target.value }))}
-              placeholder="mis. one-time, / proyek, / bulan"
-            />
-          </Field>
-        </div>
-        <Field label="Deskripsi singkat">
-          <Textarea
-            value={pricingForm.description}
-            onChange={(e) => setPricingForm(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Tulis penjelasan singkat..."
-            className="min-h-[60px] resize-y"
-          />
-        </Field>
-        <Field label="Fitur (pisahkan dengan koma)">
-          <Textarea
-            value={pricingForm.features}
-            onChange={(e) => setPricingForm(prev => ({ ...prev, features: e.target.value }))}
-            placeholder="mis. Domain .com, Hosting SSD 5GB, 10 Halaman, Desain Premium"
-            className="min-h-[80px] resize-y"
-          />
-        </Field>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex h-11 items-center gap-2.5 rounded-xl bg-adm-ghost px-3.5 ring-1 ring-inset ring-adm-line sm:self-end">
-            <input
-              type="checkbox"
-              id="popular_chk"
-              checked={pricingForm.isPopular}
-              onChange={(e) => setPricingForm(prev => ({ ...prev, isPopular: e.target.checked }))}
-              className={checkboxClass}
-            />
-            <label htmlFor="popular_chk" className="cursor-pointer select-none text-sm font-medium text-adm-fg">Tandai sebagai populer</label>
-          </div>
-          <Field label="Teks tombol CTA">
-            <Input
-              type="text"
-              value={pricingForm.buttonText}
-              onChange={(e) => setPricingForm(prev => ({ ...prev, buttonText: e.target.value }))}
-            />
-          </Field>
-        </div>
       </Modal>
 
       {/* 4. FAQ CRUD MODAL */}

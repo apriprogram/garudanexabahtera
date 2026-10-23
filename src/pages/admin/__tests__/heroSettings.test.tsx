@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Jalankan: node ../../../node_modules/vitest/vitest.mjs run src/pages/admin/__tests__/heroSettings.test.tsx
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
@@ -1419,5 +1419,40 @@ describe('SiteSettings: setting latar hero', () => {
     // Hasil muat ulang sudah tampil saat kunci dibuka
     expect(screen.getByRole('tab', { name: 'Gambar' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: 'Video' })).toBeEnabled();
+  });
+});
+
+describe('SiteSettings: tab mengikuti website (pemilik 2026-10-24)', () => {
+  it('urutan tab = urutan website, tanpa Produk & paket harga; tab Panduan menyimpan teks pembuka', async () => {
+    // Tanpa setting lama: halaman ini tidak lagi membuat products_* / pricing_* (setting lama yang ada diteruskan apa adanya)
+    const { posts } = mockSiteApi({ stored: {} });
+    renderSite();
+    const nav = screen.getByRole('navigation', { name: 'Bagian pengaturan' });
+    expect(within(nav).getAllByRole('button').map((button) => button.textContent?.trim())).toEqual([
+      'Hero',
+      'Template',
+      'Proyek',
+      'Perbandingan',
+      'Keunggulan',
+      'FAQ',
+      'Banner CTA',
+      'Footer',
+      'Harga template',
+      'Panduan',
+    ]);
+
+    // Panduan: saklar (tautan navbar & footer), teks pembuka, daftar artikel dengan status
+    fireEvent.click(within(nav).getByRole('button', { name: 'Panduan' }));
+    expect(await screen.findByText('Halaman /panduan')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: /Tampil di website/ })).toBeInTheDocument();
+    expect(screen.getAllByText(/Terbit|Draf, menunggu tinjauan/).length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByLabelText('Teks pembuka'), { target: { value: 'Panduan singkat untuk pemilik bisnis.' } });
+
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0].settings.guides_intro).toBe('Panduan singkat untuk pemilik bisnis.');
+    for (const key of ['products_data', 'products_categories', 'pricing_data', 'pricing_title', 'pricing_subtitle']) {
+      expect(posts[0].settings).not.toHaveProperty(key);
+    }
   });
 });

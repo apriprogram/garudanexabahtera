@@ -155,7 +155,10 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
   const { settings } = useSiteSettings();
   // Admin bisa menyembunyikan banner CTA (Pengaturan website → Banner CTA, kunci "cta" di disabled_sections); anchor
   // #kontak lalu pindah ke footer putih supaya tautan "Konsultasi" tetap sampai ke kontak
-  const ctaHidden = getHiddenSections(settings).has('cta');
+  const hiddenSections = getHiddenSections(settings);
+  const ctaHidden = hiddenSections.has('cta');
+  // Saklar Panduan (Pengaturan website → Panduan) juga menyembunyikan tautannya di kolom Perusahaan
+  const companyLinks = hiddenSections.has('panduan') ? COMPANY_LINKS.filter((link) => link.href !== HUB_PATHS.guides) : COMPANY_LINKS;
   const pick = (key: keyof typeof DEFAULTS) => settings[key]?.trim() || DEFAULTS[key];
   const session = sessionKind(useSessionRole());
 
@@ -254,7 +257,7 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
 
           <LinkColumn title="Template" links={TEMPLATE_LINKS} className="lg:col-span-2" />
           <LinkColumn title="Jasa" links={SERVICE_LINKS} className="lg:col-span-2" />
-          <LinkColumn title="Perusahaan" links={COMPANY_LINKS} className="lg:col-span-2" />
+          <LinkColumn title="Perusahaan" links={companyLinks} className="lg:col-span-2" />
           <LinkColumn title="Legal" links={LEGAL_COLUMN} className="lg:col-span-2" />
         </div>
 

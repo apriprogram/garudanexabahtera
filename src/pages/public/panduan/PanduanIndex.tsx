@@ -4,9 +4,10 @@ import { BookOpen, LayoutTemplate, PencilRuler, ReceiptText, Smartphone } from '
 import { Link } from 'react-router-dom';
 import { DEFAULT_AUTHOR_NAME, getAuthor } from '../../../content/authors';
 import { listArticles } from '../../../content/panduan';
+import { useSiteSettings } from '../../../hooks/useSiteSettings';
 import { HUB_PATHS } from '../../../seo/paths';
 import { InfoPage, InfoSection } from '../info/InfoPage';
-import { GUIDES_H1 } from './PanduanIndex.seo';
+import { GUIDES_H1, GUIDES_INTRO_DEFAULT } from './PanduanIndex.seo';
 import { ArticleCards } from './ui';
 
 const NEXT_LINKS = [
@@ -34,6 +35,9 @@ const NEXT_LINKS = [
 export default function PanduanIndex() {
   const articles = listArticles();
   const author = getAuthor(DEFAULT_AUTHOR_NAME);
+  // Teks pembuka dari admin (Pengaturan website → Panduan); kosong = bawaan
+  const { settings } = useSiteSettings();
+  const intro = settings.guides_intro?.trim() || GUIDES_INTRO_DEFAULT;
 
   return (
     <InfoPage
@@ -42,10 +46,7 @@ export default function PanduanIndex() {
       title={GUIDES_H1}
       lead={
         <>
-          <p>
-            Biaya, pilihan, dan isi website atau aplikasi untuk bisnis Anda, dijelaskan apa adanya. Setiap angka dari pihak lain kami sertakan
-            sumbernya, dan setiap artikel mencantumkan tanggal terakhir diperbarui.
-          </p>
+          <p>{intro}</p>
           <p className="mt-3 text-[13px] text-subtle sm:text-sm">
             Ditulis oleh{' '}
             <Link to={author.path} className="font-medium text-fg transition-colors hover:text-primary">

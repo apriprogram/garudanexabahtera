@@ -12,6 +12,9 @@ import { HUB_PATHS, articlePath } from '../../../seo/paths';
 export const GUIDES_INDEX_UPDATED = '2026-10-23';
 
 export const GUIDES_H1 = 'Panduan website untuk bisnis';
+/** Teks pembuka /panduan bawaan; admin bisa menggantinya (Pengaturan website → Panduan, setting guides_intro). */
+export const GUIDES_INTRO_DEFAULT =
+  'Biaya, pilihan, dan isi website atau aplikasi untuk bisnis Anda, dijelaskan apa adanya. Setiap angka dari pihak lain kami sertakan sumbernya, dan setiap artikel mencantumkan tanggal terakhir diperbarui.';
 export const GUIDES_TITLE = `Panduan Membuat Website untuk Bisnis${TITLE_SUFFIX}`;
 export const GUIDES_DESCRIPTION =
   'Panduan praktis membuat website & aplikasi bisnis: biaya website company profile, template vs jasa custom, biaya aplikasi Android & iOS, dan contoh niche.';
