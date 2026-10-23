@@ -27,8 +27,9 @@ import { useTranslation } from '../../hooks/useTranslation';
  */
 const SECTIONS = [
   { id: 'templates', Component: Templates, tone: 'canvas' },
-  { id: 'perbandingan', Component: HomeCompare, tone: 'alt' },
+  // Proyek tepat di bawah Pilih Template (permintaan pemilik 2026-10-24)
   { id: 'projects', Component: Projects, tone: 'alt' },
+  { id: 'perbandingan', Component: HomeCompare, tone: 'alt' },
   { id: 'process', Component: Process, tone: 'alt' },
   { id: 'faq', Component: FAQ, tone: 'canvas' },
   ...(listArticles().length > 0 ? [{ id: 'panduan', Component: LatestGuides, tone: 'alt' } as const] : []),

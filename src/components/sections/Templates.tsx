@@ -13,6 +13,7 @@ import {
   indexTemplates,
   matchesQuery,
   normalize,
+  shotGrid,
   SORT_OPTIONS,
   sortTemplates,
   TINT,
@@ -59,17 +60,8 @@ const initialState = (): LoadState => {
   const primed = peekApiGet<TemplatesResponse>('get_templates');
   return primed ? readyState(primed, preloadNow()) : { status: 'loading' };
 };
-/** Jarak grid kartu, lega seperti galeri Dribbble */
-const GRID_GAP = 'grid grid-cols-1 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:gap-x-8 2xl:gap-x-9 2xl:gap-y-12';
-/**
- * Jumlah kolom mengikuti jumlah kartu (seperti gridCols di Projects), jadi katalog kecil tidak menyisakan separuh
- * baris kosong dengan pratinjau mungil: 1–2 kartu → 2 kolom selebar maks 5xl, 3 → 3 kolom, ≥ 4 → 1/2/3/4 kolom.
- */
-const gridFor = (count: number) => {
-  if (count <= 2) return `${GRID_GAP} sm:grid-cols-2 lg:max-w-5xl`;
-  if (count === 3) return `${GRID_GAP} sm:grid-cols-2 lg:grid-cols-3`;
-  return `${GRID_GAP} sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`;
-};
+/** Grid kartu bersama dengan #projects (templates/catalog). */
+const gridFor = shotGrid;
 /** Toolbar mengikuti besar katalog: kolom cari mulai 4 template, chip "Populer" + "Urutkan" mulai 6 template. */
 const SEARCH_MIN = 4;
 const EXTRAS_MIN = 6;

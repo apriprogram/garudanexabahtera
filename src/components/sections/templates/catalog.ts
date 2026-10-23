@@ -7,6 +7,19 @@ import type { Template } from '../../../types/platform';
  */
 export const TINT = 'bg-fg/5';
 
+/** Jarak grid kartu, lega seperti galeri Dribbble */
+const GRID_GAP = 'grid grid-cols-1 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 lg:gap-x-8 2xl:gap-x-9 2xl:gap-y-12';
+/**
+ * Grid kartu gaya Dribbble (katalog template & #projects). Jumlah kolom mengikuti jumlah kartu, jadi daftar kecil tidak
+ * menyisakan separuh baris kosong dengan pratinjau mungil: 1–2 kartu → 2 kolom selebar maks 5xl, 3 → 3 kolom,
+ * ≥ 4 → 1/2/3/4 kolom.
+ */
+export const shotGrid = (count: number) => {
+  if (count <= 2) return `${GRID_GAP} sm:grid-cols-2 lg:max-w-5xl`;
+  if (count === 3) return `${GRID_GAP} sm:grid-cols-2 lg:grid-cols-3`;
+  return `${GRID_GAP} sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`;
+};
+
 export type SortKey = 'rekomendasi' | 'terbaru' | 'termurah' | 'termahal';
 
 export const SORT_OPTIONS: { value: SortKey; label: string }[] = [

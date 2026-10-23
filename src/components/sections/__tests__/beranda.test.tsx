@@ -71,7 +71,7 @@ describe('syarat proyek layak tampil (B-01)', () => {
 });
 
 describe('Projects (#projects)', () => {
-  it('hanya menampilkan proyek yang layak; kartu datar, gambar dekoratif, aksi header "Pesan Custom"', async () => {
+  it('hanya menampilkan proyek yang layak; kartu gaya template + "Pesan Serupa", gambar dekoratif, aksi header "Pesan Custom"', async () => {
     publicProjects = [
       { id: 1, name: 'Website Perusahaan', service_type: 'website', image: '/p1.jpg', description: LONG },
       { id: 2, name: 'Undangan Digital', service_type: 'website', image: '/p2.jpg', description: `${LONG} Versi undangan.` },
@@ -84,14 +84,38 @@ describe('Projects (#projects)', () => {
     expect(within(section).getByRole('heading', { name: 'Undangan Digital' })).toBeInTheDocument();
     expect(section).not.toHaveTextContent(/Lorem Ipsum|Coba text|Undangan Lama/);
 
-    // Judul sudah dibacakan dari h3, jadi gambar dekoratif; tanpa zoom/lift karena kartu bukan tautan
+    // Kartu gaya kartu template: gambar 4:3 dekoratif (judul dari h3) yang sedikit membesar saat di-hover, tanpa kartu
+    // sorotan; lapisan hover = deskripsi + "Pesan Serupa" ke form custom; di bawah gambar judul lalu jenis proyek
     const images = section.querySelectorAll('img');
     expect(images).toHaveLength(2);
     images.forEach((img) => {
       expect(img).toHaveAttribute('alt', '');
-      expect(img.className).not.toMatch(/scale/);
+      expect(img.className).toContain('motion-safe:group-hover/shot:scale-[1.04]');
+      expect(img.parentElement?.className).toContain('aspect-[4/3]');
     });
-    section.querySelectorAll('article').forEach((card) => expect(card.className).not.toMatch(/\blift\b/));
+    const cards = section.querySelectorAll('article');
+    expect(cards).toHaveLength(2);
+    expect(section).not.toHaveTextContent('Proyek pilihan');
+    const card = within(section).getByRole('heading', { level: 3, name: 'Website Perusahaan' }).closest('article') as HTMLElement;
+    expect(card.className).not.toMatch(/\b(card-flat|lift)\b/);
+    // Deskripsi: salinan visual di lapisan hover (aria-hidden) + satu salinan sesudah judul (terlihat di layar sentuh,
+    // sr-only di perangkat ber-mouse), jadi terbaca di setiap perangkat dan dibacakan sesudah h3
+    const [inOverlay, belowTitle] = within(card).getAllByText(LONG);
+    const overlay = inOverlay.closest('.pointer-events-none') as HTMLElement;
+    expect(overlay.className).toContain('[@media(hover:hover)]:opacity-0');
+    expect(overlay.className).toContain('group-focus-within/shot:opacity-100');
+    expect(overlay.className).toContain('from-fg/90');
+    expect(inOverlay.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(belowTitle.closest('.pointer-events-none')).toBeNull();
+    expect(belowTitle.className).toContain('[@media(hover:hover)]:sr-only');
+    const heading = within(card).getByRole('heading', { level: 3 });
+    expect(heading.compareDocumentPosition(belowTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(heading.className).toContain('line-clamp-2');
+    const similar = within(card).getByRole('link', { name: 'Pesan Serupa Website Perusahaan' });
+    expect(similar).toHaveAttribute('href', '/pesan-custom');
+    expect(similar.className).toContain('btn-primary');
+    expect(similar.className).toContain('focus-visible:outline-white');
+    expect(within(card).getByText('Website').closest('p')).toHaveTextContent(/^Jenis proyek Website$/);
 
     const action = within(section).getByRole('link', { name: /Pesan Custom/ });
     expect(action).toHaveAttribute('href', '/pesan-custom');
@@ -254,6 +278,8 @@ describe('form proyek admin', () => {
     render(<ProjectFormDrawer open project={project} usersList={[]} onClose={() => {}} onSaved={() => {}} onError={() => {}} />);
     expect(screen.getByText('Belum tampil di beranda')).toBeInTheDocument();
     expect(screen.getByText(/belum ada gambar, deskripsi kurang dari 40 karakter, judul atau deskripsi masih berisi teks uji/)).toBeInTheDocument();
-    expect(screen.getByText(/Disarankan 1600×1000 px/)).toBeInTheDocument();
+    // Pratinjau unggahan 4:3 = kartu proyek beranda
+    expect(screen.getByText(/Disarankan 1600×1200 px/)).toBeInTheDocument();
+    expect(screen.getByText('Taruh gambar proyek di sini').closest('.aspect-\\[4\\/3\\]')).not.toBeNull();
   });
 });

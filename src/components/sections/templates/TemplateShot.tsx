@@ -91,23 +91,24 @@ export function TemplateShot({ template, index, isNew = false, headingLevel = 3 
               )}
             </Link>
 
-            {/* Lapisan hover: gradasi bawah + judul & deskripsi (perangkat ber-mouse) + tombol Demo & Pesan */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-linear-to-t from-fg/80 via-fg/35 to-transparent p-3 pt-16 transition-opacity duration-300 group-focus-within/shot:opacity-100 sm:p-4 sm:pt-20 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/shot:opacity-100">
+            {/* Lapisan hover: gradasi bawah (cukup gelap untuk teks putih di atas pratinjau terang) + judul & deskripsi
+                (perangkat ber-mouse) + tombol Demo & Pesan (cincin fokus putih di atas gradasi gelap) */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-linear-to-t from-fg/90 via-fg/55 to-transparent p-3 pt-16 transition-opacity duration-300 group-focus-within/shot:opacity-100 sm:p-4 sm:pt-20 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/shot:opacity-100">
               <div className="min-w-0 flex-1 [@media(hover:none)]:hidden">
                 <p className="truncate text-sm font-semibold text-white sm:text-[15px]">{template.name}</p>
                 {template.short_description && (
-                  <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-white/80 sm:text-[13px]">{template.short_description}</p>
+                  <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-white/85 sm:text-[13px]">{template.short_description}</p>
                 )}
               </div>
               <div className="pointer-events-auto ml-auto flex shrink-0 items-center gap-2">
-                <DemoLink template={template} className="btn btn-sm h-9 bg-white px-3.5 text-fg hover:bg-white/90" onClick={recordView}>
+                <DemoLink template={template} className="btn btn-sm h-9 bg-white px-3.5 text-fg hover:bg-white/90 focus-visible:outline-white" onClick={recordView}>
                   <Eye className="h-4 w-4" aria-hidden />
                   Demo
                 </DemoLink>
                 <Link
                   to={orderHref}
                   onClick={recordView}
-                  className="btn btn-primary btn-sm h-9 px-3.5"
+                  className="btn btn-primary btn-sm h-9 px-3.5 focus-visible:outline-white"
                   aria-label={`Pesan Template ${template.name}`}
                 >
                   <ShoppingBag className="h-4 w-4" aria-hidden />

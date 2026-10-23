@@ -306,16 +306,16 @@ export function ProjectFormDrawer({
           <section>
             <SectionTitle icon={Camera}>Media & pratinjau</SectionTitle>
             <div className="group relative mx-auto w-full max-w-sm">
-              {/* Rasio 16:10 = rasio kartu proyek di beranda */}
-              <div className="flex aspect-[16/10] w-full flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-adm-line-strong bg-adm-ghost transition-colors group-hover:border-cobalt/60">
+              {/* Rasio 4:3 = rasio kartu proyek di beranda (gambar dipotong dari atas, object-top) */}
+              <div className="flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-adm-line-strong bg-adm-ghost transition-colors group-hover:border-cobalt/60">
                 {formData.image ? (
-                  <img src={formData.image} alt="" className="h-full w-full object-cover" />
+                  <img src={formData.image} alt="" className="h-full w-full object-cover object-top" />
                 ) : (
                   <div className="flex flex-col items-center gap-3 px-4 text-adm-subtle">
                     <Upload className="h-7 w-7" strokeWidth={1.75} />
                     <div className="text-center">
                       <p className="text-[13px] font-semibold text-adm-fg">Taruh gambar proyek di sini</p>
-                      <p className="mt-0.5 text-xs text-adm-muted">Disarankan 1600×1000 px, maks. {MAX_IMAGE_MB} MB</p>
+                      <p className="mt-0.5 text-xs text-adm-muted">Disarankan 1600×1200 px, maks. {MAX_IMAGE_MB} MB</p>
                     </div>
                   </div>
                 )}
