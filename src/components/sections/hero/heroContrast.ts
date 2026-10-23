@@ -13,7 +13,9 @@
 // - target WCAG: teks isi ≥ 4,5:1, judul besar ≥ 3:1. Tidak lolos → admin diberi peringatan + saran lapisan / nada
 //   (readableOverlay); website tidak menebalkan lapisan dan tidak menambah apa pun sendiri;
 // - setting 'light' / 'dark' memaksa nadanya; 'auto' memilih nada yang paling terbaca di lapisan admin (seri → terang);
-// - tayangan (2+ gambar): kasus terburuk dari semua gambar, jadi nada tidak berganti antar-slide.
+// - tayangan (2+ gambar): kasus terburuk dari semua gambar, jadi nada tidak berganti antar-slide;
+// - belum / tidak bisa diukur (fallbackLegibility): 'auto' = teks gelap seperti halaman tanpa media, karena selama
+//   gambar/video dimuat yang ada di belakang teks masih halaman putih (teks putih di sana tidak terlihat).
 
 export type Rgb = readonly [number, number, number];
 
@@ -357,11 +359,15 @@ export function readableOverlay(samples: BackgroundSample | readonly BackgroundS
 
 /**
  * Cadangan selama latar diukur, atau bila tidak bisa diukur (gambar lintas domain tanpa CORS, canvas tercemar, video
- * tanpa frame): teks terang (gelap bila dipaksa admin) dengan lapisan admin persis, tanpa lapisan tambahan. HTML
- * prerender dan render pertama di browser memakai ini, jadi keduanya sama (tanpa kilasan lapisan gelap).
+ * tanpa frame, hemat data dengan 2+ gambar), dengan lapisan admin persis (tanpa lapisan tambahan):
+ * - 'auto' / 'dark' → teks gelap (tampilan halaman tanpa media): selama gambar/video belum tampil, di belakang teks
+ *   masih halaman putih, jadi teks putih tidak terlihat sama sekali; lapisan nada gelap = putih, tidak menggelapkan;
+ * - 'light' → teks terang, pilihan admin dihormati (admin memilihnya untuk media yang gelap).
+ * HTML prerender dan render pertama di browser memakai ini, jadi keduanya sama (tanpa selisih hidrasi, tanpa kilasan
+ * lapisan gelap).
  */
 export function fallbackLegibility(setting: HeroTextTone, overlayPercent: number): HeroLegibility {
-  const tone: HeroTone = setting === 'dark' ? 'dark' : 'light';
+  const tone: HeroTone = setting === 'light' ? 'light' : 'dark';
   return { tone, overlayAlpha: overlayAlpha(overlayPercent), contrast: null, readable: null, measured: false };
 }
 

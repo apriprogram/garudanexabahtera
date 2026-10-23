@@ -287,21 +287,38 @@ describe('readableOverlay (saran lapisan di admin)', () => {
     expect(readableOverlay([DARK_IMAGE, MIXED], 'light')).toBe(Math.max(readableOverlay(DARK_IMAGE, 'light')!, readableOverlay(MIXED, 'light')!));
     expect(readableOverlay([], 'light')).toBeNull();
   });
+
+  it('latar paling ekstrem pun punya saran ≤ 80% untuk kedua nada (admin selalu dapat angka lapisan)', () => {
+    // Putih = terburuk untuk teks terang, hitam = terburuk untuk teks gelap; setengah-setengah = keduanya
+    const half = sampleOf([50, WHITE], [50, BLACK]);
+    expect(readableOverlay(half, 'light')).toBe(readableOverlay(solidSample(WHITE), 'light'));
+    expect(readableOverlay(half, 'dark')).toBe(readableOverlay(solidSample(BLACK), 'dark'));
+    for (const tone of ['light', 'dark'] as const) {
+      expect(readableOverlay(half, tone), tone).not.toBeNull();
+      expect(readableOverlay(half, tone)!, tone).toBeLessThanOrEqual(HERO_OVERLAY_MAX);
+    }
+  });
 });
 
 describe('cadangan (sedang mengukur / tidak bisa diukur / HTML prerender)', () => {
-  it('teks terang dengan lapisan admin persis, tanpa lapisan tambahan', () => {
-    for (const setting of ['auto', 'light'] as const) {
-      expect(fallbackLegibility(setting, 40)).toEqual({ tone: 'light', overlayAlpha: 0.4, contrast: null, readable: null, measured: false });
-      expect(fallbackLegibility(setting, 0)).toEqual({ tone: 'light', overlayAlpha: 0, contrast: null, readable: null, measured: false });
+  it('otomatis: teks gelap seperti halaman tanpa media (bukan putih di atas halaman putih), lapisan admin persis', () => {
+    for (const setting of ['auto', 'dark'] as const) {
+      expect(fallbackLegibility(setting, 40)).toEqual({ tone: 'dark', overlayAlpha: 0.4, contrast: null, readable: null, measured: false });
+      expect(fallbackLegibility(setting, 0)).toEqual({ tone: 'dark', overlayAlpha: 0, contrast: null, readable: null, measured: false });
     }
     expect(fallbackLegibility('auto', 80).overlayAlpha).toBe(0.8);
     expect(fallbackLegibility('auto', Number.NaN).overlayAlpha).toBe(0);
+    // Selama gambar/video dimuat yang ada di belakang teks = halaman putih: teks cadangan terbaca di sana
+    const page = solidSample(WHITE);
+    const pending = fallbackLegibility('auto', 0);
+    expect(decideHeroLegibility(page, pending.tone, 0).readable).toBe(true);
+    // Lapisan nada gelap = putih: tidak pernah menggelapkan media
+    expect(scrimRgb(pending.tone)).toEqual(hexToRgb('#FFFFFF'));
   });
 
-  it('nada gelap yang dipaksa: teks gelap, lapisan admin persis', () => {
-    expect(fallbackLegibility('dark', 0)).toEqual({ tone: 'dark', overlayAlpha: 0, contrast: null, readable: null, measured: false });
-    expect(fallbackLegibility('dark', 25)).toMatchObject({ tone: 'dark', overlayAlpha: 0.25 });
+  it('nada terang yang dipaksa: teks terang, lapisan admin persis', () => {
+    expect(fallbackLegibility('light', 0)).toEqual({ tone: 'light', overlayAlpha: 0, contrast: null, readable: null, measured: false });
+    expect(fallbackLegibility('light', 25)).toMatchObject({ tone: 'light', overlayAlpha: 0.25 });
   });
 });
 

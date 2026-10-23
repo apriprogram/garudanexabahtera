@@ -74,8 +74,9 @@ const mergeVideo = (poster: SampleResult | null, video: HTMLVideoElement | null,
  *   halaman; tayangan: semua gambar diukur dan dipakai kasus terburuknya, jadi nada tidak berkedip antar-slide;
  *   video: poster, atau frame pertama (loadeddata, lewat `onVideoFrame` yang dipasang ke HeroMedia);
  * - selama mengukur, dan bila tidak bisa diukur (lintas domain tanpa CORS, canvas tercemar, hemat data dengan 2+
- *   gambar), memakai cadangan: teks terang (gelap bila dipaksa admin) dengan lapisan admin persis, sama dengan HTML
- *   prerender, jadi hidrasi tidak berbeda dan tidak ada kilasan lapisan gelap;
+ *   gambar), memakai cadangan (fallbackLegibility): teks gelap seperti halaman tanpa media (terang bila dipaksa
+ *   admin) dengan lapisan admin persis, sama dengan HTML prerender, jadi hidrasi tidak berbeda, tidak ada kilasan
+ *   lapisan gelap, dan judul tidak putih di atas halaman putih selama gambar/video dimuat;
  * - diukur ulang saat tata letak berganti (640px / 1024px), lebar jendela berubah, isi blok teks berganti
  *   (`layoutKey`, mis. mode Template ↔ Custom: di HP blok teks mode Custom lebih tinggi), atau ukuran blok teks /
  *   section berubah (ResizeObserver), tanpa unduh ulang.

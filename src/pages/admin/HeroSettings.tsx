@@ -456,6 +456,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
           {heroBgMode !== 'default' && (
             <HeroLegibilityField
               sources={legibilitySources}
+              video={heroBgMode === 'video'}
               videoWithoutPoster={heroBgMode === 'video' && Boolean(heroVideo) && !heroVideoPoster.trim()}
               tone={heroTextTone}
               onToneChange={(tone) => setHeroTextTone?.(tone)}

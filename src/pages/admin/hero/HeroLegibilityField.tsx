@@ -60,6 +60,8 @@ type Measure = { key: string; samples: BackgroundSample[] | null };
 interface HeroLegibilityFieldProps {
   /** Gambar latar (mode Gambar) atau sampul video (mode Video); kosong = belum ada yang bisa dipratinjau */
   sources: string[];
+  /** true di mode Video: `sources` = sampulnya (frame video lain bisa lebih terang / gelap) */
+  video?: boolean;
   /** true untuk video tanpa sampul: website mengukur frame pertama video */
   videoWithoutPoster?: boolean;
   tone: HeroTextTone;
@@ -79,6 +81,7 @@ interface HeroLegibilityFieldProps {
  */
 const HeroLegibilityField: React.FC<HeroLegibilityFieldProps> = ({
   sources,
+  video = false,
   videoWithoutPoster = false,
   tone,
   onToneChange,
@@ -118,15 +121,19 @@ const HeroLegibilityField: React.FC<HeroLegibilityFieldProps> = ({
   let warning: string | null = null;
   if (sources.length === 0) {
     badge = <Badge tone="mist" icon={Contrast}>Belum ada pratinjau</Badge>;
-    summary = videoWithoutPoster
-      ? `Video belum punya sampul. Website mengukur frame pertama video saat dibuka untuk memilih warna teks, ${layerText(percent)}.`
-      : 'Tambahkan gambar dulu untuk melihat pratinjau.';
+    // Nada dipaksa: website tidak memilih warna teks, jadi kalimatnya menyebut nada itu (bukan "untuk memilih")
+    summary = !videoWithoutPoster
+      ? 'Tambahkan gambar dulu untuk melihat pratinjau.'
+      : tone === 'auto'
+        ? `Video belum punya sampul. Website mengukur frame pertama video saat dibuka untuk memilih warna teks, ${layerText(percent)}.`
+        : `Video belum punya sampul. ${usage}`;
   } else if (pending) {
     badge = <Badge tone="mist" icon={Contrast}>Menghitung kontras...</Badge>;
     summary = 'Mengukur kecerahan latar di belakang teks...';
   } else if (!decision.contrast || !current?.samples) {
     badge = <Badge tone="mist" icon={Contrast}>Kontras tidak terukur</Badge>;
-    summary = `Latar tidak bisa diukur (mis. gambar dari domain lain). ${usage}`;
+    // Otomatis tanpa ukuran = teks gelap seperti halaman (fallbackLegibility): admin yang tahu latarnya gelap memilih Terang
+    summary = `Latar tidak bisa diukur (mis. gambar dari domain lain). ${usage}${tone === 'auto' ? ' Pilih Terang bila latarnya gelap.' : ''}`;
   } else {
     const ratio = formatRatio(decision.contrast.body);
     badge = decision.readable ? (
@@ -134,7 +141,9 @@ const HeroLegibilityField: React.FC<HeroLegibilityFieldProps> = ({
     ) : (
       <Badge tone="warning" icon={AlertTriangle}>Kontras {ratio} · Kurang terbaca</Badge>
     );
-    summary = `${usage}${sources.length > 1 ? ` Dihitung dari ${sources.length} gambar, yang paling sulit dibaca.` : ''}`;
+    summary = `${usage}${sources.length > 1 ? ` Dihitung dari ${sources.length} gambar, yang paling sulit dibaca.` : ''}${
+      video ? ' Untuk video, yang diukur hanya sampulnya; frame lain bisa lebih terang atau lebih gelap.' : ''
+    }`;
     if (!decision.readable) warning = suggestion(current.samples, decision.tone, percent);
   }
 

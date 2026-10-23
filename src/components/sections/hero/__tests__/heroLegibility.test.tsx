@@ -2,7 +2,8 @@
 // Teks hero di atas gambar/video (useHeroLegibility + Hero + HeroMedia), permintaan pemilik 2026-10-23: lapisan =
 // setting admin `hero_overlay` PERSIS (bawaan 0 = tanpa elemen lapisan, tidak pernah ditebalkan website), nada teks
 // dari sampel latar di belakang blok teks (kasus terburuk tayangan) atau dipaksa admin, cadangan selama mengukur / bila
-// tidak bisa diukur (lapisan admin persis), HTML server = render hidrasi pertama, tanpa bayangan apa pun di hero, ukur
+// tidak bisa diukur (teks gelap seperti halaman, terang bila dipaksa; lapisan admin persis), HTML server = render
+// hidrasi pertama, tanpa bayangan apa pun di hero, ukur
 // ulang saat lebar / mode hero / ukuran blok teks berubah, hemat data, video (poster / frame pertama), media yang
 // habis → tampilan bawaan, pudar bawah yang tidak sampai ke teks, dan kelas teks terang vs gelap.
 // Jalankan: npx vitest run src/components/sections/hero/__tests__/heroLegibility.test.tsx
@@ -133,19 +134,23 @@ describe('Hero: gambar latar', () => {
     site.settings = image(IMAGE_1);
     const view = renderHero();
     await waitFor(() => expect(view.section.querySelector(`img[src="${IMAGE_1}"]`)).not.toBeNull());
-    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'light');
+    // Gambar belum terukur (mungkin belum tampil: di belakang teks masih halaman putih) -> teks gelap, bukan putih
+    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'dark');
+    expect(view.title().className).toContain('text-fg');
+    expect(view.section.querySelector('.text-on-media, .text-on-media-muted, .btn-outline-on-media')).toBeNull();
     expect(view.scrim()).toBeNull();
     expect(view.section.querySelector('.hero-scrim')).toBeNull();
     // Pudar bawah ke canvas tetap ada (bukan lapisan gelap)
     expect(view.fade()).not.toBeNull();
   });
 
-  it('selama mengukur: cadangan = teks terang dengan lapisan admin persis (tidak ditebalkan)', async () => {
+  it('selama mengukur: cadangan = teks gelap dengan lapisan admin persis (putih, tidak ditebalkan, tidak menggelapkan)', async () => {
     site.settings = { ...image(IMAGE_1), hero_overlay: '40' };
     const view = renderHero();
     await waitFor(() => expect(view.scrim()).not.toBeNull());
-    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'light');
-    expect(rgbOf(view.scrim())).toBe('18 22 32');
+    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'dark');
+    expect(view.title().className).toContain('text-fg');
+    expect(rgbOf(view.scrim())).toBe('255 255 255');
     expect(alphaOf(view.scrim())).toBe(0.4);
     // Lapisan di atas media, di bawah pudar bawah
     expect(view.scrim()!.className).toContain('hero-scrim');
@@ -246,6 +251,15 @@ describe('Hero: gambar latar', () => {
     expect(rgbOf(view.scrim())).toBe('255 255 255');
   });
 
+  it('nada terang dipaksa selama mengukur: pilihan admin dihormati, lapisan admin persis', async () => {
+    site.settings = { ...image(IMAGE_1), hero_text_tone: 'light', hero_overlay: '30' };
+    const view = renderHero();
+    await waitFor(() => expect(view.scrim()).not.toBeNull());
+    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'light');
+    expect(rgbOf(view.scrim())).toBe('18 22 32');
+    expect(alphaOf(view.scrim())).toBe(0.3);
+  });
+
   it('nada gelap dipaksa selama mengukur: teks gelap dengan lapisan admin persis (0% = tanpa lapisan)', async () => {
     site.settings = { ...image(IMAGE_1), hero_text_tone: 'dark' };
     const view = renderHero();
@@ -261,13 +275,13 @@ describe('Hero: gambar latar', () => {
     expect(alphaOf(layered.scrim())).toBe(0.25);
   });
 
-  it('tidak bisa diukur (mis. lintas domain tanpa CORS): cadangan, teks terang dengan lapisan admin persis', async () => {
+  it('tidak bisa diukur (mis. lintas domain tanpa CORS): cadangan, teks gelap dengan lapisan admin persis', async () => {
     for (const overlay of [undefined, '40']) {
       site.settings = { ...image('https://s3.test/bucket/assets/bg/hero_1.jpg'), hero_overlay: overlay };
       vi.mocked(sampleImage).mockResolvedValue({ kind: 'unmeasurable' });
       const view = renderHero();
       await measuredOnce();
-      expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'light');
+      expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'dark');
       if (overlay) expect(alphaOf(view.scrim())).toBe(0.4);
       else expect(view.scrim()).toBeNull();
       view.unmount();
@@ -283,7 +297,7 @@ describe('Hero: gambar latar', () => {
     await waitFor(() => expect(view.scrim()).not.toBeNull());
     await act(async () => {});
     expect(sampleImage).not.toHaveBeenCalled();
-    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'light');
+    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'dark');
     expect(alphaOf(view.scrim())).toBe(0.3);
   });
 
@@ -389,17 +403,17 @@ describe('Hero: video latar', () => {
     expect(sampleVideo).not.toHaveBeenCalled();
   });
 
-  it('tanpa poster: cadangan sampai frame pertama (loadeddata), lalu frame itu yang diukur', async () => {
+  it('tanpa poster: cadangan (teks gelap) sampai frame pertama (loadeddata), lalu frame itu yang diukur', async () => {
     site.settings = { hero_bg_mode: 'video', hero_bg_video: VIDEO };
-    vi.mocked(sampleVideo).mockReturnValue(ok(BRIGHT));
+    vi.mocked(sampleVideo).mockReturnValue(ok(DARK));
     const view = renderHero();
     await waitFor(() => expect(view.section.querySelector('video')).not.toBeNull());
     await act(async () => {});
-    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'light');
+    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'dark');
     expect(sampleVideo).not.toHaveBeenCalled();
     const video = view.section.querySelector('video') as HTMLVideoElement;
     fireEvent.loadedData(video);
-    await waitFor(() => expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'dark'));
+    await waitFor(() => expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'light'));
     expect(vi.mocked(sampleVideo).mock.calls[0][0]).toBe(video);
   });
 
@@ -503,13 +517,30 @@ describe('Hero: HTML server = render pertama di browser', () => {
     }
   });
 
+  it('gambar, otomatis, lapisan 0 (bawaan): judul gelap di HTML server & setelah hidrasi, bukan putih di atas halaman putih', async () => {
+    site.settings = image(IMAGE_1);
+    const run = await serverThenHydrate();
+    try {
+      expect(run.problems).toEqual([]);
+      expect(run.html).not.toContain('hero-scrim');
+      expect(run.html).not.toMatch(/text-on-media|btn-outline-on-media/);
+      expect(run.server.tone).toBe('dark');
+      expect(run.container.querySelector('.hero-parallax')).toHaveAttribute('data-hero-tone', 'dark');
+      expect(run.container.querySelector('h1')!.className).toContain('text-fg');
+      expect(run.container.querySelector('[data-hero-scrim]')).toBeNull();
+    } finally {
+      run.done();
+    }
+  });
+
   it('gambar, lapisan 40: lapisan yang sama di HTML server dan setelah hidrasi (tanpa kilasan lapisan lain)', async () => {
     site.settings = { ...image(IMAGE_1), hero_overlay: '40' };
     const run = await serverThenHydrate();
     try {
       expect(run.problems).toEqual([]);
-      expect(run.server.tone).toBe('light');
-      expect(rgbOf(run.server.scrim)).toBe('18 22 32');
+      // Belum terukur: teks gelap dengan lapisan putih admin (bukan obsidian di atas gambar yang belum diketahui)
+      expect(run.server.tone).toBe('dark');
+      expect(rgbOf(run.server.scrim)).toBe('255 255 255');
       expect(alphaOf(run.server.scrim)).toBe(0.4);
       // Node lapisan dari server dipakai ulang, alpha tetap
       const scrim = run.container.querySelector<HTMLElement>('[data-hero-scrim]');

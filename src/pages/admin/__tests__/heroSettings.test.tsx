@@ -894,6 +894,7 @@ const pixelsOf = (...groups: [number, string][]): BackgroundSample =>
   backgroundSample(groups.flatMap(([n, hex]) => Array.from({ length: n }, () => [...hexToRgb(hex), 255]).flat()))!;
 const DARK_BG = pixelsOf([90, '#0B1430'], [10, '#1D3A8A']);
 const MIXED_BG = pixelsOf([55, '#06102C'], [15, '#1A6BFF'], [30, '#F2F6FF']);
+const BRIGHT_BG = pixelsOf([80, '#F4F7FF'], [20, '#DCE6F5']);
 const toneTab = (name: string) => screen.getByRole('tab', { name });
 const overlaySlider = () => screen.getByRole('slider', { name: 'Lapisan' });
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1010,15 +1011,67 @@ describe('HeroSettings: teks di atas latar', () => {
     vi.mocked(sampleImage).mockResolvedValue({ kind: 'unmeasurable' });
     const cross = render(<Harness initialMode="image" initialImages={['https://s3.test/bucket/assets/bg/a.jpg']} />);
     expect(await screen.findByText('Kontras tidak terukur')).toBeInTheDocument();
-    // Cadangan = lapisan admin persis (bawaan 0), tanpa peringatan karena tidak terukur
-    expect(screen.getByText(/Website memakai teks terang tanpa lapisan \(gambar\/video tampil penuh\)\./)).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Pratinjau teks hero: teks terang, tanpa lapisan' }).querySelector('[data-preview-scrim]')).toBeNull();
+    // Cadangan = teks gelap seperti halaman (sama dengan website) + lapisan admin persis (bawaan 0), tanpa peringatan
+    // karena tidak terukur; admin diberi tahu kapan memilih Terang
+    expect(screen.getByText(/Website memakai teks gelap tanpa lapisan \(gambar\/video tampil penuh\)\. Pilih Terang bila latarnya gelap\./)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Pratinjau teks hero: teks gelap, tanpa lapisan' }).querySelector('[data-preview-scrim]')).toBeNull();
     expect(screen.queryByText('Teks mungkin sulit dibaca')).not.toBeInTheDocument();
     cross.unmount();
 
-    render(<Harness initialMode="video" initialVideo={VIDEO_URL} />);
-    expect(screen.getByText(/Video belum punya sampul. Website mengukur frame pertama video/)).toBeInTheDocument();
+    const forcedCross = render(<Harness initialMode="image" initialImages={['https://s3.test/bucket/assets/bg/a.jpg']} initialTone="light" />);
+    expect(await screen.findByText('Kontras tidak terukur')).toBeInTheDocument();
+    expect(screen.getByText(/Website memakai teks terang tanpa lapisan \(gambar\/video tampil penuh\)\.$/)).toBeInTheDocument();
+    forcedCross.unmount();
+
+    const noPoster = render(<Harness initialMode="video" initialVideo={VIDEO_URL} />);
+    expect(screen.getByText(/Video belum punya sampul. Website mengukur frame pertama video saat dibuka untuk memilih warna teks/)).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: /Pratinjau teks hero/ })).not.toBeInTheDocument();
+    noPoster.unmount();
+
+    // Nada dipaksa: website tidak memilih warna teks, kalimatnya menyebut nada & lapisan yang dipakai
+    for (const [initialTone, name] of [['light', 'terang'], ['dark', 'gelap']] as const) {
+      const forced = render(<Harness initialMode="video" initialVideo={VIDEO_URL} initialTone={initialTone} initialOverlay={30} />);
+      expect(screen.getByText(`Video belum punya sampul. Website memakai teks ${name} dengan lapisan 30%.`)).toBeInTheDocument();
+      expect(screen.queryByText(/untuk memilih warna teks/)).not.toBeInTheDocument();
+      forced.unmount();
+    }
+  });
+
+  it('peringatan menyarankan lapisan dan warna teks lain (seperti produksi: Terang di atas sampul terang, 0%)', async () => {
+    vi.mocked(sampleImage).mockResolvedValue({ kind: 'sample', sample: BRIGHT_BG });
+    const own = readableOverlay(BRIGHT_BG, 'light')!;
+    expect(own).toBeGreaterThan(0);
+    // Teks gelap sudah terbaca tanpa lapisan: saran warna teks tanpa keterangan lapisan
+    expect(readableOverlay(BRIGHT_BG, 'dark')).toBe(0);
+    render(<Harness initialMode="video" initialVideo={VIDEO_URL} initialPoster={POSTER_URL} initialTone="light" initialOverlay={0} />);
+    expect(await screen.findByText(/· Kurang terbaca$/)).toBeInTheDocument();
+    expect(screen.getByText('Teks mungkin sulit dibaca')).toBeInTheDocument();
+    expect(screen.getByText(`Coba naikkan lapisan ke ${own}% atau pilih warna teks Gelap.`)).toBeInTheDocument();
+    // Video: hanya sampul yang diukur, frame lain bisa berbeda
+    expect(screen.getByText(/Untuk video, yang diukur hanya sampulnya; frame lain bisa lebih terang atau lebih gelap\./)).toBeInTheDocument();
+    // Pratinjau = website: teks terang tanpa lapisan, tidak ada yang ditambahkan diam-diam
+    const preview = screen.getByRole('img', { name: 'Pratinjau teks hero: teks terang, tanpa lapisan' });
+    expect(preview.querySelector('[data-preview-scrim]')).toBeNull();
+    expect(preview.querySelector('.text-on-media')).not.toBeNull();
+
+    // Ikut saran warna teks: terbaca tanpa lapisan, peringatan hilang
+    fireEvent.click(toneTab('Gelap'));
+    expect(screen.getByText(/· Terbaca$/)).toBeInTheDocument();
+    expect(screen.queryByText('Teks mungkin sulit dibaca')).not.toBeInTheDocument();
+  });
+
+  it('saran warna teks lain menyebut lapisannya bila nada itu butuh lapisan lebih tebal dari pilihan admin', async () => {
+    vi.mocked(sampleImage).mockResolvedValue({ kind: 'sample', sample: MIXED_BG });
+    const light = readableOverlay(MIXED_BG, 'light')!;
+    const dark = readableOverlay(MIXED_BG, 'dark')!;
+    // Gelap dipaksa di 10%: Terang butuh lapisan lebih tipis dari Gelap, tapi lebih tebal dari 10%
+    expect(light).toBeLessThan(dark);
+    expect(light).toBeGreaterThan(10);
+    expect(decideHeroLegibility(MIXED_BG, 'dark', 10).readable).toBe(false);
+    render(<Harness initialMode="image" initialImages={['/assets/bg/hero_1.jpg']} initialTone="dark" initialOverlay={10} />);
+    expect(await screen.findByText('Teks mungkin sulit dibaca')).toBeInTheDocument();
+    expect(screen.getByText(`Coba naikkan lapisan ke ${dark}% atau pilih warna teks Terang dengan lapisan ${light}%.`)).toBeInTheDocument();
+    expect(screen.queryByText(/Untuk video/)).not.toBeInTheDocument();
   });
 
   it('sampul video yang diukur; terkunci selama menyimpan', async () => {

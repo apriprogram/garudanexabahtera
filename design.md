@@ -250,8 +250,10 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
     - tayangan 2+ gambar: semua gambar diukur, dipakai kasus terburuk (nada tidak berganti antar-slide). Video:
       poster, atau frame pertama (`loadeddata`) bila tanpa poster;
     - **cadangan** selama mengukur, di HTML prerender, dan bila tidak bisa diukur (gambar lintas domain tanpa CORS,
-      canvas tercemar, video tanpa frame, Save-Data dengan 2+ gambar): teks terang (gelap bila dipaksa admin) dengan
-      lapisan admin persis. HTML prerender = render hidrasi pertama, jadi tanpa kilasan lapisan gelap;
+      canvas tercemar, video tanpa frame, Save-Data dengan 2+ gambar): teks **gelap** seperti halaman tanpa media
+      (terang hanya bila admin memaksa Terang) dengan lapisan admin persis (nada gelap = lapisan putih). Selama
+      gambar/video dimuat yang ada di belakang teks masih halaman putih, jadi judul putih di sana tidak terlihat. HTML
+      prerender = render hidrasi pertama, jadi tanpa selisih hidrasi dan tanpa kilasan lapisan gelap;
     - diukur ulang saat tata letak berganti (640px / 1024px), lebar jendela berubah, mode hero berganti (Template ↔
       Custom: di HP blok teks mode Custom lebih tinggi), atau ukuran blok teks / section berubah (ResizeObserver);
       gambar tidak diunduh ulang.
@@ -306,7 +308,10 @@ Gaya "Calm Workspace" dari BELAJAR CPNS (`E:\_____________\WEBSITE\GARUDANEXA\Be
   dan pratinjau langsung yang sama dengan website: gambar pertama (atau sampul video), lapisan hanya bila > 0%, contoh
   judul & poin dalam nada yang dipakai (datar, tanpa bayangan; tanpa gambar/sampul tidak ada pratinjau),
   lencana kontras dari `heroContrast.ts` ("Kontras 7,1:1 · Terbaca" / "Kurang terbaca", dihitung dari semua gambar dengan tata letak desktop 1366×900) dan ringkasan
-  ("Website memakai teks terang tanpa lapisan (gambar/video tampil penuh)."). Kurang terbaca → `Notice` peringatan
+  ("Website memakai teks terang tanpa lapisan (gambar/video tampil penuh)."; mode Video menambahkan bahwa hanya
+  sampulnya yang diukur, frame lain bisa berbeda; tidak terukur + Otomatis = teks gelap, "Pilih Terang bila latarnya
+  gelap."; video tanpa sampul dengan nada dipaksa menyebut nada itu, bukan "untuk memilih warna teks"). Kurang
+  terbaca → `Notice` peringatan
   "Teks mungkin sulit dibaca" dengan saran ("Coba naikkan lapisan ke 35% atau pilih warna teks Gelap dengan lapisan
   20%."); website tidak pernah menebalkan lapisan atau menambah bayangan sendiri. Semua tersimpan lewat "Simpan semua
   perubahan". Detail tampilan di website: "Latar hero" di bagian Beranda.

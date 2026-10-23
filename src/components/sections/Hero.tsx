@@ -18,7 +18,8 @@ import { useHeroLegibility } from './hero/useHeroLegibility';
  * - teks di atas gambar/video (useHeroLegibility): kecerahan latar di belakang blok teks diukur, lalu dipilih teks
  *   terang atau gelap yang paling terbaca. Lapisan di atas media = persis `hero_overlay` dari admin (0 = tanpa
  *   lapisan, gambar/video tampil penuh), website tidak pernah menebalkannya; `hero_text_tone` bisa memaksa nadanya.
- *   Selama mengukur (dan di HTML prerender): teks terang (gelap bila dipaksa), lapisan admin;
+ *   Selama mengukur (dan di HTML prerender): teks gelap seperti halaman tanpa media (terang bila dipaksa admin),
+ *   lapisan admin; selama gambar/video dimuat di belakang teks masih halaman putih;
  * - datar: tanpa bayangan teks, pendar, atau bayangan kotak di seluruh hero (garis tipis ring-* boleh);
  * - kiri: toggle mode Template / Custom, judul dua warna kata per kata, checklist, tombol
  *   ("Pilih Template" → #templates, "Pesan Website / Aplikasi Mobile Custom" → /pesan-custom);
