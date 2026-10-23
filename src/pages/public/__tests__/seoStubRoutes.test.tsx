@@ -60,14 +60,8 @@ const renderAt = (path: string) =>
     </MemoryRouter>,
   );
 
-const STUBS: [string, string][] = [
-  ['/template', 'Template website siap pakai'],
-  ['/template/kategori/company-profile', 'Template website company profile'],
-  ['/template/kategori/kecantikan-klinik', 'Template website klinik kecantikan & salon'],
-  ['/template/kategori/olahraga-komunitas', 'Template website klub olahraga'],
-  ['/template/kategori/fintech-startup', 'Template website fintech & startup'],
-  ['/panduan', 'Panduan website untuk bisnis'],
-];
+// Katalog & kategori sudah halaman jadi (WP5): diuji di src/pages/public/catalog/__tests__/catalog.test.tsx
+const STUBS: [string, string][] = [['/panduan', 'Panduan website untuk bisnis']];
 
 describe('rute stub SEO WP1', () => {
   it.each(STUBS)('%s menampilkan stub di dalam layout situs', async (path, heading) => {

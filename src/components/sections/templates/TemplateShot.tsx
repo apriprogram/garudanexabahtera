@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Eye, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { templatePreviewAlt } from '../../../content/templateCopy';
 import { formatRupiah, type Template } from '../../../types/platform';
 import { LogoMark } from '../../ui/LogoMark';
 import { Reveal } from '../../ui/Reveal';
@@ -63,9 +64,12 @@ export function TemplateShot({ template, index, isNew = false, showCategory = fa
           <div className={`relative aspect-[4/3] overflow-hidden rounded-xl ${TINT}`}>
             <Link to={detailHref} tabIndex={-1} aria-hidden="true" className="block h-full w-full">
               {showImage ? (
+                // Alt deskriptif (SEO-PLAN §5.5 langkah 7): tautan gambar aria-hidden, jadi alt tidak dibacakan dua kali
                 <img
                   src={template.preview_image as string}
-                  alt=""
+                  alt={templatePreviewAlt(template)}
+                  width={1600}
+                  height={1000}
                   loading="lazy"
                   decoding="async"
                   onError={() => setImageBroken(true)}

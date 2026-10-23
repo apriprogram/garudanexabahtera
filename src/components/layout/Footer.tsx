@@ -9,14 +9,16 @@ import {
   DEFAULT_CONTACT_EMAIL,
   DEFAULT_CONTACT_PHONE,
   displayPhone,
-  getHiddenSections,
   getWhatsappNumber,
   telHref,
   useSiteSettings,
   whatsappUrl,
 } from '../../hooks/useSiteSettings';
 import { sessionKind, useSessionRole, type SessionKind } from '../../hooks/useSessionRole';
+import { CATEGORY_LIST } from '../../content/categories';
+import { COMPANY_FACTS } from '../../lib/companyFacts';
 import { LEGAL_LINKS } from '../../lib/legal';
+import { HUB_PATHS, categoryPath } from '../../seo/paths';
 
 const DEFAULTS = {
   footer_address: 'Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis.',
@@ -33,24 +35,29 @@ const CONTACT_MESSAGE = 'Halo Admin, saya tertarik dengan template website atau 
 interface FooterLink {
   label: string;
   href: string;
-  /** id section beranda; tautan disembunyikan bila section itu dimatikan admin */
-  section?: string;
 }
 
-// ?layanan= memilih jenis layanan di form /pesan-custom (dibaca CustomOrderForm)
-const SERVICE_LINKS: FooterLink[] = [
-  { label: 'Template website', href: '#templates', section: 'templates' },
-  { label: 'Website custom', href: '/pesan-custom?layanan=website' },
-  { label: 'Aplikasi mobile custom', href: '/pesan-custom?layanan=mobile' },
-  { label: 'Konsultasi Gratis', href: '#kontak' },
+// Kolom footer = semua halaman hub (docs/platform/SEO-PLAN.md §5.5 langkah 6, Lampiran A.4): tautan nyata, anchor
+// berupa nama halaman/merek (bukan kata kunci yang dijejalkan). Kategori dari src/content/categories.ts.
+const TEMPLATE_LINKS: FooterLink[] = [
+  { label: 'Semua template', href: HUB_PATHS.catalog },
+  ...CATEGORY_LIST.map((meta) => ({ label: meta.name, href: categoryPath(meta.slug) })),
 ];
 
-const EXPLORE_LINKS: FooterLink[] = [
-  { label: 'Template', href: '#templates', section: 'templates' },
-  { label: 'Projects', href: '#projects', section: 'projects' },
-  { label: 'Proses', href: '#process', section: 'process' },
-  { label: 'FAQ', href: '#faq', section: 'faq' },
+const SERVICE_LINKS: FooterLink[] = [
+  { label: 'Website custom', href: HUB_PATHS.webService },
+  { label: 'Aplikasi mobile', href: HUB_PATHS.mobileService },
+  { label: 'Pesan Custom', href: HUB_PATHS.customOrder },
+  { label: 'Harga', href: HUB_PATHS.pricing },
 ];
+
+const COMPANY_LINKS: FooterLink[] = [
+  { label: 'Tentang', href: HUB_PATHS.about },
+  { label: 'Panduan', href: HUB_PATHS.guides },
+  { label: 'Kontak', href: HUB_PATHS.contact },
+];
+
+const LEGAL_COLUMN: FooterLink[] = LEGAL_LINKS.map((link) => ({ label: link.label, href: link.to }));
 
 /** Kolom Akun mengikuti sesi (sama seperti tombol akun di Navbar): tamu, pembeli template, atau staf. */
 const ACCOUNT_LINKS: Record<SessionKind, FooterLink[]> = {
@@ -144,7 +151,6 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
   const pick = (key: keyof typeof DEFAULTS) => settings[key]?.trim() || DEFAULTS[key];
   const session = sessionKind(useSessionRole());
 
-  const hidden = getHiddenSections(settings);
   const whatsapp = getWhatsappNumber(settings);
   const phone = pick('footer_phone');
   const email = pick('footer_email');
@@ -161,7 +167,9 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
     const url = (settings[key] || '').trim();
     return url && url !== '#';
   });
-  const shown = (links: FooterLink[]) => links.filter((link) => !link.section || !hidden.has(link.section));
+  // Baris fakta dari COMPANY_FACTS (satu sumber NAP, sama dengan /kontak dan JSON-LD); field null tidak dirender
+  const { address } = COMPANY_FACTS;
+  const addressLine = address ? [address.streetAddress, address.locality, address.region, address.postalCode].filter(Boolean).join(', ') : null;
 
   return (
     <footer>
@@ -241,35 +249,35 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
               <BrandLogo />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">{pick('footer_address')}</p>
-          </div>
-
-          <LinkColumn title="Layanan" links={shown(SERVICE_LINKS)} className="lg:col-span-2" />
-          <LinkColumn title="Jelajahi" links={shown(EXPLORE_LINKS)} className="lg:col-span-2" />
-          <LinkColumn title="Akun" links={ACCOUNT_LINKS[session]} className="lg:col-span-2" />
-
-          <div className="lg:col-span-2">
-            <h3 className="eyebrow">Hubungi kami</h3>
-            <ul className="mt-2 sm:mt-4 sm:space-y-3">
-              <li>
-                <a href={whatsappUrl(whatsapp, CONTACT_MESSAGE)} target="_blank" rel="noopener noreferrer" className={linkClass}>
+            {/* Baris fakta (NAP): nama badan hukum, alamat bila sudah ada, WhatsApp, email */}
+            <address className="mt-5 max-w-sm text-[13px] not-italic leading-relaxed text-muted sm:text-sm">
+              <span className="block font-semibold text-fg">{COMPANY_FACTS.legalName}</span>
+              {addressLine && <span className="mt-0.5 block">{addressLine}</span>}
+              <span className="mt-1 flex flex-col items-start sm:flex-row sm:flex-wrap sm:gap-x-4">
+                <a
+                  href={whatsappUrl(COMPANY_FACTS.whatsapp, CONTACT_MESSAGE)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-10 items-center gap-2 transition-colors hover:text-fg sm:min-h-8"
+                >
                   <MessageCircle className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                  WhatsApp
+                  <span>
+                    WhatsApp <span className="tabular-nums">{displayPhone(COMPANY_FACTS.whatsapp)}</span>
+                  </span>
+                  <span className="sr-only"> (tab baru)</span>
                 </a>
-              </li>
-              <li>
-                <a href={telHref(phone)} className={linkClass}>
-                  <Phone className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                  <span className="tabular-nums">{displayPhone(phone)}</span>
-                </a>
-              </li>
-              <li>
-                <a href={`mailto:${email}`} className={`${linkClass} min-w-0 max-w-full`}>
+                <a href={`mailto:${COMPANY_FACTS.email}`} className="inline-flex min-h-10 min-w-0 max-w-full items-center gap-2 transition-colors hover:text-fg sm:min-h-8">
                   <Mail className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                  <EmailText email={email} />
+                  <EmailText email={COMPANY_FACTS.email} />
                 </a>
-              </li>
-            </ul>
+              </span>
+            </address>
           </div>
+
+          <LinkColumn title="Template" links={TEMPLATE_LINKS} className="lg:col-span-2" />
+          <LinkColumn title="Jasa" links={SERVICE_LINKS} className="lg:col-span-2" />
+          <LinkColumn title="Perusahaan" links={COMPANY_LINKS} className="lg:col-span-2" />
+          <LinkColumn title="Legal" links={LEGAL_COLUMN} className="lg:col-span-2" />
         </div>
 
         {/* Bar bawah: ruang bawah/kanan untuk tombol WhatsApp melayang agar tidak menutupi teks & ikon */}
@@ -277,12 +285,13 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
           <div className="container-site flex flex-col-reverse items-start gap-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-6 sm:flex-row sm:items-center sm:justify-between sm:pb-24 lg:pb-6">
             <div className="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-6">
               <p className="text-xs text-muted sm:text-[13px]">{pick('footer_copyright')}</p>
-              <nav aria-label="Dokumen legal">
+              {/* Akun mengikuti sesi (sama dengan tombol akun di Navbar): tamu, pembeli template, atau staf */}
+              <nav aria-label="Akun">
                 <ul className="flex flex-wrap gap-x-4">
-                  {LEGAL_LINKS.map((link) => (
-                    <li key={link.key}>
+                  {ACCOUNT_LINKS[session].map((link) => (
+                    <li key={link.href}>
                       <Link
-                        to={link.to}
+                        to={link.href}
                         className="inline-flex min-h-10 items-center text-xs text-muted transition-colors hover:text-fg sm:min-h-8 sm:text-[13px]"
                       >
                         {link.label}

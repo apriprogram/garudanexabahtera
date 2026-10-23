@@ -1,5 +1,7 @@
 // Galeri detail template: gambar utama (bisa digeser di HP) + thumbnail + ubin "Lihat Demo" + tampilan perbesar
 // (lightbox terang, fokus keyboard terkunci di dalamnya). Gambar rusak → placeholder.
+// Alt deskriptif per gambar (`alts`, docs/platform/SEO-PLAN.md §5.5 langkah 7); thumbnail gambar yang sedang tampil
+// adalah duplikat dekoratif (alt=""). width/height = ukuran tangkapan layar template (1600×1000, rasio bingkai 16:10).
 import { ChevronLeft, ChevronRight, Eye, ImageOff, Maximize2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
@@ -7,13 +9,19 @@ import { Link } from 'react-router-dom';
 import { LogoMark } from '../../../components/ui/LogoMark';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
-function Picture({ src, alt, broken, onBroken, className = '', fit = 'cover' }: {
+/** Ukuran asli tangkapan layar template (public/assets/templates/*.webp). */
+const IMAGE_WIDTH = 1600;
+const IMAGE_HEIGHT = 1000;
+
+function Picture({ src, alt, broken, onBroken, className = '', fit = 'cover', eager = false }: {
   src: string;
   alt: string;
   broken: boolean;
   onBroken: () => void;
   className?: string;
   fit?: 'cover' | 'contain';
+  /** Gambar utama di atas lipatan (kandidat LCP): dimuat segera. Thumbnail & lightbox: lazy. */
+  eager?: boolean;
 }) {
   if (broken) {
     return (
@@ -27,6 +35,11 @@ function Picture({ src, alt, broken, onBroken, className = '', fit = 'cover' }: 
     <img
       src={src}
       alt={alt}
+      width={IMAGE_WIDTH}
+      height={IMAGE_HEIGHT}
+      loading={eager ? 'eager' : 'lazy'}
+      fetchPriority={eager ? 'high' : undefined}
+      decoding="async"
       onError={onBroken}
       draggable={false}
       className={`h-full w-full ${fit === 'cover' ? 'object-cover object-top' : 'object-contain'} ${className}`}
@@ -47,10 +60,13 @@ const GRID_COLS: Record<number, string> = { 2: 'grid-cols-2', 3: 'grid-cols-3', 
 
 export function TemplateGallery({
   images,
+  alts = [],
   name,
   demo,
 }: {
   images: string[];
+  /** Alt deskriptif per gambar (urutan sama dengan `images`); kosong → "{nama}, gambar n dari N". */
+  alts?: string[];
   name: string;
   /** Tautan demo untuk ubin "Lihat Demo" di baris thumbnail (diisi bila baris belum penuh). */
   demo?: { href: string; external: boolean };
@@ -68,6 +84,7 @@ export function TemplateGallery({
   const go = useCallback((delta: number) => setIndex((i) => (count > 0 ? (i + delta + count) % count : 0)), [count]);
   const markBroken = (src: string) => setBroken((prev) => (prev[src] ? prev : { ...prev, [src]: true }));
   const label = (i: number) => `${name}, gambar ${i + 1} dari ${count}`;
+  const altOf = (i: number) => alts[i] || label(i);
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (count < 2) return;
@@ -133,7 +150,7 @@ export function TemplateGallery({
           className="absolute inset-0 cursor-zoom-in focus-visible:outline-offset-[-2px]"
           aria-label={`Perbesar ${label(safeIndex)}`}
         >
-          <Picture key={current} src={current} alt={label(safeIndex)} broken={!!broken[current]} onBroken={() => markBroken(current)} />
+          <Picture key={current} src={current} alt={altOf(safeIndex)} broken={!!broken[current]} onBroken={() => markBroken(current)} eager />
         </button>
         <span className="pointer-events-none absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-surface/90 text-muted opacity-0 ring-1 ring-inset ring-line transition-opacity group-hover:opacity-100 max-sm:hidden" aria-hidden>
           <Maximize2 className="h-4 w-4" />
@@ -166,7 +183,7 @@ export function TemplateGallery({
                   i === safeIndex ? 'ring-2 ring-primary' : 'opacity-75 ring-1 ring-inset ring-line hover:opacity-100 hover:ring-line-strong'
                 }`}
               >
-                <Picture src={src} alt="" broken={!!broken[src]} onBroken={() => markBroken(src)} />
+                <Picture src={src} alt={i === safeIndex ? '' : altOf(i)} broken={!!broken[src]} onBroken={() => markBroken(src)} />
               </button>
             </li>
           ))}
@@ -181,6 +198,7 @@ export function TemplateGallery({
       {zoom && (
         <Lightbox
           images={images}
+          alts={images.map((_, i) => altOf(i))}
           index={safeIndex}
           name={name}
           broken={broken}
@@ -217,6 +235,7 @@ function DemoTile({ demo, name }: { demo: { href: string; external: boolean }; n
 
 function Lightbox({
   images,
+  alts,
   index,
   name,
   broken,
@@ -226,6 +245,7 @@ function Lightbox({
   returnFocusRef,
 }: {
   images: string[];
+  alts: string[];
   index: number;
   name: string;
   broken: Record<string, true>;
@@ -285,7 +305,7 @@ function Lightbox({
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div className="relative h-full max-h-[min(80vh,900px)] w-full max-w-6xl overflow-hidden rounded-2xl bg-surface shadow-float ring-1 ring-line">
-          <Picture key={src} src={src} alt={`${name}, gambar ${index + 1} dari ${count}`} broken={!!broken[src]} onBroken={() => onBroken(src)} fit="contain" />
+          <Picture key={src} src={src} alt={alts[index] || `${name}, gambar ${index + 1} dari ${count}`} broken={!!broken[src]} onBroken={() => onBroken(src)} fit="contain" eager />
         </div>
         {count > 1 && (
           <>

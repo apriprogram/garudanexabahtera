@@ -1,10 +1,13 @@
-// Detail template (/template/:slug): galeri, nama, kategori, deskripsi, fitur, harga + "Sudah termasuk" (setting harga,
-// keputusan pemilik 2026-10-21), "Lihat Demo" & "Pesan Template". Di HP ada bar pesan bawah (Demo + Pesan Template).
+// Detail template (/template/:slug, docs/platform/SEO-PLAN.md §5.5 langkah 3): breadcrumb Beranda › Template ›
+// {Kategori} › {Nama}, galeri (alt deskriptif), panel harga lengket (H1 Lampiran A, harga + "Harga per {tanggal}",
+// "Sudah termasuk" dari setting harga, jaminan refund, Midtrans, "Pesan Template" & "Lihat Demo"), lalu isi panjang dari
+// src/content/templates/{slug}.content.ts: Cocok untuk · Halaman & bagian · CMS · Sudah termasuk & tahun berikutnya ·
+// Cara memesan · Contoh website · Butuh fitur lain? · FAQ. Template tanpa file isi memakai deskripsi & fitur DB.
+// Di HP ada bar pesan bawah (Demo + Pesan Template). Slug tidak terbit / tidak dikenal → halaman 404 (head noindex).
 import {
   AlertCircle,
-  ArrowLeft,
+  BookOpen,
   Check,
-  ChevronRight,
   CircleCheck,
   CreditCard,
   Eye,
@@ -12,28 +15,69 @@ import {
   LayoutTemplate,
   MessageCircle,
   PencilRuler,
+  ReceiptText,
+  RotateCcw,
   RotateCw,
+  ShieldCheck,
   ShoppingBag,
+  Smartphone,
+  UserRoundCheck,
 } from 'lucide-react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Footer from '../../components/layout/Footer';
 import Navbar from '../../components/layout/Navbar';
+import { categoryOf, type CategoryMeta } from '../../content/categories';
+import { faqContext, faqItem } from '../../content/faq';
+import { fillName, templateH1, templateNicheText } from '../../content/templateCopy';
 import { getTemplatePricing, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
+import { COMPANY_FACTS } from '../../lib/companyFacts';
+import { LEGAL_LABELS, LEGAL_PATHS } from '../../lib/legal';
+import { HUB_PATHS, categoryPath } from '../../seo/paths';
 import { formatRupiah, type Template } from '../../types/platform';
+import { guideLink } from './catalog/guideLink';
+import { includesSentence, usePriceDateLabel } from './catalog/pricing';
+import { Breadcrumbs, FaqList, type Crumb } from './catalog/ui';
+import NotFound from './NotFound';
 import { OtherTemplates } from './template/OtherTemplates';
 import { TemplateGallery } from './template/TemplateGallery';
-import { useDocumentTitle } from './template/useDocumentTitle';
+import { galleryAlts, templateContent } from './template/templateContent';
 import { demoLink, useTemplateBySlug } from './template/useTemplateBySlug';
-
-const STEPS = [
-  { icon: CreditCard, title: 'Pesan & bayar', body: 'Isi data dan domain yang Anda inginkan, lalu bayar secara online.' },
-  { icon: Globe, title: 'Verifikasi & domain', body: 'Tim kami memverifikasi pesanan dan menyiapkan domain Anda.' },
-  { icon: PencilRuler, title: 'Website aktif', body: 'Kelola teks, gambar, dan warna sendiri lewat CMS.' },
-];
 
 /** Tujuan "Pesan Custom" dari halaman template: layanan website langsung terpilih di form. */
 const CUSTOM_ORDER_PATH = '/pesan-custom?layanan=website';
+
+const ORDER_STEPS = [
+  {
+    icon: CreditCard,
+    title: 'Pesan & bayar',
+    body: 'Klik Pesan Template, masuk atau daftar akun pembeli, isi data pemesan serta domain utama dan alternatif, lalu bayar online lewat Midtrans.',
+  },
+  {
+    icon: UserRoundCheck,
+    title: 'Verifikasi pesanan',
+    body: 'Tim kami memeriksa dan menyetujui pesanan. Pesanan lunas yang ditolak, misalnya karena domain tidak tersedia, mendapat pengembalian dana penuh.',
+  },
+  {
+    icon: Globe,
+    title: 'Domain & website aktif',
+    body: 'Kami mendaftarkan dan menghubungkan domain Anda, lalu website aktif dengan isi contoh seperti di demo.',
+  },
+  {
+    icon: PencilRuler,
+    title: 'Kelola isi sendiri',
+    body: 'Buka Akun Saya lalu Kelola Situs untuk mengganti teks, foto, warna, dan kontak dengan pratinjau langsung.',
+  },
+];
+
+/** CMS untuk template tanpa file isi: hanya hal yang berlaku di semua template (skema CMS bersama). */
+const GENERIC_CMS = [
+  'Nama usaha, logo, dan warna aksen.',
+  'Semua judul, deskripsi, dan teks tombol.',
+  'Foto dan galeri; gambar diperkecil otomatis saat diunggah.',
+  'Nomor WhatsApp, email, telepon, alamat, jam operasional, dan link Google Maps.',
+  'Menampilkan atau menyembunyikan bagian yang belum Anda butuhkan.',
+];
 
 /**
  * Ringkasan satu baris "Sudah termasuk" untuk bar pesan di HP. Disusun dari daftar setting harga (bukan teks tetap):
@@ -51,41 +95,29 @@ export default function TemplateDetail() {
   const { slug } = useParams();
   const { state, retry } = useTemplateBySlug(slug);
   const template = state.status === 'ready' ? state.template : null;
+  const category = template ? categoryOf(template.category) : null;
 
-  useDocumentTitle(
-    template
-      ? `${template.name} · Template ${template.category || 'Website'} | Garuda Nexa`
-      : state.status === 'notfound'
-        ? 'Template tidak ditemukan | Garuda Nexa'
-        : null,
-  );
+  // Slug tidak terbit atau tidak dikenal: halaman 404 situs (kepala noindex dari getHead, 404 asli dari seo.php)
+  if (state.status === 'notfound') return <NotFound />;
+
+  const trail: Crumb[] = [
+    { label: 'Template', to: HUB_PATHS.catalog },
+    // Nama kategori dari DB, sama dengan BreadcrumbList JSON-LD (template-detail.seo.ts) dan backend/seo.php
+    ...(category ? [{ label: template?.category || category.name, to: categoryPath(category.slug) }] : []),
+  ];
 
   return (
     <>
       <Navbar />
-      <main className="bg-canvas pt-nav">
+      <main id="konten" tabIndex={-1} className="bg-canvas pt-nav focus:outline-none">
         <div className="container-site pb-14 pt-5 sm:pb-20 sm:pt-8">
           <div className="mx-auto max-w-[1240px]">
-            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-[13px] text-subtle">
-              <Link to="/#templates" className="inline-flex min-h-10 shrink-0 items-center gap-1.5 font-medium text-muted transition-colors hover:text-primary">
-                <ArrowLeft className="h-4 w-4" aria-hidden />
-                Katalog template
-              </Link>
-              {template && (
-                <>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 max-sm:hidden" aria-hidden />
-                  <span className="truncate max-sm:hidden" aria-current="page">
-                    {template.name}
-                  </span>
-                </>
-              )}
-            </nav>
+            <Breadcrumbs trail={trail} current={template?.name ?? 'Template'} hideCurrentOnMobile />
 
             <div className="mt-3 sm:mt-5" aria-busy={state.status === 'loading'}>
               {state.status === 'loading' && <DetailSkeleton />}
               {state.status === 'error' && <ErrorState message={state.message} onRetry={retry} />}
-              {state.status === 'notfound' && <NotFoundState />}
-              {template && <DetailContent template={template} />}
+              {template && <DetailContent key={template.slug} template={template} category={category} />}
             </div>
           </div>
         </div>
@@ -100,7 +132,7 @@ export default function TemplateDetail() {
 
 // ─── Konten ──────────────────────────────────────────────────────────────────
 
-function DetailContent({ template }: { template: Template }) {
+function DetailContent({ template, category }: { template: Template; category: CategoryMeta | null }) {
   const ctaRef = useRef<HTMLDivElement>(null);
   const asideRef = useRef<HTMLElement>(null);
   const [ctaVisible, setCtaVisible] = useState(true);
@@ -108,11 +140,20 @@ function DetailContent({ template }: { template: Template }) {
   const { settings } = useSiteSettings();
   const slug = encodeURIComponent(template.slug);
   const demo = demoLink(template);
+  const content = templateContent(template.slug);
+  const fill = (text: string) => fillName(text, template);
   const images = Array.from(new Set([template.preview_image, ...template.gallery].filter((src): src is string => !!src)));
+  const alts = galleryAlts(template, images, content);
   const description = (template.description || template.short_description || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   const askHref = whatsappUrl(getWhatsappNumber(settings), `Halo Admin, saya ingin bertanya tentang template ${template.name}.`);
   const pricing = getTemplatePricing(settings);
   const summary = includesSummary(pricing.includes);
+  const niche = templateNicheText(template);
+  const guide = guideLink(content?.guides ?? category?.guides ?? []);
+  const priceSentence = includesSentence(pricing.includes, `Harga ${formatRupiah(template.price)}`);
+  const priceDate = usePriceDateLabel();
+  // Jawaban bersama (src/content/faq.ts): kalimat paket & waktu aktif sama persis dengan beranda, /harga dan llms.txt
+  const shared = faqContext([template]);
 
   // Bar pesan di bawah layar HP hanya muncul saat tombol utama di panel tidak terlihat
   useEffect(() => {
@@ -133,24 +174,25 @@ function DetailContent({ template }: { template: Template }) {
     return () => observer.disconnect();
   }, []);
 
-  const demoButton = demo.external ? (
-    <a href={demo.href} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-lg">
-      <Eye className="h-4 w-4" aria-hidden />
-      Lihat Demo
-      <span className="sr-only"> (tab baru)</span>
-    </a>
-  ) : (
-    <Link to={demo.href} className="btn btn-outline btn-lg">
-      <Eye className="h-4 w-4" aria-hidden />
-      Lihat Demo
-    </Link>
-  );
+  const demoButton = (className: string) =>
+    demo.external ? (
+      <a href={demo.href} target="_blank" rel="noopener noreferrer" className={className}>
+        <Eye className="h-4 w-4" aria-hidden />
+        Lihat Demo
+        <span className="sr-only"> (tab baru)</span>
+      </a>
+    ) : (
+      <Link to={demo.href} className={className}>
+        <Eye className="h-4 w-4" aria-hidden />
+        Lihat Demo
+      </Link>
+    );
 
   return (
     <>
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-x-12 lg:gap-y-12 xl:gap-x-16">
         <div className="min-w-0 lg:col-start-1 lg:row-start-1">
-          <TemplateGallery images={images} name={template.name} demo={demo} />
+          <TemplateGallery images={images} alts={alts} name={template.name} demo={demo} />
         </div>
 
         <aside
@@ -159,13 +201,22 @@ function DetailContent({ template }: { template: Template }) {
           className="min-w-0 lg:sticky lg:top-[min(calc(var(--nav-offset)+1.5rem),calc(100svh-var(--detail-aside-h)-1.5rem))] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start"
         >
           <div className="card-site p-5 sm:p-7">
-            {template.category && <span className="badge-site">{template.category}</span>}
-            <h1 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-fg [overflow-wrap:anywhere] sm:text-4xl">{template.name}</h1>
+            {category ? (
+              <Link to={categoryPath(category.slug)} className="badge-site transition-colors hover:bg-brand-100">
+                {template.category}
+              </Link>
+            ) : (
+              template.category && <span className="badge-site">{template.category}</span>
+            )}
+            <h1 className="mt-3 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-fg [overflow-wrap:anywhere] sm:text-[30px]">
+              {templateH1(template)}
+            </h1>
             {template.short_description && <p className="mt-3 text-[14px] leading-relaxed text-muted sm:text-base">{template.short_description}</p>}
 
             <div className="mt-6 rounded-2xl bg-alt px-4 py-3.5 ring-1 ring-inset ring-line sm:px-5 sm:py-4">
               <p className="text-xs font-medium text-subtle">Harga template</p>
               <p className="mt-0.5 text-[26px] font-semibold tabular-nums tracking-tight text-fg sm:text-[32px]">{formatRupiah(template.price)}</p>
+              <p className="text-xs text-subtle">Harga per {priceDate}</p>
               {pricing.includes.length > 0 && (
                 <div className="mt-3 border-t border-dashed border-line pt-3">
                   <p className="text-[13px] font-medium text-fg">Sudah termasuk</p>
@@ -187,77 +238,181 @@ function DetailContent({ template }: { template: Template }) {
                 <ShoppingBag className="h-4 w-4" aria-hidden />
                 Pesan Template
               </Link>
-              {demoButton}
+              {demoButton('btn btn-outline btn-lg')}
             </div>
 
-            <div className="mt-7 border-t border-line pt-6">
-              <h2 className="text-sm font-semibold text-fg">Alur pemesanan</h2>
-              <ol className="mt-4 space-y-4">
-                {STEPS.map(({ icon: Icon, title, body }, i) => (
-                  <li key={title} className="flex gap-3">
-                    <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-primary">
-                      <Icon className="h-[18px] w-[18px]" aria-hidden />
-                      <span className="absolute -right-1 -top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary text-[11px] font-semibold tabular-nums text-white">
-                        {i + 1}
-                      </span>
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-fg">{title}</p>
-                      <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{body}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
+            <ul className="mt-5 space-y-2 text-[13px] leading-relaxed text-muted">
+              <li className="flex gap-2">
+                <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <span>
+                  Pesanan lunas yang ditolak (mis. domain tidak tersedia): dana kembali penuh.{' '}
+                  <Link to={LEGAL_PATHS.refund} className="link-site">
+                    {LEGAL_LABELS.refund}
+                  </Link>
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <span>Pembayaran aman via {COMPANY_FACTS.templatePackage.paymentProvider}.</span>
+              </li>
+            </ul>
 
-            <div className="mt-6 flex flex-col gap-1 border-t border-line pt-4 text-[13px] sm:flex-row sm:flex-wrap sm:gap-x-5">
+            <div className="mt-5 flex flex-col gap-1 border-t border-line pt-4 text-[13px] sm:flex-row sm:flex-wrap sm:gap-x-5">
               <a href={askHref} target="_blank" rel="noopener noreferrer" className="link-site inline-flex min-h-10 items-center gap-1.5">
                 <MessageCircle className="h-4 w-4" aria-hidden />
                 Tanya dulu via WhatsApp
+                <span className="sr-only"> (tab baru)</span>
               </a>
-              <Link to={CUSTOM_ORDER_PATH} className="link-site inline-flex min-h-10 items-center gap-1.5">
-                <LayoutTemplate className="h-4 w-4" aria-hidden />
-                Butuh desain custom?
+              <Link to={HUB_PATHS.pricing} className="link-site inline-flex min-h-10 items-center gap-1.5">
+                <ReceiptText className="h-4 w-4" aria-hidden />
+                Bandingkan semua harga
               </Link>
             </div>
           </div>
         </aside>
 
-        {(description.length > 0 || template.features.length > 0) && (
-          <div className="min-w-0 space-y-10 lg:col-start-1 lg:row-start-2">
-            {description.length > 0 && (
-              <section aria-labelledby="tentang-template">
-                <h2 id="tentang-template" className="text-xl font-semibold tracking-[-0.02em] text-fg sm:text-2xl">
-                  Tentang template ini
-                </h2>
-                <div className="mt-3 space-y-3">
-                  {description.map((p, i) => (
-                    <p key={i} className="whitespace-pre-line text-[14px] leading-relaxed text-muted sm:text-base">
-                      {p}
-                    </p>
-                  ))}
-                </div>
-              </section>
+        <div className="min-w-0 space-y-10 sm:space-y-12 lg:col-start-1 lg:row-start-2">
+          <Section id="tentang-template" title="Tentang template ini">
+            {content ? (
+              <>
+                <Paragraph>{fill(content.lead)}</Paragraph>
+                {priceSentence && <Paragraph>{priceSentence} Isi website kemudian Anda kelola sendiri lewat CMS, tanpa coding.</Paragraph>}
+              </>
+            ) : (
+              <>
+                {description.map((p, i) => (
+                  <Paragraph key={i} className="whitespace-pre-line">
+                    {p}
+                  </Paragraph>
+                ))}
+                {priceSentence && <Paragraph>{priceSentence}</Paragraph>}
+              </>
             )}
-            {template.features.length > 0 && (
-              <section aria-labelledby="fitur-template">
-                <h2 id="fitur-template" className="text-xl font-semibold tracking-[-0.02em] text-fg sm:text-2xl">
-                  Fitur
-                </h2>
-                <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {template.features.map((feature, i) => (
-                    <li key={`${feature}-${i}`} className="flex items-start gap-3 rounded-2xl bg-alt p-4 text-sm leading-relaxed text-fg ring-1 ring-inset ring-line">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-                        <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
-                      </span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </section>
+          </Section>
+
+          {content && (
+            <Section id="cocok-untuk" title="Cocok untuk">
+              <Paragraph>{fill(content.suitableFor.intro)}</Paragraph>
+              <BulletList items={content.suitableFor.items.map(fill)} />
+            </Section>
+          )}
+
+          {template.features.length > 0 && (
+            <Section id="fitur-template" title={content ? `Fitur utama ${template.name}` : 'Fitur'}>
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {template.features.map((feature, i) => (
+                  <li key={`${feature}-${i}`} className="flex items-start gap-3 rounded-2xl bg-alt p-4 text-sm leading-relaxed text-fg ring-1 ring-inset ring-line">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+                      <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
+                    </span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {content && (
+            <Section id="bagian-template" title="Halaman & bagian yang Anda dapatkan">
+              <dl className="divide-y divide-line overflow-hidden rounded-[24px] bg-surface ring-1 ring-inset ring-line">
+                {content.parts.map((part) => (
+                  <div key={part.name} className="grid gap-1 px-4 py-3.5 sm:grid-cols-[minmax(0,0.38fr)_minmax(0,1fr)] sm:gap-4 sm:px-5 sm:py-4">
+                    <dt className="text-sm font-semibold text-fg sm:text-[15px]">{part.name}</dt>
+                    <dd className="text-[14px] leading-relaxed text-muted sm:text-[15px]">{fill(part.text)}</dd>
+                  </div>
+                ))}
+              </dl>
+              {content.partsNote && <Paragraph className="mt-4">{fill(content.partsNote)}</Paragraph>}
+            </Section>
+          )}
+
+          <Section id="cms-template" title="Yang bisa Anda ubah sendiri lewat CMS">
+            <Paragraph>
+              Setelah website aktif, isinya Anda kelola dari menu Kelola Situs di Akun Saya. Setiap bagian punya formulir sendiri
+              dengan pratinjau langsung, jadi hasilnya terlihat sebelum Anda menekan Simpan.
+            </Paragraph>
+            <BulletList items={(content?.cms ?? GENERIC_CMS).map(fill)} />
+            {content?.cmsNote && <Paragraph className="mt-4">{fill(content.cmsNote)}</Paragraph>}
+          </Section>
+
+          <Section id="termasuk-template" title="Sudah termasuk & biaya tahun berikutnya">
+            {pricing.includes.length > 0 && <BulletList items={pricing.includes} />}
+            <Paragraph className={pricing.includes.length > 0 ? 'mt-4' : ''}>{faqItem('sudah-termasuk', shared).answer}</Paragraph>
+            <Paragraph>{COMPANY_FACTS.contentOwnership}</Paragraph>
+          </Section>
+
+          <Section id="cara-memesan" title="Cara memesan & kapan website aktif">
+            <ol className="space-y-4">
+              {ORDER_STEPS.map(({ icon: Icon, title, body }, i) => (
+                <li key={title} className="flex gap-3">
+                  <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-primary">
+                    <Icon className="h-[18px] w-[18px]" aria-hidden />
+                    <span className="absolute -right-1 -top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary text-[11px] font-semibold tabular-nums text-white">
+                      {i + 1}
+                    </span>
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-fg sm:text-[15px]">{title}</p>
+                    <p className="mt-0.5 text-[13px] leading-relaxed text-muted sm:text-sm">{body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <Paragraph className="mt-4">{faqItem('waktu-aktif', shared).answer}</Paragraph>
+            <Paragraph>{faqItem('pengembalian-dana', shared).answer}</Paragraph>
+          </Section>
+
+          <Section id="contoh-website" title={`Contoh website ${niche} dengan ${template.name}`}>
+            {(content?.demo ?? [`Buka demo ${template.name} untuk melihat semua bagian template dengan isi contoh, di layar HP maupun desktop. Isi demo bersifat fiktif.`]).map(
+              (text) => (
+                <Paragraph key={text.slice(0, 32)}>{fill(text)}</Paragraph>
+              ),
             )}
-          </div>
-        )}
+            <div className="mt-5 flex flex-wrap gap-3">{demoButton('btn btn-outline')}</div>
+          </Section>
+
+          <Section id="fitur-lain" title="Butuh fitur lain?">
+            <Paragraph>
+              {content
+                ? fill(content.custom)
+                : `${template.name} dipakai sesuai desainnya. Halaman tambahan, sistem booking, toko online, atau integrasi dengan sistem lain termasuk website custom; biayanya kami sampaikan lewat penawaran setelah konsultasi gratis.`}
+            </Paragraph>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+              <Link to={HUB_PATHS.webService} className="btn btn-outline-primary">
+                <LayoutTemplate className="h-4 w-4" aria-hidden />
+                Jasa pembuatan website custom
+              </Link>
+              {content?.mobileLink && (
+                <Link to={HUB_PATHS.mobileService} className="btn btn-outline">
+                  <Smartphone className="h-4 w-4" aria-hidden />
+                  Jasa aplikasi Android &amp; iOS
+                </Link>
+              )}
+              <Link to={CUSTOM_ORDER_PATH} className="btn btn-outline">
+                Pesan Custom
+              </Link>
+            </div>
+          </Section>
+
+          {content && content.faq.length > 0 && (
+            <Section id="faq-template" title={`Pertanyaan tentang ${template.name}`}>
+              <FaqList items={content.faq.map((item) => ({ question: fill(item.question), answer: fill(item.answer) }))} />
+            </Section>
+          )}
+
+          <nav aria-label="Jelajahi lebih lanjut" className="grid gap-3 sm:grid-cols-2">
+            {category && (
+              <Link to={categoryPath(category.slug)} className="card-flat lift flex items-center gap-3 p-4 text-sm font-semibold text-fg sm:p-5">
+                <LayoutTemplate className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                Semua template {category.name.toLowerCase()}
+              </Link>
+            )}
+            <Link to={guide.href} className="card-flat lift flex items-center gap-3 p-4 text-sm font-semibold text-fg sm:p-5">
+              <BookOpen className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+              {guide.label}
+            </Link>
+          </nav>
+        </div>
       </div>
 
       {/* Bar pesan di HP/tablet (aman dari home bar) */}
@@ -315,6 +470,34 @@ function DetailContent({ template }: { template: Template }) {
   );
 }
 
+function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section aria-labelledby={id}>
+      <h2 id={id} className="text-xl font-semibold tracking-[-0.02em] text-fg sm:text-2xl">
+        {title}
+      </h2>
+      <div className="mt-3 space-y-3 sm:mt-4">{children}</div>
+    </section>
+  );
+}
+
+function Paragraph({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <p className={`text-[14px] leading-relaxed text-muted sm:text-base ${className}`}>{children}</p>;
+}
+
+function BulletList({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="grid gap-2.5">
+      {items.map((item) => (
+        <li key={item} className="flex gap-2.5 text-[14px] leading-relaxed text-fg sm:text-[15px]">
+          <CircleCheck className="mt-[3px] h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 // ─── State ───────────────────────────────────────────────────────────────────
 
 function DetailSkeleton() {
@@ -359,31 +542,8 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
           <RotateCw className="h-4 w-4" aria-hidden />
           Coba lagi
         </button>
-        <Link to="/#templates" className="btn btn-outline">
-          Kembali ke katalog
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function NotFoundState() {
-  return (
-    <div className="card-site flex flex-col items-center px-6 py-12 text-center sm:py-16">
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-primary">
-        <LayoutTemplate className="h-6 w-6" aria-hidden />
-      </span>
-      <p className="mt-4 font-mono text-xs font-semibold tracking-[0.2em] text-primary">404</p>
-      <h1 className="mt-1 text-lg font-semibold text-fg sm:text-xl">Template tidak ditemukan</h1>
-      <p className="mt-1.5 max-w-md text-sm text-muted">
-        Template yang Anda cari tidak ada atau sudah tidak tersedia. Silakan pilih template lain dari katalog kami.
-      </p>
-      <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-        <Link to="/#templates" className="btn btn-primary">
+        <Link to={HUB_PATHS.catalog} className="btn btn-outline">
           Lihat Semua Template
-        </Link>
-        <Link to={CUSTOM_ORDER_PATH} className="btn btn-outline">
-          Pesan Custom
         </Link>
       </div>
     </div>

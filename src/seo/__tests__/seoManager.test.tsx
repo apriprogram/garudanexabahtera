@@ -76,7 +76,7 @@ describe('SeoManager di host utama', () => {
     expect(canonical()).toBe('https://garudanexa.com/');
 
     await go('/template/aura-studio');
-    await waitFor(() => expect(document.title).toBe('Aura Studio: Template Kecantikan & Klinik – Rp1,39 jt'));
+    await waitFor(() => expect(document.title).toBe('Aura Studio: Template Website Klinik & Salon – Rp1,39 jt'));
     expect(canonical()).toBe('https://garudanexa.com/template/aura-studio');
     expect(description()).toContain('Rp1.390.000');
     expect(document.head.querySelector('script[type="application/ld+json"]')?.textContent).toContain('"@type":"Product"');
@@ -99,7 +99,7 @@ describe('SeoManager di host utama', () => {
     expect(document.title).toBe('Aura Studio prerender');
     expect(robots()).toBe('index,follow');
     await act(async () => release(json({ templates: TEMPLATES })));
-    await waitFor(() => expect(document.title).toBe('Aura Studio: Template Kecantikan & Klinik – Rp1,39 jt'));
+    await waitFor(() => expect(document.title).toBe('Aura Studio: Template Website Klinik & Salon – Rp1,39 jt'));
   });
 
   it('API template gagal: halaman template tidak diturunkan ke noindex; 404 sungguhan tetap diterapkan', async () => {

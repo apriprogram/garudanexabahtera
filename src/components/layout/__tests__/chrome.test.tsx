@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// Chrome publik bersama (paket "fondasi"): Navbar (menu HP, skip link, tanpa sakelar bahasa), Footer (kolom akun,
-// kontak, dokumen legal), helper setting, cache apiGet, dan halaman legal.
+// Chrome publik bersama (paket "fondasi"): Navbar (menu HP, skip link, tanpa sakelar bahasa), Footer (kolom halaman
+// hub SEO WP5, baris fakta, akun, media sosial), helper setting, cache apiGet, dan halaman legal.
 // Jalankan: npx vitest run --dir src/components/layout
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -13,6 +13,7 @@ import SyaratKetentuan from '../../../pages/public/legal/SyaratKetentuan';
 import KebijakanPrivasi from '../../../pages/public/legal/KebijakanPrivasi';
 import KebijakanPengembalianDana from '../../../pages/public/legal/KebijakanPengembalianDana';
 import { apiGet, clearApiCache } from '../../../lib/api';
+import { clearCachedJson } from '../../../hooks/useCachedJson';
 import { LEGAL_PATHS } from '../../../lib/legal';
 import { getHead } from '../../../seo/routes';
 import {
@@ -127,34 +128,92 @@ describe('Navbar', () => {
     renderAt(<Navbar />);
     expect(screen.getAllByRole('link', { name: 'Akun Saya' })[0]).toHaveAttribute('href', '/akun');
   });
+
+  it('menu bawaan (SEO WP5): Template · Jasa ▾ · Harga · Panduan sebagai tautan halaman, halaman aktif ditandai', async () => {
+    renderAt(<Navbar />, '/template/aura-studio');
+    await act(async () => {});
+    const desktop = screen.getByRole('navigation', { name: 'Navigasi utama' });
+    expect(within(desktop).getByRole('link', { name: 'Template' })).toHaveAttribute('href', '/template');
+    expect(within(desktop).getByRole('link', { name: 'Template' })).toHaveAttribute('aria-current', 'page');
+    expect(within(desktop).getByRole('link', { name: 'Harga' })).toHaveAttribute('href', '/harga');
+    expect(within(desktop).getByRole('link', { name: 'Panduan' })).toHaveAttribute('href', '/panduan');
+    expect(within(desktop).getByRole('button', { name: 'Jasa' })).toHaveAttribute('aria-expanded', 'false');
+    // Menu HP selalu ada di HTML (inert saat tertutup): sub-menu Jasa terbaca crawler sebagai <a href>
+    const mobile = document.getElementById('menu-hp') as HTMLElement;
+    const hrefs = Array.from(mobile.querySelectorAll('a')).map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual(expect.arrayContaining(['/template', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/harga', '/panduan']));
+    expect(hrefs.some((href) => href?.includes('#templates') || href?.includes('#faq'))).toBe(false);
+    // CTA kanan tetap "Konsultasi Gratis"
+    expect(screen.getAllByRole('link', { name: /Konsultasi/ }).length).toBeGreaterThan(0);
+  });
+
+  it('menu dari Navbar Manager tetap dipakai bila ada (kontrol admin)', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const action = new URL(String(input), 'http://localhost').searchParams.get('action');
+      if (action === 'get_navbar_menus') {
+        return json(200, [
+          { id: 1, parent_id: null, label_id: 'Katalog', label_en: 'Catalog', url: '/template', icon: 'Globe', description_id: null, description_en: null, sort_order: 1 },
+          { id: 9, parent_id: null, label_id: 'Kontak', label_en: 'Contact', url: '/kontak', icon: 'Globe', description_id: null, description_en: null, sort_order: 2 },
+        ]);
+      }
+      return json(200, action === 'get_settings' ? {} : []);
+    });
+    clearCachedJson();
+    renderAt(<Navbar />, '/kontak');
+    const desktop = screen.getByRole('navigation', { name: 'Navigasi utama' });
+    expect(await within(desktop).findByRole('link', { name: 'Katalog' })).toHaveAttribute('href', '/template');
+    expect(within(desktop).getByRole('link', { name: 'Kontak' })).toHaveAttribute('aria-current', 'page');
+    expect(within(desktop).queryByRole('link', { name: 'Panduan' })).toBeNull();
+    clearCachedJson();
+  });
 });
 
 describe('Footer', () => {
-  it('tamu: Masuk & Daftar Akun; kontak bawaan; dokumen legal; tanpa ikon WhatsApp di media sosial', async () => {
+  it('tamu: Masuk & Daftar Akun; kolom halaman hub (SEO WP5); baris fakta; tanpa ikon media sosial "#"', async () => {
     renderAt(<Footer />);
     await act(async () => {});
     const akun = screen.getByRole('navigation', { name: 'Akun' });
     expect(within(akun).getAllByRole('link').map((a) => a.textContent)).toEqual(['Masuk', 'Daftar Akun']);
 
-    const layanan = screen.getByRole('navigation', { name: 'Layanan' });
-    expect(within(layanan).getByRole('link', { name: 'Website custom' })).toHaveAttribute('href', '/pesan-custom?layanan=website');
-    expect(within(layanan).getByRole('link', { name: 'Aplikasi mobile custom' })).toHaveAttribute('href', '/pesan-custom?layanan=mobile');
-    expect(within(layanan).getByRole('link', { name: 'Konsultasi Gratis' })).toBeInTheDocument();
-
-    const legal = screen.getByRole('navigation', { name: 'Dokumen legal' });
-    expect(within(legal).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([
-      LEGAL_PATHS.terms,
-      LEGAL_PATHS.privacy,
-      LEGAL_PATHS.refund,
+    const hrefs = (name: string) => within(screen.getByRole('navigation', { name })).getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(hrefs('Template')).toEqual([
+      '/template',
+      '/template/kategori/company-profile',
+      '/template/kategori/kecantikan-klinik',
+      '/template/kategori/olahraga-komunitas',
+      '/template/kategori/fintech-startup',
     ]);
+    expect(hrefs('Jasa')).toEqual(['/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/pesan-custom', '/harga']);
+    expect(hrefs('Perusahaan')).toEqual(['/tentang', '/panduan', '/kontak']);
+    expect(hrefs('Legal')).toEqual([LEGAL_PATHS.terms, LEGAL_PATHS.privacy, LEGAL_PATHS.refund]);
+    // Tidak ada anchor beranda (#templates, #faq, …) di kolom tautan
+    for (const link of document.querySelectorAll('footer nav a')) expect(link.getAttribute('href')).not.toMatch(/#/);
 
-    const mails = screen.getAllByRole('link', { name: /info@garudanexa\.com/ });
-    expect(mails[0]).toHaveAttribute('href', 'mailto:info@garudanexa.com');
+    // Baris fakta dari COMPANY_FACTS: nama badan hukum, WhatsApp, email; alamat null tidak dirender
+    const facts = document.querySelector('footer address') as HTMLElement;
+    expect(facts).toHaveTextContent('PT Garuda Nexa Bahtera');
+    expect(within(facts).getByRole('link', { name: /WhatsApp 0851-8800-9152/ })).toHaveAttribute('href', expect.stringContaining('https://wa.me/6285188009152'));
+    expect(within(facts).getByRole('link', { name: /info@garudanexa\.com/ })).toHaveAttribute('href', 'mailto:info@garudanexa.com');
+    expect(facts.textContent).not.toMatch(/Alamat|Jl\./);
+
     const phones = screen.getAllByRole('link', { name: '0851-8800-9152' });
     expect(phones[0]).toHaveAttribute('href', 'tel:+6285188009152');
 
     expect(screen.queryByRole('list', { name: 'Media sosial' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Pesan Custom' })).toHaveAttribute('href', '/pesan-custom');
+    expect(screen.getAllByRole('link', { name: 'Pesan Custom' }).every((a) => a.getAttribute('href') === '/pesan-custom')).toBe(true);
+  });
+
+  it('ikon media sosial hanya untuk URL nyata (bukan "#" atau kosong)', async () => {
+    clearCachedJson();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const action = new URL(String(input), 'http://localhost').searchParams.get('action');
+      if (action === 'get_settings') return json(200, { footer_instagram: 'https://instagram.com/contoh', footer_facebook: '#', footer_linkedin: '' });
+      return json(200, []);
+    });
+    renderAt(<Footer />);
+    const socials = await screen.findByRole('list', { name: 'Media sosial' });
+    expect(within(socials).getAllByRole('link').map((a) => a.getAttribute('aria-label'))).toEqual(['Instagram']);
+    clearCachedJson();
   });
 
   it('customer melihat Akun Saya; staf melihat Panel Admin', () => {

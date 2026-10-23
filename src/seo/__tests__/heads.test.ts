@@ -13,7 +13,7 @@ import { pageHead, staticPage } from '../page';
 import { HOME_DESCRIPTION, HOME_TITLE, HOME_UPDATED } from '../pages/home.seo';
 import { appTitle } from '../pages/app.seo';
 import { NOT_FOUND_PATH } from '../pages/not-found.seo';
-import { HUB_PATHS, SITE_ORIGIN, isAppPath, templatePath } from '../paths';
+import { CATEGORY_SLUGS, HUB_PATHS, SITE_ORIGIN, categoryPath, isAppPath, templatePath } from '../paths';
 import { SEO_MODULES, findSeoModule, getHead, getIndexableRoutes } from '../routes';
 import { categorySlugOf, templateDescription, templateTitle } from '../templateSeo';
 import type { SeoHead } from '../types';
@@ -29,8 +29,13 @@ describe('getHead: semua rute index', () => {
     expect(paths).toEqual(
       expect.arrayContaining(['/', HUB_PATHS.customOrder, ...Object.values(LEGAL_PATHS), ...TEMPLATES.map((t) => templatePath(t.slug))]),
     );
-    for (const stub of ['/template', '/harga', '/tentang', '/kontak', '/panduan', '/jasa-pembuatan-website']) expect(paths).not.toContain(stub);
+    // Stub yang tersisa (WP8) tidak pernah masuk sitemap
+    for (const stub of ['/panduan']) expect(paths).not.toContain(stub);
     expect(new Set(paths).size).toBe(paths.length);
+  });
+
+  it('katalog /template dan 4 halaman kategori (WP5) diindeks bila punya template', () => {
+    expect(paths).toEqual(expect.arrayContaining(['/template', ...CATEGORY_SLUGS.map(categoryPath)]));
   });
 
   it('title ≤ 60 & description 50–155 karakter, keduanya unik', () => {
@@ -111,9 +116,9 @@ describe('beranda, /pesan-custom, legal (Lampiran A)', () => {
 
 describe('halaman template (Lampiran A.1/A.2)', () => {
   it('judul "{Nama}: Template … – harga ringkas" dari data, tanpa akhiran merek, ≤ 60', () => {
-    expect(getHead('/template/aura-studio', DATA).title).toBe('Aura Studio: Template Kecantikan & Klinik – Rp1,39 jt');
+    expect(getHead('/template/aura-studio', DATA).title).toBe('Aura Studio: Template Website Klinik & Salon – Rp1,39 jt');
     expect(getHead('/template/finova', DATA).title).toBe('Finova: Template Website Fintech & Startup – Rp1,79 jt');
-    expect(getHead('/template/startup-clean', DATA).title).toBe('Startup Clean: Template Website Company Profile – Rp990 rb');
+    expect(getHead('/template/startup-clean', DATA).title).toBe('Startup Clean: Template Website UMKM & Startup – Rp990 rb');
     for (const t of TEMPLATES) expect(getHead(templatePath(t.slug), DATA).title).not.toContain('| Garuda Nexa');
   });
 

@@ -1,15 +1,17 @@
 // "Template lainnya" di bawah detail template (maks. 3, kategori yang sama didahulukan). Satu template lain = kartu
 // lebar (gambar kiri, "Lihat Detail" & "Lihat Demo" kanan); baris yang belum penuh diisi ubin "Pesan Custom" agar tidak
 // ada kolom kosong. Kartu datar (`card-flat lift`, tanpa bayangan). Gagal dimuat → disembunyikan.
+// Data awal dari preload (useTemplateList), jadi tautan ke template lain ada di HTML prerender (tautan internal
+// antar-halaman template, docs/platform/SEO-PLAN.md §5.5).
 import { ArrowRight, Eye, PencilRuler } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LogoMark } from '../../../components/ui/LogoMark';
-import { apiGet } from '../../../lib/api';
+import { templatePreviewAlt } from '../../../content/templateCopy';
+import { HUB_PATHS } from '../../../seo/paths';
 import { formatRupiah, type Template } from '../../../types/platform';
-import { demoLink, normalizeTemplate } from './useTemplateBySlug';
-
-type State = { status: 'loading' } | { status: 'ready'; templates: Template[] } | { status: 'hidden' };
+import { useTemplateList } from '../catalog/useTemplateList';
+import { demoLink } from './useTemplateBySlug';
 
 /** Tujuan "Pesan Custom" dari halaman template: layanan website langsung terpilih di form. */
 const CUSTOM_ORDER_PATH = '/pesan-custom?layanan=website';
@@ -23,8 +25,11 @@ function Thumb({ template, className = '' }: { template: Template; className?: s
       {template.preview_image && !broken ? (
         <img
           src={template.preview_image}
-          alt=""
+          alt={templatePreviewAlt(template)}
+          width={1600}
+          height={1000}
           loading="lazy"
+          decoding="async"
           onError={() => setBroken(true)}
           className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none"
         />
@@ -117,27 +122,16 @@ function CustomTile() {
 }
 
 export function OtherTemplates({ currentSlug, category }: { currentSlug: string; category: string }) {
-  const [state, setState] = useState<State>({ status: 'loading' });
-
-  useEffect(() => {
-    let alive = true;
-    apiGet<{ templates?: unknown }>('get_templates')
-      .then((data) => {
-        if (!alive) return;
-        const all = Array.isArray(data?.templates) ? data.templates : [];
-        const others = all
-          .filter((t): t is Template & Record<string, unknown> => !!t && typeof t === 'object' && typeof (t as Template).slug === 'string')
-          .map(normalizeTemplate)
-          .filter((t) => t.slug && t.slug !== currentSlug)
-          .sort((a, b) => Number(b.category === category) - Number(a.category === category))
-          .slice(0, 3);
-        setState(others.length > 0 ? { status: 'ready', templates: others } : { status: 'hidden' });
-      })
-      .catch(() => alive && setState({ status: 'hidden' }));
-    return () => {
-      alive = false;
-    };
-  }, [currentSlug, category]);
+  const { state: list } = useTemplateList();
+  const state = useMemo(() => {
+    if (list.status === 'loading') return { status: 'loading' as const };
+    if (list.status === 'error') return { status: 'hidden' as const };
+    const others = list.templates
+      .filter((t) => t.slug !== currentSlug)
+      .sort((a, b) => Number(b.category === category) - Number(a.category === category))
+      .slice(0, 3);
+    return others.length > 0 ? { status: 'ready' as const, templates: others } : { status: 'hidden' as const };
+  }, [list, currentSlug, category]);
 
   if (state.status === 'hidden') return null;
 
@@ -149,7 +143,7 @@ export function OtherTemplates({ currentSlug, category }: { currentSlug: string;
             <h2 id="template-lainnya" className="text-xl font-semibold tracking-[-0.02em] text-fg sm:text-3xl">
               Template lainnya
             </h2>
-            <Link to="/#templates" className="link-site inline-flex min-h-10 items-center gap-1 text-sm">
+            <Link to={HUB_PATHS.catalog} className="link-site inline-flex min-h-10 items-center gap-1 text-sm">
               Lihat Semua Template
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>

@@ -122,6 +122,37 @@ describe('hydrating prerendered pages', () => {
     expect(el.textContent).toContain('1.390.000');
   }, 30_000);
 
+  // WP5: isi panjang halaman template, katalog dan kategori ada di HTML server dan terhidrasi tanpa perbedaan
+  it('/template/aura-studio (WP5): ≥ 600 words in <main> and links to category, /harga, custom service and a guide', async () => {
+    const { problems, container: el } = await hydrate('/template/aura-studio');
+    expect(problems).toEqual([]);
+    expect(el.querySelector('h1')?.textContent).toBe('Aura Studio: Template Website Klinik Kecantikan & Salon');
+    const main = el.querySelector('main') as HTMLElement;
+    expect((main.textContent ?? '').match(/[\p{L}\p{N}]+/gu)?.length ?? 0).toBeGreaterThanOrEqual(600);
+    const hrefs = new Set([...main.querySelectorAll('a')].map((a) => a.getAttribute('href')));
+    for (const href of ['/template/kategori/kecantikan-klinik', '/harga', '/jasa-pembuatan-website']) expect(hrefs).toContain(href);
+    expect([...hrefs].some((href) => href === '/panduan' || href?.startsWith('/panduan/'))).toBe(true);
+  }, 30_000);
+
+  const mainLinks = (el: HTMLElement) => new Set([...el.querySelectorAll('main a')].map((a) => a.getAttribute('href')));
+
+  it('/template (WP5): every template card and category chip is an <a href> in the server HTML', async () => {
+    const { problems, serverH1, container: el } = await hydrate('/template');
+    expect(problems).toEqual([]);
+    expect(serverH1?.textContent).toBe('Template website siap pakai');
+    const hrefs = mainLinks(el);
+    for (const slug of ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova']) expect(hrefs).toContain(`/template/${slug}`);
+    for (const slug of ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup']) expect(hrefs).toContain(`/template/kategori/${slug}`);
+  }, 30_000);
+
+  it('/template/kategori/kecantikan-klinik (WP5): template links and the checklist in the server HTML', async () => {
+    const { problems, serverH1, container: el } = await hydrate('/template/kategori/kecantikan-klinik');
+    expect(problems).toEqual([]);
+    expect(serverH1?.textContent).toBe('Template website klinik kecantikan & salon');
+    expect(mainLinks(el)).toContain('/template/aura-studio');
+    expect(el.textContent).toContain('Apa yang perlu ada di website klinik kecantikan & salon');
+  }, 30_000);
+
   it('/pesan-custom?layanan=mobile: query string and session are applied only after hydration', async () => {
     const payload = btoa(JSON.stringify({ sub: 9, role: 'customer', exp: Math.floor(Date.now() / 1000) + 3600 }));
     const { problems, serverH1, container: el } = await hydrate('/pesan-custom', {

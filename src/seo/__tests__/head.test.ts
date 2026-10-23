@@ -37,7 +37,7 @@ describe('applyHead', () => {
   it('menulis title, description, robots, canonical, OG, twitter, ikon, manifest dan JSON-LD', () => {
     reset();
     applyHead(getHead('/template/aura-studio', DATA));
-    expect(document.title).toBe('Aura Studio: Template Kecantikan & Klinik – Rp1,39 jt');
+    expect(document.title).toBe('Aura Studio: Template Website Klinik & Salon – Rp1,39 jt');
     expect(meta('meta[name="description"]')).toContain('Rp1.390.000');
     expect(meta('meta[name="robots"]')).toBe('index,follow');
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://garudanexa.com/template/aura-studio');

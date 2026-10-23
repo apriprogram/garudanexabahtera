@@ -1,8 +1,10 @@
 import React, { useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowRight, LayoutTemplate, RotateCw, Search, SearchX, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CATEGORY_LIST, templatesInCategory } from '../../content/categories';
 import { ApiError, apiGet, peekApiGet } from '../../lib/api';
 import { preloadNow } from '../../lib/preload';
+import { HUB_PATHS, categoryPath } from '../../seo/paths';
 import type { Template } from '../../types/platform';
 import { SectionHeading } from '../ui/SectionHeading';
 import {
@@ -78,6 +80,8 @@ const CUSTOM_HREF = '/pesan-custom?layanan=website';
  * tab kategori (≥ 2 kategori) → kolom cari besar (≥ 4 template) → chip "Populer:" + "Urutkan" (≥ 6 template) →
  * grid kartu (gambar 4:3, tanpa garis & shadow). Katalog kecil cukup menampilkan jumlah template di atas grid.
  * Data: `get_templates`. Klik gambar/nama → /template/:slug, demo → demo_url atau /demo/:slug, pesan → /pesan/:slug.
+ * Di bawah grid: "Lihat Semua Template" → /template dan tautan nyata ke halaman kategori (SEO-PLAN §5.5 langkah 4);
+ * tab kategori di atas tetap filter di tempat.
  */
 const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, number = '01' }) => {
   const [state, setState] = useState<LoadState>(initialState);
@@ -180,6 +184,11 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
   const panel = 'flex flex-col items-center rounded-[24px] bg-surface px-6 py-12 text-center ring-1 ring-inset ring-line sm:py-16';
   const ready = state.status === 'ready';
   const availableTitleId = `${titleId}-tersedia`;
+  // Halaman kategori yang punya template (tautan crawlable; sama di HTML prerender karena data dari preload)
+  const categoryPages = useMemo(
+    () => CATEGORY_LIST.filter((meta) => templatesInCategory(templates, meta.slug).length > 0),
+    [templates],
+  );
 
   return (
     <section
@@ -439,6 +448,31 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
                 </div>
               )}
             </>
+          )}
+
+          {/* Katalog lengkap & halaman kategori: tautan nyata (bukan filter), terbaca crawler */}
+          {ready && templates.length > 0 && (
+            <div className="mt-10 flex flex-col items-center gap-4 text-center sm:mt-14">
+              <Link to={HUB_PATHS.catalog} className="btn btn-outline">
+                <LayoutTemplate className="h-4 w-4" aria-hidden />
+                Lihat Semua Template
+              </Link>
+              {categoryPages.length > 0 && (
+                <nav aria-label="Halaman kategori template" className="text-[13px] text-muted sm:text-sm">
+                  <span className="mr-1">Per kategori:</span>
+                  <ul className="inline">
+                    {categoryPages.map((meta, i) => (
+                      <li key={meta.slug} className="inline">
+                        {i > 0 && <span aria-hidden> · </span>}
+                        <Link to={categoryPath(meta.slug)} className="link-site inline-flex min-h-10 items-center sm:min-h-0">
+                          {meta.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              )}
+            </div>
           )}
 
           {/* HP: ajakan custom dari kepala section pindah ke sini (panel kosong/tidak cocok sudah punya tombolnya) */}

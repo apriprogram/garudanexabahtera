@@ -14,6 +14,7 @@ import { useSectionSpy } from '../../hooks/useSectionSpy';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { accountLinkFor, useSessionRole } from '../../hooks/useSessionRole';
 import { BrandLogo } from '../ui/LogoMark';
+import { HUB_PATHS } from '../../seo/paths';
 import { parseHeroBackground } from '../sections/hero/heroBgConfig';
 import { SkipLink } from '../ui/SkipLink';
 import { SmartLink } from './SmartLink';
@@ -80,6 +81,43 @@ const toNavItems = (rows: NavbarMenuRow[]): NavItem[] => {
 /** id section dari href `#templates` (null untuk tautan lain). */
 const anchorId = (href: string) => (href.startsWith('#') && href.length > 1 ? href.slice(1) : null);
 
+/** Tautan halaman (`/template`) yang sedang dibuka: path sama, atau halaman di bawahnya (`/template/aura-studio`). */
+const isCurrentPage = (href: string, pathname: string) => {
+  if (!href.startsWith('/') || href.startsWith('/#')) return false;
+  const path = href.split(/[?#]/, 1)[0].replace(/(.)\/+$/, '$1');
+  return path !== '/' && (pathname === path || pathname.startsWith(`${path}/`));
+};
+
+/**
+ * Menu bawaan (dipakai bila Navbar Manager kosong; struktur yang sama dipasang migrasi
+ * database/migrations/2026-10-23_011_seo_navbar.sql): halaman nyata dengan <a href>, bukan anchor beranda
+ * (docs/platform/SEO-PLAN.md §5.5 langkah 5). Anchor `#…` hanya navigasi sekunder di beranda.
+ */
+const DEFAULT_ITEMS: NavItem[] = [
+  { key: 'template', label: 'Template', href: HUB_PATHS.catalog, children: [] },
+  {
+    key: 'jasa',
+    label: 'Jasa',
+    href: HUB_PATHS.webService,
+    children: [
+      {
+        icon: <Monitor />,
+        title: 'Website custom',
+        desc: 'Company profile, sekolah, instansi, dan sistem web',
+        href: HUB_PATHS.webService,
+      },
+      {
+        icon: <Smartphone />,
+        title: 'Aplikasi mobile',
+        desc: 'Aplikasi Android & iOS sesuai alur bisnis',
+        href: HUB_PATHS.mobileService,
+      },
+    ],
+  },
+  { key: 'harga', label: 'Harga', href: HUB_PATHS.pricing, children: [] },
+  { key: 'panduan', label: 'Panduan', href: HUB_PATHS.guides, children: [] },
+];
+
 interface Pill {
   left: number;
   width: number;
@@ -134,13 +172,7 @@ const Navbar: React.FC = () => {
   }, []);
 
   // Menu dari admin (Navbar Manager); bila kosong/gagal dimuat, pakai menu bawaan
-  const defaultItems: NavItem[] = [
-    { key: 'templates', label: t('nav-templates'), href: '#templates', children: [] },
-    { key: 'projects', label: t('nav-projects'), href: '#projects', children: [] },
-    { key: 'process', label: t('nav-process'), href: '#process', children: [] },
-    { key: 'faq', label: 'FAQ', href: '#faq', children: [] },
-  ];
-  const source = !menusLoaded ? [] : menus.length > 0 ? toNavItems(menus) : defaultItems;
+  const source = !menusLoaded ? [] : menus.length > 0 ? toNavItems(menus) : DEFAULT_ITEMS;
 
   // Tautan ke section yang disembunyikan admin (setting disabled_sections) atau sudah dihapus ikut disembunyikan
   const hidden = getHiddenSections(settings);
@@ -221,7 +253,8 @@ const Navbar: React.FC = () => {
           />
           {navItems.map((item) => {
             const id = anchorId(item.href);
-            const current = Boolean(id) && id === activeId;
+            const page = isCurrentPage(item.href, pathname);
+            const current = (Boolean(id) && id === activeId) || page;
             return item.children.length > 0 ? (
               <DropdownItem
                 key={item.key}
@@ -229,6 +262,8 @@ const Navbar: React.FC = () => {
                 label={item.label}
                 entries={item.children}
                 wide={item.children.length > 4}
+                current={item.children.some((entry) => isCurrentPage(entry.href, pathname))}
+                pathname={pathname}
                 active={activeDropdown}
                 setActive={setActiveDropdown}
                 onHover={showPill}
@@ -241,7 +276,7 @@ const Navbar: React.FC = () => {
                   onMouseEnter={(e) => showPill(e.currentTarget)}
                   onFocus={(e) => showPill(e.currentTarget)}
                   onBlur={hidePill}
-                  aria-current={current ? 'location' : undefined}
+                  aria-current={page ? 'page' : current ? 'location' : undefined}
                   className={`relative z-10 inline-flex h-9 items-center rounded-full px-3.5 text-[14px] font-medium transition-colors duration-200 ${
                     current ? 'text-fg' : 'text-muted hover:text-fg'
                   }`}
@@ -311,7 +346,8 @@ const Navbar: React.FC = () => {
           <ul className="container-site max-h-[calc(100svh-var(--nav-offset))] space-y-1 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] pt-1">
             {navItems.map((item, index) => {
               const id = anchorId(item.href);
-              const current = Boolean(id) && id === activeId;
+              const page = isCurrentPage(item.href, pathname);
+              const current = (Boolean(id) && id === activeId) || page;
               return (
                 <li
                   key={item.key}
@@ -319,12 +355,20 @@ const Navbar: React.FC = () => {
                   style={{ transitionDelay: isMenuOpen ? `${index * 40}ms` : '0ms' }}
                 >
                   {item.children.length > 0 ? (
-                    <MobileGroup id={item.key} label={item.label} entries={item.children} open={mobileSubmenu} setOpen={setMobileSubmenu} onNavigate={closeMenu} />
+                    <MobileGroup
+                      id={item.key}
+                      label={item.label}
+                      entries={item.children}
+                      pathname={pathname}
+                      open={mobileSubmenu}
+                      setOpen={setMobileSubmenu}
+                      onNavigate={closeMenu}
+                    />
                   ) : (
                     <SmartLink
                       href={item.href}
                       onClick={closeMenu}
-                      aria-current={current ? 'location' : undefined}
+                      aria-current={page ? 'page' : current ? 'location' : undefined}
                       className={`flex min-h-11 items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-fg transition-colors hover:bg-alt ${current ? 'bg-alt' : ''}`}
                     >
                       {item.label}
@@ -355,11 +399,14 @@ const DropdownItem: React.FC<{
   label: string;
   entries: MenuEntry[];
   wide?: boolean;
+  /** Salah satu tautan di dalamnya = halaman yang sedang dibuka */
+  current?: boolean;
+  pathname: string;
   active: string | null;
   setActive: (id: string | null) => void;
   onHover: (el: HTMLElement) => void;
   onLeave: () => void;
-}> = ({ id, label, entries, wide, active, setActive, onHover, onLeave }) => {
+}> = ({ id, label, entries, wide, current = false, pathname, active, setActive, onHover, onLeave }) => {
   const open = active === id;
   return (
     <li
@@ -376,11 +423,18 @@ const DropdownItem: React.FC<{
         onFocus={(e) => onHover(e.currentTarget)}
         onBlur={onLeave}
         aria-expanded={open}
-        className={`relative z-10 inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-[14px] font-medium transition-colors hover:text-fg ${open ? 'text-fg' : 'text-muted'}`}
+        className={`relative z-10 inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-[14px] font-medium transition-colors hover:text-fg ${open || current ? 'text-fg' : 'text-muted'}`}
       >
         {label}
-        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+        <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} aria-hidden />
       </button>
+      {/* Titik penanda: halaman yang sedang dibuka ada di dalam menu ini */}
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary transition-all duration-300 ${
+          current ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+        }`}
+      />
 
       <Presence
         show={open}
@@ -395,7 +449,8 @@ const DropdownItem: React.FC<{
               key={`${index}-${entry.title}`}
               href={entry.href}
               onClick={() => setActive(null)}
-              className="group/item flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-alt"
+              aria-current={isCurrentPage(entry.href, pathname) ? 'page' : undefined}
+              className="group/item flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-alt aria-[current=page]:bg-alt"
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-primary transition-colors group-hover/item:bg-primary group-hover/item:text-white [&>svg]:h-[18px] [&>svg]:w-[18px]">
                 {entry.icon}
@@ -416,10 +471,11 @@ const MobileGroup: React.FC<{
   id: string;
   label: string;
   entries: MenuEntry[];
+  pathname: string;
   open: string | null;
   setOpen: (id: string | null) => void;
   onNavigate: () => void;
-}> = ({ id, label, entries, open, setOpen, onNavigate }) => {
+}> = ({ id, label, entries, pathname, open, setOpen, onNavigate }) => {
   const isOpen = open === id;
   return (
     <div>
@@ -440,7 +496,8 @@ const MobileGroup: React.FC<{
                 key={`${index}-${entry.title}`}
                 href={entry.href}
                 onClick={onNavigate}
-                className="flex min-h-11 items-center gap-3 rounded-lg px-2 text-[13px] font-medium text-muted hover:bg-alt hover:text-fg [&>span>svg]:h-4 [&>span>svg]:w-4"
+                aria-current={isCurrentPage(entry.href, pathname) ? 'page' : undefined}
+                className="flex min-h-11 items-center gap-3 rounded-lg px-2 text-[13px] font-medium text-muted hover:bg-alt hover:text-fg aria-[current=page]:bg-alt aria-[current=page]:text-fg [&>span>svg]:h-4 [&>span>svg]:w-4"
               >
                 <span className="text-primary">{entry.icon}</span>
                 {entry.title}

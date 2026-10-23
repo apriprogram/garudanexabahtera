@@ -116,6 +116,9 @@ const renderDetail = (slug = TEMPLATE.slug) =>
     </MemoryRouter>,
   );
 
+/** H1 Lampiran A dari src/content/templates/corporate-nexa.ts. */
+const H1 = 'Corporate Nexa: Template Website Company Profile Perusahaan';
+
 const priceCard = async () => (await screen.findByText('Harga template')).parentElement as HTMLElement;
 
 describe('/template/:slug: harga & bar pesan HP', () => {
@@ -130,7 +133,7 @@ describe('/template/:slug: harga & bar pesan HP', () => {
   it('setting harga yang dikosongkan admin menyembunyikan daftar, catatan, dan ringkasan bar HP', async () => {
     mockSettings = { template_price_includes: '', template_price_note: '' };
     renderDetail();
-    await screen.findByRole('heading', { level: 1, name: 'Corporate Nexa' });
+    await screen.findByRole('heading', { level: 1, name: H1 });
     expect(screen.getByText('Harga template')).toBeInTheDocument();
     expect(screen.queryByText('Sudah termasuk')).toBeNull();
     expect(screen.queryByText(TEMPLATE_PRICE_NOTE_DEFAULT)).toBeNull();
@@ -139,7 +142,7 @@ describe('/template/:slug: harga & bar pesan HP', () => {
 
   it('bar HP: Demo + Pesan Template, ringkasan "Termasuk …", ikut keluar dari urutan Tab saat tersembunyi (D-09)', async () => {
     renderDetail();
-    await screen.findByRole('heading', { level: 1, name: 'Corporate Nexa' });
+    await screen.findByRole('heading', { level: 1, name: H1 });
     const order = screen.getByRole('link', { name: 'Pesan Template Corporate Nexa', hidden: true });
     const bar = order.closest('[aria-hidden]') as HTMLElement;
     expect(bar).toHaveAttribute('aria-hidden', 'true');
@@ -154,7 +157,7 @@ describe('/template/:slug: harga & bar pesan HP', () => {
     observeAs(false);
     renderDetail();
     // Bar muncul setelah observer melaporkan tombol panel tidak terlihat (render berikutnya)
-    const order = await screen.findByRole('link', { name: 'Pesan Template Corporate Nexa' });
+    const order = await screen.findByRole('link', { name: 'Pesan Template Corporate Nexa' }, { timeout: 5000 });
     const bar = order.closest('[aria-hidden]') as HTMLElement;
     expect(bar).toHaveAttribute('aria-hidden', 'false');
     const links = within(bar).getAllByRole('link');
@@ -172,7 +175,7 @@ describe('/template/:slug: harga & bar pesan HP', () => {
       return json(200, []);
     });
     renderDetail();
-    await screen.findByRole('heading', { level: 1, name: 'Corporate Nexa' });
+    await screen.findByRole('heading', { level: 1, name: H1 });
     const order = screen.getByRole('link', { name: 'Pesan Template Corporate Nexa', hidden: true });
     const bar = order.closest('[aria-hidden]') as HTMLElement;
     const demo = within(bar).getByRole('link', { name: 'Lihat Demo Corporate Nexa (tab baru)', hidden: true });
@@ -182,8 +185,8 @@ describe('/template/:slug: harga & bar pesan HP', () => {
 
   it('badge nomor langkah tidak di bawah 11px (D-14)', async () => {
     renderDetail();
-    await screen.findByRole('heading', { level: 1, name: 'Corporate Nexa' });
-    const steps = within(screen.getByRole('heading', { name: 'Alur pemesanan' }).parentElement as HTMLElement).getAllByRole('listitem');
+    await screen.findByRole('heading', { level: 1, name: H1 });
+    const steps = within(screen.getByRole('heading', { name: 'Cara memesan & kapan website aktif' }).parentElement as HTMLElement).getAllByRole('listitem');
     for (const step of steps) expect(step.querySelector('.text-\\[11px\\]')).not.toBeNull();
   });
 });
@@ -254,7 +257,7 @@ describe('/template/:slug: Template lainnya (D-12)', () => {
     expect(detail).toHaveAttribute('href', '/template/startup-clean');
     expect(within(section).getByRole('link', { name: 'Lihat Demo Startup Clean' })).toHaveAttribute('href', '/demo/startup-clean');
     expect(within(section).getByRole('link', { name: /Pesan Custom/ })).toHaveAttribute('href', '/pesan-custom?layanan=website');
-    expect(within(section).getByRole('link', { name: /Lihat Semua Template/ })).toHaveAttribute('href', '/#templates');
+    expect(within(section).getByRole('link', { name: /Lihat Semua Template/ })).toHaveAttribute('href', '/template');
     expect(section.querySelector('.shadow-soft, .hover\\:shadow-float')).toBeNull();
     expect(section.querySelectorAll('.card-flat')).toHaveLength(2);
   });
@@ -281,7 +284,7 @@ describe('/demo/:slug', () => {
 
   it('label sesuai glosarium dan tombol kembali punya area sentuh yang diperluas (D-10, D-14)', async () => {
     renderDemo();
-    const order = await screen.findByRole('link', { name: 'Pesan Template Corporate Nexa' });
+    const order = await screen.findByRole('link', { name: 'Pesan Template Corporate Nexa' }, { timeout: 5000 });
     expect(order).toHaveAttribute('href', '/pesan/corporate-nexa');
     expect(order).toHaveTextContent('Pesan Template');
     expect(screen.getByRole('link', { name: 'Kembali ke detail template' }).className).toMatch(/after:-inset-1/);

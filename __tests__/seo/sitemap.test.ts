@@ -35,7 +35,22 @@ describe('buildSitemap dari getIndexableRoutes', () => {
       expect(loc).not.toMatch(/[?#]/);
       expect(loc === `${ORIGIN}/` || !loc.endsWith('/')).toBe(true);
     }
-    for (const stub of ['/template', '/harga', '/tentang', '/kontak', '/panduan']) expect(locs).not.toContain(`${ORIGIN}${stub}`);
+    for (const stub of ['/panduan']) expect(locs).not.toContain(`${ORIGIN}${stub}`);
+    // Halaman WP5 & WP6 yang sudah terisi
+    for (const page of [
+      '/template',
+      '/template/kategori/company-profile',
+      '/template/kategori/kecantikan-klinik',
+      '/template/kategori/olahraga-komunitas',
+      '/template/kategori/fintech-startup',
+      '/harga',
+      '/tentang',
+      '/kontak',
+      '/jasa-pembuatan-website',
+      '/jasa-pembuatan-aplikasi-mobile',
+    ]) {
+      expect(locs).toContain(`${ORIGIN}${page}`);
+    }
   });
 
   it('lastmod template = updated_at (tanggal), satu image:image pratinjau per template', () => {
