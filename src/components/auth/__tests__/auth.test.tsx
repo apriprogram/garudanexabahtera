@@ -14,8 +14,9 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 /** Token berformat JWT yang cukup untuk dibaca src/lib/auth.ts (klaim role & exp). */
-const tokenFor = (role: string) =>
-  `h.${btoa(JSON.stringify({ sub: 7, role, exp: Math.floor(Date.now() / 1000) + 3600 }))}.s`;
+// exp dihitung sekali: token yang dibuat di dua detik berbeda (suite penuh yang lambat) harus tetap sama
+const TOKEN_EXP = Math.floor(Date.now() / 1000) + 3600;
+const tokenFor = (role: string) => `h.${btoa(JSON.stringify({ sub: 7, role, exp: TOKEN_EXP }))}.s`;
 
 const session = (role: string) => ({
   token: tokenFor(role),
