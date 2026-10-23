@@ -157,6 +157,17 @@ describe('sanity checks', () => {
   it('reports a missing canonical as a head problem (a warning only in --build-only)', () => {
     expect(checkPage('p', page('<h1>a</h1>', '<title>T</title>'))).toEqual([{ level: 'head', message: 'p: 0 canonical (harus tepat 1)' }]);
   });
+
+  it('a public noindex page (e.g. /panduan without published articles) has no canonical and a noindex meta', () => {
+    const noindexHead = '<title>T</title><meta name="robots" content="noindex,follow">';
+    expect(checkPage('p', page('<h1>a</h1>', noindexHead), { indexable: false })).toEqual([]);
+    expect(checkPage('p', page('<h1>a</h1>', `${noindexHead}<link rel="canonical" href="https://garudanexa.com/p">`), { indexable: false })).toEqual([
+      { level: 'head', message: 'p: 1 canonical di halaman noindex (harus 0)' },
+    ]);
+    expect(checkPage('p', page('<h1>a</h1>', '<title>T</title>'), { indexable: false })).toEqual([
+      { level: 'error', message: 'p: halaman noindex tanpa meta robots noindex' },
+    ]);
+  });
 });
 
 describe('API data', () => {

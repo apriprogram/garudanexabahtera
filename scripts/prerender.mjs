@@ -305,8 +305,12 @@ const resourceTags = ({ js, css }) =>
 
 const count = (html, pattern) => (html.match(pattern) ?? []).length;
 
-/** Masalah satu halaman _pre: [{ level: 'error' | 'head', message }]. 'head' = bergantung WP3 (turun jadi peringatan). */
-export function checkPage(file, html) {
+/**
+ * Masalah satu halaman _pre: [{ level: 'error' | 'head', message }]. 'head' = bergantung WP3 (turun jadi peringatan).
+ * `indexable` = robots index,follow: tepat 1 canonical. Halaman publik noindex (mis. /panduan tanpa artikel terbit,
+ * kategori dengan < 2 template) sengaja tanpa canonical (src/seo/page.ts), jadi harus 0.
+ */
+export function checkPage(file, html, { indexable = true } = {}) {
   const problems = [];
   const head = html.slice(0, html.indexOf('</head>'));
   const root = html.slice(html.indexOf('<div id="root">'));
@@ -315,7 +319,11 @@ export function checkPage(file, html) {
   const titles = count(head, /<title>/g);
   if (titles !== 1) problems.push({ level: 'error', message: `${file}: ${titles} <title> (harus tepat 1)` });
   const canonicals = count(head, /<link\s+rel="canonical"/g);
-  if (canonicals !== 1) problems.push({ level: 'head', message: `${file}: ${canonicals} canonical (harus tepat 1)` });
+  if (indexable && canonicals !== 1) problems.push({ level: 'head', message: `${file}: ${canonicals} canonical (harus tepat 1)` });
+  if (!indexable && canonicals !== 0) problems.push({ level: 'head', message: `${file}: ${canonicals} canonical di halaman noindex (harus 0)` });
+  if (!indexable && !/<meta name="robots" content="noindex/.test(head)) {
+    problems.push({ level: 'error', message: `${file}: halaman noindex tanpa meta robots noindex` });
+  }
   if (count(html, /<title>/g) !== titles) problems.push({ level: 'error', message: `${file}: <title> di luar <head>` });
   for (const [, json] of html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)) {
     try {
@@ -548,7 +556,7 @@ export async function prerender({ root, outDir, deployDir, strict }) {
     const file = preFileFor(path);
     mkdirSync(dirname(join(preDir, file)), { recursive: true });
     writeFileSync(join(preDir, file), page);
-    problems.push(...checkPage(`_pre/${file}`, page));
+    problems.push(...checkPage(`_pre/${file}`, page, { indexable: head.robots === 'index,follow' }));
     const title = titleOf(page);
     if (titles.has(title)) problems.push({ level: 'head', message: `title ganda "${title}": ${titles.get(title)} dan ${path}` });
     else titles.set(title, path);
