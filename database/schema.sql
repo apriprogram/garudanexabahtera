@@ -919,7 +919,8 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-23_010', 'baseline: visitor_logs referrer_host, landing_path, utm_source (visit source)'),
   ('2026-10-23_011', 'baseline: navbar page links (no navbar rows; the built-in menu is Template, Jasa, Harga, Panduan)'),
   ('2026-10-24_012', 'baseline: template_orders list_price, discount_amount, discount_code (first-order discount)'),
-  ('2026-10-24_013', 'baseline: templates like_count, view_count (catalog card likes and views)');
+  ('2026-10-24_013', 'baseline: templates like_count, view_count (catalog card likes and views)'),
+  ('2026-10-24_014', 'baseline: navbar Tentang + Kontak (no navbar rows; the built-in menu has them)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

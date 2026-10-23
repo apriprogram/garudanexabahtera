@@ -89,7 +89,7 @@ const isCurrentPage = (href: string, pathname: string) => {
 
 /**
  * Menu bawaan (dipakai bila Navbar Manager kosong; struktur yang sama dipasang migrasi
- * database/migrations/2026-10-23_011_seo_navbar.sql): halaman nyata dengan <a href>, bukan anchor beranda
+ * database/migrations/2026-10-23_011_seo_navbar.sql + 2026-10-24_014): halaman nyata dengan <a href>, bukan anchor beranda
  * (docs/platform/SEO-PLAN.md §5.5 langkah 5). Anchor `#…` hanya navigasi sekunder di beranda.
  */
 const DEFAULT_ITEMS: NavItem[] = [
@@ -115,6 +115,9 @@ const DEFAULT_ITEMS: NavItem[] = [
   },
   { key: 'harga', label: 'Harga', href: HUB_PATHS.pricing, children: [] },
   { key: 'panduan', label: 'Panduan', href: HUB_PATHS.guides, children: [] },
+  // Tentang & Kontak (pemilik 2026-10-24; baris yang sama dipasang migrasi 2026-10-24_014)
+  { key: 'tentang', label: 'Tentang', href: HUB_PATHS.about, children: [] },
+  { key: 'kontak', label: 'Kontak', href: HUB_PATHS.contact, children: [] },
 ];
 
 interface Pill {

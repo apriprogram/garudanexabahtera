@@ -129,7 +129,7 @@ describe('Navbar', () => {
     expect(screen.getAllByRole('link', { name: 'Akun Saya' })[0]).toHaveAttribute('href', '/akun');
   });
 
-  it('menu bawaan (SEO WP5): Template · Jasa ▾ · Harga · Panduan sebagai tautan halaman, halaman aktif ditandai', async () => {
+  it('menu bawaan (SEO WP5): Template · Jasa ▾ · Harga · Panduan · Tentang · Kontak sebagai tautan halaman, halaman aktif ditandai', async () => {
     renderAt(<Navbar />, '/template/aura-studio');
     await act(async () => {});
     const desktop = screen.getByRole('navigation', { name: 'Navigasi utama' });
@@ -137,11 +137,22 @@ describe('Navbar', () => {
     expect(within(desktop).getByRole('link', { name: 'Template' })).toHaveAttribute('aria-current', 'page');
     expect(within(desktop).getByRole('link', { name: 'Harga' })).toHaveAttribute('href', '/harga');
     expect(within(desktop).getByRole('link', { name: 'Panduan' })).toHaveAttribute('href', '/panduan');
+    // Tentang & Kontak (pemilik 2026-10-24), sesudah Panduan
+    expect(within(desktop).getByRole('link', { name: 'Tentang' })).toHaveAttribute('href', '/tentang');
+    expect(within(desktop).getByRole('link', { name: 'Kontak' })).toHaveAttribute('href', '/kontak');
+    expect(
+      within(desktop)
+        .getAllByRole('link')
+        .map((a) => a.textContent?.trim())
+        .filter((t) => ['Harga', 'Panduan', 'Tentang', 'Kontak'].includes(t ?? '')),
+    ).toEqual(['Harga', 'Panduan', 'Tentang', 'Kontak']);
     expect(within(desktop).getByRole('button', { name: 'Jasa' })).toHaveAttribute('aria-expanded', 'false');
     // Menu HP selalu ada di HTML (inert saat tertutup): sub-menu Jasa terbaca crawler sebagai <a href>
     const mobile = document.getElementById('menu-hp') as HTMLElement;
     const hrefs = Array.from(mobile.querySelectorAll('a')).map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(expect.arrayContaining(['/template', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/harga', '/panduan']));
+    expect(hrefs).toEqual(
+      expect.arrayContaining(['/template', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/harga', '/panduan', '/tentang', '/kontak']),
+    );
     expect(hrefs.some((href) => href?.includes('#templates') || href?.includes('#faq'))).toBe(false);
     // Kanan (belum masuk): "Sign up" → /daftar dan "Log in" → /masuk (permintaan pemilik 2026-10-23)
     expect(screen.getAllByRole('link', { name: 'Sign up' })[0]).toHaveAttribute('href', '/daftar');
