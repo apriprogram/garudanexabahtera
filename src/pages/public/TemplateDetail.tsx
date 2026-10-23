@@ -56,7 +56,8 @@ const ORDER_STEPS = [
   {
     icon: UserRoundCheck,
     title: 'Verifikasi pesanan',
-    body: 'Tim kami memeriksa dan menyetujui pesanan. Pesanan lunas yang ditolak, misalnya karena domain tidak tersedia, mendapat pengembalian dana penuh.',
+    // Kalimat jaminan sama persis dengan FAQ, /harga, kebijakan dan llms.txt (satu sumber: COMPANY_FACTS)
+    body: `Tim kami memeriksa dan menyetujui pesanan. ${COMPANY_FACTS.refundGuarantee}`,
   },
   {
     icon: Globe,

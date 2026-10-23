@@ -2,10 +2,11 @@
 // Prerender saat deploy (docs/platform/SEO-PLAN.md §5.2, WP2): scripts/prerender.mjs, src/entry-server.tsx dan blok
 // routing host utama di deploy/cpanel/htaccess. Aturan .htaccess juga sudah dicoba di Apache sungguhan (laporan WP2);
 // di sini strukturnya dikunci dan pola regex-nya diuji.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  PRELOAD_OMIT_SETTINGS,
   USER_AGENT,
   checkPage,
   chunksFor,
@@ -16,6 +17,7 @@ import {
   htaccessRoutes,
   injectHead,
   preFileFor,
+  preloadSettings,
   scriptJson,
   seoFallbackContext,
   stripPageHead,
@@ -49,6 +51,21 @@ describe('page assembly', () => {
     expect(preFileFor('/')).toBe('index.html');
     expect(preFileFor('/pesan-custom')).toBe('pesan-custom.html');
     expect(preFileFor('/template/finova')).toBe('template/finova.html');
+  });
+
+  it('keeps stale settings no public page reads (custom package prices, old sections) out of gn-preload', () => {
+    const settings = { contact_email: 'info@garudanexa.com', disabled_sections: '["pricing"]', pricing_data: '[{"price":"Rp 2.000.000"}]', process_data: '[]' };
+    expect(preloadSettings(settings)).toEqual({ contact_email: 'info@garudanexa.com', disabled_sections: '["pricing"]' });
+    expect(preloadSettings(undefined)).toEqual({});
+    // Bila halaman publik mulai membaca salah satu key ini, hapus dari PRELOAD_OMIT_SETTINGS (hidrasi butuh datanya)
+    const publicFiles = readdirSync(join(ROOT, 'src'), { recursive: true, encoding: 'utf8' })
+      .map((file) => file.split('\\').join('/'))
+      .filter((file) => /\.tsx?$/.test(file) && !/(^|\/)__tests__\//.test(file) && !file.startsWith('pages/admin/') && !file.startsWith('templates/'));
+    expect(publicFiles.length).toBeGreaterThan(50);
+    for (const file of publicFiles) {
+      const source = readFileSync(join(ROOT, 'src', file), 'utf8');
+      for (const key of PRELOAD_OMIT_SETTINGS) expect(source.includes(key), `${file} membaca ${key}`).toBe(false);
+    }
   });
 
   it('escapes "<" in the inline JSON so data can never close the <script>', () => {

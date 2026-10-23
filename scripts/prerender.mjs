@@ -234,6 +234,26 @@ export function hoistLeadingTags(appHtml, headTags) {
   return { appHtml: appHtml.slice(match[0].length), headTags: head };
 }
 
+/**
+ * Setting lama yang tidak dibaca halaman publik mana pun tetapi berisi fakta basi: paket harga & durasi jasa custom
+ * (section "pricing" sudah dihapus, lihat REMOVED_SECTIONS di Navbar.tsx; design.md: jasa custom tanpa angka harga),
+ * serta data section produk & proses lama. Tidak ikut gn-preload, supaya HTML mentah yang dibaca crawler AI tidak
+ * memuatnya. Server dan klien sama-sama memakai preload yang sudah disaring, jadi hidrasi tetap cocok.
+ * __tests__/backend/prerender.test.ts memastikan tidak ada kode publik yang membaca key ini.
+ */
+export const PRELOAD_OMIT_SETTINGS = [
+  'pricing_title',
+  'pricing_subtitle',
+  'pricing_data',
+  'process_data',
+  'products_data',
+  'products_categories',
+];
+
+/** get_settings untuk gn-preload: tanpa PRELOAD_OMIT_SETTINGS. */
+export const preloadSettings = (settings) =>
+  Object.fromEntries(Object.entries(settings ?? {}).filter(([key]) => !PRELOAD_OMIT_SETTINGS.includes(key)));
+
 /** Halaman utuh: head + isi #root + data preload. */
 export function composePage(shell, { headTags: pageHead, appHtml: rawApp, preload }) {
   if (!ROOT_DIV.test(shell)) throw new Error('index.html tanpa <div id="root"></div>');
@@ -429,7 +449,9 @@ export async function prerender({ root, outDir, deployDir, strict }) {
     if (path === '/') urls.push(ssr.PRELOAD_URLS.projects);
     const slug = /^\/template\/([a-z0-9-]+)$/.exec(path)?.[1];
     if (slug && api[ssr.PRELOAD_URLS.template(slug)]) urls.push(ssr.PRELOAD_URLS.template(slug));
-    return Object.fromEntries(urls.map((url) => [url, api[url]]));
+    return Object.fromEntries(
+      urls.map((url) => [url, url === ssr.PRELOAD_URLS.settings ? preloadSettings(api[url]) : api[url]]),
+    );
   };
 
   const renderPage = async (path, preloadPath) => {
