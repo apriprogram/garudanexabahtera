@@ -233,7 +233,7 @@ describe('halaman WP6: prerender + hidrasi', () => {
 });
 
 describe('beranda', () => {
-  it('satu H1 statis berisi "template website", strip, kategori, perbandingan, FAQ, tanpa deskripsi section, tanpa hydration error', async () => {
+  it('satu H1 statis berisi "template website", strip, tautan kategori, perbandingan, FAQ, tanpa section #kategori & deskripsi section, tanpa hydration error', async () => {
     const { html, problems, el } = await hydrate('/');
     expect(problems).toEqual([]);
     const h1s = el.querySelectorAll('h1');
@@ -252,8 +252,11 @@ describe('beranda', () => {
     for (const slug of ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup']) {
       expect(el.querySelector(`a[href="/template/kategori/${slug}"]`), slug).not.toBeNull();
     }
+    // Kategori: section #kategori dihapus (pemilik 2026-10-24), tautan halaman kategori tetap ada lewat footer; H2 berkata
+    // kunci tinggal 2 karena judul "Template website untuk setiap jenis usaha" ikut hilang
+    expect(el.querySelector('#kategori')).toBeNull();
     const h2s = [...el.querySelectorAll('h2')].map((h) => h.textContent ?? '');
-    expect(h2s.filter((t) => /template website|jasa pembuatan website|website atau aplikasi/i.test(t)).length).toBeGreaterThanOrEqual(3);
+    expect(h2s.filter((t) => /template website|jasa pembuatan website|website atau aplikasi/i.test(t)).length).toBeGreaterThanOrEqual(2);
     expect(el.querySelector('#perbandingan table')).not.toBeNull();
     // Artikel panduan sudah terbit (WP8) → section panduan terbaru dengan tautan artikel
     expect(el.querySelector('#panduan a[href^="/panduan/"]')).not.toBeNull();

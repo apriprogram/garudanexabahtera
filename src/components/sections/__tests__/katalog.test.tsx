@@ -116,7 +116,7 @@ describe('Templates (#templates), katalog kecil', SLOW, () => {
     expect(within(section).queryByRole('button', { name: /Urutkan/ })).not.toBeInTheDocument();
     expect(within(section).getByRole('status')).toHaveTextContent('2 template');
 
-    const grid = section.querySelector('ul') as HTMLElement;
+    const grid = section.querySelector('article')?.closest('ul') as HTMLElement;
     expect(grid.className).toContain('sm:grid-cols-2');
     expect(grid.className).toContain('lg:max-w-5xl');
     expect(grid.className).not.toContain('xl:grid-cols-4');
@@ -199,6 +199,13 @@ describe('Templates (#templates), katalog besar', SLOW, () => {
     fireEvent.click(all);
 
     expect(within(section).getByRole('searchbox', { name: 'Cari template' }).className).toContain('placeholder:text-muted');
+
+    // "Sudah termasuk" tepat di bawah kolom cari, pil penuh di desktop (pindahan dari #kategori, 2026-10-24)
+    const form = within(section).getByRole('search', { name: 'Cari template' });
+    const strip = within(section).getByText('Sudah termasuk').parentElement as HTMLElement;
+    expect(form.nextElementSibling).toBe(strip);
+    expect(strip.className).toContain('lg:rounded-full');
+    expect(within(strip).getAllByRole('listitem').length).toBeGreaterThan(1);
     expect(within(section).getByRole('group', { name: 'Kata kunci populer' })).toBeInTheDocument();
     expect(within(section).getByRole('button', { name: /Urutkan/ })).toBeInTheDocument();
 
@@ -206,7 +213,7 @@ describe('Templates (#templates), katalog besar', SLOW, () => {
     expect(within(section).getAllByText('Company Profile', { exact: false }).length).toBeGreaterThan(0);
 
     // ≥ 4 kartu: grid penuh 1/2/3/4 kolom
-    expect((section.querySelector('ul') as HTMLElement).className).toContain('xl:grid-cols-4');
+    expect((section.querySelector('article')?.closest('ul') as HTMLElement).className).toContain('xl:grid-cols-4');
   });
 
   it('tanpa hasil: "Pesan Custom" jadi tombol utama, "Lihat Semua Template" mereset, template yang tersedia tetap ditawarkan', async () => {

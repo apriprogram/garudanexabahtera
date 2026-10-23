@@ -18,6 +18,7 @@ import {
   TINT,
   type SortKey,
 } from './templates/catalog';
+import { IncludesStrip } from './templates/IncludesStrip';
 import { SortMenu } from './templates/SortMenu';
 import { TemplateShot, TemplateShotSkeleton } from './templates/TemplateShot';
 
@@ -289,6 +290,9 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
                 </button>
               </form>
             )}
+
+            {/* "Sudah termasuk" tepat di bawah kolom cari (pil penuh di desktop) */}
+            <IncludesStrip className={showTabs || showSearch ? 'mt-3 sm:mt-4' : ''} />
 
             {/* Populer + jumlah hasil + Urutkan (katalog kecil: jumlah saja) */}
             <div className={`flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-6 ${showTabs || showSearch ? 'mt-2 sm:mt-3' : ''}`}>

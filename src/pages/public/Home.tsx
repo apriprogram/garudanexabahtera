@@ -10,7 +10,6 @@ import Templates from '../../components/sections/Templates';
 import Projects from '../../components/sections/Projects';
 import Process from '../../components/sections/Process';
 import FAQ from '../../components/sections/FAQ';
-import HomeCategories from '../../components/sections/home/HomeCategories';
 import HomeCompare from '../../components/sections/home/HomeCompare';
 import LatestGuides from '../../components/sections/home/LatestGuides';
 import { listArticles } from '../../content/panduan';
@@ -21,12 +20,12 @@ import { useTranslation } from '../../hooks/useTranslation';
  * Urutan section beranda (SPEC §8, SEO-PLAN §5.6 langkah 4). `id` = anchor (#templates, …) sekaligus kunci di setting
  * `disabled_sections` untuk menyembunyikan section, mis. `["projects"]`. `tone` = warna latar halaman saat section itu
  * dibaca (crossfade lewat SectionChrome, gaya BELAJAR CPNS); prop `alt` section mengikuti tone ini.
- * - kategori: intro yang bisa di-crawl + strip "Sudah termasuk" + ubin kategori
+ * - section #kategori ("Template website untuk setiap jenis usaha") dihapus atas permintaan pemilik 2026-10-24; halaman
+ *   kategori tetap ditautkan dari footer & katalog, "Sudah termasuk" pindah ke bawah kolom cari #templates
  * - perbandingan: tabel template vs custom (Lampiran D, versi pendek)
  * - panduan: 3 artikel terbaru, hanya bila sudah ada artikel (WP8)
  */
 const SECTIONS = [
-  { id: 'kategori', Component: HomeCategories, tone: 'alt' },
   { id: 'templates', Component: Templates, tone: 'canvas' },
   { id: 'perbandingan', Component: HomeCompare, tone: 'alt' },
   { id: 'projects', Component: Projects, tone: 'alt' },
@@ -46,7 +45,6 @@ export default function Home() {
   const whatsapp = getWhatsappNumber(settings);
 
   const labels: Record<string, string> = {
-    kategori: 'Kategori',
     perbandingan: 'Perbandingan',
     panduan: 'Panduan',
     templates: t('nav-templates'),
