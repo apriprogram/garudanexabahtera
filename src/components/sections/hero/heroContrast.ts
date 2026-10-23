@@ -340,6 +340,65 @@ export function decideHeroLegibility(
   return { tone, overlayAlpha: alpha, contrast, readable: passes(contrast), measured: true };
 }
 
+/* ─── Navbar transparan di atas strip latar ─────────────────────────────── */
+
+/** Kontras minimum teks navbar di atas media sebelum navbar kembali putih kaca (batas teks besar / grafis WCAG). */
+export const NAV_MIN_CONTRAST = 3;
+
+/*
+ * Teks navbar di atas strip media (Navbar.tsx NAV_LOOKS): terang = logo, menu, akun, tombol menu putih penuh; gelap =
+ * tampilan bawaan (nama & menu aktif fg, menu lain muted, sayap & titik biru brand sebagai grafis).
+ */
+const NAV_ROLES: Record<HeroTone, Role[]> = {
+  light: [role(COLORS.onMedia, 'body'), role(COLORS.onMedia, 'headline')],
+  dark: [role(COLORS.fg, 'body'), role(COLORS.muted, 'body'), role(COLORS.primary, 'headline')],
+};
+
+/** Kontras terendah teks navbar nada ini di atas sampel strip (persentil nada yang sama dengan teks hero, tanpa lapisan). */
+export function navContrast(tone: HeroTone, sample: BackgroundSample): { body: number; headline: number } {
+  const background = scrimmedLuminance(tone, sample, 0);
+  let body = Infinity;
+  let headline = Infinity;
+  for (const r of NAV_ROLES[tone]) {
+    const ratio = contrastRatio(r.luminance, background);
+    if (r.kind === 'body') body = Math.min(body, ratio);
+    else headline = Math.min(headline, ratio);
+  }
+  return { body, headline };
+}
+
+/**
+ * Nada navbar transparan di puncak beranda, dari sampel pita teks strip latar DI BELAKANG NAVBAR (satu per gambar
+ * tayangan; kasus terburuk), tanpa lapisan (navbar tidak pernah diberi lapisan):
+ * 1. nada yang lolos 4,5:1 (menu) & 3:1 (logo) di semua sampel; keduanya lolos → kontras menu terendah yang lebih tinggi;
+ * 2. tidak ada yang lolos penuh: nada dengan kontras menu terendah ≥ 3:1 yang lebih tinggi (permintaan pemilik
+ *    2026-10-23: di atas gambar gelap navbar transparan dengan teks putih, walau titik paling terang di belakang menu
+ *    sedikit di bawah 4,5:1);
+ * 3. di bawah 3:1 untuk kedua nada (latar terang & gelap bercampur) atau tanpa sampel → null: navbar putih kaca.
+ */
+export function decideNavTone(samples: readonly BackgroundSample[]): HeroTone | null {
+  if (samples.length === 0) return null;
+  const worst = (tone: HeroTone) => {
+    let body = Infinity;
+    let headline = Infinity;
+    for (const sample of samples) {
+      const c = navContrast(tone, sample);
+      body = Math.min(body, c.body);
+      headline = Math.min(headline, c.headline);
+    }
+    return { body, headline };
+  };
+  const light = worst('light');
+  const dark = worst('dark');
+  const pick = (ok: (c: { body: number; headline: number }) => boolean): HeroTone | null => {
+    const lightOk = ok(light);
+    const darkOk = ok(dark);
+    if (lightOk && darkOk) return dark.body > light.body ? 'dark' : 'light';
+    return lightOk ? 'light' : darkOk ? 'dark' : null;
+  };
+  return pick(passes) ?? pick((c) => c.body >= NAV_MIN_CONTRAST && c.headline >= NAV_MIN_CONTRAST);
+}
+
 /**
  * Saran untuk admin bila teks kurang terbaca: lapisan paling tipis (persen bulat 0..80) agar teks nada ini lolos di
  * atas SEMUA sampel; null bila tidak ada sampel atau tetap tidak lolos dengan 80%. Website tidak memakainya.

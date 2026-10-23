@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type RefObject } from 'react';
 import { heroBackgroundKey, type HeroMediaConfig, type HeroTextSettings } from './heroBgConfig';
-import { decideHeroLegibility, fallbackLegibility, type BackgroundSample, type HeroLegibility } from './heroContrast';
+import { decideHeroLegibility, decideNavTone, fallbackLegibility, type BackgroundSample, type HeroLegibility, type HeroTone } from './heroContrast';
 import { combineResults, prefersSaveData, sampleImage, sampleVideo, type SampleLayout, type SampleResult } from './heroSampling';
 
 /** Tata letak hero berganti di sini: tumpuk (HP & tablet) ↔ dua kolom (≥ 1024px), dan ukuran teks HP ↔ ≥ 640px. */
@@ -14,6 +14,8 @@ const FADE_MIN = 64;
 const FADE_GAP = 8;
 /** Jeda sebelum mengukur ulang setelah ukuran berubah (resize jendela / ResizeObserver beruntun). */
 const RESIZE_DEBOUNCE_MS = 250;
+/** Tinggi bar navbar bila `--nav-h` tidak bisa dibaca (64px ≥ 1024px, sama dengan index.css). */
+const NAV_FALLBACK_PX = 64;
 
 export interface HeroLegibilityState extends HeroLegibility {
   /** Tepi blok teks untuk --scrim-end (px dari kiri pada ≥ 1024px, dari atas di bawahnya); null = belum diukur */
@@ -26,12 +28,39 @@ interface Measured {
   key: string;
   /** Sampel per gambar; null = tidak bisa diukur → cadangan (lapisan admin persis) */
   samples: BackgroundSample[] | null;
+  /** Sampel strip di belakang navbar (per gambar); null = tidak terukur / hero tidak di puncak → navbar putih kaca */
+  navSamples: BackgroundSample[] | null;
   scrimEnd: number | null;
   fadeHeight: number | null;
 }
 
+/** Tinggi bar navbar (px) dari `--nav-h` (rem atau px) di :root; tidak terbaca → 64. */
+function navBarHeight(): number {
+  if (typeof document === 'undefined') return NAV_FALLBACK_PX;
+  const root = getComputedStyle(document.documentElement);
+  const raw = root.getPropertyValue('--nav-h').trim();
+  const value = parseFloat(raw);
+  if (!(value > 0)) return NAV_FALLBACK_PX;
+  return raw.endsWith('rem') ? value * (parseFloat(root.fontSize) || 16) : value;
+}
+
+/**
+ * Pita teks navbar (fixed di puncak halaman) dalam koordinat section: selebar section, setengah tengah tinggi bar
+ * (logo, menu & tombol 36-40px berpusat di bar 56/64px; huruf menu 14px di tengahnya). Hanya bila section mulai di
+ * puncak halaman (beranda); selain itu null (navbar tidak pernah di atas media ini).
+ */
+function navStrip(section: HTMLElement, box: SampleLayout['box']): SampleLayout | null {
+  const top = section.getBoundingClientRect().top + (window.scrollY || 0);
+  if (Math.abs(top) > 1) return null;
+  const bar = Math.min(box.h, navBarHeight());
+  return { box, region: { x: 0, y: Math.round(bar / 4), w: box.w, h: Math.round(bar / 2) } };
+}
+
 /** Ukuran section (= kotak media) dan blok teks di dalamnya, tanpa transform efek gulir bila memungkinkan. */
-function measureLayout(section: HTMLElement, text: HTMLElement): { layout: SampleLayout; scrimEnd: number; fadeHeight: number } | null {
+function measureLayout(
+  section: HTMLElement,
+  text: HTMLElement,
+): { layout: SampleLayout; strip: SampleLayout | null; scrimEnd: number; fadeHeight: number } | null {
   const w = section.clientWidth;
   const h = section.clientHeight;
   if (!(w > 0 && h > 0)) return null;
@@ -57,6 +86,7 @@ function measureLayout(section: HTMLElement, text: HTMLElement): { layout: Sampl
   const bottom = y + th;
   return {
     layout: { box: { w, h }, region: { x: x - PAD, y: y - PAD, w: tw + PAD * 2, h: th + PAD * 2 } },
+    strip: navStrip(section, { w, h }),
     scrimEnd: Math.round(twoColumns ? x + tw + PAD : bottom + PAD),
     fadeHeight: Math.round(Math.min(FADE_MAX, Math.max(FADE_MIN, h - bottom - FADE_GAP))),
   };
@@ -80,6 +110,9 @@ const mergeVideo = (poster: SampleResult | null, video: HTMLVideoElement | null,
  * - diukur ulang saat tata letak berganti (640px / 1024px), lebar jendela berubah, isi blok teks berganti
  *   (`layoutKey`, mis. mode Template ↔ Custom: di HP blok teks mode Custom lebih tinggi), atau ukuran blok teks /
  *   section berubah (ResizeObserver), tanpa unduh ulang.
+ * Sekalian diukur strip latar di belakang navbar (`navTone`, decideNavTone): navbar transparan di puncak beranda
+ * memakai teks terang / gelap yang terbaca di sana (strip bisa jauh lebih gelap dari area teks, mis. langit di atas
+ * cahaya), null selama mengukur / bila tidak terukur atau tidak ada nada yang terbaca (navbar tetap putih kaca).
  * `media` null (latar bawaan, belum dimuat, atau semua media gagal) → null: teks hero tampil seperti biasa.
  */
 export function useHeroLegibility({
@@ -95,7 +128,7 @@ export function useHeroLegibility({
   textRef: RefObject<HTMLElement | null>;
   /** Berubah saat isi blok teks berganti (mode hero): diukur ulang langsung, tanpa menunggu ResizeObserver */
   layoutKey?: string;
-}): { legibility: HeroLegibilityState | null; onVideoFrame: (video: HTMLVideoElement) => void } {
+}): { legibility: HeroLegibilityState | null; navTone: HeroTone | null; onVideoFrame: (video: HTMLVideoElement) => void } {
   const mediaKey = media ? heroBackgroundKey(media) : null;
   const [measured, setMeasured] = useState<Measured | null>(null);
   const [video, setVideo] = useState<{ key: string; el: HTMLVideoElement } | null>(null);
@@ -166,19 +199,24 @@ export function useHeroLegibility({
       const box = alive && section && textEl ? measureLayout(section, textEl) : null;
       if (!alive) return;
       if (!box) {
-        setMeasured({ key: mediaKey, samples: null, scrimEnd: null, fadeHeight: null });
+        setMeasured({ key: mediaKey, samples: null, navSamples: null, scrimEnd: null, fadeHeight: null });
         return;
       }
-      let samples: BackgroundSample[] | null = null;
-      if (!skip && media.mode === 'image') {
-        samples = combineResults(await Promise.all(media.images.map((src) => sampleImage(src, box.layout))));
-      } else if (!skip && media.mode === 'video') {
-        const poster = media.poster ? await sampleImage(media.poster, box.layout) : null;
-        const result = alive ? mergeVideo(poster, frame, box.layout) : null;
-        // Belum ada poster terukur maupun frame: tetap cadangan sampai frame pertama datang
-        samples = result ? combineResults([result]) : null;
-      }
-      if (alive) setMeasured({ key: mediaKey, samples, scrimEnd: box.scrimEnd, fadeHeight: box.fadeHeight });
+      // Satu area latar (blok teks atau strip navbar) → sampel per gambar / poster / frame; null = tidak terukur
+      const measure = async (layout: SampleLayout): Promise<BackgroundSample[] | null> => {
+        if (!skip && media.mode === 'image') {
+          return combineResults(await Promise.all(media.images.map((src) => sampleImage(src, layout))));
+        }
+        if (!skip && media.mode === 'video') {
+          const poster = media.poster ? await sampleImage(media.poster, layout) : null;
+          const result = alive ? mergeVideo(poster, frame, layout) : null;
+          // Belum ada poster terukur maupun frame: tetap cadangan sampai frame pertama datang
+          return result ? combineResults([result]) : null;
+        }
+        return null;
+      };
+      const [samples, navSamples] = await Promise.all([measure(box.layout), box.strip ? measure(box.strip) : null]);
+      if (alive) setMeasured({ key: mediaKey, samples, navSamples, scrimEnd: box.scrimEnd, fadeHeight: box.fadeHeight });
     };
     void run();
     return () => {
@@ -195,5 +233,10 @@ export function useHeroLegibility({
     return { ...base, scrimEnd: current?.scrimEnd ?? null, fadeHeight: current?.fadeHeight ?? null };
   }, [mediaKey, measured, text.tone, text.overlay]);
 
-  return { legibility, onVideoFrame };
+  const navTone = useMemo<HeroTone | null>(() => {
+    const current = mediaKey && measured?.key === mediaKey ? measured : null;
+    return current?.navSamples ? decideNavTone(current.navSamples) : null;
+  }, [mediaKey, measured]);
+
+  return { legibility, navTone, onVideoFrame };
 }

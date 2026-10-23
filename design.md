@@ -134,9 +134,16 @@ atau tombol WhatsApp melayang; offset anchor section tetap lewat `scroll-mt-*`.
 
 - `Navbar` (fixed, bar **`--nav-h` = 56px HP & tablet / 64px ≥ 1024px**; tinggi total header **`--nav-offset`** = bar +
   `env(safe-area-inset-top)` untuk mode PWA; keduanya di `src/index.css`): transparan di puncak, putih kaca
-  (`bg-canvas/85` + blur) saat digulir, dan sejak di puncak bila hero beranda memakai latar gambar/video (media tampil
-  penuh dan bisa gelap, jadi logo & menu harus tetap terbaca), **tanpa garis bawah, shadow, atau bar progres di semua
-  state** (juga saat menu HP terbuka). Menu tengah dengan sorotan pill yang meluncur saat hover (36px), titik biru = section aktif di beranda. Logo
+  (`bg-canvas/85` + blur, teks gelap) saat digulir, **tanpa garis bawah, shadow, atau bar progres di semua state** (juga
+  saat menu HP terbuka). Di puncak beranda berlatar gambar/video (permintaan pemilik 2026-10-23): tetap transparan, teks
+  logo/menu/akun/tombol menu **putih penuh** (`text-on-media`, sorotan hover `bg-on-media/15`, titik aktif putih, cincin
+  fokus putih lewat `data-nav-tone="light"`; panel dropdown putih `data-nav-surface` tetap biru) bila pita teks strip
+  latar DI BELAKANG NAVBAR gelap, atau teks gelap bawaan bila terang. Pita (setengah tengah tinggi bar, selebar layar)
+  diukur Hero terpisah dari blok teks (`useHeroLegibility` → `decideNavTone`, kasus terburuk tayangan, tanpa lapisan):
+  nada yang lolos 4,5:1; bila tidak ada, nada yang lebih terbaca selama ≥ 3:1 (`NAV_MIN_CONTRAST`; mis. gambar langit
+  pemilik: putih ±3,8:1 di belakang menu); di bawah itu, selama mengukur, atau tidak terukur (mis. lintas domain tanpa
+  CORS): putih kaca sejak puncak. Dikirim lewat `hero/heroNavState.ts`. Digulir lewat 8px atau menu HP dibuka: putih
+  kaca / putih + teks gelap. Menu tengah dengan sorotan pill yang meluncur saat hover (36px), titik biru = section aktif di beranda. Logo
   `BrandLogo size="sm"`, tombol akun 36px, CTA "Konsultasi Gratis" 40px (HP 32px, "Konsultasi").
   **Offset navbar selalu lewat variabel**, jangan menulis angka: konten pertama halaman lain `pt-nav` (= `--nav-offset`),
   bar `h-(--nav-h)`, anchor `scroll-mt-[calc(var(--nav-offset)+1rem)]`, kolom sticky
@@ -264,7 +271,7 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
     dari alpha itu. Alpha berubah halus 0,6 detik (`@property --scrim-a`), langsung untuk reduced motion.
   - Pudar bawah ke `canvas` agar menyatu dengan strip layanan (bukan lapisan gelap, selalu ada, juga di 0%): tinggi
     `h-40` (160px), dikecilkan otomatis (min. 64px) supaya selalu berakhir 8px di bawah blok teks. Tanpa pudar atas.
-    Navbar memakai putih kaca sejak di puncak beranda selama latar hero berupa gambar/video.
+    Navbar di puncak: transparan dengan nada strip latar di belakangnya (lihat `Navbar`), putih kaca bila tidak terbaca.
   - Tombol jeda bulat 40px (`bg-surface/90` + garis tipis, ikon `Pause`/`Play`, label "Jeda latar" / "Putar latar",
     WCAG 2.2.2) selama masih ada 2+ gambar yang bisa tampil, atau video yang masih bisa diputar, di kiri bawah
     `container-site` (kanan bawah tertutup tombol WhatsApp melayang di ≥ 640px). Berhenti otomatis saat hero di luar

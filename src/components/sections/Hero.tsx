@@ -5,6 +5,7 @@ import { HeroBackground } from './hero/HeroBackground';
 import { heroBackgroundKey, parseHeroBackground, parseHeroText } from './hero/heroBgConfig';
 import { HeroIntro } from './hero/HeroIntro';
 import { HeroMedia } from './hero/HeroMedia';
+import { HERO_NAV_DEFAULT, setHeroNavState } from './hero/heroNavState';
 import { HeroShowcase } from './hero/HeroShowcase';
 import { loadShowcase, peekShowcase, type HeroMode, type ShowcaseData } from './hero/showcase';
 import { useHeroLegibility } from './hero/useHeroLegibility';
@@ -20,6 +21,8 @@ import { useHeroLegibility } from './hero/useHeroLegibility';
  *   lapisan, gambar/video tampil penuh), website tidak pernah menebalkannya; `hero_text_tone` bisa memaksa nadanya.
  *   Selama mengukur (dan di HTML prerender): teks gelap seperti halaman tanpa media (terang bila dipaksa admin),
  *   lapisan admin; selama gambar/video dimuat di belakang teks masih halaman putih;
+ * - navbar (heroNavState): di puncak beranda di atas gambar/video navbar transparan dengan teks terang / gelap sesuai
+ *   strip latar di belakangnya (diukur terpisah dari blok teks); belum / tidak terukur → navbar putih kaca;
  * - datar: tanpa bayangan teks, pendar, atau bayangan kotak di seluruh hero (garis tipis ring-* boleh);
  * - kiri: toggle mode Template / Custom, judul dua warna kata per kata, checklist, tombol
  *   ("Pilih Template" → #templates, "Pesan Website / Aplikasi Mobile Custom" → /pesan-custom);
@@ -50,7 +53,14 @@ const Hero: React.FC = () => {
   const [chosenMode, setChosenMode] = useState<HeroMode | null>(null);
   const mode: HeroMode = chosenMode ?? (templatesHidden ? 'custom' : 'template');
   // Mode ikut menentukan tinggi blok teks (di HP mode Custom lebih tinggi): ganti mode = ukur ulang
-  const { legibility, onVideoFrame } = useHeroLegibility({ media, text: textSettings, sectionRef, textRef, layoutKey: mode });
+  const { legibility, navTone, onVideoFrame } = useHeroLegibility({ media, text: textSettings, sectionRef, textRef, layoutKey: mode });
+  const hasMedia = media !== null;
+
+  // Navbar transparan di atas media (nada dari strip di belakangnya); kembali bawaan saat hero dilepas (pindah halaman)
+  useEffect(() => {
+    setHeroNavState({ media: hasMedia, tone: hasMedia ? navTone : null });
+  }, [hasMedia, navTone]);
+  useEffect(() => () => setHeroNavState(HERO_NAV_DEFAULT), []);
   const [step, setStep] = useState(0);
   const [hold, setHold] = useState(false);
 

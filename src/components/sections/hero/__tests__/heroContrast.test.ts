@@ -17,6 +17,9 @@ import {
   contrastRatio,
   coverSourceRect,
   decideHeroLegibility,
+  decideNavTone,
+  navContrast,
+  NAV_MIN_CONTRAST,
   fallbackLegibility,
   formatRatio,
   hexToRgb,
@@ -419,5 +422,60 @@ describe('parser setting hero_text_tone / hero_overlay (sama dengan backend)', (
   it('dari get_settings', () => {
     expect(parseHeroText({})).toEqual({ tone: 'auto', overlay: 0 });
     expect(parseHeroText({ hero_text_tone: 'dark', hero_overlay: '15' })).toEqual({ tone: 'dark', overlay: 15 });
+  });
+});
+
+describe('decideNavTone: navbar transparan di atas pita teks strip latar (tanpa lapisan)', () => {
+  const solid = (hex: string) => solidSample(hexToRgb(hex));
+  const halves = (a: string, b: string) =>
+    backgroundSample([...Array.from({ length: 50 }, () => [...hexToRgb(a), 255]), ...Array.from({ length: 50 }, () => [...hexToRgb(b), 255])].flat())!;
+
+  it('strip gelap → teks putih; strip terang → teks gelap', () => {
+    expect(decideNavTone([solid('#0B1430')])).toBe('light');
+    expect(decideNavTone([solid('#F4F7FF')])).toBe('dark');
+  });
+
+  it('teks putih navbar = putih penuh: 4,5:1 sampai luminans latar ±0,18', () => {
+    expect(navContrast('light', solid('#777777')).body).toBeGreaterThan(4.4);
+    expect(navContrast('light', solid('#0B1430')).headline).toBeGreaterThan(15);
+  });
+
+  it('tidak lolos 4,5:1 tapi ≥ 3:1: nada yang lebih terbaca tetap dipakai (permintaan pemilik), di bawah 3:1 → null', () => {
+    // #8A8A8A: putih ±3,45:1 (di bawah 4,5:1), teks gelap muted ±2,3:1 → tetap putih
+    expect(navContrast('light', solid('#8A8A8A')).body).toBeLessThan(BODY_TARGET);
+    expect(navContrast('light', solid('#8A8A8A')).body).toBeGreaterThanOrEqual(NAV_MIN_CONTRAST);
+    expect(decideNavTone([solid('#8A8A8A')])).toBe('light');
+    // Seperti gambar langit pemilik: hampir semua gelap, pita terang di belakang menu ±3,8:1 untuk putih
+    const sky = backgroundSample(
+      [...Array.from({ length: 90 }, () => [6, 16, 60, 255]), ...Array.from({ length: 10 }, () => [64, 112, 230, 255])].flat(),
+    )!;
+    expect(navContrast('light', sky).body).toBeLessThan(BODY_TARGET);
+    expect(decideNavTone([sky])).toBe('light');
+    // Separuh gelap separuh terang: tidak ada nada ≥ 3:1 → putih kaca
+    expect(decideNavTone([halves('#0B1430', '#F4F7FF')])).toBeNull();
+    expect(decideNavTone([])).toBeNull();
+  });
+
+  it('kasus terburuk tayangan: nada harus terbaca di semua gambar', () => {
+    expect(decideNavTone([solid('#0B1430'), solid('#1D3A8A')])).toBe('light');
+    expect(decideNavTone([solid('#0B1430'), solid('#F4F7FF')])).toBeNull();
+  });
+
+  it('dekat batas: abu sangat gelap → putih, hampir putih → gelap; kedua nada tidak pernah lolos 4,5:1 bersamaan', () => {
+    expect(decideNavTone([solid('#2A2E38')])).toBe('light');
+    expect(decideNavTone([solid('#FAFBFD')])).toBe('dark');
+    for (let v = 0; v <= 255; v += 5) {
+      const hex = `#${v.toString(16).padStart(2, '0').repeat(3)}`;
+      const light = navContrast('light', solid(hex)).body >= BODY_TARGET;
+      const dark = navContrast('dark', solid(hex)).body >= BODY_TARGET;
+      expect(light && dark, hex).toBe(false);
+    }
+  });
+
+  it('bintik terang kecil (≤ 5% piksel, mis. bintang) tidak membatalkan teks terang', () => {
+    const starfield = backgroundSample(
+      [...Array.from({ length: 97 }, () => [11, 20, 48, 255]), ...Array.from({ length: 3 }, () => [255, 255, 255, 255])].flat(),
+    )!;
+    expect(decideNavTone([starfield])).toBe('light');
   });
 });

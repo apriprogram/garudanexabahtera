@@ -33,24 +33,35 @@ const BRAND_SIZES = {
   sm: { gap: 'gap-2 sm:gap-2.5', mark: 'h-[18px] sm:h-[22px]', name: 'text-[15px] sm:text-[16px]' },
 };
 
+const BRAND_TONES = {
+  // Di atas latar terang (bawaan): sayap biru brand, nama gelap
+  default: { mark: 'text-primary', name: 'text-fg', suffix: 'text-subtle' },
+  // Di atas gambar/video gelap (navbar transparan di puncak beranda): putih, "Bahtera" sedikit redup
+  onMedia: { mark: 'text-on-media', name: 'text-on-media', suffix: 'text-on-media-muted' },
+};
+
 /**
  * Logo + nama perusahaan untuk navbar/footer: sayap biru brand tanpa latar, ukuran `md` (bawaan) atau `sm` (navbar).
  * "Bahtera" tampil mulai `sm`; `compact` = tanpa "Bahtera"; `fullFrom="xl"` = "Bahtera" baru tampil mulai 1280px
- * (navbar: memberi ruang menu di 1024px).
+ * (navbar: memberi ruang menu di 1024px). `tone="onMedia"` = putih di atas gambar/video gelap.
  */
-export const BrandLogo: React.FC<{ className?: string; compact?: boolean; fullFrom?: 'sm' | 'xl'; size?: 'md' | 'sm' }> = ({
-  className = '',
-  compact = false,
-  fullFrom = 'sm',
-  size = 'md',
-}) => {
+export const BrandLogo: React.FC<{
+  className?: string;
+  compact?: boolean;
+  fullFrom?: 'sm' | 'xl';
+  size?: 'md' | 'sm';
+  tone?: keyof typeof BRAND_TONES;
+}> = ({ className = '', compact = false, fullFrom = 'sm', size = 'md', tone = 'default' }) => {
   const s = BRAND_SIZES[size];
+  const c = BRAND_TONES[tone];
   return (
     <span className={`inline-flex min-w-0 items-center ${s.gap} ${className}`}>
-      <LogoMark className={`text-primary ${s.mark}`} />
-      <span className={`min-w-0 truncate font-bold tracking-[-0.03em] text-fg ${s.name}`}>
+      <LogoMark className={`transition-colors duration-300 ${c.mark} ${s.mark}`} />
+      <span className={`min-w-0 truncate font-bold tracking-[-0.03em] transition-colors duration-300 ${c.name} ${s.name}`}>
         Garuda Nexa
-        {!compact && <span className={`hidden font-semibold text-subtle ${fullFrom === 'xl' ? 'xl:inline' : 'sm:inline'}`}> Bahtera</span>}
+        {!compact && (
+          <span className={`hidden font-semibold transition-colors duration-300 ${c.suffix} ${fullFrom === 'xl' ? 'xl:inline' : 'sm:inline'}`}> Bahtera</span>
+        )}
       </span>
     </span>
   );

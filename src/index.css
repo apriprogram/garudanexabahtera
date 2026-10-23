@@ -286,6 +286,14 @@
     outline-color: var(--color-on-media);
   }
 
+  /* Navbar transparan bernada terang di puncak beranda (Navbar.tsx): sama, kecuali panel dropdown putih di dalamnya */
+  [data-nav-tone='light'] :focus-visible {
+    outline-color: var(--color-on-media);
+  }
+  [data-nav-tone='light'] [data-nav-surface] :focus-visible {
+    outline-color: var(--color-primary);
+  }
+
   /*
    * Fokus keyboard tidak boleh tertutup navbar fixed (--nav-offset) atau tombol WhatsApp melayang (WCAG 2.4.11).
    * Hanya elemen yang bisa difokus; offset anchor section (scroll-mt-*, section-screen) tetap dari utilitasnya.

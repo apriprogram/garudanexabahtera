@@ -15,7 +15,7 @@ import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { accountLinkFor, useSessionRole } from '../../hooks/useSessionRole';
 import { BrandLogo } from '../ui/LogoMark';
 import { HUB_PATHS } from '../../seo/paths';
-import { parseHeroBackground } from '../sections/hero/heroBgConfig';
+import { useHeroNavState } from '../sections/hero/heroNavState';
 import { SkipLink } from '../ui/SkipLink';
 import { SmartLink } from './SmartLink';
 
@@ -125,9 +125,40 @@ interface Pill {
 }
 
 /**
- * Navbar publik gaya BELAJAR CPNS: transparan di puncak halaman, jadi putih kaca saat digulir, tanpa garis bawah
- * maupun shadow di semua state. Bila hero beranda memakai latar gambar/video (tampil penuh, bisa gelap), putih kaca
- * sejak di puncak supaya logo dan menu selalu terbaca. Menu di tengah dengan sorotan pill yang meluncur mengikuti
+ * Warna isi bar: bawaan (di atas halaman terang / putih kaca) atau terang (transparan di atas strip gambar/video gelap
+ * di puncak beranda; nada dari Hero, lihat heroNavState). Tombol CTA biru tetap sama (permukaannya sendiri).
+ */
+const NAV_LOOKS = {
+  default: {
+    link: 'text-muted hover:text-fg',
+    linkCurrent: 'text-fg',
+    pill: 'bg-fg/[0.06]',
+    dot: 'bg-primary',
+    account: 'text-muted hover:bg-fg/[0.06] hover:text-fg',
+    accountIcon: 'text-primary',
+    toggle: 'text-fg hover:bg-fg/[0.06]',
+    brand: 'default',
+  },
+  // Putih penuh (bukan on-media-muted): kontras sebesar mungkin di atas gambar; hover = sorotan pill, aktif = titik putih
+  light: {
+    link: 'text-on-media',
+    linkCurrent: 'text-on-media',
+    pill: 'bg-on-media/15',
+    dot: 'bg-on-media',
+    account: 'text-on-media hover:bg-on-media/15',
+    accountIcon: 'text-on-media',
+    toggle: 'text-on-media hover:bg-on-media/15',
+    brand: 'onMedia',
+  },
+} as const;
+
+type NavLook = (typeof NAV_LOOKS)[keyof typeof NAV_LOOKS];
+
+/**
+ * Navbar publik gaya BELAJAR CPNS: transparan di puncak halaman, jadi putih kaca (teks gelap) saat digulir, tanpa
+ * garis bawah maupun shadow di semua state. Di puncak beranda berlatar gambar/video: tetap transparan, teks (logo,
+ * menu, akun, tombol menu) PUTIH bila strip latar di belakang navbar gelap atau gelap bila terang (diukur Hero,
+ * heroNavState); selama belum terukur / tidak terukur / tidak ada nada yang terbaca: putih kaca seperti saat digulir. Menu di tengah dengan sorotan pill yang meluncur mengikuti
  * hover, titik biru menandai halaman yang sedang dibuka (aria-current="page", juga di dalam menu Jasa) atau section aktif
  * di beranda. Menu = tautan halaman nyata (DEFAULT_ITEMS / Navbar Manager), terbaca crawler di HTML prerender. Tinggi = `--nav-h` (56px HP / 64px ≥ 1024px, di index.css): halaman lain memberi `pt-nav`
  * pada konten pertamanya.
@@ -136,7 +167,7 @@ const Navbar: React.FC = () => {
   const { t } = useTranslation();
   // Berlangganan perubahan rute: navbar dirender ulang saat pindah halaman (tombol akun ikut diperbarui)
   const { pathname } = useLocation();
-  const { settings, loaded: settingsLoaded } = useSiteSettings();
+  const { settings } = useSiteSettings();
   const { menus, loaded: menusLoaded } = useNavbarMenus();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -188,9 +219,13 @@ const Navbar: React.FC = () => {
 
   // Scroll-spy hanya di beranda: titik biru di bawah menu section yang sedang dibaca
   const onHome = pathname === '/';
-  // Hero beranda berlatar gambar/video: putih kaca walau belum digulir
-  const mediaHero = onHome && settingsLoaded && parseHeroBackground(settings).mode !== 'default';
-  const glass = scrolled || mediaHero;
+  // Puncak beranda di atas gambar/video: transparan dengan nada strip latar (putih di atas latar gelap); belum / tidak
+  // terukur → putih kaca. Digulir atau menu HP terbuka → putih kaca / putih dengan teks gelap seperti biasa
+  const heroNav = useHeroNavState();
+  const overMedia = onHome && heroNav.media;
+  const mediaTone = overMedia && !scrolled && !isMenuOpen ? heroNav.tone : null;
+  const glass = scrolled || (overMedia && heroNav.tone === null);
+  const look: NavLook = mediaTone === 'light' ? NAV_LOOKS.light : NAV_LOOKS.default;
   const spyIds = navItems.map((item) => anchorId(item.href)).filter((id): id is string => Boolean(id));
   const { activeId } = useSectionSpy(spyIds, { enabled: onHome });
 
@@ -230,6 +265,8 @@ const Navbar: React.FC = () => {
       className={`fixed inset-x-0 top-0 z-50 pt-[env(safe-area-inset-top)] transition-colors duration-300 ${
         isMenuOpen ? 'bg-canvas' : glass ? 'bg-canvas/85 backdrop-blur-xl backdrop-saturate-150' : 'bg-transparent'
       }`}
+      // Teks terang di atas media: cincin fokus putih (index.css), kecuali di panel dropdown putih (data-nav-surface)
+      data-nav-tone={mediaTone === 'light' ? 'light' : undefined}
     >
       {/* Tautan pertama di urutan Tab: lompat ke <main> (id="konten" di beranda, <main> pertama di halaman lain) */}
       <SkipLink />
@@ -242,14 +279,14 @@ const Navbar: React.FC = () => {
           className="flex min-w-0 shrink items-center rounded-full"
           aria-label="Garuda Nexa Bahtera, ke beranda"
         >
-          <BrandLogo size="sm" fullFrom="xl" />
+          <BrandLogo size="sm" fullFrom="xl" tone={look.brand} />
         </Link>
 
         {/* Tengah: navigasi desktop + sorotan hover */}
         <ul className={`relative hidden flex-1 items-center justify-center gap-1 ${desktopNav}`} onMouseLeave={hidePill}>
           <span
             aria-hidden
-            className="pointer-events-none absolute top-1/2 h-9 -translate-y-1/2 rounded-full bg-fg/[0.06] transition-[left,width,opacity] duration-300 ease-calm"
+            className={`pointer-events-none absolute top-1/2 h-9 -translate-y-1/2 rounded-full transition-[left,width,opacity] duration-300 ease-calm ${look.pill}`}
             style={{ left: pill.left, width: pill.width, opacity: pill.visible ? 1 : 0 }}
           />
           {navItems.map((item) => {
@@ -265,6 +302,7 @@ const Navbar: React.FC = () => {
                 wide={item.children.length > 4}
                 current={item.children.some((entry) => isCurrentPage(entry.href, pathname))}
                 pathname={pathname}
+                look={look}
                 active={activeDropdown}
                 setActive={setActiveDropdown}
                 onHover={showPill}
@@ -279,7 +317,7 @@ const Navbar: React.FC = () => {
                   onBlur={hidePill}
                   aria-current={page ? 'page' : current ? 'location' : undefined}
                   className={`relative z-10 inline-flex h-9 items-center rounded-full px-3.5 text-[14px] font-medium transition-colors duration-200 ${
-                    current ? 'text-fg' : 'text-muted hover:text-fg'
+                    current ? look.linkCurrent : look.link
                   }`}
                 >
                   {item.label}
@@ -287,7 +325,7 @@ const Navbar: React.FC = () => {
                 {/* Titik penanda section aktif */}
                 <span
                   aria-hidden
-                  className={`pointer-events-none absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary transition-all duration-300 ${
+                  className={`pointer-events-none absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full transition-all duration-300 ${look.dot} ${
                     current ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
                   }`}
                 />
@@ -300,9 +338,9 @@ const Navbar: React.FC = () => {
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Link
             to={account.to}
-            className="hidden h-9 items-center gap-2 rounded-full px-3.5 text-[14px] font-medium text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:inline-flex"
+            className={`hidden h-9 items-center gap-2 rounded-full px-3.5 text-[14px] font-medium transition-colors sm:inline-flex ${look.account}`}
           >
-            {role && <UserRound className="h-4 w-4 text-primary" strokeWidth={2} aria-hidden />}
+            {role && <UserRound className={`h-4 w-4 ${look.accountIcon}`} strokeWidth={2} aria-hidden />}
             {account.label}
           </Link>
 
@@ -314,7 +352,7 @@ const Navbar: React.FC = () => {
           <button
             ref={toggleRef}
             type="button"
-            className={`relative -mr-1.5 flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors after:absolute after:-inset-1 hover:bg-fg/[0.06] sm:mr-0 ${mobileOnly}`}
+            className={`relative -mr-1.5 flex h-9 w-9 items-center justify-center rounded-full transition-colors after:absolute after:-inset-1 sm:mr-0 ${look.toggle} ${mobileOnly}`}
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-label={isMenuOpen ? 'Tutup menu' : 'Buka menu'}
             aria-expanded={isMenuOpen}
@@ -403,11 +441,13 @@ const DropdownItem: React.FC<{
   /** Salah satu tautan di dalamnya = halaman yang sedang dibuka */
   current?: boolean;
   pathname: string;
+  /** Warna tombol & titik sesuai latar bar (bawaan / terang di atas media) */
+  look: NavLook;
   active: string | null;
   setActive: (id: string | null) => void;
   onHover: (el: HTMLElement) => void;
   onLeave: () => void;
-}> = ({ id, label, entries, wide, current = false, pathname, active, setActive, onHover, onLeave }) => {
+}> = ({ id, label, entries, wide, current = false, pathname, look, active, setActive, onHover, onLeave }) => {
   const open = active === id;
   return (
     <li
@@ -424,7 +464,7 @@ const DropdownItem: React.FC<{
         onFocus={(e) => onHover(e.currentTarget)}
         onBlur={onLeave}
         aria-expanded={open}
-        className={`relative z-10 inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-[14px] font-medium transition-colors hover:text-fg ${open || current ? 'text-fg' : 'text-muted'}`}
+        className={`relative z-10 inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-[14px] font-medium transition-colors ${open || current ? look.linkCurrent : look.link}`}
       >
         {label}
         <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} aria-hidden />
@@ -432,7 +472,7 @@ const DropdownItem: React.FC<{
       {/* Titik penanda: halaman yang sedang dibuka ada di dalam menu ini */}
       <span
         aria-hidden
-        className={`pointer-events-none absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary transition-all duration-300 ${
+        className={`pointer-events-none absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full transition-all duration-300 ${look.dot} ${
           current ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
         }`}
       />
@@ -444,7 +484,10 @@ const DropdownItem: React.FC<{
         className={`absolute top-full z-20 pt-3 transition-[opacity,translate] duration-[180ms] ease-out motion-reduce:transition-none ${wide ? 'left-0' : 'left-1/2 -translate-x-1/2'}`}
       >
         {/* Lapisan melayang: satu-satunya tempat shadow-float di navbar */}
-        <div className={`rounded-[20px] bg-surface p-2 shadow-float ring-1 ring-inset ring-line ${wide ? 'grid w-[600px] grid-cols-2 gap-1' : 'grid w-[300px] gap-1'}`}>
+        <div
+          data-nav-surface
+          className={`rounded-[20px] bg-surface p-2 shadow-float ring-1 ring-inset ring-line ${wide ? 'grid w-[600px] grid-cols-2 gap-1' : 'grid w-[300px] gap-1'}`}
+        >
           {entries.map((entry, index) => (
             <SmartLink
               key={`${index}-${entry.title}`}

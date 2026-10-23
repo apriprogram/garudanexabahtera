@@ -17,6 +17,7 @@ import Hero from '../../Hero';
 import { HeroMedia } from '../HeroMedia';
 import { backgroundSample, decideHeroLegibility, hexToRgb, type BackgroundSample, type Rgb } from '../heroContrast';
 import { sampleImage, sampleVideo, type SampleResult } from '../heroSampling';
+import { getHeroNavState } from '../heroNavState';
 
 // Pengaturan situs per tes (pola navbarHeroMedia.test.tsx)
 const site = vi.hoisted(() => ({ settings: {} as Record<string, string | undefined>, loaded: true }));
@@ -100,6 +101,11 @@ const renderHero = () => {
 
 const alphaOf = (scrim: HTMLElement | null) => Number(scrim?.style.getPropertyValue('--scrim-a'));
 const rgbOf = (scrim: HTMLElement | null) => scrim?.style.getPropertyValue('--scrim-rgb');
+/** Pita teks navbar (useHeroLegibility): x 0, setengah tengah bar 64px (jsdom tidak membaca --nav-h) = y 16, tinggi 32. */
+const isStrip = (layout: { region: { x: number; y: number; h: number } }) =>
+  layout.region.x === 0 && layout.region.y === 16 && layout.region.h === 32;
+/** Panggilan sampel untuk area blok teks saja (tanpa strip navbar). */
+const textCalls = () => vi.mocked(sampleImage).mock.calls.filter(([, layout]) => !isStrip(layout));
 /** Selesai mengukur: sampel diminta, lalu hasilnya (promise tiruan) diterapkan */
 const measuredOnce = async () => {
   await waitFor(() => expect(sampleImage).toHaveBeenCalled());
@@ -229,9 +235,9 @@ describe('Hero: gambar latar', () => {
     await waitFor(() => expect(view.scrim()!.style.getPropertyValue('--scrim-end')).toBe('816px'));
     expect(view.textColumn()).toHaveAttribute('data-hero-tone', expected.tone);
     expect(alphaOf(view.scrim())).toBe(0.4);
-    expect(vi.mocked(sampleImage).mock.calls.map(([src]) => src)).toEqual([IMAGE_1, IMAGE_2]);
+    expect(textCalls().map(([src]) => src)).toEqual([IMAGE_1, IMAGE_2]);
     // Blok teks ± 16px di dalam section 1366×900
-    expect(vi.mocked(sampleImage).mock.calls[0][1]).toEqual({
+    expect(textCalls()[0][1]).toEqual({
       box: { w: 1366, h: 900 },
       region: { x: 32, y: 84, w: 627, h: 732 },
     });
@@ -305,12 +311,12 @@ describe('Hero: gambar latar', () => {
     site.settings = image(IMAGE_1);
     vi.mocked(sampleImage).mockResolvedValue(ok(DARK));
     renderHero();
-    await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(textCalls()).toHaveLength(1));
     const width = window.innerWidth;
     try {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: width - 300 });
       fireEvent(window, new Event('resize'));
-      await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(2), { timeout: 2000 });
+      await waitFor(() => expect(textCalls()).toHaveLength(2), { timeout: 2000 });
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
     }
@@ -320,14 +326,14 @@ describe('Hero: gambar latar', () => {
     site.settings = { ...image(IMAGE_1), hero_overlay: '40' };
     vi.mocked(sampleImage).mockResolvedValue(ok(DARK));
     const view = renderHero();
-    await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(textCalls()).toHaveLength(1));
     await waitFor(() => expect(view.scrim()!.style.getPropertyValue('--scrim-end')).toBe('816px'));
     const height = LAYOUT.text.height;
     try {
       LAYOUT.text.height = 760;
       fireEvent.click(view.getAllByRole('tab')[1]);
-      await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(2));
-      expect(vi.mocked(sampleImage).mock.calls[1][1].region).toEqual({ x: 32, y: 84, w: 627, h: 792 });
+      await waitFor(() => expect(textCalls()).toHaveLength(2));
+      expect(textCalls()[1][1].region).toEqual({ x: 32, y: 84, w: 627, h: 792 });
       await waitFor(() => expect(view.scrim()!.style.getPropertyValue('--scrim-end')).toBe('876px'));
     } finally {
       LAYOUT.text.height = height;
@@ -362,7 +368,7 @@ describe('Hero: gambar latar', () => {
       site.settings = image(IMAGE_1);
       vi.mocked(sampleImage).mockResolvedValue(ok(DARK));
       const view = renderHero();
-      await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(textCalls()).toHaveLength(1));
       const callback = observed.get(view.textColumn());
       expect(callback).toBeDefined();
       const report = () =>
@@ -372,10 +378,10 @@ describe('Hero: gambar latar', () => {
       report(); // laporan pertama: ukuran awal, tidak mengukur ulang
       report(); // ukuran sama
       await new Promise((resolve) => setTimeout(resolve, 400));
-      expect(sampleImage).toHaveBeenCalledTimes(1);
+      expect(textCalls()).toHaveLength(1);
       textHeight = 760;
       report();
-      await waitFor(() => expect(sampleImage).toHaveBeenCalledTimes(2), { timeout: 2000 });
+      await waitFor(() => expect(textCalls()).toHaveLength(2), { timeout: 2000 });
     } finally {
       Reflect.deleteProperty(HTMLElement.prototype, 'offsetHeight');
     }
@@ -432,6 +438,97 @@ describe('Hero: video latar', () => {
     expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'light');
     expect(view.scrim()).toBeNull();
     expect(view.section.querySelector('.hero-scrim')).toBeNull();
+  });
+});
+
+describe('Hero → navbar: strip latar di belakang navbar (permintaan pemilik 2026-10-23)', () => {
+  /** Sampel per area: pita teks navbar (x 0, y 16, tinggi 32) vs blok teks. */
+  const byArea = (strip: SampleResult, text: SampleResult) =>
+    vi.mocked(sampleImage).mockImplementation(async (_src, layout) => (isStrip(layout) ? strip : text));
+
+  it('latar bawaan: navbar tanpa media (tetap seperti biasa)', async () => {
+    const view = renderHero();
+    await waitFor(() => expect(view.section.querySelector('canvas')).not.toBeNull());
+    expect(getHeroNavState()).toEqual({ media: false, tone: null });
+  });
+
+  it('strip gelap di atas area teks yang terang: navbar teks putih, teks hero tetap gelap (diukur terpisah)', async () => {
+    site.settings = image(IMAGE_1);
+    byArea(ok(DARK), ok(BRIGHT));
+    const view = renderHero();
+    await waitFor(() => expect(getHeroNavState()).toEqual({ media: true, tone: 'light' }));
+    expect(view.textColumn()).toHaveAttribute('data-hero-tone', 'dark');
+    // Strip = selebar section, setinggi navbar, dari puncak
+    expect(vi.mocked(sampleImage).mock.calls.some(([, layout]) => isStrip(layout) && layout.region.w === 1366)).toBe(true);
+  });
+
+  it('strip terang: navbar transparan dengan teks gelap', async () => {
+    site.settings = image(IMAGE_1);
+    byArea(ok(BRIGHT), ok(DARK));
+    renderHero();
+    await waitFor(() => expect(getHeroNavState()).toEqual({ media: true, tone: 'dark' }));
+  });
+
+  it('selama mengukur, strip ramai (tidak ada nada yang terbaca), atau tidak terukur: tanpa nada → navbar putih kaca', async () => {
+    site.settings = image(IMAGE_1);
+    const view = renderHero();
+    await waitFor(() => expect(getHeroNavState()).toEqual({ media: true, tone: null }));
+    view.unmount();
+
+    byArea(ok(MIXED), ok(BRIGHT));
+    const busy = renderHero();
+    await waitFor(() => expect(busy.textColumn()).toHaveAttribute('data-hero-tone', 'dark'));
+    await act(async () => {});
+    expect(getHeroNavState()).toEqual({ media: true, tone: null });
+    busy.unmount();
+
+    byArea({ kind: 'unmeasurable' }, ok(BRIGHT));
+    renderHero();
+    await measuredOnce();
+    expect(getHeroNavState()).toEqual({ media: true, tone: null });
+  });
+
+  it('nada teks hero yang dipaksa admin tidak mengubah nada navbar (strip diukur sendiri)', async () => {
+    site.settings = { ...image(IMAGE_1), hero_text_tone: 'dark' };
+    byArea(ok(DARK), ok(BRIGHT));
+    renderHero();
+    await waitFor(() => expect(getHeroNavState().tone).toBe('light'));
+  });
+
+  it('tayangan: nada navbar harus terbaca di SEMUA gambar (kasus terburuk)', async () => {
+    site.settings = image(IMAGE_1, IMAGE_2);
+    vi.mocked(sampleImage).mockImplementation(async (src, layout) => (isStrip(layout) ? ok(src === IMAGE_1 ? DARK : BRIGHT) : ok(BRIGHT)));
+    renderHero();
+    await waitFor(() => expect(textCalls()).toHaveLength(2));
+    await act(async () => {});
+    // Gambar 1 gelap, gambar 2 terang di strip: tidak ada nada yang terbaca di keduanya → putih kaca
+    expect(getHeroNavState()).toEqual({ media: true, tone: null });
+  });
+
+  it('video: strip diukur dari frame pertama bila tanpa poster', async () => {
+    site.settings = { hero_bg_mode: 'video', hero_bg_video: VIDEO };
+    vi.mocked(sampleVideo).mockReturnValue(ok(DARK));
+    const view = renderHero();
+    await waitFor(() => expect(view.section.querySelector('video')).not.toBeNull());
+    await act(async () => {});
+    expect(getHeroNavState()).toEqual({ media: true, tone: null });
+    fireEvent.loadedData(view.section.querySelector('video') as HTMLVideoElement);
+    await waitFor(() => expect(getHeroNavState()).toEqual({ media: true, tone: 'light' }));
+  });
+
+  it('semua media gagal (kanvas bawaan) atau hero dilepas (pindah halaman): kembali tanpa media', async () => {
+    site.settings = image(IMAGE_1);
+    byArea(ok(DARK), ok(BRIGHT));
+    const view = renderHero();
+    await waitFor(() => expect(getHeroNavState().tone).toBe('light'));
+    fireEvent.error(view.section.querySelector(`img[src="${IMAGE_1}"]`) as HTMLImageElement);
+    await waitFor(() => expect(getHeroNavState()).toEqual({ media: false, tone: null }));
+    view.unmount();
+
+    const again = renderHero();
+    await waitFor(() => expect(getHeroNavState().tone).toBe('light'));
+    again.unmount();
+    expect(getHeroNavState()).toEqual({ media: false, tone: null });
   });
 });
 
