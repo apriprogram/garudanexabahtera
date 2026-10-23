@@ -234,7 +234,6 @@ const Process: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '
           titleId="process-title"
           title="Cara kerja"
           accent="kami"
-          description="Pilih jalurnya: template siap pakai agar cepat online, atau dibuat custom dari nol."
         />
 
         {/* Kontrol segmen alur */}

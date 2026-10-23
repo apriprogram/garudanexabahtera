@@ -26,7 +26,6 @@ const LatestGuides: React.FC<{ alt?: boolean; number?: string }> = ({ alt, numbe
           titleId="panduan-title"
           title="Panduan"
           accent="terbaru"
-          description="Biaya, domain & hosting, dan cara memilih antara template dan website custom, ditulis tim kami."
           action={
             <Link to={HUB_PATHS.guides} className="btn btn-outline">
               Lihat semua panduan

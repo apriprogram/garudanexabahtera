@@ -165,7 +165,7 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
         </div>
 
         {/* ---------- Layar ---------- */}
-        <div className="relative mt-1.5 aspect-[16/10] overflow-hidden rounded-[14px] bg-alt sm:mt-2 sm:rounded-[20px]">
+        <div className="group/layar relative mt-1.5 aspect-[16/10] overflow-hidden rounded-[14px] bg-alt sm:mt-2 sm:rounded-[20px]">
           {!ready ? (
             <div className="flex h-full w-full animate-pulse items-center justify-center bg-alt" role="status">
               <LogoMark className="h-8 text-brand-200 sm:h-10" />
@@ -219,11 +219,12 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
           <span className="pointer-events-none absolute inset-0 z-[3] rounded-[inherit] ring-1 ring-inset ring-fg/[0.06]" aria-hidden />
 
           {ready && (
-            // Tombol toggle: label tetap + aria-pressed (ditekan = dijeda); hanya ikonnya yang berganti
+            // Tombol toggle: label tetap + aria-pressed (ditekan = dijeda); hanya ikonnya yang berganti. Perangkat ber-mouse:
+            // tersembunyi sampai layar di-hover (permintaan pemilik 2026-10-23); fokus keyboard & layar sentuh tetap terlihat
             <button
               type="button"
               onClick={() => setUserPlaying(!playing)}
-              className="absolute right-2.5 top-2.5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface/90 text-fg ring-1 ring-inset ring-line backdrop-blur transition-colors hover:bg-surface max-sm:after:absolute max-sm:after:-inset-1 sm:right-3 sm:top-3 sm:h-9 sm:w-9"
+              className="absolute right-2.5 top-2.5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface/90 text-fg ring-1 ring-inset ring-line backdrop-blur transition-[background-color,opacity] duration-200 hover:bg-surface focus-visible:opacity-100 max-sm:after:absolute max-sm:after:-inset-1 sm:right-3 sm:top-3 sm:h-9 sm:w-9 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/layar:opacity-100"
               aria-label="Jeda tayangan"
               aria-pressed={!playing}
             >

@@ -451,7 +451,7 @@ describe('decideNavTone: navbar transparan di atas pita teks strip latar (tanpa 
     expect(navContrast('light', solid('#0B1430')).headline).toBeGreaterThan(15);
   });
 
-  it('tidak lolos 4,5:1 tapi ≥ 3:1: nada yang lebih terbaca tetap dipakai (permintaan pemilik), di bawah 3:1 → null', () => {
+  it('tidak lolos 4,5:1 tapi ≥ 3:1: nada yang lebih terbaca tetap dipakai (permintaan pemilik), di bawah 3:1 juga', () => {
     // #8A8A8A: putih ±3,45:1 (di bawah 4,5:1), teks gelap muted ±2,3:1 → tetap putih
     expect(navContrast('light', solid('#8A8A8A')).body).toBeLessThan(BODY_TARGET);
     expect(navContrast('light', solid('#8A8A8A')).body).toBeGreaterThanOrEqual(NAV_MIN_CONTRAST);
@@ -462,14 +462,15 @@ describe('decideNavTone: navbar transparan di atas pita teks strip latar (tanpa 
     )!;
     expect(navContrast('light', sky).body).toBeLessThan(BODY_TARGET);
     expect(decideNavTone([sky])).toBe('light');
-    // Separuh gelap separuh terang: tidak ada nada ≥ 3:1 → putih kaca
-    expect(decideNavTone([halves('#0B1430', '#F4F7FF')])).toBeNull();
+    // Separuh gelap separuh terang: tidak ada nada ≥ 3:1 → tetap transparan dengan nada yang lebih terbaca
+    // (permintaan pemilik 2026-10-23: desktop DAN HP); hanya tanpa sampel → putih kaca
+    expect(decideNavTone([halves('#0B1430', '#F4F7FF')])).toMatch(/^(light|dark)$/);
     expect(decideNavTone([])).toBeNull();
   });
 
   it('kasus terburuk tayangan: nada harus terbaca di semua gambar', () => {
     expect(decideNavTone([solid('#0B1430'), solid('#1D3A8A')])).toBe('light');
-    expect(decideNavTone([solid('#0B1430'), solid('#F4F7FF')])).toBeNull();
+    expect(decideNavTone([solid('#0B1430'), solid('#F4F7FF')])).toMatch(/^(light|dark)$/);
   });
 
   it('dekat batas: abu sangat gelap → putih, hampir putih → gelap; kedua nada tidak pernah lolos 4,5:1 bersamaan', () => {

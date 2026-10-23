@@ -3,7 +3,7 @@
 // portofolio), kartu proyek datar, strip layanan (ikon + tanda SVG ringan, ejaan i-School), toggle & "Lihat Demo" hero,
 // tombol jeda tayangan, rail langkah, dan peringatan syarat tampil di form proyek admin.
 // Jalankan: npx vitest run --dir src/components/sections
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -154,34 +154,30 @@ const ITEM: ShowcaseItem = {
 };
 
 describe('HeroIntro', () => {
-  it('toggle sentence case dengan bentuk segmen Proses; label pendek HP jelas', () => {
+  it('toggle gaya Dribbble: label kapital kecil tanpa ikon, terpilih teks gelap di pill putih; label pendek HP jelas', () => {
     renderAt(<HeroIntro mode="template" onModeChange={() => {}} current={ITEM} templatesHidden={false} />);
     const [template, custom] = screen.getAllByRole('tab');
     expect(template).toHaveTextContent('Template siap pakai');
     expect(custom).toHaveTextContent('Website & aplikasi custom');
-    expect(template.className).not.toMatch(/uppercase/);
-    expect(template.className).toContain('text-white');
+    expect(template.className).toMatch(/uppercase/);
+    expect(template.className).toContain('text-fg');
+    expect(template.querySelector('svg')).toBeNull();
     expect(t('home-hero-mode-template-short')).toBe('Siap pakai');
     expect(t('home-hero-mode-custom-short')).toBe('Jasa custom');
     expect(t('nav-projects')).toBe('Projects'); // keputusan pemilik: label nav tetap
   });
 
-  it('"Lihat Demo" menampilkan nama template dan menahan tayangan saat difokus / di-hover', () => {
-    const onHoldChange = vi.fn();
-    renderAt(<HeroIntro mode="template" onModeChange={() => {}} current={ITEM} templatesHidden={false} onHoldChange={onHoldChange} />);
-    const demo = screen.getByRole('link', { name: 'Lihat Demo template Corporate Nexa (tab baru)' });
-    expect(demo).toHaveAttribute('href', '/demo/corporate-nexa');
-    expect(demo).toHaveAttribute('target', '_blank');
+  it('mode Template hanya "Pilih Template" (tanpa "Lihat Demo"); mode Custom "Start Your Project Brief"', () => {
+    const { unmount } = renderAt(<HeroIntro mode="template" onModeChange={() => {}} current={ITEM} templatesHidden={false} />);
+    const panels = screen.getAllByRole('tabpanel');
+    expect(within(panels[0]).getByRole('link', { name: /Pilih Template/ })).toBeInTheDocument();
+    expect(screen.queryByText(/Lihat Demo/)).toBeNull();
+    unmount();
 
-    act(() => demo.focus());
-    expect(onHoldChange).toHaveBeenLastCalledWith(true);
-    act(() => demo.blur());
-    expect(onHoldChange).toHaveBeenLastCalledWith(false);
-
-    fireEvent.pointerOver(demo, { pointerType: 'mouse' });
-    expect(onHoldChange).toHaveBeenLastCalledWith(true);
-    fireEvent.pointerOut(demo, { pointerType: 'mouse' });
-    expect(onHoldChange).toHaveBeenLastCalledWith(false);
+    renderAt(<HeroIntro mode="custom" onModeChange={() => {}} current={ITEM} templatesHidden={false} />);
+    const brief = screen.getByRole('link', { name: 'Start Your Project Brief' });
+    expect(brief).toHaveAttribute('href', '/pesan-custom');
+    expect(brief.querySelector('svg')).not.toBeNull();
   });
 });
 

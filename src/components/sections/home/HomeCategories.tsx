@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { categoryTiles, homeIntro } from '../../../content/home';
+import { categoryTiles } from '../../../content/home';
 import { CMS_INCLUDE } from '../../../content/pricing';
 import { getTemplatePricing, useSiteSettings } from '../../../hooks/useSiteSettings';
 import { usePublishedTemplates } from '../../../hooks/usePublishedTemplates';
@@ -30,7 +30,6 @@ const HomeCategories: React.FC<{ alt?: boolean; number?: string }> = ({ alt, num
           titleId="kategori-title"
           title="Template website untuk"
           accent="setiap jenis usaha"
-          description={homeIntro(templates)}
           action={
             <Link to={HUB_PATHS.catalog} className="btn btn-outline">
               Lihat Semua Template

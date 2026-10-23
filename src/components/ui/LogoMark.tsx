@@ -35,9 +35,9 @@ const BRAND_SIZES = {
 
 const BRAND_TONES = {
   // Di atas latar terang (bawaan): sayap biru brand, nama gelap
-  default: { mark: 'text-primary', name: 'text-fg', suffix: 'text-subtle' },
-  // Di atas gambar/video gelap (navbar transparan di puncak beranda): putih, "Bahtera" sedikit redup
-  onMedia: { mark: 'text-on-media', name: 'text-on-media', suffix: 'text-on-media-muted' },
+  default: { mark: 'text-primary', name: 'text-fg' },
+  // Di atas gambar/video gelap (navbar transparan di puncak beranda): putih
+  onMedia: { mark: 'text-on-media', name: 'text-on-media' },
 };
 
 /**
@@ -57,11 +57,10 @@ export const BrandLogo: React.FC<{
   return (
     <span className={`inline-flex min-w-0 items-center ${s.gap} ${className}`}>
       <LogoMark className={`transition-colors duration-300 ${c.mark} ${s.mark}`} />
-      <span className={`min-w-0 truncate font-bold tracking-[-0.03em] transition-colors duration-300 ${c.name} ${s.name}`}>
+      {/* Satu jenis huruf: "Garuda Nexa Bahtera" semibold, warna sama (permintaan pemilik 2026-10-23) */}
+      <span className={`min-w-0 truncate font-semibold tracking-[-0.03em] transition-colors duration-300 ${c.name} ${s.name}`}>
         Garuda Nexa
-        {!compact && (
-          <span className={`hidden font-semibold transition-colors duration-300 ${c.suffix} ${fullFrom === 'xl' ? 'xl:inline' : 'sm:inline'}`}> Bahtera</span>
-        )}
+        {!compact && <span className={`hidden ${fullFrom === 'xl' ? 'xl:inline' : 'sm:inline'}`}> Bahtera</span>}
       </span>
     </span>
   );

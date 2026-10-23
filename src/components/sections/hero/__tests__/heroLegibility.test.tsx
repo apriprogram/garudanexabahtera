@@ -130,7 +130,7 @@ describe('Hero: latar bawaan', () => {
     expect(view.textColumn()).not.toHaveAttribute('data-hero-tone');
     expect(view.scrim()).toBeNull();
     expect(view.title().className).toContain('text-fg');
-    expect(view.section.querySelector('[role="tablist"]')!.className).toContain('bg-surface');
+    expect(view.section.querySelector('[role="tablist"]')!.className).toContain('bg-surface/60');
     expect(sampleImage).not.toHaveBeenCalled();
   });
 });
@@ -469,7 +469,7 @@ describe('Hero → navbar: strip latar di belakang navbar (permintaan pemilik 20
     await waitFor(() => expect(getHeroNavState()).toEqual({ media: true, tone: 'dark' }));
   });
 
-  it('selama mengukur, strip ramai (tidak ada nada yang terbaca), atau tidak terukur: tanpa nada → navbar putih kaca', async () => {
+  it('selama mengukur atau tidak terukur: tanpa nada → navbar putih kaca; strip ramai tetap transparan (nada lebih terbaca)', async () => {
     site.settings = image(IMAGE_1);
     const view = renderHero();
     await waitFor(() => expect(getHeroNavState()).toEqual({ media: true, tone: null }));
@@ -479,7 +479,8 @@ describe('Hero → navbar: strip latar di belakang navbar (permintaan pemilik 20
     const busy = renderHero();
     await waitFor(() => expect(busy.textColumn()).toHaveAttribute('data-hero-tone', 'dark'));
     await act(async () => {});
-    expect(getHeroNavState()).toEqual({ media: true, tone: null });
+    // Permintaan pemilik 2026-10-23: transparan di desktop DAN HP, walau tidak ada nada ≥ 3:1
+    expect(getHeroNavState()).toEqual({ media: true, tone: expect.stringMatching(/^(light|dark)$/) });
     busy.unmount();
 
     byArea({ kind: 'unmeasurable' }, ok(BRIGHT));
@@ -495,14 +496,15 @@ describe('Hero → navbar: strip latar di belakang navbar (permintaan pemilik 20
     await waitFor(() => expect(getHeroNavState().tone).toBe('light'));
   });
 
-  it('tayangan: nada navbar harus terbaca di SEMUA gambar (kasus terburuk)', async () => {
+  it('tayangan: nada navbar dari kasus terburuk SEMUA gambar, tetap transparan', async () => {
     site.settings = image(IMAGE_1, IMAGE_2);
     vi.mocked(sampleImage).mockImplementation(async (src, layout) => (isStrip(layout) ? ok(src === IMAGE_1 ? DARK : BRIGHT) : ok(BRIGHT)));
     renderHero();
     await waitFor(() => expect(textCalls()).toHaveLength(2));
     await act(async () => {});
-    // Gambar 1 gelap, gambar 2 terang di strip: tidak ada nada yang terbaca di keduanya → putih kaca
-    expect(getHeroNavState()).toEqual({ media: true, tone: null });
+    // Gambar 1 gelap, gambar 2 terang di strip: tidak ada nada yang terbaca di keduanya → nada yang kontrasnya lebih
+    // tinggi, navbar tetap transparan (permintaan pemilik 2026-10-23)
+    expect(getHeroNavState()).toEqual({ media: true, tone: expect.stringMatching(/^(light|dark)$/) });
   });
 
   it('video: strip diukur dari frame pertama bila tanpa poster', async () => {

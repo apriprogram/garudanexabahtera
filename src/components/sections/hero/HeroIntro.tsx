@@ -1,5 +1,5 @@
 import React, { useId, useRef, useState } from 'react';
-import { Check, LayoutTemplate, MessageCircle, Play, Smartphone, type LucideIcon } from 'lucide-react';
+import { Check, LayoutTemplate, MessageCircle, Smartphone, Sparkles, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation, type TranslationKey } from '../../../hooks/useTranslation';
 import { SplitText } from '../../ui/SplitText';
@@ -42,7 +42,7 @@ const MODES: Mode[] = [
 ];
 
 const TITLE_CLASS =
-  'block text-[26px] font-semibold leading-[1.18] tracking-[-0.02em] sm:text-[52px] sm:leading-[1.02] sm:tracking-[-0.04em] lg:text-[48px] xl:text-[60px] 2xl:text-[72px]';
+  'block text-[24px] font-semibold leading-[1.18] tracking-[-0.02em] sm:text-[44px] sm:leading-[1.04] sm:tracking-[-0.035em] lg:text-[42px] xl:text-[52px] 2xl:text-[60px]';
 
 /**
  * Sisi kiri hero (port HeroIntro BELAJAR CPNS): toggle mode berindikator meluncur
@@ -59,12 +59,10 @@ const TITLE_CLASS =
 interface HeroIntroProps {
   mode: HeroMode;
   onModeChange: (mode: HeroMode) => void;
-  /** Template yang sedang tampil di visual kanan (untuk "Lihat Demo"). */
+  /** Template yang sedang tampil di visual kanan (tujuan "Pilih Template" bila katalog disembunyikan). */
   current: ShowcaseItem | null;
   /** Section katalog #templates disembunyikan admin → tombol mode Template tidak boleh menuju ke sana. */
   templatesHidden: boolean;
-  /** true selama "Lihat Demo" di-hover / difokus: tayangan berhenti agar template yang dibuka tidak berganti. */
-  onHoldChange?: (hold: boolean) => void;
   /** Warna teks: 'default' (latar bawaan), 'light' / 'dark' (di atas gambar/video). */
   look?: HeroTextLook;
 }
@@ -74,7 +72,6 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
   onModeChange,
   current,
   templatesHidden,
-  onHoldChange,
   look = 'default',
 }) => {
   const { t } = useTranslation();
@@ -120,11 +117,12 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
         role="tablist"
         aria-label="Pilih layanan"
         onKeyDown={onTabKey}
-        className={`relative inline-grid grid-cols-2 rounded-full p-1 ring-1 ring-inset ${tone.toggle}`}
+        className={`relative inline-grid grid-cols-2 rounded-full p-1 ${tone.toggle}`}
       >
+        {/* Gaya Dribbble: pill putih bergaris tipis meluncur di jalur abu, label kapital kecil tanpa ikon */}
         <span
           aria-hidden
-          className="absolute inset-y-1 left-1 rounded-full bg-primary transition-transform duration-500 ease-calm motion-reduce:transition-none"
+          className="absolute inset-y-1 left-1 rounded-full bg-surface ring-1 ring-inset ring-line transition-transform duration-500 ease-calm motion-reduce:transition-none"
           style={{ width: 'calc((100% - 8px) / 2)', transform: `translateX(${mode * 100}%)` }}
         />
         {MODES.map((item, index) => {
@@ -142,11 +140,10 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
               aria-controls={`${baseId}-panel-${item.key}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setMode(index)}
-              className={`relative z-10 inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-xs font-semibold transition-colors duration-300 after:absolute after:inset-x-0 after:-inset-y-1.5 sm:h-10 sm:px-5 sm:text-sm sm:after:hidden ${
-                selected ? 'text-white' : tone.toggleIdle
+              className={`relative z-10 inline-flex h-8 items-center justify-center whitespace-nowrap rounded-full px-4 text-[11px] font-semibold uppercase tracking-[0.06em] transition-colors duration-300 after:absolute after:inset-x-0 after:-inset-y-1.5 sm:h-10 sm:px-5 sm:text-xs sm:after:hidden ${
+                selected ? tone.toggleActive : tone.toggleIdle
               }`}
             >
-              <item.icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
               {/* Label pendek di layar sempit & 1024-1279px (kolom hero sempit), panjang di tempat lain */}
               <span className="sm:hidden lg:inline xl:hidden">{t(item.tabShort)}</span>
               <span className="hidden sm:inline lg:hidden xl:inline">{t(item.tab)}</span>
@@ -209,24 +206,13 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
                 style={animate ? { animationDelay: '750ms' } : undefined}
               >
                 {item.key === 'template' ? (
-                  <>
-                    <TemplateCta current={current} templatesHidden={templatesHidden} />
-                    <DemoLink
-                      current={current}
-                      label={t('home-hero-demo')}
-                      templatesHidden={templatesHidden}
-                      onHoldChange={onHoldChange}
-                      className={secondaryBtn}
-                      noteClassName={tone.note}
-                    />
-                  </>
+                  <TemplateCta current={current} templatesHidden={templatesHidden} />
                 ) : (
                   <>
-                    <Link
-                      to="/pesan-custom"
-                      className="btn btn-primary btn-xl max-sm:h-auto max-sm:min-h-10 sm:px-6 max-sm:w-full max-sm:whitespace-normal max-sm:py-2 max-sm:text-center max-sm:leading-snug"
-                    >
-                      {t('home-hero-btn-custom')}
+                    {/* Label & ikon seperti Dribbble (permintaan pemilik 2026-10-23) */}
+                    <Link to="/pesan-custom" className={PRIMARY_BTN}>
+                      <Sparkles className={ICON} aria-hidden />
+                      Start Your Project Brief
                     </Link>
                     <SmartLink href="#kontak" className={secondaryBtn}>
                       <MessageCircle className={SECONDARY_ICON} aria-hidden />
@@ -244,14 +230,14 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
 };
 
 /**
- * Tombol hero tanpa panah: utama biru solid, kedua garis saja tanpa latar (ikon polos 16px); tinggi sama (btn-xl: 56px,
- * HP 40px), padding 24px agar pasangan mode Custom tetap satu baris di 1366px. HP: berbagi satu baris sama lebar, turun
+ * Tombol hero tanpa panah: utama biru solid, kedua garis saja tanpa latar (ikon polos 16px); ukuran seperti Dribbble
+ * (permintaan pemilik 2026-10-23): tinggi 48px, padding 24px, huruf 15px (HP 40px). HP: berbagi satu baris sama lebar, turun
  * ke baris baru (selebar kolom) bila tidak muat.
  */
-const PRIMARY_BTN = 'btn btn-primary btn-xl max-sm:flex-1 sm:px-6';
+const PRIMARY_BTN = 'btn btn-primary max-sm:flex-1 sm:h-12 sm:px-6 sm:text-[15px]';
 /** Ukuran tombol kedua; warnanya (btn-outline-clear / btn-outline-on-media) mengikuti nada teks hero */
-const SECONDARY_SIZE = 'btn-xl max-sm:flex-1 sm:px-6';
-const ICON = 'h-5 w-5 max-sm:h-4 max-sm:w-4';
+const SECONDARY_SIZE = 'max-sm:flex-1 sm:h-12 sm:px-6 sm:text-[15px]';
+const ICON = 'h-4 w-4';
 const SECONDARY_ICON = 'h-4 w-4';
 
 /**
@@ -275,68 +261,6 @@ const TemplateCta: React.FC<{ current: ShowcaseItem | null; templatesHidden: boo
       <LayoutTemplate className={ICON} aria-hidden />
       {t('home-hero-btn-templates')}
     </SmartLink>
-  );
-};
-
-/**
- * "Lihat Demo · {nama template}" untuk template yang sedang tampil di visual: tombol garis tanpa latar dengan ikon play
- * polos (tanpa lingkaran, tanpa panah ↗). Nama template terlihat mulai 640px; di HP cukup "Lihat Demo" agar tetap
- * sebaris dengan tombol utama (nama lengkap & "(tab baru)" tetap ada di nama aksesibel). Tanpa template → ke katalog
- * (tidak tampil bila katalog disembunyikan). Selama di-hover (mouse) atau difokus, tayangan hero berhenti
- * (`onHoldChange`) agar template tidak berganti tepat sebelum diklik. `className` = kelas tombol kedua, `noteClassName`
- * = warna nama template (keduanya mengikuti nada teks hero).
- */
-const DemoLink: React.FC<{
-  current: ShowcaseItem | null;
-  label: string;
-  templatesHidden: boolean;
-  onHoldChange?: (hold: boolean) => void;
-  className: string;
-  noteClassName: string;
-}> = ({ current, label, templatesHidden, onHoldChange, className, noteClassName }) => {
-  // Nama aksesibel lengkap (diawali label yang terlihat): "Lihat Demo template Corporate Nexa (tab baru)"
-  const linkProps = {
-    'aria-label': current?.demoHref ? `${label} template ${current.name} (tab baru)` : undefined,
-    onPointerEnter: (event: React.PointerEvent) => {
-      if (event.pointerType === 'mouse') onHoldChange?.(true);
-    },
-    onPointerLeave: (event: React.PointerEvent) => {
-      if (event.pointerType === 'mouse') onHoldChange?.(false);
-    },
-    onFocus: () => onHoldChange?.(true),
-    onBlur: () => onHoldChange?.(false),
-  };
-  const content = (
-    <>
-      <Play className={`${SECONDARY_ICON} shrink-0 max-sm:h-3.5 max-sm:w-3.5`} fill="currentColor" aria-hidden />
-      <span className="flex min-w-0 items-baseline">
-        <span className="shrink-0">{label}</span>
-        {current?.demoHref && (
-          <span className={`ml-1 max-w-[9rem] truncate font-medium max-sm:hidden ${noteClassName}`}>· {current.name}</span>
-        )}
-      </span>
-    </>
-  );
-
-  if (!current?.demoHref) {
-    if (templatesHidden) return null;
-    return (
-      <SmartLink href="#templates" className={className}>
-        {content}
-      </SmartLink>
-    );
-  }
-  if (current.demoExternal) {
-    return (
-      <a href={current.demoHref} target="_blank" rel="noopener noreferrer" className={className} {...linkProps}>
-        {content}
-      </a>
-    );
-  }
-  return (
-    <Link to={current.demoHref} target="_blank" rel="noopener" className={className} {...linkProps}>
-      {content}
-    </Link>
   );
 };
 

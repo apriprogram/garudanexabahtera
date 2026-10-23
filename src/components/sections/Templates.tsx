@@ -203,7 +203,6 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
           title="Pilih"
           accent="Template"
           titleId={titleId}
-          description="Desain siap pakai yang tinggal Anda isi. Lihat demonya, pesan, lalu kelola konten sendiri lewat CMS setelah website aktif."
           action={
             // HP: ajakan ini pindah ke bawah grid, jadi kartu pertama naik ke layar pertama
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 max-sm:hidden lg:justify-end">

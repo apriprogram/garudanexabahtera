@@ -139,7 +139,6 @@ const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = 
           titleId="projects-title"
           title="Proyek yang sudah"
           accent="kami kerjakan"
-          description="Website dan aplikasi untuk sekolah, pesantren, UMKM, hingga instansi pemerintahan."
           action={
             <Link to="/pesan-custom" className="btn btn-outline group">
               Pesan Custom

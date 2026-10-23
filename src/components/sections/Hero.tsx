@@ -25,10 +25,9 @@ import { useHeroLegibility } from './hero/useHeroLegibility';
  *   strip latar di belakangnya (diukur terpisah dari blok teks); belum / tidak terukur → navbar putih kaca;
  * - datar: tanpa bayangan teks, pendar, atau bayangan kotak di seluruh hero (garis tipis ring-* boleh);
  * - kiri: toggle mode Template / Custom, judul dua warna kata per kata, checklist, tombol
- *   ("Pilih Template" → #templates, "Pesan Website / Aplikasi Mobile Custom" → /pesan-custom);
+ *   ("Pilih Template" → #templates, "Start Your Project Brief" → /pesan-custom);
  * - kanan (di HP: di bawah): bingkai browser yang menayangkan pratinjau template asli + rail langkah yang MENGIKUTI
- *   mode: alur pemesanan template, atau alur custom (konsultasi → penawaran → pengerjaan → rilis). Tayangan berhenti
- *   selama "Lihat Demo" di-hover / difokus (`hold`), jadi demo yang dibuka sama dengan nama template yang terlihat.
+ *   mode: alur pemesanan template, atau alur custom (konsultasi → penawaran → pengerjaan → rilis).
  * Bila admin menyembunyikan section katalog (`disabled_sections` berisi "templates"), hero mulai di mode Custom dan
  * tombol mode Template tidak lagi menuju #templates yang tidak ada.
  * Saat digulir, isi sedikit memudar & visual sedikit miring (desktop saja, tidak untuk reduced motion).
@@ -62,7 +61,6 @@ const Hero: React.FC = () => {
   }, [hasMedia, navTone]);
   useEffect(() => () => setHeroNavState(HERO_NAV_DEFAULT), []);
   const [step, setStep] = useState(0);
-  const [hold, setHold] = useState(false);
 
   // Alur baru selalu mulai dari langkah pertama, baik karena dipilih pengunjung maupun karena setting admin dimuat
   // (pola "sesuaikan state saat render" React, tanpa efek tambahan)
@@ -130,7 +128,8 @@ const Hero: React.FC = () => {
           />
         ))}
 
-      <div className="container-site grid items-center gap-8 pb-12 pt-20 sm:min-h-[100svh] sm:gap-12 sm:pb-16 sm:pt-28 lg:grid-cols-2 lg:gap-12 lg:pb-20 lg:pt-28 xl:gap-16 2xl:gap-24">
+      {/* Isi hero lebih sempit dari navbar (seperti Dribbble): ±1500px di tengah layar lebar */}
+      <div className="container-site max-w-[1584px] grid items-center gap-8 pb-12 pt-20 sm:min-h-[100svh] sm:gap-12 sm:pb-16 sm:pt-28 lg:grid-cols-2 lg:gap-12 lg:pb-20 lg:pt-28 xl:gap-16 2xl:gap-24">
         <div
           ref={textRef}
           className="hero-parallax lg:pl-[2%]"
@@ -144,7 +143,6 @@ const Hero: React.FC = () => {
             onModeChange={setChosenMode}
             current={current}
             templatesHidden={templatesHidden}
-            onHoldChange={setHold}
           />
         </div>
 
@@ -165,7 +163,6 @@ const Hero: React.FC = () => {
               slide={slide}
               onNext={nextSlide}
               templatesHidden={templatesHidden}
-              hold={hold}
               // Latar gambar/video = kandidat LCP; tanpa itu slide pertama tayangan yang terbesar
               priority={!media}
             />

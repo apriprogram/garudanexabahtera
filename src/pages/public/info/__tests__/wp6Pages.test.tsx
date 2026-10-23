@@ -233,7 +233,7 @@ describe('halaman WP6: prerender + hidrasi', () => {
 });
 
 describe('beranda', () => {
-  it('satu H1 statis berisi "template website", intro, strip, kategori, perbandingan, FAQ, tanpa hydration error', async () => {
+  it('satu H1 statis berisi "template website", strip, kategori, perbandingan, FAQ, tanpa deskripsi section, tanpa hydration error', async () => {
     const { html, problems, el } = await hydrate('/');
     expect(problems).toEqual([]);
     const h1s = el.querySelectorAll('h1');
@@ -243,8 +243,10 @@ describe('beranda', () => {
     // Judul mode custom = <p>, tetap ada sebagai teks di HTML server
     expect(visibleText(html)).toContain('Jasa pembuatan website & aplikasi mobile custom.');
     const text = visibleText(html);
+    // Deskripsi di kepala section & chip bernomor dihapus (permintaan pemilik 2026-10-23); nama legal tetap di footer
     expect(text).toContain('PT Garuda Nexa Bahtera');
-    expect(text).toContain('Rp990 ribu');
+    expect(text).not.toContain('menyediakan template website untuk');
+    expect(text).not.toMatch(/0\d\s*Kategori/);
     expect(text).toContain('Apa saja yang sudah termasuk');
     expect(text).toContain('Sudah termasuk');
     for (const slug of ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup']) {

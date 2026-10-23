@@ -30,7 +30,6 @@ const FAQ: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '04' 
             titleId="faq-title"
             title="Pertanyaan seputar"
             accent="template website & jasa custom"
-            description="Harga, apa saja yang termasuk, pembayaran, domain, CMS, dan proyek custom. Belum menemukan jawabannya? Tim kami siap membantu."
             action={
               <a
                 href={whatsappUrl(whatsapp, 'Halo Admin, saya punya pertanyaan tentang layanan Garuda Nexa.')}

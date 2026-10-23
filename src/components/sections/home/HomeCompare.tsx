@@ -25,7 +25,6 @@ const HomeCompare: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number
           titleId="perbandingan-title"
           title="Template siap pakai atau"
           accent="jasa pembuatan website custom?"
-          description="Template paling cepat online dengan harga pasti. Website dan aplikasi custom dirancang dari nol untuk alur kerja Anda, dengan biaya lewat penawaran setelah konsultasi gratis."
           action={
             <Link to={HUB_PATHS.pricing} className="btn btn-outline">
               Lihat harga lengkap

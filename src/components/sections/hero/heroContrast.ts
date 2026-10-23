@@ -402,7 +402,9 @@ export function navContrast(tone: HeroTone, sample: BackgroundSample): { body: n
  * 2. tidak ada yang lolos penuh: nada dengan kontras menu terendah ≥ 3:1 yang lebih tinggi (permintaan pemilik
  *    2026-10-23: di atas gambar gelap navbar transparan dengan teks putih, walau titik paling terang di belakang menu
  *    sedikit di bawah 4,5:1);
- * 3. di bawah 3:1 untuk kedua nada (latar terang & gelap bercampur) atau tanpa sampel → null: navbar putih kaca.
+ * 3. di bawah 3:1 untuk kedua nada (latar terang & gelap bercampur, mis. cahaya terang di belakang logo di HP): tetap
+ *    transparan dengan nada yang kontras menunya lebih tinggi (permintaan pemilik 2026-10-23: di desktop DAN HP navbar
+ *    transparan di puncak). Hanya tanpa sampel → null: navbar putih kaca.
  */
 export function decideNavTone(samples: readonly BackgroundSample[]): HeroTone | null {
   if (samples.length === 0) return null;
@@ -424,7 +426,11 @@ export function decideNavTone(samples: readonly BackgroundSample[]): HeroTone | 
     if (lightOk && darkOk) return dark.body > light.body ? 'dark' : 'light';
     return lightOk ? 'light' : darkOk ? 'dark' : null;
   };
-  return pick(passes) ?? pick((c) => c.body >= NAV_MIN_CONTRAST && c.headline >= NAV_MIN_CONTRAST);
+  return (
+    pick(passes) ??
+    pick((c) => c.body >= NAV_MIN_CONTRAST && c.headline >= NAV_MIN_CONTRAST) ??
+    (dark.body > light.body ? 'dark' : 'light')
+  );
 }
 
 /**

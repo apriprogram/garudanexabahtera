@@ -3,9 +3,9 @@ import { Reveal } from './Reveal';
 import { SplitText } from './SplitText';
 
 interface SectionHeadingProps {
-  /** Nomor section, mis. "01". */
-  index: string;
-  label: string;
+  /** Nomor & label section, mis. "01" "Kategori": tidak lagi ditampilkan (chip dihapus, permintaan pemilik 2026-10-23). */
+  index?: string;
+  label?: string;
   /** Judul. String = muncul kata per kata; node lain dirender apa adanya. */
   title: React.ReactNode;
   /** Kata kunci berwarna biru brand di akhir judul (opsional, hanya bila `title` string). */
@@ -32,15 +32,13 @@ export const SectionChip: React.FC<{ index: string; label: string; className?: s
 );
 
 const TITLE_CLASS =
-  'mt-4 block text-2xl font-semibold leading-[1.2] tracking-[-0.025em] text-fg sm:mt-5 sm:text-5xl sm:leading-[1.02] sm:tracking-[-0.035em] xl:text-[56px]';
+  'block text-2xl font-semibold leading-[1.2] tracking-[-0.025em] text-fg sm:mt-5 sm:text-5xl sm:leading-[1.02] sm:tracking-[-0.035em] xl:text-[56px]';
 
 /**
- * Kepala section website (gaya CPNS): chip bernomor + judul yang muncul kata per kata di kiri,
- * deskripsi (rata kanan) + aksi opsional di kanan pada layar lebar.
+ * Kepala section website: judul yang muncul kata per kata di kiri (tanpa chip bernomor), deskripsi (rata kanan) +
+ * aksi opsional di kanan pada layar lebar.
  */
 export const SectionHeading: React.FC<SectionHeadingProps> = ({
-  index,
-  label,
   title,
   accent,
   description,
@@ -51,9 +49,6 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
 }) => {
   const heading = (
     <div className={layout === 'split' ? 'max-w-3xl' : ''}>
-      <Reveal>
-        <SectionChip index={index} label={label} />
-      </Reveal>
       {typeof title === 'string' ? (
         <SplitText
           as="h2"

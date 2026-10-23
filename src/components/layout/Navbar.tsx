@@ -6,7 +6,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { useTranslation } from '../../hooks/useTranslation';
 import { Presence } from '../ui/Presence';
 import { getHiddenSections, useSiteSettings } from '../../hooks/useSiteSettings';
 import { useNavbarMenus, type NavbarMenuRow } from '../../hooks/useNavbarMenus';
@@ -136,6 +135,7 @@ const NAV_LOOKS = {
     dot: 'bg-primary',
     account: 'text-muted hover:bg-fg/[0.06] hover:text-fg',
     accountIcon: 'text-primary',
+    signup: 'bg-transparent text-fg hover:bg-fg/[0.06]',
     toggle: 'text-fg hover:bg-fg/[0.06]',
     brand: 'default',
   },
@@ -147,12 +147,18 @@ const NAV_LOOKS = {
     dot: 'bg-on-media',
     account: 'text-on-media hover:bg-on-media/15',
     accountIcon: 'text-on-media',
+    signup: 'bg-transparent text-on-media hover:bg-on-media/15',
     toggle: 'text-on-media hover:bg-on-media/15',
     brand: 'onMedia',
   },
 } as const;
 
 type NavLook = (typeof NAV_LOOKS)[keyof typeof NAV_LOOKS];
+
+/** Tombol akun saat belum masuk (permintaan pemilik 2026-10-23: label seperti Dribbble). */
+const SIGNUP_PATH = '/daftar';
+const SIGNUP_LABEL = 'Sign up';
+const LOGIN_LABEL = 'Log in';
 
 /**
  * Navbar publik gaya BELAJAR CPNS: transparan di puncak halaman, jadi putih kaca (teks gelap) saat digulir, tanpa
@@ -164,7 +170,6 @@ type NavLook = (typeof NAV_LOOKS)[keyof typeof NAV_LOOKS];
  * pada konten pertamanya.
  */
 const Navbar: React.FC = () => {
-  const { t } = useTranslation();
   // Berlangganan perubahan rute: navbar dirender ulang saat pindah halaman (tombol akun ikut diperbarui)
   const { pathname } = useLocation();
   const { settings } = useSiteSettings();
@@ -334,20 +339,23 @@ const Navbar: React.FC = () => {
           })}
         </ul>
 
-        {/* Kanan: akun, CTA, tombol menu HP */}
+        {/* Kanan: Sign up + Log in (belum masuk) atau tombol akun (sudah masuk), tombol menu HP */}
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Link
-            to={account.to}
-            className={`hidden h-9 items-center gap-2 rounded-full px-3.5 text-[14px] font-medium transition-colors sm:inline-flex ${look.account}`}
-          >
-            {role && <UserRound className={`h-4 w-4 ${look.accountIcon}`} strokeWidth={2} aria-hidden />}
-            {account.label}
-          </Link>
-
-          <SmartLink href="#kontak" className="btn btn-primary btn-sm sm:h-10 sm:px-5 sm:text-sm">
-            <span className="sm:hidden">{t('nav-consult-short')}</span>
-            <span className="max-sm:hidden">{t('nav-consult')}</span>
-          </SmartLink>
+          {role ? (
+            <Link to={account.to} className="btn btn-primary btn-sm sm:h-10 sm:px-5 sm:text-sm lg:h-12 lg:px-6 lg:text-[15px]">
+              <UserRound className="h-4 w-4" strokeWidth={2} aria-hidden />
+              {account.label}
+            </Link>
+          ) : (
+            <>
+              <Link to={SIGNUP_PATH} className={`btn ${look.signup} btn-sm hidden sm:inline-flex sm:h-10 sm:px-5 sm:text-sm lg:h-12 lg:px-6 lg:text-[15px]`}>
+                {SIGNUP_LABEL}
+              </Link>
+              <Link to={account.to} className="btn btn-primary btn-sm sm:h-10 sm:px-5 sm:text-sm lg:h-12 lg:px-6 lg:text-[15px]">
+                {LOGIN_LABEL}
+              </Link>
+            </>
+          )}
 
           <button
             ref={toggleRef}
@@ -418,13 +426,21 @@ const Navbar: React.FC = () => {
               );
             })}
             <li className="grid grid-cols-2 gap-2 border-t border-line pt-3 sm:hidden">
-              <Link to={account.to} onClick={closeMenu} className="btn btn-outline">
-                {role && <UserRound className="h-4 w-4 text-primary" aria-hidden />}
-                {account.label}
-              </Link>
-              <SmartLink href="#kontak" onClick={closeMenu} className="btn btn-primary">
-                {t('nav-consult')}
-              </SmartLink>
+              {role ? (
+                <Link to={account.to} onClick={closeMenu} className="btn btn-primary col-span-2">
+                  <UserRound className="h-4 w-4" aria-hidden />
+                  {account.label}
+                </Link>
+              ) : (
+                <>
+                  <Link to={SIGNUP_PATH} onClick={closeMenu} className="btn btn-outline">
+                    {SIGNUP_LABEL}
+                  </Link>
+                  <Link to={account.to} onClick={closeMenu} className="btn btn-primary">
+                    {LOGIN_LABEL}
+                  </Link>
+                </>
+              )}
             </li>
           </ul>
         </div>

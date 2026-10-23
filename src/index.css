@@ -182,12 +182,12 @@
 }
 
 /*
- * Kontainer lebar (CPNS container-wide): hampir penuh kiri-kanan, dibatasi 1680px di layar sangat lebar.
- * Gutter 20/32/48/64px, tetapi tidak pernah lebih sempit dari safe-area (viewport-fit=cover: iPhone landscape
+ * Kontainer penuh kiri-kanan (permintaan pemilik 2026-10-23, seperti Dribbble): selebar layar, hanya disisakan
+ * gutter tipis 20/24/32/40px, tetapi tidak pernah lebih sempit dari safe-area (viewport-fit=cover: iPhone landscape
  * menaruh notch di kiri/kanan). Di perangkat tanpa notch env() = 0, jadi tampilan tidak berubah.
  */
 @utility container-site {
-  @apply mx-auto w-full max-w-[1680px] [--gutter:1.25rem] sm:[--gutter:2rem] lg:[--gutter:3rem] 2xl:[--gutter:4rem];
+  @apply mx-auto w-full [--gutter:1.25rem] sm:[--gutter:1.5rem] lg:[--gutter:2rem] 2xl:[--gutter:2.5rem];
   padding-inline: max(var(--gutter), env(safe-area-inset-left)) max(var(--gutter), env(safe-area-inset-right));
 }
 

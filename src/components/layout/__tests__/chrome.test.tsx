@@ -143,8 +143,10 @@ describe('Navbar', () => {
     const hrefs = Array.from(mobile.querySelectorAll('a')).map((a) => a.getAttribute('href'));
     expect(hrefs).toEqual(expect.arrayContaining(['/template', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/harga', '/panduan']));
     expect(hrefs.some((href) => href?.includes('#templates') || href?.includes('#faq'))).toBe(false);
-    // CTA kanan tetap "Konsultasi Gratis"
-    expect(screen.getAllByRole('link', { name: /Konsultasi/ }).length).toBeGreaterThan(0);
+    // Kanan (belum masuk): "Sign up" → /daftar dan "Log in" → /masuk (permintaan pemilik 2026-10-23)
+    expect(screen.getAllByRole('link', { name: 'Sign up' })[0]).toHaveAttribute('href', '/daftar');
+    expect(screen.getAllByRole('link', { name: 'Log in' })[0]).toHaveAttribute('href', '/masuk');
+    expect(screen.queryByRole('link', { name: /Konsultasi/ })).toBeNull();
   });
 
   it('menu dari Navbar Manager tetap dipakai bila ada (kontrol admin)', async () => {

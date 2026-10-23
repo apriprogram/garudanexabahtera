@@ -79,7 +79,8 @@ describe('Navbar di atas latar hero', () => {
     expect(template.className).toContain('text-on-media');
     expect(template.className).not.toContain('text-on-media-muted');
     expect(nav.bar().getByRole('button', { name: /^Jasa/ }).className).toContain('text-on-media');
-    expect(nav.bar().getByRole('link', { name: 'Masuk' }).className).toContain('text-on-media');
+    expect(nav.bar().getByRole('link', { name: 'Sign up' }).className).toContain('text-on-media');
+    expect(nav.bar().getByRole('link', { name: 'Sign up' }).className).not.toMatch(/outline|ring-/);
     expect(nav.burger().className).toContain('text-on-media');
     expect(nav.header.querySelector('.btn-primary')).not.toBeNull();
     // Tidak ada sisa teks gelap di bar
