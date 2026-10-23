@@ -8,9 +8,9 @@ import Hero from '../../components/sections/Hero';
 import LogoTicker from '../../components/sections/LogoTicker';
 import Templates from '../../components/sections/Templates';
 import Projects from '../../components/sections/Projects';
-import Process from '../../components/sections/Process';
 import FAQ from '../../components/sections/FAQ';
 import HomeCompare from '../../components/sections/home/HomeCompare';
+import HomeFeatures from '../../components/sections/home/HomeFeatures';
 import { getHiddenSections, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -28,7 +28,8 @@ const SECTIONS = [
   // Proyek tepat di bawah Pilih Template (permintaan pemilik 2026-10-24)
   { id: 'projects', Component: Projects, tone: 'alt' },
   { id: 'perbandingan', Component: HomeCompare, tone: 'alt' },
-  { id: 'process', Component: Process, tone: 'alt' },
+  // Keunggulan (bento fitur) menggantikan "Cara kerja kami" (#process), permintaan pemilik 2026-10-24
+  { id: 'keunggulan', Component: HomeFeatures, tone: 'alt' },
   { id: 'faq', Component: FAQ, tone: 'canvas' },
 ] as const;
 
@@ -46,7 +47,7 @@ export default function Home() {
     perbandingan: 'Perbandingan',
     templates: t('nav-templates'),
     projects: t('nav-projects'),
-    process: t('nav-process'),
+    keunggulan: 'Keunggulan',
     faq: t('nav-faq'),
   };
   const chrome: ChromeSection[] = [

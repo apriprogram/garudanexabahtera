@@ -1,15 +1,14 @@
 // @vitest-environment jsdom
-// Proses & FAQ beranda (paket "proses-faq-404"): FAQ satu-terbuka yang tidak menggeser pertanyaan yang diketuk,
-// hover baris tertutup yang terlihat, tombol nyata di kartu 01 Proses (bukan tombol tiruan di ilustrasi), tombol
-// tiruan diredam, tombol kartu lebar sesudah langkah 04-06 di HP, dan metode pembayaran yang tidak dirinci.
+// FAQ beranda (paket "proses-faq-404"): satu-terbuka yang tidak menggeser pertanyaan yang diketuk, hover baris
+// tertutup yang terlihat, dan metode pembayaran yang tidak dirinci. Section Proses dihapus (diganti #keunggulan,
+// tesnya di keunggulan.test.tsx).
 // Jalankan: npx vitest run --dir src/components/sections
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SiteSettings } from '../../../hooks/useSiteSettings';
 import FAQ from '../FAQ';
-import Process from '../Process';
 
 // Setting website per tes; helper lain (readList, getHiddenSections, dst.) tetap asli
 let mockSettings: SiteSettings = {};
@@ -90,69 +89,5 @@ describe('FAQ (#faq)', () => {
     const answer = screen.getByRole('region', { name: /Metode pembayaran apa saja/ });
     expect(answer).toHaveTextContent('metode pembayaran yang tersedia di Midtrans');
     expect(answer).not.toHaveTextContent(/QRIS|virtual account|e-wallet|kartu kredit/i);
-  });
-});
-
-describe('Proses (#process)', () => {
-  it('kartu 01 punya tombol nyata ke katalog di luar ilustrasi; tombol tiruan diredam & tidak bisa diklik (C-05)', () => {
-    renderAt(<Process />);
-    const panel = screen.getByRole('tabpanel');
-    const link = within(panel).getByRole('link', { name: 'Lihat template' });
-    expect(link).toHaveAttribute('href', '/#templates');
-    expect(link.closest('[aria-hidden]')).toBeNull();
-    expect(link.closest('article')).toHaveTextContent('Pilih template');
-    // Pil "Lihat demo" + lingkaran panah hitam tiruan sudah tidak ada
-    expect(within(panel).queryByText('Lihat demo')).not.toBeInTheDocument();
-
-    for (const label of ['Lanjut bayar', 'Bayar sekarang']) {
-      const mock = within(panel).getByText(label).closest('span')!;
-      expect(mock.closest('[aria-hidden]')).not.toBeNull();
-      expect(mock.className).toContain('pointer-events-none');
-      expect(mock.className).toContain('bg-brand-200');
-      expect(mock.className).not.toContain('bg-primary');
-    }
-    // Metode pembayaran tidak dirinci (keputusan pemilik), baik di teks maupun ilustrasi
-    expect(panel).toHaveTextContent('metode pembayaran yang tersedia di Midtrans');
-    expect(panel).not.toHaveTextContent(/QRIS|Virtual Account|E-wallet/);
-  });
-
-  it('label segmen di HP sama dengan toggle hero: "Siap pakai" / "Jasa custom" (A-08)', () => {
-    renderAt(<Process />);
-    const [template, custom] = screen.getAllByRole('tab');
-    expect(within(template).getByText('Siap pakai')).toHaveClass('sm:hidden');
-    expect(within(template).getByText('Template siap pakai')).toHaveClass('hidden', 'sm:inline');
-    expect(within(custom).getByText('Jasa custom')).toHaveClass('sm:hidden');
-    expect(within(custom).getByText('Website & aplikasi custom')).toHaveClass('hidden', 'sm:inline');
-  });
-
-  it('kartu ringkas di HP, tetap sama mulai 640px (C-06)', () => {
-    renderAt(<Process />);
-    const articles = within(screen.getByRole('tabpanel')).getAllByRole('article');
-    expect(articles[0].className).toContain('min-h-0 sm:min-h-[320px] lg:min-h-0');
-    expect(articles[1].className).toContain('min-h-0 sm:min-h-[320px] lg:min-h-0');
-    expect(articles[2].className).toContain('min-h-[460px] sm:min-h-[560px] lg:min-h-0');
-  });
-
-  it('tombol kartu lebar berada di akhir alur di HP & tablet, di kolom teks di desktop (C-06)', () => {
-    renderAt(<Process />);
-    const cta = screen.getByRole('link', { name: 'Pilih Template' });
-    const actions = cta.parentElement!;
-    expect(actions.className).toContain('order-last');
-    expect(actions.className).toContain('lg:order-none');
-    // Kolom teks "dilebur" di bawah lg agar `order-last` berlaku terhadap ilustrasi langkah 04-06
-    expect(actions.parentElement!.className).toContain('contents lg:block');
-    expect(screen.getByRole('list', { name: 'Langkah 4 sampai 6' })).toBeInTheDocument();
-  });
-
-  it('katalog disembunyikan admin: tanpa tombol ke #templates; alur custom memakai "Pesan Custom"', () => {
-    mockSettings = { disabled_sections: JSON.stringify(['templates']) };
-    renderAt(<Process />);
-    const panel = screen.getByRole('tabpanel');
-    expect(within(panel).queryByRole('link', { name: 'Lihat template' })).not.toBeInTheDocument();
-    expect(within(panel).queryByRole('link', { name: /Pilih Template/ })).not.toBeInTheDocument();
-    expect(within(panel).getByRole('link', { name: 'Konsultasi Gratis' })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('tab', { name: /custom/i }));
-    expect(within(screen.getByRole('tabpanel')).getByRole('link', { name: 'Pesan Custom' })).toHaveAttribute('href', '/pesan-custom');
   });
 });

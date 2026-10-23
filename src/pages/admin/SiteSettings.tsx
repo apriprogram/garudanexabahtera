@@ -114,7 +114,7 @@ type SettingsMap = Record<string, string>;
  */
 const SECTION_KEY_OF_TAB: Partial<Record<string, string>> = {
   portfolio: 'projects',
-  process: 'process',
+  process: 'keunggulan',
   faq: 'faq',
   services: 'cta',
 };
@@ -164,15 +164,6 @@ interface PortfolioItem {
   span: string;
 }
 
-/** Satu entri process_data. */
-interface ProcessItem {
-  step: string;
-  title: string;
-  desc: string;
-  back_title?: string;
-  detail?: string;
-}
-
 /** Satu entri pricing_data. */
 interface PricingItem {
   name: string;
@@ -203,7 +194,7 @@ const SiteSettings: React.FC = () => {
     { id: 'hero', label: 'Hero', icon: ImageIcon },
     { id: 'products', label: 'Produk', icon: Package },
     { id: 'portfolio', label: 'Portofolio', icon: Briefcase },
-    { id: 'process', label: 'Proses', icon: Activity },
+    { id: 'process', label: 'Keunggulan', icon: Activity },
     { id: 'pricing', label: 'Harga', icon: CreditCard },
     { id: 'faq', label: 'FAQ', icon: HelpCircle },
     { id: 'services', label: 'Banner CTA', icon: HelpCircle },
@@ -277,7 +268,6 @@ const SiteSettings: React.FC = () => {
   const [isPortfolioSpanDropdownOpen, setIsPortfolioSpanDropdownOpen] = useState(false);
 
   // Process tab States
-  const [processList, setProcessList] = useState<ProcessItem[]>([]);
 
   // Pricing tab States
   const [pricingList, setPricingList] = useState<PricingItem[]>([]);
@@ -415,42 +405,6 @@ const SiteSettings: React.FC = () => {
         ]);
       }
 
-      // Load Process tab data
-      if (data.process_data) {
-        setProcessList(JSON.parse(data.process_data));
-      } else {
-        setProcessList([
-          { 
-            step: '01', 
-            title: 'Consultation', 
-            desc: 'Needs Analysis & Planning', 
-            back_title: 'DETAIL CONSULTATION',
-            detail: 'Kami memulai dengan mendalami visi bisnis Anda. Sesi brainstorming intensif untuk menentukan fitur utama, target pasar, dan strategi teknologi yang paling efektif untuk mencapai tujuan Anda.' 
-          },
-          { 
-            step: '02', 
-            title: 'Desain UI/UX', 
-            desc: 'Wireframing & Prototyping', 
-            back_title: 'DETAIL DESAIN UI/UX',
-            detail: 'Fokus pada pengalaman pengguna yang intuitif dan estetika modern. Kami membuat purwarupa interaktif sehingga Anda dapat merasakan alur navigasi aplikasi sebelum proses coding dimulai.' 
-          },
-          { 
-            step: '03', 
-            title: 'Development', 
-            desc: 'Coding & System Testing', 
-            back_title: 'DETAIL DEVELOPMENT',
-            detail: 'Tim engineer kami membangun sistem menggunakan teknologi terkini yang skalabel. Kami menerapkan standar keamanan tinggi dan pengujian menyeluruh (QA) untuk memastikan performa yang stabil.' 
-          },
-          { 
-            step: '04', 
-            title: 'Launching', 
-            desc: 'Deployment & Maintenance', 
-            back_title: 'DETAIL LAUNCHING',
-            detail: 'Membantu proses rilis ke App Store/Play Store atau hosting cloud. Kami tidak berhenti di sana; kami menyediakan dukungan teknis berkelanjutan dan pemeliharaan untuk menjaga sistem tetap prima.' 
-          }
-        ]);
-      }
-
       // Load Pricing tab data
       if (data.pricing_data) {
         setPricingList(JSON.parse(data.pricing_data));
@@ -544,7 +498,6 @@ const SiteSettings: React.FC = () => {
       portfolio_data: JSON.stringify(portfolioList),
 
       // Process data
-      process_data: JSON.stringify(processList),
 
       // Pricing data
       pricing_title: (document.getElementById('pricing_title') as HTMLInputElement)?.value || settings.pricing_title || "Paket Layanan Kami",
@@ -962,70 +915,17 @@ const SiteSettings: React.FC = () => {
       case 'process':
         return (
           <div>
-            <PanelHeader title="Langkah proses kerja" subtitle="Atur langkah-langkah alur proses yang tampil di beranda." />
-
-            <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
-              {processList.map((step, index) => (
-                <Panel key={index} className="space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[22px] font-semibold tabular-nums text-adm-cobalt-fg">{step.step}</span>
-                    <Chip>Langkah {index + 1}</Chip>
-                  </div>
-                  <div className="space-y-4">
-                    <Field label="Judul kartu depan">
-                      <Input
-                        type="text"
-                        value={step.title}
-                        onChange={(e) => {
-                          const updated = [...processList];
-                          updated[index].title = e.target.value;
-                          setProcessList(updated);
-                        }}
-                        placeholder="mis. Konsultasi"
-                        className="font-medium"
-                      />
-                    </Field>
-                    <Field label="Deskripsi kartu depan">
-                      <Input
-                        type="text"
-                        value={step.desc}
-                        onChange={(e) => {
-                          const updated = [...processList];
-                          updated[index].desc = e.target.value;
-                          setProcessList(updated);
-                        }}
-                        placeholder="mis. Analisis kebutuhan & perencanaan"
-                      />
-                    </Field>
-                    <Field label="Judul kartu belakang">
-                      <Input
-                        type="text"
-                        value={step.back_title || `DETAIL ${step.title}`.toUpperCase()}
-                        onChange={(e) => {
-                          const updated = [...processList];
-                          updated[index].back_title = e.target.value;
-                          setProcessList(updated);
-                        }}
-                        placeholder="mis. DETAIL KONSULTASI"
-                        className="font-medium"
-                      />
-                    </Field>
-                    <Field label="Deskripsi kartu belakang">
-                      <Textarea
-                        value={step.detail || ''}
-                        onChange={(e) => {
-                          const updated = [...processList];
-                          updated[index].detail = e.target.value;
-                          setProcessList(updated);
-                        }}
-                        placeholder="Tulis deskripsi kartu belakang..."
-                        className="min-h-[100px] resize-y"
-                      />
-                    </Field>
-                  </div>
-                </Panel>
-              ))}
-            </div>
+            <PanelHeader
+              title="Section keunggulan"
+              subtitle="Kartu fitur “Bukan sekadar template, semua sudah siap.” di beranda (menggantikan alur proses kerja)."
+            />
+            <Panel className="space-y-2 text-sm leading-relaxed text-adm-muted">
+              <p>
+                Isinya mengikuti fitur yang benar-benar tersedia (CMS, domain, hosting & SSL, pembayaran Midtrans, status pesanan,
+                diskon pembelian pertama, demo template, WhatsApp) dan diatur di kode situs, jadi tidak ada isian di sini.
+              </p>
+              <p>Gunakan saklar di kanan atas untuk menampilkan atau menyembunyikan section ini di beranda.</p>
+            </Panel>
           </div>
         );
 
