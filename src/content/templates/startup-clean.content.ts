@@ -82,7 +82,7 @@ export const content: TemplatePageContent = {
   ],
   imageAlts: {
     'startup-clean-preview.webp': 'Tampilan beranda template website UMKM dan startup {nama} di desktop dan HP',
-    'startup-clean-1.webp': 'Kartu fitur bento template {nama}: kasir, stok, laporan, dan pembayaran QRIS',
+    'startup-clean-1.webp': 'Bagian fitur bento template {nama} berisi contoh teks usaha demo (kasir, stok, laporan, QRIS) yang bisa diganti',
     'startup-clean-2.webp': 'Bagian cerita usaha template {nama} dengan foto pemilik dan poin unggulan',
   },
   guides: ['biaya-website-company-profile', 'template-vs-jasa-website-custom'],
