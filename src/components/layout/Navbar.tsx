@@ -128,7 +128,8 @@ interface Pill {
  * Navbar publik gaya BELAJAR CPNS: transparan di puncak halaman, jadi putih kaca saat digulir, tanpa garis bawah
  * maupun shadow di semua state. Bila hero beranda memakai latar gambar/video (tampil penuh, bisa gelap), putih kaca
  * sejak di puncak supaya logo dan menu selalu terbaca. Menu di tengah dengan sorotan pill yang meluncur mengikuti
- * hover, titik biru menandai section aktif di beranda. Tinggi = `--nav-h` (56px HP / 64px ≥ 1024px, di index.css): halaman lain memberi `pt-nav`
+ * hover, titik biru menandai halaman yang sedang dibuka (aria-current="page", juga di dalam menu Jasa) atau section aktif
+ * di beranda. Menu = tautan halaman nyata (DEFAULT_ITEMS / Navbar Manager), terbaca crawler di HTML prerender. Tinggi = `--nav-h` (56px HP / 64px ≥ 1024px, di index.css): halaman lain memberi `pt-nav`
  * pada konten pertamanya.
  */
 const Navbar: React.FC = () => {
