@@ -50,6 +50,7 @@ describe('applyHead', () => {
     expect(meta('meta[name="twitter:card"]')).toBe('summary_large_image');
     expect(document.head.querySelector('link[rel="manifest"]')?.getAttribute('href')).toBe('/site.webmanifest');
     expect(document.head.querySelector('link[rel="apple-touch-icon"]')).not.toBeNull();
+    expect(document.head.querySelector('link[rel="icon"][type="image/png"][sizes="192x192"]')?.getAttribute('href')).toBe('/icon-192.png');
     expect(document.head.querySelector('link[rel="preload"][as="image"]')?.getAttribute('fetchpriority')).toBe('high');
     expect(ldTypes()).toEqual(['Organization', 'WebSite', 'Product', 'BreadcrumbList']);
     expect(meta('meta[name="theme-color"]')).toBe('#ffffff'); // tag di luar data-gn tidak disentuh

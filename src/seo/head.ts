@@ -17,6 +17,8 @@ export const escapeHtml = (value: string): string => value.replace(/[&<>"']/g, (
 export const MANAGED_ATTR = 'data-gn';
 
 /** Ikon & manifest host utama: hanya di halaman Garuda Nexa, tidak di shell netral index.html (domain pembeli). */
+/** Ikon PNG 192 px (kelipatan 48, panduan favicon Google Search) di samping favicon.ico 48 px dan favicon.svg. */
+export const ICON_192 = '/icon-192.png';
 export const APPLE_TOUCH_ICON = '/apple-touch-icon.png';
 export const WEB_MANIFEST = '/site.webmanifest';
 
@@ -116,6 +118,16 @@ export function headTags(head: SeoHead): HeadTag[] {
     });
   }
   tags.push(
+    {
+      key: 'icon-192',
+      tag: 'link',
+      attrs: [
+        ['rel', 'icon'],
+        ['type', 'image/png'],
+        ['sizes', '192x192'],
+        ['href', ICON_192],
+      ],
+    },
     {
       key: 'apple-touch-icon',
       tag: 'link',

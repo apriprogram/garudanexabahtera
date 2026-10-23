@@ -97,11 +97,12 @@ describe('rute SEO WP1', () => {
   it('kategori dan artikel panduan yang tidak ada → 404', async () => {
     for (const path of ['/template/kategori/tidak-ada', '/panduan/belum-ada-artikel']) {
       renderAt(path);
-      expect(await screen.findByRole('heading', { level: 1 }, { timeout: 5000 })).toHaveTextContent('Halaman ini tidak ditemukan.');
+      // Render pertama memuat chunk halaman kategori/panduan yang besar; saat suite berat itu bisa > 5 detik
+      expect(await screen.findByRole('heading', { level: 1 }, { timeout: 15_000 })).toHaveTextContent('Halaman ini tidak ditemukan.');
       cleanup();
     }
     // Beberapa render berurutan: batas waktu tes lebih longgar dari 5 detik bawaan, supaya tidak gagal saat suite penuh berat
-  }, 20_000);
+  }, 40_000);
 
   it('huruf besar di path → 404, sama dengan server (aturan .htaccess membedakan huruf besar-kecil)', async () => {
     for (const path of ['/Harga', '/Template/aura-studio', '/PANDUAN', '/Jasa-Pembuatan-Website']) {
