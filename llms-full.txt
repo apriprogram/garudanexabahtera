@@ -1,0 +1,169 @@
+# Garuda Nexa: informasi lengkap
+> Garuda Nexa (PT Garuda Nexa Bahtera, Indonesia) menjual template website siap pakai yang sudah termasuk domain, hosting, dan SSL tahun pertama, serta menerima jasa pembuatan website dan aplikasi mobile Android/iOS custom.
+
+Diperbarui 23 Oktober 2026. Versi ringkas: https://garudanexa.com/llms.txt
+
+## Fakta perusahaan
+Diperbarui 23 Oktober 2026.
+
+- Nama merek: Garuda Nexa
+- Badan hukum: PT Garuda Nexa Bahtera
+- Situs: https://garudanexa.com/
+- Area layanan: Seluruh Indonesia (online)
+- Harga template: Rp990.000–Rp1.790.000 (per 23 Oktober 2026)
+- Sudah termasuk: template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Bayar online via Midtrans; isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Jasa custom: biaya website dan aplikasi custom disampaikan lewat penawaran setelah konsultasi gratis.
+- Jaminan: pesanan yang sudah lunas tetapi ditolak (misalnya domain tidak tersedia) mendapat pengembalian dana penuh ke metode pembayaran semula, paling lambat 7 hari kerja setelah pesanan ditolak.
+- Kontak: WhatsApp +62 851-8800-9152, info@garudanexa.com
+- Layanan:
+  1. Template website siap pakai: Pilih template, lihat demo, pesan dan bayar online via Midtrans, lalu kelola isi website lewat CMS. https://garudanexa.com/template
+  2. Jasa pembuatan website custom: Website yang dirancang dari nol sesuai kebutuhan, dengan penawaran setelah konsultasi gratis. https://garudanexa.com/jasa-pembuatan-website
+  3. Jasa pembuatan aplikasi mobile Android & iOS: Aplikasi Android dan iOS sesuai alur bisnis, dengan penawaran setelah konsultasi gratis. https://garudanexa.com/jasa-pembuatan-aplikasi-mobile
+
+## Template website
+Diperbarui 23 Oktober 2026.
+
+### Corporate Nexa
+- Halaman: https://garudanexa.com/template/corporate-nexa
+- Kategori: Company Profile
+- Harga: Rp1.500.000 (per 23 Oktober 2026), sudah termasuk template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Ringkasan: Company profile elegan untuk perusahaan yang ingin tampil profesional dan terpercaya.
+- Fitur: Desain responsif untuk HP, tablet, dan desktop; Ubah teks, gambar, dan warna sendiri lewat CMS; Bagian layanan, keunggulan, dan galeri proyek; Testimoni klien dan angka pencapaian; Kontak lengkap: alamat, email, telepon, WhatsApp, peta; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/corporate-nexa (konten demo fiktif)
+
+Corporate Nexa dirancang untuk perusahaan jasa, konsultan, kontraktor, dan distributor yang ingin memperkenalkan bisnisnya secara rapi. Tampilan bersih dengan warna aksen yang bisa disesuaikan, bagian layanan, keunggulan, galeri proyek, testimoni klien, dan kontak lengkap dengan peta lokasi. Semua isi bisa Anda ubah sendiri lewat panel pengelola konten tanpa coding.
+
+### Startup Clean
+- Halaman: https://garudanexa.com/template/startup-clean
+- Kategori: Company Profile
+- Harga: Rp990.000 (per 23 Oktober 2026), sudah termasuk template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Ringkasan: Company profile modern dan ringan untuk startup, UMKM, dan bisnis digital.
+- Fitur: Tampilan modern dan cepat dibuka di HP; Kelola konten sendiri lewat CMS tanpa coding; Bagian layanan, statistik, dan galeri; Testimoni pelanggan; Tombol WhatsApp dan formulir kontak; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/startup-clean (konten demo fiktif)
+
+Startup Clean cocok untuk startup, UMKM, studio kreatif, dan bisnis digital yang ingin tampil modern. Tata letak lapang dengan tipografi tegas, bagian produk atau layanan, statistik singkat, galeri, testimoni, dan ajakan menghubungi lewat WhatsApp. Konten dapat Anda kelola sendiri kapan saja melalui CMS yang mudah dipakai.
+
+### Arena Club
+- Halaman: https://garudanexa.com/template/arena-club
+- Kategori: Olahraga & Komunitas
+- Harga: Rp1.290.000 (per 23 Oktober 2026), sudah termasuk template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Ringkasan: Website klub olahraga yang enerjik untuk lapangan padel, tenis, futsal, badminton, gym, dan akademi olahraga.
+- Fitur: Desain enerjik dan responsif untuk HP, tablet, dan desktop; Paket membership dengan harga dan benefit yang bisa diubah; Profil pelatih serta jadwal turnamen dan acara klub; Program latihan dan sewa lapangan dalam kartu foto; Tombol pesan lapangan langsung ke WhatsApp; Kelola teks, foto, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/arena-club (konten demo fiktif)
+
+Arena Club dirancang untuk klub dan tempat olahraga yang ingin tampil profesional sekaligus memudahkan member baru bergabung. Foto besar di bagian pembuka dengan ajakan pesan lapangan, profil klub, angka pencapaian, program latihan dan sewa lapangan, paket membership dengan harga yang jelas, profil pelatih, jadwal turnamen dan acara, testimoni member, serta tombol pesan lewat WhatsApp.
+
+Cocok untuk lapangan padel dan tenis, futsal, badminton, mini soccer, gym, hingga akademi olahraga anak. Semua teks, foto, harga paket, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.
+
+### Aura Studio
+- Halaman: https://garudanexa.com/template/aura-studio
+- Kategori: Kecantikan & Klinik
+- Harga: Rp1.390.000 (per 23 Oktober 2026), sudah termasuk template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Ringkasan: Website elegan untuk klinik kecantikan, salon, nail art, spa, dan barbershop yang ingin tampil premium dan tepercaya.
+- Fitur: Tampilan elegan dan lembut, nyaman dibuka di HP; Daftar perawatan dengan foto, kategori, dan harga mulai; Sorotan perawatan unggulan beserta tahapannya; Galeri suasana studio dan hasil perawatan; Testimoni pelanggan dengan foto; Tombol reservasi langsung ke WhatsApp; Kelola teks, foto, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/aura-studio (konten demo fiktif)
+
+Aura Studio menghadirkan tampilan lembut dan elegan untuk bisnis kecantikan. Bagian pembuka dengan foto potret besar dan daftar layanan singkat, alasan memilih studio Anda, galeri kategori perawatan dengan tab, sorotan perawatan unggulan beserta tahapannya, harga mulai per layanan, testimoni pelanggan, dan ajakan reservasi lewat WhatsApp.
+
+Cocok untuk klinik kecantikan dan estetika, salon rambut, nail art, spa, lash & brow studio, hingga barbershop. Ubah teks, foto, harga layanan, dan warna sendiri kapan saja lewat CMS tanpa coding.
+
+### Finova
+- Halaman: https://garudanexa.com/template/finova
+- Kategori: Fintech & Startup
+- Harga: Rp1.790.000 (per 23 Oktober 2026), sudah termasuk template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Ringkasan: Landing page modern untuk fintech, koperasi, aplikasi pembayaran, konsultan keuangan, dan produk SaaS.
+- Fitur: Bagian pembuka gelap premium dengan foto produk dan bukti sosial; Strip logo mitra dan angka pencapaian; Fitur produk dengan kartu antarmuka yang teksnya bisa diubah; Kartu manfaat bento dan testimoni pengguna; Tanya jawab (FAQ) untuk calon pengguna atau anggota; Footer lengkap dengan tautan unduh aplikasi; Kelola teks, foto, dan dua warna merek sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/finova (konten demo fiktif)
+
+Finova memberi kesan aman, modern, dan meyakinkan untuk produk keuangan. Bagian pembuka gelap dengan foto kartu dan bukti sosial, strip logo mitra, angka pencapaian besar, fitur produk dengan kartu antarmuka melayang, kartu manfaat bento, testimoni pengguna, tanya jawab, ajakan mengunduh aplikasi, serta footer lengkap dengan tautan dan media sosial.
+
+Cocok untuk startup fintech, koperasi simpan pinjam, aplikasi pembayaran dan dompet digital, konsultan keuangan, hingga produk SaaS. Semua isi, angka, logo mitra, dan dua warna merek bisa Anda kelola sendiri lewat CMS tanpa coding.
+
+## Jasa custom
+Diperbarui 23 Oktober 2026.
+
+- Jasa pembuatan website custom: Website yang dirancang dari nol sesuai kebutuhan, dengan penawaran setelah konsultasi gratis. https://garudanexa.com/jasa-pembuatan-website
+- Jasa pembuatan aplikasi mobile Android & iOS: Aplikasi Android dan iOS sesuai alur bisnis, dengan penawaran setelah konsultasi gratis. https://garudanexa.com/jasa-pembuatan-aplikasi-mobile
+- Biaya: biaya website dan aplikasi custom disampaikan lewat penawaran setelah konsultasi gratis.
+- Cara memesan: isi formulir di https://garudanexa.com/pesan-custom atau hubungi WhatsApp +62 851-8800-9152; konsultasi gratis, lalu penawaran dikirim.
+
+## Tanya jawab
+Diperbarui 23 Oktober 2026.
+
+### Berapa harga template website di Garuda Nexa?
+Harga template website Garuda Nexa saat ini Rp990.000–Rp1.790.000, tergantung template yang Anda pilih. Harga itu dibayar sekali di awal dan sudah termasuk setup, domain, hosting, dan SSL tahun pertama. Mulai tahun ke-2, perpanjangan domain dan hosting ditagih per tahun, dan nominalnya kami informasikan sebelum jatuh tempo. Pembayaran online lewat Midtrans.
+
+### Apa saja yang sudah termasuk dalam harga template?
+Untuk template, harga sudah termasuk template dan setup awal, domain, hosting, serta sertifikat SSL (HTTPS) untuk tahun pertama. Isi website Anda kelola sendiri lewat CMS di Akun Saya. Mulai tahun ke-2, perpanjangan domain dan hosting ditagih per tahun, dan nominalnya kami informasikan sebelum jatuh tempo. Untuk website atau aplikasi custom, domain dan hosting dibahas saat konsultasi.
+
+### Berapa lama proses pembuatan satu website?
+Website dari template aktif setelah pembayaran dikonfirmasi, pesanan kami setujui, dan domain selesai diproses; setiap tahapnya bisa Anda pantau di Akun Saya. Lama proses domain bergantung pada registrar dan jenis domainnya; misalnya .co.id memerlukan dokumen tambahan. Untuk website atau aplikasi mobile custom, jadwal pengerjaan disepakati bersama dan dituliskan di penawaran.
+
+### Bagaimana cara memesan template website?
+Pilih template, klik Pesan, lalu masuk atau daftar akun. Isi data pemesan serta nama domain yang Anda inginkan, kemudian lanjutkan ke pembayaran. Status pesanan bisa Anda pantau kapan saja di halaman Akun Saya, mulai dari menunggu pembayaran sampai website aktif.
+
+### Metode pembayaran apa saja yang bisa dipakai?
+Pembayaran template diproses dengan aman oleh Midtrans. Anda bisa memilih metode pembayaran yang tersedia di Midtrans, yang tampil di halaman pembayaran. Setelah pembayaran berhasil, status pesanan berubah otomatis dan tim kami mulai memeriksa pesanan Anda.
+
+### Bagaimana dengan domain website saya?
+Saat memesan, Anda mengisi nama domain utama dan satu domain alternatif. Setelah pembayaran dikonfirmasi dan pesanan disetujui, tim kami memproses domain tersebut. Bila domain utama tidak tersedia, kami memakai domain alternatif; bila keduanya tidak tersedia dan tidak ada kesepakatan domain lain, pesanan ditolak dan dana dikembalikan penuh.
+
+### Apakah website yang dibuat bisa saya edit sendiri?
+Bisa. Setelah website aktif, buka Akun Saya lalu kelola situs Anda. Lewat CMS Anda dapat mengubah teks, gambar, layanan, galeri, testimoni, dan kontak dengan pratinjau langsung, tanpa perlu keahlian coding. Bagian yang bisa diubah mengikuti template yang Anda pilih.
+
+### Bagaimana dengan sistem keamanannya?
+Website dari template sudah memakai sertifikat SSL (HTTPS) yang termasuk dalam harga tahun pertama, jadi alamatnya diawali https:// dan data yang dikirim pengunjung terenkripsi. Untuk website atau aplikasi mobile custom, kebutuhan keamanan seperti SSL, hosting, dan perlindungan data dibahas saat konsultasi dan dituliskan di penawaran.
+
+### Siapa pemilik konten yang saya buat?
+Isi yang Anda masukkan, seperti teks, gambar, logo, dan data, tetap milik Anda. Untuk template, desain dan kodenya tetap milik Garuda Nexa dan Anda mendapat hak pakai untuk satu situs pada domain pesanan selama layanan aktif. Untuk proyek custom, kepemilikan kode sumber diatur di penawaran tertulis.
+
+### Apa bedanya template dengan jasa custom?
+Template memakai desain siap pakai, sehingga website lebih cepat online dan harganya tertera jelas. Jasa custom dirancang dari nol untuk kebutuhan Anda, baik website maupun aplikasi Android/iOS; kebutuhan dan biayanya dibahas lewat konsultasi gratis, lalu kami kirimkan penawaran sebelum pengerjaan dimulai.
+
+### Bagaimana jika pesanan yang sudah dibayar ditolak?
+Pesanan yang sudah lunas tetapi ditolak (misalnya domain tidak tersedia) mendapat pengembalian dana penuh ke metode pembayaran semula, paling lambat 7 hari kerja setelah pesanan ditolak. Pesanan yang belum dibayar bisa Anda batalkan sendiri tanpa biaya. Pesanan yang sudah disetujui tidak dapat dibatalkan, karena domain, hosting, dan SSL mulai didaftarkan untuk situs Anda.
+
+### Berapa biaya jasa pembuatan website atau aplikasi custom?
+Biaya website dan aplikasi custom kami sampaikan lewat penawaran tertulis setelah konsultasi gratis, karena bergantung pada cakupannya: jumlah halaman atau fitur, integrasi dengan sistem lain, desain, dan kebutuhan server. Penawaran memuat biaya, jadwal, dan tahapan pembayaran, dan pengerjaan baru dimulai setelah Anda menyetujuinya.
+
+### Berapa lama pengerjaan website atau aplikasi custom?
+Jadwal pengerjaan custom disepakati bersama dan dituliskan di penawaran, sesuai cakupan proyeknya. Selama pengerjaan Anda mendapat kabar progres berkala dan ikut menguji hasilnya sebelum rilis. Bila Anda perlu website yang cepat online dengan harga pasti, template siap pakai bisa menjadi pilihan.
+
+### Apa yang perlu saya siapkan sebelum konsultasi?
+Cukup gambaran kebutuhan Anda: tujuan website atau aplikasi, fitur yang diinginkan, contoh referensi bila ada, serta catatan anggaran atau tenggat. Semuanya bisa Anda tulis di formulir Pesan Custom atau lewat WhatsApp. Materi seperti logo, teks, dan foto bisa menyusul saat pengerjaan.
+
+### Berapa kali revisi yang saya dapat untuk proyek custom?
+Jumlah dan cakupan revisi dituliskan di penawaran tertulis, bersama lingkup pekerjaan, biaya, jadwal, dan tahapan pembayaran. Dengan begitu Anda tahu sejak awal apa yang bisa diubah dan kapan. Pengerjaan baru dimulai setelah Anda menyetujui penawaran tersebut.
+
+### Siapa pemilik kode sumber proyek custom?
+Kepemilikan kode sumber proyek custom dituangkan dalam penawaran tertulis yang Anda setujui sebelum pengerjaan dimulai, bersama lingkup pekerjaan, biaya, jadwal, dan revisi. Isi dan data yang Anda masukkan ke website atau aplikasi tetap milik Anda.
+
+### Apakah ada pendampingan setelah website atau aplikasi rilis?
+Ya. Setelah rilis kami tetap mendampingi Anda memakai website atau aplikasi yang kami buat. Bila Anda membutuhkan pemeliharaan rutin, misalnya pembaruan berkala dan penanganan kendala, cakupan dan biayanya bisa dimasukkan ke penawaran atau perjanjian proyek sejak awal.
+
+### Bisakah dibuatkan toko online atau sistem informasi?
+Bisa. Website custom bisa berupa company profile, toko online, sistem informasi, atau aplikasi web sesuai alur kerja Anda. Fitur seperti katalog produk, formulir, panel admin, dan laporan dibahas saat konsultasi, lalu cakupannya dicantumkan di penawaran sebelum pengerjaan dimulai.
+
+### Bisakah satu aplikasi dibuat untuk Android dan iOS sekaligus?
+Bisa. Aplikasi kami bangun untuk Android dan iOS sekaligus dari satu basis kode, sehingga fitur di kedua platform sama dan pembaruannya bisa dirilis bersamaan. Bila Anda hanya membutuhkan salah satu platform, hal itu bisa diatur di penawaran.
+
+### Apakah aplikasi dirilis ke Play Store dan App Store?
+Ya. Kami membantu proses rilis aplikasi ke Google Play Store dan Apple App Store, termasuk menyiapkan berkas aplikasi untuk ditinjau toko. Kepemilikan akun toko aplikasi dan kode sumber dituliskan di penawaran yang Anda setujui sebelum pengerjaan dimulai.
+
+### Apakah aplikasi sudah termasuk server dan panel admin?
+Bila aplikasi membutuhkan server, database, atau panel admin, kebutuhan itu ikut dirancang dan dicantumkan di penawaran beserta biayanya. Banyak aplikasi bisnis, seperti kasir dan absensi, memakai panel web untuk pengelola dan aplikasi mobile untuk pengguna di lapangan.
+
+## Kebijakan
+Diperbarui 21 Oktober 2026.
+
+- Syarat & Ketentuan: https://garudanexa.com/syarat-ketentuan. Ketentuan penggunaan garudanexa.com, pembelian template website, dan permintaan jasa website atau aplikasi mobile custom dari PT Garuda Nexa Bahtera.
+- Kebijakan Privasi: https://garudanexa.com/kebijakan-privasi. Data pribadi yang kami kumpulkan di garudanexa.com, untuk apa dipakai, kepada siapa dibagikan, dan hak Anda sesuai UU Pelindungan Data Pribadi.
+- Kebijakan Pengembalian Dana: https://garudanexa.com/kebijakan-pengembalian-dana. Kapan dana pembelian template website di Garuda Nexa dikembalikan, berapa jumlahnya, ke mana, dan berapa lama prosesnya.
+- Pengembalian dana: Pesanan yang sudah lunas tetapi ditolak (misalnya domain tidak tersedia) mendapat pengembalian dana penuh ke metode pembayaran semula, paling lambat 7 hari kerja setelah pesanan ditolak.
+- Kepemilikan isi: Isi yang dimasukkan pembeli (teks, gambar, logo, dan data) tetap milik pembeli.

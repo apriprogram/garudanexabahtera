@@ -1,33 +1,98 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://garudanexa.com/</loc>
-    <lastmod>2026-10-22</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
+    <loc>https://garudanexa.com/template</loc>
+    <lastmod>2026-10-23</lastmod>
   </url>
   <url>
-    <loc>https://garudanexa.com/pesan-custom</loc>
-    <lastmod>2026-10-22</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://garudanexa.com/template/kategori/company-profile</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/kategori/kecantikan-klinik</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/kategori/olahraga-komunitas</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/kategori/fintech-startup</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/harga</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/kontak</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/tentang</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/jasa-pembuatan-aplikasi-mobile</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/jasa-pembuatan-website</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/</loc>
+    <lastmod>2026-10-23</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/syarat-ketentuan</loc>
     <lastmod>2026-10-21</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://garudanexa.com/kebijakan-privasi</loc>
     <lastmod>2026-10-21</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://garudanexa.com/kebijakan-pengembalian-dana</loc>
     <lastmod>2026-10-21</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/pesan-custom</loc>
+    <lastmod>2026-10-23</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/corporate-nexa</loc>
+    <lastmod>2026-10-23</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/corporate-nexa-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/startup-clean</loc>
+    <lastmod>2026-10-23</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/startup-clean-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/arena-club</loc>
+    <lastmod>2026-10-23</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/arena-club-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/aura-studio</loc>
+    <lastmod>2026-10-23</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/aura-studio-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/finova</loc>
+    <lastmod>2026-10-23</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/finova-preview.webp</image:loc>
+    </image:image>
   </url>
 </urlset>

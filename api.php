@@ -10,6 +10,10 @@ ini_set('memory_limit', '256M');
 ini_set('max_execution_time', '300');
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+// API URLs never belong in search results: robots.txt lets crawlers fetch the public read actions (pages need their
+// data to render), so every response, errors and file downloads included, says noindex. Same header in security.js.
+header('X-Robots-Tag: noindex');
+
 // An error whose message is safe to show to the client (validation, auth, rate limit).
 // $fieldErrors (field => message) is sent as `errors` so forms can show messages under each field.
 class ApiError extends Exception {
@@ -88,6 +92,9 @@ require_once __DIR__ . '/modules/project_files.php';
 require_once __DIR__ . '/modules/hero_media.php';
 // Project documents & agreements, pd_* actions (handle_project_docs_action, docs/platform/PROJECT-DOCS-SPEC.md)
 require_once __DIR__ . '/modules/project_docs.php';
+// Visit sources for track_visit / get_visitor_details: referrer host, landing path, utm_source (visit_source_fields,
+// visit_log, visit_sources; docs/platform/SEO-PLAN.md §5.9)
+require_once __DIR__ . '/modules/visits.php';
 
 load_env_file();
 
@@ -233,7 +240,8 @@ switch ($action) {
         foreach (array_keys($settings) as $key) {
             if (stripos((string)$key, 'pd_') === 0) throw new ApiError('Pengaturan dokumen proyek hanya bisa diubah lewat Pengaturan dokumen.', 403, 'FORBIDDEN');
         }
-        // hero_bg_mode, hero_bg_video, hero_bg_video_poster, hero_images (backend/modules/hero_media.php). First, so a
+        // hero_bg_mode, hero_text_tone, hero_overlay, hero_bg_video, hero_bg_video_poster, hero_images
+        // (backend/modules/hero_media.php). First, so a
         // refused hero value (stale tab, data: video, SVG poster) stops the save before any upload; hero_media_base is
         // the hero video/poster the admin page loaded (compare-and-swap, never stored as a setting)
         $finishHeroMedia = hero_media_prepare_settings($conn, $settings, $input['hero_media_base'] ?? null);
@@ -386,11 +394,11 @@ switch ($action) {
 
     case 'track_visit':
         db_run($conn, "UPDATE visitor_stats SET total_visits = total_visits + 1 WHERE id = 1");
-        // Per-visit row for the device/browser/OS charts, like server.js
+        // Per-visit row for the device/browser/OS charts and the visit source (referrer host, landing path,
+        // utm_source; modules/visits.php), like server.js
         $ua = substr(in_str($input, 'user_agent', $_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 500);
         [$device, $browser, $os] = parse_user_agent($ua);
-        db_run($conn, "INSERT INTO visitor_logs (ip_address, user_agent, device, browser, os, country, visited_at)
-                       VALUES (?, ?, ?, ?, ?, 'Unknown', NOW())", [client_ip(), $ua, $device, $browser, $os]);
+        visit_log($conn, [client_ip(), $ua, $device, $browser, $os], visit_source_fields($input));
         echo json_encode(["success" => true]);
         break;
 
@@ -443,7 +451,9 @@ switch ($action) {
             "devices" => $devices,
             "browsers" => $browsers,
             "os" => $os,
-            "countries" => $countries
+            "countries" => $countries,
+            // Visits per source (chatgpt.com, …, google.*, lainnya, langsung) over 30 days; null before migration 010
+            "sources" => visit_sources($conn)
         ]);
         break;
 

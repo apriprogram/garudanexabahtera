@@ -25,6 +25,9 @@ const PF_STATUS_LABEL = [
 ];
 const PF_DOMAIN_PATTERN = '/^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/';
 const PF_SLUG_PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
+// Slugs no template may use because the public page /template/{slug} belongs to something else:
+// /template/kategori/{category} are the category pages (docs/platform/SEO-PLAN.md §2). Same list in templates.js.
+const PF_RESERVED_SLUGS = ['kategori'];
 const PF_TEMPLATE_CODE_PATTERN = '/^[a-z0-9][a-z0-9-]{1,59}$/';
 const PF_CONTENT_MAX_BYTES = 524288;      // site content JSON after images became paths (512 KB)
 const PF_SITE_IMAGE_MAX_BYTES = 2097152;  // one image inside site content (2 MB)
@@ -598,6 +601,10 @@ function pf_admin_save_template(mysqli $conn, array $input, ?array $user): array
     }
     $status = in_str($input, 'status', 'draft');
     if (!in_array($status, ['draft', 'published'], true)) $errors['status'] = 'Status harus draft atau published.';
+    // Template terbit tanpa harga tidak bisa dibeli (pesanan Rp0 ditolak) dan membatalkan prerender saat deploy
+    if ($status === 'published' && !isset($errors['price']) && (float)$price <= 0) {
+        $errors['price'] = 'Template yang terbit harus punya harga di atas 0. Simpan sebagai draft bila harganya belum ada.';
+    }
     $sortOrder = in_int($input, 'sort_order');
     $preview = $input['preview_image'] ?? null;
     if ($preview !== null && $preview !== '' && !pf_is_image_ref($preview)) {
@@ -611,14 +618,16 @@ function pf_admin_save_template(mysqli $conn, array $input, ?array $user): array
     $slug = strtolower(trim(in_str($input, 'slug')));
     if ($slug !== '' && (strlen($slug) > 120 || !preg_match(PF_SLUG_PATTERN, $slug))) {
         $errors['slug'] = 'Slug hanya huruf kecil, angka, dan tanda hubung (contoh: company-profile-modern).';
+    } elseif (in_array($slug, PF_RESERVED_SLUGS, true)) {
+        $errors['slug'] = "Slug \"$slug\" tidak bisa dipakai karena alamat /template/$slug sudah dipakai halaman lain. Pilih slug lain.";
     }
     pf_validate($errors);
 
     if ($slug === '') {
-        // Automatic slug from the name, made unique with -2, -3, ...
+        // Automatic slug from the name, made unique with -2, -3, ... (a reserved slug also gets a number)
         $base = pf_slugify($name);
         $slug = $base;
-        for ($n = 2; db_one($conn, "SELECT id FROM templates WHERE slug = ? AND id <> ? LIMIT 1", [$slug, $id]); $n++) {
+        for ($n = 2; in_array($slug, PF_RESERVED_SLUGS, true) || db_one($conn, "SELECT id FROM templates WHERE slug = ? AND id <> ? LIMIT 1", [$slug, $id]); $n++) {
             $slug = substr($base, 0, 110) . '-' . $n;
         }
     } elseif (db_one($conn, "SELECT id FROM templates WHERE slug = ? AND id <> ? LIMIT 1", [$slug, $id])) {

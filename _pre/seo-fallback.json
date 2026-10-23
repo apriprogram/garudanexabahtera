@@ -1,0 +1,78 @@
+{
+  "builtAt": "2026-10-23T08:36:30.508Z",
+  "origin": "https://garudanexa.com",
+  "brandName": "Garuda Nexa",
+  "organizationId": "https://garudanexa.com/#organization",
+  "globalJsonLd": [
+    {
+      "@type": "Organization",
+      "@id": "https://garudanexa.com/#organization",
+      "name": "Garuda Nexa",
+      "legalName": "PT Garuda Nexa Bahtera",
+      "url": "https://garudanexa.com/",
+      "logo": {
+        "@type": "ImageObject",
+        "@id": "https://garudanexa.com/#logo",
+        "url": "https://garudanexa.com/brand/logo-512.png",
+        "contentUrl": "https://garudanexa.com/brand/logo-512.png",
+        "width": 512,
+        "height": 512,
+        "caption": "Garuda Nexa"
+      },
+      "image": {
+        "@id": "https://garudanexa.com/#logo"
+      },
+      "email": "info@garudanexa.com",
+      "telephone": "+6285188009152",
+      "areaServed": {
+        "@type": "Country",
+        "name": "Indonesia"
+      },
+      "contactPoint": [
+        {
+          "@type": "ContactPoint",
+          "contactType": "sales",
+          "telephone": "+6285188009152",
+          "email": "info@garudanexa.com",
+          "areaServed": "ID",
+          "availableLanguage": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://garudanexa.com/#website",
+      "name": "Garuda Nexa",
+      "alternateName": [
+        "PT Garuda Nexa Bahtera",
+        "garudanexa.com"
+      ],
+      "url": "https://garudanexa.com/",
+      "inLanguage": "id-ID",
+      "publisher": {
+        "@id": "https://garudanexa.com/#organization"
+      }
+    }
+  ],
+  "defaultOgImage": "https://garudanexa.com/og/default.jpg",
+  "categorySlugs": [
+    "company-profile",
+    "kecantikan-klinik",
+    "olahraga-komunitas",
+    "fintech-startup"
+  ],
+  "categoryNames": {
+    "company-profile": "Company profile",
+    "kecantikan-klinik": "Klinik kecantikan & salon",
+    "olahraga-komunitas": "Klub olahraga",
+    "fintech-startup": "Fintech & startup"
+  },
+  "pricingIncludes": [
+    "Template website + setup awal",
+    "Domain tahun pertama",
+    "Hosting tahun pertama",
+    "Sertifikat SSL (HTTPS) tahun pertama"
+  ]
+}

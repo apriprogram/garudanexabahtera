@@ -8,6 +8,9 @@
 //   hero_images           JSON array of image paths in slide order; new images arrive as data:image/... URIs
 //   hero_bg_video         path of a video stored by upload_hero_video, '' = none; never a data: URI
 //   hero_bg_video_poster  path of the poster image, '' = none; a new poster arrives as a data:image/... URI
+//   hero_text_tone        hero text over an image/video: 'auto' (default) | 'light' | 'dark'; anything else → 'auto'
+//   hero_overlay          minimum overlay behind the hero text in percent, an integer 0..80 as a string (default 40):
+//                         a number or plain decimal text ("55", " 40.6") is rounded and clamped, anything else → '40'
 //
 // upload_hero_video (POST /api.php?action=upload_hero_video, staff token): the body is the raw file, not JSON, base64
 // or multipart; api.php skips its JSON read for this action and the body is streamed from php://input into a dot
@@ -31,6 +34,12 @@
 // safe_link, delete_local_asset.
 
 const HM_BG_MODES = ['default', 'image', 'video'];
+// hero_text_tone values (HERO_TEXT_TONES in src/components/sections/hero/heroContrast.ts) and hero_overlay limits
+const HM_TEXT_TONES = ['auto', 'light', 'dark'];
+const HM_OVERLAY_DEFAULT = 40;
+const HM_OVERLAY_MAX = 80;
+// Plain decimal number with spaces/tabs/newlines around it: no sign other than '-', no exponent, no thousands separator
+const HM_OVERLAY_NUMBER = '/^[ \t\n\r]*(-?[0-9]+(?:\.[0-9]+)?)[ \t\n\r]*$/D';
 // ISO-BMFF major brands of MP4 files that browsers play; 'qt  ' (QuickTime .mov) is deliberately not one of them
 const HM_MP4_BRANDS = ['isom', 'iso2', 'iso3', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'dash', 'M4V ', 'mmp4', 'MSNV'];
 // Names this module gives its files (file name only, directly in assets/bg/); the sweep deletes nothing else
@@ -150,6 +159,25 @@ function hm_bg_mode($value): string {
     return (is_string($value) && in_array($value, HM_BG_MODES, true)) ? $value : 'default';
 }
 
+// hero_text_tone as stored: one of HM_TEXT_TONES, anything else (missing, empty, unknown, not a string) → 'auto'
+function hm_text_tone($value): string {
+    return (is_string($value) && in_array($value, HM_TEXT_TONES, true)) ? $value : 'auto';
+}
+
+// hero_overlay as stored: a JSON number (not NaN) or plain decimal text, rounded half away from zero and clamped to
+// 0..HM_OVERLAY_MAX, as an integer string; anything else → HM_OVERLAY_DEFAULT. Clamped before the int cast, so a huge
+// value (or INF) never overflows. Same as heroOverlay() in hero_media.js.
+function hm_overlay($value): string {
+    if ((is_int($value) || is_float($value)) && !is_nan((float)$value)) {
+        $number = (float)$value;
+    } elseif (is_string($value) && preg_match(HM_OVERLAY_NUMBER, $value, $m)) {
+        $number = (float)$m[1];
+    } else {
+        return (string)HM_OVERLAY_DEFAULT;
+    }
+    return (string)(int)max(0.0, min((float)HM_OVERLAY_MAX, round($number)));
+}
+
 function hm_is_data_uri($value): bool {
     return is_string($value) && (bool)preg_match('/^\s*data:/i', $value);
 }
@@ -253,7 +281,7 @@ function hm_write_image(array $image, string $stem, array &$written): string {
 }
 
 // Normalizes the hero keys of an update_settings payload in place, before anything is saved: hero_bg_mode → one of
-// HM_BG_MODES, hero_bg_video → a link (a data: URI is refused with 400), hero_bg_video_poster → a new data: image is
+// HM_BG_MODES, hero_text_tone → one of HM_TEXT_TONES, hero_overlay → '0'..'80', hero_bg_video → a link (a data: URI is refused with 400), hero_bg_video_poster → a new data: image is
 // stored as /assets/bg/hero_poster_<hex>.<ext>, other values pass the link check, hero_images → stored paths.
 // Keys that were not sent stay absent. $base: hero_media_base of the request (see hm_check_media), null = no check.
 // Returns function (bool $saved): call it once the request is over, true after a successful save (garbage-collect
@@ -265,6 +293,8 @@ function hero_media_prepare_settings(mysqli $conn, array &$settings, $base = nul
     // image decoded and checked, then the stale-tab and existence checks against the stored values
     if ($has('hero_bg_video')) $settings['hero_bg_video'] = hm_video_link($settings['hero_bg_video']);
     if ($has('hero_bg_mode')) $settings['hero_bg_mode'] = hm_bg_mode($settings['hero_bg_mode']);
+    if ($has('hero_text_tone')) $settings['hero_text_tone'] = hm_text_tone($settings['hero_text_tone']);
+    if ($has('hero_overlay')) $settings['hero_overlay'] = hm_overlay($settings['hero_overlay']);
     $poster = null;
     if ($has('hero_bg_video_poster')) {
         if (hm_is_data_uri($settings['hero_bg_video_poster'])) $poster = hm_raster_image($settings['hero_bg_video_poster'], HM_POSTER_EXTS);

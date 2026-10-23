@@ -1,1 +1,0 @@
-import{Jn as e,Zn as t}from"./index-BRiQkxTJ.js";var n=t(e(),1);function r(e){(0,n.useEffect)(()=>{if(!e)return;let t=document.title;return document.title=e,()=>{document.title=t}},[e])}export{r as t};
