@@ -255,12 +255,12 @@ export const preloadSettings = (settings) =>
   Object.fromEntries(Object.entries(settings ?? {}).filter(([key]) => !PRELOAD_OMIT_SETTINGS.includes(key)));
 
 /**
- * get_public_projects untuk gn-preload: hanya proyek yang memang boleh tampil (isPresentableProject, filter yang sama
- * dengan Projects.tsx). Proyek berisi teks uji/Lorem ipsum yang dicentang "Tampilkan di website" tidak ikut ke HTML
- * mentah. Hasil render sama: Projects.tsx menyaring daftar yang sama dengan fungsi yang sama.
+ * get_public_projects untuk gn-preload: hanya proyek yang benar-benar tampil (`select` = presentableProjects, fungsi
+ * yang sama dengan Projects.tsx). Proyek berisi teks uji/Lorem ipsum, atau satu-satunya proyek layak (beranda lalu
+ * memakai portofolio cadangan), tidak ikut ke HTML mentah yang dibaca crawler AI. Hasil render sama.
  */
-export const preloadProjects = (body, isPresentable) =>
-  body && Array.isArray(body.projects) ? { ...body, projects: body.projects.filter((project) => isPresentable(project)) } : body;
+export const preloadProjects = (body, select) =>
+  body && Array.isArray(body.projects) ? { ...body, projects: select(body.projects) } : body;
 
 /** Halaman utuh: head + isi #root + data preload. */
 export function composePage(shell, { headTags: pageHead, appHtml: rawApp, preload }) {
@@ -506,7 +506,7 @@ export async function prerender({ root, outDir, deployDir, strict }) {
       url === ssr.PRELOAD_URLS.settings
         ? preloadSettings(api[url])
         : url === ssr.PRELOAD_URLS.projects
-          ? preloadProjects(api[url], ssr.isPresentableProject)
+          ? preloadProjects(api[url], ssr.presentableProjects)
           : api[url];
     return Object.fromEntries(urls.map((url) => [url, trim(url)]));
   };

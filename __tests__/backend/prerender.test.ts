@@ -360,9 +360,9 @@ describe('server render (src/entry-server.tsx)', () => {
     });
     const junk = { id: 9, name: '[TEST verif-ui] Aplikasi', service_type: 'mobile_app', image: '/x.png', description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do.' };
     const body = { success: true, projects: [good(1, 'Koperasi Maju'), junk, good(2, 'Sekolah Harapan')] };
-    const trimmed = preloadProjects(body, ssr.isPresentableProject);
+    const trimmed = preloadProjects(body, ssr.presentableProjects);
     expect(trimmed.projects.map((p: { id: number }) => p.id)).toEqual([1, 2]);
-    expect(preloadProjects(undefined, ssr.isPresentableProject)).toBeUndefined();
+    expect(preloadProjects(undefined, ssr.presentableProjects)).toBeUndefined();
     const withProjects = (projects: unknown) => {
       const preload = fixturePreload('/');
       return { ...preload, api: { ...preload.api, [ssr.PRELOAD_URLS.projects]: projects } };
@@ -373,6 +373,29 @@ describe('server render (src/entry-server.tsx)', () => {
     expect(lean.html).toBe(full.html);
     expect(full.html).toContain('Koperasi Maju');
     expect(full.html).not.toContain('[TEST verif-ui]');
+  }, 30_000);
+
+  it('drops a single presentable project from gn-preload: the home page shows the portfolio fallback instead', async () => {
+    const lone = {
+      id: 5,
+      name: 'Portal Investor Samudra',
+      service_type: 'website',
+      image: '/assets/dokumen-client/logo/p5.png',
+      description: 'Website corporate dan portal investor dengan hosting dedicated dan SLA pemeliharaan 12 bulan.',
+    };
+    const body = { success: true, projects: [lone] };
+    const trimmed = preloadProjects(body, ssr.presentableProjects);
+    expect(trimmed).toEqual({ success: true, projects: [] });
+    expect(JSON.stringify(trimmed)).not.toContain('Samudra');
+    const withProjects = (projects: unknown) => {
+      const preload = fixturePreload('/');
+      return { ...preload, api: { ...preload.api, [ssr.PRELOAD_URLS.projects]: projects } };
+    };
+    const full = await ssr.render('/', withProjects(body));
+    const lean = await ssr.render('/', withProjects(trimmed));
+    expect(full.errors).toEqual([]);
+    expect(lean.html).toBe(full.html);
+    expect(full.html).not.toContain('Samudra');
   }, 30_000);
 
   it('builds the seo.php context from the same TypeScript head (Organization/WebSite nodes)', () => {

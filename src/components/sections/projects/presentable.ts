@@ -26,3 +26,13 @@ export const projectIssues = (project: ProjectLike): string[] => {
 
 /** Proyek layak tampil di beranda: ada gambar, deskripsi ≥ 40 karakter, bukan teks uji. */
 export const isPresentableProject = (project: ProjectLike): boolean => projectIssues(project).length === 0;
+
+/**
+ * Proyek yang benar-benar tampil di #projects: yang layak, atau [] bila kurang dari MIN_PRESENTABLE_PROJECTS (beranda
+ * lalu memakai portofolio cadangan). Dipakai Projects.tsx dan gn-preload prerender, supaya HTML mentah tidak memuat
+ * proyek yang tidak terlihat pengunjung.
+ */
+export const presentableProjects = <T extends ProjectLike>(projects: readonly T[]): T[] => {
+  const presentable = projects.filter(isPresentableProject);
+  return presentable.length >= MIN_PRESENTABLE_PROJECTS ? presentable : [];
+};

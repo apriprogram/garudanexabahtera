@@ -7,7 +7,7 @@ import { readList, useSiteSettings } from '../../hooks/useSiteSettings';
 import { Reveal } from '../ui/Reveal';
 import { SectionHeading } from '../ui/SectionHeading';
 import { LogoMark } from '../ui/LogoMark';
-import { MIN_PRESENTABLE_PROJECTS, isPresentableProject } from './projects/presentable';
+import { presentableProjects } from './projects/presentable';
 
 /** Satu entri `portfolio_data` lama (Pengaturan website > Portofolio), dipakai sebagai cadangan. */
 interface PortfolioItem {
@@ -98,9 +98,9 @@ const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = 
   let items: ProjectCardData[] = [];
   if (state.status === 'done') {
     // Teks uji (Lorem ipsum, "Coba text") tidak boleh sampai ke beranda; satu proyek saja juga tampak sepi
-    const presentable = state.projects.filter(isPresentableProject);
+    const presentable = presentableProjects(state.projects);
     items =
-      presentable.length >= MIN_PRESENTABLE_PROJECTS
+      presentable.length > 0
         ? presentable.map((project) => ({
             key: `p-${project.id}`,
             title: project.name,

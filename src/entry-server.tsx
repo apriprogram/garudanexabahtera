@@ -28,7 +28,7 @@ export { getTemplatePricing } from './hooks/useSiteSettings';
 export { COMPANY_FACTS } from './lib/companyFacts';
 export { listArticles } from './content/panduan';
 export { faqForLlms } from './content/faq';
-export { isPresentableProject } from './components/sections/projects/presentable';
+export { isPresentableProject, presentableProjects } from './components/sections/projects/presentable';
 export { PRELOAD_ELEMENT_ID, PRELOAD_URLS, seoDataFromApi, type PreloadData } from './lib/preload';
 
 /**
