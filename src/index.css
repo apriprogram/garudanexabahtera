@@ -44,7 +44,8 @@
   --color-success-700: #067647;
 
   /*
-   * Teks hero di atas gambar/video latar bernada TERANG (lapisan obsidian di belakangnya, lihat .hero-scrim).
+   * Teks hero di atas gambar/video latar bernada TERANG (lapisan obsidian hanya bila admin memasangnya, lihat
+   * .hero-scrim; tanpa bayangan teks).
    * Nilai sama persis dengan COLORS di src/components/sections/hero/heroContrast.ts (dicek heroContrast.test.ts).
    * on-media = judul & teks tombol garis; on-media-muted = poin; on-media-accent = kata aksen judul (= brand-200).
    */
@@ -280,7 +281,7 @@
     outline-offset: 2px;
   }
 
-  /* Teks hero bernada terang (di atas lapisan gelap): cincin fokus putih, biru brand tidak terlihat di sana */
+  /* Teks hero bernada terang (di atas gambar/video gelap): cincin fokus putih, biru brand tidak terlihat di sana */
   [data-hero-tone='light'] :focus-visible {
     outline-color: var(--color-on-media);
   }
@@ -354,8 +355,8 @@
   }
 
   /*
-   * Versi btn-outline-clear untuk teks hero bernada terang (gambar/video gelap + lapisan obsidian): garis & teks putih,
-   * tanpa latar; hover sedikit menerangi.
+   * Versi btn-outline-clear untuk teks hero bernada terang (gambar/video gelap): garis & teks putih, tanpa latar;
+   * hover sedikit menerangi.
    */
   .btn-outline-on-media {
     @apply bg-transparent text-on-media ring-1 ring-inset ring-on-media/45 hover:bg-on-media/10 hover:ring-on-media/70 active:bg-on-media/15;
@@ -578,9 +579,10 @@
 }
 
 /*
- * Lapisan keterbacaan hero di atas gambar/video (dirender HeroMedia di atas media, di bawah pudar bawah; nilai dari
- * useHeroLegibility / heroContrast.ts): --scrim-rgb = warna (obsidian "18 22 32" untuk teks terang, putih untuk teks
- * gelap), --scrim-a = alpha di belakang blok teks, --scrim-end = tepi blok teks (px dari kiri / atas section).
+ * Lapisan hero di atas gambar/video, HANYA bila admin memasangnya (`hero_overlay` > 0; 0 = tidak dirender sama
+ * sekali). Dirender HeroMedia di atas media, di bawah pudar bawah; nilai dari useHeroLegibility / heroContrast.ts:
+ * --scrim-rgb = warna (obsidian "18 22 32" untuk teks terang, putih untuk teks gelap), --scrim-a = alpha di belakang
+ * blok teks = setting admin persis, --scrim-end = tepi blok teks (px dari kiri / atas section).
  * Paling pekat di sisi teks (HP & tablet: atas; >= 1024px: kiri), lalu melandai tenang ke alpha x 0,4 agar gambar
  * tetap terlihat. Datar: tanpa blur, tanpa bayangan. Alpha berubah halus (0,6 detik), langsung untuk reduced motion.
  */

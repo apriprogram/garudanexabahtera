@@ -41,12 +41,13 @@ konsep "Order. Balance. Clarity."), diterapkan dengan brand Garuda Nexa:
 - **Datar, hampir tanpa shadow.** Permukaan putih + garis tipis di dalam (`ring-1 ring-inset ring-line`) di atas latar
   putih / abu sangat muda. `shadow-float` HANYA untuk lapisan melayang (dropdown, popover, modal, toast, tombol WhatsApp).
   `shadow-soft` sudah dinetralkan (`--shadow-soft: 0 0 #0000`, tanpa bayangan); nama kelasnya tetap ada agar halaman lama
-  tidak rusak, tetapi jangan dipakai lagi. Tepi kartu = `ring-1 ring-inset ring-line`.
+  tidak rusak, tetapi jangan dipakai lagi. Tepi kartu = `ring-1 ring-inset ring-line`. Hero beranda: tanpa bayangan
+  sama sekali (teks, tombol, bingkai showcase; lihat "Latar hero").
 - **Satu aksen**: biru brand (`primary`). Pemetaan dari palet CPNS: cobalt → `primary`/`brand-*`, obsidian → `fg`
   (teks, chip nomor, ikon aktif), mist → `line`/`muted`/`subtle`, ghost → `alt`. Komposisi ±80% netral, ±15% biru brand.
 - **Satu-satunya gradien**: cahaya biru brand lembut (`glow-brand`, kanvas hero, CTA). Tidak ada blok gelap; CTA `#kontak` biru brand.
-  Pengecualian: lapisan keterbacaan hero di atas gambar/video admin (`.hero-scrim`, lihat "Latar hero"), yang hanya
-  setebal yang diperlukan agar teks terbaca.
+  Pengecualian: lapisan hero di atas gambar/video admin (`.hero-scrim`, lihat "Latar hero"), hanya bila admin
+  memasangnya dan persis setebal setting `hero_overlay` (bawaan 0 = tanpa lapisan).
 - Ruang lega, satu fokus per kartu, gerak tenang (`ease-calm`), selalu menghormati `prefers-reduced-motion`.
 
 Tidak ada latar gelap dan tidak ada toggle tema. Token `:root` sudah terang; kelas `light-theme` di `<body>` (dipakai
@@ -65,7 +66,7 @@ mode terang panel admin) tidak mengubah apa pun di halaman publik. Jangan memaka
 | `ring-line` / `border-line` | `#E3E6EE` | Garis kartu, pemisah (mist-100) |
 | `ring-line-strong` / `border-line-strong` | `#CBD0DB` | Garis input, hover (mist) |
 | `bg-primary` / `text-primary` | `#211FFE` | Aksi, tautan, kata kunci judul (cobalt) |
-| `text-on-media` | `#FFFFFF` | Teks hero bernada terang di atas lapisan obsidian (judul, teks tombol garis) |
+| `text-on-media` | `#FFFFFF` | Teks hero bernada terang di atas gambar/video gelap (judul, teks tombol garis) |
 | `text-on-media-muted` | `#EEF0F5` | Poin hero bernada terang |
 | `text-on-media-accent` | `#C2C1FF` (= brand-200) | Kata aksen judul hero bernada terang (3:1 sebagai teks besar) |
 | `shadow-float` | dari admin.css | HANYA lapisan melayang |
@@ -94,7 +95,7 @@ Token `on-media*` hanya untuk teks hero di atas gambar/video; nilainya sama pers
 | `btn` + `btn-primary` | Biru brand solid | Satu aksi utama per area (Pesan, Bayar, Simpan) |
 | `btn` + `btn-outline` | Putih + garis tipis (CPNS secondary) | Aksi netral: Batal, Kembali, Lihat Demo (halaman template) |
 | `btn` + `btn-outline-clear` | Transparan, garis `fg/20` (di atas putih setara `line-strong`, tetap terlihat di atas foto/video latar) → hover `fg/45`, tanpa latar | Aksi kedua di atas visual: "Lihat demo" & "Konsultasi Gratis" di hero (tinggi sama dengan tombol utama) |
-| `btn` + `btn-outline-on-media` | Transparan, garis & teks putih (`on-media/45`) → hover `on-media/10` | Tombol kedua hero bernada terang (gambar/video gelap + lapisan obsidian) |
+| `btn` + `btn-outline-on-media` | Transparan, garis & teks putih (`on-media/45`) → hover `on-media/10` | Tombol kedua hero bernada terang (gambar/video gelap) |
 | `btn` + `btn-outline-primary` | Putih, garis & teks biru | Aksi kedua yang tetap menonjol |
 | `btn` + `btn-secondary` | Latar biru muda, teks biru | Aksi tonal |
 | `btn` + `btn-soft` | Latar abu lembut tanpa garis | Aksi tersier di kartu |
@@ -223,40 +224,45 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
     tampil sebagai gambar (tanpa poster / poster rusak: kanvas bawaan).
   - URL hanya path situs (`/…`, bukan `//`) atau `http(s)://` (S3); data:/blob:/javascript: diabaikan. Mode gambar tanpa
     gambar valid / mode video tanpa video valid → bawaan.
-  - **Teks selalu terbaca di atas gambar/video** (permintaan pemilik 2026-10-22, menggantikan "media tampil penuh
-    tanpa lapisan"): `hero/useHeroLegibility.ts` mengukur latar DI BELAKANG BLOK TEKS lalu memilih nada teks dan tebal
-    lapisan (`hero/heroContrast.ts`, murni & teruji; sampel di `hero/heroSampling.ts`):
+  - **Teks di atas gambar/video tanpa menutupi media** (permintaan pemilik 2026-10-23, menggantikan lapisan otomatis
+    2026-10-22): gambar/video TIDAK PERNAH ditutup lapisan gelap/putih yang tidak dipilih admin. `hero/useHeroLegibility.ts` mengukur latar DI BELAKANG BLOK TEKS lalu memilih nada teks
+    (`hero/heroContrast.ts`, murni & teruji; sampel di `hero/heroSampling.ts`):
     - sampel = area kolom teks + 16px (desktop: kolom kiri; HP & tablet: tumpukan teks di atas) dengan potongan
       `object-fit: cover` yang sama dengan halaman, digambar ke canvas maks. 48px; tiap piksel dicampur lapisan dengan
       warna aslinya, lalu dipakai persentil 95% (teks terang: 95% piksel paling gelap harus lolos) / 5% (teks gelap);
       titik kecil ≤ 5% diabaikan, pita terang/gelap tidak;
-    - target WCAG: poin & tombol garis ≥ 4,5:1, judul (teks besar) ≥ 3:1. Nada **terang** = judul `text-on-media`,
-      aksen `text-on-media-accent`, poin `text-on-media-muted`, centang `bg-primary` putih, toggle `bg-fg/70`
-      bergaris `on-media/20`, tombol kedua `btn-outline-on-media`, cincin fokus putih (`[data-hero-tone='light']`),
-      di atas lapisan obsidian `#121620`. Nada **gelap** = tampilan bawaan (keterangan "· nama template" memakai
-      `text-muted`, bukan `text-subtle`) di atas lapisan putih. Tombol utama tetap biru brand; kartu showcase & rail
-      langkah punya permukaan sendiri. Latar bawaan (kanvas titik) tidak berubah dan tanpa lapisan;
+    - target WCAG: poin & tombol garis ≥ 4,5:1, judul (teks besar) ≥ 3:1; dipakai untuk memilih nada dan untuk
+      lencana + peringatan di admin, tidak pernah untuk menebalkan lapisan. Nada **terang** = judul `text-on-media`,
+      aksen `text-on-media-accent`, poin `text-on-media-muted`, centang `bg-primary` putih, toggle `bg-fg/70` bergaris
+      `on-media/20`, tombol kedua `btn-outline-on-media`, cincin fokus putih (`[data-hero-tone='light']`). Nada
+      **gelap** = tampilan bawaan (keterangan "· nama template" memakai `text-muted`, bukan `text-subtle`). Tombol
+      utama tetap biru brand; kartu showcase & rail langkah punya permukaan sendiri. Latar bawaan (kanvas titik) tidak
+      berubah, tanpa lapisan;
+    - **tanpa bayangan apa pun di hero** (permintaan pemilik 2026-10-23): tanpa `text-shadow`/pendar, `box-shadow`
+      bayangan, atau `drop-shadow` di judul, kata aksen, poin, toggle mode, tombol, bingkai showcase, rail langkah,
+      maupun tombol tayangan/jeda. Permukaan datar; garis tipis (`ring-1 ring-inset`, `border`) boleh. Teks yang kurang
+      terbaca ditangani admin (lapisan atau warna teks), bukan dengan bayangan;
     - setting admin `hero_text_tone` (`auto` bawaan | `light` | `dark`, dicocokkan persis) dan `hero_overlay` (persen
-      bulat 0-80, bawaan 40, dinormalkan sama di kedua backend). Lapisan admin = **minimum**: dinaikkan otomatis
-      sampai target tercapai, maks. 85%. `auto` memilih nada yang butuh lapisan paling tipis (seri → terang);
-      `light`/`dark` memaksa nadanya, lapisannya tetap dinaikkan bila perlu;
-    - tayangan 2+ gambar: semua gambar diukur, dipakai kasus terburuk (nada & lapisan tidak berganti antar-slide).
-      Video: poster, atau frame pertama (`loadeddata`) bila tanpa poster;
-    - **cadangan aman** selama mengukur dan bila tidak bisa diukur (gambar lintas domain tanpa CORS, canvas tercemar,
-      video tanpa frame, Save-Data dengan 2+ gambar): teks terang + lapisan 62,4% (lolos bahkan di atas putih polos,
-      ≥ 55%); nada `dark` yang dipaksa: lapisan putih 77% (lolos di atas hitam polos). Tidak pernah ada kilasan teks
-      yang tidak terbaca;
+      bulat 0-80, **bawaan 0**, dinormalkan sama di kedua backend). Lapisan admin dipakai **persis**, website tidak
+      pernah menebalkannya; **0 = tanpa elemen lapisan sama sekali**, gambar/video tampil penuh. `auto` memilih nada
+      yang paling terbaca di lapisan itu (skor = kontras terendah ÷ target; seri → terang); `light`/`dark` memaksa
+      nadanya;
+    - tayangan 2+ gambar: semua gambar diukur, dipakai kasus terburuk (nada tidak berganti antar-slide). Video:
+      poster, atau frame pertama (`loadeddata`) bila tanpa poster;
+    - **cadangan** selama mengukur, di HTML prerender, dan bila tidak bisa diukur (gambar lintas domain tanpa CORS,
+      canvas tercemar, video tanpa frame, Save-Data dengan 2+ gambar): teks terang (gelap bila dipaksa admin) dengan
+      lapisan admin persis. HTML prerender = render hidrasi pertama, jadi tanpa kilasan lapisan gelap;
     - diukur ulang saat tata letak berganti (640px / 1024px), lebar jendela berubah, mode hero berganti (Template ↔
-      Custom: di HP blok teks mode Custom lebih tinggi, tombolnya harus tetap di dalam lapisan pekat), atau ukuran blok
-      teks / section berubah (ResizeObserver); gambar tidak diunduh ulang.
+      Custom: di HP blok teks mode Custom lebih tinggi), atau ukuran blok teks / section berubah (ResizeObserver);
+      gambar tidak diunduh ulang.
       Media habis (semua gambar / video + poster gagal) → kanvas bawaan dan teks bawaan.
-  - Lapisan `.hero-scrim` (di dalam lapisan media, di atas gambar, di bawah pudar bawah): datar, tanpa blur/bayangan;
-    pekat (`--scrim-a`) dari tepi sampai tepi blok teks (`--scrim-end`: ≥ 1024px tepi kanan kolom teks, di bawahnya
-    tepi bawah tumpukan teks), lalu melandai tenang ke 40% dari alpha itu agar gambar tetap terlihat. Alpha berubah
-    halus 0,6 detik (`@property --scrim-a`), langsung untuk reduced motion.
-  - Pudar bawah ke `canvas` agar menyatu dengan strip layanan: tinggi `h-40` (160px), dikecilkan otomatis (min. 64px)
-    supaya selalu berakhir 8px di bawah blok teks. Tanpa pudar atas. Navbar memakai putih kaca sejak di puncak
-    beranda selama latar hero berupa gambar/video.
+  - Lapisan `.hero-scrim` HANYA bila `hero_overlay` > 0 (di dalam lapisan media, di atas gambar, di bawah pudar
+    bawah): datar, tanpa blur/bayangan; pekat (`--scrim-a` = setting admin) dari tepi sampai tepi blok teks
+    (`--scrim-end`: ≥ 1024px tepi kanan kolom teks, di bawahnya tepi bawah tumpukan teks), lalu melandai tenang ke 40%
+    dari alpha itu. Alpha berubah halus 0,6 detik (`@property --scrim-a`), langsung untuk reduced motion.
+  - Pudar bawah ke `canvas` agar menyatu dengan strip layanan (bukan lapisan gelap, selalu ada, juga di 0%): tinggi
+    `h-40` (160px), dikecilkan otomatis (min. 64px) supaya selalu berakhir 8px di bawah blok teks. Tanpa pudar atas.
+    Navbar memakai putih kaca sejak di puncak beranda selama latar hero berupa gambar/video.
   - Tombol jeda bulat 40px (`bg-surface/90` + garis tipis, ikon `Pause`/`Play`, label "Jeda latar" / "Putar latar",
     WCAG 2.2.2) selama masih ada 2+ gambar yang bisa tampil, atau video yang masih bisa diputar, di kiri bawah
     `container-site` (kanan bawah tertutup tombol WhatsApp melayang di ≥ 640px). Berhenti otomatis saat hero di luar
@@ -296,11 +302,14 @@ Gaya "Calm Workspace" dari BELAJAR CPNS (`E:\_____________\WEBSITE\GARUDANEXA\Be
   berganti tiap 6 detik). Mode Video: unggah MP4/WebM maks. 30 MB (`upload_hero_video`, dengan progres), poster dibuat
   dari salah satu frame di browser, pratinjau, ganti & hapus. Mode Gambar & Video menampilkan "Teks di atas latar"
   (`hero/HeroLegibilityField.tsx`): kontrol segmen "Warna teks" Otomatis / Terang / Gelap (`hero_text_tone`), slider
-  "Lapisan" 0-80% dengan nilainya (`hero_overlay`, minimum), dan pratinjau langsung: gambar pertama (atau sampul
-  video) dengan lapisan + contoh judul & poin dalam nada yang dipakai, lencana kontras dari `heroContrast.ts`
-  ("Kontras 7,1:1 · Terbaca" / "Kurang terbaca", dihitung dari semua gambar dengan tata letak desktop 1366×900) dan
-  ringkasan ("Website memakai teks terang dengan lapisan 62% (dinaikkan dari 40% agar tetap terbaca)."). Semua
-  tersimpan lewat "Simpan semua perubahan". Detail tampilan di website: "Latar hero" di bagian Beranda.
+  "Lapisan" 0-80% dengan nilainya (`hero_overlay`, dipakai persis: "0% = tanpa lapisan, video/gambar tampil penuh"),
+  dan pratinjau langsung yang sama dengan website: gambar pertama (atau sampul video), lapisan hanya bila > 0%, contoh
+  judul & poin dalam nada yang dipakai (datar, tanpa bayangan; tanpa gambar/sampul tidak ada pratinjau),
+  lencana kontras dari `heroContrast.ts` ("Kontras 7,1:1 · Terbaca" / "Kurang terbaca", dihitung dari semua gambar dengan tata letak desktop 1366×900) dan ringkasan
+  ("Website memakai teks terang tanpa lapisan (gambar/video tampil penuh)."). Kurang terbaca → `Notice` peringatan
+  "Teks mungkin sulit dibaca" dengan saran ("Coba naikkan lapisan ke 35% atau pilih warna teks Gelap dengan lapisan
+  20%."); website tidak pernah menebalkan lapisan atau menambah bayangan sendiri. Semua tersimpan lewat "Simpan semua
+  perubahan". Detail tampilan di website: "Latar hero" di bagian Beranda.
 
 ### Bahasa & istilah (copy panel admin)
 

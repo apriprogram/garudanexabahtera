@@ -77,7 +77,7 @@ interface HeroSettingsProps {
   /** hero_text_tone: warna teks hero di atas gambar/video (Otomatis / Terang / Gelap). */
   heroTextTone?: HeroTextTone;
   setHeroTextTone?: (tone: HeroTextTone) => void;
-  /** hero_overlay: lapisan minimum di belakang teks hero, persen 0-80. */
+  /** hero_overlay: lapisan di belakang teks hero, persen 0-80, dipakai persis di website (0 = tanpa lapisan). */
   heroOverlay?: number;
   setHeroOverlay?: (value: number) => void;
 }

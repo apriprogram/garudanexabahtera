@@ -15,9 +15,11 @@ import { useHeroLegibility } from './hero/useHeroLegibility';
  *   Bawaan = kanvas medan titik interaktif + cahaya biru brand yang mengikuti kursor; Gambar (1 statis / 2+ bergantian)
  *   atau Video = HeroMedia. Setting tidak lengkap/tidak aman → Bawaan. Sebelum setting dimuat tidak ada latar sama
  *   sekali, jadi kanvas tidak sempat berkedip berganti gambar/video;
- * - teks di atas gambar/video selalu terbaca (useHeroLegibility): kecerahan latar di belakang blok teks diukur, lalu
- *   dipilih teks terang (lapisan obsidian) atau gelap (lapisan putih) dengan lapisan setebal yang diperlukan, minimal
- *   `hero_overlay` dari admin; `hero_text_tone` bisa memaksa nadanya. Selama mengukur: teks terang + lapisan aman;
+ * - teks di atas gambar/video (useHeroLegibility): kecerahan latar di belakang blok teks diukur, lalu dipilih teks
+ *   terang atau gelap yang paling terbaca. Lapisan di atas media = persis `hero_overlay` dari admin (0 = tanpa
+ *   lapisan, gambar/video tampil penuh), website tidak pernah menebalkannya; `hero_text_tone` bisa memaksa nadanya.
+ *   Selama mengukur (dan di HTML prerender): teks terang (gelap bila dipaksa), lapisan admin;
+ * - datar: tanpa bayangan teks, pendar, atau bayangan kotak di seluruh hero (garis tipis ring-* boleh);
  * - kiri: toggle mode Template / Custom, judul dua warna kata per kata, checklist, tombol
  *   ("Pilih Template" → #templates, "Pesan Website / Aplikasi Mobile Custom" → /pesan-custom);
  * - kanan (di HP: di bawah): bingkai browser yang menayangkan pratinjau template asli + rail langkah yang MENGIKUTI

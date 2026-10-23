@@ -2,30 +2,32 @@
 // Pengambilan sampel piksel ada di heroSampling.ts (browser), keputusan dipakai Hero.tsx dan pratinjau admin
 // (Pengaturan website → Hero → "Latar hero").
 //
-// Aturan keputusan (decideHeroLegibility):
+// Aturan keputusan (decideHeroLegibility), permintaan pemilik 2026-10-23: gambar/video TIDAK PERNAH ditutup lapisan
+// yang tidak dipilih admin, dan hero tanpa bayangan apa pun (teks, pendar, kotak).
+// - lapisan = setting admin `hero_overlay` (0..80%) PERSIS, website tidak pernah menebalkannya; 0 = tanpa lapisan,
+//   gambar/video tampil penuh;
 // - sampel = piksel latar DI BELAKANG BLOK TEKS (canvas kecil). Lapisan dicampur per piksel dengan warna aslinya,
 //   lalu dipakai persentil yang kokoh: 95% piksel paling gelap harus lolos untuk teks terang (persentil tinggi), 95%
 //   piksel paling terang untuk teks gelap (persentil rendah). Titik kecil (≤ 5%) diabaikan, pita terang/gelap tidak;
-// - nada 'light' = teks putih di atas lapisan obsidian; 'dark' = teks gelap (tampilan bawaan) di atas lapisan putih;
-// - target WCAG: teks isi ≥ 4,5:1, judul besar ≥ 3:1; lapisan admin (0..80%) = MINIMUM, dinaikkan sampai lolos,
-//   maks. 85%;
-// - setting 'light' / 'dark' memaksa nadanya (lapisan tetap dinaikkan bila perlu); 'auto' memilih nada yang butuh
-//   lapisan paling tipis (seri → terang);
-// - tayangan (2+ gambar): kasus terburuk dari semua gambar, jadi nada & lapisan tidak berganti antar-slide.
+// - nada 'light' = teks putih (lapisan obsidian bila ada); 'dark' = teks gelap (tampilan bawaan, lapisan putih);
+// - target WCAG: teks isi ≥ 4,5:1, judul besar ≥ 3:1. Tidak lolos → admin diberi peringatan + saran lapisan / nada
+//   (readableOverlay); website tidak menebalkan lapisan dan tidak menambah apa pun sendiri;
+// - setting 'light' / 'dark' memaksa nadanya; 'auto' memilih nada yang paling terbaca di lapisan admin (seri → terang);
+// - tayangan (2+ gambar): kasus terburuk dari semua gambar, jadi nada tidak berganti antar-slide.
 
 export type Rgb = readonly [number, number, number];
 
 /** Setting `hero_text_tone`: 'auto' (bawaan) memilih sendiri, 'light' / 'dark' memaksa. */
 export type HeroTextTone = 'auto' | 'light' | 'dark';
-/** Nada teks yang dipakai: 'light' = teks terang (lapisan gelap), 'dark' = teks gelap (lapisan putih). */
+/** Nada teks yang dipakai: 'light' = teks terang (lapisan gelap bila ada), 'dark' = teks gelap (lapisan putih bila ada). */
 export type HeroTone = 'light' | 'dark';
 
 export const HERO_TEXT_TONES: readonly HeroTextTone[] = ['auto', 'light', 'dark'];
-/** Setting `hero_overlay` (persen, bilangan bulat): bawaan dan batas atas yang bisa dipilih admin. */
-export const HERO_OVERLAY_DEFAULT = 40;
+/** Setting `hero_overlay` (persen, bilangan bulat, dipakai persis): bawaan 0 = tanpa lapisan, batas atas admin 80. */
+export const HERO_OVERLAY_DEFAULT = 0;
 export const HERO_OVERLAY_MAX = 80;
-/** Lapisan paling tebal yang boleh dipasang otomatis (alpha 0..1). */
-export const HERO_SCRIM_CAP = 0.85;
+/** Lapisan paling tebal yang bisa dipilih admin (alpha 0..1): batas hitungan saran lapisan (requiredAlpha). */
+const MAX_ALPHA = HERO_OVERLAY_MAX / 100;
 /** Target WCAG 1.4.3: teks isi 4,5:1, teks besar (judul ≥ 24px / ≥ 18,66px tebal) 3:1. */
 export const BODY_TARGET = 4.5;
 export const HEADLINE_TARGET = 3;
@@ -247,8 +249,9 @@ function enoughPass(tone: HeroTone, sample: BackgroundSample, alpha: number): bo
 const requiredCache = new WeakMap<BackgroundSample, Partial<Record<HeroTone, number | null>>>();
 
 /**
- * Lapisan paling tipis (alpha 0..HERO_SCRIM_CAP, naik per 0,001) agar teks nada ini lolos di atas sampel; null bila
- * tetap tidak lolos dengan lapisan paling tebal. Disimpan per sampel (slider admin tidak menghitung ulang).
+ * Lapisan paling tipis (alpha 0..0,8, naik per 0,001) agar teks nada ini lolos di atas sampel; null bila tetap tidak
+ * lolos dengan lapisan paling tebal yang bisa dipilih admin. Hanya untuk SARAN di admin (readableOverlay): website
+ * tidak pernah memasang lapisan selain setting admin. Disimpan per sampel (slider admin tidak menghitung ulang).
  */
 export function requiredAlpha(tone: HeroTone, sample: BackgroundSample): number | null {
   const cached = requiredCache.get(sample)?.[tone];
@@ -256,91 +259,110 @@ export function requiredAlpha(tone: HeroTone, sample: BackgroundSample): number 
   let result: number | null;
   if (enoughPass(tone, sample, 0)) {
     result = 0;
-  } else if (!enoughPass(tone, sample, HERO_SCRIM_CAP)) {
+  } else if (!enoughPass(tone, sample, MAX_ALPHA)) {
     result = null;
   } else {
     let lo = 0;
-    let hi = HERO_SCRIM_CAP;
+    let hi = MAX_ALPHA;
     for (let i = 0; i < 14; i += 1) {
       const mid = (lo + hi) / 2;
       if (enoughPass(tone, sample, mid)) hi = mid;
       else lo = mid;
     }
     // Dibulatkan ke atas ke 0,001 (tetap lolos), tidak melewati batas
-    result = Math.min(HERO_SCRIM_CAP, Math.ceil(hi * 1000 - 1e-6) / 1000);
-    while (result < HERO_SCRIM_CAP && !enoughPass(tone, sample, result)) result = Math.min(HERO_SCRIM_CAP, result + 0.001);
+    result = Math.min(MAX_ALPHA, Math.ceil(hi * 1000 - 1e-6) / 1000);
+    while (result < MAX_ALPHA && !enoughPass(tone, sample, result)) result = Math.min(MAX_ALPHA, result + 0.001);
   }
   requiredCache.set(sample, { ...requiredCache.get(sample), [tone]: result });
   return result;
 }
 
-/** `hero_overlay` (persen) → alpha minimum 0..0,8. */
+/** `hero_overlay` (persen) → alpha lapisan yang dipakai persis, 0..0,8; bukan angka → bawaan (0). */
 export const overlayAlpha = (percent: number): number =>
   Math.min(HERO_OVERLAY_MAX, Math.max(0, Number.isFinite(percent) ? percent : HERO_OVERLAY_DEFAULT)) / 100;
 
 export interface HeroLegibility {
   tone: HeroTone;
-  /** Alpha lapisan di belakang blok teks (0..HERO_SCRIM_CAP) */
+  /** Alpha lapisan di belakang blok teks = setting admin persis (0..0,8); 0 = tanpa lapisan */
   overlayAlpha: number;
-  /** Kontras terendah (gambar terburuk) dengan lapisan ini; null = latar tidak bisa diukur (cadangan) */
+  /** Kontras terendah (gambar terburuk) dengan lapisan ini; null = latar tidak bisa diukur */
   contrast: { body: number; headline: number } | null;
-  /** Semua teks lolos target (cadangan dianggap lolos: dihitung untuk latar putih / hitam polos) */
-  readable: boolean;
+  /** Semua teks lolos target di lapisan ini; null = tidak diukur (cadangan) */
+  readable: boolean | null;
   /** false = cadangan (sedang mengukur, atau latar tidak bisa diukur) */
   measured: boolean;
 }
 
+/** Skor keterbacaan: kontras terendah dibanding targetnya (≥ 1 = semua teks lolos). */
+const legibilityScore = (c: { body: number; headline: number }) => Math.min(c.body / BODY_TARGET, c.headline / HEADLINE_TARGET);
+
+const sampleList = (samples: BackgroundSample | readonly BackgroundSample[]): readonly BackgroundSample[] =>
+  Array.isArray(samples) ? (samples as readonly BackgroundSample[]) : [samples as BackgroundSample];
+
 /**
- * Nada & lapisan untuk latar dengan sampel `samples` (satu per gambar tayangan; kasus terburuk dipakai), setting
- * nada, dan lapisan admin (persen, minimum). Lihat aturan di kepala file. Tanpa sampel → cadangan.
+ * Nada untuk latar dengan sampel `samples` (satu per gambar tayangan; kasus terburuk dipakai), setting nada, dan
+ * lapisan admin (persen, dipakai persis). Lihat aturan di kepala file. Tanpa sampel → cadangan.
  */
 export function decideHeroLegibility(
   samples: BackgroundSample | readonly BackgroundSample[],
   setting: HeroTextTone,
   overlayPercent: number,
 ): HeroLegibility {
-  const list = Array.isArray(samples) ? (samples as readonly BackgroundSample[]) : [samples as BackgroundSample];
+  const list = sampleList(samples);
   if (list.length === 0) return fallbackLegibility(setting, overlayPercent);
-  const min = overlayAlpha(overlayPercent);
-  const pick = (tone: HeroTone) => {
-    let req = 0;
-    for (const sample of list) req = Math.max(req, requiredAlpha(tone, sample) ?? Infinity);
-    return { tone, req, alpha: Number.isFinite(req) ? Math.max(min, req) : HERO_SCRIM_CAP };
+  const alpha = overlayAlpha(overlayPercent);
+  // Kontras terendah nada ini dari semua gambar, di lapisan admin
+  const worst = (tone: HeroTone) => {
+    let body = Infinity;
+    let headline = Infinity;
+    for (const sample of list) {
+      const c = toneContrast(tone, sample, alpha);
+      body = Math.min(body, c.body);
+      headline = Math.min(headline, c.headline);
+    }
+    return { body, headline };
   };
-  let chosen;
+  let tone: HeroTone;
+  let contrast: { body: number; headline: number };
   if (setting === 'light' || setting === 'dark') {
-    chosen = pick(setting);
+    tone = setting;
+    contrast = worst(setting);
   } else {
-    const light = pick('light');
-    const dark = pick('dark');
-    chosen = dark.req < light.req ? dark : light;
+    const light = worst('light');
+    const dark = worst('dark');
+    // Seri → terang
+    const darkWins = legibilityScore(dark) > legibilityScore(light);
+    tone = darkWins ? 'dark' : 'light';
+    contrast = darkWins ? dark : light;
   }
-  let body = Infinity;
-  let headline = Infinity;
-  for (const sample of list) {
-    const c = toneContrast(chosen.tone, sample, chosen.alpha);
-    body = Math.min(body, c.body);
-    headline = Math.min(headline, c.headline);
-  }
-  const contrast = { body, headline };
-  return { tone: chosen.tone, overlayAlpha: chosen.alpha, contrast, readable: passes(contrast), measured: true };
+  return { tone, overlayAlpha: alpha, contrast, readable: passes(contrast), measured: true };
 }
 
-/** Lapisan teks terang yang lolos bahkan di atas latar putih polos (latar terburuk), minimal 55%. */
-export const HERO_FALLBACK_ALPHA = Math.max(0.55, requiredAlpha('light', solidSample([255, 255, 255])) ?? HERO_SCRIM_CAP);
-/** Lapisan teks gelap yang lolos bahkan di atas latar hitam polos. */
-export const HERO_DARK_FALLBACK_ALPHA = requiredAlpha('dark', solidSample([0, 0, 0])) ?? HERO_SCRIM_CAP;
+/**
+ * Saran untuk admin bila teks kurang terbaca: lapisan paling tipis (persen bulat 0..80) agar teks nada ini lolos di
+ * atas SEMUA sampel; null bila tidak ada sampel atau tetap tidak lolos dengan 80%. Website tidak memakainya.
+ */
+export function readableOverlay(samples: BackgroundSample | readonly BackgroundSample[], tone: HeroTone): number | null {
+  const list = sampleList(samples);
+  if (list.length === 0) return null;
+  let req = 0;
+  for (const sample of list) {
+    const alpha = requiredAlpha(tone, sample);
+    if (alpha === null) return null;
+    req = Math.max(req, alpha);
+  }
+  // requiredAlpha = kelipatan 0,001 yang sudah lolos: persen dibulatkan ke atas agar tetap lolos (max: bukan -0)
+  return Math.min(HERO_OVERLAY_MAX, Math.max(0, Math.ceil(req * 100 - 1e-6)));
+}
 
 /**
- * Cadangan aman selama latar diukur, atau bila tidak bisa diukur (gambar lintas domain tanpa CORS, canvas
- * tercemar, video tanpa frame): teks terang dengan lapisan yang cukup untuk latar paling terang; nada 'dark' yang
- * dipaksa admin memakai lapisan putih yang cukup untuk latar paling gelap. Lapisan admin tetap minimum.
+ * Cadangan selama latar diukur, atau bila tidak bisa diukur (gambar lintas domain tanpa CORS, canvas tercemar, video
+ * tanpa frame): teks terang (gelap bila dipaksa admin) dengan lapisan admin persis, tanpa lapisan tambahan. HTML
+ * prerender dan render pertama di browser memakai ini, jadi keduanya sama (tanpa kilasan lapisan gelap).
  */
 export function fallbackLegibility(setting: HeroTextTone, overlayPercent: number): HeroLegibility {
-  const min = overlayAlpha(overlayPercent);
   const tone: HeroTone = setting === 'dark' ? 'dark' : 'light';
-  const alpha = Math.max(min, tone === 'dark' ? HERO_DARK_FALLBACK_ALPHA : HERO_FALLBACK_ALPHA);
-  return { tone, overlayAlpha: alpha, contrast: null, readable: true, measured: false };
+  return { tone, overlayAlpha: overlayAlpha(overlayPercent), contrast: null, readable: null, measured: false };
 }
 
 /* ─── Geometri object-fit: cover ──────────────────────────────────────────── */

@@ -1,7 +1,7 @@
 // Keterbacaan teks hero di atas gambar/video: luminans & kontras WCAG, pencampuran lapisan per piksel, persentil
-// latar, keputusan nada + lapisan (minimum admin, batas 85%, nada yang dipaksa, kasus terburuk tayangan), cadangan
-// aman, geometri object-fit: cover, parser setting hero_text_tone / hero_overlay, dan token CSS yang harus sama dengan
-// warna yang dihitung.
+// latar, keputusan nada (lapisan admin dipakai PERSIS, tidak pernah dinaikkan; nada yang dipaksa; kasus terburuk
+// tayangan), saran lapisan untuk admin, cadangan (lapisan admin, bawaan 0), geometri object-fit: cover, parser setting
+// hero_text_tone / hero_overlay, token CSS yang harus sama dengan warna yang dihitung, dan hero tanpa bayangan.
 // Jalankan: npx vitest run src/components/sections/hero/__tests__/heroContrast.test.ts
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -10,9 +10,8 @@ import {
   BODY_TARGET,
   COLORS,
   HEADLINE_TARGET,
-  HERO_DARK_FALLBACK_ALPHA,
-  HERO_FALLBACK_ALPHA,
-  HERO_SCRIM_CAP,
+  HERO_OVERLAY_DEFAULT,
+  HERO_OVERLAY_MAX,
   backgroundSample,
   compositeRgb,
   contrastRatio,
@@ -24,6 +23,7 @@ import {
   linearToSrgb,
   luminanceStats,
   overlayAlpha,
+  readableOverlay,
   relativeLuminance,
   requiredAlpha,
   scrimRgb,
@@ -51,6 +51,13 @@ const WHITE: Rgb = [255, 255, 255];
 const BLACK: Rgb = [0, 0, 0];
 const OBSIDIAN = hexToRgb(COLORS.scrimDark);
 const passes = (c: { body: number; headline: number }) => c.body >= BODY_TARGET && c.headline >= HEADLINE_TARGET;
+/** Skor keterbacaan seperti decideHeroLegibility: kontras terendah ÷ target */
+const score = (c: { body: number; headline: number }) => Math.min(c.body / BODY_TARGET, c.headline / HEADLINE_TARGET);
+/** Kontras terendah nada ini dari semua sampel di alpha ini */
+const worst = (tone: 'light' | 'dark', samples: BackgroundSample[], alpha: number) => ({
+  body: Math.min(...samples.map((s) => toneContrast(tone, s, alpha).body)),
+  headline: Math.min(...samples.map((s) => toneContrast(tone, s, alpha).headline)),
+});
 
 describe('warna & luminans', () => {
   it('hex → RGB (6 dan 3 digit), selain itu error', () => {
@@ -147,7 +154,7 @@ describe('lapisan yang diperlukan', () => {
     }
   });
 
-  it('naik seiring latar makin terang (teks terang) / makin gelap (teks gelap), selalu ≤ 85%', () => {
+  it('naik seiring latar makin terang (teks terang) / makin gelap (teks gelap), selalu ≤ 80% (batas admin)', () => {
     let lastLight = -1;
     let lastDark = 2;
     for (let i = 0; i <= 20; i += 1) {
@@ -155,7 +162,7 @@ describe('lapisan yang diperlukan', () => {
       const dark = requiredAlpha('dark', gray(i / 20))!;
       expect(light).toBeGreaterThanOrEqual(lastLight);
       expect(dark).toBeLessThanOrEqual(lastDark);
-      expect(Math.max(light, dark)).toBeLessThanOrEqual(HERO_SCRIM_CAP);
+      expect(Math.max(light, dark)).toBeLessThanOrEqual(HERO_OVERLAY_MAX / 100);
       lastLight = light;
       lastDark = dark;
     }
@@ -172,12 +179,14 @@ describe('lapisan yang diperlukan', () => {
     expect(textContrast('dark', 1).body).toBeCloseTo(7.82, 1);
   });
 
-  it('lapisan admin (persen) → alpha 0..0,8; bukan angka → 40%', () => {
+  it('lapisan admin (persen) → alpha persis 0..0,8; bukan angka → bawaan 0 (tanpa lapisan)', () => {
+    expect(HERO_OVERLAY_DEFAULT).toBe(0);
     expect(overlayAlpha(40)).toBe(0.4);
+    expect(overlayAlpha(37)).toBe(0.37);
     expect(overlayAlpha(0)).toBe(0);
     expect(overlayAlpha(120)).toBe(0.8);
     expect(overlayAlpha(-5)).toBe(0);
-    expect(overlayAlpha(Number.NaN)).toBe(0.4);
+    expect(overlayAlpha(Number.NaN)).toBe(0);
   });
 });
 
@@ -187,77 +196,112 @@ describe('decideHeroLegibility', () => {
   // Gelap di atas, putih di bawah blok teks (seperti gambar latar lokal saat ini)
   const MIXED = sampleOf([55, hexToRgb('#06102C')], [15, hexToRgb('#1A6BFF')], [30, hexToRgb('#F2F6FF')]);
 
-  it('otomatis: gambar gelap → teks terang dengan lapisan admin saja', () => {
+  it('otomatis: gambar gelap → teks terang dengan lapisan admin persis (0 = tanpa lapisan)', () => {
     expect(decideHeroLegibility(DARK_IMAGE, 'auto', 40)).toMatchObject({ tone: 'light', overlayAlpha: 0.4, readable: true, measured: true });
-    expect(decideHeroLegibility(DARK_IMAGE, 'auto', 0)).toMatchObject({ tone: 'light', overlayAlpha: 0 });
+    expect(decideHeroLegibility(DARK_IMAGE, 'auto', 0)).toMatchObject({ tone: 'light', overlayAlpha: 0, readable: true });
   });
 
-  it('otomatis: gambar terang → teks gelap (lapisan putih)', () => {
+  it('otomatis: gambar terang → teks gelap, tetap tanpa lapisan di 0%', () => {
     const result = decideHeroLegibility(BRIGHT_IMAGE, 'auto', 0);
     expect(result).toMatchObject({ tone: 'dark', overlayAlpha: 0, readable: true });
     expect(result.contrast!.body).toBeGreaterThanOrEqual(BODY_TARGET);
   });
 
-  it('otomatis memilih nada yang butuh lapisan paling tipis; lapisan dinaikkan di atas minimum admin bila perlu', () => {
-    const result = decideHeroLegibility(MIXED, 'auto', 40);
-    const light = requiredAlpha('light', MIXED)!;
-    const dark = requiredAlpha('dark', MIXED)!;
-    expect(result.tone).toBe(light <= dark ? 'light' : 'dark');
-    expect(result.overlayAlpha).toBe(Math.min(light, dark));
-    expect(result.overlayAlpha).toBeGreaterThan(0.4);
-    expect(result.contrast!.body).toBeGreaterThanOrEqual(BODY_TARGET);
-    expect(result.contrast!.headline).toBeGreaterThanOrEqual(HEADLINE_TARGET);
+  it('lapisan = setting admin PERSIS, tidak pernah dinaikkan otomatis (juga bila kurang terbaca)', () => {
+    for (const sample of [DARK_IMAGE, BRIGHT_IMAGE, MIXED, solidSample(WHITE), solidSample(BLACK)]) {
+      for (const setting of ['auto', 'light', 'dark'] as const) {
+        for (const percent of [0, 1, 20, 37, 55, 80]) {
+          expect(decideHeroLegibility(sample, setting, percent).overlayAlpha, `${setting} ${percent}`).toBe(percent / 100);
+        }
+      }
+    }
+    // Latar campuran di 20%: kurang terbaca, lapisan tetap 20% (dulu dinaikkan sampai lolos)
+    const mixed = decideHeroLegibility(MIXED, 'auto', 20);
+    expect(mixed.overlayAlpha).toBe(0.2);
+    expect(mixed.readable).toBe(false);
+    expect(mixed.contrast).toEqual(toneContrast(mixed.tone, MIXED, 0.2));
+    // Teks terang dipaksa di atas putih polos tanpa lapisan: tetap 0, dilaporkan tidak terbaca
+    expect(decideHeroLegibility(solidSample(WHITE), 'light', 0)).toMatchObject({ tone: 'light', overlayAlpha: 0, readable: false });
   });
 
-  it('lapisan admin = minimum, juga bila latar sudah cukup kontras', () => {
-    expect(decideHeroLegibility(DARK_IMAGE, 'auto', 75).overlayAlpha).toBe(0.75);
-    expect(decideHeroLegibility(BRIGHT_IMAGE, 'auto', 25)).toMatchObject({ tone: 'dark', overlayAlpha: 0.25 });
+  it('otomatis memilih nada yang paling terbaca di lapisan admin (skor kontras ÷ target)', () => {
+    for (const percent of [0, 20, 40, 70]) {
+      const alpha = percent / 100;
+      const result = decideHeroLegibility(MIXED, 'auto', percent);
+      const light = score(toneContrast('light', MIXED, alpha));
+      const dark = score(toneContrast('dark', MIXED, alpha));
+      expect(result.tone, String(percent)).toBe(dark > light ? 'dark' : 'light');
+      expect(result.contrast).toEqual(toneContrast(result.tone, MIXED, alpha));
+    }
+    // Abu-abu menengah di 0%: nada dengan skor lebih tinggi menang, sama dengan perbandingan manual
+    for (let i = 0; i <= 20; i += 1) {
+      const sample = gray(i / 20);
+      const result = decideHeroLegibility(sample, 'auto', 0);
+      const light = score(toneContrast('light', sample, 0));
+      const dark = score(toneContrast('dark', sample, 0));
+      expect(result.tone, String(i)).toBe(dark > light ? 'dark' : 'light');
+    }
   });
 
-  it('nada dipaksa: tetap nada itu, lapisan dinaikkan agar lolos (maks. 85%)', () => {
+  it('nada dipaksa: tetap nada itu dengan lapisan admin persis, walau kurang terbaca', () => {
     const light = decideHeroLegibility(BRIGHT_IMAGE, 'light', 10);
-    expect(light).toMatchObject({ tone: 'light', overlayAlpha: requiredAlpha('light', BRIGHT_IMAGE), readable: true });
+    expect(light).toMatchObject({ tone: 'light', overlayAlpha: 0.1, readable: false });
     const dark = decideHeroLegibility(DARK_IMAGE, 'dark', 10);
-    expect(dark).toMatchObject({ tone: 'dark', overlayAlpha: requiredAlpha('dark', DARK_IMAGE), readable: true });
-    expect(dark.overlayAlpha).toBeLessThanOrEqual(HERO_SCRIM_CAP);
-    // Lapisan admin lebih tebal dari yang diperlukan tetap dipakai
-    expect(decideHeroLegibility(DARK_IMAGE, 'light', 60).overlayAlpha).toBe(0.6);
+    expect(dark).toMatchObject({ tone: 'dark', overlayAlpha: 0.1, readable: false });
+    expect(decideHeroLegibility(DARK_IMAGE, 'light', 60)).toMatchObject({ tone: 'light', overlayAlpha: 0.6, readable: true });
+    // Produksi: video gelap, teks terang dipaksa, 0% → tanpa lapisan
+    expect(decideHeroLegibility(DARK_IMAGE, 'light', 0)).toMatchObject({ tone: 'light', overlayAlpha: 0 });
   });
 
-  it('tayangan: kasus terburuk dari semua gambar (nada tidak berganti antar-slide)', () => {
+  it('tayangan: kasus terburuk dari semua gambar (nada tidak berganti antar-slide), lapisan tetap persis', () => {
     const both = decideHeroLegibility([DARK_IMAGE, BRIGHT_IMAGE], 'auto', 0);
-    const worstLight = Math.max(requiredAlpha('light', DARK_IMAGE)!, requiredAlpha('light', BRIGHT_IMAGE)!);
-    const worstDark = Math.max(requiredAlpha('dark', DARK_IMAGE)!, requiredAlpha('dark', BRIGHT_IMAGE)!);
-    expect(both.tone).toBe(worstLight <= worstDark ? 'light' : 'dark');
-    expect(both.overlayAlpha).toBe(Math.min(worstLight, worstDark));
-    // Lolos di tiap gambar, dan kontras yang dilaporkan = gambar terburuk
-    for (const sample of [DARK_IMAGE, BRIGHT_IMAGE]) expect(passes(toneContrast(both.tone, sample, both.overlayAlpha))).toBe(true);
-    expect(both.contrast!.body).toBe(
-      Math.min(...[DARK_IMAGE, BRIGHT_IMAGE].map((s) => toneContrast(both.tone, s, both.overlayAlpha).body)),
-    );
+    const light = worst('light', [DARK_IMAGE, BRIGHT_IMAGE], 0);
+    const dark = worst('dark', [DARK_IMAGE, BRIGHT_IMAGE], 0);
+    expect(both.tone).toBe(score(dark) > score(light) ? 'dark' : 'light');
+    expect(both.overlayAlpha).toBe(0);
+    expect(both.contrast).toEqual(both.tone === 'dark' ? dark : light);
     expect(decideHeroLegibility([], 'auto', 40)).toEqual(fallbackLegibility('auto', 40));
   });
 });
 
-describe('cadangan aman (sedang mengukur / tidak bisa diukur)', () => {
-  it('teks terang dengan lapisan yang lolos di atas putih polos, minimal 55%', () => {
-    expect(HERO_FALLBACK_ALPHA).toBeGreaterThanOrEqual(0.55);
-    expect(HERO_FALLBACK_ALPHA).toBeGreaterThanOrEqual(requiredAlpha('light', solidSample(WHITE))!);
-    for (const setting of ['auto', 'light'] as const) {
-      expect(fallbackLegibility(setting, 40)).toEqual({ tone: 'light', overlayAlpha: HERO_FALLBACK_ALPHA, contrast: null, readable: true, measured: false });
+describe('readableOverlay (saran lapisan di admin)', () => {
+  const MIXED = sampleOf([55, hexToRgb('#06102C')], [15, hexToRgb('#1A6BFF')], [30, hexToRgb('#F2F6FF')]);
+  const DARK_IMAGE = sampleOf([80, hexToRgb('#0B1430')], [20, hexToRgb('#1D3A8A')]);
+
+  it('persen bulat paling tipis yang lolos: 1% lebih tipis sudah tidak lolos', () => {
+    for (const tone of ['light', 'dark'] as const) {
+      for (const sample of [MIXED, solidSample(WHITE), solidSample(BLACK), gray(0.3)]) {
+        const percent = readableOverlay(sample, tone);
+        expect(percent, tone).not.toBeNull();
+        expect(percent!).toBeLessThanOrEqual(HERO_OVERLAY_MAX);
+        expect(decideHeroLegibility(sample, tone, percent!).readable, tone).toBe(true);
+        if (percent! > 0) expect(decideHeroLegibility(sample, tone, percent! - 1).readable, tone).toBe(false);
+      }
     }
-    // Lolos di atas latar apa pun
-    for (const color of [WHITE, BLACK, hexToRgb('#FFE14D'), hexToRgb('#211FFE')]) {
-      expect(passes(toneContrast('light', solidSample(color), HERO_FALLBACK_ALPHA))).toBe(true);
-    }
+    // Putih polos butuh 63% obsidian untuk teks terang; latar gelap tidak butuh lapisan
+    expect(readableOverlay(solidSample(WHITE), 'light')).toBe(63);
+    expect(readableOverlay(DARK_IMAGE, 'light')).toBe(0);
   });
 
-  it('nada gelap yang dipaksa: lapisan putih yang lolos di atas hitam polos; lapisan admin tetap minimum', () => {
-    expect(fallbackLegibility('dark', 0)).toMatchObject({ tone: 'dark', overlayAlpha: HERO_DARK_FALLBACK_ALPHA });
-    for (const color of [WHITE, BLACK, hexToRgb('#211FFE'), hexToRgb('#C00000')]) {
-      expect(passes(toneContrast('dark', solidSample(color), HERO_DARK_FALLBACK_ALPHA))).toBe(true);
+  it('tayangan: kasus terburuk; tanpa sampel → null', () => {
+    expect(readableOverlay([DARK_IMAGE, MIXED], 'light')).toBe(Math.max(readableOverlay(DARK_IMAGE, 'light')!, readableOverlay(MIXED, 'light')!));
+    expect(readableOverlay([], 'light')).toBeNull();
+  });
+});
+
+describe('cadangan (sedang mengukur / tidak bisa diukur / HTML prerender)', () => {
+  it('teks terang dengan lapisan admin persis, tanpa lapisan tambahan', () => {
+    for (const setting of ['auto', 'light'] as const) {
+      expect(fallbackLegibility(setting, 40)).toEqual({ tone: 'light', overlayAlpha: 0.4, contrast: null, readable: null, measured: false });
+      expect(fallbackLegibility(setting, 0)).toEqual({ tone: 'light', overlayAlpha: 0, contrast: null, readable: null, measured: false });
     }
     expect(fallbackLegibility('auto', 80).overlayAlpha).toBe(0.8);
+    expect(fallbackLegibility('auto', Number.NaN).overlayAlpha).toBe(0);
+  });
+
+  it('nada gelap yang dipaksa: teks gelap, lapisan admin persis', () => {
+    expect(fallbackLegibility('dark', 0)).toEqual({ tone: 'dark', overlayAlpha: 0, contrast: null, readable: null, measured: false });
+    expect(fallbackLegibility('dark', 25)).toMatchObject({ tone: 'dark', overlayAlpha: 0.25 });
   });
 });
 
@@ -315,6 +359,22 @@ describe('format & token', () => {
     expect(css).toContain('@property --scrim-a');
   });
 
+  it('hero tanpa bayangan (permintaan pemilik 2026-10-23): tanpa kelas bayangan teks, lapisan & tombol hero datar', () => {
+    const css = readFileSync(join(resolve(__dirname, '../../../../..'), 'src', 'index.css'), 'utf8').replace(/\r\n/g, '\n');
+    // Kelas bayangan teks / pendar hero dari percobaan sebelumnya sudah dihapus seluruhnya
+    expect(css).not.toMatch(/hero-shadow|text-shadow/);
+    const rules = (name: string) => [...css.matchAll(new RegExp(`\\.${name}\\s*\\{([^}]*)\\}`, 'g'))].map((m) => m[1]);
+    for (const name of ['hero-scrim', 'hero-scrim-x', 'btn', 'btn-xl', 'btn-primary', 'btn-outline-clear', 'btn-outline-on-media']) {
+      const bodies = rules(name);
+      expect(bodies.length, name).toBeGreaterThan(0);
+      for (const body of bodies) expect(body, name).not.toMatch(/shadow|glow|filter|blur/);
+    }
+    // Kelas teks per nada: warna & garis saja
+    for (const [look, classes] of Object.entries(HERO_TONE_CLASSES)) {
+      for (const value of Object.values(classes)) expect(value, look).not.toMatch(/shadow|glow|blur/);
+    }
+  });
+
   it('kelas nada terang memakai token on-media, nada gelap = tampilan bawaan', () => {
     expect(HERO_TONE_CLASSES.light).toMatchObject({ title: 'text-on-media', accent: 'text-on-media-accent', point: 'text-on-media-muted', secondary: 'btn-outline-on-media' });
     expect(HERO_TONE_CLASSES.dark).toMatchObject({ title: 'text-fg', accent: 'text-primary', point: 'text-muted', secondary: 'btn-outline-clear' });
@@ -329,18 +389,18 @@ describe('parser setting hero_text_tone / hero_overlay (sama dengan backend)', (
     for (const raw of ['', 'LIGHT', ' dark', 'terang', null, undefined, 1, ['light']]) expect(parseHeroTextTone(raw), String(raw)).toBe('auto');
   });
 
-  it('lapisan: angka dibulatkan & dibatasi 0..80, selain itu 40', () => {
+  it('lapisan: angka dibulatkan & dibatasi 0..80, selain itu bawaan 0 (tanpa lapisan)', () => {
     const cases: [unknown, number][] = [
       ['40', 40], ['0', 0], ['80', 80], ['55', 55], [' 40.5 ', 41], ['\t12\n', 12], ['0.5', 1], ['80.49', 80],
       ['-3', 0], ['-0.4', 0], ['81', 80], ['999999999999999999999', 80], [42.5, 43], [-0.4, 0], [1e21, 80],
-      ['', 40], ['abc', 40], ['1e2', 40], ['+5', 40], ['5%', 40], ['4,5', 40], [null, 40], [undefined, 40], [true, 40], [Number.NaN, 40], [[3], 40],
+      ['', 0], ['abc', 0], ['1e2', 0], ['+5', 0], ['5%', 0], ['4,5', 0], [null, 0], [undefined, 0], [true, 0], [Number.NaN, 0], [[3], 0],
     ];
     for (const [raw, expected] of cases) expect(parseHeroOverlay(raw), JSON.stringify(raw)).toBe(expected);
     expect(Object.is(parseHeroOverlay('-0.4'), 0)).toBe(true);
   });
 
   it('dari get_settings', () => {
-    expect(parseHeroText({})).toEqual({ tone: 'auto', overlay: 40 });
+    expect(parseHeroText({})).toEqual({ tone: 'auto', overlay: 0 });
     expect(parseHeroText({ hero_text_tone: 'dark', hero_overlay: '15' })).toEqual({ tone: 'dark', overlay: 15 });
   });
 });

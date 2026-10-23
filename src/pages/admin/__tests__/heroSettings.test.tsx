@@ -31,10 +31,12 @@ import {
 import { resizeHeroImage } from '../hero/heroImage';
 import { HeroUploadError, captureVideoPoster, uploadHeroVideo, type PosterResult } from '../hero/heroVideo';
 import {
+  HERO_OVERLAY_DEFAULT,
   backgroundSample,
   decideHeroLegibility,
   formatRatio,
   hexToRgb,
+  readableOverlay,
   type BackgroundSample,
   type HeroTextTone,
 } from '../../../components/sections/hero/heroContrast';
@@ -314,7 +316,7 @@ function Harness({
   initialVideo = '',
   initialPoster = '',
   initialTone = 'auto',
-  initialOverlay = 40,
+  initialOverlay = HERO_OVERLAY_DEFAULT,
   saving,
   onBusyChange,
   onImagesProcessing,
@@ -909,8 +911,12 @@ describe('HeroSettings: teks di atas latar', () => {
     expect(screen.getByText(/Dipilih otomatis dari kecerahan latar/)).toBeInTheDocument();
     expect(overlaySlider()).toHaveAttribute('min', '0');
     expect(overlaySlider()).toHaveAttribute('max', '80');
-    expect(overlaySlider()).toHaveValue('40');
-    expect(overlaySlider()).toHaveAttribute('aria-valuetext', '40%');
+    // Bawaan 0 = tanpa lapisan; nilainya dipakai persis di website
+    expect(overlaySlider()).toHaveValue('0');
+    expect(overlaySlider()).toHaveAttribute('aria-valuetext', '0%');
+    expect(overlaySlider()).toHaveAccessibleDescription(/dipakai persis.*0% = tanpa lapisan, video\/gambar tampil penuh/);
+    const field = screen.getByText('Teks di atas latar').parentElement!.parentElement!;
+    expect(field.textContent).not.toMatch(/minimal|minimum|menebalkan|85%/i);
 
     fireEvent.click(screen.getByRole('tab', { name: 'Video' }));
     expect(screen.getByRole('tablist', { name: 'Warna teks hero' })).toBeInTheDocument();
@@ -920,44 +926,69 @@ describe('HeroSettings: teks di atas latar', () => {
     render(<Harness initialMode="image" initialImages={['/assets/bg/hero_1.jpg']} />);
     fireEvent.click(toneTab('Terang'));
     expect(textState().tone).toBe('light');
-    expect(screen.getByText(/Teks putih dengan lapisan gelap/)).toBeInTheDocument();
+    expect(screen.getByText('Teks putih, cocok untuk latar gelap.')).toBeInTheDocument();
     fireEvent.click(toneTab('Gelap'));
     expect(textState().tone).toBe('dark');
+    expect(screen.getByText('Teks gelap, cocok untuk latar terang.')).toBeInTheDocument();
     fireEvent.change(overlaySlider(), { target: { value: '65' } });
     expect(textState().overlay).toBe(65);
     expect(screen.getByText('65%')).toBeInTheDocument();
     expect(overlaySlider()).toHaveAttribute('aria-valuetext', '65%');
   });
 
-  it('pratinjau: gambar pertama + lapisan + contoh judul; kontras dihitung dari semua gambar (kasus terburuk)', async () => {
+  it('pratinjau = website: gambar pertama, lapisan persis, contoh judul datar; kontras dari semua gambar (kasus terburuk)', async () => {
     const images = ['/assets/bg/hero_1.jpg', '/assets/bg/hero_2.jpg', '/assets/bg/hero_1.jpg'];
     vi.mocked(sampleImage).mockImplementation(async (src) => ({ kind: 'sample', sample: src.endsWith('1.jpg') ? DARK_BG : MIXED_BG }));
     const expected = decideHeroLegibility([DARK_BG, MIXED_BG], 'auto', 40);
-    render(<Harness initialMode="image" initialImages={images} />);
+    // Lapisan 40% belum cukup untuk gambar campuran: website TIDAK menebalkannya, admin diberi peringatan
+    expect(expected).toMatchObject({ tone: 'light', overlayAlpha: 0.4, readable: false });
+    render(<Harness initialMode="image" initialImages={images} initialOverlay={40} />);
 
-    expect(await screen.findByText(`Kontras ${formatRatio(expected.contrast!.body)} · Terbaca`)).toBeInTheDocument();
+    expect(await screen.findByText(`Kontras ${formatRatio(expected.contrast!.body)} · Kurang terbaca`)).toBeInTheDocument();
     // Tanpa duplikat, maks. 12 gambar seperti website, dengan area kolom teks desktop
     expect(vi.mocked(sampleImage).mock.calls.map(([src]) => src)).toEqual(['/assets/bg/hero_1.jpg', '/assets/bg/hero_2.jpg']);
     expect(vi.mocked(sampleImage).mock.calls[0][1]).toEqual({ box: { w: 1366, h: 900 }, region: { x: 32, y: 196, w: 628, h: 540 } });
 
-    const percent = Math.round(expected.overlayAlpha * 100);
-    const preview = screen.getByRole('img', { name: `Pratinjau teks hero: teks terang, lapisan ${percent}%` });
+    const preview = screen.getByRole('img', { name: 'Pratinjau teks hero: teks terang, lapisan 40%' });
     expect(preview.querySelector('img')).toHaveAttribute('src', '/assets/bg/hero_1.jpg');
     const scrim = preview.querySelector<HTMLElement>('[data-preview-scrim="light"]')!;
     expect(scrim.className).toContain('hero-scrim');
-    expect(Number(scrim.style.getPropertyValue('--scrim-a'))).toBeCloseTo(expected.overlayAlpha, 3);
+    expect(scrim.style.getPropertyValue('--scrim-a')).toBe('0.400');
     expect(preview.querySelector('.text-on-media')).toHaveTextContent('Template website siap pakai,');
     expect(preview.querySelector('.text-on-media-accent')).toHaveTextContent('termasuk domain & hosting.');
-    const summary = `teks terang dengan lapisan ${percent}% (dinaikkan dari 40% agar tetap terbaca)`;
-    expect(screen.getByText(new RegExp(escapeRegExp(summary)))).toBeInTheDocument();
+    // Datar seperti website: tanpa kelas bayangan / pendar di pratinjau
+    for (const el of preview.querySelectorAll('*')) expect(el.getAttribute('class') ?? '').not.toMatch(/shadow|glow/);
+    expect(screen.getByText(/Website memakai teks terang dengan lapisan 40%\./)).toBeInTheDocument();
     expect(screen.getByText(/Dihitung dari 2 gambar/)).toBeInTheDocument();
+    expect(screen.queryByText(/dinaikkan/)).not.toBeInTheDocument();
 
-    // Gelap dipaksa: lapisan putih, tetap terbaca (lapisan dinaikkan)
+    // Peringatan jujur + saran lapisan yang cukup (dihitung dari semua gambar)
+    const needed = readableOverlay([DARK_BG, MIXED_BG], 'light')!;
+    expect(needed).toBeGreaterThan(40);
+    expect(screen.getByText('Teks mungkin sulit dibaca')).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(escapeRegExp(`naikkan lapisan ke ${needed}%`)))).toBeInTheDocument();
+
+    // Admin menaikkan lapisan sesuai saran: terbaca, peringatan hilang, pratinjau memakai nilai itu persis
+    fireEvent.change(overlaySlider(), { target: { value: String(needed) } });
+    const raised = decideHeroLegibility([DARK_BG, MIXED_BG], 'auto', needed);
+    expect(raised.readable).toBe(true);
+    expect(screen.getByText(`Kontras ${formatRatio(raised.contrast!.body)} · Terbaca`)).toBeInTheDocument();
+    expect(screen.queryByText('Teks mungkin sulit dibaca')).not.toBeInTheDocument();
+    expect(preview.querySelector<HTMLElement>('[data-preview-scrim]')!.style.getPropertyValue('--scrim-a')).toBe((needed / 100).toFixed(3));
+
+    // 0% = tanpa elemen lapisan, sama dengan website
+    fireEvent.change(overlaySlider(), { target: { value: '0' } });
+    expect(screen.getByRole('img', { name: /tanpa lapisan$/ })).toBe(preview);
+    expect(preview.querySelector('[data-preview-scrim]')).toBeNull();
+    expect(screen.getByText(/tanpa lapisan \(gambar\/video tampil penuh\)/)).toBeInTheDocument();
+
+    // Gelap dipaksa dengan lapisan: lapisan putih persis
+    fireEvent.change(overlaySlider(), { target: { value: '40' } });
     fireEvent.click(toneTab('Gelap'));
     const dark = decideHeroLegibility([DARK_BG, MIXED_BG], 'dark', 40);
-    expect(dark.readable).toBe(true);
-    expect(screen.getByText(`Kontras ${formatRatio(dark.contrast!.body)} · Terbaca`)).toBeInTheDocument();
-    expect(preview.querySelector('[data-preview-scrim="dark"]')).not.toBeNull();
+    expect(dark.overlayAlpha).toBe(0.4);
+    expect(screen.getByText(new RegExp(escapeRegExp(`Kontras ${formatRatio(dark.contrast!.body)} · `)))).toBeInTheDocument();
+    expect(preview.querySelector<HTMLElement>('[data-preview-scrim="dark"]')!.style.getPropertyValue('--scrim-a')).toBe('0.400');
     expect(preview.querySelector('.text-fg')).not.toBeNull();
     // Pengukuran tidak diulang saat nada / lapisan berubah
     fireEvent.change(overlaySlider(), { target: { value: '80' } });
@@ -968,6 +999,8 @@ describe('HeroSettings: teks di atas latar', () => {
     const empty = render(<Harness initialMode="image" />);
     expect(screen.getByText('Belum ada pratinjau')).toBeInTheDocument();
     expect(screen.getByText('Tambahkan gambar dulu untuk melihat pratinjau.')).toBeInTheDocument();
+    // Tanpa gambar tidak ada pratinjau palsu (latar putih kosong)
+    expect(screen.queryByRole('img', { name: /Pratinjau teks hero/ })).not.toBeInTheDocument();
     empty.unmount();
 
     const pending = render(<Harness initialMode="image" initialImages={['/assets/bg/hero_1.jpg']} />);
@@ -977,11 +1010,15 @@ describe('HeroSettings: teks di atas latar', () => {
     vi.mocked(sampleImage).mockResolvedValue({ kind: 'unmeasurable' });
     const cross = render(<Harness initialMode="image" initialImages={['https://s3.test/bucket/assets/bg/a.jpg']} />);
     expect(await screen.findByText('Kontras tidak terukur')).toBeInTheDocument();
-    expect(screen.getByText(/teks terang dengan lapisan aman 62%/)).toBeInTheDocument();
+    // Cadangan = lapisan admin persis (bawaan 0), tanpa peringatan karena tidak terukur
+    expect(screen.getByText(/Website memakai teks terang tanpa lapisan \(gambar\/video tampil penuh\)\./)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Pratinjau teks hero: teks terang, tanpa lapisan' }).querySelector('[data-preview-scrim]')).toBeNull();
+    expect(screen.queryByText('Teks mungkin sulit dibaca')).not.toBeInTheDocument();
     cross.unmount();
 
     render(<Harness initialMode="video" initialVideo={VIDEO_URL} />);
     expect(screen.getByText(/Video belum punya sampul. Website mengukur frame pertama video/)).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Pratinjau teks hero/ })).not.toBeInTheDocument();
   });
 
   it('sampul video yang diukur; terkunci selama menyimpan', async () => {

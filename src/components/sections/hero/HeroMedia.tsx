@@ -223,10 +223,10 @@ const HeroSlides: React.FC<HeroSlidesProps> = ({ images, slides, upcoming, prelo
 
 /* ─── Lapisan latar + tombol jeda ─────────────────────────────────────────── */
 
-/** Lapisan keterbacaan di atas media (dari useHeroLegibility): warna per nada, alpha di sisi teks, tepi blok teks. */
+/** Lapisan di atas media (dari useHeroLegibility): warna per nada, alpha di sisi teks, tepi blok teks. */
 export interface HeroScrim {
   tone: HeroTone;
-  /** Alpha di belakang blok teks (0..0,85) */
+  /** Alpha di belakang blok teks = setting admin `hero_overlay` persis (0..0,8); 0 = tidak ada lapisan sama sekali */
   alpha: number;
   /** Tepi blok teks dalam px (kiri pada ≥ 1024px, atas di bawahnya); null = bawaan CSS (50% / 60%) */
   end: number | null;
@@ -234,7 +234,7 @@ export interface HeroScrim {
 
 interface HeroMediaProps {
   config: HeroMediaConfig;
-  /** Lapisan di antara media dan isi hero; tanpa ini media tampil polos */
+  /** Lapisan di antara media dan isi hero; tanpa ini, atau alpha 0, media tampil polos */
   scrim?: HeroScrim | null;
   /** Tinggi pudar bawah ke canvas (px) agar tidak sampai ke blok teks; bawaan 160px (h-40) */
   fadeHeight?: number | null;
@@ -251,9 +251,10 @@ interface HeroMediaProps {
  * - video: berulang tanpa suara, inline, tanpa kontrol bawaan; poster tampil sampai video berjalan. Video rusak /
  *   gagal dimuat → disembunyikan (poster tetap tampil sebagai gambar bila ada).
  * Tidak ada lagi yang bisa tampil (semua gambar gagal, atau video gagal tanpa poster yang bisa dimuat) → kanvas bawaan.
- * Di atas media ada lapisan keterbacaan `scrim` (.hero-scrim: obsidian untuk teks terang, putih untuk teks gelap;
- * paling pekat di sisi teks, lebih tipis di tempat lain agar gambar tetap terlihat), lalu pudar bawah ke canvas agar
- * menyatu dengan strip layanan (tingginya `fadeHeight`, tidak pernah sampai ke blok teks).
+ * Di atas media hanya ada lapisan `scrim` bila admin memasangnya (`hero_overlay` > 0; .hero-scrim: obsidian untuk
+ * teks terang, putih untuk teks gelap; paling pekat di sisi teks, lebih tipis di tempat lain). 0% = tanpa elemen
+ * lapisan, gambar/video tampil penuh. Lalu pudar bawah ke canvas agar menyatu dengan strip layanan (tingginya
+ * `fadeHeight`, tidak pernah sampai ke blok teks); pudar ini bukan lapisan gelap dan selalu ada.
  * Berhenti saat hero tidak terlihat atau tab disembunyikan; tombol jeda (WCAG 2.2.2) selama masih ada 2+ gambar yang
  * bisa tampil, atau video yang masih bisa diputar.
  * Reduced motion atau hemat data (Save-Data): mulai dijeda (gambar pertama / poster saja), pengunjung bisa memutar;
@@ -371,8 +372,8 @@ export const HeroMedia: React.FC<HeroMediaProps> = ({ config, scrim = null, fade
             )
           ))}
 
-        {/* Lapisan keterbacaan: di atas media, di bawah pudar bawah (warna & alpha lewat variabel CSS, lihat index.css) */}
-        {scrim && (
+        {/* Lapisan dari admin: di atas media, di bawah pudar bawah (warna & alpha lewat variabel CSS, lihat index.css) */}
+        {scrim && scrim.alpha > 0 && (
           <div
             data-hero-scrim={scrim.tone}
             className="hero-scrim absolute inset-0 z-[3]"

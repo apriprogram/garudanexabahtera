@@ -13,7 +13,7 @@ export interface SampleLayout {
 
 /**
  * Hasil satu sumber: statistik, 'missing' (gambar situs yang gagal dimuat: HeroMedia juga melewatinya), atau
- * 'unmeasurable' (lintas domain tanpa CORS, canvas tercemar, dekode gagal): latar tidak diketahui → cadangan aman.
+ * 'unmeasurable' (lintas domain tanpa CORS, canvas tercemar, dekode gagal): latar tidak diketahui → cadangan.
  */
 export type SampleResult = { kind: 'sample'; sample: BackgroundSample } | { kind: 'missing' } | { kind: 'unmeasurable' };
 

@@ -59,6 +59,7 @@ vi.mock('bcryptjs', () => ({ default: { hashSync: () => 'dummy', compare: async 
 import * as hm from '../../backend/modules/hero_media.js';
 import { parseUpload, svgHasActiveContent, uploadBase64ToS3 } from '../../backend/s3-client.js';
 import { createAuthGate, issueToken } from '../../backend/security.js';
+import { HERO_OVERLAY_DEFAULT as HERO_OVERLAY_DEFAULT_FRONTEND } from '../../src/components/sections/hero/heroContrast';
 
 const ROOT = resolve(__dirname, '..', '..');
 const read = (...parts: string[]) => readFileSync(join(ROOT, ...parts), 'utf8');
@@ -134,15 +135,16 @@ const SNIFF_CASES: [string, Buffer, 'mp4' | 'webm' | null][] = [
 
 const MIME = { mp4: 'video/mp4', webm: 'video/webm' } as const;
 
-// hero_text_tone / hero_overlay: [sent value, stored tone, stored overlay] (same table as heroContrast.test.ts)
+// hero_text_tone / hero_overlay: [sent value, stored tone, stored overlay] (same table as heroContrast.test.ts). The
+// overlay is applied exactly by the site; anything that is not a number falls back to the default '0' (no overlay).
 const TEXT_CASES: [unknown, string, string][] = [
-  ['auto', 'auto', '40'], ['light', 'light', '40'], ['dark', 'dark', '40'], ['', 'auto', '40'], ['LIGHT', 'auto', '40'],
-  [' dark', 'auto', '40'], [null, 'auto', '40'], [true, 'auto', '40'], [['light'], 'auto', '40'], [{}, 'auto', '40'],
+  ['auto', 'auto', '0'], ['light', 'light', '0'], ['dark', 'dark', '0'], ['', 'auto', '0'], ['LIGHT', 'auto', '0'],
+  [' dark', 'auto', '0'], [null, 'auto', '0'], [true, 'auto', '0'], [['light'], 'auto', '0'], [{}, 'auto', '0'],
   ['40', 'auto', '40'], ['0', 'auto', '0'], ['80', 'auto', '80'], ['55', 'auto', '55'], [' 40.5 ', 'auto', '41'],
   ['\t12\n', 'auto', '12'], ['0.5', 'auto', '1'], ['80.49', 'auto', '80'], ['-3', 'auto', '0'], ['-0.4', 'auto', '0'],
   ['81', 'auto', '80'], ['999999999999999999999', 'auto', '80'], [42.5, 'auto', '43'], [-0.4, 'auto', '0'], [1e21, 'auto', '80'],
-  [0, 'auto', '0'], [80, 'auto', '80'], [81, 'auto', '80'], [-1, 'auto', '0'], ['abc', 'auto', '40'], ['1e2', 'auto', '40'],
-  ['+5', 'auto', '40'], ['5%', 'auto', '40'], ['4,5', 'auto', '40'],
+  [0, 'auto', '0'], [80, 'auto', '80'], [81, 'auto', '80'], [-1, 'auto', '0'], ['abc', 'auto', '0'], ['1e2', 'auto', '0'],
+  ['+5', 'auto', '0'], ['5%', 'auto', '0'], ['4,5', 'auto', '0'],
 ];
 
 // SVGs for the active-content check (s3-client.js ↔ svg_has_active_content() in api.php): [name, text, active]
@@ -576,6 +578,19 @@ describe('update_settings hero keys (Node)', () => {
     }
     expect(await prepareNode({ hero_overlay: '25' }).then((r) => r.settings)).toEqual({ hero_overlay: '25' });
     expect(await prepareNode({ hero_text_tone: 'dark' }).then((r) => r.settings)).toEqual({ hero_text_tone: 'dark' });
+  });
+
+  it('hero_overlay defaults to 0 (no overlay, applied exactly by the site) in both backends and the frontend', () => {
+    expect(hm.HERO_OVERLAY_DEFAULT).toBe(0);
+    expect(hm.heroOverlay(undefined)).toBe('0');
+    expect(hm.heroOverlay('kosong')).toBe('0');
+    expect(HERO_OVERLAY_DEFAULT_FRONTEND).toBe(0);
+    const php = readFileSync(join(ROOT, 'backend', 'modules', 'hero_media.php'), 'utf8');
+    expect(php).toMatch(/const HM_OVERLAY_DEFAULT = 0;/);
+    // Comments describe the exact overlay, not a minimum that the site raises
+    for (const source of [php, readFileSync(join(ROOT, 'backend', 'modules', 'hero_media.js'), 'utf8')]) {
+      expect(source).not.toMatch(/minimum overlay|default 40|→ '40'/);
+    }
   });
 
   it('refuses a data: video before storing anything', async () => {

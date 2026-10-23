@@ -2,7 +2,7 @@
 // Warna di sini HARUS sama dengan peran teks di heroContrast.ts (yang menghitung kontrasnya).
 import type { HeroTone } from './heroContrast';
 
-/** Latar bawaan (kanvas titik) = tampilan hari ini; media + nada gelap/terang = teks di atas lapisan. */
+/** Latar bawaan (kanvas titik) = tampilan hari ini; media + nada gelap/terang = teks di atas gambar/video (lapisan admin bila ada). */
 export type HeroTextLook = 'default' | HeroTone;
 
 export interface HeroToneClasses {
@@ -37,9 +37,11 @@ const DEFAULT_LOOK: HeroToneClasses = {
 
 export const HERO_TONE_CLASSES: Record<HeroTextLook, HeroToneClasses> = {
   default: DEFAULT_LOOK,
-  // Di atas lapisan putih: sama dengan bawaan, keterangan kecil memakai muted (subtle baru 4,5:1 di latar hampir putih)
+  // Teks gelap di atas gambar/video terang: sama dengan bawaan, keterangan kecil memakai muted (subtle baru 4,5:1 di
+  // latar hampir putih)
   dark: { ...DEFAULT_LOOK, note: 'text-muted' },
-  // Di atas lapisan obsidian: putih, aksen brand-200, pill toggle obsidian 70% (kontras sendiri, tidak bergantung gambar)
+  // Teks terang di atas gambar/video gelap: putih, aksen brand-200, pill toggle obsidian 70% (kontras sendiri, tidak
+  // bergantung gambar). Datar: tanpa bayangan teks / pendar (permintaan pemilik 2026-10-23)
   light: {
     title: 'text-on-media',
     accent: 'text-on-media-accent',

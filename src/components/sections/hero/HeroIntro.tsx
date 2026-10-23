@@ -49,8 +49,8 @@ const TITLE_CLASS =
  * [Template siap pakai | Website & aplikasi custom] (bentuk & huruf sama dengan segmen alur di section Proses) yang
  * mengganti judul dua warna (muncul kata per kata), tiga poin checklist, dan tombol. Kedua panel ditumpuk di sel grid
  * yang sama, jadi tinggi hero tidak melompat saat mode berganti. State mode dipegang Hero agar visual kanan ikut
- * berganti alur. Warna mengikuti `look` (heroTone.ts): bawaan, atau teks terang / gelap di atas lapisan latar
- * gambar/video (nadanya dipilih Hero lewat useHeroLegibility).
+ * berganti alur. Warna mengikuti `look` (heroTone.ts): bawaan, atau teks terang / gelap di atas latar gambar/video
+ * (nadanya dipilih Hero lewat useHeroLegibility). Datar: tanpa bayangan teks, pendar, atau bayangan kotak.
  *
  * SEO (heroHeadline.ts): judul mode Template SELALU elemen H1 yang sama (statis, juga saat mode Custom aktif), judul
  * mode Custom selalu <p>. Kedua judul ada sebagai teks di HTML prerender. Animasi masuk poin & tombol hanya diputar
@@ -65,7 +65,7 @@ interface HeroIntroProps {
   templatesHidden: boolean;
   /** true selama "Lihat Demo" di-hover / difokus: tayangan berhenti agar template yang dibuka tidak berganti. */
   onHoldChange?: (hold: boolean) => void;
-  /** Warna teks: 'default' (latar bawaan), 'light' / 'dark' (di atas lapisan gambar/video). */
+  /** Warna teks: 'default' (latar bawaan), 'light' / 'dark' (di atas gambar/video). */
   look?: HeroTextLook;
 }
 

@@ -210,7 +210,7 @@ const SiteSettings: React.FC = () => {
   const [heroBgMode, setHeroBgMode] = useState<HeroBgMode>('default');
   const [heroVideo, setHeroVideo] = useState('');
   const [heroVideoPoster, setHeroVideoPoster] = useState('');
-  // Teks hero di atas gambar/video: warna (hero_text_tone) dan lapisan minimum dalam persen (hero_overlay)
+  // Teks hero di atas gambar/video: warna (hero_text_tone) dan lapisan dalam persen, dipakai persis (hero_overlay)
   const [heroTextTone, setHeroTextTone] = useState<HeroTextTone>('auto');
   const [heroOverlay, setHeroOverlay] = useState(() => parseHeroOverlay(undefined));
   // true selama video diunggah sampai sampulnya terpasang (juga setelah tab Hero ditutup): tombol simpan ditahan

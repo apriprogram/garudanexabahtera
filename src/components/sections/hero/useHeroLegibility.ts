@@ -24,7 +24,7 @@ export interface HeroLegibilityState extends HeroLegibility {
 
 interface Measured {
   key: string;
-  /** Sampel per gambar; null = tidak bisa diukur → cadangan aman */
+  /** Sampel per gambar; null = tidak bisa diukur → cadangan (lapisan admin persis) */
   samples: BackgroundSample[] | null;
   scrimEnd: number | null;
   fadeHeight: number | null;
@@ -69,12 +69,13 @@ const mergeVideo = (poster: SampleResult | null, video: HTMLVideoElement | null,
 };
 
 /**
- * Nada teks & lapisan hero di atas gambar/video dari setting admin (`hero_text_tone`, `hero_overlay`):
+ * Nada teks hero di atas gambar/video dari setting admin (`hero_text_tone`; lapisan `hero_overlay` dipakai persis):
  * - mengambil sampel latar DI BELAKANG BLOK TEKS (`textRef`) dengan potongan object-fit: cover yang sama dengan
  *   halaman; tayangan: semua gambar diukur dan dipakai kasus terburuknya, jadi nada tidak berkedip antar-slide;
  *   video: poster, atau frame pertama (loadeddata, lewat `onVideoFrame` yang dipasang ke HeroMedia);
  * - selama mengukur, dan bila tidak bisa diukur (lintas domain tanpa CORS, canvas tercemar, hemat data dengan 2+
- *   gambar), memakai cadangan aman: teks terang dengan lapisan yang cukup untuk latar putih (≥ 55%);
+ *   gambar), memakai cadangan: teks terang (gelap bila dipaksa admin) dengan lapisan admin persis, sama dengan HTML
+ *   prerender, jadi hidrasi tidak berbeda dan tidak ada kilasan lapisan gelap;
  * - diukur ulang saat tata letak berganti (640px / 1024px), lebar jendela berubah, isi blok teks berganti
  *   (`layoutKey`, mis. mode Template ↔ Custom: di HP blok teks mode Custom lebih tinggi), atau ukuran blok teks /
  *   section berubah (ResizeObserver), tanpa unduh ulang.
@@ -109,7 +110,7 @@ export function useHeroLegibility({
 
   // Ukur ulang saat tata letak berganti, lebar jendela berubah (tinggi jendela saja = bilah alamat HP: diabaikan),
   // atau ukuran blok teks / section berubah: mis. di HP panel mode yang tidak aktif dilepas dari tata letak, jadi
-  // mode Custom (tombol lebih tinggi) memanjangkan blok teks; tanpa ukur ulang tombolnya jatuh di luar lapisan pekat
+  // mode Custom (tombol lebih tinggi) memanjangkan blok teks; tanpa ukur ulang tombolnya jatuh di luar area sampel
   useEffect(() => {
     if (!mediaKey || typeof window === 'undefined') return undefined;
     const bump = () => setLayoutTick((n) => n + 1);

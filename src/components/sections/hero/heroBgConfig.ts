@@ -77,7 +77,7 @@ export const heroBackgroundKey = (config: HeroBackgroundConfig): string => {
 
 /* ─── Keterbacaan teks di atas gambar/video (hero_text_tone, hero_overlay) ─── */
 
-/** Setting teks hero di atas media: nada (auto/light/dark) + lapisan minimum dalam persen (0..80). */
+/** Setting teks hero di atas media: nada (auto/light/dark) + lapisan dalam persen (0..80, dipakai persis; 0 = tanpa lapisan). */
 export interface HeroTextSettings {
   tone: HeroTextTone;
   overlay: number;
@@ -92,7 +92,7 @@ const OVERLAY_NUMBER = /^[ \t\n\r]*(-?[0-9]+(?:\.[0-9]+)?)[ \t\n\r]*$/;
 
 /**
  * `hero_overlay` → bilangan bulat 0..80, sama persis dengan hm_overlay() / heroOverlay() di backend: angka
- * (atau teks angka) dibulatkan lalu dibatasi 0..80; selain itu (kosong, teks lain, bukan angka) → 40.
+ * (atau teks angka) dibulatkan lalu dibatasi 0..80; selain itu (kosong, teks lain, bukan angka) → 0 (tanpa lapisan).
  */
 export const parseHeroOverlay = (raw: unknown): number => {
   let value: number;

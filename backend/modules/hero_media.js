@@ -8,8 +8,9 @@
 //   hero_bg_video         URL of a video stored by upload_hero_video, '' = none; never a data: URI
 //   hero_bg_video_poster  URL of the poster image, '' = none; a new poster arrives as a data:image/... URI
 //   hero_text_tone        hero text over an image/video: 'auto' (default) | 'light' | 'dark'; anything else → 'auto'
-//   hero_overlay          minimum overlay behind the hero text in percent, an integer 0..80 as a string (default 40):
-//                         a number or plain decimal text ("55", " 40.6") is rounded and clamped, anything else → '40'
+//   hero_overlay          overlay behind the hero text in percent, applied exactly as stored (never raised by the site;
+//                         0 = no overlay, the image/video shows uncovered), an integer 0..80 as a string (default 0):
+//                         a number or plain decimal text ("55", " 40.6") is rounded and clamped, anything else → '0'
 //
 // upload_hero_video (POST /api.php?action=upload_hero_video, staff token): the body is the raw file, not JSON, base64
 // or multipart, so express.json leaves the request stream unread for this module. The type comes from the magic bytes
@@ -44,7 +45,7 @@ export const HERO_MEDIA_ACTIONS = Object.freeze(['upload_hero_video', 'get_hero_
 export const HERO_BG_MODES = Object.freeze(['default', 'image', 'video']);
 // hero_text_tone values (HERO_TEXT_TONES in src/components/sections/hero/heroContrast.ts) and hero_overlay limits
 export const HERO_TEXT_TONES = Object.freeze(['auto', 'light', 'dark']);
-export const HERO_OVERLAY_DEFAULT = 40;
+export const HERO_OVERLAY_DEFAULT = 0;
 export const HERO_OVERLAY_MAX = 80;
 // Plain decimal number with spaces/tabs/newlines around it: no sign other than '-', no exponent, no thousands separator
 const OVERLAY_NUMBER = /^[ \t\n\r]*(-?[0-9]+(?:\.[0-9]+)?)[ \t\n\r]*$/;

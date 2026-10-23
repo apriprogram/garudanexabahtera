@@ -9,8 +9,9 @@
 //   hero_bg_video         path of a video stored by upload_hero_video, '' = none; never a data: URI
 //   hero_bg_video_poster  path of the poster image, '' = none; a new poster arrives as a data:image/... URI
 //   hero_text_tone        hero text over an image/video: 'auto' (default) | 'light' | 'dark'; anything else → 'auto'
-//   hero_overlay          minimum overlay behind the hero text in percent, an integer 0..80 as a string (default 40):
-//                         a number or plain decimal text ("55", " 40.6") is rounded and clamped, anything else → '40'
+//   hero_overlay          overlay behind the hero text in percent, applied exactly as stored (never raised by the site;
+//                         0 = no overlay, the image/video shows uncovered), an integer 0..80 as a string (default 0):
+//                         a number or plain decimal text ("55", " 40.6") is rounded and clamped, anything else → '0'
 //
 // upload_hero_video (POST /api.php?action=upload_hero_video, staff token): the body is the raw file, not JSON, base64
 // or multipart; api.php skips its JSON read for this action and the body is streamed from php://input into a dot
@@ -36,7 +37,7 @@
 const HM_BG_MODES = ['default', 'image', 'video'];
 // hero_text_tone values (HERO_TEXT_TONES in src/components/sections/hero/heroContrast.ts) and hero_overlay limits
 const HM_TEXT_TONES = ['auto', 'light', 'dark'];
-const HM_OVERLAY_DEFAULT = 40;
+const HM_OVERLAY_DEFAULT = 0;
 const HM_OVERLAY_MAX = 80;
 // Plain decimal number with spaces/tabs/newlines around it: no sign other than '-', no exponent, no thousands separator
 const HM_OVERLAY_NUMBER = '/^[ \t\n\r]*(-?[0-9]+(?:\.[0-9]+)?)[ \t\n\r]*$/D';
