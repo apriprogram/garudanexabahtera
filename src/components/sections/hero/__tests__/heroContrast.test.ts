@@ -199,6 +199,15 @@ describe('decideHeroLegibility', () => {
   // Gelap di atas, putih di bawah blok teks (seperti gambar latar lokal saat ini)
   const MIXED = sampleOf([55, hexToRgb('#06102C')], [15, hexToRgb('#1A6BFF')], [30, hexToRgb('#F2F6FF')]);
 
+  it('otomatis, tidak ada nada yang lolos: nada yang terbaca di bagian latar terbesar menang', () => {
+    const mostlyLight = sampleOf([35, hexToRgb('#06102C')], [65, hexToRgb('#F2F6FF')]);
+    const mostlyDark = sampleOf([65, hexToRgb('#06102C')], [35, hexToRgb('#F2F6FF')]);
+    expect(decideHeroLegibility(mostlyLight, 'auto', 0)).toMatchObject({ tone: 'dark', readable: false });
+    expect(decideHeroLegibility(mostlyDark, 'auto', 0)).toMatchObject({ tone: 'light', readable: false });
+    // Gambar terburuk menentukan: tayangan dengan satu gambar mayoritas gelap → teks terang
+    expect(decideHeroLegibility([mostlyLight, mostlyDark], 'auto', 0).tone).toBe('light');
+  });
+
   it('otomatis: gambar gelap → teks terang dengan lapisan admin persis (0 = tanpa lapisan)', () => {
     expect(decideHeroLegibility(DARK_IMAGE, 'auto', 40)).toMatchObject({ tone: 'light', overlayAlpha: 0.4, readable: true, measured: true });
     expect(decideHeroLegibility(DARK_IMAGE, 'auto', 0)).toMatchObject({ tone: 'light', overlayAlpha: 0, readable: true });

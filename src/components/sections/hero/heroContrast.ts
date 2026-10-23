@@ -248,6 +248,18 @@ function enoughPass(tone: HeroTone, sample: BackgroundSample, alpha: number): bo
   return true;
 }
 
+/** Bagian piksel (0..1) tempat teks nada ini lolos dengan lapisan `alpha`. */
+function passShare(tone: HeroTone, sample: BackgroundSample, alpha: number): number {
+  if (sample.count === 0) return 0;
+  const { scrim, limit } = TONES[tone];
+  let ok = 0;
+  for (let i = 0; i < sample.count; i += 1) {
+    const l = compositeLuminance(scrim, alpha, sample.rgb[i * 3], sample.rgb[i * 3 + 1], sample.rgb[i * 3 + 2]);
+    if (tone === 'light' ? l <= limit : l >= limit) ok += 1;
+  }
+  return ok / sample.count;
+}
+
 const requiredCache = new WeakMap<BackgroundSample, Partial<Record<HeroTone, number | null>>>();
 
 /**
@@ -332,8 +344,13 @@ export function decideHeroLegibility(
   } else {
     const light = worst('light');
     const dark = worst('dark');
-    // Seri → terang
-    const darkWins = legibilityScore(dark) > legibilityScore(light);
+    // Keduanya tidak lolos di seluruh area (mis. blok teks separuh di langit gelap, separuh di cahaya putih): pilih
+    // nada yang terbaca di bagian latar terbesar (gambar terburuk), bukan titik terburuk yang nyaris seri dan bisa
+    // berganti antar-muat halaman. Selain itu (atau bagiannya sama, mis. latar abu-abu polos) skor kontras; seri → terang.
+    const share = (t: HeroTone) => Math.min(...list.map((sample) => passShare(t, sample, alpha)));
+    const lightShare = passes(light) || passes(dark) ? 0 : share('light');
+    const darkShare = passes(light) || passes(dark) ? 0 : share('dark');
+    const darkWins = darkShare !== lightShare ? darkShare > lightShare : legibilityScore(dark) > legibilityScore(light);
     tone = darkWins ? 'dark' : 'light';
     contrast = darkWins ? dark : light;
   }
