@@ -52,7 +52,8 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
     <div
       role="region"
       aria-label="Promo pembelian pertama"
-      className={`relative flex items-center justify-center gap-2 rounded-2xl bg-brand-50 px-11 py-2.5 text-center text-[13px] leading-snug text-fg ring-1 ring-inset ring-brand-100 sm:gap-3 sm:py-3 sm:text-[15px] ${className}`}
+      // Gelap & bulat penuh (permintaan pemilik 2026-10-23): di atas langit gelap hero; HP (2 baris) cukup rounded-2xl
+      className={`relative flex items-center justify-center gap-2 rounded-2xl bg-fg/45 px-11 py-2.5 text-center text-[13px] leading-snug text-white ring-1 ring-inset ring-white/15 backdrop-blur-sm sm:gap-3 sm:rounded-full sm:py-2 sm:text-[15px] ${className}`}
     >
       <span aria-hidden>🎁</span>
       <p className="min-w-0">
@@ -61,7 +62,7 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
       </p>
       <Link
         to={HUB_PATHS.catalog}
-        className="hidden h-9 shrink-0 items-center rounded-full bg-surface px-4 text-[13px] font-semibold text-fg ring-1 ring-inset ring-line transition-colors hover:bg-alt sm:inline-flex sm:text-sm"
+        className="hidden h-9 shrink-0 items-center rounded-full bg-white/10 px-4 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/30 transition-colors hover:bg-white/20 sm:inline-flex sm:text-sm"
       >
         Pilih Template
       </Link>
@@ -69,7 +70,7 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
         type="button"
         onClick={close}
         aria-label="Tutup promo"
-        className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:bg-fg/[0.06] hover:text-fg sm:right-3"
+        className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white sm:right-3"
       >
         <X className="h-4 w-4" aria-hidden />
       </button>

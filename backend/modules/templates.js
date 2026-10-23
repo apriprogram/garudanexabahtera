@@ -62,6 +62,9 @@ const GET_ACTIONS = new Set([
 // Same limits as api.php: 5 per IP per hour, counted only after the input is valid
 const customOrderLimiter = createLimiter(3600 * 1000, 5);
 const customerRegisterLimiter = createLimiter(3600 * 1000, 5);
+// Suka / dilihat di kartu template (sama dengan PF_LIKES_PER_HOUR / PF_VIEWS_PER_HOUR di templates.php)
+const templateLikeLimiter = createLimiter(3600 * 1000, 60);
+const templateViewLimiter = createLimiter(3600 * 1000, 300);
 
 /** An error whose message is safe to show to the client. `errors` = per-field messages. */
 export class ApiError extends Error {
@@ -84,6 +87,8 @@ const HANDLERS = {
   customer_register: customerRegister,
   midtrans_notification: midtransNotification,
   get_payment_config: getPaymentConfig,
+  template_like: templateLike,
+  template_view: templateView,
   // customer (own data only)
   customer_create_order: customerCreateOrder,
   customer_get_order_quote: customerGetOrderQuote,
@@ -228,6 +233,42 @@ async function getSitePublic(ctx) {
       content: contentOut(row.content),
     },
   };
+}
+
+// Template terbit dari input `slug` (huruf kecil, angka, tanda hubung); tidak ada → 404
+async function publishedTemplateBySlug(pool, input) {
+  const slug = phpTrim(inStr(input, 'slug')).toLowerCase();
+  const row = /^[a-z0-9-]{1,120}$/.test(slug)
+    ? await dbOne(pool, "SELECT id FROM templates WHERE slug = ? AND status = 'published' LIMIT 1", [slug])
+    : null;
+  if (!row) throw new ApiError('Template tidak ditemukan atau belum tersedia.', 404, 'TEMPLATE_NOT_FOUND');
+  return row;
+}
+
+// Suka (`liked` true) / batal suka template di kartu katalog: like_count +1 / -1 (tidak pernah di bawah 0). Status suka
+// per pengunjung disimpan di browser; server hanya menghitung, dibatasi per IP. Sama dengan pf_template_like().
+async function templateLike({ pool, input, req }) {
+  const key = `tpl-like|${clientIp(req)}`;
+  const wait = templateLikeLimiter.retryAfter(key);
+  if (wait) tooManyAttempts(wait);
+  const id = Number((await publishedTemplateBySlug(pool, input)).id);
+  const liked = ['1', 'true'].includes(inStr(input, 'liked').toLowerCase());
+  templateLikeLimiter.hit(key);
+  await dbRun(pool, liked
+    ? 'UPDATE templates SET like_count = like_count + 1 WHERE id = ?'
+    : 'UPDATE templates SET like_count = GREATEST(like_count - 1, 0) WHERE id = ?', [id]);
+  return { like_count: Number((await dbOne(pool, 'SELECT like_count FROM templates WHERE id = ?', [id])).like_count) };
+}
+
+// Template dibuka dari kartu (detail, demo, pesan): view_count +1. Sekali per sesi per template di browser, dibatasi per IP.
+async function templateView({ pool, input, req }) {
+  const key = `tpl-view|${clientIp(req)}`;
+  const wait = templateViewLimiter.retryAfter(key);
+  if (wait) tooManyAttempts(wait);
+  const id = Number((await publishedTemplateBySlug(pool, input)).id);
+  templateViewLimiter.hit(key);
+  await dbRun(pool, 'UPDATE templates SET view_count = view_count + 1 WHERE id = ?', [id]);
+  return { view_count: Number((await dbOne(pool, 'SELECT view_count FROM templates WHERE id = ?', [id])).view_count) };
 }
 
 // Public form for custom website / mobile app work -> project_client (source website, status pending)
@@ -1239,6 +1280,9 @@ function templateOut(r) {
     demo_url: r.demo_url,
     status: r.status,
     sort_order: Math.trunc(Number(r.sort_order)),
+    // Suka & dilihat (kartu katalog); 0 sebelum migrasi 013
+    like_count: Math.trunc(Number(r.like_count ?? 0)),
+    view_count: Math.trunc(Number(r.view_count ?? 0)),
     created_at: r.created_at,
     updated_at: r.updated_at,
   };

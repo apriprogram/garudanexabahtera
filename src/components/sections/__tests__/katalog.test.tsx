@@ -122,34 +122,41 @@ describe('Templates (#templates), katalog kecil', SLOW, () => {
     expect(grid.className).not.toContain('xl:grid-cols-4');
   });
 
-  it('kartu: deskripsi + "Lihat Demo" & "Pesan" selalu tampil, tanpa lapisan hover dan tanpa lencana kategori tunggal', async () => {
+  it('kartu gaya Dribbble: tanpa logo; hover = deskripsi + "Demo" & "Pesan"; judul, kategori · harga, ♥ suka & 👁 dilihat', async () => {
     catalog = { templates: SMALL(), categories: ['Company Profile'] };
     const section = await renderCatalog();
     const card = within(section).getByRole('heading', { level: 3, name: 'Corporate Nexa' }).closest('article') as HTMLElement;
 
+    // Deskripsi & tombol di lapisan hover (perangkat ber-mouse); di layar sentuh tombol selalu terlihat
     const description = within(card).getByText(/Company profile elegan/);
     expect(description.className).toContain('line-clamp-2');
-    // Tidak ada lagi kelas yang menyembunyikan isi di desktop (pointer halus) atau lapisan hover
-    expect(card.innerHTML).not.toMatch(/pointer-fine|group-hover\/shot:opacity/);
+    const overlay = description.closest('.pointer-events-none') as HTMLElement;
+    expect(overlay.className).toContain('[@media(hover:hover)]:opacity-0');
+    expect(overlay.className).toContain('[@media(hover:hover)]:group-hover/shot:opacity-100');
+    expect(overlay.className).toContain('group-focus-within/shot:opacity-100');
 
     const demo = within(card).getByRole('link', { name: /Lihat Demo Corporate Nexa/ });
     expect(demo).toHaveAttribute('href', '/demo/corporate-nexa');
     expect(demo).toHaveAttribute('target', '_blank');
-    expect(demo.className).toMatch(/btn-outline.*btn-sm|btn-sm.*btn-outline/);
+    expect(demo).toHaveTextContent('Demo');
     const order = within(card).getByRole('link', { name: 'Pesan Template Corporate Nexa' });
     expect(order).toHaveAttribute('href', '/pesan/corporate-nexa');
     expect(order).toHaveTextContent('Pesan');
     expect(order.className).toContain('btn-primary');
 
-    // Nama & harga memakai skala kartu design.md
+    // Nama memakai skala kartu design.md; kategori · harga selalu tampil di bawah gambar
     const heading = within(card).getByRole('heading', { level: 3 });
     expect(heading.className).toMatch(/text-base font-semibold/);
     expect(heading.className).toContain('sm:text-[17px]');
-    const price = within(card).getByText('Rp 1.500.000').closest('p') as HTMLElement;
-    expect(price.className).toMatch(/text-sm font-semibold/);
-    expect(price.className).toContain('max-sm:col-start-2');
+    const price = within(card).getByText('Rp 1.500.000');
+    expect(price.className).toContain('font-semibold');
+    expect(price.closest('p')).toHaveTextContent(/Company Profile\s*·\s*Harga Rp 1\.500\.000/);
 
-    expect(card).not.toHaveTextContent(/Compro|Kategori Company Profile/);
+    // Tanpa logo/avatar di kartu; tombol suka + jumlah dilihat
+    expect(card.querySelector('.bg-primary svg')).toBeNull();
+    const like = within(card).getByRole('button', { name: /^Suka Corporate Nexa, 0 suka$/ });
+    expect(like).toHaveAttribute('aria-pressed', 'false');
+    expect(within(card).getByText(/kali dilihat/)).toBeInTheDocument();
   });
 
   it('ajakan custom memakai label glosarium "Pesan Custom" (kepala section; HP: di bawah grid)', async () => {
@@ -183,9 +190,8 @@ describe('Templates (#templates), katalog besar', SLOW, () => {
     expect(within(section).getByRole('group', { name: 'Kata kunci populer' })).toBeInTheDocument();
     expect(within(section).getByRole('button', { name: /Urutkan/ })).toBeInTheDocument();
 
-    const badge = within(section).getAllByTitle('Company Profile')[0];
-    expect(badge.className).toContain('badge-site');
-    expect(badge).toHaveTextContent('Company Profile');
+    // Kategori tertulis di baris info setiap kartu (kategori · harga)
+    expect(within(section).getAllByText('Company Profile', { exact: false }).length).toBeGreaterThan(0);
 
     // ≥ 4 kartu: grid penuh 1/2/3/4 kolom
     expect((section.querySelector('ul') as HTMLElement).className).toContain('xl:grid-cols-4');

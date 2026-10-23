@@ -36,6 +36,8 @@ const PF_SITE_IMAGE_EXTS = ['png', 'jpg', 'webp', 'gif']; // customer CMS images
 const PF_MAX_PENDING_ORDERS = 5;          // unpaid orders one customer may have at the same time
 const PF_FIRST_ORDER_DISCOUNT_PERCENT = 20; // automatic discount on an account's first template order (owner 2026-10-23)
 const PF_FIRST_ORDER_DISCOUNT_CODE = 'PERTAMA20';
+const PF_LIKES_PER_HOUR = 60;             // like / unlike clicks per IP (kartu template, owner 2026-10-23)
+const PF_VIEWS_PER_HOUR = 300;            // counted template views per IP
 const PF_SNAP_REUSE_HOURS = 23;           // a Snap token lives 24 hours
 const PF_GENERATED_ASSET = '/_[0-9a-f]{12}\.[a-z0-9]+$/'; // names made by save_base64_asset (never seed files)
 
@@ -58,6 +60,8 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
         'customer_register' => 'pf_customer_register',
         'midtrans_notification' => 'pf_midtrans_notification',
         'get_payment_config' => 'pf_get_payment_config',
+        'template_like' => 'pf_template_like',
+        'template_view' => 'pf_template_view',
         // customer (own data only)
         'customer_create_order' => 'pf_customer_create_order',
         'customer_get_order_quote' => 'pf_customer_get_order_quote',
@@ -152,6 +156,42 @@ function pf_get_site_public(mysqli $conn, array $input, ?array $user): array {
         'domain' => $row['domain'],
         'content' => pf_content_out($row['content']),
     ]];
+}
+
+// Template terbit dari input `slug` (huruf kecil, angka, tanda hubung); tidak ada → 404
+function pf_published_template_by_slug(mysqli $conn, array $input): array {
+    $slug = strtolower(trim(in_str($input, 'slug')));
+    $row = preg_match('/^[a-z0-9-]{1,120}$/', $slug)
+        ? db_one($conn, "SELECT id FROM templates WHERE slug = ? AND status = 'published' LIMIT 1", [$slug])
+        : null;
+    if (!$row) throw new ApiError('Template tidak ditemukan atau belum tersedia.', 404, 'TEMPLATE_NOT_FOUND');
+    return $row;
+}
+
+// Suka (`liked` true) / batal suka template di kartu katalog: like_count +1 / -1 (tidak pernah di bawah 0). Status suka
+// per pengunjung disimpan di browser; server hanya menghitung, dibatasi per IP.
+function pf_template_like(mysqli $conn, array $input, ?array $user): array {
+    $key = 'tpl-like|' . client_ip();
+    $wait = rate_limit_wait($key, PF_LIKES_PER_HOUR);
+    if ($wait) too_many_attempts($wait);
+    $id = (int)pf_published_template_by_slug($conn, $input)['id'];
+    $liked = in_array(strtolower(in_str($input, 'liked')), ['1', 'true'], true);
+    rate_limit_hit($key, 3600);
+    db_run($conn, $liked
+        ? "UPDATE templates SET like_count = like_count + 1 WHERE id = ?"
+        : "UPDATE templates SET like_count = GREATEST(like_count - 1, 0) WHERE id = ?", [$id]);
+    return ['like_count' => (int)db_one($conn, "SELECT like_count FROM templates WHERE id = ?", [$id])['like_count']];
+}
+
+// Template dibuka dari kartu (detail, demo, pesan): view_count +1. Sekali per sesi per template di browser, dibatasi per IP.
+function pf_template_view(mysqli $conn, array $input, ?array $user): array {
+    $key = 'tpl-view|' . client_ip();
+    $wait = rate_limit_wait($key, PF_VIEWS_PER_HOUR);
+    if ($wait) too_many_attempts($wait);
+    $id = (int)pf_published_template_by_slug($conn, $input)['id'];
+    rate_limit_hit($key, 3600);
+    db_run($conn, "UPDATE templates SET view_count = view_count + 1 WHERE id = ?", [$id]);
+    return ['view_count' => (int)db_one($conn, "SELECT view_count FROM templates WHERE id = ?", [$id])['view_count']];
 }
 
 // Public form for custom website / mobile app work -> project_client (source website, status pending)
@@ -1121,6 +1161,9 @@ function pf_template_out(array $r): array {
         'demo_url' => $r['demo_url'],
         'status' => $r['status'],
         'sort_order' => (int)$r['sort_order'],
+        // Suka & dilihat (kartu katalog); 0 sebelum migrasi 013
+        'like_count' => (int)($r['like_count'] ?? 0),
+        'view_count' => (int)($r['view_count'] ?? 0),
         'created_at' => $r['created_at'],
         'updated_at' => $r['updated_at'],
     ];

@@ -190,6 +190,8 @@ CREATE TABLE IF NOT EXISTS templates (
   demo_url          VARCHAR(500) DEFAULT NULL,    -- optional; empty = /demo/:slug
   status            ENUM('draft','published') NOT NULL DEFAULT 'draft',
   sort_order        INT NOT NULL DEFAULT 0,
+  like_count         INT NOT NULL DEFAULT 0,      -- catalog card likes (migration 013)
+  view_count         INT NOT NULL DEFAULT 0,      -- catalog card views (migration 013)
   created_at        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -916,7 +918,8 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-23_009', 'baseline: SEO FAQ/contact data fix (no faq_data rows; seed.sql has the new hero/CTA values)'),
   ('2026-10-23_010', 'baseline: visitor_logs referrer_host, landing_path, utm_source (visit source)'),
   ('2026-10-23_011', 'baseline: navbar page links (no navbar rows; the built-in menu is Template, Jasa, Harga, Panduan)'),
-  ('2026-10-24_012', 'baseline: template_orders list_price, discount_amount, discount_code (first-order discount)');
+  ('2026-10-24_012', 'baseline: template_orders list_price, discount_amount, discount_code (first-order discount)'),
+  ('2026-10-24_013', 'baseline: templates like_count, view_count (catalog card likes and views)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

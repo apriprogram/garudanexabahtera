@@ -37,7 +37,7 @@ export const isAuthConfigured = () => authConfigured;
 export const PUBLIC_ACTIONS = new Set([
   'get_settings', 'track_visit', 'login', 'register', 'get_list_products', 'get_navbar_menus',
   'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
-  'customer_register', 'midtrans_notification', 'get_payment_config',
+  'customer_register', 'midtrans_notification', 'get_payment_config', 'template_like', 'template_view',
 ]);
 export const ANY_ROLE_ACTIONS = new Set([
   'pd_notifications_list', 'pd_notifications_read', 'pd_file',
