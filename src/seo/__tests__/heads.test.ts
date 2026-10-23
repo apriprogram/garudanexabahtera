@@ -67,7 +67,8 @@ describe('getHead: semua rute index', () => {
   it('lastmod jujur: tanggal YYYY-MM-DD dari data/konten, bukan tanggal build', () => {
     const byPath = Object.fromEntries(entries.map((e) => [e.path, e]));
     expect(byPath['/template/aura-studio'].lastmod).toBe('2026-10-23');
-    expect(byPath['/template/corporate-nexa'].lastmod).toBe('2026-10-22');
+    // updated_at DB 2026-10-22, tetapi isi halamannya (corporate-nexa.ts/.content.ts) berubah 2026-10-23
+    expect(byPath['/template/corporate-nexa'].lastmod).toBe('2026-10-23');
     expect(byPath['/template/aura-studio'].images).toEqual([`${SITE_ORIGIN}/assets/templates/aura-studio-preview.webp`]);
     expect(byPath[LEGAL_PATHS.terms].lastmod).toBe(LEGAL_UPDATED_AT);
     expect(byPath['/'].lastmod).toBe('2026-10-23'); // max(HOME_UPDATED, updated_at template)

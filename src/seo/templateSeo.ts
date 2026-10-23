@@ -7,7 +7,7 @@
 // 2. Pola cadangan Lampiran A.1/A.2 dari kolom DB (nama, kategori, short_description, harga).
 // Harga SELALU dari data (DB/API): teks salinan memakai token {harga} / {harga_singkat}, tidak menulis angka sendiri.
 import type { Template } from '../types/platform';
-import { collapseSpace, firstThatFits, formatPriceFull, formatPriceShort, isPrice, sentence } from './format';
+import { collapseSpace, firstThatFits, formatPriceFull, formatPriceShort, isPrice, latestDate, sentence } from './format';
 import { isCategorySlug, type CategorySlug } from './paths';
 import type { SeoData } from './types';
 
@@ -19,7 +19,18 @@ export interface TemplateSeoCopy {
   description?: string;
   /** Niche untuk judul cadangan dan alt gambar, mis. "Klinik & Salon". Bawaan: kategori DB. */
   niche?: string;
+  /**
+   * YYYY-MM-DD terakhir teks halaman template ini berubah ({slug}.ts atau {slug}.content.ts). lastmod sitemap = tanggal
+   * paling akhir dari ini, TEMPLATE_PAGE_UPDATED dan updated_at DB. Perbarui di commit yang sama dengan perubahan isinya.
+   */
+  updated?: string;
 }
+
+/**
+ * YYYY-MM-DD terakhir bagian bersama halaman /template/{slug} berubah: tata letak TemplateDetail.tsx, kalimat paket &
+ * FAQ bersama (src/content/faq.ts), kalimat refund/Midtrans. Berlaku untuk semua template, juga template tanpa salinan.
+ */
+export const TEMPLATE_PAGE_UPDATED = '2026-10-23';
 
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 155;
@@ -34,6 +45,10 @@ export const TEMPLATE_COPY: Readonly<Record<string, TemplateSeoCopy>> = Object.f
     .map(([file, mod]) => [file.replace(/^.*\/([^/]+)\.ts$/, '$1'), mod?.seo] as const)
     .filter((entry): entry is readonly [string, TemplateSeoCopy] => Boolean(entry[1]) && typeof entry[1] === 'object'),
 );
+
+/** lastmod halaman template: isi bersama, isi per template, atau data DB (updated_at/created_at), mana yang terakhir. */
+export const templateLastmod = (template: Pick<Template, 'slug' | 'updated_at' | 'created_at'>): string =>
+  latestDate([TEMPLATE_PAGE_UPDATED, TEMPLATE_COPY[template.slug]?.updated, template.updated_at, template.created_at]) ?? TEMPLATE_PAGE_UPDATED;
 
 /** Template terbit untuk slug ini (dari get_template per slug, lalu daftar get_templates), atau null. */
 export function findTemplate(data: Pick<SeoData, 'templates' | 'templateBySlug'>, slug: string): Template | null {

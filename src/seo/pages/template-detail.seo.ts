@@ -2,17 +2,19 @@
 // (salinan WP5 bila ada, selain itu pola A.1/A.2 dari DB). JSON-LD: Product + Offer (IDR) + BreadcrumbList.
 // Slug yang tidak terbit (atau "kategori", yang dicadangkan untuk halaman kategori) → head null → kepala 404.
 // /template/kategori/{x} dimiliki CategoryPage.seo.ts (dua segmen, tidak cocok dengan pola di sini).
-import { latestDate, toIsoDate } from '../format';
+// Remah kategori memakai nama halaman kategori (src/content/categories.ts), sama dengan H1/BreadcrumbList halaman
+// kategori itu dan footer; nama kategori DB hanya untuk Product.category.
+import { categoryOf } from '../../content/categories';
 import { breadcrumb, product, type Crumb } from '../jsonld';
 import { ogCardUrl, templateCard } from '../og';
 import { pageHead } from '../page';
 import { HUB_PATHS, absoluteUrl, categoryPath, templatePath } from '../paths';
 import {
-  categorySlugOf,
   findTemplate,
   publishedTemplates,
   templateDescription,
   templateImageAlt,
+  templateLastmod,
   templateRasterImages,
   templateTitle,
 } from '../templateSeo';
@@ -31,11 +33,11 @@ const seo: PageSeo = {
     const card = templateCard(template.slug);
     const raster = templateRasterImages(template);
     const images = raster.length ? raster.map(toAbsolute) : [ogCardUrl(card)];
-    const category = categorySlugOf(template.category);
+    const category = categoryOf(template.category);
     const crumbs: Crumb[] = [
       { name: 'Beranda', path: HUB_PATHS.home },
       { name: 'Template', path: HUB_PATHS.catalog },
-      ...(category ? [{ name: template.category, path: categoryPath(category) }] : []),
+      ...(category ? [{ name: category.name, path: categoryPath(category.slug) }] : []),
       { name: template.name, path },
     ];
     const description = templateDescription(template);
@@ -59,8 +61,8 @@ const seo: PageSeo = {
       const preview = templateRasterImages(template)[0];
       return {
         path: templatePath(template.slug),
-        // Tanggal template terakhir diubah di DB; cadangan: tanggal dibuat, lalu tanggal data diambil
-        lastmod: toIsoDate(template.updated_at) ?? toIsoDate(template.created_at) ?? latestDate([data.builtAt]) ?? '',
+        // Tanggal terakhir isi halaman (bersama atau per template, di kode) atau data template di DB berubah
+        lastmod: templateLastmod(template),
         ...(preview ? { images: [toAbsolute(preview)] } : {}),
       };
     }),

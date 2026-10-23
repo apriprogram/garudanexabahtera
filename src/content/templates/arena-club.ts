@@ -8,6 +8,8 @@ export const seo: TemplateSeoCopy = {
   description:
     'Website klub olahraga untuk padel, futsal & gym. Pesan lapangan via WhatsApp. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Lihat demo.',
   niche: 'Klub Olahraga, Padel & Futsal',
+  // Isi halaman (arena-club.ts, arena-club.content.ts) terakhir diubah: lastmod sitemap
+  updated: '2026-10-23',
 };
 
 export const page: TemplatePageCopy = {

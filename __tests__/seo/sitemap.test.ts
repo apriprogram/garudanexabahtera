@@ -7,7 +7,9 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildSitemap, parseSitemap, toLastmod } from '../../scripts/seo/sitemap.mjs';
+import { latestDate } from '../../src/seo/format';
 import { getIndexableRoutes } from '../../src/seo/routes';
+import { TEMPLATE_COPY, TEMPLATE_PAGE_UPDATED, templateLastmod } from '../../src/seo/templateSeo';
 import { DATA, TEMPLATES } from '../../src/seo/__tests__/fixtures';
 
 const ROOT = resolve(__dirname, '..', '..');
@@ -60,6 +62,21 @@ describe('buildSitemap dari getIndexableRoutes', () => {
     expect(block.match(/<image:image>/g)).toHaveLength(1);
     expect(block).toContain('<image:loc>https://garudanexa.com/assets/templates/aura-studio-preview.webp</image:loc>');
     expect(parseSitemap(xml).find((e) => e.loc === `${ORIGIN}/syarat-ketentuan`)?.lastmod).toBe('2026-10-21');
+  });
+
+  it('lastmod template tidak lebih tua dari isi halamannya di kode (bersama dan per template)', () => {
+    const lastmods = new Map(parseSitemap(xml).map((e) => [e.loc, e.lastmod]));
+    for (const t of TEMPLATES) {
+      expect(TEMPLATE_COPY[t.slug]?.updated, `${t.slug}.ts seo.updated`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      const lastmod = lastmods.get(`${ORIGIN}/template/${t.slug}`)!;
+      expect(lastmod >= TEMPLATE_PAGE_UPDATED, t.slug).toBe(true);
+      expect(lastmod >= TEMPLATE_COPY[t.slug]!.updated!, t.slug).toBe(true);
+    }
+    // Data DB yang lebih tua dari isi halaman tidak menurunkan lastmod; yang lebih baru menaikkannya
+    const old = { slug: 'corporate-nexa', updated_at: '2026-01-02 08:00:00', created_at: '2026-01-01 08:00:00' };
+    expect(templateLastmod(old)).toBe(latestDate([TEMPLATE_PAGE_UPDATED, TEMPLATE_COPY['corporate-nexa']?.updated]));
+    expect(templateLastmod({ ...old, updated_at: '2027-03-04 10:00:00' })).toBe('2027-03-04');
+    expect(templateLastmod({ slug: 'template-baru-tanpa-salinan', updated_at: undefined, created_at: undefined })).toBe(TEMPLATE_PAGE_UPDATED);
   });
 });
 

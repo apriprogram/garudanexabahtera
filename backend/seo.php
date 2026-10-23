@@ -197,7 +197,8 @@ function seo_template_head(array $t, array $ctx): array {
     }
     $crumbs = [['Beranda', '/'], ['Template', '/template']];
     $category = seo_category_slug($t['category'], $ctx['categorySlugs']);
-    if ($category !== null) $crumbs[] = [$t['category'], '/template/kategori/' . $category];
+    // Nama halaman kategori (src/content/categories.ts lewat seo-fallback.json), sama dengan template-detail.seo.ts
+    if ($category !== null) $crumbs[] = [$ctx['categoryNames'][$category] ?? $t['category'], '/template/kategori/' . $category];
     $crumbs[] = [$t['name'], $path];
     $items = [];
     foreach ($crumbs as $i => [$name, $crumbPath]) {

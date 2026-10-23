@@ -7,6 +7,8 @@ export const seo: TemplateSeoCopy = {
   description:
     'Website company profile modern untuk UMKM & startup. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Kelola isi lewat CMS. Lihat demo.',
   niche: 'UMKM & Startup',
+  // Isi halaman (startup-clean.ts, startup-clean.content.ts) terakhir diubah: lastmod sitemap
+  updated: '2026-10-23',
 };
 
 export const page: TemplatePageCopy = {

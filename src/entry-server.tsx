@@ -24,6 +24,7 @@ export { getHead, getIndexableRoutes, normalizePathname } from './seo/routes';
 export { renderHeadTags } from './seo/head';
 export { notFoundHead } from './seo/defaults';
 export { CATEGORY_SLUGS, HUB_PATHS, LEGAL_PATHS, SITE_ORIGIN } from './seo/paths';
+export { CATEGORY_LIST } from './content/categories';
 export { getTemplatePricing } from './hooks/useSiteSettings';
 export { COMPANY_FACTS } from './lib/companyFacts';
 export { listArticles } from './content/panduan';

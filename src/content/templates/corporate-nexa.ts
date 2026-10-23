@@ -7,6 +7,8 @@ export const seo: TemplateSeoCopy = {
   description:
     'Template company profile untuk perusahaan jasa, konsultan & kontraktor. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Lihat demo.',
   niche: 'Company Profile Perusahaan',
+  // Isi halaman (corporate-nexa.ts, corporate-nexa.content.ts) terakhir diubah: lastmod sitemap
+  updated: '2026-10-23',
 };
 
 export const page: TemplatePageCopy = {

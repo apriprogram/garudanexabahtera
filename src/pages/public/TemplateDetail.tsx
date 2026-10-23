@@ -103,8 +103,9 @@ export default function TemplateDetail() {
 
   const trail: Crumb[] = [
     { label: 'Template', to: HUB_PATHS.catalog },
-    // Nama kategori dari DB, sama dengan BreadcrumbList JSON-LD (template-detail.seo.ts) dan backend/seo.php
-    ...(category ? [{ label: template?.category || category.name, to: categoryPath(category.slug) }] : []),
+    // Nama halaman kategori (categories.ts), sama dengan BreadcrumbList JSON-LD (template-detail.seo.ts), backend/seo.php,
+    // H1 halaman kategori dan footer
+    ...(category ? [{ label: category.name, to: categoryPath(category.slug) }] : []),
   ];
 
   return (
@@ -204,7 +205,7 @@ function DetailContent({ template, category }: { template: Template; category: C
           <div className="card-site p-5 sm:p-7">
             {category ? (
               <Link to={categoryPath(category.slug)} className="badge-site transition-colors hover:bg-brand-100">
-                {template.category}
+                {category.name}
               </Link>
             ) : (
               template.category && <span className="badge-site">{template.category}</span>

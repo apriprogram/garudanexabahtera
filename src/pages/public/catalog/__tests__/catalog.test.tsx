@@ -144,7 +144,7 @@ describe('/template/:slug', () => {
     for (const href of ['/template/kategori/olahraga-komunitas', '/harga', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/panduan/template-vs-jasa-website-custom', '/pesan/arena-club', '/demo/arena-club']) {
       expect(hrefs).toContain(href);
     }
-    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent(/Beranda.*Template.*Olahraga & Komunitas/);
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent(/Beranda.*Template.*Klub olahraga/);
     expect(screen.getByRole('button', { name: /^Perbesar / }).querySelector('img')).toHaveAttribute(
       'alt',
       'Tampilan beranda template website klub olahraga Arena Club di desktop dan HP dengan banner foto lapangan',

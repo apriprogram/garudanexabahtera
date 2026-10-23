@@ -77,7 +77,11 @@ describe('BreadcrumbList', () => {
   it('halaman template: Beranda › Template › {Kategori} › {Nama}, position 1..n, URL absolut', () => {
     const crumbs = byType(nodesOf('/template/aura-studio'), 'BreadcrumbList');
     const items = crumbs.itemListElement as Node[];
-    expect(items.map((i) => i.name)).toEqual(['Beranda', 'Template', 'Kecantikan & Klinik', 'Aura Studio']);
+    // Nama halaman kategori (categories.ts), bukan nama kategori DB "Kecantikan & Klinik"
+    expect(items.map((i) => i.name)).toEqual(['Beranda', 'Template', 'Klinik kecantikan & salon', 'Aura Studio']);
+    // Satu nama untuk satu URL kategori: sama dengan remah terakhir BreadcrumbList halaman kategorinya
+    const categoryCrumbs = byType(nodesOf('/template/kategori/kecantikan-klinik'), 'BreadcrumbList').itemListElement as Node[];
+    expect(categoryCrumbs.at(-1)).toMatchObject({ name: items[2].name, item: items[2].item });
     expect(items.map((i) => i.position)).toEqual([1, 2, 3, 4]);
     expect(items.map((i) => i['@type'])).toEqual(['ListItem', 'ListItem', 'ListItem', 'ListItem']);
     for (const item of items) expect(isAbsoluteHttps(item.item)).toBe(true);

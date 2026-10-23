@@ -8,6 +8,8 @@ export const seo: TemplateSeoCopy = {
   description:
     'Landing page untuk fintech, koperasi, aplikasi pembayaran & SaaS. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Lihat demo.',
   niche: 'Fintech & Startup',
+  // Isi halaman (finova.ts, finova.content.ts) terakhir diubah: lastmod sitemap
+  updated: '2026-10-23',
 };
 
 export const page: TemplatePageCopy = {

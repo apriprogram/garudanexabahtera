@@ -401,6 +401,8 @@ export function seoFallbackContext(ssr, data, sampleSlug, builtAt) {
     globalJsonLd,
     defaultOgImage: ssr.notFoundHead().ogImage,
     categorySlugs: [...ssr.CATEGORY_SLUGS],
+    // Nama halaman kategori untuk remah BreadcrumbList (sama dengan template-detail.seo.ts)
+    categoryNames: Object.fromEntries((ssr.CATEGORY_LIST ?? []).map((meta) => [meta.slug, meta.name])),
     pricingIncludes: ssr.getTemplatePricing(data.settings).includes,
   };
 }

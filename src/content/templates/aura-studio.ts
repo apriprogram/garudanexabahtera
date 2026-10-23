@@ -8,6 +8,8 @@ export const seo: TemplateSeoCopy = {
   description:
     'Template website klinik kecantikan, salon & spa. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Kelola isi lewat CMS. Lihat demo.',
   niche: 'Klinik Kecantikan & Salon',
+  // Isi halaman (aura-studio.ts, aura-studio.content.ts) terakhir diubah: lastmod sitemap
+  updated: '2026-10-23',
 };
 
 export const page: TemplatePageCopy = {
