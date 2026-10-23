@@ -35,6 +35,8 @@ Deploy ulang (`node scripts/deploy-cpanel.mjs --push`, lalu Pull di cPanel, lalu
 | Isi halaman statis berubah (beranda, `/pesan-custom`, legal, halaman WP5/6/8) | `lastmod` sitemap harus jujur | Ubah tanggal `updated` halaman itu (§5) di commit yang sama |
 | Fakta perusahaan berubah (`src/lib/companyFacts.ts`) | JSON-LD Organization, llms.txt | Isi field yang tadinya `null` hanya dengan data nyata |
 | Profil sosial resmi diisi di Admin → Pengaturan (footer_instagram, dst.) | `sameAs` Organization dibaca dari settings saat deploy | Nilai `#` atau kosong dianggap belum ada. `garudanexa.id` dan akun `@garudanexa` sengaja tidak dipakai (keputusan default 4) |
+| Admin mengubah **kontak** (nomor WhatsApp/telepon, email: `footer_whatsapp`, `footer_phone`, `cta_phone`, …), **menu navbar** (Kelola navbar), **hero** (judul, gambar, video) atau **section yang disembunyikan** | Nilai ini ikut tertulis di HTML mentah semua halaman `_pre` dan di `gn-preload`. Crawler dan mesin AI terus membaca nilai lama sampai deploy ulang, walaupun pengunjung dengan JavaScript sudah melihat yang baru | Setelah deploy, cek footer `/` dan `/kontak` tanpa JavaScript (`curl -s $B/kontak \| grep -o '62[0-9]*' \| sort -u`) |
+| Artikel panduan **selesai disunting dan dicek faktanya** | Artikel tanpa `reviewed:` di frontmatter adalah draf: tidak terbit di build production (§4a) | Tambahkan `reviewed: YYYY-MM-DD`, jalankan `npx vitest run src/content/panduan -u`, commit, lalu deploy |
 
 Setelah deploy, jalankan pemeriksaan di §7.
 
@@ -77,7 +79,7 @@ Sitemap dibuat prerender dari `getIndexableRoutes(data)` lewat `buildSitemap(ent
 
 - **Isi:** hanya URL `index,follow`, kanonis (tanpa query, tanpa garis miring di akhir), berstatus 200. Halaman stub (noindex) baru masuk setelah `*.seo.ts`-nya mengembalikan kepala `index`.
 - **`lastmod` per jenis halaman:**
-  - Template: tanggal `updated_at` di DB.
+  - Template: tanggal paling akhir dari `updated_at` DB, `seo.updated` di `src/content/templates/{slug}.ts` (isi halaman template itu) dan `TEMPLATE_PAGE_UPDATED` di `src/seo/templateSeo.ts` (tata letak & teks bersama `TemplateDetail.tsx`). Ubah tanggal itu di commit yang sama dengan perubahan isinya.
   - Halaman statis: tanggal `updated` di `*.seo.ts`.
   - Beranda: tanggal terbaru dari `HOME_UPDATED` dan `updated_at` template.
   - Legal: `LEGAL_UPDATED_AT`.
@@ -92,6 +94,16 @@ curl -s https://garudanexa.com/sitemap.xml | grep -E '/(demo|pesan|akun|masuk|da
 ```
 
 Pemilik mengirim sitemap sekali di Search Console dan Bing Webmaster (SEO-PLAN §6.C–6.D). Setelah itu tidak perlu dikirim ulang setiap deploy.
+
+---
+
+## 4a. Artikel panduan: draf dan terbit
+
+Artikel di `src/content/panduan/*.md` ditulis dengan bantuan AI, jadi wajib disunting dan dicek faktanya oleh manusia sebelum terbit (SEO-PLAN §5.8).
+
+- **Draf** = frontmatter tanpa baris `reviewed:`. Draf tampil di server dev Vite (`npm run dev`) dan tes, tetapi **tidak ada** di build production: tanpa halaman (404), tanpa entri di `/panduan`, beranda, sitemap dan llms.txt. Tautan ke artikel itu dari halaman template, kategori, jasa dan `/harga` tidak dirender, atau jatuh ke `/panduan`. Selama semua artikel masih draf, `/panduan` tetap ada tetapi `noindex,follow`.
+- **Terbit:** setelah penyuntingan, tambahkan `reviewed: YYYY-MM-DD` (dan perbarui `dateModified` bila isinya berubah), lalu `npx vitest run src/content/panduan -u` untuk memperbarui `articles.generated.ts`, commit, deploy, IndexNow.
+- **Pratinjau build dengan draf:** `VITE_PANDUAN_DRAFTS=1` saat `--build-only`. Deploy sungguhan menolak build yang memuat draf.
 
 ---
 

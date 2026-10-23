@@ -30,7 +30,9 @@ Pada `--build-only`:
 | Nama | Bawaan | Fungsi |
 |---|---|---|
 | `DEPLOY_DIR` | `../.garudanexa-deploy` (di luar proyek) | Folder kerja. Isinya: `build/` (= isi `public_html`), `ssr/` (bundel server, tidak terbit), `cpanel-branch/` (worktree), `client-manifest.json`, `prerender-data.json` |
-| `PRERENDER_API` | `https://garudanexa.com` | Sumber data prerender. Untuk uji lokal: `http://127.0.0.1:8000` (php-api) |
+| `PRERENDER_API` | `https://garudanexa.com` | Sumber data prerender. Untuk uji lokal (`--build-only`): `http://127.0.0.1:8000` (php-api). Deploy sungguhan menolak sumber selain `https://garudanexa.com`, supaya data database lokal tidak pernah terbit. **Hapus variabel ini dari shell setelah uji lokal** |
+| `PRERENDER_ALLOW_NONPROD` | — | `1` = izinkan deploy sungguhan dengan `PRERENDER_API` selain production. Hanya untuk keadaan darurat yang disengaja |
+| `VITE_PANDUAN_DRAFTS` | — | `1` = build pratinjau yang ikut memuat artikel panduan draf (tanpa `reviewed:`). Deploy sungguhan menolaknya (SEO-RUNBOOK §4a) |
 | `MIN_TEMPLATES` | `5` | Jumlah minimal template terbit. Kurang dari ini, deploy dibatalkan |
 | `CPANEL_HOME` | `/home/garudanexa` | Dipakai `.cpanel.yml` di branch deploy |
 
@@ -92,7 +94,9 @@ Catatan:
 
 ## 4. Aturan: deploy ulang setelah data template berubah
 
-HTML prerender, JSON-LD (harga Product), sitemap dan llms.txt memakai data pada saat deploy. **Jalankan deploy ulang setiap kali admin mengubah harga, nama, kategori atau deskripsi template, atau menerbitkan, menarik atau menghapus template.** Daftar lengkapnya ada di SEO-RUNBOOK §2.
+HTML prerender, JSON-LD (harga Product), sitemap dan llms.txt memakai data pada saat deploy. **Jalankan deploy ulang setiap kali admin mengubah harga, nama, kategori atau deskripsi template, atau menerbitkan, menarik atau menghapus template.** Juga setelah admin mengubah **kontak** (WhatsApp, telepon, email), **menu navbar**, **hero** atau **section yang disembunyikan** di Pengaturan: nilai-nilai itu ikut tertulis di HTML mentah setiap halaman. Daftar lengkapnya ada di SEO-RUNBOOK §2.
+
+Commit di branch `cpanel-deploy` mencatat sumber data dan waktunya, mis. `deploy: build dari main abc1234 (data https://garudanexa.com 2026-10-23T…)`. Bila yang tertulis bukan `https://garudanexa.com`, jangan Pull di cPanel.
 
 Sebelum deploy ulang:
 - **Template baru** sudah tampil lewat `backend/seo.php`.
@@ -106,7 +110,15 @@ Sebelum deploy ulang:
 
 ## 5. Pemeriksaan
 
-Setelah deploy (tanpa JavaScript, seperti crawler AI):
+Setelah setiap Pull di cPanel, jalankan pengaman otomatis (WP9). Ia memeriksa setiap URL sitemap (status, H1, canonical, title, JSON-LD, harga Product = API) dan tes negatif tabel §5.2, berurutan dengan jeda dan User-Agent `GarudaNexaSeoCheck/1.0`. Keluar dengan kode 1 bila ada yang gagal:
+
+```bash
+node scripts/seo/seo-check.mjs
+```
+
+Bila WAF hosting menjawab 429/503, pengecekan berhenti; izinkan User-Agent itu atau IP mesin deploy (SEO-PLAN §6.B), lalu ulangi.
+
+Pemeriksaan manual (tanpa JavaScript, seperti crawler AI):
 
 ```bash
 B=https://garudanexa.com
@@ -149,5 +161,8 @@ Cara menguji:
 | `Hanya N template terbit` | Cek status template di admin. Turunkan `MIN_TEMPLATES` hanya bila jumlah itu memang benar |
 | `getIndexableRoutes() tidak memuat halaman wajib` | Ada modul `*.seo.ts` yang rusak atau mengembalikan `noindex` untuk `/`, `/pesan-custom`, halaman legal atau template |
 | `Cek prerender gagal: … <h1>` | Halaman tidak punya tepat satu H1, atau ada komponen yang melempar error saat render server |
+| `Deploy sungguhan harus memakai data production` | `PRERENDER_API` masih terisi dari uji lokal. Hapus (`unset PRERENDER_API`, PowerShell: `Remove-Item Env:PRERENDER_API`), lalu ulangi |
+| `Artikel panduan belum ditinjau` | Build memakai `VITE_PANDUAN_DRAFTS=1`. Hapus variabel itu; draf otomatis tidak ikut |
+| `.htaccess punya baris ≥ 8000 karakter` | Pengaman batas baris Apache (8190). Aturan prerender sudah dipecah per 40 rute; cek perubahan manual di `deploy/cpanel/htaccess` |
 | `Render … gagal` | Komponen mengakses `window`/`localStorage`/`document` saat render. Pindahkan ke effect, atau pakai `useHydrated()` |
 | Spinner sebentar di `/template/{slug-yang-tidak-ada}` | Wajar. `404.html` dirender di `/404` dan hanya dihidrasi di path yang tidak dimiliki modul `*.seo.ts` (React Router juga merender NotFound di sana). Path milik halaman lain dirender ulang oleh React |

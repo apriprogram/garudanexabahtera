@@ -343,7 +343,7 @@ export interface PageSeo {
    - Ubah aturan `no-cache` dari `^index\.html$` menjadi semua `\.html$`.
    - Uji setiap aturan dengan `curl -I` di LiteSpeed. Jika `%{DOCUMENT_ROOT}` berbeda di server, ganti dengan path absolut `public_html`.
 8. **`backend/seo.php`:**
-   - Validasi `slug` dengan `^[a-z0-9-]{1,80}$`, lalu ambil template yang `published` (gunakan ulang fungsi di `modules/templates.php`).
+   - Validasi `slug` dengan `^[a-z0-9-]{1,120}$` (batas slug di kedua backend dan kolom DB), lalu ambil template yang `published` (gunakan ulang fungsi di `modules/templates.php`).
    - Jika tidak ada: `http_response_code(404)`, lalu `readfile('404.html')`.
    - Jika ada: baca `index.html`, lalu sisipkan title, description, canonical, OG, JSON-LD Product dan Breadcrumb, serta blok `<main>` sederhana (H1, deskripsi, fitur, harga, tautan ke `/pesan/{slug}`, `/demo/{slug}`, `/template`).
    - Escape semua nilai dengan `htmlspecialchars`. JSON-LD ditulis dengan `json_encode(..., JSON_HEX_TAG | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)`.
