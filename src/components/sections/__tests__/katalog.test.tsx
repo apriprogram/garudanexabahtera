@@ -122,7 +122,7 @@ describe('Templates (#templates), katalog kecil', SLOW, () => {
     expect(grid.className).not.toContain('xl:grid-cols-4');
   });
 
-  it('kartu gaya Dribbble: tanpa logo; hover = deskripsi + "Demo" & "Pesan"; judul, kategori · harga, ♥ suka & 👁 dilihat', async () => {
+  it('kartu gaya Dribbble: tanpa logo; hover = deskripsi + "Demo" & "Pesan"; judul, kategori, harga coret, ♥ suka & 👁 dilihat', async () => {
     catalog = { templates: SMALL(), categories: ['Company Profile'] };
     const section = await renderCatalog();
     const card = within(section).getByRole('heading', { level: 3, name: 'Corporate Nexa' }).closest('article') as HTMLElement;
@@ -144,13 +144,20 @@ describe('Templates (#templates), katalog kecil', SLOW, () => {
     expect(order).toHaveTextContent('Pesan');
     expect(order.className).toContain('btn-primary');
 
-    // Nama memakai skala kartu design.md; kategori · harga selalu tampil di bawah gambar
+    // Nama memakai skala kartu design.md; kategori lalu harga selalu tampil di bawah gambar
     const heading = within(card).getByRole('heading', { level: 3 });
     expect(heading.className).toMatch(/text-base font-semibold/);
     expect(heading.className).toContain('sm:text-[17px]');
-    const price = within(card).getByText('Rp 1.500.000');
-    expect(price.className).toContain('font-semibold');
-    expect(price.closest('p')).toHaveTextContent(/Company Profile\s*·\s*Harga Rp 1\.500\.000/);
+    expect(within(card).getByText('Company Profile').closest('p')).toHaveTextContent(/^Kategori Company Profile$/);
+
+    // Harga jujur: harga template asli dicoret, harga pembelian pertama (−20%) tebal + label
+    const normal = within(card).getByText('Rp 1.500.000');
+    expect(normal.className).toContain('line-through');
+    expect(normal).toHaveTextContent(/^Harga normal Rp 1\.500\.000$/);
+    const first = within(card).getByText('Rp 1.200.000');
+    expect(first.className).toContain('font-semibold');
+    expect(first).toHaveTextContent(/^Harga pembelian pertama Rp 1\.200\.000$/);
+    expect(within(card).getByText('−20% pembelian pertama')).toBeInTheDocument();
 
     // Tanpa logo/avatar di kartu; tombol suka + jumlah dilihat
     expect(card.querySelector('.bg-primary svg')).toBeNull();
@@ -190,7 +197,7 @@ describe('Templates (#templates), katalog besar', SLOW, () => {
     expect(within(section).getByRole('group', { name: 'Kata kunci populer' })).toBeInTheDocument();
     expect(within(section).getByRole('button', { name: /Urutkan/ })).toBeInTheDocument();
 
-    // Kategori tertulis di baris info setiap kartu (kategori · harga)
+    // Kategori tertulis di baris info setiap kartu (di bawah judul)
     expect(within(section).getAllByText('Company Profile', { exact: false }).length).toBeGreaterThan(0);
 
     // ≥ 4 kartu: grid penuh 1/2/3/4 kolom

@@ -21,7 +21,7 @@ import {
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { LogoMark } from '../../components/ui/LogoMark';
-import { FIRST_ORDER_DISCOUNT_PERCENT } from '../../components/sections/hero/PromoBanner';
+import { FIRST_ORDER_DISCOUNT_PERCENT } from '../../lib/firstOrderDiscount';
 import { getWhatsappNumber, useSiteSettings, useTemplatePricing, whatsappUrl, type TemplatePricing } from '../../hooks/useSiteSettings';
 import { ApiError, apiGet, apiPost, errorMessage } from '../../lib/api';
 import { clearSession, customerLoginPath, getCurrentUser, getRole } from '../../lib/auth';

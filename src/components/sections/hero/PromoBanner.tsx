@@ -1,10 +1,9 @@
 import React, { useSyncExternalStore } from 'react';
 import { X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { FIRST_ORDER_DISCOUNT_PERCENT } from '../../../lib/firstOrderDiscount';
 import { HUB_PATHS } from '../../../seo/paths';
 
-/** Persen diskon pembelian pertama (= PF_FIRST_ORDER_DISCOUNT_PERCENT di backend/modules/templates.php). */
-export const FIRST_ORDER_DISCOUNT_PERCENT = 20;
 const DISMISS_KEY = 'gn-promo-first-order-closed';
 
 const DISMISS_EVENT = 'gn-promo-dismiss';

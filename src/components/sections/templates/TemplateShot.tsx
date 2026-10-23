@@ -6,6 +6,7 @@ import { formatRupiah, type Template } from '../../../types/platform';
 import { Reveal } from '../../ui/Reveal';
 import { TINT } from './catalog';
 import { compactCount, useTemplateEngagement } from './useTemplateEngagement';
+import { FIRST_ORDER_DISCOUNT_PERCENT, firstOrderPrice } from '../../../lib/firstOrderDiscount';
 
 /** Tautan demo: demo_url eksternal (http/https) atau /demo/:slug, selalu di tab baru. */
 function DemoLink({
@@ -47,8 +48,9 @@ interface TemplateShotProps {
 /**
  * Kartu template gaya Dribbble (permintaan pemilik 2026-10-23): gambar 4:3 tanpa logo, garis & shadow. Saat di-hover
  * (atau difokus keyboard) muncul lapisan gradasi bawah berisi judul + deskripsi singkat dan tombol "Demo" & "Pesan";
- * di layar sentuh tombolnya selalu terlihat. Di bawah gambar: judul, kategori · harga, lalu ♥ suka (bisa diklik) dan
- * 👁 jumlah dilihat (dihitung saat template dibuka dari kartu). Lihat useTemplateEngagement.
+ * di layar sentuh tombolnya selalu terlihat. Di bawah gambar: judul | ♥ suka (bisa diklik) · 👁 dilihat (dihitung saat
+ * template dibuka dari kartu, lihat useTemplateEngagement), kategori, lalu harga normal dicoret + harga pembelian
+ * pertama (−20%, lib/firstOrderDiscount) dengan label.
  */
 export function TemplateShot({ template, index, isNew = false, headingLevel = 3 }: TemplateShotProps) {
   const [imageBroken, setImageBroken] = useState(false);
@@ -154,17 +156,31 @@ export function TemplateShot({ template, index, isNew = false, headingLevel = 3 
                 </span>
               </div>
             </div>
-            <p className="mt-0.5 text-sm text-muted">
-              {template.category && (
-                <>
-                  <span className="sr-only">Kategori </span>
-                  {template.category}
-                  <span aria-hidden> · </span>
-                </>
-              )}
-              <span className="sr-only">Harga </span>
-              <span className="font-semibold tabular-nums text-fg">{formatRupiah(template.price)}</span>
-            </p>
+            {template.category && (
+              <p className="mt-0.5 text-sm text-muted">
+                <span className="sr-only">Kategori </span>
+                {template.category}
+              </p>
+            )}
+            {/* Harga jujur: harga template sebenarnya dicoret, harga pembelian pertama (−20%, sama dengan yang dibayar
+                akun baru di checkout) di sebelahnya, dengan label (permintaan pemilik 2026-10-24) */}
+            {template.price > 0 ? (
+              <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                <span className="tabular-nums text-subtle line-through">
+                  <span className="sr-only">Harga normal </span>
+                  {formatRupiah(template.price)}
+                </span>
+                <span className="font-semibold tabular-nums text-fg">
+                  <span className="sr-only">Harga pembelian pertama </span>
+                  {formatRupiah(firstOrderPrice(template.price))}
+                </span>
+                <span className="inline-flex h-5 items-center rounded-full bg-success-50 px-2 text-[11px] font-semibold text-success-700">
+                  −{FIRST_ORDER_DISCOUNT_PERCENT}% pembelian pertama
+                </span>
+              </p>
+            ) : (
+              <p className="mt-1 text-sm font-semibold text-fg">Gratis</p>
+            )}
           </div>
         </article>
       </Reveal>
