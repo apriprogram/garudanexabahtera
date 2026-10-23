@@ -270,6 +270,7 @@ function seo_render_head_tags(array $head, array $ctx): string {
     if (!empty($head['preloadImage'])) {
         $tags[] = seo_tag('preload-image', 'link', [['rel', 'preload'], ['as', 'image'], ['href', $head['preloadImage']], ['fetchpriority', 'high']]);
     }
+    $tags[] = seo_tag('icon-192', 'link', [['rel', 'icon'], ['type', 'image/png'], ['sizes', '192x192'], ['href', '/icon-192.png']]);
     $tags[] = seo_tag('apple-touch-icon', 'link', [['rel', 'apple-touch-icon'], ['href', '/apple-touch-icon.png']]);
     $tags[] = seo_tag('manifest', 'link', [['rel', 'manifest'], ['href', '/site.webmanifest']]);
     if ($head['jsonLd']) {
