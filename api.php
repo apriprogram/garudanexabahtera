@@ -37,14 +37,14 @@ const GENERIC_ERROR = 'Terjadi kesalahan pada server. Silakan coba lagi.';
 const PUBLIC_ACTIONS = [
     'get_settings', 'track_visit', 'login', 'register', 'get_list_products', 'get_navbar_menus',
     'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
-    'customer_register', 'midtrans_notification', 'get_payment_config',
+    'customer_register', 'midtrans_notification', 'get_payment_config', 'template_like', 'template_view',
 ];
 const ANY_ROLE_ACTIONS = [
     'pd_notifications_list', 'pd_notifications_read', 'pd_file',
 ];
 const CUSTOMER_ACTIONS = [
     'customer_create_order', 'customer_pay_order', 'customer_get_orders', 'customer_get_order',
-    'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment',
+    'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment', 'customer_get_order_quote',
     'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
 ];
 const ADMIN_ACTIONS = [

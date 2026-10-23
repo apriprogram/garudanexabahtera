@@ -34,13 +34,21 @@ const PF_SITE_IMAGE_MAX_BYTES = 2097152;  // one image inside site content (2 MB
 const PF_SITE_IMAGE_MAX_COUNT = 30;       // new images in one save
 const PF_SITE_IMAGE_EXTS = ['png', 'jpg', 'webp', 'gif']; // customer CMS images: raster only, never SVG
 const PF_MAX_PENDING_ORDERS = 5;          // unpaid orders one customer may have at the same time
+const PF_FIRST_ORDER_DISCOUNT_PERCENT = 20; // automatic discount on an account's first template order (owner 2026-10-23)
+const PF_FIRST_ORDER_DISCOUNT_CODE = 'PERTAMA20';
+const PF_LIKES_PER_HOUR = 60;             // like / unlike clicks per IP (kartu template, owner 2026-10-23)
+const PF_VIEWS_PER_HOUR = 300;            // counted template views per IP
+// Jumlah terjual per template (kartu katalog, owner 2026-10-24): pesanan yang sudah dibayar dan tidak dibatalkan/ditolak,
+// definisi yang sama dengan pendapatan template di dasbor admin. Same SQL in templates.js.
+const PF_SOLD_COUNT_SQL = "(SELECT COUNT(*) FROM template_orders o WHERE o.template_id = templates.id AND o.paid_at IS NOT NULL
+    AND o.status IN ('menunggu_approval', 'proses_domain', 'aktif')) AS sold_count";
 const PF_SNAP_REUSE_HOURS = 23;           // a Snap token lives 24 hours
 const PF_GENERATED_ASSET = '/_[0-9a-f]{12}\.[a-z0-9]+$/'; // names made by save_base64_asset (never seed files)
 
 // Reads may use GET (query string) as well as POST; every other platform action is POST only
 const PF_GET_ACTIONS = [
     'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'get_payment_config',
-    'customer_get_orders', 'customer_get_order', 'customer_get_site',
+    'customer_get_orders', 'customer_get_order', 'customer_get_site', 'customer_get_order_quote',
     'admin_get_template_orders', 'admin_get_template_order', 'admin_get_templates', 'admin_get_active_sites',
     'admin_dashboard_summary',
 ];
@@ -56,8 +64,11 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
         'customer_register' => 'pf_customer_register',
         'midtrans_notification' => 'pf_midtrans_notification',
         'get_payment_config' => 'pf_get_payment_config',
+        'template_like' => 'pf_template_like',
+        'template_view' => 'pf_template_view',
         // customer (own data only)
         'customer_create_order' => 'pf_customer_create_order',
+        'customer_get_order_quote' => 'pf_customer_get_order_quote',
         'customer_pay_order' => 'pf_customer_pay_order',
         'customer_get_orders' => 'pf_customer_get_orders',
         'customer_get_order' => 'pf_customer_get_order',
@@ -93,7 +104,7 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
 
 function pf_get_templates(mysqli $conn, array $input, ?array $user): array {
     $category = trim(in_str($input, 'category'));
-    $sql = "SELECT * FROM templates WHERE status = 'published'";
+    $sql = "SELECT *, " . PF_SOLD_COUNT_SQL . " FROM templates WHERE status = 'published'";
     $params = [];
     if ($category !== '') {
         $sql .= " AND category = ?";
@@ -107,7 +118,7 @@ function pf_get_templates(mysqli $conn, array $input, ?array $user): array {
 
 function pf_get_template(mysqli $conn, array $input, ?array $user): array {
     $slug = strtolower(trim(in_str($input, 'slug')));
-    $row = $slug === '' ? null : db_one($conn, "SELECT * FROM templates WHERE slug = ? AND status = 'published' LIMIT 1", [$slug]);
+    $row = $slug === '' ? null : db_one($conn, "SELECT *, " . PF_SOLD_COUNT_SQL . " FROM templates WHERE slug = ? AND status = 'published' LIMIT 1", [$slug]);
     if (!$row) throw new ApiError('Template tidak ditemukan.', 404, 'TEMPLATE_NOT_FOUND');
     return ['template' => pf_template_out($row)];
 }
@@ -149,6 +160,42 @@ function pf_get_site_public(mysqli $conn, array $input, ?array $user): array {
         'domain' => $row['domain'],
         'content' => pf_content_out($row['content']),
     ]];
+}
+
+// Template terbit dari input `slug` (huruf kecil, angka, tanda hubung); tidak ada → 404
+function pf_published_template_by_slug(mysqli $conn, array $input): array {
+    $slug = strtolower(trim(in_str($input, 'slug')));
+    $row = preg_match('/^[a-z0-9-]{1,120}$/', $slug)
+        ? db_one($conn, "SELECT id FROM templates WHERE slug = ? AND status = 'published' LIMIT 1", [$slug])
+        : null;
+    if (!$row) throw new ApiError('Template tidak ditemukan atau belum tersedia.', 404, 'TEMPLATE_NOT_FOUND');
+    return $row;
+}
+
+// Suka (`liked` true) / batal suka template di kartu katalog: like_count +1 / -1 (tidak pernah di bawah 0). Status suka
+// per pengunjung disimpan di browser; server hanya menghitung, dibatasi per IP.
+function pf_template_like(mysqli $conn, array $input, ?array $user): array {
+    $key = 'tpl-like|' . client_ip();
+    $wait = rate_limit_wait($key, PF_LIKES_PER_HOUR);
+    if ($wait) too_many_attempts($wait);
+    $id = (int)pf_published_template_by_slug($conn, $input)['id'];
+    $liked = in_array(strtolower(in_str($input, 'liked')), ['1', 'true'], true);
+    rate_limit_hit($key, 3600);
+    db_run($conn, $liked
+        ? "UPDATE templates SET like_count = like_count + 1 WHERE id = ?"
+        : "UPDATE templates SET like_count = GREATEST(like_count - 1, 0) WHERE id = ?", [$id]);
+    return ['like_count' => (int)db_one($conn, "SELECT like_count FROM templates WHERE id = ?", [$id])['like_count']];
+}
+
+// Template dibuka dari kartu (detail, demo, pesan): view_count +1. Sekali per sesi per template di browser, dibatasi per IP.
+function pf_template_view(mysqli $conn, array $input, ?array $user): array {
+    $key = 'tpl-view|' . client_ip();
+    $wait = rate_limit_wait($key, PF_VIEWS_PER_HOUR);
+    if ($wait) too_many_attempts($wait);
+    $id = (int)pf_published_template_by_slug($conn, $input)['id'];
+    rate_limit_hit($key, 3600);
+    db_run($conn, "UPDATE templates SET view_count = view_count + 1 WHERE id = ?", [$id]);
+    return ['view_count' => (int)db_one($conn, "SELECT view_count FROM templates WHERE id = ?", [$id])['view_count']];
 }
 
 // Public form for custom website / mobile app work -> project_client (source website, status pending)
@@ -307,13 +354,17 @@ function pf_customer_create_order(mysqli $conn, array $input, ?array $user): arr
         throw new ApiError('Anda masih punya ' . $pending . ' pesanan yang belum dibayar. Selesaikan atau batalkan dulu sebelum memesan lagi.', 409, 'TOO_MANY_PENDING');
     }
 
+    // Harga yang dibayar = harga template dikurangi diskon pesanan pertama (bila berlaku); harga katalog tetap dicatat
+    $quote = pf_first_order_quote($conn, (int)$user['id'], (float)$template['price']);
     $orderId = 0;
     for ($try = 0; $try < 5 && !$orderId; $try++) {
         try {
-            db_run($conn, "INSERT INTO template_orders (order_number, user_id, template_id, template_name, template_code, price,
-                               customer_name, customer_email, customer_phone, company_name, notes, domain_primary, domain_alternative)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-                pf_new_order_number(), $user['id'], (int)$template['id'], $template['name'], $template['template_code'], (float)$template['price'],
+            db_run($conn, "INSERT INTO template_orders (order_number, user_id, template_id, template_name, template_code, price, list_price,
+                               discount_amount, discount_code, customer_name, customer_email, customer_phone, company_name, notes,
+                               domain_primary, domain_alternative)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+                pf_new_order_number(), $user['id'], (int)$template['id'], $template['name'], $template['template_code'], $quote['price'],
+                $quote['list_price'], $quote['discount_amount'], $quote['discount_code'],
                 $customerName, $customerEmail, $customerPhone, $companyName, $notes, $domainPrimary, $domainAlternative,
             ]);
             $orderId = (int)$conn->insert_id;
@@ -339,6 +390,39 @@ function pf_customer_create_order(mysqli $conn, array $input, ?array $user): arr
     $out = ['order' => pf_order_out(pf_order_by_id($conn, $orderId), false), 'payment_url' => $paymentUrl];
     if ($paymentError !== null) $out['payment_error'] = $paymentError;
     return $out;
+}
+
+/**
+ * Diskon otomatis pesanan template pertama (PF_FIRST_ORDER_DISCOUNT_PERCENT): berlaku selama akun belum punya pesanan
+ * template lain yang tidak dibatalkan / ditolak. Dibulatkan ke rupiah utuh; template gratis tidak diberi diskon.
+ */
+function pf_first_order_quote(mysqli $conn, int $userId, float $listPrice): array {
+    $others = (int)db_one($conn, "SELECT COUNT(*) AS c FROM template_orders WHERE user_id = ? AND status NOT IN ('dibatalkan', 'ditolak')",
+        [$userId])['c'];
+    $percent = ($others === 0 && $listPrice > 0) ? PF_FIRST_ORDER_DISCOUNT_PERCENT : 0;
+    $discount = $percent > 0 ? round($listPrice * $percent / 100) : 0.0;
+    return [
+        'list_price' => $listPrice,
+        'discount_percent' => $percent,
+        'discount_amount' => (float)$discount,
+        'discount_code' => $percent > 0 ? PF_FIRST_ORDER_DISCOUNT_CODE : null,
+        'price' => $listPrice - $discount,
+    ];
+}
+
+// Harga yang akan dibayar akun ini untuk template (untuk halaman pesan, sebelum pesanan dibuat)
+function pf_customer_get_order_quote(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    $templateId = in_int($input, 'template_id');
+    $template = $templateId > 0 ? db_one($conn, "SELECT id, price FROM templates WHERE id = ? AND status = 'published' LIMIT 1", [$templateId]) : null;
+    if (!$template) throw new ApiError('Template tidak ditemukan atau belum tersedia.', 404, 'TEMPLATE_NOT_FOUND');
+    $quote = pf_first_order_quote($conn, (int)$user['id'], (float)$template['price']);
+    return ['quote' => [
+        'list_price' => pf_num($quote['list_price']),
+        'discount_percent' => $quote['discount_percent'],
+        'discount_amount' => pf_num($quote['discount_amount']),
+        'price' => pf_num($quote['price']),
+    ]];
 }
 
 function pf_customer_pay_order(mysqli $conn, array $input, ?array $user): array {
@@ -964,6 +1048,10 @@ function pf_order_out(array $r, bool $staff): array {
         'template_code' => $r['template_code'],
         'template_slug' => $r['template_slug'] ?? null,
         'price' => pf_num($r['price']),
+        // Harga katalog & diskon pesanan pertama; pesanan lama (sebelum kolom ini ada) = tanpa diskon
+        'list_price' => pf_num($r['list_price'] ?? $r['price']),
+        'discount_amount' => pf_num($r['discount_amount'] ?? 0),
+        'discount_code' => $r['discount_code'] ?? null,
         'customer_name' => $r['customer_name'],
         'customer_email' => $r['customer_email'],
         'customer_phone' => $r['customer_phone'],
@@ -1077,6 +1165,10 @@ function pf_template_out(array $r): array {
         'demo_url' => $r['demo_url'],
         'status' => $r['status'],
         'sort_order' => (int)$r['sort_order'],
+        // Suka & dilihat (kartu katalog); 0 sebelum migrasi 013. Terjual hanya dihitung di daftar & detail publik.
+        'like_count' => (int)($r['like_count'] ?? 0),
+        'view_count' => (int)($r['view_count'] ?? 0),
+        'sold_count' => (int)($r['sold_count'] ?? 0),
         'created_at' => $r['created_at'],
         'updated_at' => $r['updated_at'],
     ];
