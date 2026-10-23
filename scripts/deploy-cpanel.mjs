@@ -36,12 +36,16 @@ const EXCLUDE = ['assets/sites', 'assets/documents', 'assets/list-products', 'as
 // File upload di folder yang juga berisi file ter-commit: video & poster latar hero (backend/modules/hero_media.php)
 // di assets/bg, di samping gambar slider bawaan. Dikecualikan per nama file (path relatif terhadap public/, pakai /).
 const EXCLUDE_FILES = ['assets/bg/hero_video_*', 'assets/bg/hero_poster_*', 'assets/bg/.hero_video_*'];
+// Gambar latar hero yang diunggah dari admin (hero_<12 hex>.<ext>, sama dengan .gitignore): juga hanya di server.
+// Gambar bawaan hero_6a07…_N.jpg punya nama lain, jadi tetap ikut.
+EXCLUDE_FILES.push('assets/bg/hero_????????????.*');
 // File public/ yang dibuat ulang saat build, jadi versi lama di repo tidak ikut tersalin (tetap di-commit ke branch
 // deploy, tidak seperti EXCLUDE_FILES): sitemap.xml dibuat dari database oleh prerender (WP4).
 const GENERATED_FILES = ['sitemap.xml'];
-const excludedFile = (rel) =>
-  GENERATED_FILES.includes(rel) ||
-  EXCLUDE_FILES.some((glob) => new RegExp(`^${glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')}$`).test(rel));
+// Glob → regex: * = nol atau lebih karakter, ? = tepat satu karakter (tidak melewati /), seperti .gitignore
+const globRegExp = (glob) =>
+  new RegExp(`^${glob.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]')}$`);
+const excludedFile = (rel) => GENERATED_FILES.includes(rel) || EXCLUDE_FILES.some((glob) => globRegExp(glob).test(rel));
 
 const run = (cmd, cwd = ROOT) => execSync(cmd, { cwd, stdio: 'inherit' });
 const out = (cmd, cwd = ROOT) => execSync(cmd, { cwd, encoding: 'utf8' }).trim();

@@ -987,6 +987,10 @@ describe('access and deploy config', () => {
     const gitignore = read('.gitignore').split(/\r?\n/);
     for (const line of ['public/assets/bg/hero_video_*', 'public/assets/bg/hero_poster_*', 'public/assets/bg/.hero_video_*']) expect(gitignore).toContain(line);
     expect(read('scripts', 'deploy-cpanel.mjs')).toContain("const EXCLUDE_FILES = ['assets/bg/hero_video_*', 'assets/bg/hero_poster_*', 'assets/bg/.hero_video_*'];");
+    // Gambar hero yang diunggah dari admin (hero_<12 hex>) juga tidak ikut build/branch deploy; ? = satu karakter
+    expect(gitignore).toContain('public/assets/bg/hero_????????????.*');
+    expect(read('scripts', 'deploy-cpanel.mjs')).toContain("EXCLUDE_FILES.push('assets/bg/hero_????????????.*');");
+    expect(read('scripts', 'deploy-cpanel.mjs')).toContain(".replace(/\\?/g, '[^/]')");
     expect(read('docker-compose.yml')).toContain('- UPLOAD_MAX_VIDEO_MB=${UPLOAD_MAX_VIDEO_MB:-30}');
     expect(read('.env.example')).toMatch(/^UPLOAD_MAX_VIDEO_MB=30$/m);
   });
