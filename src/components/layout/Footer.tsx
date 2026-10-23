@@ -9,6 +9,7 @@ import {
   DEFAULT_CONTACT_EMAIL,
   DEFAULT_CONTACT_PHONE,
   displayPhone,
+  getHiddenSections,
   getWhatsappNumber,
   telHref,
   useSiteSettings,
@@ -148,6 +149,9 @@ interface FooterProps {
  */
 const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
   const { settings } = useSiteSettings();
+  // Admin bisa menyembunyikan banner CTA (Pengaturan website → Banner CTA, kunci "cta" di disabled_sections); anchor
+  // #kontak lalu pindah ke footer putih supaya tautan "Konsultasi" tetap sampai ke kontak
+  const ctaHidden = getHiddenSections(settings).has('cta');
   const pick = (key: keyof typeof DEFAULTS) => settings[key]?.trim() || DEFAULTS[key];
   const session = sessionKind(useSessionRole());
 
@@ -174,6 +178,7 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
   return (
     <footer>
       {/* ---------- CTA biru brand ---------- */}
+      {!ctaHidden && (
       <div className={`pb-12 pt-12 sm:pb-20 sm:pt-20 lg:pb-24 lg:pt-24 ${chrome ? '' : alt ? 'bg-alt' : 'bg-canvas'}`}>
         {/*
           Anchor #kontak sengaja di pembungkus polos: kartu di dalamnya overflow-hidden (jadi scroll container, sehingga
@@ -240,9 +245,13 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
           </Reveal>
         </div>
       </div>
+      )}
 
       {/* ---------- Footer putih ---------- */}
-      <div className="border-t border-line bg-canvas">
+      <div
+        id={ctaHidden ? 'kontak' : undefined}
+        className="scroll-mt-[var(--nav-offset)] border-t border-line bg-canvas"
+      >
         <div className="container-site grid grid-cols-2 gap-x-4 gap-y-8 py-12 sm:grid-cols-4 sm:gap-x-6 sm:gap-y-10 sm:py-16 lg:grid-cols-12 lg:gap-8">
           <div className="col-span-2 sm:col-span-4 lg:col-span-4">
             <Link to="/" className="inline-flex rounded-full" aria-label="Garuda Nexa Bahtera, ke beranda">

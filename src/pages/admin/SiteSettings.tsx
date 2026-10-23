@@ -45,6 +45,7 @@ import {
   PageHeader,
   Panel,
   PanelHeader,
+  Switch,
   Tabs,
   Textarea,
   checkboxClass,
@@ -54,6 +55,7 @@ import {
 } from '../../components/admin/ui';
 import {
   DEFAULT_CONTACT_EMAIL,
+  getHiddenSections,
   TEMPLATE_PRICE_INCLUDES_DEFAULT,
   TEMPLATE_PRICE_NOTE_DEFAULT,
 } from '../../hooks/useSiteSettings';
@@ -105,6 +107,19 @@ const NOTIFY_TONE = {
 
 /** Respons get_settings: setting_key → setting_value. Daftar di bawah disimpan sebagai string JSON. */
 type SettingsMap = Record<string, string>;
+
+/*
+ * Saklar tampil/sembunyi per tab (permintaan pemilik 2026-10-23), kecuali Hero & Footer: kunci section di setting
+ * `disabled_sections` (dibaca Home.tsx, Footer.tsx, Navbar). Disimpan bersama "Simpan semua perubahan".
+ */
+const SECTION_KEY_OF_TAB: Partial<Record<string, string>> = {
+  portfolio: 'projects',
+  process: 'process',
+  faq: 'faq',
+  services: 'cta',
+};
+/** Tab yang isinya belum tampil di website (tidak ada section di beranda): tanpa saklar, hanya keterangan. */
+const TABS_NOT_ON_SITE = new Set(['products', 'pricing']);
 
 /** Error simpan dengan pesan dari server yang ditampilkan apa adanya (mis. 409 latar hero diubah di tab lain). */
 class SaveError extends Error {}
@@ -483,6 +498,16 @@ const SiteSettings: React.FC = () => {
   // Alasan tombol simpan ditahan, null = boleh simpan: belum/gagal muat, video diunggah, atau gambar masih diproses
   const saveBlock: keyof typeof SAVE_BLOCK_LABEL | null =
     loadState !== 'ready' ? loadState : heroBusy ? 'video' : heroImagesPending > 0 ? 'images' : null;
+
+  // Saklar section: ubah daftar disabled_sections di state; ikut terkirim lewat `...settings` saat disimpan
+  const setSectionVisible = (key: string, visible: boolean) => {
+    setSettings((prev) => {
+      const hidden = getHiddenSections(prev);
+      if (visible) hidden.delete(key);
+      else hidden.add(key);
+      return { ...prev, disabled_sections: JSON.stringify([...hidden]) };
+    });
+  };
 
   const handleSave = async () => {
     const heroBaseline = heroBaselineRef.current;
@@ -1330,7 +1355,24 @@ const SiteSettings: React.FC = () => {
             icon={tabs.find(t => t.id === activeTab)?.icon || ImageIcon}
             iconTone="cobalt"
             title={tabs.find(t => t.id === activeTab)?.label}
-            subtitle="Perbarui isi dan tampilan bagian ini di website kamu."
+            subtitle={
+              TABS_NOT_ON_SITE.has(activeTab)
+                ? 'Bagian ini belum ditampilkan di beranda website.'
+                : 'Perbarui isi dan tampilan bagian ini di website kamu.'
+            }
+            action={(() => {
+              const key = SECTION_KEY_OF_TAB[activeTab];
+              if (!key) return undefined;
+              const visible = !getHiddenSections(settings).has(key);
+              return (
+                <Switch
+                  checked={visible}
+                  onChange={(next) => setSectionVisible(key, next)}
+                  label={visible ? 'Tampil di website' : 'Disembunyikan'}
+                  className="items-center"
+                />
+              );
+            })()}
             className="mb-5 border-b border-adm-line pb-4 sm:mb-6 sm:pb-5"
           />
 
