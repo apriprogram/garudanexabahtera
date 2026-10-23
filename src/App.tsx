@@ -82,49 +82,51 @@ function App() {
   return (
     <div className="min-h-screen bg-canvas text-fg">
       <SiteHostGate>
+        {/* caseSensitive: server (.htaccess, seo.php) membedakan huruf besar-kecil, jadi /Harga atau /Template/x adalah 404
+            di server dan juga NotFound di klien (tanpa itu React Router merender halaman aslinya di atas HTML 404). */}
         <Routes>
           {/* Website publik */}
-          <Route path="/" element={<Home />} />
+          <Route caseSensitive path="/" element={<Home />} />
           {/* Katalog & kategori (docs/platform/SEO-PLAN.md §2). "kategori" bukan slug template (ditolak kedua backend),
               dan /template/kategori/:category lebih spesifik dari /template/:slug, jadi slug template tetap menang. */}
-          <Route path={HUB_PATHS.catalog} element={lazyPage(<CatalogPage />)} />
-          <Route path="/template/kategori/:category" element={lazyPage(<CategoryPage />)} />
-          <Route path="/template/:slug" element={lazyPage(<TemplateDetail />)} />
-          <Route path="/demo/:slug" element={lazyPage(<TemplateDemo />)} />
-          <Route path="/situs/:siteId" element={lazyPage(<SitePreview />)} />
-          <Route path="/pesan/:slug" element={lazyPage(<OrderTemplate />)} />
-          <Route path="/pesan-custom" element={lazyPage(<CustomOrder />)} />
-          <Route path="/masuk" element={lazyPage(<CustomerLogin />)} />
-          <Route path="/daftar" element={lazyPage(<CustomerRegister />)} />
+          <Route caseSensitive path={HUB_PATHS.catalog} element={lazyPage(<CatalogPage />)} />
+          <Route caseSensitive path="/template/kategori/:category" element={lazyPage(<CategoryPage />)} />
+          <Route caseSensitive path="/template/:slug" element={lazyPage(<TemplateDetail />)} />
+          <Route caseSensitive path="/demo/:slug" element={lazyPage(<TemplateDemo />)} />
+          <Route caseSensitive path="/situs/:siteId" element={lazyPage(<SitePreview />)} />
+          <Route caseSensitive path="/pesan/:slug" element={lazyPage(<OrderTemplate />)} />
+          <Route caseSensitive path="/pesan-custom" element={lazyPage(<CustomOrder />)} />
+          <Route caseSensitive path="/masuk" element={lazyPage(<CustomerLogin />)} />
+          <Route caseSensitive path="/daftar" element={lazyPage(<CustomerRegister />)} />
 
           {/* Jasa custom, harga, perusahaan, panduan */}
-          <Route path={HUB_PATHS.webService} element={lazyPage(<JasaWebsite />)} />
-          <Route path={HUB_PATHS.mobileService} element={lazyPage(<JasaAplikasi />)} />
-          <Route path={HUB_PATHS.pricing} element={lazyPage(<Harga />)} />
-          <Route path={HUB_PATHS.about} element={lazyPage(<Tentang />)} />
-          <Route path={HUB_PATHS.contact} element={lazyPage(<Kontak />)} />
-          <Route path={HUB_PATHS.guides} element={lazyPage(<PanduanIndex />)} />
-          <Route path="/panduan/:slug" element={lazyPage(<PanduanArticle />)} />
+          <Route caseSensitive path={HUB_PATHS.webService} element={lazyPage(<JasaWebsite />)} />
+          <Route caseSensitive path={HUB_PATHS.mobileService} element={lazyPage(<JasaAplikasi />)} />
+          <Route caseSensitive path={HUB_PATHS.pricing} element={lazyPage(<Harga />)} />
+          <Route caseSensitive path={HUB_PATHS.about} element={lazyPage(<Tentang />)} />
+          <Route caseSensitive path={HUB_PATHS.contact} element={lazyPage(<Kontak />)} />
+          <Route caseSensitive path={HUB_PATHS.guides} element={lazyPage(<PanduanIndex />)} />
+          <Route caseSensitive path="/panduan/:slug" element={lazyPage(<PanduanArticle />)} />
 
           {/* Dokumen legal (ditautkan di Footer, checkout, dan form daftar) */}
-          <Route path={LEGAL_PATHS.terms} element={lazyPage(<SyaratKetentuan />)} />
-          <Route path={LEGAL_PATHS.privacy} element={lazyPage(<KebijakanPrivasi />)} />
-          <Route path={LEGAL_PATHS.refund} element={lazyPage(<KebijakanPengembalianDana />)} />
+          <Route caseSensitive path={LEGAL_PATHS.terms} element={lazyPage(<SyaratKetentuan />)} />
+          <Route caseSensitive path={LEGAL_PATHS.privacy} element={lazyPage(<KebijakanPrivasi />)} />
+          <Route caseSensitive path={LEGAL_PATHS.refund} element={lazyPage(<KebijakanPengembalianDana />)} />
 
           {/* Akun pembeli template */}
-          <Route path="/akun" element={lazyPage(<AccountLayout />)}>
+          <Route caseSensitive path="/akun" element={lazyPage(<AccountLayout />)}>
             <Route index element={lazyPage(<AccountHome />)} />
-            <Route path="pesanan/:orderNumber" element={lazyPage(<AccountOrderDetail />)} />
-            <Route path="situs/:siteId" element={lazyPage(<SiteEditor />)} />
+            <Route caseSensitive path="pesanan/:orderNumber" element={lazyPage(<AccountOrderDetail />)} />
+            <Route caseSensitive path="situs/:siteId" element={lazyPage(<SiteEditor />)} />
             {/* Dokumen proyek custom (docs/platform/PROJECT-DOCS-SPEC.md §7) */}
-            <Route path="proyek" element={lazyPage(<MyProjects />)} />
-            <Route path="proyek/:id" element={lazyPage(<MyProjectDetail />)} />
-            <Route path="proyek/:id/dokumen/:docId" element={lazyPage(<MyProjectDocument />)} />
+            <Route caseSensitive path="proyek" element={lazyPage(<MyProjects />)} />
+            <Route caseSensitive path="proyek/:id" element={lazyPage(<MyProjectDetail />)} />
+            <Route caseSensitive path="proyek/:id/dokumen/:docId" element={lazyPage(<MyProjectDocument />)} />
           </Route>
 
           {/* Login staf & panel admin */}
-          <Route path="/login" element={lazyPage(<Auth />)} />
-          <Route path="/auth" element={lazyPage(<Auth />)} />
+          <Route caseSensitive path="/login" element={lazyPage(<Auth />)} />
+          <Route caseSensitive path="/auth" element={lazyPage(<Auth />)} />
           {adminRoutes}
 
           <Route path="*" element={lazyPage(<NotFound />)} />

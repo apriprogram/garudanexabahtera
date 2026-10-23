@@ -102,6 +102,14 @@ describe('rute SEO WP1', () => {
     }
   });
 
+  it('huruf besar di path → 404, sama dengan server (aturan .htaccess membedakan huruf besar-kecil)', async () => {
+    for (const path of ['/Harga', '/Template/aura-studio', '/PANDUAN', '/Jasa-Pembuatan-Website']) {
+      renderAt(path);
+      expect(await screen.findByRole('heading', { level: 1 }, { timeout: 5000 }), path).toHaveTextContent('Halaman ini tidak ditemukan.');
+      cleanup();
+    }
+  });
+
   it('/template/:slug tetap menang untuk slug template asli', async () => {
     renderAt('/template/aura-studio');
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('slug=aura-studio'))).toBe(true), { timeout: 5000 });
