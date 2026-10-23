@@ -36,47 +36,52 @@ export const InfoPage: React.FC<InfoPageProps> = ({ crumb, parents = [], badge, 
         {/* Aksen lembut biru brand di latar kepala halaman (sama dengan /pesan-custom) */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-linear-to-b from-brand-50/80 to-transparent" />
         <div className="container-site relative pb-10 pt-5 sm:pb-16 sm:pt-8">
-          <nav aria-label="Breadcrumb" className="min-w-0 text-[13px] text-subtle">
-            <ol className="flex min-w-0 items-center gap-1.5">
-              <li className="flex shrink-0 items-center">
-                <Link to="/" className="inline-flex min-h-10 items-center font-medium text-muted transition-colors hover:text-primary">
-                  Beranda
-                </Link>
-              </li>
-              {parents.map((parent) => (
-                <li key={parent.to} className="flex min-w-0 items-center gap-1.5">
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  <Link to={parent.to} className="inline-flex min-h-10 items-center truncate font-medium text-muted transition-colors hover:text-primary">
-                    {parent.label}
+          {/* Lebar isi sama dengan halaman artikel panduan (PanduanArticle: max-w-[1160px]), permintaan pemilik 2026-10-24 */}
+          <div className="mx-auto max-w-[1160px]">
+            <nav aria-label="Breadcrumb" className="min-w-0 text-[13px] text-subtle">
+              <ol className="flex min-w-0 items-center gap-1.5">
+                <li className="flex shrink-0 items-center">
+                  <Link to="/" className="inline-flex min-h-10 items-center font-medium text-muted transition-colors hover:text-primary">
+                    Beranda
                   </Link>
                 </li>
-              ))}
-              <li className="flex min-w-0 items-center gap-1.5">
-                <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span className="truncate" aria-current="page">
-                  {crumb}
-                </span>
-              </li>
-            </ol>
-          </nav>
+                {parents.map((parent) => (
+                  <li key={parent.to} className="flex min-w-0 items-center gap-1.5">
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <Link to={parent.to} className="inline-flex min-h-10 items-center truncate font-medium text-muted transition-colors hover:text-primary">
+                      {parent.label}
+                    </Link>
+                  </li>
+                ))}
+                <li className="flex min-w-0 items-center gap-1.5">
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span className="truncate" aria-current="page">
+                    {crumb}
+                  </span>
+                </li>
+              </ol>
+            </nav>
 
-          <header
-            className={`mt-3 grid items-start gap-8 sm:mt-6 ${aside ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16 xl:gap-24' : ''}`}
-          >
-            <div className="max-w-3xl">
-              <span className="badge-site">{badge}</span>
-              <h1 className="mt-4 text-[26px] font-semibold leading-[1.18] tracking-[-0.02em] text-fg sm:text-5xl sm:leading-[1.06] sm:tracking-[-0.03em] xl:text-[56px]">
-                {title}
-              </h1>
-              <div className="mt-4 text-[14px] leading-relaxed text-muted sm:mt-5 sm:text-lg sm:leading-relaxed">{lead}</div>
-              {actions && <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">{actions}</div>}
-            </div>
-            {aside && <div className="min-w-0">{aside}</div>}
-          </header>
+            <header
+              className={`mt-3 grid items-start gap-8 sm:mt-6 ${aside ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16 xl:gap-24' : ''}`}
+            >
+              <div className="max-w-3xl">
+                <span className="badge-site">{badge}</span>
+                <h1 className="mt-4 text-[26px] font-semibold leading-[1.18] tracking-[-0.02em] text-fg sm:text-5xl sm:leading-[1.06] sm:tracking-[-0.03em] xl:text-[56px]">
+                  {title}
+                </h1>
+                <div className="mt-4 text-[14px] leading-relaxed text-muted sm:mt-5 sm:text-lg sm:leading-relaxed">{lead}</div>
+                {actions && <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">{actions}</div>}
+              </div>
+              {aside && <div className="min-w-0">{aside}</div>}
+            </header>
+          </div>
         </div>
       </div>
 
-      <div className="container-site pb-14 sm:pb-20">{children}</div>
+      <div className="container-site pb-14 sm:pb-20">
+        <div className="mx-auto max-w-[1160px]">{children}</div>
+      </div>
     </main>
     <Footer />
   </>
