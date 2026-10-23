@@ -601,6 +601,10 @@ function pf_admin_save_template(mysqli $conn, array $input, ?array $user): array
     }
     $status = in_str($input, 'status', 'draft');
     if (!in_array($status, ['draft', 'published'], true)) $errors['status'] = 'Status harus draft atau published.';
+    // Template terbit tanpa harga tidak bisa dibeli (pesanan Rp0 ditolak) dan membatalkan prerender saat deploy
+    if ($status === 'published' && !isset($errors['price']) && (float)$price <= 0) {
+        $errors['price'] = 'Template yang terbit harus punya harga di atas 0. Simpan sebagai draft bila harganya belum ada.';
+    }
     $sortOrder = in_int($input, 'sort_order');
     $preview = $input['preview_image'] ?? null;
     if ($preview !== null && $preview !== '' && !pf_is_image_ref($preview)) {

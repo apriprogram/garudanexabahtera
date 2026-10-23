@@ -185,8 +185,12 @@ function validate(form: FormState): FormErrors {
   if (features.length > MAX_FEATURES) errors.features = `Fitur maksimal ${MAX_FEATURES} item.`;
   else if (features.some((f) => f.length > 200)) errors.features = 'Setiap fitur maksimal 200 karakter.';
 
-  if (form.price == null) errors.price = 'Harga wajib diisi (isi 0 bila gratis).';
+  if (form.price == null) errors.price = 'Harga wajib diisi.';
   else if (form.price > 999_999_999_999) errors.price = 'Harga terlalu besar.';
+  // Sama dengan kedua backend: template terbit tanpa harga tidak bisa dibeli dan membatalkan deploy
+  else if (form.status === 'published' && form.price <= 0) {
+    errors.price = 'Template yang terbit harus punya harga di atas 0. Simpan sebagai draft bila harganya belum ada.';
+  }
 
   if (!form.template_code) errors.template_code = 'Pilih kode template dari daftar.';
 

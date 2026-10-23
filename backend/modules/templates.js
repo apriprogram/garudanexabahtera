@@ -694,6 +694,10 @@ async function adminSaveTemplate(ctx) {
   }
   const status = inStr(input, 'status', 'draft');
   if (status !== 'draft' && status !== 'published') errors.status = 'Status harus draft atau published.';
+  // Template terbit tanpa harga tidak bisa dibeli (pesanan Rp0 ditolak) dan membatalkan prerender saat deploy
+  if (status === 'published' && !errors.price && Number(price) <= 0) {
+    errors.price = 'Template yang terbit harus punya harga di atas 0. Simpan sebagai draft bila harganya belum ada.';
+  }
   const sortOrder = inInt(ctx, 'sort_order');
   const preview = input.preview_image ?? null;
   if (preview !== null && preview !== '' && !isImageRef(preview)) {

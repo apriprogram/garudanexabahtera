@@ -56,6 +56,7 @@ const API_PHP = read('backend', 'api.php');
 const TEMPLATES_PHP = read('backend', 'modules', 'templates.php');
 
 const RESERVED_ERROR = 'Slug "kategori" tidak bisa dipakai karena alamat /template/kategori sudah dipakai halaman lain. Pilih slug lain.';
+const PRICE_ERROR = 'Template yang terbit harus punya harga di atas 0. Simpan sebagai draft bila harganya belum ada.';
 
 interface Case {
   /** admin_save_template input on top of a valid base */
@@ -88,6 +89,12 @@ const CASES: Case[] = [
   { input: { slug: '', name: 'Kategori' } },
   { input: { slug: '', name: 'Kategori' }, taken: ['kategori-2'] },
   { input: { slug: '', name: 'Aura Studio' } },
+  // Template terbit wajib punya harga > 0 (prerender membatalkan deploy untuk template terbit tanpa harga)
+  { input: { slug: 'gratis', status: 'published', price: 0 } },
+  { input: { slug: 'gratis', status: 'published', price: '0.00' } },
+  { input: { slug: 'gratis', status: 'draft', price: 0 } },
+  { input: { slug: 'berbayar', status: 'published', price: 990000 } },
+  { input: { slug: 'minus', status: 'published', price: -5 } },
 ];
 const EXPECTED: Outcome[] = [
   { status: 400, code: 'VALIDATION', errors: { slug: RESERVED_ERROR }, slug: null },
@@ -98,6 +105,11 @@ const EXPECTED: Outcome[] = [
   { status: 200, slug: 'kategori-2' },
   { status: 200, slug: 'kategori-3' },
   { status: 200, slug: 'aura-studio' },
+  { status: 400, code: 'VALIDATION', errors: { price: PRICE_ERROR }, slug: null },
+  { status: 400, code: 'VALIDATION', errors: { price: PRICE_ERROR }, slug: null },
+  { status: 200, slug: 'gratis' },
+  { status: 200, slug: 'berbayar' },
+  { status: 400, code: 'VALIDATION', errors: { price: 'Harga harus berupa angka 0 atau lebih.' }, slug: null },
 ];
 
 // ── Node: the real handler with an in-memory stand-in for the pool ──
@@ -146,6 +158,18 @@ describe('reserved template slug (Node)', () => {
   it('is the same list in both backends', () => {
     expect([...RESERVED_SLUGS]).toEqual(['kategori']);
     expect(TEMPLATES_PHP).toMatch(/^const PF_RESERVED_SLUGS = \['kategori'\];\r?$/m);
+  });
+
+  it('every slug the backends accept (120 characters, the DB column) reaches seo.php through .htaccess', () => {
+    const TEMPLATES_JS = read('backend', 'modules', 'templates.js');
+    expect(TEMPLATES_JS).toContain('slug.length > 120');
+    expect(TEMPLATES_PHP).toContain('strlen($slug) > 120');
+    expect(read('database', 'schema.sql')).toMatch(/^\s*slug\s+VARCHAR\(120\) NOT NULL,/m);
+    // Slug otomatis: nama dipotong 100 karakter + akhiran -N, tetap di bawah 120
+    expect(TEMPLATES_JS).toContain('.slice(0, 100)');
+    expect(TEMPLATES_PHP).toContain('substr($slug, 0, 100)');
+    expect(read('deploy', 'cpanel', 'htaccess')).toContain('RewriteRule ^template/([a-z0-9-]{1,120})$ seo.php?slug=$1 [L]');
+    expect(read('backend', 'seo.php')).toContain("const SEO_SLUG_PATTERN = '/^[a-z0-9-]{1,120}$/';");
   });
 
   it('refuses "kategori" on create and update and numbers an automatic slug', async () => {
