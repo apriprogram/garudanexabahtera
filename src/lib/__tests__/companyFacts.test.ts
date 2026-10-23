@@ -36,6 +36,13 @@ describe('COMPANY_FACTS', () => {
     expect(COMPANY_FACTS.sameAs).toEqual([]);
   });
 
+  it('direksi & titik peta dari pemilik (2026-10-24); alamat tertulis tetap null', () => {
+    expect(COMPANY_FACTS.leadership.map((p) => p.name)).toEqual(['Muhammad Fajri, S.T.', 'Dede Apriyansah, S.Kom.']);
+    for (const person of COMPANY_FACTS.leadership) expect(person.photo).toMatch(/^\/assets\/team\/[a-z-]+\.webp$/);
+    expect(COMPANY_FACTS.location).toEqual({ latitude: -5.1350242, longitude: 105.3194528, mapsUrl: 'https://maps.app.goo.gl/FVNdCXafRWFUFCYD8' });
+    expect(COMPANY_FACTS.address).toBeNull();
+  });
+
   it('tanpa angka harga dan tanpa garudanexa.id', () => {
     const text = JSON.stringify(COMPANY_FACTS);
     expect(text).not.toMatch(/Rp\s?\d|\d\.\d{3}\.\d{3}/);

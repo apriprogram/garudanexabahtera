@@ -18,6 +18,22 @@ export interface CompanyAddress {
   country: 'ID';
 }
 
+/** Anggota direksi (nama & gelar persis dari pemilik). */
+export interface CompanyLeader {
+  name: string;
+  role: string;
+  /** Foto 4:5 di public/assets/team. */
+  photo: string;
+}
+
+/** Titik kantor di peta (bukan alamat tertulis: alamat tetap `address`). */
+export interface CompanyLocation {
+  latitude: number;
+  longitude: number;
+  /** Tautan Google Maps dari pemilik (dibuka di tab baru). */
+  mapsUrl: string;
+}
+
 export interface CompanyService {
   key: 'template' | 'website' | 'mobile';
   name: string;
@@ -71,6 +87,10 @@ export interface CompanyFacts {
   ownProducts: readonly string[] | null;
   /** Profil resmi yang benar-benar ada (Organization.sameAs). Kosong = tidak ada yang dirender. */
   sameAs: readonly string[];
+  /** Direksi untuk /tentang. Kosong = bagian direksi tidak dirender. */
+  leadership: readonly CompanyLeader[];
+  /** Lokasi kantor untuk peta di /tentang. null = tanpa peta. */
+  location: CompanyLocation | null;
 }
 
 export const COMPANY_FACTS: CompanyFacts = {
@@ -124,4 +144,10 @@ export const COMPANY_FACTS: CompanyFacts = {
   contentOwnership: 'Isi yang dimasukkan pembeli (teks, gambar, logo, dan data) tetap milik pembeli.',
   ownProducts: null,
   sameAs: [],
+  // Direksi & lokasi peta dari pemilik 2026-10-24 (jabatan rinci belum diberikan: "Direksi")
+  leadership: [
+    { name: 'Muhammad Fajri, S.T.', role: 'Direksi', photo: '/assets/team/muhammad-fajri.webp' },
+    { name: 'Dede Apriyansah, S.Kom.', role: 'Direksi', photo: '/assets/team/dede-apriyansah.webp' },
+  ],
+  location: { latitude: -5.1350242, longitude: 105.3194528, mapsUrl: 'https://maps.app.goo.gl/FVNdCXafRWFUFCYD8' },
 };

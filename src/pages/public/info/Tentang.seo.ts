@@ -6,7 +6,7 @@ import { pageHead, staticPage } from '../../../seo/page';
 import { HUB_PATHS } from '../../../seo/paths';
 
 /** Tanggal terakhir isi /tentang berubah (Tentang.tsx, COMPANY_FACTS). Ubah setiap kali isinya diubah. */
-export const ABOUT_UPDATED = '2026-10-23';
+export const ABOUT_UPDATED = '2026-10-24';
 
 export const ABOUT_DESCRIPTION = `${COMPANY_FACTS.legalName}: template website siap pakai serta jasa pembuatan website & aplikasi mobile custom di Indonesia. Kenali layanan dan cara kerja kami.`;
 

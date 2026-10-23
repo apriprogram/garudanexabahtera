@@ -187,7 +187,7 @@ describe('halaman WP6: prerender + hidrasi', () => {
     expect(getHead('/harga', DATA).description).toContain('mulai Rp990 rb');
   });
 
-  it('/tentang: fakta yang diketahui saja (tanpa alamat, NIB, tim, produk sendiri)', async () => {
+  it('/tentang: fakta yang diketahui saja + direksi, kontak & peta (tanpa alamat tertulis, NIB, produk sendiri)', async () => {
     const { html, problems, el } = await hydrate('/tentang');
     expect(problems).toEqual([]);
     expect(el.querySelector('h1')?.textContent).toBe('Tentang Garuda Nexa');
@@ -200,6 +200,25 @@ describe('halaman WP6: prerender + hidrasi', () => {
       expect(el.querySelector(`main a[href="${path}"]`), path).not.toBeNull();
     }
     expect(getHead('/tentang', DATA).jsonLd.map((n) => (n as { '@type': string })['@type'])).toContain('AboutPage');
+
+    // Direksi (pemilik 2026-10-24): nama & gelar persis, foto dengan alt nama
+    const direksi = el.querySelector('#direksi') as HTMLElement;
+    expect([...direksi.querySelectorAll('h3')].map((h) => h.textContent)).toEqual(['Muhammad Fajri, S.T.', 'Dede Apriyansah, S.Kom.']);
+    expect([...direksi.querySelectorAll('img')].map((img) => [img.getAttribute('src'), img.getAttribute('alt')])).toEqual([
+      ['/assets/team/muhammad-fajri.webp', 'Foto Muhammad Fajri, S.T.'],
+      ['/assets/team/dede-apriyansah.webp', 'Foto Dede Apriyansah, S.Kom.'],
+    ]);
+
+    // Hubungi kami: WhatsApp, telepon, email dari setting (sama dengan Footer) + peta Google di titik kantor
+    const hubungi = el.querySelector('#hubungi') as HTMLElement;
+    expect(hubungi.querySelector('a[href^="https://wa.me/6285188009152"]')).not.toBeNull();
+    expect(hubungi.querySelector('a[href="tel:+6285188009152"]')).not.toBeNull();
+    expect(hubungi.querySelector('a[href="mailto:info@garudanexa.com"]')).not.toBeNull();
+    const map = hubungi.querySelector('iframe') as HTMLIFrameElement;
+    expect(map.getAttribute('src')).toBe('https://maps.google.com/maps?q=-5.1350242,105.3194528&z=17&hl=id&output=embed');
+    expect(map.getAttribute('title')).toBe('Peta lokasi kantor PT Garuda Nexa Bahtera');
+    expect(map.getAttribute('loading')).toBe('lazy');
+    expect(hubungi.querySelector('a[href="https://maps.app.goo.gl/FVNdCXafRWFUFCYD8"]')).toHaveAttribute('target', '_blank');
   });
 
   it('/kontak: NAP sama dengan Footer, tanpa alamat/jam layanan selama null', async () => {
