@@ -11,8 +11,6 @@ import Projects from '../../components/sections/Projects';
 import Process from '../../components/sections/Process';
 import FAQ from '../../components/sections/FAQ';
 import HomeCompare from '../../components/sections/home/HomeCompare';
-import LatestGuides from '../../components/sections/home/LatestGuides';
-import { listArticles } from '../../content/panduan';
 import { getHiddenSections, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -23,7 +21,7 @@ import { useTranslation } from '../../hooks/useTranslation';
  * - section #kategori ("Template website untuk setiap jenis usaha") dihapus atas permintaan pemilik 2026-10-24; halaman
  *   kategori tetap ditautkan dari footer & katalog, "Sudah termasuk" pindah ke bawah kolom cari #templates
  * - perbandingan: tabel template vs custom (Lampiran D, versi pendek)
- * - panduan: 3 artikel terbaru, hanya bila sudah ada artikel (WP8)
+ * - section #panduan (artikel terbaru) dihapus atas permintaan pemilik 2026-10-24; panduan tetap di menu & /panduan
  */
 const SECTIONS = [
   { id: 'templates', Component: Templates, tone: 'canvas' },
@@ -32,7 +30,6 @@ const SECTIONS = [
   { id: 'perbandingan', Component: HomeCompare, tone: 'alt' },
   { id: 'process', Component: Process, tone: 'alt' },
   { id: 'faq', Component: FAQ, tone: 'canvas' },
-  ...(listArticles().length > 0 ? [{ id: 'panduan', Component: LatestGuides, tone: 'alt' } as const] : []),
 ] as const;
 
 /** Halaman utama website publik (tema terang). */
@@ -47,7 +44,6 @@ export default function Home() {
 
   const labels: Record<string, string> = {
     perbandingan: 'Perbandingan',
-    panduan: 'Panduan',
     templates: t('nav-templates'),
     projects: t('nav-projects'),
     process: t('nav-process'),

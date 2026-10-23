@@ -242,14 +242,82 @@ describe('Footer', () => {
 });
 
 describe('FloatingWhatsApp', () => {
-  it('di HP mulai tersembunyi bila menjaga hero; tanpa hideOverId selalu tampil', () => {
+  it('di HP mulai tersembunyi bila menjaga hero (Nexa + WhatsApp sekaligus); tanpa hideOverId selalu tampil', () => {
     const { unmount } = renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" hideOverId="beranda" />);
-    expect(screen.getByRole('link', { name: 'Chat WhatsApp' }).className).toContain('max-sm:invisible');
+    const dock = screen.getByRole('link', { name: 'Chat WhatsApp' }).parentElement as HTMLElement;
+    expect(dock.className).toContain('max-sm:invisible');
+    expect(within(dock).getByRole('button', { name: 'Tanya Nexa, asisten AI' })).toBeInTheDocument();
     unmount();
     renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" />);
     const link = screen.getByRole('link', { name: 'Chat WhatsApp' });
-    expect(link.className).not.toContain('max-sm:invisible');
+    expect((link.parentElement as HTMLElement).className).not.toContain('max-sm:invisible');
     expect(link).toHaveAttribute('target', '_blank');
+  });
+});
+
+describe('Nexa (calon agen AI)', () => {
+  const WA = 'https://wa.me/6285188009152';
+
+  it('tombol maskot membuka panel percakapan non-modal; fokus ke kolom pesan; Esc menutup & fokus kembali', async () => {
+    renderAt(<FloatingWhatsApp href={WA} />);
+    const launcher = screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' });
+    expect(launcher).toHaveAttribute('aria-expanded', 'false');
+    expect(launcher).not.toHaveAttribute('aria-controls');
+    expect(launcher.querySelector('img')).toHaveAttribute('src', '/assets/nexa/nexa-128.webp');
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(launcher);
+    const panel = screen.getByRole('dialog', { name: 'Nexa' });
+    expect(panel).toHaveAttribute('aria-modal', 'false');
+    expect(launcher).toHaveAttribute('aria-expanded', 'true');
+    expect(launcher).toHaveAttribute('aria-controls', panel.id);
+    expect(document.activeElement).toBe(within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' }));
+    expect(within(panel).getByRole('log', { name: 'Percakapan dengan Nexa' })).toHaveTextContent(/Halo, saya Nexa/);
+    expect(panel).toHaveTextContent('belum terhubung ke AI');
+
+    // Esc dari kontrol lain di halaman (fokus di luar panel) tidak menutup chat
+    const outside = document.createElement('input');
+    document.body.appendChild(outside);
+    outside.focus();
+    fireEvent.keyDown(outside, { key: 'Escape' });
+    expect(screen.getByRole('dialog', { name: 'Nexa' })).toBeInTheDocument();
+    outside.remove();
+
+    within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' }).focus();
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(launcher);
+  });
+
+  it('topik cepat dijawab teks tetap + tautan halaman; pesan bebas dijawab jujur + tautan WhatsApp', async () => {
+    renderAt(<FloatingWhatsApp href={WA} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' }));
+    const panel = screen.getByRole('dialog', { name: 'Nexa' });
+
+    // Chip tetap di DOM (fokus keyboard tidak hilang), hanya aria-disabled selama Nexa mengetik; chip di luar role=log
+    const chip = within(panel).getByRole('button', { name: 'Berapa harganya?' });
+    chip.focus();
+    fireEvent.click(chip);
+    expect(chip).toBeInTheDocument();
+    expect(document.activeElement).toBe(chip);
+    expect(chip).toHaveAttribute('aria-disabled', 'true');
+    expect(within(panel).getByRole('log').contains(chip)).toBe(false);
+    expect(within(panel).getByRole('status')).toHaveTextContent('Nexa sedang mengetik');
+    const toPricing = await within(panel).findByRole('link', { name: 'Lihat halaman harga' }, { timeout: 2000 });
+    expect(toPricing).toHaveAttribute('href', '/harga');
+    expect(chip).not.toHaveAttribute('aria-disabled');
+
+    const input = within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' });
+    const send = within(panel).getByRole('button', { name: 'Kirim pesan' });
+    expect(send).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.change(input, { target: { value: 'Bisa bikin toko online?' } });
+    fireEvent.click(send);
+    expect(within(panel).getByText('Bisa bikin toko online?')).toBeInTheDocument();
+    expect(input).toHaveValue('');
+    const wa = await within(panel).findByRole('link', { name: /Chat WhatsApp/ }, { timeout: 2000 });
+    expect(wa).toHaveAttribute('href', WA);
+    expect(wa).toHaveAttribute('target', '_blank');
+    expect(panel).toHaveTextContent(/belum bisa menjawab pertanyaan bebas/);
   });
 });
 

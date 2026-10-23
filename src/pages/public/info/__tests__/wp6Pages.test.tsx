@@ -252,14 +252,16 @@ describe('beranda', () => {
     for (const slug of ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup']) {
       expect(el.querySelector(`a[href="/template/kategori/${slug}"]`), slug).not.toBeNull();
     }
-    // Kategori: section #kategori dihapus (pemilik 2026-10-24), tautan halaman kategori tetap ada lewat footer; H2 berkata
-    // kunci tinggal 2 karena judul "Template website untuk setiap jenis usaha" ikut hilang
+    // Kategori: section #kategori dihapus (pemilik 2026-10-24), tautan halaman kategori tetap ada lewat footer. H2 berkata
+    // kunci tinggal 1: "Template website untuk setiap jenis usaha" hilang dan judul perbandingan kini "Pilih sesuai
+    // kebutuhanmu" (keduanya permintaan pemilik 2026-10-24)
     expect(el.querySelector('#kategori')).toBeNull();
     const h2s = [...el.querySelectorAll('h2')].map((h) => h.textContent ?? '');
-    expect(h2s.filter((t) => /template website|jasa pembuatan website|website atau aplikasi/i.test(t)).length).toBeGreaterThanOrEqual(2);
+    expect(h2s.filter((t) => /template website|jasa pembuatan website|website atau aplikasi/i.test(t)).length).toBeGreaterThanOrEqual(1);
+    expect(h2s.map((t) => t.replace(/\s+/g, ' ').trim())).toContain('Pilih sesuai kebutuhanmu');
     expect(el.querySelector('#perbandingan table')).not.toBeNull();
-    // Artikel panduan sudah terbit (WP8) → section panduan terbaru dengan tautan artikel
-    expect(el.querySelector('#panduan a[href^="/panduan/"]')).not.toBeNull();
+    // Section panduan terbaru dihapus dari beranda (pemilik 2026-10-24); panduan tetap di menu & /panduan
+    expect(el.querySelector('#panduan')).toBeNull();
     // Mode custom: H1 tetap elemen yang sama, judul custom tetap <p>
     const customTab = [...el.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((b) => /custom/i.test(b.textContent ?? ''))!;
     await act(async () => customTab.click());

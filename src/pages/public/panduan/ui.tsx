@@ -1,6 +1,6 @@
 // Komponen bersama halaman /panduan dan /panduan/{slug}: kartu artikel (judul = heading, tanggal <time>), ajakan di
 // akhir artikel, dan kotak penulis. Semua tautan berupa <a href> asli (Link) supaya terbaca crawler di HTML prerender.
-import { BookOpen, MessageCircle } from 'lucide-react';
+import { ArrowRight, BookOpen, MessageCircle, ReceiptText, Scale, Smartphone, Sparkles, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Author } from '../../../content/authors';
 import type { ArticleCta, ArticleSummary } from '../../../content/panduan';
@@ -27,26 +27,70 @@ export function ArticleDates({ article }: { article: Pick<ArticleSummary, 'dateP
   );
 }
 
-/** Kartu artikel: judul (heading), ringkasan, tanggal. */
+interface ArticleTopic {
+  label: string;
+  icon: LucideIcon;
+  /** Latar sampul */
+  tone: string;
+}
+
+// Topik dari kata di slug (artikel tidak punya gambar): label kecil + ikon & warna sampul. Urutan = prioritas.
+const TOPICS: { match: RegExp; topic: ArticleTopic }[] = [
+  { match: /(^|-)vs(-|$)/, topic: { label: 'Perbandingan', icon: Scale, tone: 'bg-fg/5' } },
+  { match: /(^|-)biaya(-|$)/, topic: { label: 'Biaya', icon: ReceiptText, tone: 'bg-linear-to-br from-brand-100 to-brand-50' } },
+  { match: /(^|-)aplikasi(-|$)/, topic: { label: 'Aplikasi', icon: Smartphone, tone: 'bg-linear-to-br from-brand-50 to-brand-100' } },
+  { match: /(^|-)(klinik|salon|kecantikan)(-|$)/, topic: { label: 'Inspirasi', icon: Sparkles, tone: 'bg-linear-to-br from-success-50 to-brand-50' } },
+];
+const DEFAULT_TOPIC: ArticleTopic = { label: 'Panduan', icon: BookOpen, tone: 'bg-fg/5' };
+
+const articleTopic = (slug: string): ArticleTopic => TOPICS.find(({ match }) => match.test(slug))?.topic ?? DEFAULT_TOPIC;
+
+/**
+ * Kartu artikel gaya kartu template (permintaan pemilik 2026-10-24): sampul 16:10 bertint dengan ilustrasi "halaman"
+ * kecil + ikon topik (dekoratif), lalu topik · tanggal, judul (heading), ringkasan 3 baris, dan "Baca panduan →".
+ * Seluruh kartu satu tautan; tanpa garis & bayangan.
+ */
 export function ArticleCards({ articles, headingLevel = 'h3' }: { articles: readonly ArticleSummary[]; headingLevel?: 'h2' | 'h3' }) {
   const Heading = headingLevel;
   return (
     // Kelipatan 3 → 3 kolom di layar lebar; selain itu 2 kolom (4 artikel = 2×2, tanpa kartu yatim di baris terakhir)
-    <ul className={`grid gap-3 sm:gap-4 ${articles.length % 3 === 0 ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2'}`}>
-      {articles.map((article) => (
-        <li key={article.slug}>
-          <Link to={articlePath(article.slug)} className="card-flat lift group flex h-full flex-col p-5 sm:p-6">
-            <BookOpen className="h-5 w-5 text-primary" aria-hidden />
-            <Heading className="mt-4 text-base font-semibold leading-snug text-fg transition-colors group-hover:text-primary sm:text-xl">
-              {article.title}
-            </Heading>
-            <p className="mt-2 flex-1 text-sm leading-relaxed text-muted sm:text-[15px]">{article.description}</p>
-            <p className="mt-4 text-xs text-subtle sm:text-[13px]">
-              <ArticleDates article={article} />
-            </p>
-          </Link>
-        </li>
-      ))}
+    <ul className={`grid gap-x-6 gap-y-10 sm:gap-y-12 ${articles.length % 3 === 0 ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2'}`}>
+      {articles.map((article) => {
+        const topic = articleTopic(article.slug);
+        const Icon = topic.icon;
+        return (
+          <li key={article.slug}>
+            <Link to={articlePath(article.slug)} className="group flex h-full flex-col rounded-[20px]">
+              <span className={`flex aspect-[16/10] items-center justify-center overflow-hidden rounded-[20px] ${topic.tone}`} aria-hidden>
+                <span className="w-[56%] max-w-60 rounded-2xl bg-surface p-4 ring-1 ring-inset ring-line transition-transform duration-500 ease-calm motion-safe:group-hover:-translate-y-1.5 motion-safe:group-hover:-rotate-2">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-primary">
+                    <Icon className="h-[18px] w-[18px]" />
+                  </span>
+                  <span className="mt-4 block h-2 w-11/12 rounded-full bg-fg/15" />
+                  <span className="mt-2 block h-2 w-3/4 rounded-full bg-fg/10" />
+                  <span className="mt-2 block h-2 w-5/6 rounded-full bg-fg/10" />
+                  <span className="mt-2 block h-2 w-1/2 rounded-full bg-fg/10" />
+                </span>
+              </span>
+              <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-subtle sm:text-[13px]">
+                <span className="font-semibold text-primary">{topic.label}</span>
+                <span aria-hidden>·</span>
+                <span>
+                  <ArticleDates article={article} />
+                </span>
+              </p>
+              <Heading className="mt-1.5 text-lg font-semibold leading-snug tracking-[-0.01em] text-fg transition-colors group-hover:text-primary sm:text-xl">
+                {article.title}
+              </Heading>
+              <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted sm:text-[15px]">{article.description}</p>
+              <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-fg">
+                Baca panduan
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+              </span>
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }

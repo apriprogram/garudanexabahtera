@@ -8,8 +8,9 @@ import { HUB_PATHS } from '../../../seo/paths';
 import { SectionHeading } from '../../ui/SectionHeading';
 
 /**
- * Section beranda #perbandingan: tabel template siap pakai vs website custom vs aplikasi mobile custom (versi pendek
- * Lampiran D; versi lengkap di /harga). Rentang harga template dari data, jasa custom tanpa angka.
+ * Section beranda #perbandingan "Pilih sesuai kebutuhanmu" (judul dari pemilik 2026-10-24): tabel template siap pakai
+ * vs website custom vs aplikasi mobile custom (versi pendek Lampiran D; versi lengkap di /harga), baris judul kolom
+ * gelap seperti footer dengan sel pojok "Service". Rentang harga template dari data, jasa custom tanpa angka.
  */
 const HomeCompare: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '03' }) => {
   const { templates } = usePublishedTemplates();
@@ -23,8 +24,8 @@ const HomeCompare: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number
           index={number}
           label="Perbandingan"
           titleId="perbandingan-title"
-          title="Template siap pakai atau"
-          accent="jasa pembuatan website custom?"
+          title="Pilih sesuai"
+          accent="kebutuhanmu"
           action={
             <Link to={HUB_PATHS.pricing} className="btn btn-outline">
               Lihat harga lengkap
@@ -35,6 +36,8 @@ const HomeCompare: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number
           table={table}
           caption="Perbandingan template siap pakai, website custom, dan aplikasi mobile custom"
           highlight={0}
+          darkHeader
+          cornerLabel="Service"
           className="mt-8 sm:mt-12"
         />
       </div>
