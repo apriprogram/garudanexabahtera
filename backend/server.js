@@ -34,6 +34,8 @@ import { handleProjectFileAction } from './modules/project_files.js';
 import { handleHeroMediaAction, prepareHeroMediaSettings } from './modules/hero_media.js';
 // Project documents & agreements, pd_* actions (docs/platform/PROJECT-DOCS-SPEC.md)
 import { handleProjectDocsAction } from './modules/project_docs.js';
+// Visit sources for track_visit / get_visitor_details: referrer host, landing path, utm_source (docs/platform/SEO-PLAN.md §5.9)
+import { logVisit, visitSourceFields, visitSources } from './modules/visits.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -101,11 +103,13 @@ async function getNavbarMenus(includeInactive) {
   return rows;
 }
 
-// Counts a visit and logs device/browser/OS for the dashboard charts (GET and POST track_visit)
+// Counts a visit and logs device/browser/OS and the visit source (modules/visits.js) for the dashboard (GET and
+// POST track_visit)
 async function trackVisit(req, input) {
   await pool.query('UPDATE visitor_stats SET total_visits = total_visits + 1 WHERE id = 1');
 
-  const ua = input.user_agent || req.headers['user-agent'] || '';
+  // At most 500 characters, like api.php
+  const ua = String(input.user_agent || req.headers['user-agent'] || '').slice(0, 500);
   let device = 'Desktop', browser = 'Unknown', os = 'Unknown';
 
   if (/Mobile|Android|iPhone|iPad|iPod/i.test(ua)) device = 'Mobile';
@@ -126,14 +130,8 @@ async function trackVisit(req, input) {
   // req.ip honours the 'trust proxy' setting, so a client can't spoof it via X-Forwarded-For
   const ip = req.ip || req.socket?.remoteAddress || '';
 
-  // Basic country from IP (using a simple offline lookup or default)
-  let country = 'Unknown';
-
-  await pool.query(
-    `INSERT INTO visitor_logs (ip_address, user_agent, device, browser, os, country, visited_at)
-     VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-    [ip, ua, device, browser, os, country]
-  );
+  // Country stays 'Unknown' (no IP lookup), as in api.php
+  await logVisit(pool, [ip, ua, device, browser, os], visitSourceFields(input));
 }
 
 // A project with project documents (signed contracts, invoices, receipts, pd_*) is an archive: deleting it would
@@ -263,7 +261,9 @@ app.get('/api.php', async (req, res) => {
         devices,
         browsers,
         os,
-        countries
+        countries,
+        // Visits per source (chatgpt.com, …, google.*, lainnya, langsung) over 30 days; null before migration 010
+        sources: await visitSources(pool)
       });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -292,43 +292,8 @@ app.get('/api.php', async (req, res) => {
     return;
   }
 
-  if (action === 'get_visitor_details') {
-    try {
-      const [totalRow] = await pool.query('SELECT total_visits FROM visitor_stats WHERE id = 1');
-      const totalVisits = totalRow.length ? totalRow[0].total_visits : 0;
-      
-      const [todayRow] = await pool.query('SELECT COUNT(*) as today FROM visitor_logs WHERE DATE(visited_at) = CURDATE()');
-      const todayVisits = todayRow[0].today;
-
-      const [dailyRows] = await pool.query(`
-        SELECT DATE_FORMAT(visited_at, '%Y-%m-%d') as date, COUNT(*) as count 
-        FROM visitor_logs 
-        WHERE visited_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) 
-        GROUP BY DATE(visited_at) 
-        ORDER BY date ASC
-      `);
-
-      const [deviceRows] = await pool.query('SELECT device as label, COUNT(*) as value FROM visitor_logs GROUP BY device');
-      const [browserRows] = await pool.query('SELECT browser as label, COUNT(*) as value FROM visitor_logs GROUP BY browser');
-      const [osRows] = await pool.query('SELECT os as label, COUNT(*) as value FROM visitor_logs GROUP BY os');
-      const [countryRows] = await pool.query('SELECT country as label, COUNT(*) as value FROM visitor_logs GROUP BY country');
-
-      res.json({
-        total: totalVisits,
-        today: todayVisits,
-        daily: dailyRows,
-        devices: deviceRows,
-        browsers: browserRows,
-        os: osRows,
-        countries: countryRows
-      });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-    return;
-  }
-
-  // The public site calls track_visit with GET (App.tsx), the dashboard resets with GET
+  // track_visit also answers GET (pages cached before the site switched to POST, src/lib/visitTracking.ts); the
+  // dashboard resets with GET
   if (action === 'track_visit') {
     try {
       await trackVisit(req, req.query);

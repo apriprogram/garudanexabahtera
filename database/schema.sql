@@ -497,15 +497,20 @@ CREATE TABLE IF NOT EXISTS visitor_stats (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- One row per tracked visit (plain INSERT from track_visit; no per-IP dedup).
+-- referrer_host / landing_path / utm_source: where the session came from (backend/modules/visits.php; host only, no
+-- full referrer URL or query string). NULL in rows from before migration 2026-10-23_010.
 CREATE TABLE IF NOT EXISTS visitor_logs (
-  id         INT NOT NULL AUTO_INCREMENT,
-  visited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  ip_address VARCHAR(45) DEFAULT '',
-  user_agent TEXT DEFAULT NULL,
-  device     VARCHAR(20) DEFAULT '',
-  browser    VARCHAR(50) DEFAULT '',
-  os         VARCHAR(50) DEFAULT '',
-  country    VARCHAR(100) DEFAULT 'Unknown',
+  id            INT NOT NULL AUTO_INCREMENT,
+  visited_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ip_address    VARCHAR(45) DEFAULT '',
+  user_agent    TEXT DEFAULT NULL,
+  device        VARCHAR(20) DEFAULT '',
+  browser       VARCHAR(50) DEFAULT '',
+  os            VARCHAR(50) DEFAULT '',
+  country       VARCHAR(100) DEFAULT 'Unknown',
+  referrer_host VARCHAR(255) DEFAULT NULL,
+  landing_path  VARCHAR(255) DEFAULT NULL,
+  utm_source    VARCHAR(100) DEFAULT NULL,
   PRIMARY KEY (id),
   KEY idx_visitor_visited_at (visited_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -906,6 +911,7 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-21_006', 'baseline: project documents pd_* tables, project_client workspace columns (settings: seed.sql)'),
   ('2026-10-22_007', 'baseline: template preview images (no template rows; seed.templates.sql uses .webp)'),
   ('2026-10-23_009', 'baseline: SEO FAQ/contact data fix (no faq_data rows; seed.sql has the new hero/CTA values)'),
+  ('2026-10-23_010', 'baseline: visitor_logs referrer_host, landing_path, utm_source (visit source)'),
   ('2026-10-23_011', 'baseline: navbar page links (no navbar rows; the built-in menu is Template, Jasa, Harga, Panduan)');
 
 -- ----------------------------------------------------------------------------

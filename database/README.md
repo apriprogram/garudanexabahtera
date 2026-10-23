@@ -19,6 +19,7 @@ database/
 │   ├── 2026-10-22_007_template_previews.sql        # data: pratinjau template .webp (tangkapan layar asli)
 │   ├── 2026-10-22_008_new_templates.sql            # data: katalog Arena Club, Aura Studio, Finova (DB lama)
 │   ├── 2026-10-23_009_seo_faq_contact.sql          # data: FAQ (hosting/SSL/waktu), placeholder WhatsApp, hero & CTA lama
+│   ├── 2026-10-23_010_visit_referrer.sql           # visitor_logs + referrer_host, landing_path, utm_source (sumber kunjungan)
 │   └── 2026-10-23_011_seo_navbar.sql               # data: navbar Template, Jasa ▾, Harga, Panduan (halaman nyata)
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
@@ -88,6 +89,7 @@ C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudane
 C:/xampp/mysql/bin/mysql.exe -u root db_garudanexabahtera < database/migrations/2026-10-22_007_template_previews.sql
 C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-22_008_new_templates.sql
 C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-23_009_seo_faq_contact.sql
+C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-23_010_visit_referrer.sql
 C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-23_011_seo_navbar.sql
 ```
 
@@ -95,6 +97,12 @@ C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudane
 Aplikasi mobile) · Harga (`/harga`) · Panduan (`/panduan`). Baris hanya diubah selama label dan URL-nya masih bawaan 004/003
 (Projects, Proses, FAQ dinonaktifkan, tidak dihapus); baris baru hanya ditambah bila belum ada. Navbar kosong dibiarkan
 kosong (menu bawaan frontend sudah berstruktur sama). Dijalankan ulang = tidak mengubah apa pun.
+
+`2026-10-23_010` (skema, SEO WP9) menambah tiga kolom nullable di `visitor_logs`: `referrer_host` (host saja, tanpa
+`www.`, path, atau query), `landing_path` (path halaman pertama sesi, tanpa query) dan `utm_source`. Dipakai panel
+"Sumber kunjungan" di Analitik pengunjung (30 hari terakhir). Kolom ditambah lewat cek `information_schema`, jadi aman
+diulang. Kode tetap jalan tanpa kolom ini (kunjungan dicatat tanpa sumber), tapi jalankan saat deploy kode WP9. Query
+kunjungan per sumber per bulan ada di kepala file migrasinya.
 
 `2026-10-23_009` (data saja, SEO WP6) hanya mengubah nilai yang masih sama persis dengan teks bawaan lama: jawaban FAQ
 `faq_data` (hosting/domain, SSL, waktu aktif, edit, kepemilikan) disamakan dengan `src/content/faq.ts`,

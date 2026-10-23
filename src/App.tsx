@@ -4,9 +4,9 @@ import { useStore } from './store/useStore';
 import Home from './pages/public/Home';
 import { adminRoutes } from './pages/admin/routes';
 import SiteHostGate from './templates/SiteHostGate';
-import { isMainHost } from './templates/siteHosts';
 import { LEGAL_PATHS } from './lib/legal';
 import { HUB_PATHS } from './seo/paths';
+import { trackVisitOnce } from './lib/visitTracking';
 
 // Halaman di luar beranda dimuat saat dibuka agar bundel beranda tetap ringan
 const Auth = lazy(() => import('./pages/Auth'));
@@ -75,16 +75,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Situs milik pembeli (domain lain) tidak dihitung di statistik pengunjung Garuda Nexa
-    if (!isMainHost(window.location.hostname)) return;
-    // Only track visit once per session
-    const hasVisited = sessionStorage.getItem('hasVisited');
-    if (!hasVisited) {
-      sessionStorage.setItem('hasVisited', 'true'); // Set immediately to prevent double fetch in StrictMode
-      fetch('/api.php?action=track_visit').catch(err => {
-        console.error('Error tracking visit:', err);
-      });
-    }
+    // Sekali per sesi, host utama saja, dengan host referrer + path landing + utm_source (src/lib/visitTracking.ts)
+    trackVisitOnce();
   }, []);
 
   return (

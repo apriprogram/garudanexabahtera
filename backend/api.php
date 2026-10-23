@@ -92,6 +92,9 @@ require_once __DIR__ . '/modules/project_files.php';
 require_once __DIR__ . '/modules/hero_media.php';
 // Project documents & agreements, pd_* actions (handle_project_docs_action, docs/platform/PROJECT-DOCS-SPEC.md)
 require_once __DIR__ . '/modules/project_docs.php';
+// Visit sources for track_visit / get_visitor_details: referrer host, landing path, utm_source (visit_source_fields,
+// visit_log, visit_sources; docs/platform/SEO-PLAN.md §5.9)
+require_once __DIR__ . '/modules/visits.php';
 
 load_env_file();
 
@@ -391,11 +394,11 @@ switch ($action) {
 
     case 'track_visit':
         db_run($conn, "UPDATE visitor_stats SET total_visits = total_visits + 1 WHERE id = 1");
-        // Per-visit row for the device/browser/OS charts, like server.js
+        // Per-visit row for the device/browser/OS charts and the visit source (referrer host, landing path,
+        // utm_source; modules/visits.php), like server.js
         $ua = substr(in_str($input, 'user_agent', $_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 500);
         [$device, $browser, $os] = parse_user_agent($ua);
-        db_run($conn, "INSERT INTO visitor_logs (ip_address, user_agent, device, browser, os, country, visited_at)
-                       VALUES (?, ?, ?, ?, ?, 'Unknown', NOW())", [client_ip(), $ua, $device, $browser, $os]);
+        visit_log($conn, [client_ip(), $ua, $device, $browser, $os], visit_source_fields($input));
         echo json_encode(["success" => true]);
         break;
 
@@ -448,7 +451,9 @@ switch ($action) {
             "devices" => $devices,
             "browsers" => $browsers,
             "os" => $os,
-            "countries" => $countries
+            "countries" => $countries,
+            // Visits per source (chatgpt.com, …, google.*, lainnya, langsung) over 30 days; null before migration 010
+            "sources" => visit_sources($conn)
         ]);
         break;
 

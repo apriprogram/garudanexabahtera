@@ -7,6 +7,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   BriefcaseBusiness,
+  Compass,
   DollarSign,
   ExternalLink,
   Eye,
@@ -70,7 +71,17 @@ interface VisitorDetails {
   browsers: VisitorBreakdownItem[];
   os: VisitorBreakdownItem[];
   countries: VisitorBreakdownItem[];
+  /**
+   * Kunjungan 30 hari per sumber, urutan tetap (backend/modules/visits.php): chatgpt.com, perplexity.ai,
+   * gemini.google.com, copilot.microsoft.com, bing.com, google.*, lainnya, langsung. null = migrasi 010 belum jalan.
+   */
+  sources?: VisitorBreakdownItem[] | null;
 }
+
+/** Label tampilan sumber kunjungan; nama situs tetap ditulis apa adanya. */
+const SOURCE_LABELS: Record<string, string> = { lainnya: 'Lainnya', langsung: 'Langsung (tanpa referrer)' };
+/** Asisten AI biru, mesin pencari hijau, sisanya abu-abu. */
+const SOURCE_TONES: ('cobalt' | 'mint' | 'warning' | 'mist')[] = ['cobalt', 'cobalt', 'cobalt', 'cobalt', 'mint', 'mint', 'mist', 'mist'];
 
 interface UserRow {
   id: number;
@@ -559,6 +570,10 @@ function BreakdownPanel({
   tones,
   showCount,
   renderLabel,
+  subtitle,
+  empty = 'Belum ada data.',
+  twoColumns,
+  className,
 }: {
   title: string;
   icon: React.ReactNode;
@@ -568,14 +583,19 @@ function BreakdownPanel({
   tones: ('cobalt' | 'mint' | 'warning' | 'mist')[];
   showCount?: boolean;
   renderLabel?: (item: VisitorBreakdownItem) => React.ReactNode;
+  subtitle?: React.ReactNode;
+  empty?: string;
+  /** Daftar dua kolom mulai layar md (untuk panel selebar modal). */
+  twoColumns?: boolean;
+  className?: string;
 }) {
   return (
-    <Panel>
-      <PanelHeader title={title} icon={icon} iconTone={iconTone} />
+    <Panel className={className}>
+      <PanelHeader title={title} subtitle={subtitle} icon={icon} iconTone={iconTone} />
       {items.length === 0 ? (
-        <p className="text-[13px] text-adm-muted">Belum ada data.</p>
+        <p className="text-[13px] text-adm-muted">{empty}</p>
       ) : (
-        <div className="space-y-3">
+        <div className={twoColumns ? 'grid gap-3 md:grid-cols-2 md:gap-x-6' : 'space-y-3'}>
           {items.slice(0, limit).map((item, i) => {
             const percentage = percentOf(items, item.value);
             return (
@@ -601,6 +621,8 @@ function VisitorAnalytics({ details, error, loading, onRetry }: { details: Visit
     return error ? <ErrorState title="Gagal memuat data analitik" error={error} onRetry={onRetry} /> : <LoadingState label="Memuat data analitik..." className="py-20" />;
   }
   const daily = details.daily ?? [];
+  const sources = (details.sources ?? []).map((item) => ({ label: SOURCE_LABELS[item.label] ?? item.label, value: Number(item.value) || 0 }));
+  const sourcesTotal = sources.reduce((acc, item) => acc + item.value, 0);
   return (
     <div className={cn('space-y-4 transition-opacity sm:space-y-6', loading && 'opacity-60')}>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -633,6 +655,20 @@ function VisitorAnalytics({ details, error, loading, onRetry }: { details: Visit
         <BreakdownPanel title="Browser" icon={<Globe />} iconTone="mint" items={details.browsers ?? []} tones={['mint', 'cobalt', 'warning']} />
         <BreakdownPanel title="Sistem operasi" icon={<Monitor />} iconTone="default" items={details.os ?? []} tones={['cobalt', 'mint', 'warning']} />
         <BreakdownPanel title="Lokasi" icon={<Globe />} iconTone="warning" items={details.countries ?? []} tones={['warning', 'cobalt', 'mint']} />
+        {/* Sumber kunjungan (SEO-PLAN §5.9): asisten AI, mesin pencari, situs lain, langsung */}
+        <BreakdownPanel
+          title="Sumber kunjungan"
+          subtitle="30 hari terakhir, satu per sesi, dihitung sejak pencatatan sumber aktif."
+          icon={<Compass />}
+          iconTone="cobalt"
+          items={sourcesTotal > 0 ? sources : []}
+          limit={sources.length}
+          showCount
+          twoColumns
+          tones={SOURCE_TONES}
+          empty={details.sources === null ? 'Belum aktif: jalankan migrasi database 2026-10-23_010.' : 'Belum ada data.'}
+          className="md:col-span-2"
+        />
       </div>
     </div>
   );
