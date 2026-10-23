@@ -53,6 +53,12 @@ DirectoryIndex index.html
   RewriteCond %{ENV:REDIRECT_STATUS} ^$
   RewriteCond %{THE_REQUEST} \s/+(_pre([/?\s]|$)|app\.html|404\.html|seo\.php) [NC]
   RewriteRule ^ - [R=404,L]
+  # Sama untuk request dengan %-encoding di path (/%5Fpre/index.html, /seo%2Ephp, /app%2Ehtml): THE_REQUEST belum
+  # di-decode, jadi polanya dicocokkan dengan path yang sudah di-decode. Hanya request asli yang berisi "%", sehingga
+  # rewrite internal ke _pre/ (request tanpa "%") tetap jalan.
+  RewriteCond %{ENV:REDIRECT_STATUS} ^$
+  RewriteCond %{THE_REQUEST} ^\S+\s+[^?\s]*%
+  RewriteRule ^/*(_pre(/|$)|app\.html$|404\.html$|seo\.php$) - [R=404,L,NC]
 
   # Frontend memanggil /api/ai-chat (jalur Node); di PHP itu action=ai_chat. Sebelum aturan garis miring di bawah,
   # supaya POST ke /api/ai-chat/ tidak dialihkan.
@@ -71,9 +77,10 @@ DirectoryIndex index.html
   # END gn-prerender
 
   # Template yang terbit setelah deploy terakhir: seo.php merender halamannya dari DB, atau 404 bila tidak ada /
-  # belum terbit. Template yang sudah diprerender tertangkap aturan di atas lebih dulu.
+  # belum terbit. Template yang sudah diprerender tertangkap aturan di atas lebih dulu. Batas 120 karakter = batas slug
+  # di kedua backend dan kolom templates.slug (dicek __tests__/backend/template-slug.test.ts).
   RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
-  RewriteRule ^template/([a-z0-9-]{1,80})$ seo.php?slug=$1 [L]
+  RewriteRule ^template/([a-z0-9-]{1,120})$ seo.php?slug=$1 [L]
 
   # Rute aplikasi (akun, checkout, login, demo, pratinjau situs, admin) → cangkang SPA dengan robots noindex,follow.
   # ^pesan(/…)? tidak menangkap /pesan-custom (halaman publik yang diprerender).

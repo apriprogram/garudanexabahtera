@@ -307,6 +307,8 @@ export function negativeCases(host, slug) {
     { path: '/template/kategori', expect: { status: 404 } },
     { path: '/panduan/tidak-ada-seo-check', expect: { status: 404 } },
     { path: '/_pre/index.html', expect: { status: 404 } },
+    // Versi %-encoding (THE_REQUEST belum di-decode, deploy/cpanel/htaccess punya aturan khusus)
+    { path: '/%5Fpre/index.html', expect: { status: 404 } },
     { path: '/app.html', expect: { status: 404 } },
     { path: '/404.html', expect: { status: 404 } },
     { path: '/akun', expect: { status: 200, noindex: true } },
@@ -323,6 +325,7 @@ export function negativeCases(host, slug) {
   if (slug) {
     cases.push(
       { path: `/seo.php?slug=${slug}`, expect: { status: 404 } },
+      { path: `/seo%2Ephp?slug=${slug}`, expect: { status: 404 } },
       { path: `/demo/${slug}`, expect: { status: 200, noindex: true } },
       { path: `/pesan/${slug}`, expect: { status: 200, noindex: true } },
       { path: `/template/${slug}/`, expect: { status: 301, location: to(`/template/${slug}`) } },

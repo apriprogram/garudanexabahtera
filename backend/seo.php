@@ -17,7 +17,7 @@
 // Aturan proses: setelah harga/nama/deskripsi template berubah atau template baru terbit, deploy ulang
 // (deploy/cpanel/README.md); skrip ini hanya penambal sampai deploy berikutnya.
 
-const SEO_SLUG_PATTERN = '/^[a-z0-9-]{1,80}$/';
+const SEO_SLUG_PATTERN = '/^[a-z0-9-]{1,120}$/';
 const SEO_TITLE_MAX = 60;
 const SEO_DESCRIPTION_MAX = 155;
 const SEO_RASTER = '/\.(png|jpe?g|webp|gif|avif)(\?.*)?$/i';

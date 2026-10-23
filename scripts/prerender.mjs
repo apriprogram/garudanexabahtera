@@ -334,6 +334,14 @@ const titleOf = (html) => /<title>([\s\S]*?)<\/title>/.exec(html)?.[1] ?? '';
 
 // ─── 5. .htaccess ────────────────────────────────────────────────────────────
 
+/** Rute per RewriteRule di blok gn-prerender: baris tetap pendek berapa pun jumlah halaman (lihat HTACCESS_MAX_LINE). */
+export const HTACCESS_ROUTES_PER_RULE = 40;
+/**
+ * Batas panjang satu baris .htaccess. Apache menolak baris > 8190 karakter ("Line too long") dan seluruh .htaccess
+ * gagal: 500 untuk semua halaman, api.php dan domain pembeli. Diberi jarak aman di bawah batas itu.
+ */
+export const HTACCESS_MAX_LINE = 8000;
+
 /** Isi blok gn-prerender: rute host utama yang punya file _pre (selain "/", yang punya aturan sendiri). */
 export function htaccessRoutes(paths) {
   const others = paths.filter((path) => path !== '/').map((path) => path.slice(1)).sort();
@@ -343,12 +351,21 @@ export function htaccessRoutes(paths) {
     '  RewriteCond %{HTTP_HOST} ^garudanexa\\.com$ [NC]',
     '  RewriteRule ^$ _pre/index.html [L]',
   ];
-  if (others.length) {
-    lines.push('  RewriteCond %{HTTP_HOST} ^garudanexa\\.com$ [NC]', `  RewriteRule ^(${others.join('|')})$ _pre/$1.html [L]`);
+  // Satu pasang RewriteCond + RewriteRule per kelompok rute, supaya tidak ada baris yang melewati batas Apache
+  for (let i = 0; i < others.length; i += HTACCESS_ROUTES_PER_RULE) {
+    const group = others.slice(i, i + HTACCESS_ROUTES_PER_RULE);
+    lines.push('  RewriteCond %{HTTP_HOST} ^garudanexa\\.com$ [NC]', `  RewriteRule ^(${group.join('|')})$ _pre/$1.html [L]`);
   }
   lines.push(`  ${HTACCESS_END}`);
   return lines.join('\n');
 }
+
+/** Baris .htaccess yang terlalu panjang ({ line: nomor mulai 1, length }), kosong bila aman. */
+export const longHtaccessLines = (htaccess) =>
+  htaccess
+    .split(/\r?\n/)
+    .map((line, index) => ({ line: index + 1, length: line.length }))
+    .filter(({ length }) => length >= HTACCESS_MAX_LINE);
 
 export function fillHtaccess(htaccess, block) {
   const start = htaccess.indexOf(HTACCESS_BEGIN);
@@ -356,7 +373,13 @@ export function fillHtaccess(htaccess, block) {
   if (start < 0 || end < start) throw new Error(`.htaccess tanpa blok "${HTACCESS_BEGIN}" … "${HTACCESS_END}"`);
   const lineStart = htaccess.lastIndexOf('\n', start) + 1;
   const lineEnd = htaccess.indexOf('\n', end);
-  return htaccess.slice(0, lineStart) + block + (lineEnd < 0 ? '' : htaccess.slice(lineEnd));
+  const filled = htaccess.slice(0, lineStart) + block + (lineEnd < 0 ? '' : htaccess.slice(lineEnd));
+  const long = longHtaccessLines(filled);
+  if (long.length) {
+    const where = long.map(({ line, length }) => `baris ${line} (${length} karakter)`).join(', ');
+    throw new Error(`.htaccess punya baris ≥ ${HTACCESS_MAX_LINE} karakter (${where}); Apache akan menolak seluruh file (500)`);
+  }
+  return filled;
 }
 
 // ─── seo.php ─────────────────────────────────────────────────────────────────
@@ -401,6 +424,28 @@ async function optionalModule(root, rel, exportsNeeded, strict, { required = tru
 // ─── Utama ───────────────────────────────────────────────────────────────────
 
 /**
+ * Sumber data prerender: PRERENDER_API, bawaan https://garudanexa.com. Deploy sungguhan (strict) hanya boleh memakai
+ * API production: PRERENDER_API=http://127.0.0.1:8000 yang tertinggal di shell setelah uji --build-only akan menerbitkan
+ * data database lokal (proyek uji, harga, navbar) ke production. PRERENDER_ALLOW_NONPROD=1 = pengecualian sadar.
+ */
+export function prerenderApiBase({ strict, env = process.env }) {
+  const apiBase = env.PRERENDER_API || SITE_ORIGIN;
+  let origin;
+  try {
+    origin = new URL(apiBase).origin;
+  } catch {
+    throw new Error(`PRERENDER_API bukan URL yang valid: ${JSON.stringify(apiBase)}`);
+  }
+  if (strict && origin !== SITE_ORIGIN && env.PRERENDER_ALLOW_NONPROD !== '1') {
+    throw new Error(
+      `Deploy sungguhan harus memakai data production (${SITE_ORIGIN}), bukan PRERENDER_API=${apiBase}. ` +
+        'Hapus PRERENDER_API dari shell, atau set PRERENDER_ALLOW_NONPROD=1 bila memang disengaja.',
+    );
+  }
+  return apiBase;
+}
+
+/**
  * @param {object} options
  * @param {string} options.root      folder proyek
  * @param {string} options.outDir    OUT (isi public_html)
@@ -409,7 +454,7 @@ async function optionalModule(root, rel, exportsNeeded, strict, { required = tru
  */
 export async function prerender({ root, outDir, deployDir, strict }) {
   process.env.NODE_ENV = 'production';
-  const apiBase = process.env.PRERENDER_API || SITE_ORIGIN;
+  const apiBase = prerenderApiBase({ strict });
   const minTemplates = Number(process.env.MIN_TEMPLATES ?? 5);
   if (!Number.isInteger(minTemplates) || minTemplates < 1) throw new Error('MIN_TEMPLATES harus bilangan bulat ≥ 1');
 
@@ -553,6 +598,6 @@ export async function prerender({ root, outDir, deployDir, strict }) {
   for (const p of problems) if (!errors.includes(p)) warn(p.message);
   if (errors.length) throw new Error(`Cek prerender gagal:\n  ${errors.map((p) => p.message).join('\n  ')}`);
   log(`selesai: ${paths.length} halaman, data ${builtAt}`);
-  return { paths, builtAt, entries };
+  return { paths, builtAt, entries, dataOrigin: new URL(apiBase).origin };
 }
 

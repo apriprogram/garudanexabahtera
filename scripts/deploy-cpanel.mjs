@@ -84,7 +84,7 @@ cpSync(join(ROOT, 'deploy', 'cpanel', 'htaccess'), join(OUT, '.htaccess'));
 // 2b. Prerender halaman publik host utama: OUT/_pre/*.html, app.html, 404.html, seo.php, sitemap.xml, llms*.txt, dan
 //     daftar rute di blok gn-prerender .htaccess (docs/platform/SEO-PLAN.md §5.2). Gagal = deploy dibatalkan.
 const { prerender } = await import('./prerender.mjs');
-await prerender({ root: ROOT, outDir: OUT, deployDir: DEPLOY_DIR, strict: !buildOnly });
+const prerendered = await prerender({ root: ROOT, outDir: OUT, deployDir: DEPLOY_DIR, strict: !buildOnly });
 
 // 3. cPanel: repo ini di-clone langsung ke public_html dan branch cpanel-deploy yang di-checkout,
 //    jadi "Update from Remote" sudah cukup. Deploy task hanya mencatat waktu (tidak menyalin apa pun).
@@ -128,7 +128,8 @@ for (const entry of readdirSync(WORKTREE)) {
 cpSync(OUT, WORKTREE, { recursive: true });
 gitw('add -A');
 if (gitwOut('status --porcelain')) {
-  gitw(`commit -m "deploy: build dari main ${sourceSha}${dirty}"`);
+  // Sumber & waktu data prerender ikut dicatat: build dari data lokal mudah dikenali di riwayat branch deploy
+  gitw(`commit -m "deploy: build dari main ${sourceSha}${dirty} (data ${prerendered.dataOrigin} ${prerendered.builtAt})"`);
 } else {
   console.log('Tidak ada perubahan build; branch tidak diubah.');
 }

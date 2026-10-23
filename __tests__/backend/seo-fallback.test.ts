@@ -155,7 +155,7 @@ describe.skipIf(!PHP_AVAILABLE)('backend/seo.php matches the prerendered templat
   });
 
   it('answers 404 with the 404 page for invalid or reserved slugs, without touching the database', () => {
-    for (const slug of ['Bukan Slug!', 'kategori', '', 'a'.repeat(81)]) {
+    for (const slug of ['Bukan Slug!', 'kategori', '', 'a'.repeat(121)]) {
       writeFileSync(join(dir, 'notfound.php'), `<?php $_GET['slug'] = ${JSON.stringify(slug)}; require getenv('SEO_PHP');`);
       const result = runPhp('notfound.php');
       expect(result.status, result.stderr).toBe(0);

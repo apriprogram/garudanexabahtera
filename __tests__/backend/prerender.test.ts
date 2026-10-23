@@ -6,6 +6,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  HTACCESS_MAX_LINE,
+  HTACCESS_ROUTES_PER_RULE,
   PRELOAD_OMIT_SETTINGS,
   USER_AGENT,
   checkPage,
@@ -16,9 +18,11 @@ import {
   hoistLeadingTags,
   htaccessRoutes,
   injectHead,
+  longHtaccessLines,
   preFileFor,
   preloadProjects,
   preloadSettings,
+  prerenderApiBase,
   scriptJson,
   seoFallbackContext,
   stripPageHead,
@@ -206,7 +210,7 @@ describe('.htaccess routing (main host only)', () => {
       pos('RewriteRule ^api/ai-chat/?$ api.php?action=ai_chat [QSA,L]'),
       pos('RewriteRule ^(.+?)/+$ https://garudanexa.com/$1 [R=301,L]'),
       pos('# BEGIN gn-prerender'),
-      pos('RewriteRule ^template/([a-z0-9-]{1,80})$ seo.php?slug=$1 [L]'),
+      pos('RewriteRule ^template/([a-z0-9-]{1,120})$ seo.php?slug=$1 [L]'),
       pos('RewriteRule ^(akun|admin|pesan|demo|situs|masuk|daftar|login|auth)(/.*)?$ app.html [L]'),
       pos('RewriteCond %{HTTP_HOST} !^garudanexa\\.com$ [NC]'),
       // yang pertama R=404 = blok file internal; yang terakhir = 404 asli host utama
@@ -226,6 +230,30 @@ describe('.htaccess routing (main host only)', () => {
     }
     for (const path of ['/', '/template/finova', '/pesan-custom', '/_preview', '/api.php?action=get_settings', '/assets/app.js']) {
       expect(rule.test(line(path)), path).toBe(false);
+    }
+  });
+
+  it('also blocks percent-encoded requests for internal files (matched on the decoded path)', () => {
+    const encodedRule = [
+      'RewriteCond %{ENV:REDIRECT_STATUS} ^$',
+      'RewriteCond %{THE_REQUEST} ^\\S+\\s+[^?\\s]*%',
+      'RewriteRule ^/*(_pre(/|$)|app\\.html$|404\\.html$|seo\\.php$) - [R=404,L,NC]',
+    ].join('\n  ');
+    expect(HTACCESS).toContain(encodedRule);
+    // Sebelum aturan rute (garis miring, prerender, seo.php), sesudah blok file internal biasa
+    expect(pos(encodedRule)).toBeGreaterThan(pos('RewriteCond %{THE_REQUEST} \\s/+(_pre'));
+    expect(pos(encodedRule)).toBeLessThan(pos('# BEGIN gn-prerender'));
+    const hasPercent = /^\S+\s+[^?\s]*%/;
+    const decodedPath = /^\/*(_pre(\/|$)|app\.html$|404\.html$|seo\.php$)/i;
+    const blocked = (requestPath: string) => {
+      const [path] = requestPath.split('?');
+      return hasPercent.test(`GET ${requestPath} HTTP/1.1`) && decodedPath.test(decodeURIComponent(path).replace(/^\//, ''));
+    };
+    for (const path of ['/%5Fpre/index.html', '/%5fpre/template/finova.html', '/%5Fpre/seo-fallback.json', '/seo%2Ephp?slug=finova', '/app%2Ehtml', '/404%2Ehtml', '/%61pp.html']) {
+      expect(blocked(path), path).toBe(true);
+    }
+    for (const path of ['/harga', '/template/finova', '/template?q=%5Fpre', '/assets/foto%20baru.jpg', '/%5Fpreview']) {
+      expect(blocked(path), path).toBe(false);
     }
   });
 
@@ -249,6 +277,43 @@ describe('.htaccess routing (main host only)', () => {
     expect(() => fillHtaccess('RewriteEngine On\n', block)).toThrow(/gn-prerender/);
     expect(() => htaccessRoutes(['/', '/a b'])).toThrow(/tidak aman/);
     expect(() => htaccessRoutes(['/', '/x|y'])).toThrow(/tidak aman/);
+  });
+
+  it('splits many routes over several short RewriteRules (Apache rejects .htaccess lines over 8190 characters)', () => {
+    const paths = ['/', ...Array.from({ length: 500 }, (_, i) => `/panduan/artikel-panduan-yang-cukup-panjang-nomor-${i + 1}`)];
+    const block = htaccessRoutes(paths);
+    const rules = block.split('\n').filter((line) => line.includes('_pre/$1.html'));
+    expect(rules).toHaveLength(Math.ceil(500 / HTACCESS_ROUTES_PER_RULE));
+    // Setiap RewriteRule punya RewriteCond host utama sendiri tepat di atasnya
+    const lines = block.split('\n');
+    for (const rule of rules) expect(lines[lines.indexOf(rule) - 1]).toBe('  RewriteCond %{HTTP_HOST} ^garudanexa\\.com$ [NC]');
+    const routed = rules.flatMap((rule) => /\^\((.*)\)\$/.exec(rule)![1].split('|'));
+    expect(routed.sort()).toEqual(paths.slice(1).map((p) => p.slice(1)).sort());
+    const filled = fillHtaccess(HTACCESS, block);
+    expect(longHtaccessLines(filled)).toEqual([]);
+    expect(Math.max(...filled.split('\n').map((line) => line.length))).toBeLessThan(HTACCESS_MAX_LINE);
+    // Pengaman terakhir: baris yang tetap terlalu panjang menggagalkan build, bukan situs
+    const tooLong = `  # BEGIN gn-prerender\n  RewriteRule ^(${'a'.repeat(HTACCESS_MAX_LINE)})$ x [L]\n  # END gn-prerender`;
+    expect(() => fillHtaccess(HTACCESS, tooLong)).toThrow(/karakter/);
+  });
+});
+
+describe('data source', () => {
+  it('a real deploy only reads production data; --build-only may use a local API', () => {
+    expect(prerenderApiBase({ strict: true, env: {} })).toBe('https://garudanexa.com');
+    expect(prerenderApiBase({ strict: true, env: { PRERENDER_API: 'https://garudanexa.com/' } })).toBe('https://garudanexa.com/');
+    expect(() => prerenderApiBase({ strict: true, env: { PRERENDER_API: 'http://127.0.0.1:8000' } })).toThrow(/data production/);
+    expect(() => prerenderApiBase({ strict: true, env: { PRERENDER_API: 'https://staging.garudanexa.com' } })).toThrow(/data production/);
+    expect(prerenderApiBase({ strict: true, env: { PRERENDER_API: 'http://127.0.0.1:8000', PRERENDER_ALLOW_NONPROD: '1' } })).toBe(
+      'http://127.0.0.1:8000',
+    );
+    expect(prerenderApiBase({ strict: false, env: { PRERENDER_API: 'http://127.0.0.1:8000' } })).toBe('http://127.0.0.1:8000');
+    expect(() => prerenderApiBase({ strict: false, env: { PRERENDER_API: 'bukan url' } })).toThrow(/bukan URL/);
+  });
+
+  it('the deploy commit records where the data came from', () => {
+    const deploy = readFileSync(join(ROOT, 'scripts', 'deploy-cpanel.mjs'), 'utf8');
+    expect(deploy).toMatch(/commit -m "deploy: build dari main \$\{sourceSha\}\$\{dirty\} \(data \$\{prerendered\.dataOrigin\} \$\{prerendered\.builtAt\}\)"/);
   });
 });
 
