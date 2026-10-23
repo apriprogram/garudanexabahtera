@@ -50,7 +50,7 @@ export default function Tentang() {
     },
     {
       title: 'Isi website dikelola pemiliknya',
-      text: `${pkg.contentManagement} ${facts.contentOwnership}`,
+      text: 'Teks, foto, dan kontak di website Anda ubah sendiri lewat CMS di Akun Saya, tanpa coding. Isi yang Anda masukkan, seperti teks, gambar, logo, dan data, tetap milik Anda.',
     },
     {
       title: 'Proyek custom dimulai dari penawaran tertulis',

@@ -2,11 +2,9 @@
 // /jasa-pembuatan-aplikasi-mobile. Hanya layanan yang benar-benar ditawarkan (form Pesan Custom, strip layanan beranda,
 // Syarat & Ketentuan); proses dan hasil hanya sejauh yang sudah dijanjikan situs dan dokumen legal. Tanpa angka harga.
 // Modul murni (tanpa React): dipakai halaman, *.seo.ts dan tes.
-import { COMPANY_FACTS } from '../lib/companyFacts';
-import { HUB_PATHS } from '../seo/paths';
-import { MOBILE_SERVICE_FAQ_IDS, WEB_SERVICE_FAQ_IDS, type FaqId } from './faq';
+import { MOBILE_SERVICE_META, WEB_SERVICE_META, type ServiceKey, type ServiceMeta } from './servicesMeta';
 
-export type ServiceKey = 'website' | 'mobile';
+export type { ServiceKey, ServiceMeta } from './servicesMeta';
 
 export interface ServiceCard {
   title: string;
@@ -25,15 +23,8 @@ export interface ServiceSection {
   paragraphs: readonly string[];
 }
 
-export interface ServiceContent {
-  key: ServiceKey;
-  path: string;
-  /** Label remah roti. */
-  crumb: string;
+export interface ServiceContent extends ServiceMeta {
   badge: string;
-  h1: string;
-  /** Kalimat pembuka (langsung menjawab: apa, untuk siapa, bagaimana biaya ditentukan). */
-  lead: string;
   /** Nilai ?layanan= di /pesan-custom. */
   orderParam: 'website' | 'mobile';
   whatsappMessage: string;
@@ -45,24 +36,14 @@ export interface ServiceContent {
   costTitle: string;
   costIntro: string;
   faqTitle: string;
-  faqIds: readonly FaqId[];
   cta: { title: string; text: string };
-  /** Untuk JSON-LD Service. */
-  serviceType: string;
-  serviceName: string;
 }
-
-const { legalName, name } = COMPANY_FACTS;
 
 const STEPS_INTRO = 'Alurnya sama dengan yang tertulis di formulir Pesan Custom dan di Syarat & Ketentuan kami.';
 
 export const WEB_SERVICE: ServiceContent = {
-  key: 'website',
-  path: HUB_PATHS.webService,
-  crumb: 'Jasa pembuatan website',
+  ...WEB_SERVICE_META,
   badge: 'Jasa website custom',
-  h1: 'Jasa pembuatan website custom untuk bisnis & instansi',
-  lead: `${name} (${legalName}) membuat website custom untuk perusahaan, UMKM, sekolah, pesantren, dan instansi di seluruh Indonesia. Kami mulai dari konsultasi gratis, lalu mengirim penawaran tertulis berisi lingkup, biaya, dan jadwal sebelum pengerjaan dimulai, dan mendampingi Anda dari desain sampai rilis.`,
   orderParam: 'website',
   whatsappMessage: 'Halo Garuda Nexa, saya ingin konsultasi pembuatan website custom.',
   kinds: {
@@ -143,22 +124,15 @@ export const WEB_SERVICE: ServiceContent = {
   costIntro:
     'Kami tidak memasang daftar harga untuk website custom, karena dua website dengan jumlah halaman yang sama bisa sangat berbeda isinya. Biaya disusun dari faktor berikut dan dituliskan di penawaran:',
   faqTitle: 'Pertanyaan tentang jasa pembuatan website',
-  faqIds: WEB_SERVICE_FAQ_IDS,
   cta: {
     title: 'Ceritakan website yang Anda butuhkan',
     text: 'Isi formulir Pesan Custom atau hubungi kami lewat WhatsApp. Konsultasi gratis, dan kami melayani klien di seluruh Indonesia secara online.',
   },
-  serviceType: 'Jasa pembuatan website',
-  serviceName: 'Jasa pembuatan website custom',
 };
 
 export const MOBILE_SERVICE: ServiceContent = {
-  key: 'mobile',
-  path: HUB_PATHS.mobileService,
-  crumb: 'Jasa pembuatan aplikasi mobile',
+  ...MOBILE_SERVICE_META,
   badge: 'Jasa aplikasi mobile',
-  h1: 'Jasa pembuatan aplikasi Android & iOS custom',
-  lead: `${name} (${legalName}) membuat aplikasi mobile Android dan iOS yang mengikuti alur bisnis Anda, dari aplikasi kasir dan absensi sampai aplikasi untuk sekolah dan pesantren. Biaya dan jadwal disampaikan lewat penawaran tertulis setelah konsultasi gratis, dan kami membantu sampai aplikasi rilis di Play Store dan App Store.`,
   orderParam: 'mobile',
   whatsappMessage: 'Halo Garuda Nexa, saya ingin konsultasi pembuatan aplikasi mobile Android/iOS.',
   kinds: {
@@ -239,13 +213,10 @@ export const MOBILE_SERVICE: ServiceContent = {
   costIntro:
     'Biaya aplikasi mobile bergantung pada fitur dan platformnya, jadi kami tidak memasang daftar harga. Faktor berikut menentukan biaya dan dituliskan di penawaran:',
   faqTitle: 'Pertanyaan tentang jasa pembuatan aplikasi',
-  faqIds: MOBILE_SERVICE_FAQ_IDS,
   cta: {
     title: 'Ceritakan aplikasi yang Anda butuhkan',
     text: 'Isi formulir Pesan Custom atau hubungi kami lewat WhatsApp. Konsultasi gratis, dan kami melayani klien di seluruh Indonesia secara online.',
   },
-  serviceType: 'Jasa pembuatan aplikasi mobile',
-  serviceName: 'Jasa pembuatan aplikasi Android & iOS custom',
 };
 
 export const SERVICES: Record<ServiceKey, ServiceContent> = { website: WEB_SERVICE, mobile: MOBILE_SERVICE };

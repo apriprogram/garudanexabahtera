@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { FaqAccordion } from '../../../components/sections/faq/FaqAccordion';
 import { COMPANY_FACTS } from '../../../lib/companyFacts';
 import { faqContext, faqItems, PRICING_FAQ_IDS } from '../../../content/faq';
-import { buildOptionsTable, CUSTOM_COST_FACTORS, shortPriceRange, templateVsCustomTable } from '../../../content/pricing';
+import { buildOptionsTable, CMS_INCLUDE, CUSTOM_COST_FACTORS, shortPriceRange, templateVsCustomTable } from '../../../content/pricing';
 import { getTemplatePricing, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../../hooks/useSiteSettings';
 import { usePriceDate, usePublishedTemplates } from '../../../hooks/usePublishedTemplates';
 import { formatDateId, formatPriceFull, formatPriceRange, isPrice } from '../../../seo/format';
@@ -146,7 +146,7 @@ export default function Harga() {
       >
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-8">
           <ul className="grid gap-3 sm:grid-cols-2">
-            {[...pricing.includes, 'Kelola isi sendiri lewat CMS di Akun Saya'].map((item) => (
+            {[...pricing.includes, CMS_INCLUDE].map((item) => (
               <li key={item} className="flex items-start gap-3 rounded-[20px] bg-surface p-4 text-sm text-fg ring-1 ring-inset ring-line sm:text-[15px]">
                 <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-white">
                   <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />

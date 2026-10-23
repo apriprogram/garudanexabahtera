@@ -60,6 +60,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ table, caption
         </tbody>
       </table>
     </div>
+    <p className="border-t border-line px-4 py-2.5 text-xs text-subtle sm:hidden">Geser tabel ke samping untuk melihat semua kolom.</p>
   </div>
 );
 

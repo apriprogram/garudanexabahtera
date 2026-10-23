@@ -1,9 +1,9 @@
 // /jasa-pembuatan-website (Lampiran A): Service + BreadcrumbList + FAQPage, tanpa harga.
-import { WEB_SERVICE } from '../../../content/services';
+import { WEB_SERVICE_META } from '../../../content/servicesMeta';
 import { TITLE_SUFFIX } from '../../../seo/defaults';
 import { serviceSeo } from './serviceSeo';
 
-export default serviceSeo(WEB_SERVICE, {
+export default serviceSeo(WEB_SERVICE_META, {
   title: `Jasa Pembuatan Website Company Profile${TITLE_SUFFIX}`,
   description:
     'Jasa pembuatan website custom untuk perusahaan, sekolah, instansi & UMKM. Konsultasi gratis, penawaran jelas sebelum mulai, didampingi sampai rilis.',

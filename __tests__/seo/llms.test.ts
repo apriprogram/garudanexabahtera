@@ -40,17 +40,17 @@ describe('llms.txt', () => {
     expect(txt).not.toMatch(/tahun ke-2|Alamat|PEMILIK|\{|null|undefined/);
   });
 
-  it('hanya menautkan halaman index: halaman stub (/template, /harga, /tentang) belum disebut', () => {
+  it('hanya menautkan halaman index: halaman stub belum disebut', () => {
     const links = [...txt.matchAll(/\]\((https:\/\/garudanexa\.com[^)]*)\)/g)].map((m) => m[1]);
     for (const link of links.filter((l) => !l.endsWith('/llms-full.txt'))) {
       const path = link.replace('https://garudanexa.com', '') || '/';
       expect(entries.map((e) => e.path), link).toContain(path);
     }
-    expect(txt).not.toContain('https://garudanexa.com/harga)');
     expect(txt).toContain('[Kebijakan Pengembalian Dana](https://garudanexa.com/kebijakan-pengembalian-dana)');
-    // begitu halaman jadi index, tautannya ikut muncul
-    const withPricing = buildLlmsTxt({ ...input, entries: [...entries, { path: '/harga', lastmod: '2026-11-10' }] });
-    expect(withPricing).toContain('- [Harga](https://garudanexa.com/harga)');
+    // /harga sudah index (WP6) → tertaut; selama sebuah halaman belum index, tautannya tidak muncul
+    expect(txt).toContain('- [Harga](https://garudanexa.com/harga)');
+    const withoutPricing = buildLlmsTxt({ ...input, entries: entries.filter((e) => e.path !== '/harga') });
+    expect(withoutPricing).not.toContain('https://garudanexa.com/harga)');
   });
 });
 

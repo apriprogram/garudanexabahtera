@@ -7,6 +7,9 @@ import { formatPriceShort, isPrice } from '../seo/format';
 import { HUB_PATHS } from '../seo/paths';
 import type { Template } from '../types/platform';
 
+/** Butir tambahan di daftar "Sudah termasuk" (beranda, /harga): isi website dikelola pembeli sendiri lewat CMS. */
+export const CMS_INCLUDE = 'Kelola isi lewat CMS';
+
 /** Tanggal (YYYY-MM-DD) di WIB (UTC+7) dari waktu ISO; tidak valid → null. */
 export function wibDate(iso: string | null | undefined): string | null {
   const time = iso ? Date.parse(iso) : Number.NaN;

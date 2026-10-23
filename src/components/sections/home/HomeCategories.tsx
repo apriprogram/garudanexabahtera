@@ -2,6 +2,7 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { categoryTiles, homeIntro } from '../../../content/home';
+import { CMS_INCLUDE } from '../../../content/pricing';
 import { getTemplatePricing, useSiteSettings } from '../../../hooks/useSiteSettings';
 import { usePublishedTemplates } from '../../../hooks/usePublishedTemplates';
 import { formatPriceShort } from '../../../seo/format';
@@ -17,7 +18,7 @@ import { SectionHeading } from '../../ui/SectionHeading';
 const HomeCategories: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = '01' }) => {
   const { settings } = useSiteSettings();
   const { templates } = usePublishedTemplates();
-  const includes = [...getTemplatePricing(settings).includes, 'CMS untuk mengelola isi sendiri'];
+  const includes = [...getTemplatePricing(settings).includes, CMS_INCLUDE];
   const tiles = categoryTiles(templates);
 
   return (
@@ -53,7 +54,7 @@ const HomeCategories: React.FC<{ alt?: boolean; number?: string }> = ({ alt, num
         </div>
 
         {tiles.length > 0 && (
-          <ul className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <ul className="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:gap-4 lg:grid-cols-4">
             {tiles.map((tile) => (
               <li key={tile.slug}>
                 <Link to={tile.path} className="card-flat lift group flex h-full flex-col p-1.5">
@@ -70,14 +71,14 @@ const HomeCategories: React.FC<{ alt?: boolean; number?: string }> = ({ alt, num
                       />
                     )}
                   </span>
-                  <span className="flex flex-1 flex-col px-3.5 pb-3.5 pt-3.5 sm:px-4 sm:pb-4">
-                    <span className="text-base font-semibold text-fg transition-colors group-hover:text-primary sm:text-lg">
+                  <span className="flex flex-1 flex-col px-2.5 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-3.5">
+                    <span className="text-[14px] font-semibold leading-snug text-fg transition-colors group-hover:text-primary sm:text-lg">
                       Template {tile.name}
                     </span>
-                    <span className="mt-1 text-sm text-muted">
+                    <span className="mt-1 text-[12px] text-muted sm:text-sm">
                       {tile.count} template{tile.minPrice ? ` · mulai ${formatPriceShort(tile.minPrice)}` : ''}
                     </span>
-                    <span className="mt-2 text-[13px] leading-relaxed text-subtle">{tile.templateNames.join(', ')}</span>
+                    <span className="mt-2 text-[13px] leading-relaxed text-subtle max-sm:hidden">{tile.templateNames.join(', ')}</span>
                   </span>
                 </Link>
               </li>
