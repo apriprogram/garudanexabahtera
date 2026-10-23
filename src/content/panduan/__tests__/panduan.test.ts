@@ -1,8 +1,22 @@
 // @vitest-environment node
 // Jalankan: npx vitest run src/content/panduan
-// Pemuat artikel panduan: frontmatter sederhana tanpa dependensi, validasi, urutan terbaru dulu.
+// Pemuat artikel panduan: frontmatter sederhana tanpa dependensi, validasi, urutan terbaru dulu, penolong Markdown.
 import { describe, expect, it } from 'vitest';
-import { getArticle, listArticles, parseArticle, parseFrontmatter, sortArticles, type Article } from '..';
+import { getArticle, listArticles } from '..';
+import {
+  articleHeadings,
+  countWords,
+  headingId,
+  markdownLinks,
+  parseArticle,
+  parseFrontmatter,
+  proseBeforeSources,
+  readingMinutes,
+  sortArticles,
+  SUMMARY_KEYS,
+  toSummary,
+  type Article,
+} from '../parse';
 
 const ARTICLE = [
   '---',
@@ -62,6 +76,7 @@ describe('parseArticle', () => {
       author: 'Tim Garuda Nexa',
       datePublished: '2026-11-02',
       dateModified: '2026-11-05',
+      cta: 'template',
       related: ['template-vs-jasa-website-custom', 'website-klinik-kecantikan'],
     });
     expect(article.body.startsWith('## Jawaban singkat')).toBe(true);
@@ -79,11 +94,19 @@ describe('parseArticle', () => {
     expect(() => parseArticle(ARTICLE.replace(/sources:[\s\S]*?(?=related:)/, 'sources: satu\r\n'))).toThrow(/daftar/);
     expect(() => parseArticle(swap("'website-klinik-kecantikan'", 'Bukan Slug'))).toThrow(/related/);
   });
+
+  it('cta opsional: bawaan template, nilai lain harus template | website | mobile', () => {
+    const withCta = (value: string) => ARTICLE.replace('slug: biaya', `cta: ${value}\r\nslug: biaya`);
+    expect(parseArticle(withCta('mobile')).cta).toBe('mobile');
+    expect(parseArticle(withCta('website')).cta).toBe('website');
+    expect(() => parseArticle(withCta('toko'))).toThrow(/cta "toko"/);
+    expect(() => parseArticle(withCta('[mobile]'))).toThrow(/cta/);
+  });
 });
 
 describe('sortArticles, listArticles, getArticle', () => {
   const make = (slug: string, datePublished: string, dateModified = datePublished): Article => ({
-    title: slug, description: slug, slug, author: 'Tim Garuda Nexa', datePublished, dateModified, sources: [], related: [], body: '',
+    title: slug, description: slug, slug, author: 'Tim Garuda Nexa', datePublished, dateModified, cta: 'template', sources: [], related: [], body: '',
   });
 
   it('terbaru dulu, seri → dateModified, lalu slug; slug ganda ditolak', () => {
@@ -97,10 +120,73 @@ describe('sortArticles, listArticles, getArticle', () => {
     expect(() => sortArticles([make('x', '2026-01-01'), make('x', '2026-02-01')])).toThrow(/lebih dari satu/);
   });
 
-  it('artikel di folder ini sah semua (kosong selama belum ada file .md)', () => {
+  it('listArticles/getArticle: ringkasan saja (tanpa isi Markdown), terbaru dulu', () => {
     const articles = listArticles();
-    expect(Array.isArray(articles)).toBe(true);
-    for (const article of articles) expect(getArticle(article.slug)).toEqual(article);
+    expect(articles.length).toBeGreaterThan(0);
+    for (const article of articles) {
+      expect(getArticle(article.slug)).toEqual(article);
+      expect(Object.keys(article).sort()).toEqual([...SUMMARY_KEYS].sort());
+    }
+    expect(articles).toEqual(sortArticles(articles));
     expect(getArticle('tidak-ada')).toBeUndefined();
+  });
+
+  it('toSummary mengambil kunci ringkasan saja', () => {
+    expect(toSummary(make('a', '2026-01-01'))).toEqual({
+      slug: 'a', title: 'a', description: 'a', author: 'Tim Garuda Nexa', datePublished: '2026-01-01', dateModified: '2026-01-01',
+    });
+  });
+});
+
+describe('penolong Markdown', () => {
+  const MD = [
+    'Paragraf pembuka dengan [tautan](https://contoh.test/a) dan {{harga_template_min}}.',
+    '',
+    '## Domain, hosting & SSL',
+    '',
+    '| Kolom | Isi |',
+    '|---|---|',
+    '| a | b |',
+    '',
+    '```',
+    '## bukan judul',
+    '```',
+    '',
+    '## Biaya perawatan per tahun',
+    '',
+    '![gambar](/x.png) dan [internal](/harga "judul")',
+    '',
+    '## Sumber',
+    '',
+    '- [Sumber satu](https://contoh.test/sumber) kata kata kata',
+  ].join('\n');
+
+  it('judul H2 (tanpa blok kode) dengan id yang sama seperti render', () => {
+    expect(articleHeadings(MD)).toEqual([
+      { id: 'domain-hosting-dan-ssl', text: 'Domain, hosting & SSL' },
+      { id: 'biaya-perawatan-per-tahun', text: 'Biaya perawatan per tahun' },
+      { id: 'sumber', text: 'Sumber' },
+    ]);
+    expect(headingId('Apa itu SSL (HTTPS)?')).toBe('apa-itu-ssl-https');
+    expect(headingId('Café & Spa')).toBe('cafe-dan-spa');
+  });
+
+  it('hitung kata tanpa URL, sintaks tabel, dan bagian Sumber', () => {
+    const prose = proseBeforeSources(MD);
+    expect(prose).not.toContain('Sumber satu');
+    // "Paragraf pembuka dengan tautan dan x" (6) + judul (3 + 4, "&" bukan kata) + tabel (Kolom Isi a b = 4) +
+    // "gambar dan internal" (3); blok kode tidak dihitung
+    expect(countWords(prose)).toBe(6 + 3 + 4 + 4 + 3);
+    expect(countWords('Rp1.390.000 per 23 Oktober 2026, siap-pakai.')).toBe(6);
+    expect(readingMinutes(0)).toBe(1);
+    expect(readingMinutes(1400)).toBe(7);
+  });
+
+  it('daftar tautan (tanpa gambar)', () => {
+    expect(markdownLinks(MD)).toEqual([
+      { text: 'tautan', href: 'https://contoh.test/a' },
+      { text: 'internal', href: '/harga' },
+      { text: 'Sumber satu', href: 'https://contoh.test/sumber' },
+    ]);
   });
 });

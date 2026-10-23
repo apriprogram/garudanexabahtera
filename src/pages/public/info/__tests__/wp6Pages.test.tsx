@@ -231,8 +231,8 @@ describe('beranda', () => {
     const h2s = [...el.querySelectorAll('h2')].map((h) => h.textContent ?? '');
     expect(h2s.filter((t) => /template website|jasa pembuatan website|website atau aplikasi/i.test(t)).length).toBeGreaterThanOrEqual(3);
     expect(el.querySelector('#perbandingan table')).not.toBeNull();
-    // Belum ada artikel panduan → section panduan tidak dirender
-    expect(el.querySelector('#panduan')).toBeNull();
+    // Artikel panduan sudah terbit (WP8) → section panduan terbaru dengan tautan artikel
+    expect(el.querySelector('#panduan a[href^="/panduan/"]')).not.toBeNull();
     // Mode custom: H1 tetap elemen yang sama, judul custom tetap <p>
     const customTab = [...el.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((b) => /custom/i.test(b.textContent ?? ''))!;
     await act(async () => customTab.click());

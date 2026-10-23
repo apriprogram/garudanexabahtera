@@ -90,8 +90,10 @@ describe('llms-full.txt', () => {
 
   it('panduan hanya bila artikelnya index', () => {
     const guides = [{ slug: 'biaya-website-company-profile', title: 'Berapa Biaya Website?', description: 'Ringkasan.', dateModified: '2026-11-02' }];
-    expect(buildLlmsFullTxt({ ...input, guides })).not.toContain('## Panduan');
-    const indexed = buildLlmsFullTxt({ ...input, guides, entries: [...entries, { path: '/panduan/biaya-website-company-profile', lastmod: '2026-11-02' }] });
+    // Artikel WP8 sudah ada di getIndexableRoutes; tanpa rutenya di entries, panduan tidak ditulis
+    const withoutGuides = entries.filter((e) => !e.path.startsWith('/panduan/'));
+    expect(buildLlmsFullTxt({ ...input, guides, entries: withoutGuides })).not.toContain('## Panduan');
+    const indexed = buildLlmsFullTxt({ ...input, guides, entries: [...withoutGuides, { path: '/panduan/biaya-website-company-profile', lastmod: '2026-11-02' }] });
     expect(indexed).toContain('## Panduan\nDiperbarui 2 November 2026.');
   });
 });

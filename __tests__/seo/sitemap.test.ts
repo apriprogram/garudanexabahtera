@@ -35,7 +35,8 @@ describe('buildSitemap dari getIndexableRoutes', () => {
       expect(loc).not.toMatch(/[?#]/);
       expect(loc === `${ORIGIN}/` || !loc.endsWith('/')).toBe(true);
     }
-    for (const stub of ['/panduan']) expect(locs).not.toContain(`${ORIGIN}${stub}`);
+    // Panduan (WP8): daftar dan artikelnya ikut sitemap
+    for (const page of ['/panduan', '/panduan/biaya-website-company-profile']) expect(locs).toContain(`${ORIGIN}${page}`);
     // Halaman WP5 & WP6 yang sudah terisi
     for (const page of [
       '/template',

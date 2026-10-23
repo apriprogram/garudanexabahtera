@@ -35,7 +35,6 @@ const DATA: SeoData = {
 const STUB_PATHS = [
   '/template',
   ...CATEGORY_SLUGS.map(categoryPath),
-  '/panduan',
 ];
 
 /** Halaman WP6 yang sudah terisi: index,follow dan masuk sitemap. */
@@ -125,7 +124,8 @@ describe('routes: modul *.seo.ts', () => {
 describe('getHead', () => {
   it("getHead('/harga') index,follow sejak halamannya terisi (WP6; kriteria WP1 berlaku untuk stub yang tersisa)", () => {
     expect(getHead('/harga', DATA).robots).toBe('index,follow');
-    expect(getHead('/panduan', DATA).robots).toBe('noindex,follow');
+    // /panduan terisi artikel (WP8)
+    expect(getHead('/panduan', DATA).robots).toBe('index,follow');
   });
 
   it('semua rute stub: noindex,follow, tanpa canonical, judul unik dan berisi', () => {

@@ -29,8 +29,8 @@ describe('getHead: semua rute index', () => {
     expect(paths).toEqual(
       expect.arrayContaining(['/', HUB_PATHS.customOrder, ...Object.values(LEGAL_PATHS), ...TEMPLATES.map((t) => templatePath(t.slug))]),
     );
-    // Stub yang tersisa (WP8) tidak pernah masuk sitemap
-    for (const stub of ['/panduan']) expect(paths).not.toContain(stub);
+    // Panduan (WP8): daftar dan artikelnya ikut diindeks
+    expect(paths).toEqual(expect.arrayContaining(['/panduan', '/panduan/biaya-website-company-profile']));
     expect(new Set(paths).size).toBe(paths.length);
   });
 

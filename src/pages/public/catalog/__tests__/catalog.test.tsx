@@ -70,7 +70,8 @@ describe('/template (katalog)', () => {
       '/template/kategori/olahraga-komunitas',
       '/template/kategori/fintech-startup',
     ]);
-    for (const href of ['/harga', '/jasa-pembuatan-website', '/panduan']) expect(hrefs).toContain(href);
+    // Panduan: artikel pertama yang terbit dari daftar prioritas (guideLink, WP8)
+    for (const href of ['/harga', '/jasa-pembuatan-website', '/panduan/template-vs-jasa-website-custom']) expect(hrefs).toContain(href);
     // FAQ = jawaban bersama src/content/faq.ts (sama dengan beranda, /harga dan JSON-LD FAQPage)
     for (const item of faqItems(CATALOG_FAQ_IDS, faqContext(FIXTURE_TEMPLATES))) expect(main().getByText(item.answer)).toBeInTheDocument();
     expect(main().getByRole('table', { name: /website builder DIY/ })).toBeInTheDocument();
@@ -101,7 +102,7 @@ describe('/template/kategori/:category', () => {
       'aria-current',
       'page',
     );
-    for (const href of ['/panduan', '/jasa-pembuatan-website', '/harga']) expect(mainHrefs()).toContain(href);
+    for (const href of ['/panduan/website-klinik-kecantikan', '/jasa-pembuatan-website', '/harga']) expect(mainHrefs()).toContain(href);
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent(/Beranda.*Template.*Klinik kecantikan & salon/);
   });
 
@@ -140,7 +141,7 @@ describe('/template/:slug', () => {
     expect(main().getByText(/Harga per \d{1,2} \w+ \d{4}/)).toBeInTheDocument();
     expect(main().getByText(/Pembayaran aman via Midtrans/)).toBeInTheDocument();
     const hrefs = mainHrefs();
-    for (const href of ['/template/kategori/olahraga-komunitas', '/harga', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/panduan', '/pesan/arena-club', '/demo/arena-club']) {
+    for (const href of ['/template/kategori/olahraga-komunitas', '/harga', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/panduan/template-vs-jasa-website-custom', '/pesan/arena-club', '/demo/arena-club']) {
       expect(hrefs).toContain(href);
     }
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent(/Beranda.*Template.*Olahraga & Komunitas/);
