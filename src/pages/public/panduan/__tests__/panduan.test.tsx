@@ -166,7 +166,11 @@ describe('head panduan', () => {
   });
 });
 
-describe('halaman panduan: prerender + hidrasi', () => {
+// Prerender + hidrasi App penuh: di bawah beban paralel bisa lebih dari 5 detik bawaan vitest (waitFor di hydrate()
+// sendiri memberi 10 detik); tanpa batas ini tes terputus di tengah hidrasi dan berantai jadi galat lain
+const SLOW = { timeout: 30_000 };
+
+describe('halaman panduan: prerender + hidrasi', SLOW, () => {
   it('/panduan: satu H1, semua artikel sebagai tautan dengan tanggal, tautan lanjutan', async () => {
     const { problems, serverH1, el } = await hydrate('/panduan');
     expect(problems).toEqual([]);
