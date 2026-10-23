@@ -201,6 +201,11 @@ describe('halaman WP6: prerender + hidrasi', () => {
     }
     expect(getHead('/tentang', DATA).jsonLd.map((n) => (n as { '@type': string })['@type'])).toContain('AboutPage');
 
+    // Logo merek di Profil perusahaan (pemilik 2026-10-24): sayap Garuda + nama merek & badan hukum
+    const logo = el.querySelector('#profil figure') as HTMLElement;
+    expect(logo.querySelector('svg')).not.toBeNull();
+    expect(logo.querySelector('figcaption')).toHaveTextContent(/^Garuda NexaPT Garuda Nexa Bahtera$/);
+
     // Direksi (pemilik 2026-10-24): nama & gelar persis, foto dengan alt nama
     const direksi = el.querySelector('#direksi') as HTMLElement;
     expect([...direksi.querySelectorAll('h3')].map((h) => h.textContent)).toEqual(['Muhammad Fajri, S.T.', 'Dede Apriyansah, S.Kom.']);

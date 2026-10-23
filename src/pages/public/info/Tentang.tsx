@@ -7,6 +7,7 @@ import React from 'react';
 import { ArrowUpRight, Code2, LayoutTemplate, Mail, MapPin, MessageCircle, Phone, Smartphone, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { COMPANY_FACTS } from '../../../lib/companyFacts';
+import { LogoMark } from '../../../components/ui/LogoMark';
 import {
   displayPhone,
   getContactEmail,
@@ -144,20 +145,33 @@ export default function Tentang() {
       aside={<CompanyFactsCard updated={ABOUT_UPDATED} />}
     >
       <InfoSection id="profil" title="Profil perusahaan">
-        <Prose
-          paragraphs={[
-            <>
-              {facts.legalName} membangun website dan aplikasi untuk bisnis dan organisasi di Indonesia: UMKM, klinik dan salon, klub
-              olahraga, startup, sekolah, sampai instansi. Tujuannya sederhana, yaitu membuat bisnis Anda mudah ditemukan, terlihat
-              profesional, dan isinya bisa Anda kelola sendiri.
-            </>,
-            <>
-              Ada dua jalur. Pertama, <TextLink to={HUB_PATHS.catalog}>template website siap pakai</TextLink> dengan harga tertera yang
-              sudah termasuk domain, hosting, dan SSL tahun pertama. Kedua, website dan aplikasi custom yang dirancang dari nol setelah
-              konsultasi gratis. Semuanya berjalan online, jadi kami bisa melayani klien di kota mana pun.
-            </>,
-          ]}
-        />
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-14">
+          <Prose
+            paragraphs={[
+              <>
+                {facts.legalName} membangun website dan aplikasi untuk bisnis dan organisasi di Indonesia: UMKM, klinik dan salon, klub
+                olahraga, startup, sekolah, sampai instansi. Tujuannya sederhana, yaitu membuat bisnis Anda mudah ditemukan, terlihat
+                profesional, dan isinya bisa Anda kelola sendiri.
+              </>,
+              <>
+                Ada dua jalur. Pertama, <TextLink to={HUB_PATHS.catalog}>template website siap pakai</TextLink> dengan harga tertera yang
+                sudah termasuk domain, hosting, dan SSL tahun pertama. Kedua, website dan aplikasi custom yang dirancang dari nol setelah
+                konsultasi gratis. Semuanya berjalan online, jadi kami bisa melayani klien di kota mana pun.
+              </>,
+            ]}
+          />
+          {/* Logo merek (permintaan pemilik 2026-10-24): sayap Garuda + nama merek & badan hukum */}
+          <figure className="relative overflow-hidden rounded-[28px] bg-linear-to-br from-brand-50 via-surface to-brand-100 p-8 ring-1 ring-inset ring-line sm:p-10">
+            <span aria-hidden className="grid-dots pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(70%_70%_at_50%_40%,#000,transparent)]" />
+            <div className="relative flex flex-col items-center text-center">
+              <LogoMark className="h-24 text-primary sm:h-28" />
+              <figcaption className="mt-6">
+                <span className="block text-2xl font-semibold tracking-[-0.03em] text-fg sm:text-[28px]">{facts.name}</span>
+                <span className="mt-1 block text-sm text-muted">{facts.legalName}</span>
+              </figcaption>
+            </div>
+          </figure>
+        </div>
       </InfoSection>
 
       <InfoSection
