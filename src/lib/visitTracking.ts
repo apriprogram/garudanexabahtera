@@ -53,12 +53,15 @@ export function trackVisitOnce(): void {
   if (typeof window === 'undefined' || !isMainHost(window.location.hostname)) return;
   if (!firstVisitInSession()) return;
   const body = { action: 'track_visit', ...visitSourceOf(window.location, document.referrer) };
-  fetch('/api.php?action=track_visit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    keepalive: true,
-  }).catch(() => {
-    // statistik saja: tidak perlu memberi tahu pengunjung
-  });
+  // Statistik saja: gagal (jaringan, atau fetch yang melempar langsung) tidak perlu diketahui pengunjung
+  try {
+    fetch('/api.php?action=track_visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    // diabaikan, lihat di atas
+  }
 }

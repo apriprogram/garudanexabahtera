@@ -75,5 +75,19 @@ describe('trackVisitOnce', () => {
     fetchMock.mockImplementationOnce(() => Promise.reject(new Error('offline')));
     expect(() => trackVisitOnce()).not.toThrow();
     await Promise.resolve();
+    sessionStorage.clear();
+    fetchMock.mockImplementationOnce(() => {
+      throw new TypeError('fetch diblokir');
+    });
+    expect(() => trackVisitOnce()).not.toThrow();
+  });
+
+  it('situs pembeli (domain lain) tidak dihitung', async () => {
+    vi.resetModules();
+    vi.doMock('../../templates/siteHosts', () => ({ isMainHost: () => false }));
+    const { trackVisitOnce: trackOnBuyerSite } = await import('../visitTracking');
+    trackOnBuyerSite();
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.doUnmock('../../templates/siteHosts');
   });
 });
