@@ -198,8 +198,16 @@ describe('Footer', () => {
     expect(within(facts).getByRole('link', { name: /info@garudanexa\.com/ })).toHaveAttribute('href', 'mailto:info@garudanexa.com');
     expect(facts.textContent).not.toMatch(/Alamat|Jl\./);
 
-    const phones = screen.getAllByRole('link', { name: '0851-8800-9152' });
-    expect(phones[0]).toHaveAttribute('href', 'tel:+6285188009152');
+    // Ajakan #kontak gaya Mobbin (2026-10-24): tanpa chip "Konsultasi GRATIS" dan tanpa baris telepon/email (ada di
+    // baris fakta); tombol gelap WhatsApp + tombol abu Pesan Custom; footer gelap dengan teks merek raksasa dekoratif
+    const kontak = document.getElementById('kontak') as HTMLElement;
+    expect(kontak).not.toHaveTextContent(/Konsultasi GRATIS|0851-8800-9152|info@garudanexa\.com/);
+    expect(document.querySelector('footer a[href^="tel:"]')).toBeNull();
+    expect(within(kontak).getByRole('link', { name: /Hubungi WhatsApp/ }).className).toContain('btn-dark');
+    expect(within(kontak).getByRole('link', { name: 'Pesan Custom' })).toHaveAttribute('href', '/pesan-custom');
+    expect(document.querySelector('footer')?.className).toContain('bg-fg');
+    const wordmark = document.querySelector('footer svg[aria-hidden="true"] text') as SVGTextElement;
+    expect(wordmark).toHaveTextContent('GARUDA NEXA');
 
     expect(screen.queryByRole('list', { name: 'Media sosial' })).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Pesan Custom' }).every((a) => a.getAttribute('href') === '/pesan-custom')).toBe(true);

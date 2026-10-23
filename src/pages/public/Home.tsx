@@ -56,7 +56,8 @@ export default function Home() {
   const chrome: ChromeSection[] = [
     { id: 'beranda', label: t('nav-home'), tone: 'canvas' },
     ...sections.map(({ id, tone }) => ({ id, label: labels[id] ?? id, tone })),
-    { id: 'kontak', label: t('nav-contact'), tone: 'alt' },
+    // Ajakan #kontak berlatar putih padat di atas footer gelap (gaya Mobbin)
+    { id: 'kontak', label: t('nav-contact'), tone: 'canvas' },
   ];
 
   // Section baru ada setelah setting dimuat, jadi lompat ke #anchor dari URL (mis. /#kontak dari halaman lain) dan jaga

@@ -380,6 +380,11 @@
     @apply bg-surface text-primary ring-1 ring-inset ring-brand-300 hover:bg-brand-50 hover:ring-primary active:bg-brand-100 disabled:hover:bg-surface;
   }
 
+  /* Gelap netral (ajakan footer gaya Mobbin): latar teks utama, teks putih */
+  .btn-dark {
+    @apply bg-fg text-white hover:bg-fg/85 active:bg-fg/75;
+  }
+
   /* Di atas latar biru brand (CTA): tombol putih */
   .btn-light {
     @apply bg-white text-brand-700 hover:bg-brand-50 active:bg-brand-100;

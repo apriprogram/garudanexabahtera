@@ -562,8 +562,6 @@ const SiteSettings: React.FC = () => {
       cta_title: (document.getElementById('cta_title') as HTMLTextAreaElement)?.value || settings.cta_title || CTA_TITLE_DEFAULT,
       cta_button: (document.getElementById('cta_button') as HTMLInputElement)?.value || settings.cta_button || "Hubungi WhatsApp",
       cta_link: (document.getElementById('cta_link') as HTMLInputElement)?.value || settings.cta_link || "",
-      cta_phone: (document.getElementById('cta_phone') as HTMLInputElement)?.value || settings.cta_phone || "085188009152",
-      cta_note: (document.getElementById('cta_note') as HTMLInputElement)?.value || settings.cta_note || "Konsultasi GRATIS",
 
       // Footer data
       footer_address: (document.getElementById('footer_address') as HTMLTextAreaElement)?.value || settings.footer_address || "Mitra terpercaya untuk inovasi digital bisnis Anda. Membantu dari ide hingga menjadi produk siap rilis.",
@@ -1178,12 +1176,6 @@ const SiteSettings: React.FC = () => {
                 </Field>
                 <Field label="Link atau nomor WhatsApp" htmlFor="cta_link">
                   <Input id="cta_link" type="text" placeholder="mis. 6285188009152 atau link lain" defaultValue={settings.cta_link || ""} />
-                </Field>
-                <Field label="Nomor HP yang ditampilkan" htmlFor="cta_phone">
-                  <Input id="cta_phone" type="text" inputMode="tel" placeholder="mis. 085188009152" defaultValue={settings.cta_phone || "085188009152"} />
-                </Field>
-                <Field label="Catatan konsultasi gratis" htmlFor="cta_note">
-                  <Input id="cta_note" type="text" placeholder="Konsultasi GRATIS" defaultValue={settings.cta_note || "Konsultasi GRATIS"} />
                 </Field>
               </div>
             </Panel>
