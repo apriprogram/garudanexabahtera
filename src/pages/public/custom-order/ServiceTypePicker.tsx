@@ -6,13 +6,13 @@ const OPTIONS: { value: ServiceType; title: string; description: string; Icon: L
   {
     value: 'website',
     title: 'Website',
-    description: 'Company profile, toko online, sistem informasi, atau aplikasi web sesuai kebutuhan.',
+    description: 'Company profile, toko online, atau sistem informasi.',
     Icon: Globe,
   },
   {
     value: 'mobile_app',
     title: 'Aplikasi Mobile',
-    description: 'Aplikasi Android dan iOS untuk pelanggan, tim internal, atau layanan bisnis Anda.',
+    description: 'Aplikasi Android dan iOS untuk bisnis Anda.',
     Icon: Smartphone,
   },
 ];

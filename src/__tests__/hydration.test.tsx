@@ -167,7 +167,8 @@ describe('hydrating prerendered pages', () => {
     await vi.waitFor(() => {
       expect(el.querySelector<HTMLInputElement>('input[type="radio"][value="mobile_app"]')?.checked).toBe(true);
       expect(el.querySelector<HTMLInputElement>('#co-name')?.value).toBe('Uji Pembeli');
-      expect(el.textContent).toContain('Anda masuk sebagai pembeli');
+      // Pembeli yang login: baris akun berganti ke "Akun Saya" (bukan "Daftar Akun") setelah hidrasi
+      expect(el.textContent).toContain('atau buka Akun Saya');
     });
   }, 30_000);
 

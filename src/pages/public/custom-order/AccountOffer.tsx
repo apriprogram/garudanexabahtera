@@ -1,9 +1,9 @@
-// Ajakan membuat akun pembeli (/daftar) di samping form /pesan-custom. Akun dipakai untuk pesanan TEMPLATE (bayar online,
-// pantau status); permintaan custom belum tersimpan di akun, jadi teksnya tidak menjanjikan pemantauan permintaan custom.
-// Pembeli yang sudah login melihat "Akun Saya"; staf tidak melihat apa pun.
+// Satu baris di bawah tombol WhatsApp /pesan-custom: arahkan ke template siap pakai dan akun pembeli (/daftar). Akun
+// dipakai untuk pesanan TEMPLATE (bayar online); permintaan custom tidak butuh akun, jadi teksnya tidak menjanjikan
+// pemantauan permintaan custom. Pembeli yang sudah login melihat "Akun Saya"; staf tidak melihat apa pun.
+// Ringkas (pemilik 2026-10-24: halaman pesan custom terlalu banyak kalimat).
 import { Link } from 'react-router-dom';
-import { ArrowRight, UserRoundPlus, UserRound } from 'lucide-react';
-import { customerLoginPath } from '../../../lib/auth';
+import { HUB_PATHS } from '../../../seo/paths';
 import { useSessionRole } from '../../../hooks/useSessionRole';
 
 export function AccountOffer({ className = '' }: { className?: string }) {
@@ -11,47 +11,30 @@ export function AccountOffer({ className = '' }: { className?: string }) {
   const role = useSessionRole();
   if (role && role !== 'customer') return null;
 
-  if (role === 'customer') {
-    return (
-      <div className={`flex items-start gap-3 rounded-2xl bg-brand-50 p-4 ring-1 ring-inset ring-brand-100 sm:p-5 ${className}`}>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface text-primary" aria-hidden>
-          <UserRound className="h-5 w-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-fg">Anda masuk sebagai pembeli</p>
-          <p className="mt-0.5 text-sm leading-relaxed text-muted">
-            Pesanan template dan status pembayarannya bisa Anda pantau di akun. Permintaan custom kami tindak lanjuti lewat
-            WhatsApp atau email.
-          </p>
-          <Link to="/akun" className="link-site mt-2 inline-flex min-h-10 items-center gap-1.5 text-sm">
-            Akun Saya
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`flex items-start gap-3 rounded-2xl bg-brand-50 p-4 ring-1 ring-inset ring-brand-100 sm:p-5 ${className}`}>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface text-primary" aria-hidden>
-        <UserRoundPlus className="h-5 w-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-fg">Punya rencana memesan template?</p>
-        <p className="mt-0.5 text-sm leading-relaxed text-muted">
-          Akun dipakai untuk memesan template siap pakai, membayar online, dan memantau pesanan template. Permintaan custom
-          tidak butuh akun.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <Link to="/daftar" className="btn btn-primary btn-sm">
+    <p className={`text-sm leading-relaxed text-muted ${className}`}>
+      Butuh harga pasti?{' '}
+      <Link to={HUB_PATHS.catalog} className="link-site font-medium">
+        Lihat template siap pakai
+      </Link>
+      {role === 'customer' ? (
+        <>
+          {' '}
+          atau buka{' '}
+          <Link to="/akun" className="link-site font-medium">
+            Akun Saya
+          </Link>
+          .
+        </>
+      ) : (
+        <>
+          , lalu{' '}
+          <Link to="/daftar" className="link-site font-medium">
             Daftar Akun
-          </Link>
-          <Link to={customerLoginPath('/pesan-custom')} className="link-site inline-flex min-h-9 items-center text-sm">
-            Sudah punya akun? Masuk
-          </Link>
-        </div>
-      </div>
-    </div>
+          </Link>{' '}
+          untuk bayar online.
+        </>
+      )}
+    </p>
   );
 }

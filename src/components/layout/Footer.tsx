@@ -143,6 +143,11 @@ interface FooterProps {
   alt?: boolean;
   /** Beranda: area CTA transparan agar latar crossfade SectionChrome terlihat. */
   chrome?: boolean;
+  /**
+   * false = tanpa banner ajakan (WhatsApp + Pesan Custom), mis. di /pesan-custom yang sudah punya form dan satu tombol
+   * WhatsApp sendiri (pemilik 2026-10-24: tombol WhatsApp cukup satu).
+   */
+  cta?: boolean;
 }
 
 /**
@@ -151,12 +156,12 @@ interface FooterProps {
  * deskripsi, kolom tautan, hak cipta, akun & media sosial, lalu teks besar "GARUDA NEXA" yang terpotong di tepi bawah.
  * Nomor & email ada di footer gelap, tidak diulang di ajakan.
  */
-const Footer: React.FC<FooterProps> = ({ alt, chrome }) => {
+const Footer: React.FC<FooterProps> = ({ alt, chrome, cta = true }) => {
   const { settings } = useSiteSettings();
   // Admin bisa menyembunyikan banner CTA (Pengaturan website → Banner CTA, kunci "cta" di disabled_sections); anchor
   // #kontak lalu pindah ke footer putih supaya tautan "Konsultasi" tetap sampai ke kontak
   const hiddenSections = getHiddenSections(settings);
-  const ctaHidden = hiddenSections.has('cta');
+  const ctaHidden = !cta || hiddenSections.has('cta');
   // Saklar Panduan (Pengaturan website → Panduan) juga menyembunyikan tautannya di kolom Perusahaan
   const companyLinks = hiddenSections.has('panduan') ? COMPANY_LINKS.filter((link) => link.href !== HUB_PATHS.guides) : COMPANY_LINKS;
   const pick = (key: keyof typeof DEFAULTS) => settings[key]?.trim() || DEFAULTS[key];

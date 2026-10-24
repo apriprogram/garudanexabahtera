@@ -169,7 +169,7 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
             aria-describedby={describedBy(fid('email'), { error: errors.email })}
           />
         </Field>
-        <Field id={fid('phone')} label="Nomor WhatsApp" error={errors.phone} help="Kami menghubungi Anda lewat nomor ini.">
+        <Field id={fid('phone')} label="Nomor WhatsApp" error={errors.phone}>
           <input
             {...text('phone')}
             type="tel"
@@ -177,7 +177,7 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
             autoComplete="tel"
             maxLength={LIMITS.phone}
             placeholder="mis. 0812-3456-7890"
-            aria-describedby={describedBy(fid('phone'), { error: errors.phone, help: true })}
+            aria-describedby={describedBy(fid('phone'), { error: errors.phone })}
           />
         </Field>
         <Field id={fid('company')} label="Nama perusahaan / instansi" optional error={errors.company}>
@@ -215,7 +215,7 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
         id={fid('description')}
         label="Detail kebutuhan"
         error={errors.description}
-        help={`Tujuan, fitur utama, pengguna, dan target waktu. Minimal ${DESCRIPTION_MIN} karakter.`}
+        help={`Tujuan, fitur utama, dan target waktu (min. ${DESCRIPTION_MIN} karakter).`}
         aside={<CharCounter id={`${fid('description')}-count`} length={values.description.length} max={LIMITS.description} />}
       >
         <textarea
@@ -238,7 +238,6 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
         label="Catatan anggaran atau tenggat"
         optional
         error={errors.budget_note}
-        help="Tidak ada daftar harga untuk jasa custom. Biaya final kami sampaikan lewat penawaran setelah kebutuhan Anda jelas."
       >
         <input
           {...text('budget_note')}
@@ -246,7 +245,7 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
           autoComplete="off"
           maxLength={LIMITS.budget_note}
           placeholder="mis. Anggaran terbatas, ingin rilis sebelum Desember"
-          aria-describedby={describedBy(fid('budget_note'), { error: errors.budget_note, help: true })}
+          aria-describedby={describedBy(fid('budget_note'), { error: errors.budget_note })}
         />
       </Field>
 
@@ -272,9 +271,7 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
       )}
 
       <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs leading-relaxed text-subtle sm:max-w-xs">
-          Data Anda hanya dipakai untuk menghubungi Anda terkait kebutuhan ini.
-        </p>
+        <p className="text-xs leading-relaxed text-subtle sm:max-w-xs">Data Anda hanya dipakai untuk menghubungi Anda.</p>
         <button type="submit" disabled={submitting} className="btn btn-primary btn-lg w-full sm:w-auto">
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Send className="h-4 w-4" aria-hidden />}
           {submitting ? 'Mengirim...' : 'Kirim Kebutuhan'}

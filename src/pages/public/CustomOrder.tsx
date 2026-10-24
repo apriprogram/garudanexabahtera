@@ -1,8 +1,10 @@
 // /pesan-custom: formulir jasa pembuatan website / aplikasi mobile custom (tombol kedua di Hero).
 // Tanpa harga: biaya dibahas lewat penawaran (SPEC §8). Kirim → submit_custom_order → layar sukses + nomor referensi.
+// Ringkas (pemilik 2026-10-24: "terlalu ribet, terlalu banyak kalimat"): satu kalimat pengantar, 4 langkah pendek, dan
+// SATU tombol WhatsApp (banner ajakan footer tidak dipasang di halaman ini; layar sukses punya tombol WhatsApp sendiri).
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronRight, ClipboardList, FileText, MessagesSquare, Rocket } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
@@ -16,26 +18,10 @@ import { WhatsAppIcon } from './custom-order/WhatsAppIcon';
 import type { CustomOrderValues } from './custom-order/validation';
 
 const STEPS = [
-  {
-    Icon: ClipboardList,
-    title: 'Kirim kebutuhan',
-    text: 'Isi formulir ini dengan gambaran proyek Anda. Cukup beberapa menit.',
-  },
-  {
-    Icon: MessagesSquare,
-    title: 'Diskusi & penawaran',
-    text: 'Tim kami menghubungi Anda untuk memperjelas kebutuhan, lalu mengirim penawaran berisi biaya dan jadwal.',
-  },
-  {
-    Icon: FileText,
-    title: 'Persetujuan',
-    text: 'Anda meninjau penawaran terlebih dulu. Pengerjaan baru dimulai setelah Anda menyetujuinya.',
-  },
-  {
-    Icon: Rocket,
-    title: 'Pengerjaan & peluncuran',
-    text: 'Kami membangun, menguji bersama Anda, lalu meluncurkan website atau aplikasi Anda.',
-  },
+  { title: 'Kirim kebutuhan', text: 'Isi form, cukup beberapa menit.' },
+  { title: 'Diskusi & penawaran', text: 'Kami kirim biaya dan jadwal.' },
+  { title: 'Persetujuan', text: 'Pengerjaan dimulai setelah Anda setuju.' },
+  { title: 'Pengerjaan & peluncuran', text: 'Diuji bersama Anda, lalu dirilis.' },
 ];
 
 export default function CustomOrder() {
@@ -73,7 +59,7 @@ export default function CustomOrder() {
 
           <div className="container-site relative py-8 sm:py-14 lg:py-20">
             <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,40rem)] lg:gap-x-16 xl:gap-x-24">
-              {/* Pengantar */}
+              {/* Pengantar: satu kalimat (tautan ke halaman jasa tetap ada di dalamnya) */}
               <div className="lg:col-start-1 lg:row-start-1">
                 <nav aria-label="Breadcrumb" className="mb-5 flex items-center gap-1.5 text-[13px] text-subtle max-sm:mb-3">
                   {/* HP: area sentuh 40px tanpa mengubah ukuran teks (mobile-responsive.md §5) */}
@@ -89,30 +75,17 @@ export default function CustomOrder() {
                 <h1 className="mt-4 text-[24px] font-semibold leading-[1.2] tracking-[-0.02em] text-fg sm:text-5xl sm:leading-[1.08] sm:tracking-[-0.03em] xl:text-[56px]">
                   Pesan Website / Aplikasi Mobile <span className="text-primary">Custom</span>
                 </h1>
-                <p className="mt-4 max-w-xl text-[14px] leading-relaxed text-muted sm:mt-5 sm:text-lg">
-                  Punya ide yang tidak cukup dengan template? Ceritakan kebutuhan Anda. Kami akan menghubungi Anda untuk berdiskusi, lalu mengirim
-                  penawaran harga dan jadwal yang sesuai dengan cakupan proyek Anda.
-                </p>
-                <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-muted sm:text-lg">
-                  Kami membuat website custom, dari company profile sampai toko online dan sistem informasi, serta aplikasi Android dan iOS
-                  seperti kasir dan absensi. Lihat detail{' '}
+                <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-muted sm:mt-5 sm:text-lg">
+                  Ceritakan kebutuhan{' '}
                   <Link to={HUB_PATHS.webService} className="link-site font-medium">
-                    jasa pembuatan website
+                    website
                   </Link>{' '}
-                  dan{' '}
+                  atau{' '}
                   <Link to={HUB_PATHS.mobileService} className="link-site font-medium">
-                    jasa pembuatan aplikasi mobile
-                  </Link>
-                  .
+                    aplikasi mobile
+                  </Link>{' '}
+                  Anda. Kami kirim penawaran biaya dan jadwal, konsultasinya gratis.
                 </p>
-                {/* HP: chip disembunyikan agar form lebih cepat terlihat; poinnya ada lagi di kartu proses & konsultasi */}
-                <ul className="mt-5 flex flex-wrap gap-2 text-[13px] text-muted max-sm:hidden">
-                  {['Tanpa daftar harga, biaya lewat penawaran', 'Konsultasi gratis', 'Website & aplikasi Android/iOS'].map((item) => (
-                    <li key={item} className="inline-flex h-8 items-center rounded-full bg-surface px-3 ring-1 ring-inset ring-line">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
               </div>
 
               {/* Formulir / layar sukses */}
@@ -130,10 +103,7 @@ export default function CustomOrder() {
                     />
                   ) : (
                     <>
-                      <div className="mb-6">
-                        <h2 className="text-lg font-semibold tracking-[-0.01em] text-fg sm:text-xl">Ceritakan kebutuhan Anda</h2>
-                        <p className="mt-1 text-sm text-muted">Semua isian wajib, kecuali yang bertanda opsional.</p>
-                      </div>
+                      <h2 className="mb-6 text-lg font-semibold tracking-[-0.01em] text-fg sm:text-xl">Ceritakan kebutuhan Anda</h2>
                       <CustomOrderForm
                         key={`${formKey}-${initialValues.email ?? ''}`}
                         initialValues={initialValues}
@@ -147,61 +117,57 @@ export default function CustomOrder() {
                 </div>
               </div>
 
-              {/* Alur kerja + kontak langsung + akun */}
-              <div className="space-y-6 lg:col-start-1 lg:row-start-2">
-                <section aria-labelledby="alur-custom" className="rounded-[24px] bg-alt p-5 ring-1 ring-inset ring-line sm:p-6">
-                  <h2 id="alur-custom" className="text-base font-semibold text-fg sm:text-lg">
-                    Bagaimana prosesnya
+              {/* Alur kerja (garis waktu bernomor) + satu tombol WhatsApp + tautan template/akun */}
+              <div className="lg:col-start-1 lg:row-start-2 lg:max-w-lg">
+                <section aria-labelledby="alur-custom">
+                  <h2 id="alur-custom" className="text-[13px] font-semibold uppercase tracking-[0.08em] text-subtle">
+                    Cara kerjanya
                   </h2>
-                  <ol className="mt-4 space-y-4">
-                    {STEPS.map(({ Icon, title, text }, index) => (
-                      <li key={title} className="flex gap-3.5">
-                        <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface text-primary ring-1 ring-inset ring-line">
-                          <Icon className="h-[18px] w-[18px]" aria-hidden />
-                          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 font-mono text-[10px] font-semibold text-white">
-                            {index + 1}
-                          </span>
+                  {/* Garis tipis menyambung nomor langkah; cincin warna latar memutus garis di sekitar nomor */}
+                  <ol className="relative mt-5 space-y-5 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:-translate-x-1/2 before:bg-line">
+                    {STEPS.map(({ title, text }, index) => (
+                      <li key={title} className="relative flex items-start gap-4">
+                        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-semibold tabular-nums text-white ring-4 ring-canvas">
+                          {index + 1}
                         </span>
-                        <div className="min-w-0 pt-0.5">
-                          <p className="text-sm font-semibold text-fg sm:text-[15px]">{title}</p>
-                          <p className="mt-0.5 text-sm leading-relaxed text-muted">{text}</p>
+                        <div className="min-w-0 pt-1">
+                          <p className="text-[15px] font-semibold leading-snug text-fg">{title}</p>
+                          <p className="mt-0.5 text-sm text-muted">{text}</p>
                         </div>
                       </li>
                     ))}
                   </ol>
                 </section>
 
-                <div className="flex flex-col gap-4 rounded-[24px] bg-surface p-5 ring-1 ring-inset ring-line sm:flex-row sm:items-center sm:justify-between sm:p-6">
-                  <div>
-                    <p className="text-sm font-semibold text-fg sm:text-[15px]">Lebih suka ngobrol langsung?</p>
-                    <p className="mt-0.5 text-sm text-muted">Konsultasi gratis lewat WhatsApp pada jam kerja.</p>
+                {/* Satu-satunya tombol WhatsApp di halaman (layar sukses memakai tombolnya sendiri) */}
+                {!result && (
+                  <div className="mt-8 flex items-center gap-3.5 rounded-2xl bg-surface p-4 ring-1 ring-inset ring-line sm:gap-4 sm:p-5">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-whatsapp/10" aria-hidden>
+                      <WhatsAppIcon className="h-5 w-5 text-whatsapp" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-fg sm:text-[15px]">Lebih suka chat?</p>
+                      <p className="mt-0.5 text-[13px] text-muted sm:text-sm">Konsultasi gratis di WhatsApp.</p>
+                    </div>
+                    <a
+                      href={whatsappUrl(whatsapp, 'Halo Garuda Nexa, saya ingin konsultasi tentang pembuatan website / aplikasi mobile custom.')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-outline btn-sm shrink-0"
+                    >
+                      Chat WhatsApp
+                      <span className="sr-only"> (tab baru)</span>
+                    </a>
                   </div>
-                  <a
-                    href={whatsappUrl(whatsapp, 'Halo Garuda Nexa, saya ingin konsultasi tentang pembuatan website / aplikasi mobile custom.')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline shrink-0"
-                  >
-                    <WhatsAppIcon className="h-[18px] w-[18px] text-whatsapp" />
-                    Konsultasi Gratis
-                  </a>
-                </div>
+                )}
 
-                {!result && <AccountOffer />}
-
-                <p className="text-sm text-muted">
-                  Butuh website cepat dengan harga pasti?{' '}
-                  <Link to={HUB_PATHS.catalog} className="link-site inline-flex items-center gap-1">
-                    Lihat template siap pakai
-                    <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-                  </Link>
-                </p>
+                {!result && <AccountOffer className="mt-5" />}
               </div>
             </div>
           </div>
         </div>
       </main>
-      <Footer />
+      <Footer cta={false} />
     </>
   );
 }
