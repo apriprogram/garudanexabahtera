@@ -1,0 +1,1 @@
+import{a as e,in as t,nn as n}from"./index-nw341_Mz.js";function r(r=[]){for(let n of r){let r=e(n);if(r)return{href:t(r.slug),label:r.title,article:!0}}return{href:n.guides,label:`Panduan website untuk bisnis`,article:!1}}export{r as t};

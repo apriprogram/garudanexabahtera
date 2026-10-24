@@ -70,6 +70,9 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
         'showcase_like' => 'pf_showcase_like',
         'showcase_view' => 'pf_showcase_view',
         'nexa_chat' => 'pf_nexa_chat', // backend/modules/nexa.php
+        // admin: tab "Tanya Nexa" (kunci API Claude/Gemini; hanya admin lewat ADMIN_ACTIONS)
+        'nexa_get_config' => 'pf_nexa_get_config',
+        'nexa_save_config' => 'pf_nexa_save_config',
         // customer (own data only)
         'customer_create_order' => 'pf_customer_create_order',
         'customer_get_order_quote' => 'pf_customer_get_order_quote',

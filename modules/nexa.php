@@ -21,6 +21,15 @@
 const NEXA_DEFAULT_MODEL = 'claude-opus-5-5';
 const NEXA_API_URL = 'https://api.anthropic.com/v1/messages';
 const NEXA_API_VERSION = '2026-10-21';
+// Penyedia kedua (pilihan admin di tab Tanya Nexa): Google Gemini lewat REST generateContent
+const NEXA_GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
+const NEXA_GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
+// Kunci & saklar AI dari admin (hero_settings; TIDAK pernah ikut get_settings publik — lihat api.php). nexa_enabled
+// (saklar widget) satu-satunya setting nexa_ yang publik dan boleh lewat update_settings biasa.
+const NEXA_CONFIG_KEYS = ['nexa_enabled', 'nexa_provider', 'nexa_anthropic_on', 'nexa_gemini_on', 'nexa_anthropic_key', 'nexa_gemini_key'];
+const NEXA_PROVIDERS = ['anthropic', 'gemini'];
+// Kunci API: ASCII tercetak tanpa spasi, 8–300 karakter
+const NEXA_KEY_PATTERN = '/^[\x21-\x7E]{8,300}$/';
 const NEXA_PER_HOUR = 30;              // pertanyaan per pengunjung (IP; IPv6 per /64) per jam
 const NEXA_PER_DAY = 100;              // pertanyaan per pengunjung per hari
 const NEXA_DEFAULT_DAILY_LIMIT = 1000; // pertanyaan per hari, semua pengunjung
@@ -145,6 +154,168 @@ function nexa_clean_messages($raw): ?array {
     return $out;
 }
 
+/** 4 karakter terakhir kunci untuk ditampilkan di admin ("••••abcd"); '' bila belum ada kunci. */
+function nexa_mask_key(string $key): string {
+    return $key === '' ? '' : '••••' . mb_substr($key, max(0, mb_strlen($key, 'UTF-8') - 4), 4, 'UTF-8');
+}
+
+/**
+ * Penyedia AI yang dipakai nexa_chat dari setting admin + cadangan .env: penyedia pilihan bila saklarnya hidup dan
+ * kuncinya ada (kunci Anthropic/Gemini dari DB, atau ANTHROPIC_API_KEY / GEMINI_API_KEY di .env); kalau tidak, penyedia
+ * satunya; dua-duanya mati → null (Nexa menjawab dari data situs di widget).
+ */
+function nexa_resolve_provider(array $rows, string $envAnthropic, string $envGemini): ?array {
+    $keys = [
+        'anthropic' => trim((string)($rows['nexa_anthropic_key'] ?? '')) !== '' ? trim((string)$rows['nexa_anthropic_key']) : $envAnthropic,
+        'gemini' => trim((string)($rows['nexa_gemini_key'] ?? '')) !== '' ? trim((string)$rows['nexa_gemini_key']) : $envGemini,
+    ];
+    $on = [
+        'anthropic' => ($rows['nexa_anthropic_on'] ?? '1') !== '0' && $keys['anthropic'] !== '',
+        'gemini' => ($rows['nexa_gemini_on'] ?? '1') !== '0' && $keys['gemini'] !== '',
+    ];
+    $preferred = in_array($rows['nexa_provider'] ?? '', NEXA_PROVIDERS, true) ? $rows['nexa_provider'] : 'anthropic';
+    foreach ([$preferred, $preferred === 'anthropic' ? 'gemini' : 'anthropic'] as $provider) {
+        if ($on[$provider]) return ['provider' => $provider, 'key' => $keys[$provider]];
+    }
+    return null;
+}
+
+/** Konfigurasi untuk tab admin: tanpa kunci (hanya topeng 4 karakter terakhir) + ada/tidaknya kunci di .env. */
+function nexa_config_out(array $rows, bool $envAnthropic, bool $envGemini): array {
+    return [
+        'enabled' => ($rows['nexa_enabled'] ?? '1') !== '0',
+        'provider' => in_array($rows['nexa_provider'] ?? '', NEXA_PROVIDERS, true) ? $rows['nexa_provider'] : 'anthropic',
+        'anthropic' => [
+            'on' => ($rows['nexa_anthropic_on'] ?? '1') !== '0',
+            'key_masked' => nexa_mask_key(trim((string)($rows['nexa_anthropic_key'] ?? ''))),
+            'env_key' => $envAnthropic,
+        ],
+        'gemini' => [
+            'on' => ($rows['nexa_gemini_on'] ?? '1') !== '0',
+            'key_masked' => nexa_mask_key(trim((string)($rows['nexa_gemini_key'] ?? ''))),
+            'env_key' => $envGemini,
+        ],
+    ];
+}
+
+/**
+ * Masukan nexa_save_config → daftar tulis [setting_key => nilai] + daftar hapus. Kunci: string sah = simpan,
+ * null = hapus, kosong/tidak dikirim = biarkan. Masukan tidak sah → 400 VALIDATION.
+ */
+function nexa_config_writes(array $input): array {
+    $provider = $input['provider'] ?? 'anthropic';
+    if (!in_array($provider, NEXA_PROVIDERS, true)) throw new ApiError('Penyedia AI tidak dikenal.', 400, 'VALIDATION');
+    $writes = ['nexa_provider' => $provider];
+    $deletes = [];
+    foreach (NEXA_PROVIDERS as $name) {
+        $cfg = $input[$name] ?? [];
+        if (!is_array($cfg)) throw new ApiError('Pengaturan AI tidak valid.', 400, 'VALIDATION');
+        $writes["nexa_{$name}_on"] = (($cfg['on'] ?? true) === false || ($cfg['on'] ?? '') === '0') ? '0' : '1';
+        if (!array_key_exists('key', $cfg)) continue;
+        $key = $cfg['key'];
+        if ($key === null) {
+            $deletes[] = "nexa_{$name}_key";
+            continue;
+        }
+        if (!is_string($key)) throw new ApiError('Kunci API tidak valid.', 400, 'VALIDATION');
+        $key = trim($key);
+        if ($key === '') continue; // kolom dibiarkan kosong = kunci lama dipertahankan
+        if (!preg_match(NEXA_KEY_PATTERN, $key)) {
+            throw new ApiError('Kunci API tidak valid: 8–300 karakter tanpa spasi.', 400, 'VALIDATION', ["{$name}_key" => 'Periksa kembali kunci yang ditempel.']);
+        }
+        $writes["nexa_{$name}_key"] = $key;
+    }
+    return ['writes' => $writes, 'deletes' => $deletes];
+}
+
+/** Baris setting nexa_* dari database (kunci yang tidak ada tidak ikut). */
+function nexa_config_rows(mysqli $conn): array {
+    $rows = [];
+    $list = "'" . implode("', '", NEXA_CONFIG_KEYS) . "'";
+    foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN ($list)") as $row) {
+        $rows[$row['setting_key']] = (string)$row['setting_value'];
+    }
+    return $rows;
+}
+
+// Tab admin "Tanya Nexa": baca konfigurasi (kunci hanya tampil 4 karakter terakhir)
+function pf_nexa_get_config(mysqli $conn, array $input, ?array $user): array {
+    return ['config' => nexa_config_out(nexa_config_rows($conn), env_value('ANTHROPIC_API_KEY') !== '', env_value('GEMINI_API_KEY') !== '')];
+}
+
+// Tab admin "Tanya Nexa": simpan penyedia, saklar per penyedia, dan kunci API (hanya admin; lihat ADMIN_ACTIONS)
+function pf_nexa_save_config(mysqli $conn, array $input, ?array $user): array {
+    $plan = nexa_config_writes($input);
+    foreach ($plan['writes'] as $key => $value) {
+        db_run($conn, "INSERT INTO hero_settings (setting_key, setting_value) VALUES (?, ?)
+                       ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [$key, $value]);
+    }
+    foreach ($plan['deletes'] as $key) {
+        db_run($conn, "DELETE FROM hero_settings WHERE setting_key = ?", [$key]);
+    }
+    return ['config' => nexa_config_out(nexa_config_rows($conn), env_value('ANTHROPIC_API_KEY') !== '', env_value('GEMINI_API_KEY') !== '')];
+}
+
+// ── Google Gemini (penyedia kedua) ──
+
+/** Isi permintaan generateContent: instruksi + pengetahuan sama persis dengan blok system Claude. */
+function nexa_gemini_body(string $knowledge, string $live, array $messages): array {
+    $static = NEXA_INSTRUCTIONS . "\n\nPENGETAHUAN SITUS (isi garudanexa.com)\n\n"
+        . ($knowledge !== '' ? $knowledge : '(tidak tersedia; pakai DATA TERKINI)');
+    $contents = [];
+    foreach ($messages as $m) {
+        $contents[] = ['role' => $m['role'] === 'assistant' ? 'model' : 'user', 'parts' => [['text' => $m['content']]]];
+    }
+    return [
+        'system_instruction' => ['parts' => [['text' => $static], ['text' => $live]]],
+        'contents' => $contents,
+        'generationConfig' => ['maxOutputTokens' => NEXA_MAX_TOKENS],
+    ];
+}
+
+/** Teks jawaban dari respons generateContent, null bila tidak bisa dipakai (diblokir/kosong). */
+function nexa_gemini_text($response): ?string {
+    $candidate = is_array($response) ? ($response['candidates'][0] ?? null) : null;
+    if (!is_array($candidate)) return null;
+    $finish = (string)($candidate['finishReason'] ?? '');
+    if (in_array($finish, ['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'RECITATION', 'SPII'], true)) return null;
+    $parts = [];
+    foreach ((array)($candidate['content']['parts'] ?? []) as $part) {
+        if (is_array($part) && is_string($part['text'] ?? null)) $parts[] = $part['text'];
+    }
+    $text = trim(implode('', $parts));
+    return $text === '' ? null : $text;
+}
+
+/** Panggil Gemini. ['reply' => teks] atau ['error' => alasan untuk log]. Tidak pernah melempar. */
+function nexa_gemini_reply(string $apiKey, string $model, array $body): array {
+    $ch = curl_init(NEXA_GEMINI_URL . rawurlencode($model) . ':generateContent');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . $apiKey],
+        CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE),
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => NEXA_TIMEOUT,
+        CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+    ]);
+    $raw = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    $response = is_string($raw) ? json_decode($raw, true) : null;
+    if ($code !== 200) {
+        $status = is_array($response) ? (string)($response['error']['status'] ?? '') : '';
+        return ['error' => 'gemini HTTP ' . $code . ($status !== '' ? " $status" : '') . ($err !== '' ? " $err" : '')];
+    }
+    $text = nexa_gemini_text($response);
+    if ($text === null) {
+        $finish = is_array($response) ? (string)($response['candidates'][0]['finishReason'] ?? '?') : '?';
+        return ['error' => "gemini no usable text (finishReason $finish)"];
+    }
+    return ['reply' => $text];
+}
+
 /**
  * Kunci batas per pengunjung: alamat IPv4 apa adanya; IPv6 per prefiks /64 (satu sambungan rumah/HP biasanya punya
  * satu /64 dan bisa berganti alamat di dalamnya); IPv4 yang dibungkus IPv6 (::ffff:a.b.c.d) dibaca sebagai IPv4.
@@ -236,8 +407,10 @@ function nexa_claude_reply(string $apiKey, array $body): array {
 function pf_nexa_chat(mysqli $conn, array $input, ?array $user): array {
     $messages = nexa_clean_messages($input['messages'] ?? null);
     if ($messages === null) throw new ApiError('Pesan untuk Nexa tidak valid.', 400, 'VALIDATION');
-    $apiKey = env_value('ANTHROPIC_API_KEY');
-    if ($apiKey === '') throw new ApiError('Nexa AI belum aktif.', 503, 'NEXA_OFFLINE');
+    // Penyedia dari pengaturan admin (tab Tanya Nexa) + cadangan .env; widget dimatikan / tanpa kunci → jawaban bawaan
+    $cfg = nexa_config_rows($conn);
+    $active = ($cfg['nexa_enabled'] ?? '1') === '0' ? null : nexa_resolve_provider($cfg, env_value('ANTHROPIC_API_KEY'), env_value('GEMINI_API_KEY'));
+    if ($active === null) throw new ApiError('Nexa AI belum aktif.', 503, 'NEXA_OFFLINE');
 
     $visitor = nexa_ip_bucket(client_ip());
     $hourKey = 'nexa|' . $visitor;
@@ -256,8 +429,14 @@ function pf_nexa_chat(mysqli $conn, array $input, ?array $user): array {
     }
     $templates = db_all($conn, "SELECT name, slug, category, price FROM templates WHERE status = 'published' ORDER BY sort_order ASC, id ASC");
 
-    $model = env_value('NEXA_MODEL', NEXA_DEFAULT_MODEL);
-    $result = nexa_claude_reply($apiKey, nexa_request_body($model, nexa_knowledge(), nexa_live_facts($templates, $settings), $messages));
+    $live = nexa_live_facts($templates, $settings);
+    if ($active['provider'] === 'gemini') {
+        $model = env_value('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
+        $result = nexa_gemini_reply($active['key'], $model, nexa_gemini_body(nexa_knowledge(), $live, $messages));
+    } else {
+        $model = env_value('NEXA_MODEL', NEXA_DEFAULT_MODEL);
+        $result = nexa_claude_reply($active['key'], nexa_request_body($model, nexa_knowledge(), $live, $messages));
+    }
     if (!isset($result['reply'])) {
         error_log('[nexa] ' . $result['error']);
         throw new ApiError('Nexa AI sedang tidak tersedia.', 503, 'NEXA_UNAVAILABLE');

@@ -59,6 +59,7 @@ const ADMIN_ACTIONS = [
     'pd_document_change', 'pd_document_sign', 'pd_document_complete', 'pd_document_delete',
     'pd_invoice_create', 'pd_invoice_update', 'pd_invoice_cancel', 'pd_payment_record', 'pd_payment_delete',
     'pd_settings_save',
+    'nexa_get_config', 'nexa_save_config',
 ];
 const STAFF_ROLES = ['admin', 'user'];
 const USER_ROLES = ['admin', 'user', 'customer'];
@@ -229,7 +230,9 @@ switch ($action) {
         // Public: pd_* keys (company identity, tax, payment terms of the project documents) are read through
         // pd_settings_get only; the comparison follows the column's case-insensitive collation
         $settings = [];
-        foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_'") as $row) {
+        // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik
+        foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings
+                                WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_')") as $row) {
             $settings[$row['setting_key']] = $row['setting_value'];
         }
         // Always a JSON object like server.js: {} for an empty table (never []), numeric keys stay keys
@@ -242,6 +245,10 @@ switch ($action) {
         // the hero media step below, so a refused save never stores an upload
         foreach (array_keys($settings) as $key) {
             if (stripos((string)$key, 'pd_') === 0) throw new ApiError('Pengaturan dokumen proyek hanya bisa diubah lewat Pengaturan dokumen.', 403, 'FORBIDDEN');
+            // Kunci API & saklar AI hanya lewat nexa_save_config (admin); nexa_enabled (saklar widget) boleh di sini
+            if (stripos((string)$key, 'nexa_') === 0 && strtolower((string)$key) !== 'nexa_enabled') {
+                throw new ApiError('Pengaturan Nexa AI hanya bisa diubah lewat tab Tanya Nexa.', 403, 'FORBIDDEN');
+            }
         }
         // hero_bg_mode, hero_text_tone, hero_overlay, hero_bg_video, hero_bg_video_poster, hero_images
         // (backend/modules/hero_media.php). First, so a
