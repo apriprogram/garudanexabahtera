@@ -215,7 +215,8 @@ export function hubCardSpecs(templates) {
       name: 'catalog',
       eyebrow: 'Katalog template',
       headline: 'Template website <em>siap pakai</em>',
-      sub: categories.length ? categories.join(' · ') : 'Lihat demo, pesan, dan bayar online.',
+      // Nama kategori tidak dipotong di tengah ("Yoga &" / "Wellness"); baris hanya pindah di antara kategori
+      sub: categories.length ? categories.map((c) => c.replace(/ /g, '\u00a0')).join(' · ') : 'Lihat demo, pesan, dan bayar online.',
       shots: shots(list.slice(-2)),
     },
     {

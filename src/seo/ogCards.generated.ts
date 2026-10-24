@@ -16,6 +16,7 @@ export const OG_CARDS: readonly string[] = [
   'template-aura-studio',
   'template-corporate-nexa',
   'template-finova',
+  'template-serenity',
   'template-startup-clean',
   'tentang',
 ];
