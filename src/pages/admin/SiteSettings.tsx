@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import HeroSettings from './HeroSettings';
+import { NexaCustomProviderCard, type NexaCustomConfig } from './nexa/NexaCustomProviderCard';
 import { parseHeroOverlay, parseHeroTextTone } from '../../components/sections/hero/heroBgConfig';
 import type { HeroTextTone } from '../../components/sections/hero/heroContrast';
 import {
@@ -140,11 +141,14 @@ interface NexaProviderConfig {
 }
 interface NexaConfig {
   enabled: boolean;
-  provider: 'anthropic' | 'gemini';
+  provider: 'anthropic' | 'gemini' | 'custom';
   anthropic: NexaProviderConfig;
   gemini: NexaProviderConfig;
+  /** Endpoint custom OpenAI-compatible; tidak ada di backend lama (sebelum 2026-10-24) */
+  custom?: NexaCustomConfig;
 }
-const NEXA_PROVIDER_LABEL = { anthropic: 'Claude (Anthropic)', gemini: 'Gemini (Google)' } as const;
+const NEXA_PROVIDER_LABEL = { anthropic: 'Claude (Anthropic)', gemini: 'Gemini (Google)', custom: 'Endpoint custom' } as const;
+const NEXA_CUSTOM_EMPTY: NexaCustomConfig = { on: true, key_masked: '', env_key: false, url: '', model: '' };
 
 /** Keterangan di bawah judul tab; tab lain memakai keterangan umum. */
 const TAB_SUBTITLE: Partial<Record<string, string>> = {
@@ -353,15 +357,18 @@ const SiteSettings: React.FC = () => {
   // ── Tab Tanya Nexa: konfigurasi AI (dimuat saat tab dibuka; kunci tidak pernah dikirim balik utuh) ──
   const [nexaCfg, setNexaCfg] = useState<NexaConfig | null>(null);
   const [nexaCfgState, setNexaCfgState] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle');
-  const [nexaKeys, setNexaKeys] = useState({ anthropic: '', gemini: '' });
-  const [nexaClear, setNexaClear] = useState({ anthropic: false, gemini: false });
+  const [nexaKeys, setNexaKeys] = useState({ anthropic: '', gemini: '', custom: '' });
+  const [nexaClear, setNexaClear] = useState({ anthropic: false, gemini: false, custom: false });
   const [nexaSaving, setNexaSaving] = useState(false);
+  // Alamat endpoint custom yang tersimpan di server: kunci tersimpan terikat ke servernya (lihat NexaCustomProviderCard)
+  const [nexaCustomSavedUrl, setNexaCustomSavedUrl] = useState('');
 
   const loadNexaConfig = useCallback(async () => {
     try {
       const data = await apiPost<{ config?: NexaConfig }>('nexa_get_config', {});
       if (!data.config) throw new Error('config kosong');
       setNexaCfg(data.config);
+      setNexaCustomSavedUrl(data.config.custom?.url ?? '');
       setNexaCfgState('ready');
     } catch {
       setNexaCfgState('failed');
@@ -386,20 +393,25 @@ const SiteSettings: React.FC = () => {
     setNexaSaving(true);
     try {
       // Kunci baru yang diketik menang atas "Hapus kunci tersimpan" (mengganti = menghapus lama + memakai yang baru)
-      const keyField = (name: 'anthropic' | 'gemini') =>
+      const keyField = (name: 'anthropic' | 'gemini' | 'custom') =>
         nexaKeys[name].trim() !== '' ? { key: nexaKeys[name].trim() } : nexaClear[name] ? { key: null } : {};
+      const custom = nexaCfg.custom ?? NEXA_CUSTOM_EMPTY;
       const data = await apiPost<{ config?: NexaConfig }>('nexa_save_config', {
         provider: nexaCfg.provider,
         anthropic: { on: nexaCfg.anthropic.on, ...keyField('anthropic') },
         gemini: { on: nexaCfg.gemini.on, ...keyField('gemini') },
+        custom: { on: custom.on, url: custom.url.trim(), model: custom.model.trim(), ...keyField('custom') },
       });
-      if (data.config) setNexaCfg(data.config);
-      setNexaKeys({ anthropic: '', gemini: '' });
-      setNexaClear({ anthropic: false, gemini: false });
+      if (data.config) {
+        setNexaCfg(data.config);
+        setNexaCustomSavedUrl(data.config.custom?.url ?? '');
+      }
+      setNexaKeys({ anthropic: '', gemini: '', custom: '' });
+      setNexaClear({ anthropic: false, gemini: false, custom: false });
       showNotify('success', 'Pengaturan AI tersimpan', 'Kunci disimpan di server dan tidak pernah ditampilkan penuh.');
     } catch (error) {
-      const detail = error instanceof ApiError && error.fieldErrors ? Object.values(error.fieldErrors)[0] : '';
-      showNotify('error', 'Gagal menyimpan pengaturan AI', detail || errorMessage(error));
+      // Pesan utama server sudah menyebut alasannya (mis. "Alamat endpoint tidak valid: pakai https://…")
+      showNotify('error', 'Gagal menyimpan pengaturan AI', error instanceof ApiError ? error.message : errorMessage(error));
     } finally {
       setNexaSaving(false);
     }
@@ -855,13 +867,16 @@ const SiteSettings: React.FC = () => {
                 <>
                   <Field
                     label="Penyedia utama"
-                    hint="Bila penyedia pilihan mati atau tanpa kunci, Nexa otomatis memakai penyedia satunya."
+                    hint="Bila penyedia pilihan mati atau belum lengkap, Nexa otomatis memakai penyedia lain yang aktif."
                   >
                     <Segmented
                       ariaLabel="Penyedia jawaban AI"
+                      // Tiga pilihan tidak muat satu baris di HP: dibungkus agar "Endpoint custom" tetap terlihat
+                      className="max-sm:flex-wrap"
                       items={[
                         { value: 'anthropic', label: NEXA_PROVIDER_LABEL.anthropic },
                         { value: 'gemini', label: NEXA_PROVIDER_LABEL.gemini },
+                        { value: 'custom', label: NEXA_PROVIDER_LABEL.custom },
                       ]}
                       value={nexaCfg.provider}
                       onChange={(value) => setNexaCfg({ ...nexaCfg, provider: value as NexaConfig['provider'] })}
@@ -920,6 +935,17 @@ const SiteSettings: React.FC = () => {
                       </div>
                     );
                   })}
+
+                  <NexaCustomProviderCard
+                    value={nexaCfg.custom ?? NEXA_CUSTOM_EMPTY}
+                    onChange={(custom) => setNexaCfg({ ...nexaCfg, custom })}
+                    keyValue={nexaKeys.custom}
+                    onKeyChange={(key) => setNexaKeys((prev) => ({ ...prev, custom: key }))}
+                    clearKey={nexaClear.custom}
+                    onToggleClear={() => setNexaClear((prev) => ({ ...prev, custom: !prev.custom }))}
+                    selected={nexaCfg.provider === 'custom'}
+                    savedUrl={nexaCustomSavedUrl}
+                  />
 
                   <div className="flex flex-wrap items-center gap-3">
                     <Button icon={<Save />} disabled={nexaSaving} onClick={() => void saveNexaConfig()}>

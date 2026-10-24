@@ -3,7 +3,8 @@
 // Claude harus identik (__tests__/backend/nexa.test.ts membandingkan keduanya). Penjelasan lengkap & variabel .env
 // (ANTHROPIC_API_KEY, NEXA_MODEL, NEXA_DAILY_LIMIT, NEXA_KNOWLEDGE_FILE) ada di kepala nexa.php.
 //
-// Claude dipanggil lewat HTTPS biasa (fetch, seperti Midtrans di templates.js), sama dengan cURL di nexa.php.
+// Claude dipanggil lewat HTTPS biasa (fetch, seperti Midtrans di templates.js), sama dengan cURL di nexa.php. Penyedia
+// lain dari tab admin: Gemini, atau endpoint custom OpenAI-compatible (…/chat/completions + Authorization: Bearer).
 // Modul ini tanpa impor ke modul backend lain: handler nexa_chat (nexaChat) ada di templates.js.
 import { readFileSync, statSync } from 'node:fs';
 import { isIPv6 } from 'node:net';
@@ -21,10 +22,19 @@ const NEXA_GEMINI_FALLBACK_MODEL = 'gemini-flash-latest';
 const NEXA_GEMINI_TIMEOUT = 25; // detik per percobaan (= nexa.php)
 const NEXA_GEMINI_RETRY_CODES = [0, 404, 429, 500, 503, 504];
 const NEXA_GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
+// Penyedia ketiga: endpoint custom OpenAI-compatible (= nexa.php). Nama model ASCII tanpa spasi.
+const NEXA_CUSTOM_MODEL_PATTERN = /^[\x21-\x7E]{1,200}$/;
+const NEXA_CUSTOM_URL_MAX = 300;
+const NEXA_CUSTOM_MAX_COMPLETION_TOKENS = 4096; // = nexa.php: ulangan untuk model penalaran OpenAI
+const NEXA_CUSTOM_URL_PATTERN = /^https:\/\/([A-Za-z0-9.-]+)(:[0-9]{1,5})?(\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*)?(\?[A-Za-z0-9._~!$&'()*+,;=:@%/?-]*)?$/;
 // Kunci & saklar AI dari admin (hero_settings; TIDAK pernah ikut get_settings publik — lihat server.js). nexa_enabled
 // (saklar widget) satu-satunya setting nexa_ yang publik dan boleh lewat update_settings biasa.
-export const NEXA_CONFIG_KEYS = ['nexa_enabled', 'nexa_provider', 'nexa_anthropic_on', 'nexa_gemini_on', 'nexa_anthropic_key', 'nexa_gemini_key'];
-const NEXA_PROVIDERS = ['anthropic', 'gemini'];
+export const NEXA_CONFIG_KEYS = [
+  'nexa_enabled', 'nexa_provider', 'nexa_anthropic_on', 'nexa_gemini_on', 'nexa_anthropic_key', 'nexa_gemini_key',
+  'nexa_custom_on', 'nexa_custom_key', 'nexa_custom_url', 'nexa_custom_model',
+];
+// Urutan = urutan cadangan: penyedia pilihan dulu, lalu sisanya dalam urutan ini
+const NEXA_PROVIDERS = ['anthropic', 'gemini', 'custom'];
 // Kunci API: ASCII tercetak tanpa spasi, 8–300 karakter
 const NEXA_KEY_PATTERN = /^[\x21-\x7E]{8,300}$/;
 export const NEXA_PER_HOUR = 30; // pertanyaan per pengunjung (IP; IPv6 per /64) per jam
@@ -265,22 +275,30 @@ export function nexaMaskKey(key) {
 }
 
 /**
- * Penyedia AI yang dipakai nexa_chat (= nexa_resolve_provider): penyedia pilihan bila saklarnya hidup dan kuncinya ada
- * (kunci dari DB, atau ANTHROPIC_API_KEY / GEMINI_API_KEY di .env); kalau tidak, penyedia satunya; dua-duanya mati → null.
+ * Penyedia AI yang dipakai nexa_chat (= nexa_resolve_provider): penyedia pilihan bila saklarnya hidup dan siap
+ * (Anthropic/Gemini: kunci dari DB atau .env; custom: alamat sah + model, kunci boleh kosong); kalau tidak, penyedia lain
+ * yang siap (urutan NEXA_PROVIDERS); semua mati → null. Custom ikut membawa alamat chat completions & modelnya.
  */
 export function nexaResolveProvider(rows, envAnthropic, envGemini) {
   const dbKey = (name) => phpTrim(String(rows[`nexa_${name}_key`] ?? ''));
   const keys = {
     anthropic: dbKey('anthropic') !== '' ? dbKey('anthropic') : envAnthropic,
     gemini: dbKey('gemini') !== '' ? dbKey('gemini') : envGemini,
+    custom: dbKey('custom'),
   };
+  const customUrl = nexaCustomEndpoint(String(rows.nexa_custom_url ?? ''));
+  const customModel = phpTrim(String(rows.nexa_custom_model ?? ''));
   const on = {
     anthropic: (rows.nexa_anthropic_on ?? '1') !== '0' && keys.anthropic !== '',
     gemini: (rows.nexa_gemini_on ?? '1') !== '0' && keys.gemini !== '',
+    custom: (rows.nexa_custom_on ?? '1') !== '0' && customUrl !== null && NEXA_CUSTOM_MODEL_PATTERN.test(customModel),
   };
   const preferred = NEXA_PROVIDERS.includes(rows.nexa_provider ?? '') ? rows.nexa_provider : 'anthropic';
-  for (const provider of [preferred, preferred === 'anthropic' ? 'gemini' : 'anthropic']) {
-    if (on[provider]) return { provider, key: keys[provider] };
+  for (const provider of [preferred, ...NEXA_PROVIDERS.filter((name) => name !== preferred)]) {
+    if (!on[provider]) continue;
+    return provider === 'custom'
+      ? { provider: 'custom', key: keys.custom, url: customUrl, model: customModel }
+      : { provider, key: keys[provider] };
   }
   return null;
 }
@@ -300,6 +318,14 @@ export function nexaConfigOut(rows, envAnthropic, envGemini) {
       key_masked: nexaMaskKey(phpTrim(String(rows.nexa_gemini_key ?? ''))),
       env_key: envGemini,
     },
+    // Alamat & model bukan rahasia: tampil utuh untuk diubah
+    custom: {
+      on: (rows.nexa_custom_on ?? '1') !== '0',
+      key_masked: nexaMaskKey(phpTrim(String(rows.nexa_custom_key ?? ''))),
+      env_key: false,
+      url: phpTrim(String(rows.nexa_custom_url ?? '')),
+      model: phpTrim(String(rows.nexa_custom_model ?? '')),
+    },
   };
 }
 
@@ -308,7 +334,7 @@ export function nexaConfigOut(rows, envAnthropic, envGemini) {
  * kosong/tidak dikirim = biarkan. Masukan tidak sah → NexaConfigError (400 VALIDATION). `field(obj, k)` membaca Map
  * dari phpRequestBody maupun objek biasa.
  */
-export function nexaConfigWrites(input) {
+export function nexaConfigWrites(input, current = {}) {
   const field = (obj, key) => (obj instanceof Map ? obj.get(key) : obj?.[key]);
   const has = (obj, key) => (obj instanceof Map ? obj.has(key) : obj !== null && typeof obj === 'object' && key in obj);
   const provider = field(input, 'provider') ?? 'anthropic';
@@ -334,6 +360,38 @@ export function nexaConfigWrites(input) {
       throw new NexaConfigError('Kunci API tidak valid: 8–300 karakter tanpa spasi.', { [`${name}_key`]: 'Periksa kembali kunci yang ditempel.' });
     }
     writes[`nexa_${name}_key`] = key;
+  }
+  // Endpoint custom: alamat & model (sudah dipastikan objek di atas). Kosong = hapus, tidak dikirim = biarkan.
+  const custom = field(input, 'custom') ?? {};
+  for (const name of ['url', 'model']) {
+    if (!has(custom, name)) continue;
+    const raw = field(custom, name);
+    if (typeof raw !== 'string') throw new NexaConfigError('Pengaturan AI tidak valid.');
+    const value = phpTrim(raw);
+    if (value === '') {
+      deletes.push(`nexa_custom_${name}`);
+      continue;
+    }
+    if (name === 'url' && nexaCustomEndpoint(value) === null) {
+      throw new NexaConfigError('Alamat endpoint tidak valid: pakai https:// ke server AI publik, mis. https://api.openai.com/v1.', { custom_url: 'Periksa kembali alamat endpoint.' });
+    }
+    if (name === 'model' && !NEXA_CUSTOM_MODEL_PATTERN.test(value)) {
+      throw new NexaConfigError('Nama model tidak valid: 1–200 karakter tanpa spasi.', { custom_model: 'Periksa kembali nama model.' });
+    }
+    writes[`nexa_custom_${name}`] = value;
+  }
+  // Kunci endpoint custom terikat ke server alamat tersimpan (= nexa_config_writes): pindah server tanpa kunci baru → hapus
+  const newUrl = has(writes, 'nexa_custom_url') ? writes.nexa_custom_url : deletes.includes('nexa_custom_url') ? '' : null;
+  const oldOrigin = nexaCustomOrigin(String(current.nexa_custom_url ?? ''));
+  if (
+    newUrl !== null
+    && oldOrigin !== ''
+    && nexaCustomOrigin(newUrl) !== oldOrigin
+    && !has(writes, 'nexa_custom_key')
+    && !deletes.includes('nexa_custom_key')
+    && phpTrim(String(current.nexa_custom_key ?? '')) !== ''
+  ) {
+    deletes.push('nexa_custom_key');
   }
   return { writes, deletes };
 }
@@ -417,6 +475,129 @@ export async function nexaGeminiReply(apiKey, models, body, fetchImpl = fetch) {
     break;
   }
   return { error: `gemini ${errors.join('; ')}` };
+}
+
+// ── Endpoint custom OpenAI-compatible (penyedia ketiga) ──
+
+/** Host publik untuk endpoint custom (= nexa_public_host): nama bertitik atau IPv4 publik lengkap. */
+function nexaPublicHost(host) {
+  const labels = host.split('.');
+  if (labels.length < 2) return false;
+  if (labels.some((label) => label === '' || label.startsWith('-') || label.endsWith('-'))) return false;
+  const tld = labels[labels.length - 1];
+  if (['localhost', 'local', 'internal', 'arpa', 'lan', 'home'].includes(tld)) return false;
+  const numeric = labels.every((label) => /^(0x[0-9a-f]*|[0-9]+)$/.test(label));
+  if (!numeric && !/^[0-9]+$/.test(tld)) return true;
+  // Bentuk IP: hanya IPv4 desimal lengkap yang publik
+  if (labels.length !== 4 || !labels.every((label) => /^(0|[1-9][0-9]{0,2})$/.test(label) && Number(label) <= 255)) return false;
+  const [a, b, c] = labels.map(Number);
+  return !(
+    a === 0 || a === 10 || a === 127 || a >= 224
+    || (a === 100 && b >= 64 && b <= 127)
+    || (a === 169 && b === 254)
+    || (a === 172 && b >= 16 && b <= 31)
+    || (a === 192 && b === 168)
+    || (a === 192 && b === 0 && c === 0)
+    || (a === 198 && (b === 18 || b === 19))
+  );
+}
+
+/** Alamat chat completions dari isian admin (= nexa_custom_endpoint), null bila tidak sah. */
+export function nexaCustomEndpoint(url) {
+  const value = phpTrim(String(url ?? ''));
+  if (value === '' || value.length > NEXA_CUSTOM_URL_MAX) return null;
+  const m = NEXA_CUSTOM_URL_PATTERN.exec(value);
+  if (!m) return null;
+  const host = m[1].toLowerCase();
+  const port = m[2] ?? '';
+  const path = (m[3] ?? '').replace(/\/+$/, '');
+  const query = m[4] ?? '';
+  if (port !== '' && (Number(port.slice(1)) < 1 || Number(port.slice(1)) > 65535)) return null;
+  if (!nexaPublicHost(host)) return null;
+  return `https://${host}${port}${path.endsWith('/chat/completions') ? path : `${path}/chat/completions`}${query}`;
+}
+
+/** Server (host[:port]) alamat endpoint custom (= nexa_custom_origin), '' bila alamat tidak sah/kosong. */
+export function nexaCustomOrigin(url) {
+  const endpoint = nexaCustomEndpoint(url);
+  return endpoint === null ? '' : (/^https:\/\/([^/?]+)/.exec(endpoint)?.[1] ?? '');
+}
+
+/** Isi permintaan chat completions (= nexa_custom_body): satu pesan system, batas keluaran sama, tanpa temperature. */
+export function nexaCustomBody(model, knowledge, live, messages) {
+  const staticText = `${NEXA_INSTRUCTIONS}\n\nPENGETAHUAN SITUS (isi garudanexa.com)\n\n${knowledge !== '' ? knowledge : '(tidak tersedia; pakai DATA TERKINI)'}`;
+  return { model, max_tokens: NEXA_MAX_TOKENS, messages: [{ role: 'system', content: `${staticText}\n\n${live}` }, ...messages], stream: false };
+}
+
+/** Galat 400 "pakai max_completion_tokens" (= nexa_custom_wants_completion_tokens). */
+function nexaCustomWantsCompletionTokens(response) {
+  const error = response !== null && typeof response === 'object' && response.error !== null && typeof response.error === 'object' ? response.error : null;
+  if (error === null) return false;
+  if (error.param === 'max_tokens') return true;
+  return typeof error.message === 'string' && error.message.toLowerCase().includes('max_completion_tokens');
+}
+
+/** Teks jawaban dari respons chat completions (= nexa_custom_text), null bila tidak bisa dipakai. */
+export function nexaCustomText(response) {
+  const choice = response !== null && typeof response === 'object' ? (response.choices?.[0] ?? null) : null;
+  if (choice === null || typeof choice !== 'object' || choice.finish_reason === 'content_filter') return null;
+  let content = choice.message !== null && typeof choice.message === 'object' ? (choice.message.content ?? null) : null;
+  if (Array.isArray(content)) {
+    content = content
+      .filter((part) => part !== null && typeof part === 'object' && typeof part.text === 'string' && ['text', 'output_text'].includes(part.type ?? 'text'))
+      .map((part) => part.text)
+      .join('');
+  }
+  if (typeof content !== 'string') return null;
+  const text = phpTrim(content.replace(/^[ \t\n\r\x0B\f]*<think>[\s\S]*?<\/think>/, ''));
+  return text === '' ? null : text;
+}
+
+/** Satu POST ke endpoint custom (= nexa_custom_post): { status, parsed }; jaringan putus/lewat waktu melempar. */
+async function nexaCustomPost(url, apiKey, body, fetchImpl, signal) {
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+  if (apiKey !== '') headers.Authorization = `Bearer ${apiKey}`;
+  // redirect: 'error' = cURL tanpa FOLLOWLOCATION di nexa.php: tujuan tetap alamat yang sudah diperiksa
+  const response = await fetchImpl(url, { method: 'POST', headers, body: JSON.stringify(body), signal, redirect: 'error' });
+  const raw = await response.text();
+  let parsed = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = null;
+  }
+  return { status: response.status, parsed };
+}
+
+/** Panggil endpoint custom (= nexa_custom_reply): { reply } atau { error }. Tidak pernah melempar. */
+export async function nexaCustomReply(url, apiKey, body, fetchImpl = fetch) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), NEXA_TIMEOUT * 1000);
+  try {
+    let { status, parsed } = await nexaCustomPost(url, apiKey, body, fetchImpl, controller.signal);
+    // Model penalaran OpenAI menolak max_tokens (galat 400 langsung): ulangi sekali dengan max_completion_tokens
+    if (status === 400 && body.max_tokens !== undefined && nexaCustomWantsCompletionTokens(parsed)) {
+      const retry = { ...body, max_completion_tokens: NEXA_CUSTOM_MAX_COMPLETION_TOKENS };
+      delete retry.max_tokens;
+      ({ status, parsed } = await nexaCustomPost(url, apiKey, retry, fetchImpl, controller.signal));
+    }
+    if (status !== 200) {
+      const error = parsed !== null && typeof parsed === 'object' && parsed.error !== null && typeof parsed.error === 'object' ? parsed.error : null;
+      const kind = error !== null ? (error.type ?? error.code ?? '') : '';
+      const detail = typeof kind === 'string' || Number.isInteger(kind) ? String(kind) : '';
+      return { error: `custom HTTP ${status}${detail !== '' ? ` ${detail}` : ''}` };
+    }
+    const text = nexaCustomText(parsed);
+    if (text === null) {
+      const finish = parsed?.choices?.[0]?.finish_reason;
+      return { error: `custom no usable text (finish_reason ${typeof finish === 'string' ? finish : '?'})` };
+    }
+    return { reply: text };
+  } catch (err) {
+    return { error: `custom ${controller.signal.aborted ? 'timeout' : String(err?.cause?.message || err?.message || err)}` };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Kunci batas per pengunjung (= nexa_ip_bucket): IPv4 apa adanya, IPv6 per /64, ::ffff:a.b.c.d sebagai IPv4. */

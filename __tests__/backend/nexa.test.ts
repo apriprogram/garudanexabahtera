@@ -51,6 +51,10 @@ import {
   nexaCleanMessages,
   nexaConfigOut,
   nexaConfigWrites,
+  nexaCustomBody,
+  nexaCustomEndpoint,
+  nexaCustomReply,
+  nexaCustomText,
   nexaGeminiBody,
   nexaGeminiModels,
   nexaGeminiPayload,
@@ -153,6 +157,12 @@ const RESOLVE_CASES: [Record<string, string>, string, string][] = [
   [{ nexa_provider: 'gemini', nexa_gemini_on: '0' }, '', 'env-gemini-key'],
   [{ nexa_enabled: '0' }, 'env-anthropic-key', ''],
   [{ nexa_provider: 'aneh' }, '', 'env-gemini-key'],
+  // Endpoint custom: alamat sah + model; kunci boleh kosong; alamat tidak sah / saklar mati → penyedia berikutnya
+  [{ nexa_provider: 'custom', nexa_custom_url: 'https://openrouter.ai/api/v1', nexa_custom_model: 'openai/gpt-x', nexa_custom_key: ' or-key-123456 ' }, 'env-anthropic-key', ''],
+  [{ nexa_provider: 'custom', nexa_custom_url: 'http://insecure.example.com/v1', nexa_custom_model: 'm' }, 'env-anthropic-key', ''],
+  [{ nexa_provider: 'custom', nexa_custom_url: 'https://api.openai.com/v1' }, '', ''],
+  [{ nexa_provider: 'custom', nexa_custom_on: '0', nexa_custom_url: 'https://api.openai.com/v1', nexa_custom_model: 'm' }, '', 'env-gemini-key'],
+  [{ nexa_anthropic_on: '0', nexa_custom_url: 'https://api.openai.com/v1', nexa_custom_model: 'gpt-x' }, 'env-anthropic-key', ''],
 ];
 
 const MASK_CASES = ['', 'abc', 'sk-ant-abcd1234', '😀😀😀😀😀'];
@@ -160,6 +170,7 @@ const MASK_CASES = ['', 'abc', 'sk-ant-abcd1234', '😀😀😀😀😀'];
 const CONFIG_OUT_CASES: [Record<string, string>, boolean, boolean][] = [
   [{}, false, false],
   [{ nexa_enabled: '0', nexa_provider: 'gemini', nexa_anthropic_on: '0', nexa_anthropic_key: 'sk-ant-abcd1234', nexa_gemini_key: ' g-key-999888 ' }, true, false],
+  [{ nexa_provider: 'custom', nexa_custom_on: '0', nexa_custom_url: ' https://api.groq.com/openai/v1 ', nexa_custom_model: ' m-1 ', nexa_custom_key: 'gsk_abcdef123456' }, false, false],
 ];
 
 const SAVE_CASES: unknown[] = [
@@ -173,6 +184,13 @@ const SAVE_CASES: unknown[] = [
   { provider: 'anthropic', anthropic: { on: '0' }, gemini: { on: false } },
   // [] = {} di json_decode assoc PHP: diterima, saklar bawaan hidup
   { provider: 'anthropic', anthropic: [], gemini: { on: true } },
+  // 9–14: endpoint custom
+  { provider: 'custom', custom: { on: true, url: ' https://openrouter.ai/api/v1 ', model: ' openai/gpt-x ', key: ' or-key-123456 ' } },
+  { provider: 'custom', custom: { url: 'http://localhost:11434/v1' } },
+  { provider: 'custom', custom: { model: 'ada spasi' } },
+  { provider: 'anthropic', custom: { on: false, url: '', model: '  ', key: null } },
+  { provider: 'custom', custom: { url: 42 } },
+  { provider: 'custom', custom: 'bukan-objek' },
 ];
 
 const GEMINI_BODY_CASES: [string, string, { role: string; content: string }[]][] = [
@@ -187,6 +205,70 @@ const GEMINI_TEXT_CASES: unknown[] = [
   { candidates: [{ content: { parts: [] } }] },
   { candidates: [] },
   null,
+];
+
+// Alamat endpoint custom dari admin → alamat chat completions (null = ditolak: bukan https, host lokal/privat, dll.)
+const CUSTOM_URL_CASES = [
+  'https://api.openai.com/v1',
+  '  https://openrouter.ai/api/v1/  ',
+  'https://api.groq.com/openai/v1/chat/completions',
+  'https://API.DeepSeek.com',
+  'https://gateway.example.com:8443/v1?api-version=2026-01-01',
+  'https://8.8.8.8/v1',
+  'http://api.openai.com/v1',
+  'https://localhost:11434/v1',
+  'https://127.0.0.1/v1',
+  'https://10.0.0.5/v1',
+  'https://169.254.169.254/latest',
+  'https://172.20.1.1/v1',
+  'https://192.168.1.10/v1',
+  'https://100.64.0.1/v1',
+  'https://127.1/v1',
+  'https://0x7f.0.0.1/v1',
+  'https://intranet/v1',
+  'https://user:pass@api.openai.com/v1',
+  'https://api.openai.com/v1#frag',
+  'https://api.example.local/v1',
+  'https://ai.corp.internal/v1',
+  'https://api..openai.com/v1',
+  'https://-bad.example.com/v1',
+  'https://api.openai.com:99999/v1',
+  'https://api.openai.com:0/v1',
+  'https://api.openai.com/v 1',
+  'ftp://api.openai.com',
+  '',
+  `https://${'a'.repeat(300)}.com/v1`,
+];
+
+// Respons chat completions → teks jawaban (null = tidak bisa dipakai)
+const CUSTOM_TEXT_CASES: unknown[] = [
+  { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: '  Halo!  ' } }] },
+  { choices: [{ message: { content: [{ type: 'text', text: 'Bagian ' }, { type: 'image_url', image_url: {} }, { text: 'dua' }] } }] },
+  { choices: [{ finish_reason: 'content_filter', message: { content: 'X' } }] },
+  { choices: [{ message: { content: '<think>rencana jawaban</think>\n\nJawaban akhir.' } }] },
+  { choices: [{ message: { content: '' } }] },
+  { choices: [{ message: { content: null, tool_calls: [] } }] },
+  { choices: [] },
+  { error: { message: 'kunci salah' } },
+  null,
+];
+
+// [masukan nexa_save_config, setting tersimpan] → kunci endpoint custom terikat ke server (host:port) alamat tersimpan
+const OPENAI_SAVED = { nexa_custom_url: 'https://api.openai.com/v1', nexa_custom_key: 'sk-openai-123456' };
+const KEYBIND_CASES: [Record<string, unknown>, Record<string, string>][] = [
+  [{ provider: 'custom', custom: { url: 'https://openrouter.ai/api/v1' } }, OPENAI_SAVED], // pindah server → kunci dihapus
+  [{ provider: 'custom', custom: { url: 'https://API.openai.com/v2/' } }, OPENAI_SAVED], // server sama, path lain → tetap
+  [{ provider: 'custom', custom: { url: 'https://openrouter.ai/api/v1', key: 'or-key-123456' } }, OPENAI_SAVED], // kunci baru
+  [{ provider: 'custom', custom: { url: '' } }, OPENAI_SAVED], // alamat dikosongkan → kunci ikut dihapus
+  [{ provider: 'custom', custom: { url: 'https://api.openai.com:8443/v1' } }, OPENAI_SAVED], // port lain = server lain
+  [{ provider: 'custom', custom: { url: 'https://openrouter.ai/api/v1' } }, { nexa_custom_key: 'sk-belum-ada-alamat' }], // belum terikat
+  [{ provider: 'custom', custom: { model: 'gpt-x' } }, OPENAI_SAVED], // alamat tidak dikirim → tetap
+  [{ provider: 'custom', custom: { url: 'https://openrouter.ai/api/v1', key: null } }, OPENAI_SAVED], // hapus eksplisit, sekali saja
+];
+
+const CUSTOM_BODY_CASES: [string, string, string, { role: string; content: string }[]][] = [
+  ['openai/gpt-x', 'ISI', 'DATA', [{ role: 'user', content: 'Halo' }, { role: 'assistant', content: 'Hai!' }, { role: 'user', content: 'Harga?' }]],
+  ['m', '', 'DATA', [{ role: 'user', content: 'Halo' }]],
 ];
 
 // [baris project_client show_on_website = 1, setting portfolio_data, section Projects disembunyikan] → blok proyek DATA TERKINI
@@ -271,7 +353,7 @@ require getenv('NEXA_PHP');
 $in = json_decode(stream_get_contents(STDIN), true);
 $out = ['instructions' => NEXA_INSTRUCTIONS, 'live' => [], 'clean' => [], 'body' => [], 'reply' => [], 'ip' => [], 'handler' => [],
     'resolve' => [], 'mask' => [], 'cfgout' => [], 'save' => [], 'gbody' => [], 'gtext' => [], 'config_handler' => [],
-    'gmodels' => [], 'gpayload' => [], 'showcase' => [], 'hidden' => []];
+    'gmodels' => [], 'gpayload' => [], 'showcase' => [], 'hidden' => [], 'curl' => [], 'ctext' => [], 'cbody' => [], 'bind' => []];
 foreach ($in['live'] as $c) $out['live'][] = nexa_live_facts($c['templates'], $c['settings']);
 foreach ($in['clean'] as $c) $out['clean'][] = nexa_clean_messages($c);
 foreach ($in['body'] as $c) $out['body'][] = nexa_request_body($c[0], $c[1], $c[2], $c[3]);
@@ -289,6 +371,10 @@ foreach ($in['gtext'] as $c) $out['gtext'][] = nexa_gemini_text($c);
 foreach ($in['gmodels'] as $c) $out['gmodels'][] = nexa_gemini_models($c);
 foreach ($in['showcase'] as $c) $out['showcase'][] = nexa_showcase_facts($c[0], $c[1], $c[2] ?? false);
 foreach ($in['hidden'] as $c) $out['hidden'][] = nexa_projects_hidden($c);
+foreach ($in['curl'] as $c) $out['curl'][] = nexa_custom_endpoint($c);
+foreach ($in['ctext'] as $c) $out['ctext'][] = nexa_custom_text($c);
+foreach ($in['cbody'] as $c) $out['cbody'][] = nexa_custom_body($c[0], $c[1], $c[2], $c[3]);
+foreach ($in['bind'] as $c) $out['bind'][] = nexa_config_writes($c[0], $c[1]);
 foreach ($in['gpayload'] as $c) $out['gpayload'][] = nexa_gemini_payload(nexa_gemini_body('', 'DATA', [['role' => 'user', 'content' => 'Halo']]), $c);
 // Handler get/save config dengan database tiruan ($GLOBALS['rows'] + catatan tulis)
 foreach ($in['config_handler'] as $c) {
@@ -302,6 +388,8 @@ foreach ($in['config_handler'] as $c) {
         $out['config_handler'][] = ['status' => $e->status, 'message' => $e->getMessage(), 'writes' => $GLOBALS['writes']];
     }
 }
+// Handler nexa_chat tanpa setting tersimpan (baris dari kasus config di atas tidak terbawa)
+$GLOBALS['rows'] = [];
 foreach ($in['handler'] as $c) {
     try { $out['handler'][] = ['ok' => pf_nexa_chat(mysqli_init(), $c, null)]; }
     catch (ApiError $e) { $out['handler'][] = ['status' => $e->status, 'code' => $e->errorCode]; }
@@ -324,7 +412,8 @@ function runPhp() {
       live: LIVE_CASES, clean: CLEAN_CASES, body: BODY_CASES, reply: REPLY_CASES, ip: IP_CASES, handler: HANDLER_CASES,
       resolve: RESOLVE_CASES, mask: MASK_CASES, cfgout: CONFIG_OUT_CASES, save: SAVE_CASES, gbody: GEMINI_BODY_CASES,
       gtext: GEMINI_TEXT_CASES, config_handler: CONFIG_HANDLER_CASES, gmodels: GEMINI_MODEL_CASES, gpayload: GEMINI_PAYLOAD_CASES,
-      showcase: SHOWCASE_CASES, hidden: HIDDEN_CASES,
+      showcase: SHOWCASE_CASES, hidden: HIDDEN_CASES, curl: CUSTOM_URL_CASES, ctext: CUSTOM_TEXT_CASES, cbody: CUSTOM_BODY_CASES,
+      bind: KEYBIND_CASES,
     }),
     encoding: 'utf8',
     env: { ...process.env, NEXA_PHP, PF_HELPERS, ANTHROPIC_API_KEY: '', GEMINI_API_KEY: '' },
@@ -388,6 +477,10 @@ const nodeOutputs = () => ({
   gmodels: GEMINI_MODEL_CASES.map((c) => nexaGeminiModels(c)),
   showcase: SHOWCASE_CASES.map(([projects, portfolio, hidden]) => nexaShowcaseFacts(projects, portfolio, hidden)),
   hidden: HIDDEN_CASES.map((c) => nexaProjectsHidden(c)),
+  curl: CUSTOM_URL_CASES.map((c) => nexaCustomEndpoint(c)),
+  ctext: CUSTOM_TEXT_CASES.map((c) => nexaCustomText(c)),
+  cbody: CUSTOM_BODY_CASES.map(([model, knowledge, live, messages]) => nexaCustomBody(model, knowledge, live, messages)),
+  bind: KEYBIND_CASES.map(([input, current]) => nexaConfigWrites(input, current)),
   gpayload: GEMINI_PAYLOAD_CASES.map((c) => nexaGeminiPayload(nexaGeminiBody('', 'DATA', [{ role: 'user', content: 'Halo' }]), c)),
 });
 
@@ -398,6 +491,15 @@ const CONFIG_HANDLER_CASES = [
   { action: 'nexa_save_config', rows: { nexa_anthropic_key: 'sk-lama-11112222' }, input: SAVE_CASES[0] },
   { action: 'nexa_save_config', rows: { nexa_anthropic_key: 'sk-lama-11112222' }, input: SAVE_CASES[1] },
   { action: 'nexa_save_config', rows: {}, input: SAVE_CASES[3] },
+  { action: 'nexa_save_config', rows: { nexa_custom_url: 'https://lama.example.com/v1' }, input: SAVE_CASES[9] },
+  { action: 'nexa_save_config', rows: {}, input: SAVE_CASES[10] },
+  {
+    action: 'nexa_get_config',
+    rows: { nexa_provider: 'custom', nexa_custom_url: 'https://api.openai.com/v1', nexa_custom_model: 'gpt-x', nexa_custom_key: 'sk-abcdef123456' },
+    input: {},
+  },
+  // Handler membaca setting tersimpan: alamat pindah server tanpa kunci baru → DELETE nexa_custom_key
+  { action: 'nexa_save_config', rows: { ...OPENAI_SAVED, nexa_custom_model: 'gpt-x' }, input: KEYBIND_CASES[0][0] },
 ];
 
 describe('Nexa AI: fungsi murni (Node)', () => {
@@ -514,6 +616,11 @@ describe('Nexa AI: fungsi murni (Node)', () => {
       null, // gemini dipilih tapi saklarnya mati; anthropic tanpa kunci
       { provider: 'anthropic', key: 'env-anthropic-key' }, // nexa_enabled dicek handler, bukan resolver
       { provider: 'gemini', key: 'env-gemini-key' }, // provider tak dikenal → bawaan anthropic (mati) → gemini
+      { provider: 'custom', key: 'or-key-123456', url: 'https://openrouter.ai/api/v1/chat/completions', model: 'openai/gpt-x' },
+      { provider: 'anthropic', key: 'env-anthropic-key' }, // alamat http:// ditolak → penyedia berikutnya
+      null, // custom tanpa model; anthropic & gemini tanpa kunci
+      { provider: 'gemini', key: 'env-gemini-key' }, // custom dimatikan
+      { provider: 'custom', key: '', url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-x' }, // anthropic mati, gemini tanpa kunci → custom tanpa kunci
     ]);
   });
 
@@ -521,18 +628,82 @@ describe('Nexa AI: fungsi murni (Node)', () => {
     const save = nodeOutputs().save;
     expect(save[0]).toEqual({
       ok: {
-        writes: { nexa_provider: 'gemini', nexa_anthropic_on: '0', nexa_gemini_on: '1', nexa_gemini_key: 'AIzaSyExample12345' },
+        writes: { nexa_provider: 'gemini', nexa_anthropic_on: '0', nexa_gemini_on: '1', nexa_gemini_key: 'AIzaSyExample12345', nexa_custom_on: '1' },
         deletes: [],
       },
     });
-    expect(save[1]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1' }, deletes: ['nexa_anthropic_key'] } });
-    expect(save[2]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1' }, deletes: [] } });
+    expect(save[1]).toEqual({
+      ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1', nexa_custom_on: '1' }, deletes: ['nexa_anthropic_key'] },
+    });
+    expect(save[2]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1', nexa_custom_on: '1' }, deletes: [] } });
     expect(save[3]).toMatchObject({ status: 400 });
     expect(save[4]).toMatchObject({ status: 400 });
     expect(save[5]).toMatchObject({ status: 400 });
     expect(save[6]).toMatchObject({ status: 400 });
-    expect(save[7]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '0', nexa_gemini_on: '0' }, deletes: [] } });
-    expect(save[8]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1' }, deletes: [] } });
+    expect(save[7]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '0', nexa_gemini_on: '0', nexa_custom_on: '1' }, deletes: [] } });
+    expect(save[8]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1', nexa_custom_on: '1' }, deletes: [] } });
+    // Endpoint custom: alamat & model dirapikan dan disimpan; kosong menghapus; alamat/model salah → 400
+    expect(save[9]).toEqual({
+      ok: {
+        writes: {
+          nexa_provider: 'custom',
+          nexa_anthropic_on: '1',
+          nexa_gemini_on: '1',
+          nexa_custom_on: '1',
+          nexa_custom_key: 'or-key-123456',
+          nexa_custom_url: 'https://openrouter.ai/api/v1',
+          nexa_custom_model: 'openai/gpt-x',
+        },
+        deletes: [],
+      },
+    });
+    expect(save[10]).toMatchObject({ status: 400, message: expect.stringMatching(/^Alamat endpoint tidak valid/) });
+    expect(save[11]).toMatchObject({ status: 400, message: expect.stringMatching(/^Nama model tidak valid/) });
+    expect(save[12]).toEqual({
+      ok: {
+        writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1', nexa_custom_on: '0' },
+        deletes: ['nexa_custom_key', 'nexa_custom_url', 'nexa_custom_model'],
+      },
+    });
+    expect(save[13]).toMatchObject({ status: 400 });
+    expect(save[14]).toMatchObject({ status: 400 });
+  });
+
+  it('kunci endpoint custom terikat ke server alamatnya: pindah server tanpa kunci baru → kunci lama dihapus', () => {
+    const deletes = (nodeOutputs().bind as { deletes: string[] }[]).map((plan) => plan.deletes);
+    expect(deletes).toEqual([
+      ['nexa_custom_key'],
+      [],
+      [],
+      ['nexa_custom_url', 'nexa_custom_key'],
+      ['nexa_custom_key'],
+      [],
+      [],
+      ['nexa_custom_key'],
+    ]);
+    expect((nodeOutputs().bind[2] as { writes: Record<string, string> }).writes.nexa_custom_key).toBe('or-key-123456');
+  });
+
+  it('endpoint custom: alamat https publik saja → …/chat/completions; teks jawaban; satu pesan system tanpa max_tokens', () => {
+    expect(nodeOutputs().curl).toEqual([
+      'https://api.openai.com/v1/chat/completions',
+      'https://openrouter.ai/api/v1/chat/completions',
+      'https://api.groq.com/openai/v1/chat/completions',
+      'https://api.deepseek.com/chat/completions',
+      'https://gateway.example.com:8443/v1/chat/completions?api-version=2026-01-01',
+      'https://8.8.8.8/v1/chat/completions',
+      ...Array(CUSTOM_URL_CASES.length - 6).fill(null),
+    ]);
+    expect(nodeOutputs().ctext).toEqual(['Halo!', 'Bagian dua', null, 'Jawaban akhir.', null, null, null, null, null]);
+    const [body] = nodeOutputs().cbody as { model: string; max_tokens: number; messages: { role: string; content: string }[]; stream: boolean }[];
+    expect(body.model).toBe('openai/gpt-x');
+    expect(body.stream).toBe(false);
+    // Batas keluaran sama dengan Claude/Gemini: pengunjung (aksi publik) tidak bisa memicu jawaban panjang yang ditagih
+    expect(body.max_tokens).toBe(2048);
+    expect(body).not.toHaveProperty('temperature');
+    expect(body.messages.map((m) => m.role)).toEqual(['system', 'user', 'assistant', 'user']);
+    const anthropic = nexaRequestBody('claude-opus-5-5', 'ISI', 'DATA', []);
+    expect(body.messages[0].content).toBe((anthropic.system as { text: string }[]).map((block) => block.text).join('\n\n'));
   });
 
   it('Gemini: system_instruction = blok system Claude, role assistant → model, teks dari parts', () => {
@@ -636,6 +807,49 @@ describe('Nexa AI: panggilan Claude (Node, fetch palsu)', () => {
     });
   });
 
+  it('endpoint custom: POST ke …/chat/completions dengan Bearer, tanpa ikut redirect; galat → { error }', async () => {
+    const fetchImpl = vi.fn(async () =>
+      new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: 'Dari endpoint custom' } }] }), { status: 200 }));
+    const body = nexaCustomBody('openai/gpt-x', '', 'DATA', [{ role: 'user', content: 'Halo' }]);
+    const url = 'https://openrouter.ai/api/v1/chat/completions';
+    expect(await nexaCustomReply(url, 'or-key-123456', body, fetchImpl)).toEqual({ reply: 'Dari endpoint custom' });
+    const [calledUrl, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(calledUrl).toBe(url);
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json', Accept: 'application/json', Authorization: 'Bearer or-key-123456' });
+    expect(init.redirect).toBe('error');
+    expect(JSON.parse(String(init.body))).toEqual(body);
+    // Gateway tanpa kunci: tanpa header Authorization
+    await nexaCustomReply(url, '', body, fetchImpl);
+    expect((fetchImpl.mock.calls[1] as unknown as [string, RequestInit])[1].headers).not.toHaveProperty('Authorization');
+    const denied = vi.fn(async () => new Response(JSON.stringify({ error: { type: 'invalid_request_error', code: 'invalid_api_key' } }), { status: 401 }));
+    expect(await nexaCustomReply(url, 'salah-123456', body, denied)).toEqual({ error: 'custom HTTP 401 invalid_request_error' });
+    const filtered = vi.fn(async () => new Response(JSON.stringify({ choices: [{ finish_reason: 'content_filter', message: { content: '' } }] }), { status: 200 }));
+    expect(await nexaCustomReply(url, 'k-123456', body, filtered)).toEqual({ error: 'custom no usable text (finish_reason content_filter)' });
+    const offline = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    });
+    expect(await nexaCustomReply(url, 'k-123456', body, offline)).toEqual({ error: 'custom fetch failed' });
+  });
+
+  it('endpoint custom: model menolak max_tokens (400) → diulang sekali dengan max_completion_tokens', async () => {
+    const body = nexaCustomBody('o-uji', '', 'DATA', [{ role: 'user', content: 'Halo' }]);
+    const strict = vi.fn(async (_url: string, init: RequestInit) => {
+      const sent = JSON.parse(String(init.body)) as Record<string, unknown>;
+      return 'max_tokens' in sent
+        ? new Response(JSON.stringify({ error: { message: "Unsupported parameter: 'max_tokens'. Use 'max_completion_tokens' instead.", type: 'invalid_request_error', param: 'max_tokens', code: 'unsupported_parameter' } }), { status: 400 })
+        : new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: 'Jawaban model penalaran' } }] }), { status: 200 });
+    });
+    expect(await nexaCustomReply('https://api.openai.com/v1/chat/completions', 'sk-123456', body, strict)).toEqual({ reply: 'Jawaban model penalaran' });
+    expect(strict).toHaveBeenCalledTimes(2);
+    const retry = JSON.parse(String((strict.mock.calls[1] as unknown as [string, RequestInit])[1].body)) as Record<string, unknown>;
+    expect(retry).not.toHaveProperty('max_tokens');
+    expect(retry.max_completion_tokens).toBe(4096);
+    // 400 lain (mis. model tidak ada) tidak diulang
+    const missing = vi.fn(async () => new Response(JSON.stringify({ error: { type: 'invalid_request_error', param: 'model' } }), { status: 400 }));
+    expect(await nexaCustomReply('https://api.openai.com/v1/chat/completions', 'sk-123456', body, missing)).toEqual({ error: 'custom HTTP 400 invalid_request_error' });
+    expect(missing).toHaveBeenCalledTimes(1);
+  });
+
   it('galat API, penolakan, dan jaringan putus → { error } tanpa melempar', async () => {
     const body = nexaRequestBody('claude-haiku-5-5', '', 'DATA', [{ role: 'user', content: 'Halo' }]);
     const overloaded = vi.fn(async () => new Response(JSON.stringify({ type: 'error', error: { type: 'overloaded_error' } }), { status: 529 }));
@@ -689,6 +903,10 @@ describe('Nexa AI: handler nexa_chat', () => {
     expect(fromPhp.gpayload).toEqual(fromNode.gpayload);
     expect(fromPhp.showcase).toEqual(fromNode.showcase);
     expect(fromPhp.hidden).toEqual(fromNode.hidden);
+    expect(fromPhp.curl).toEqual(fromNode.curl);
+    expect(fromPhp.ctext).toEqual(fromNode.ctext);
+    expect(fromPhp.cbody).toEqual(fromNode.cbody);
+    expect(fromPhp.bind).toEqual(fromNode.bind);
     // Handler get/save config: hasil + urutan tulis SQL sama
     const nodeConfig = [];
     for (const c of CONFIG_HANDLER_CASES) {

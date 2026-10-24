@@ -7,6 +7,9 @@
 // cURL seperti Midtrans: hosting cPanel tanpa Composer) bila ANTHROPIC_API_KEY ada di .env. Tanpa kunci, atau bila
 // Claude gagal menjawab, aksi membalas 503 dan widget menjawab sendiri dari data situs (nexa/localAnswer.ts).
 //
+// Penyedia lain (dipilih admin di tab Tanya Nexa): Google Gemini, atau endpoint custom OpenAI-compatible
+// (POST …/chat/completions + Authorization: Bearer) untuk OpenAI, OpenRouter, Groq, DeepSeek, Mistral, xAI, dll.
+//
 // Pengetahuan Nexa = instruksi tetap (NEXA_INSTRUCTIONS) + isi llms-full.txt hasil prerender (fakta perusahaan,
 // template, jasa, tanya jawab, kebijakan; di produksi ada di web root di samping api.php) + data terkini dari database
 // (template terbit & harganya, diskon pembelian pertama, isi paket, kontak). Dua blok system diberi cache_control
@@ -29,10 +32,20 @@ const NEXA_GEMINI_FALLBACK_MODEL = 'gemini-flash-latest';
 const NEXA_GEMINI_TIMEOUT = 25; // detik per percobaan; dua percobaan tetap di bawah batas ±100 detik Cloudflare
 const NEXA_GEMINI_RETRY_CODES = [0, 404, 429, 500, 503, 504];
 const NEXA_GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
+// Penyedia ketiga: endpoint custom OpenAI-compatible (pemilik 2026-10-24: "endpoint API universal untuk semua AI").
+// Alamat, model & kunci diisi admin; nama model persis seperti di dokumentasi penyedianya (ASCII tanpa spasi).
+const NEXA_CUSTOM_MODEL_PATTERN = '/^[\x21-\x7E]{1,200}$/';
+const NEXA_CUSTOM_URL_MAX = 300;
+// Model penalaran OpenAI menolak max_tokens: diulang sekali dengan max_completion_tokens (token penalaran ikut dihitung)
+const NEXA_CUSTOM_MAX_COMPLETION_TOKENS = 4096;
 // Kunci & saklar AI dari admin (hero_settings; TIDAK pernah ikut get_settings publik — lihat api.php). nexa_enabled
 // (saklar widget) satu-satunya setting nexa_ yang publik dan boleh lewat update_settings biasa.
-const NEXA_CONFIG_KEYS = ['nexa_enabled', 'nexa_provider', 'nexa_anthropic_on', 'nexa_gemini_on', 'nexa_anthropic_key', 'nexa_gemini_key'];
-const NEXA_PROVIDERS = ['anthropic', 'gemini'];
+const NEXA_CONFIG_KEYS = [
+    'nexa_enabled', 'nexa_provider', 'nexa_anthropic_on', 'nexa_gemini_on', 'nexa_anthropic_key', 'nexa_gemini_key',
+    'nexa_custom_on', 'nexa_custom_key', 'nexa_custom_url', 'nexa_custom_model',
+];
+// Urutan = urutan cadangan: penyedia pilihan dulu, lalu sisanya dalam urutan ini
+const NEXA_PROVIDERS = ['anthropic', 'gemini', 'custom'];
 // Kunci API: ASCII tercetak tanpa spasi, 8–300 karakter
 const NEXA_KEY_PATTERN = '/^[\x21-\x7E]{8,300}$/';
 const NEXA_PER_HOUR = 30;              // pertanyaan per pengunjung (IP; IPv6 per /64) per jam
@@ -254,22 +267,30 @@ function nexa_mask_key(string $key): string {
 }
 
 /**
- * Penyedia AI yang dipakai nexa_chat dari setting admin + cadangan .env: penyedia pilihan bila saklarnya hidup dan
- * kuncinya ada (kunci Anthropic/Gemini dari DB, atau ANTHROPIC_API_KEY / GEMINI_API_KEY di .env); kalau tidak, penyedia
- * satunya; dua-duanya mati → null (Nexa menjawab dari data situs di widget).
+ * Penyedia AI yang dipakai nexa_chat dari setting admin + cadangan .env: penyedia pilihan bila saklarnya hidup dan siap
+ * (Anthropic/Gemini: kunci dari DB, atau ANTHROPIC_API_KEY / GEMINI_API_KEY di .env; custom: alamat sah + model, kunci
+ * boleh kosong untuk gateway tanpa kunci); kalau tidak, penyedia lain yang siap (urutan NEXA_PROVIDERS); semua mati →
+ * null (Nexa menjawab dari data situs di widget). Custom ikut membawa alamat chat completions & modelnya.
  */
 function nexa_resolve_provider(array $rows, string $envAnthropic, string $envGemini): ?array {
     $keys = [
         'anthropic' => trim((string)($rows['nexa_anthropic_key'] ?? '')) !== '' ? trim((string)$rows['nexa_anthropic_key']) : $envAnthropic,
         'gemini' => trim((string)($rows['nexa_gemini_key'] ?? '')) !== '' ? trim((string)$rows['nexa_gemini_key']) : $envGemini,
+        'custom' => trim((string)($rows['nexa_custom_key'] ?? '')),
     ];
+    $customUrl = nexa_custom_endpoint((string)($rows['nexa_custom_url'] ?? ''));
+    $customModel = trim((string)($rows['nexa_custom_model'] ?? ''));
     $on = [
         'anthropic' => ($rows['nexa_anthropic_on'] ?? '1') !== '0' && $keys['anthropic'] !== '',
         'gemini' => ($rows['nexa_gemini_on'] ?? '1') !== '0' && $keys['gemini'] !== '',
+        'custom' => ($rows['nexa_custom_on'] ?? '1') !== '0' && $customUrl !== null && preg_match(NEXA_CUSTOM_MODEL_PATTERN, $customModel) === 1,
     ];
     $preferred = in_array($rows['nexa_provider'] ?? '', NEXA_PROVIDERS, true) ? $rows['nexa_provider'] : 'anthropic';
-    foreach ([$preferred, $preferred === 'anthropic' ? 'gemini' : 'anthropic'] as $provider) {
-        if ($on[$provider]) return ['provider' => $provider, 'key' => $keys[$provider]];
+    foreach (array_merge([$preferred], array_values(array_diff(NEXA_PROVIDERS, [$preferred]))) as $provider) {
+        if (!$on[$provider]) continue;
+        return $provider === 'custom'
+            ? ['provider' => 'custom', 'key' => $keys['custom'], 'url' => $customUrl, 'model' => $customModel]
+            : ['provider' => $provider, 'key' => $keys[$provider]];
     }
     return null;
 }
@@ -289,14 +310,23 @@ function nexa_config_out(array $rows, bool $envAnthropic, bool $envGemini): arra
             'key_masked' => nexa_mask_key(trim((string)($rows['nexa_gemini_key'] ?? ''))),
             'env_key' => $envGemini,
         ],
+        // Alamat & model bukan rahasia: tampil utuh untuk diubah
+        'custom' => [
+            'on' => ($rows['nexa_custom_on'] ?? '1') !== '0',
+            'key_masked' => nexa_mask_key(trim((string)($rows['nexa_custom_key'] ?? ''))),
+            'env_key' => false,
+            'url' => trim((string)($rows['nexa_custom_url'] ?? '')),
+            'model' => trim((string)($rows['nexa_custom_model'] ?? '')),
+        ],
     ];
 }
 
 /**
  * Masukan nexa_save_config → daftar tulis [setting_key => nilai] + daftar hapus. Kunci: string sah = simpan,
- * null = hapus, kosong/tidak dikirim = biarkan. Masukan tidak sah → 400 VALIDATION.
+ * null = hapus, kosong/tidak dikirim = biarkan. Masukan tidak sah → 400 VALIDATION. $current = setting tersimpan,
+ * untuk mengikat kunci endpoint custom ke server alamatnya.
  */
-function nexa_config_writes(array $input): array {
+function nexa_config_writes(array $input, array $current = []): array {
     $provider = $input['provider'] ?? 'anthropic';
     if (!in_array($provider, NEXA_PROVIDERS, true)) throw new ApiError('Penyedia AI tidak dikenal.', 400, 'VALIDATION');
     $writes = ['nexa_provider' => $provider];
@@ -319,6 +349,34 @@ function nexa_config_writes(array $input): array {
         }
         $writes["nexa_{$name}_key"] = $key;
     }
+    // Endpoint custom: alamat & model (sudah dipastikan array di atas). Kosong = hapus, tidak dikirim = biarkan.
+    $custom = $input['custom'] ?? [];
+    foreach (['url', 'model'] as $field) {
+        if (!array_key_exists($field, $custom)) continue;
+        if (!is_string($custom[$field])) throw new ApiError('Pengaturan AI tidak valid.', 400, 'VALIDATION');
+        $value = trim($custom[$field]);
+        if ($value === '') {
+            $deletes[] = "nexa_custom_{$field}";
+            continue;
+        }
+        if ($field === 'url' && nexa_custom_endpoint($value) === null) {
+            throw new ApiError('Alamat endpoint tidak valid: pakai https:// ke server AI publik, mis. https://api.openai.com/v1.', 400, 'VALIDATION', ['custom_url' => 'Periksa kembali alamat endpoint.']);
+        }
+        if ($field === 'model' && !preg_match(NEXA_CUSTOM_MODEL_PATTERN, $value)) {
+            throw new ApiError('Nama model tidak valid: 1–200 karakter tanpa spasi.', 400, 'VALIDATION', ['custom_model' => 'Periksa kembali nama model.']);
+        }
+        $writes["nexa_custom_{$field}"] = $value;
+    }
+    // Kunci endpoint custom terikat ke server (host:port) alamat tersimpan: alamat pindah server tanpa kunci baru →
+    // kunci lama dihapus, jadi kunci satu penyedia tidak pernah terkirim ke server lain (salah klik "Isi cepat", atau
+    // sesi admin yang dicuri untuk membaca kunci lewat server sendiri)
+    $newUrl = array_key_exists('nexa_custom_url', $writes) ? $writes['nexa_custom_url'] : (in_array('nexa_custom_url', $deletes, true) ? '' : null);
+    $oldOrigin = nexa_custom_origin((string)($current['nexa_custom_url'] ?? ''));
+    if ($newUrl !== null && $oldOrigin !== '' && nexa_custom_origin($newUrl) !== $oldOrigin
+        && !array_key_exists('nexa_custom_key', $writes) && !in_array('nexa_custom_key', $deletes, true)
+        && trim((string)($current['nexa_custom_key'] ?? '')) !== '') {
+        $deletes[] = 'nexa_custom_key';
+    }
     return ['writes' => $writes, 'deletes' => $deletes];
 }
 
@@ -339,7 +397,7 @@ function pf_nexa_get_config(mysqli $conn, array $input, ?array $user): array {
 
 // Tab admin "Tanya Nexa": simpan penyedia, saklar per penyedia, dan kunci API (hanya admin; lihat ADMIN_ACTIONS)
 function pf_nexa_save_config(mysqli $conn, array $input, ?array $user): array {
-    $plan = nexa_config_writes($input);
+    $plan = nexa_config_writes($input, nexa_config_rows($conn));
     foreach ($plan['writes'] as $key => $value) {
         db_run($conn, "INSERT INTO hero_settings (setting_key, setting_value) VALUES (?, ?)
                        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [$key, $value]);
@@ -427,6 +485,167 @@ function nexa_gemini_reply(string $apiKey, array $models, array $body): array {
         break;
     }
     return ['error' => 'gemini ' . implode('; ', $errors)];
+}
+
+// ── Endpoint custom OpenAI-compatible (penyedia ketiga) ──
+
+/**
+ * Host publik untuk endpoint custom: nama bertitik (label a-z0-9-) atau IPv4 publik lengkap. Bukan localhost/.local/
+ * .internal/.arpa/.lan/.home, IP privat/lokal/khusus, atau bentuk angka singkat (127.1, 0x7f.0.0.1) yang dibaca resolver
+ * sebagai IP. Nama publik yang menunjuk ke IP privat tidak tertangkap di sini; setting ini hanya bisa diubah admin.
+ */
+function nexa_public_host(string $host): bool {
+    $labels = explode('.', $host);
+    if (count($labels) < 2) return false;
+    foreach ($labels as $label) {
+        if ($label === '' || $label[0] === '-' || substr($label, -1) === '-') return false;
+    }
+    $tld = $labels[count($labels) - 1];
+    if (in_array($tld, ['localhost', 'local', 'internal', 'arpa', 'lan', 'home'], true)) return false;
+    $numeric = true;
+    foreach ($labels as $label) {
+        if (!preg_match('/^(0x[0-9a-f]*|[0-9]+)$/', $label)) {
+            $numeric = false;
+            break;
+        }
+    }
+    if (!$numeric && !preg_match('/^[0-9]+$/', $tld)) return true;
+    // Bentuk IP: hanya IPv4 desimal lengkap yang publik
+    if (count($labels) !== 4) return false;
+    $octets = [];
+    foreach ($labels as $label) {
+        if (!preg_match('/^(0|[1-9][0-9]{0,2})$/', $label) || (int)$label > 255) return false;
+        $octets[] = (int)$label;
+    }
+    [$a, $b, $c] = $octets;
+    return !($a === 0 || $a === 10 || $a === 127 || $a >= 224
+        || ($a === 100 && $b >= 64 && $b <= 127)
+        || ($a === 169 && $b === 254)
+        || ($a === 172 && $b >= 16 && $b <= 31)
+        || ($a === 192 && $b === 168)
+        || ($a === 192 && $b === 0 && $c === 0)
+        || ($a === 198 && ($b === 18 || $b === 19)));
+}
+
+/**
+ * Alamat chat completions dari isian admin, null bila tidak sah: hanya https:// ke host publik (permintaan dikirim
+ * dari server). "https://api.openai.com/v1" → "https://api.openai.com/v1/chat/completions"; alamat yang sudah
+ * berakhiran /chat/completions dipakai apa adanya; query (mis. ?api-version=…) dipertahankan. Tanpa userinfo/fragmen.
+ */
+function nexa_custom_endpoint(string $url): ?string {
+    $url = trim($url);
+    if ($url === '' || strlen($url) > NEXA_CUSTOM_URL_MAX) return null;
+    if (!preg_match('#^https://([A-Za-z0-9.-]+)(:[0-9]{1,5})?(/[A-Za-z0-9._~!$&\'()*+,;=:@%/-]*)?(\?[A-Za-z0-9._~!$&\'()*+,;=:@%/?-]*)?$#', $url, $m)) {
+        return null;
+    }
+    $host = strtolower($m[1]);
+    $port = $m[2] ?? '';
+    $path = rtrim($m[3] ?? '', '/');
+    $query = $m[4] ?? '';
+    if ($port !== '' && ((int)substr($port, 1) < 1 || (int)substr($port, 1) > 65535)) return null;
+    if (!nexa_public_host($host)) return null;
+    if (substr($path, -17) !== '/chat/completions') $path .= '/chat/completions';
+    return 'https://' . $host . $port . $path . $query;
+}
+
+/** Server (host[:port]) alamat endpoint custom, '' bila alamat tidak sah/kosong. */
+function nexa_custom_origin(string $url): string {
+    $endpoint = nexa_custom_endpoint($url);
+    return $endpoint !== null && preg_match('#^https://([^/?]+)#', $endpoint, $m) ? $m[1] : '';
+}
+
+/**
+ * Isi permintaan chat completions: instruksi + pengetahuan + data terkini dalam satu pesan system (bentuk yang diterima
+ * semua penyedia), batas keluaran sama dengan Claude/Gemini (aksi publik: pengunjung tidak boleh memicu jawaban
+ * panjang yang ditagih ke kunci pemilik). Tanpa temperature: aturannya beda antar model.
+ */
+function nexa_custom_body(string $model, string $knowledge, string $live, array $messages): array {
+    $static = NEXA_INSTRUCTIONS . "\n\nPENGETAHUAN SITUS (isi garudanexa.com)\n\n"
+        . ($knowledge !== '' ? $knowledge : '(tidak tersedia; pakai DATA TERKINI)');
+    return [
+        'model' => $model,
+        'max_tokens' => NEXA_MAX_TOKENS,
+        'messages' => array_merge([['role' => 'system', 'content' => $static . "\n\n" . $live]], $messages),
+        'stream' => false,
+    ];
+}
+
+/** Galat 400 "pakai max_completion_tokens" (model penalaran OpenAI) dari respons endpoint custom. */
+function nexa_custom_wants_completion_tokens($response): bool {
+    $error = is_array($response) && is_array($response['error'] ?? null) ? $response['error'] : null;
+    if ($error === null) return false;
+    if (($error['param'] ?? null) === 'max_tokens') return true;
+    return is_string($error['message'] ?? null) && stripos($error['message'], 'max_completion_tokens') !== false;
+}
+
+/**
+ * Teks jawaban dari respons chat completions, null bila tidak bisa dipakai (filter konten, kosong, hanya tool call).
+ * content berupa teks atau daftar bagian {type: text}; blok <think>…</think> di awal (model penalaran) dibuang.
+ */
+function nexa_custom_text($response): ?string {
+    $choice = is_array($response) ? ($response['choices'][0] ?? null) : null;
+    if (!is_array($choice) || ($choice['finish_reason'] ?? '') === 'content_filter') return null;
+    $content = is_array($choice['message'] ?? null) ? ($choice['message']['content'] ?? null) : null;
+    if (is_array($content)) {
+        $parts = [];
+        foreach ($content as $part) {
+            if (is_array($part) && is_string($part['text'] ?? null) && in_array($part['type'] ?? 'text', ['text', 'output_text'], true)) {
+                $parts[] = $part['text'];
+            }
+        }
+        $content = implode('', $parts);
+    }
+    if (!is_string($content)) return null;
+    $text = trim(preg_replace('#^[ \t\n\r\x0B\f]*<think>.*?</think>#s', '', $content) ?? $content);
+    return $text === '' ? null : $text;
+}
+
+/** Satu POST ke endpoint custom: [kode HTTP (0 = putus/lewat waktu), JSON respons atau null, galat cURL]. */
+function nexa_custom_post(string $url, string $apiKey, array $body): array {
+    $headers = ['Content-Type: application/json', 'Accept: application/json'];
+    if ($apiKey !== '') $headers[] = 'Authorization: Bearer ' . $apiKey;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE),
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => NEXA_TIMEOUT,
+        CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+        CURLOPT_FOLLOWLOCATION => false,
+    ]);
+    $raw = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    return [$code, is_string($raw) ? json_decode($raw, true) : null, $err];
+}
+
+/**
+ * Panggil endpoint custom: Authorization Bearer bila ada kunci, tanpa mengikuti redirect (tujuan tetap alamat yang
+ * sudah diperiksa). ['reply' => teks] atau ['error' => alasan untuk log]. Tidak pernah melempar.
+ */
+function nexa_custom_reply(string $url, string $apiKey, array $body): array {
+    [$code, $response, $err] = nexa_custom_post($url, $apiKey, $body);
+    // Model penalaran OpenAI menolak max_tokens (galat 400 langsung): ulangi sekali dengan max_completion_tokens
+    if ($code === 400 && isset($body['max_tokens']) && nexa_custom_wants_completion_tokens($response)) {
+        unset($body['max_tokens']);
+        $body['max_completion_tokens'] = NEXA_CUSTOM_MAX_COMPLETION_TOKENS;
+        [$code, $response, $err] = nexa_custom_post($url, $apiKey, $body);
+    }
+    if ($code !== 200) {
+        $error = is_array($response) && is_array($response['error'] ?? null) ? $response['error'] : null;
+        $kind = $error !== null ? ($error['type'] ?? $error['code'] ?? '') : '';
+        $detail = is_string($kind) || is_int($kind) ? (string)$kind : '';
+        return ['error' => 'custom HTTP ' . $code . ($detail !== '' ? " $detail" : '') . ($err !== '' ? " $err" : '')];
+    }
+    $text = nexa_custom_text($response);
+    if ($text === null) {
+        $finish = is_array($response) ? ($response['choices'][0]['finish_reason'] ?? '?') : '?';
+        return ['error' => 'custom no usable text (finish_reason ' . (is_string($finish) ? $finish : '?') . ')'];
+    }
+    return ['reply' => $text];
 }
 
 /**
@@ -552,6 +771,8 @@ function pf_nexa_chat(mysqli $conn, array $input, ?array $user): array {
     if ($active['provider'] === 'gemini') {
         $model = env_value('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
         $result = nexa_gemini_reply($active['key'], nexa_gemini_models($model), nexa_gemini_body(nexa_knowledge(), $live, $messages));
+    } elseif ($active['provider'] === 'custom') {
+        $result = nexa_custom_reply($active['url'], $active['key'], nexa_custom_body($active['model'], nexa_knowledge(), $live, $messages));
     } else {
         $model = env_value('NEXA_MODEL', NEXA_DEFAULT_MODEL);
         $result = nexa_claude_reply($active['key'], nexa_request_body($model, nexa_knowledge(), $live, $messages));
