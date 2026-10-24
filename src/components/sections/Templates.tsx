@@ -1,10 +1,9 @@
-import React, { useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, LayoutTemplate, RotateCw, Search, SearchX, X } from 'lucide-react';
+import React, { useCallback, useDeferredValue, useEffect, useId, useMemo, useState } from 'react';
+import { AlertCircle, ArrowRight, LayoutTemplate, RotateCw, SearchX } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CATEGORY_LIST, templatesInCategory } from '../../content/categories';
 import { ApiError, apiGet, peekApiGet } from '../../lib/api';
 import { preloadNow } from '../../lib/preload';
-import { HUB_PATHS, categoryPath } from '../../seo/paths';
+import { HUB_PATHS } from '../../seo/paths';
 import type { Template } from '../../types/platform';
 import { SectionHeading } from '../ui/SectionHeading';
 import {
@@ -21,6 +20,7 @@ import {
 } from './templates/catalog';
 import { IncludesStrip } from './templates/IncludesStrip';
 import { SortMenu } from './templates/SortMenu';
+import { TemplateSearchBox } from './templates/TemplateSearchBox';
 import { TemplateShot, TemplateShotSkeleton } from './templates/TemplateShot';
 
 interface TemplatesResponse {
@@ -73,8 +73,8 @@ const CUSTOM_HREF = '/pesan-custom?layanan=website';
  * tab kategori (≥ 2 kategori) → kolom cari besar (≥ 4 template) → chip "Populer:" + "Urutkan" (≥ 6 template) →
  * grid kartu (gambar 4:3, tanpa garis & shadow). Katalog kecil cukup menampilkan jumlah template di atas grid.
  * Data: `get_templates`. Klik gambar/nama → /template/:slug, demo → demo_url atau /demo/:slug, pesan → /pesan/:slug.
- * Di bawah grid: "Lihat Semua Template" → /template dan tautan nyata ke halaman kategori (SEO-PLAN §5.5 langkah 4);
- * tab kategori di atas tetap filter di tempat.
+ * "Lihat Semua Template" (ikon tata letak) → /template sebaris dengan tab kategori; tab kategori = filter di tempat.
+ * Halaman kategori tertaut dari footer di setiap halaman (SEO-PLAN §5.5 langkah 4).
  */
 const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, number = '01' }) => {
   const [state, setState] = useState<LoadState>(initialState);
@@ -84,8 +84,6 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
   const [sort, setSort] = useState<SortKey>('rekomendasi');
   const [limit, setLimit] = useState(PAGE_SIZE);
   const deferredQuery = useDeferredValue(query);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const inputId = useId();
   const titleId = useId();
 
   useEffect(() => {
@@ -164,12 +162,6 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
   };
   const togglePopular = (label: string) => changeQuery(normalizedQuery === normalize(label) ? '' : label);
 
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    // Hasil sudah tersaring saat mengetik; di layar sentuh tutup keyboard agar hasil terlihat
-    if (window.matchMedia?.('(pointer: coarse)').matches) inputRef.current?.blur();
-  };
-
   const countText = filtered
     ? `${results.length} dari ${templates.length} template`
     : `${templates.length} template`;
@@ -177,11 +169,6 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
   const panel = 'flex flex-col items-center rounded-[24px] bg-surface px-6 py-12 text-center ring-1 ring-inset ring-line sm:py-16';
   const ready = state.status === 'ready';
   const availableTitleId = `${titleId}-tersedia`;
-  // Halaman kategori yang punya template (tautan crawlable; sama di HTML prerender karena data dari preload)
-  const categoryPages = useMemo(
-    () => CATEGORY_LIST.filter((meta) => templatesInCategory(templates, meta.slug).length > 0),
-    [templates],
-  );
 
   return (
     <section
@@ -196,13 +183,8 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
           title="Pilih"
           accent="Template"
           titleId={titleId}
-          action={
-            // HP: ajakan ini pindah ke bawah grid, jadi kartu pertama naik ke layar pertama
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 max-sm:hidden lg:justify-end">
-              <p className="text-sm text-muted">Butuh desain custom?</p>
-              <CustomLink />
-            </div>
-          }
+          // Biasanya tombol katalog duduk sejajar tab kategori; tanpa tab (katalog kecil) tetap di samping judul
+          action={!showTabs && state.status !== 'loading' ? <CatalogLink /> : undefined}
         />
 
         {state.status === 'loading' && <ToolbarSkeleton />}
@@ -211,77 +193,31 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
           <div className="mt-8 sm:mt-10 xl:mt-12">
             {/* Tab kategori (seperti Shots / Designers / Services di Dribbble), hanya bila ada pilihan nyata */}
             {showTabs && (
-              // Padding samping (HP: selebar gutter, desktop: 4px) agar outline fokus tidak terpotong overflow
-              <div className={`-mx-5 overflow-x-auto px-5 sm:-mx-1 sm:px-1 ${NO_SCROLLBAR}`}>
-                <div className="flex w-max gap-2 py-1.5" role="group" aria-label="Kategori template">
-                  {[ALL, ...categories].map((name) => (
-                    // chip-site: aktif = aria-pressed (biru solid), jelas beda dari chip kata kunci "Populer" (tonal)
-                    <button
-                      key={name}
-                      type="button"
-                      aria-pressed={category === name}
-                      onClick={() => changeCategory(name)}
-                      className="chip-site max-sm:h-8 max-sm:px-3 max-sm:text-xs max-sm:after:-inset-y-1.5"
-                    >
-                      {name === ALL ? 'Semua' : name}
-                    </button>
-                  ))}
+              // Tab di kiri, "Lihat Semua Template" di kanan pada baris yang sama (pemilik 2026-10-24)
+              <div className="flex items-center gap-4">
+                {/* Padding kiri (HP: selebar gutter, desktop: 4px) agar outline fokus tidak terpotong overflow */}
+                <div className={`-ml-5 min-w-0 flex-1 overflow-x-auto pl-5 pr-1 sm:-ml-1 sm:pl-1 ${NO_SCROLLBAR}`}>
+                  <div className="flex w-max gap-2 py-1.5" role="group" aria-label="Kategori template">
+                    {[ALL, ...categories].map((name) => (
+                      // chip-site: aktif = aria-pressed (biru solid), jelas beda dari chip kata kunci "Populer" (tonal)
+                      <button
+                        key={name}
+                        type="button"
+                        aria-pressed={category === name}
+                        onClick={() => changeCategory(name)}
+                        className="chip-site max-sm:h-8 max-sm:px-3 max-sm:text-xs max-sm:after:-inset-y-1.5"
+                      >
+                        {name === ALL ? 'Semua' : name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+                <CatalogLink />
               </div>
             )}
 
-            {/* Kolom cari besar, tombol bulat biru di kanan */}
-            {showSearch && (
-              <form
-                role="search"
-                aria-label="Cari template"
-                onSubmit={onSubmit}
-                className={`flex h-12 items-center gap-1 rounded-full pr-1.5 ring-1 ring-inset ring-transparent transition-[background-color,box-shadow,outline-color] focus-within:bg-surface focus-within:ring-primary focus-within:outline-4 focus-within:outline-brand-100 sm:h-14 sm:pr-2 [&:not(:focus-within):hover]:bg-fg/7 ${showTabs ? 'mt-3 sm:mt-4' : ''} ${TINT}`}
-              >
-                <label htmlFor={inputId} className="sr-only">
-                  Cari template
-                </label>
-                <input
-                  ref={inputRef}
-                  id={inputId}
-                  type="search"
-                  value={query}
-                  onChange={(event) => changeQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape' && query) {
-                      event.preventDefault();
-                      changeQuery('');
-                    }
-                  }}
-                  placeholder="Cari template website…"
-                  enterKeyHint="search"
-                  autoComplete="off"
-                  spellCheck={false}
-                  // placeholder text-muted: ±6,8:1 di atas isian abu (text-subtle hanya ±4,3:1, di bawah WCAG AA)
-                  className="h-full min-w-0 flex-1 rounded-full bg-transparent pl-5 text-[16px] text-fg outline-none placeholder:text-muted focus-visible:outline-none sm:pl-7 [&::-webkit-search-cancel-button]:appearance-none"
-                />
-                {query && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      changeQuery('');
-                      inputRef.current?.focus();
-                    }}
-                    aria-label="Hapus pencarian"
-                    className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-subtle transition-colors before:absolute before:-inset-1.5 hover:bg-line hover:text-fg"
-                  >
-                    <X className="h-4 w-4" aria-hidden />
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  aria-label="Cari"
-                  className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover active:bg-brand-800 max-sm:before:absolute max-sm:before:-inset-1 sm:h-11 sm:w-11"
-                >
-                  <Search className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
-                </button>
-              </form>
-            )}
+            {/* Kolom cari besar, tombol bulat biru di kanan (sama dengan katalog /template) */}
+            {showSearch && <TemplateSearchBox value={query} onChange={changeQuery} className={showTabs ? 'mt-3 sm:mt-4' : ''} />}
 
             {/* "Sudah termasuk" tepat di bawah kolom cari (pil penuh di desktop) */}
             <IncludesStrip className={showTabs || showSearch ? 'mt-3 sm:mt-4' : ''} />
@@ -445,38 +381,9 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
             </>
           )}
 
-          {/* Katalog lengkap & halaman kategori: tautan nyata (bukan filter), terbaca crawler */}
-          {ready && templates.length > 0 && (
-            <div className="mt-10 flex flex-col items-center gap-4 text-center sm:mt-14">
-              <Link to={HUB_PATHS.catalog} className="btn btn-outline">
-                <LayoutTemplate className="h-4 w-4" aria-hidden />
-                Lihat Semua Template
-              </Link>
-              {categoryPages.length > 0 && (
-                <nav aria-label="Halaman kategori template" className="text-[13px] text-muted sm:text-sm">
-                  <span className="mr-1">Per kategori:</span>
-                  <ul className="inline">
-                    {categoryPages.map((meta, i) => (
-                      <li key={meta.slug} className="inline">
-                        {i > 0 && <span aria-hidden> · </span>}
-                        <Link to={categoryPath(meta.slug)} className="link-site inline-flex min-h-10 items-center sm:min-h-0">
-                          {meta.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-              )}
-            </div>
-          )}
+          {/* Tombol "Lihat Semua Template" & daftar "Per kategori:" di bawah grid dihapus (pemilik 2026-10-24): katalog
+              lewat tombol di baris tab; halaman kategori tetap tertaut dari footer di setiap halaman dan dari /template */}
 
-          {/* HP: ajakan custom dari kepala section pindah ke sini (panel kosong/tidak cocok sudah punya tombolnya) */}
-          {(shown.length > 0 || state.status === 'error') && (
-            <div className="mt-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 sm:hidden">
-              <p className="text-sm text-muted">Butuh desain custom?</p>
-              <CustomLink />
-            </div>
-          )}
         </div>
       </div>
     </section>
@@ -491,6 +398,18 @@ const CustomLink: React.FC<{ primary?: boolean; className?: string }> = ({ prima
   </Link>
 );
 
+/**
+ * Ke katalog lengkap (pemilik 2026-10-24, menggantikan "Butuh desain custom? Pesan Custom"): satu-satunya tombol katalog
+ * di section (yang di bawah grid dihapus), jadi tampil juga di HP. Ikon tata letak di kiri seperti tombol lama di bawah
+ * grid; setinggi chip kategori (btn-sm) agar sebaris rapi.
+ */
+const CatalogLink: React.FC = () => (
+  <Link to={HUB_PATHS.catalog} className="btn btn-sm btn-outline shrink-0">
+    <LayoutTemplate className="h-4 w-4" aria-hidden />
+    Lihat Semua Template
+  </Link>
+);
+
 /** Placeholder toolbar saat memuat, agar tinggi section tidak meloncat. */
 const ToolbarSkeleton: React.FC = () => {
   const block = TINT;
@@ -500,6 +419,7 @@ const ToolbarSkeleton: React.FC = () => {
         {['w-16', 'w-32', 'w-28'].map((width) => (
           <span key={width} className={`h-8 rounded-full sm:h-10 ${width} ${block}`} />
         ))}
+        <span className={`ml-auto h-8 w-40 shrink-0 rounded-full sm:h-9 sm:w-48 ${block}`} />
       </div>
       <div className={`mt-3 h-12 rounded-full sm:mt-4 sm:h-14 ${block}`} />
       <div className="mt-2 flex items-center gap-2 py-2 sm:mt-3">

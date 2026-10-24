@@ -171,16 +171,31 @@ describe('Templates (#templates), katalog kecil', SLOW, () => {
     expect(within(card).getByText(/kali dilihat/)).toBeInTheDocument();
   });
 
-  it('ajakan custom memakai label glosarium "Pesan Custom" (kepala section; HP: di bawah grid)', async () => {
+  it('kepala section: "Lihat Semua Template" ke /template (bukan lagi ajakan Pesan Custom, pemilik 2026-10-24)', async () => {
     catalog = { templates: SMALL(), categories: ['Company Profile'] };
     const section = await renderCatalog();
-    const links = within(section).getAllByRole('link', { name: /Pesan Custom/ });
-    expect(links).toHaveLength(2);
-    links.forEach((link) => expect(link).toHaveAttribute('href', '/pesan-custom?layanan=website'));
-    expect(links[0].parentElement?.className).toContain('max-sm:hidden');
-    expect(links[1].parentElement?.className).toContain('sm:hidden');
-    expect(within(section).getAllByText('Butuh desain custom?')).toHaveLength(2);
-    expect(section).not.toHaveTextContent(/khusus/);
+    // Tanpa tab kategori: satu tombol di samping judul (tombol di bawah grid & "Per kategori:" dihapus, pemilik 2026-10-24)
+    const link = within(section).getByRole('link', { name: /Lihat Semua Template/ });
+    expect(link).toHaveAttribute('href', '/template');
+    expect(link.querySelector('svg')).not.toBeNull();
+    expect(within(section).queryByRole('navigation', { name: 'Halaman kategori template' })).toBeNull();
+    expect(within(section).queryByRole('link', { name: /Pesan Custom/ })).toBeNull();
+    expect(section).not.toHaveTextContent(/Butuh desain custom\?|khusus/);
+  });
+
+  it('ada tab kategori: "Lihat Semua Template" sebaris dengan tab, bukan di samping judul', async () => {
+    catalog = { templates: LARGE(), categories: ['Company Profile', 'Landing Page', 'Toko Online'] };
+    const section = await renderCatalog();
+    // Satu-satunya tombol katalog di section, jadi juga tampil di HP
+    const link = within(section).getByRole('link', { name: /Lihat Semua Template/ });
+    expect(link.className).not.toContain('max-sm:hidden');
+    const tabs = within(section).getByRole('group', { name: 'Kategori template' });
+    // Tab & tombol berbagi satu baris flex
+    const row = link.parentElement!;
+    expect(row).toContainElement(tabs);
+    expect(row.className).toContain('items-center');
+    expect(within(section).getByRole('heading', { level: 2 }).parentElement).not.toContainElement(link);
+    expect(section.querySelectorAll('a[href^="/template/kategori/"]')).toHaveLength(0);
   });
 });
 
@@ -233,8 +248,8 @@ describe('Templates (#templates), katalog besar', SLOW, () => {
 
     const available = within(section).getByRole('list', { name: 'Template yang tersedia' });
     expect(within(available).getAllByRole('heading', { level: 4 })).toHaveLength(7);
-    // Ajakan HP di bawah grid tidak diulang (panel sudah punya tombolnya)
-    expect(within(section).queryAllByText('Butuh desain custom?')).toHaveLength(1);
+    // Ajakan "Butuh desain custom?" sudah tidak ada di section (pemilik 2026-10-24); panel tanpa hasil punya tombolnya sendiri
+    expect(within(section).queryAllByText('Butuh desain custom?')).toHaveLength(0);
 
     fireEvent.click(reset);
     await waitFor(() => expect(within(section).getByRole('status')).toHaveTextContent('7 template'));
