@@ -25,8 +25,9 @@ import bcrypt from 'bcryptjs';
 import { issueToken, createLimiter, isAuthConfigured } from '../security.js';
 import { uploadBase64ToS3, parseUpload, deleteFromS3, S3_PUBLIC_URL } from '../s3-client.js';
 import {
-  NEXA_DEFAULT_DAILY_LIMIT, NEXA_DEFAULT_MODEL, NEXA_PER_DAY, NEXA_PER_HOUR, nexaCleanMessages, nexaClaudeReply, nexaIpBucket,
-  nexaKnowledge, nexaLiveFacts, nexaRequestBody,
+  NEXA_CONFIG_KEYS, NEXA_DEFAULT_DAILY_LIMIT, NEXA_DEFAULT_MODEL, NEXA_GEMINI_DEFAULT_MODEL, NEXA_PER_DAY, NEXA_PER_HOUR,
+  NexaConfigError, nexaCleanMessages, nexaClaudeReply, nexaConfigOut, nexaConfigWrites, nexaGeminiBody, nexaGeminiReply,
+  nexaIpBucket, nexaKnowledge, nexaLiveFacts, nexaRequestBody, nexaResolveProvider,
 } from './nexa.js';
 
 const STATUS_LABEL = {
@@ -108,6 +109,9 @@ const HANDLERS = {
   showcase_like: showcaseLike,
   showcase_view: showcaseView,
   nexa_chat: nexaChat, // backend/modules/nexa.js
+  // admin: tab "Tanya Nexa" (kunci API Claude/Gemini; hanya admin lewat ADMIN_ACTIONS)
+  nexa_get_config: nexaGetConfig,
+  nexa_save_config: nexaSaveConfig,
   // customer (own data only)
   customer_create_order: customerCreateOrder,
   customer_get_order_quote: customerGetOrderQuote,
@@ -291,8 +295,10 @@ async function nexaChat({ pool, body, req }) {
   // body = isi POST seperti json_decode PHP (Map), jadi daftar & kunci dibaca persis seperti pf_nexa_chat
   const messages = nexaCleanMessages(body instanceof Map ? body.get('messages') : undefined);
   if (messages === null) throw new ApiError('Pesan untuk Nexa tidak valid.', 400, 'VALIDATION');
-  const apiKey = envValue('ANTHROPIC_API_KEY');
-  if (apiKey === '') throw new ApiError('Nexa AI belum aktif.', 503, 'NEXA_OFFLINE');
+  // Penyedia dari pengaturan admin (tab Tanya Nexa) + cadangan .env; widget dimatikan / tanpa kunci → jawaban bawaan
+  const cfg = await nexaConfigRows(pool);
+  const active = (cfg.nexa_enabled ?? '1') === '0' ? null : nexaResolveProvider(cfg, envValue('ANTHROPIC_API_KEY'), envValue('GEMINI_API_KEY'));
+  if (active === null) throw new ApiError('Nexa AI belum aktif.', 503, 'NEXA_OFFLINE');
 
   const visitor = nexaIpBucket(clientIp(req));
   const hourKey = `nexa|${visitor}`;
@@ -313,13 +319,54 @@ async function nexaChat({ pool, body, req }) {
   }
   const templates = await dbAll(pool, "SELECT name, slug, category, price FROM templates WHERE status = 'published' ORDER BY sort_order ASC, id ASC");
 
-  const model = envValue('NEXA_MODEL', NEXA_DEFAULT_MODEL);
-  const result = await nexaClaudeReply(apiKey, nexaRequestBody(model, nexaKnowledge(), nexaLiveFacts(templates, settings), messages));
+  const live = nexaLiveFacts(templates, settings);
+  let result;
+  if (active.provider === 'gemini') {
+    const model = envValue('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
+    result = await nexaGeminiReply(active.key, model, nexaGeminiBody(nexaKnowledge(), live, messages));
+  } else {
+    const model = envValue('NEXA_MODEL', NEXA_DEFAULT_MODEL);
+    result = await nexaClaudeReply(active.key, nexaRequestBody(model, nexaKnowledge(), live, messages));
+  }
   if (result.reply === undefined) {
     console.error(`[nexa] ${result.error}`);
     throw new ApiError('Nexa AI sedang tidak tersedia.', 503, 'NEXA_UNAVAILABLE');
   }
   return { reply: result.reply };
+}
+
+/** Baris setting nexa_* dari database (= nexa_config_rows di nexa.php). */
+async function nexaConfigRows(pool) {
+  const placeholders = NEXA_CONFIG_KEYS.map(() => '?').join(', ');
+  const rows = {};
+  for (const row of await dbAll(pool, `SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN (${placeholders})`, NEXA_CONFIG_KEYS)) {
+    rows[row.setting_key] = String(row.setting_value ?? '');
+  }
+  return rows;
+}
+
+// Tab admin "Tanya Nexa": baca konfigurasi (kunci hanya tampil 4 karakter terakhir) — = pf_nexa_get_config
+async function nexaGetConfig({ pool }) {
+  return { config: nexaConfigOut(await nexaConfigRows(pool), envValue('ANTHROPIC_API_KEY') !== '', envValue('GEMINI_API_KEY') !== '') };
+}
+
+// Tab admin "Tanya Nexa": simpan penyedia, saklar per penyedia, dan kunci API — = pf_nexa_save_config
+async function nexaSaveConfig({ pool, body }) {
+  let plan;
+  try {
+    plan = nexaConfigWrites(body ?? {});
+  } catch (err) {
+    if (err instanceof NexaConfigError) throw new ApiError(err.message, err.status, err.code, err.errors);
+    throw err;
+  }
+  for (const [key, value] of Object.entries(plan.writes)) {
+    await dbRun(pool, `INSERT INTO hero_settings (setting_key, setting_value) VALUES (?, ?)
+                       ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`, [key, value]);
+  }
+  for (const key of plan.deletes) {
+    await dbRun(pool, 'DELETE FROM hero_settings WHERE setting_key = ?', [key]);
+  }
+  return { config: nexaConfigOut(await nexaConfigRows(pool), envValue('ANTHROPIC_API_KEY') !== '', envValue('GEMINI_API_KEY') !== '') };
 }
 
 async function showcaseView({ pool, input, req }) {

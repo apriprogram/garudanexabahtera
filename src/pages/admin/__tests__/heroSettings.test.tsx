@@ -1109,6 +1109,18 @@ function mockSiteApi({
       const body = JSON.parse(String(init.body)) as SavedBody;
       posts.push(body);
       if (post) return post(body);
+      // Tab Tanya Nexa: konfigurasi AI (kunci hanya topeng)
+      if ((body as { action?: string }).action === 'nexa_get_config' || (body as { action?: string }).action === 'nexa_save_config') {
+        return json({
+          success: true,
+          config: {
+            enabled: true,
+            provider: 'anthropic',
+            anthropic: { on: true, key_masked: '', env_key: false },
+            gemini: { on: true, key_masked: '••••9988', env_key: false },
+          },
+        });
+      }
       Object.assign(stored, body.settings);
       return json({ success: true });
     }
@@ -1439,6 +1451,7 @@ describe('SiteSettings: tab mengikuti website (pemilik 2026-10-24)', () => {
       'Footer',
       'Harga template',
       'Panduan',
+      'Tanya Nexa',
     ]);
 
     // Panduan: saklar (tautan navbar & footer), teks pembuka, daftar artikel dengan status
@@ -1454,5 +1467,36 @@ describe('SiteSettings: tab mengikuti website (pemilik 2026-10-24)', () => {
     for (const key of ['products_data', 'products_categories', 'pricing_data', 'pricing_title', 'pricing_subtitle']) {
       expect(posts[0].settings).not.toHaveProperty(key);
     }
+  });
+
+  it('tab Tanya Nexa: saklar widget → nexa_enabled; kunci & penyedia disimpan lewat nexa_save_config (kunci bertopeng)', async () => {
+    const { posts } = mockSiteApi({ stored: {} });
+    renderSite();
+    const nav = screen.getByRole('navigation', { name: 'Bagian pengaturan' });
+    fireEvent.click(within(nav).getByRole('button', { name: 'Tanya Nexa' }));
+
+    // Konfigurasi dimuat saat tab dibuka; kunci lama hanya tampil 4 karakter terakhir
+    expect(await screen.findByText(/Kunci tersimpan: ••••9988/)).toBeInTheDocument();
+    expect((posts[0] as { action?: string }).action).toBe('nexa_get_config');
+
+    // Pilih penyedia Gemini, matikan Claude, isi kunci Gemini baru
+    fireEvent.click(screen.getAllByRole('tab', { name: 'Gemini (Google)' })[0]);
+    fireEvent.click(screen.getAllByRole('switch', { name: 'Aktif' })[0]); // Claude → Nonaktif (urutan: Claude dulu)
+    fireEvent.change(screen.getByLabelText('Kunci API Gemini (Google)'), { target: { value: '  AIzaBaru123456  ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan pengaturan AI' }));
+    await waitFor(() => expect(posts).toHaveLength(2));
+    expect(posts[1]).toMatchObject({
+      action: 'nexa_save_config',
+      provider: 'gemini',
+      anthropic: { on: false },
+      gemini: { on: true, key: 'AIzaBaru123456' },
+    });
+    expect((posts[1] as unknown as { anthropic: { key?: unknown } }).anthropic).not.toHaveProperty('key');
+
+    // Saklar kanan atas menulis nexa_enabled lewat simpan global
+    fireEvent.click(screen.getByRole('switch', { name: 'Tampil di website' }));
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(3));
+    expect(posts[2].settings.nexa_enabled).toBe('0');
   });
 });

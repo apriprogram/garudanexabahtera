@@ -290,6 +290,15 @@ describe('FloatingWhatsApp', () => {
     expect(label.className).toContain('right-full');
   });
 
+  it('chat dimatikan admin (chat=false): maskot hilang, tombol "Kembali ke atas" tetap bekerja', async () => {
+    renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" backToTop chat={false} />);
+    expect(screen.queryByRole('button', { name: 'Tanya Nexa, asisten AI' })).toBeNull();
+    Object.defineProperty(window, 'scrollY', { value: 600, configurable: true });
+    fireEvent.scroll(window);
+    expect(await screen.findByRole('button', { name: 'Kembali ke atas' })).toBeInTheDocument();
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+  });
+
   it('tombol "Kembali ke atas" (beranda): muncul setelah menggulir, kaca buram, gulir halus ke atas', async () => {
     const scrollTo = vi.fn();
     vi.stubGlobal('scrollTo', scrollTo);

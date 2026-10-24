@@ -45,12 +45,20 @@ vi.mock('bcryptjs', () => ({ default: { hashSync: () => 'dummy', compare: async 
 
 import {
   NEXA_INSTRUCTIONS,
+  NexaConfigError,
   nexaClaudeReply,
   nexaCleanMessages,
+  nexaConfigOut,
+  nexaConfigWrites,
+  nexaGeminiBody,
+  nexaGeminiReply,
+  nexaGeminiText,
   nexaIpBucket,
   nexaLiveFacts,
+  nexaMaskKey,
   nexaReplyText,
   nexaRequestBody,
+  nexaResolveProvider,
 } from '../../backend/modules/nexa.js';
 import { handlePlatformAction } from '../../backend/modules/templates.js';
 
@@ -120,6 +128,53 @@ const IP_CASES = [
   '',
 ];
 
+// [rows hero_settings nexa_*, env ANTHROPIC_API_KEY, env GEMINI_API_KEY]
+const RESOLVE_CASES: [Record<string, string>, string, string][] = [
+  [{}, '', ''],
+  [{}, 'env-anthropic-key', ''],
+  [{ nexa_provider: 'gemini' }, 'env-anthropic-key', ''],
+  [{ nexa_provider: 'gemini', nexa_gemini_key: ' g-key-123456 ' }, 'env-anthropic-key', ''],
+  [{ nexa_provider: 'anthropic', nexa_anthropic_on: '0', nexa_gemini_key: 'g-key-123456' }, 'env-anthropic-key', ''],
+  [{ nexa_anthropic_key: 'db-key-123456' }, 'env-anthropic-key', ''],
+  [{ nexa_provider: 'gemini', nexa_gemini_on: '0' }, '', 'env-gemini-key'],
+  [{ nexa_enabled: '0' }, 'env-anthropic-key', ''],
+  [{ nexa_provider: 'aneh' }, '', 'env-gemini-key'],
+];
+
+const MASK_CASES = ['', 'abc', 'sk-ant-abcd1234', '😀😀😀😀😀'];
+
+const CONFIG_OUT_CASES: [Record<string, string>, boolean, boolean][] = [
+  [{}, false, false],
+  [{ nexa_enabled: '0', nexa_provider: 'gemini', nexa_anthropic_on: '0', nexa_anthropic_key: 'sk-ant-abcd1234', nexa_gemini_key: ' g-key-999888 ' }, true, false],
+];
+
+const SAVE_CASES: unknown[] = [
+  { provider: 'gemini', anthropic: { on: false, key: '' }, gemini: { on: true, key: '  AIzaSyExample12345  ' } },
+  { provider: 'anthropic', anthropic: { key: null }, gemini: {} },
+  {},
+  { provider: 'openai' },
+  { provider: 'anthropic', anthropic: { key: 'pendek' } },
+  { provider: 'anthropic', anthropic: { key: 'ada spasi di dalamnya ya' } },
+  { provider: 'anthropic', anthropic: 'bukan-objek' },
+  { provider: 'anthropic', anthropic: { on: '0' }, gemini: { on: false } },
+  // [] = {} di json_decode assoc PHP: diterima, saklar bawaan hidup
+  { provider: 'anthropic', anthropic: [], gemini: { on: true } },
+];
+
+const GEMINI_BODY_CASES: [string, string, { role: string; content: string }[]][] = [
+  ['ISI', 'DATA', [{ role: 'user', content: 'Halo' }, { role: 'assistant', content: 'Hai!' }, { role: 'user', content: 'Harga?' }]],
+  ['', 'DATA', [{ role: 'user', content: 'Halo' }]],
+];
+
+const GEMINI_TEXT_CASES: unknown[] = [
+  { candidates: [{ finishReason: 'STOP', content: { parts: [{ text: ' Halo ' }, { text: 'lagi.' }] } }] },
+  { candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: 'Sebagian' }] } }] },
+  { candidates: [{ finishReason: 'SAFETY', content: { parts: [{ text: 'X' }] } }] },
+  { candidates: [{ content: { parts: [] } }] },
+  { candidates: [] },
+  null,
+];
+
 const REPLY_CASES: unknown[] = [
   { stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: '  Halo!  ' }, { type: 'text', text: 'Kedua.' }] },
   { stop_reason: 'refusal', content: [{ type: 'text', text: 'Tidak.' }] },
@@ -140,15 +195,48 @@ function client_ip() { return '203.0.113.9'; }
 function rate_limit_wait($key, $max) { return 0; }
 function rate_limit_hit($key, $window) {}
 function too_many_attempts($seconds) { throw new ApiError('Terlalu banyak percobaan.', 429); }
-function db_all($conn, $sql, $params = []) { throw new Exception('no database in this test'); }
+function db_all($conn, $sql, $params = []) {
+    if (strpos($sql, 'setting_key IN') === false) throw new Exception('no database in this test');
+    $rows = [];
+    foreach (($GLOBALS['rows'] ?? []) as $key => $value) $rows[] = ['setting_key' => $key, 'setting_value' => $value];
+    return $rows;
+}
+function db_run($conn, $sql, $params = []) {
+    $GLOBALS['writes'][] = [preg_replace('/\s+/', ' ', trim($sql)), $params];
+    // Tulisan upsert/hapus langsung terlihat di "database" untuk pembacaan ulang config
+    if (stripos($sql, 'INSERT') === 0) $GLOBALS['rows'][$params[0]] = $params[1];
+    if (stripos($sql, 'DELETE') === 0) unset($GLOBALS['rows'][$params[0]]);
+}
 require getenv('NEXA_PHP');
 $in = json_decode(stream_get_contents(STDIN), true);
-$out = ['instructions' => NEXA_INSTRUCTIONS, 'live' => [], 'clean' => [], 'body' => [], 'reply' => [], 'ip' => [], 'handler' => []];
+$out = ['instructions' => NEXA_INSTRUCTIONS, 'live' => [], 'clean' => [], 'body' => [], 'reply' => [], 'ip' => [], 'handler' => [],
+    'resolve' => [], 'mask' => [], 'cfgout' => [], 'save' => [], 'gbody' => [], 'gtext' => [], 'config_handler' => []];
 foreach ($in['live'] as $c) $out['live'][] = nexa_live_facts($c['templates'], $c['settings']);
 foreach ($in['clean'] as $c) $out['clean'][] = nexa_clean_messages($c);
 foreach ($in['body'] as $c) $out['body'][] = nexa_request_body($c[0], $c[1], $c[2], $c[3]);
 foreach ($in['reply'] as $c) $out['reply'][] = nexa_reply_text($c);
 foreach ($in['ip'] as $c) $out['ip'][] = nexa_ip_bucket($c);
+foreach ($in['resolve'] as $c) $out['resolve'][] = nexa_resolve_provider($c[0], $c[1], $c[2]);
+foreach ($in['mask'] as $c) $out['mask'][] = nexa_mask_key($c);
+foreach ($in['cfgout'] as $c) $out['cfgout'][] = nexa_config_out($c[0], $c[1], $c[2]);
+foreach ($in['save'] as $c) {
+    try { $out['save'][] = ['ok' => nexa_config_writes(is_array($c) ? $c : [])]; }
+    catch (ApiError $e) { $out['save'][] = ['status' => $e->status, 'message' => $e->getMessage()]; }
+}
+foreach ($in['gbody'] as $c) $out['gbody'][] = nexa_gemini_body($c[0], $c[1], $c[2]);
+foreach ($in['gtext'] as $c) $out['gtext'][] = nexa_gemini_text($c);
+// Handler get/save config dengan database tiruan ($GLOBALS['rows'] + catatan tulis)
+foreach ($in['config_handler'] as $c) {
+    $GLOBALS['rows'] = $c['rows'];
+    $GLOBALS['writes'] = [];
+    try {
+        $fn = $c['action'] === 'nexa_get_config' ? 'pf_nexa_get_config' : 'pf_nexa_save_config';
+        $result = $fn(mysqli_init(), $c['input'], ['id' => 1, 'role' => 'admin']);
+        $out['config_handler'][] = ['ok' => $result, 'writes' => $GLOBALS['writes']];
+    } catch (ApiError $e) {
+        $out['config_handler'][] = ['status' => $e->status, 'message' => $e->getMessage(), 'writes' => $GLOBALS['writes']];
+    }
+}
 foreach ($in['handler'] as $c) {
     try { $out['handler'][] = ['ok' => pf_nexa_chat(mysqli_init(), $c, null)]; }
     catch (ApiError $e) { $out['handler'][] = ['status' => $e->status, 'code' => $e->errorCode]; }
@@ -167,9 +255,13 @@ const phpOk = php.stdout === 'ok' && spawnSync('php', ['-r', 'echo function_exis
 
 function runPhp() {
   const result = spawnSync('php', ['-d', 'display_errors=stderr', '-r', PHP_HARNESS], {
-    input: JSON.stringify({ live: LIVE_CASES, clean: CLEAN_CASES, body: BODY_CASES, reply: REPLY_CASES, ip: IP_CASES, handler: HANDLER_CASES }),
+    input: JSON.stringify({
+      live: LIVE_CASES, clean: CLEAN_CASES, body: BODY_CASES, reply: REPLY_CASES, ip: IP_CASES, handler: HANDLER_CASES,
+      resolve: RESOLVE_CASES, mask: MASK_CASES, cfgout: CONFIG_OUT_CASES, save: SAVE_CASES, gbody: GEMINI_BODY_CASES,
+      gtext: GEMINI_TEXT_CASES, config_handler: CONFIG_HANDLER_CASES,
+    }),
     encoding: 'utf8',
-    env: { ...process.env, NEXA_PHP, ANTHROPIC_API_KEY: '' },
+    env: { ...process.env, NEXA_PHP, ANTHROPIC_API_KEY: '', GEMINI_API_KEY: '' },
   });
   expect(result.stderr).toBe('');
   return JSON.parse(result.stdout) as Record<string, unknown[]> & { instructions: string };
@@ -197,7 +289,8 @@ async function runNodeHandler(input: Record<string, unknown>) {
   };
   const req = { method: 'POST', query: {}, ip: '203.0.113.9', user: null, rawBody: Buffer.from(JSON.stringify({ ...input, action: 'nexa_chat' })) };
   const pool = {
-    query() {
+    query({ sql }: { sql: string }) {
+      if (sql.includes('setting_key IN')) return [[]];
       throw new Error('no database in this test');
     },
   };
@@ -213,7 +306,29 @@ const nodeOutputs = () => ({
   body: BODY_CASES.map((c) => nexaRequestBody(...c)),
   reply: REPLY_CASES.map((c) => nexaReplyText(c)),
   ip: IP_CASES.map((c) => nexaIpBucket(c)),
+  resolve: RESOLVE_CASES.map(([rows, a, g]) => nexaResolveProvider(rows, a, g)),
+  mask: MASK_CASES.map((c) => nexaMaskKey(c)),
+  cfgout: CONFIG_OUT_CASES.map(([rows, a, g]) => nexaConfigOut(rows, a, g)),
+  save: SAVE_CASES.map((c) => {
+    try {
+      return { ok: nexaConfigWrites(c) };
+    } catch (err) {
+      if (err instanceof NexaConfigError) return { status: err.status, message: err.message };
+      throw err;
+    }
+  }),
+  gbody: GEMINI_BODY_CASES.map(([k, l, m]) => nexaGeminiBody(k, l, m)),
+  gtext: GEMINI_TEXT_CASES.map((c) => nexaGeminiText(c)),
 });
+
+/** Kasus handler get/save config (PHP; Node diuji terpisah dengan pool tiruan). */
+const CONFIG_HANDLER_CASES = [
+  { action: 'nexa_get_config', rows: {}, input: {} },
+  { action: 'nexa_get_config', rows: { nexa_enabled: '0', nexa_provider: 'gemini', nexa_gemini_key: 'g-key-999888' }, input: {} },
+  { action: 'nexa_save_config', rows: { nexa_anthropic_key: 'sk-lama-11112222' }, input: SAVE_CASES[0] },
+  { action: 'nexa_save_config', rows: { nexa_anthropic_key: 'sk-lama-11112222' }, input: SAVE_CASES[1] },
+  { action: 'nexa_save_config', rows: {}, input: SAVE_CASES[3] },
+];
 
 describe('Nexa AI: fungsi murni (Node)', () => {
   it('DATA TERKINI: harga normal & pembelian pertama (diskon 20%), slug sah saja, setting menimpa teks bawaan', () => {
@@ -297,7 +412,88 @@ describe('Nexa AI: fungsi murni (Node)', () => {
   it('teks jawaban: blok text saja; penolakan / kosong → null', () => {
     expect(nodeOutputs().reply).toEqual(['Halo!  \n\nKedua.', null, null, 'Sebagian', null]);
   });
+
+  it('penyedia AI: pilihan admin + saklar + kunci DB/.env; dua-duanya mati → null', () => {
+    expect(nodeOutputs().resolve).toEqual([
+      null,
+      { provider: 'anthropic', key: 'env-anthropic-key' },
+      { provider: 'anthropic', key: 'env-anthropic-key' }, // gemini dipilih tapi tanpa kunci → jatuh ke anthropic
+      { provider: 'gemini', key: 'g-key-123456' },
+      { provider: 'gemini', key: 'g-key-123456' }, // anthropic dimatikan → gemini
+      { provider: 'anthropic', key: 'db-key-123456' }, // kunci DB menang atas .env
+      null, // gemini dipilih tapi saklarnya mati; anthropic tanpa kunci
+      { provider: 'anthropic', key: 'env-anthropic-key' }, // nexa_enabled dicek handler, bukan resolver
+      { provider: 'gemini', key: 'env-gemini-key' }, // provider tak dikenal → bawaan anthropic (mati) → gemini
+    ]);
+  });
+
+  it('simpan config: kunci sah disimpan, null menghapus, kosong dibiarkan; masukan salah → 400', () => {
+    const save = nodeOutputs().save;
+    expect(save[0]).toEqual({
+      ok: {
+        writes: { nexa_provider: 'gemini', nexa_anthropic_on: '0', nexa_gemini_on: '1', nexa_gemini_key: 'AIzaSyExample12345' },
+        deletes: [],
+      },
+    });
+    expect(save[1]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1' }, deletes: ['nexa_anthropic_key'] } });
+    expect(save[2]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1' }, deletes: [] } });
+    expect(save[3]).toMatchObject({ status: 400 });
+    expect(save[4]).toMatchObject({ status: 400 });
+    expect(save[5]).toMatchObject({ status: 400 });
+    expect(save[6]).toMatchObject({ status: 400 });
+    expect(save[7]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '0', nexa_gemini_on: '0' }, deletes: [] } });
+    expect(save[8]).toEqual({ ok: { writes: { nexa_provider: 'anthropic', nexa_anthropic_on: '1', nexa_gemini_on: '1' }, deletes: [] } });
+  });
+
+  it('Gemini: system_instruction = blok system Claude, role assistant → model, teks dari parts', () => {
+    const [body] = nodeOutputs().gbody;
+    const anthropic = nexaRequestBody('claude-opus-5-5', 'ISI', 'DATA', GEMINI_BODY_CASES[0][2]);
+    expect(body.system_instruction.parts.map((p: { text: string }) => p.text)).toEqual(
+      (anthropic.system as { text: string }[]).map((block) => block.text),
+    );
+    expect(body.contents.map((c: { role: string }) => c.role)).toEqual(['user', 'model', 'user']);
+    expect(body.generationConfig).toEqual({ maxOutputTokens: 2048 });
+    expect(nodeOutputs().gtext).toEqual(['Halo lagi.', 'Sebagian', null, null, null, null]);
+  });
 });
+
+/** Handler config Node dengan pool tiruan: SELECT membaca `rows`, INSERT/DELETE mengubahnya + dicatat. */
+async function runNodeConfig(action: string, rows: Record<string, string>, input: unknown) {
+  const store = { ...rows };
+  const writes: [string, unknown[]][] = [];
+  const pool = {
+    query({ sql, values }: { sql: string; values?: unknown[] }) {
+      const clean = sql.replace(/\s+/g, ' ').trim();
+      if (clean.startsWith('SELECT')) return [Object.entries(store).map(([k, v]) => ({ setting_key: k, setting_value: v }))];
+      writes.push([clean, values ?? []]);
+      if (clean.startsWith('INSERT')) store[String(values?.[0])] = String(values?.[1]);
+      if (clean.startsWith('DELETE')) delete store[String(values?.[0])];
+      return [{ affectedRows: 1 }];
+    },
+  };
+  const res = {
+    statusCode: 200,
+    body: undefined as unknown,
+    headersSent: false,
+    locals: {} as Record<string, unknown>,
+    set() {
+      return this;
+    },
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    json(body: unknown) {
+      this.body = body;
+      this.headersSent = true;
+      return this;
+    },
+  };
+  const req = { method: 'POST', query: {}, ip: '203.0.113.9', user: { id: 1, role: 'admin' }, rawBody: Buffer.from(JSON.stringify({ ...(input as object), action })) };
+  expect(await handlePlatformAction(action, { ...(input as object), action }, req, res, pool)).toBe(true);
+  const body = res.body as { success?: boolean; config?: unknown; error?: string };
+  return res.statusCode === 200 ? { ok: { config: body.config }, writes } : { status: res.statusCode, message: body.error, writes };
+}
 
 describe('Nexa AI: panggilan Claude (Node, fetch palsu)', () => {
   afterEach(() => vi.useRealTimers());
@@ -317,6 +513,19 @@ describe('Nexa AI: panggilan Claude (Node, fetch palsu)', () => {
     expect(JSON.parse(String(init.body))).toEqual(body);
   });
 
+  it('panggilan Gemini: model di URL + x-goog-api-key; galat → { error } tanpa melempar', async () => {
+    const fetchImpl = vi.fn(async () =>
+      new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'Dari Gemini' }] } }] }), { status: 200 }));
+    const body = nexaGeminiBody('', 'DATA', [{ role: 'user', content: 'Halo' }]);
+    expect(await nexaGeminiReply('g-key-123456', 'gemini-2.5-flash', body, fetchImpl)).toEqual({ reply: 'Dari Gemini' });
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json', 'x-goog-api-key': 'g-key-123456' });
+    expect(JSON.parse(String(init.body))).toEqual(body);
+    const denied = vi.fn(async () => new Response(JSON.stringify({ error: { status: 'PERMISSION_DENIED' } }), { status: 403 }));
+    expect(await nexaGeminiReply('g-key-123456', 'gemini-2.5-flash', body, denied)).toEqual({ error: 'gemini HTTP 403 PERMISSION_DENIED' });
+  });
+
   it('galat API, penolakan, dan jaringan putus → { error } tanpa melempar', async () => {
     const body = nexaRequestBody('claude-haiku-5-5', '', 'DATA', [{ role: 'user', content: 'Halo' }]);
     const overloaded = vi.fn(async () => new Response(JSON.stringify({ type: 'error', error: { type: 'overloaded_error' } }), { status: 529 }));
@@ -334,7 +543,9 @@ describe('Nexa AI: panggilan Claude (Node, fetch palsu)', () => {
 describe('Nexa AI: handler nexa_chat', () => {
   it('Node: riwayat tidak sah → 400 VALIDATION; tanpa ANTHROPIC_API_KEY → 503 NEXA_OFFLINE (sebelum database)', async () => {
     const saved = process.env.ANTHROPIC_API_KEY;
+    const savedGemini = process.env.GEMINI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.GEMINI_API_KEY;
     try {
       const out = [];
       for (const c of HANDLER_CASES) out.push(await runNodeHandler(c));
@@ -345,6 +556,7 @@ describe('Nexa AI: handler nexa_chat', () => {
       ]);
     } finally {
       if (saved !== undefined) process.env.ANTHROPIC_API_KEY = saved;
+      if (savedGemini !== undefined) process.env.GEMINI_API_KEY = savedGemini;
     }
   });
 
@@ -357,14 +569,33 @@ describe('Nexa AI: handler nexa_chat', () => {
     expect(fromPhp.body).toEqual(fromNode.body);
     expect(fromPhp.reply).toEqual(fromNode.reply);
     expect(fromPhp.ip).toEqual(fromNode.ip);
+    expect(fromPhp.resolve).toEqual(fromNode.resolve);
+    expect(fromPhp.mask).toEqual(fromNode.mask);
+    expect(fromPhp.cfgout).toEqual(fromNode.cfgout);
+    expect(fromPhp.save).toEqual(fromNode.save);
+    expect(fromPhp.gbody).toEqual(fromNode.gbody);
+    expect(fromPhp.gtext).toEqual(fromNode.gtext);
+    // Handler get/save config: hasil + urutan tulis SQL sama
+    const nodeConfig = [];
+    for (const c of CONFIG_HANDLER_CASES) {
+      const out = await runNodeConfig(c.action, c.rows as Record<string, string>, c.input);
+      nodeConfig.push('status' in out ? { status: out.status, message: out.message, writes: out.writes } : { config: (out.ok as { config: unknown }).config, writes: out.writes });
+    }
+    const phpConfig = (fromPhp.config_handler as { ok?: { config?: unknown }; status?: number; message?: string; writes: unknown }[]).map((c) =>
+      c.status === undefined ? { config: c.ok?.config, writes: c.writes } : { status: c.status, message: c.message, writes: c.writes },
+    );
+    expect(phpConfig).toEqual(nodeConfig);
     const saved = process.env.ANTHROPIC_API_KEY;
+    const savedGemini = process.env.GEMINI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.GEMINI_API_KEY;
     try {
       const nodeHandler = [];
       for (const c of HANDLER_CASES) nodeHandler.push(await runNodeHandler(c));
       expect(fromPhp.handler).toEqual(nodeHandler);
     } finally {
       if (saved !== undefined) process.env.ANTHROPIC_API_KEY = saved;
+      if (savedGemini !== undefined) process.env.GEMINI_API_KEY = savedGemini;
     }
   });
 });

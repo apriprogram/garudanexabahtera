@@ -9,6 +9,7 @@ import {
   LayoutTemplate,
   Table2,
   BookOpen,
+  Bot,
   ExternalLink,
   Save,
   CheckCircle2,
@@ -32,6 +33,7 @@ import {
   type HeroBgMode,
   type HeroMediaBaseline,
 } from './hero/heroMedia';
+import { ApiError, apiPost, errorMessage } from '../../lib/api';
 import {
   Button,
   Chip,
@@ -46,6 +48,8 @@ import {
   PageHeader,
   Panel,
   PanelHeader,
+  PasswordInput,
+  Segmented,
   Switch,
   Tabs,
   Textarea,
@@ -132,12 +136,27 @@ const SECTION_KEY_OF_TAB: Partial<Record<string, string>> = {
   guides: 'panduan',
 };
 
+/** Konfigurasi AI widget Nexa dari nexa_get_config (kunci hanya topeng 4 karakter terakhir). */
+interface NexaProviderConfig {
+  on: boolean;
+  key_masked: string;
+  env_key: boolean;
+}
+interface NexaConfig {
+  enabled: boolean;
+  provider: 'anthropic' | 'gemini';
+  anthropic: NexaProviderConfig;
+  gemini: NexaProviderConfig;
+}
+const NEXA_PROVIDER_LABEL = { anthropic: 'Claude (Anthropic)', gemini: 'Gemini (Google)' } as const;
+
 /** Keterangan di bawah judul tab; tab lain memakai keterangan umum. */
 const TAB_SUBTITLE: Partial<Record<string, string>> = {
   templates: 'Section "Pilih Template" di beranda. Katalognya diambil dari template yang terbit.',
   compare: 'Tabel "Pilih sesuai kebutuhanmu" di beranda.',
   pricing: 'Tampil di detail template, halaman pesan, akun pembeli, dan strip "Sudah termasuk" di beranda.',
   guides: 'Halaman /panduan dan artikel panduan.',
+  nexa: 'Chat Nexa AI melayang di seluruh situs: penyedia jawaban dan kunci API-nya.',
 };
 
 /** Artikel panduan untuk tab Panduan: terbaru dulu, status terbit seperti build production (draf = belum ditinjau). */
@@ -202,6 +221,7 @@ const SiteSettings: React.FC = () => {
     { id: 'footer', label: 'Footer', icon: Layout },
     { id: 'pricing', label: 'Harga template', icon: CreditCard },
     { id: 'guides', label: 'Panduan', icon: BookOpen },
+    { id: 'nexa', label: 'Tanya Nexa', icon: Bot },
   ];
 
   const showNotify = useCallback((type: 'success' | 'error' | 'warning', message: string, description: string) => {
@@ -336,6 +356,61 @@ const SiteSettings: React.FC = () => {
   // Alasan tombol simpan ditahan, null = boleh simpan: belum/gagal muat, video diunggah, atau gambar masih diproses
   const saveBlock: keyof typeof SAVE_BLOCK_LABEL | null =
     loadState !== 'ready' ? loadState : heroBusy ? 'video' : heroImagesPending > 0 ? 'images' : null;
+
+  // ── Tab Tanya Nexa: konfigurasi AI (dimuat saat tab dibuka; kunci tidak pernah dikirim balik utuh) ──
+  const [nexaCfg, setNexaCfg] = useState<NexaConfig | null>(null);
+  const [nexaCfgState, setNexaCfgState] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle');
+  const [nexaKeys, setNexaKeys] = useState({ anthropic: '', gemini: '' });
+  const [nexaClear, setNexaClear] = useState({ anthropic: false, gemini: false });
+  const [nexaSaving, setNexaSaving] = useState(false);
+
+  const loadNexaConfig = useCallback(async () => {
+    try {
+      const data = await apiPost<{ config?: NexaConfig }>('nexa_get_config', {});
+      if (!data.config) throw new Error('config kosong');
+      setNexaCfg(data.config);
+      setNexaCfgState('ready');
+    } catch {
+      setNexaCfgState('failed');
+    }
+  }, []);
+
+  useEffect(() => {
+    // Hanya saat tab dibuka pertama kali; penanda 'loading' dipasang sinkron agar effect tidak berulang
+    if (activeTab !== 'nexa' || nexaCfgState !== 'idle') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- satu kali per buka tab, seperti fetchSettings
+    setNexaCfgState('loading');
+    void loadNexaConfig();
+  }, [activeTab, nexaCfgState, loadNexaConfig]);
+
+  const retryNexaConfig = () => {
+    setNexaCfgState('loading');
+    void loadNexaConfig();
+  };
+
+  const saveNexaConfig = async () => {
+    if (!nexaCfg || nexaSaving) return;
+    setNexaSaving(true);
+    try {
+      // Kunci baru yang diketik menang atas "Hapus kunci tersimpan" (mengganti = menghapus lama + memakai yang baru)
+      const keyField = (name: 'anthropic' | 'gemini') =>
+        nexaKeys[name].trim() !== '' ? { key: nexaKeys[name].trim() } : nexaClear[name] ? { key: null } : {};
+      const data = await apiPost<{ config?: NexaConfig }>('nexa_save_config', {
+        provider: nexaCfg.provider,
+        anthropic: { on: nexaCfg.anthropic.on, ...keyField('anthropic') },
+        gemini: { on: nexaCfg.gemini.on, ...keyField('gemini') },
+      });
+      if (data.config) setNexaCfg(data.config);
+      setNexaKeys({ anthropic: '', gemini: '' });
+      setNexaClear({ anthropic: false, gemini: false });
+      showNotify('success', 'Pengaturan AI tersimpan', 'Kunci disimpan di server dan tidak pernah ditampilkan penuh.');
+    } catch (error) {
+      const detail = error instanceof ApiError && error.fieldErrors ? Object.values(error.fieldErrors)[0] : '';
+      showNotify('error', 'Gagal menyimpan pengaturan AI', detail || errorMessage(error));
+    } finally {
+      setNexaSaving(false);
+    }
+  };
 
   // Saklar section: ubah daftar disabled_sections di state; ikut terkirim lewat `...settings` saat disimpan
   const setSectionVisible = (key: string, visible: boolean) => {
@@ -797,6 +872,106 @@ const SiteSettings: React.FC = () => {
           </div>
         );
 
+      case 'nexa':
+        return (
+          <div className="space-y-4 sm:space-y-6">
+            <Panel className="space-y-4">
+              <PanelHeader
+                title="Penyedia jawaban AI"
+                titleAs="h4"
+                subtitle="Saklar di kanan atas menampilkan atau menyembunyikan chat Nexa di seluruh situs (disimpan lewat tombol Simpan semua perubahan). Tanpa penyedia aktif, Nexa menjawab dari data situs."
+              />
+              {nexaCfgState === 'failed' && (
+                <div className="flex flex-wrap items-center gap-3 text-sm text-adm-muted">
+                  Gagal memuat pengaturan AI.
+                  <Button size="sm" variant="secondary" icon={<RefreshCw />} onClick={retryNexaConfig}>
+                    Coba lagi
+                  </Button>
+                </div>
+              )}
+              {!nexaCfg && nexaCfgState !== 'failed' && <p className="text-sm text-adm-muted">Memuat pengaturan AI…</p>}
+              {nexaCfg && (
+                <>
+                  <Field
+                    label="Penyedia utama"
+                    hint="Bila penyedia pilihan mati atau tanpa kunci, Nexa otomatis memakai penyedia satunya."
+                  >
+                    <Segmented
+                      ariaLabel="Penyedia jawaban AI"
+                      items={[
+                        { value: 'anthropic', label: NEXA_PROVIDER_LABEL.anthropic },
+                        { value: 'gemini', label: NEXA_PROVIDER_LABEL.gemini },
+                      ]}
+                      value={nexaCfg.provider}
+                      onChange={(value) => setNexaCfg({ ...nexaCfg, provider: value as NexaConfig['provider'] })}
+                    />
+                  </Field>
+
+                  {(['anthropic', 'gemini'] as const).map((name) => {
+                    const provider = nexaCfg[name];
+                    return (
+                      <div key={name} className="space-y-3 rounded-2xl p-4 ring-1 ring-inset ring-adm-line">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-adm-fg">{NEXA_PROVIDER_LABEL[name]}</p>
+                            <p className="mt-0.5 text-xs text-adm-muted">
+                              {nexaClear[name]
+                                ? 'Kunci tersimpan akan dihapus saat pengaturan AI disimpan.'
+                                : provider.key_masked !== ''
+                                  ? `Kunci tersimpan: ${provider.key_masked}`
+                                  : provider.env_key
+                                    ? 'Memakai kunci dari .env server (bisa ditimpa lewat kolom di bawah).'
+                                    : 'Belum ada kunci.'}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={provider.on}
+                            onChange={(next) => setNexaCfg({ ...nexaCfg, [name]: { ...provider, on: next } })}
+                            label={provider.on ? 'Aktif' : 'Nonaktif'}
+                          />
+                        </div>
+                        <Field
+                          label={`Kunci API ${NEXA_PROVIDER_LABEL[name]}`}
+                          htmlFor={`nexa_${name}_key`}
+                          hint="Isi untuk mengganti; biarkan kosong untuk mempertahankan kunci tersimpan."
+                        >
+                          <PasswordInput
+                            id={`nexa_${name}_key`}
+                            mono
+                            autoComplete="new-password"
+                            placeholder={name === 'anthropic' ? 'sk-ant-…' : 'AIza…'}
+                            value={nexaKeys[name]}
+                            onChange={(event) => {
+                              const { value } = event.target;
+                              setNexaKeys((prev) => ({ ...prev, [name]: value }));
+                            }}
+                          />
+                        </Field>
+                        {provider.key_masked !== '' && (
+                          <button
+                            type="button"
+                            className="text-xs font-medium text-adm-muted underline-offset-2 hover:underline"
+                            onClick={() => setNexaClear((prev) => ({ ...prev, [name]: !prev[name] }))}
+                          >
+                            {nexaClear[name] ? 'Batal menghapus kunci' : 'Hapus kunci tersimpan'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button icon={<Save />} disabled={nexaSaving} onClick={() => void saveNexaConfig()}>
+                      {nexaSaving ? 'Menyimpan…' : 'Simpan pengaturan AI'}
+                    </Button>
+                    <p className="text-xs text-adm-muted">Kunci di sini menang atas kunci .env di server.</p>
+                  </div>
+                </>
+              )}
+            </Panel>
+          </div>
+        );
+
       case 'footer':
         return (
           <div>
@@ -964,6 +1139,17 @@ const SiteSettings: React.FC = () => {
             title={tabs.find(t => t.id === activeTab)?.label}
             subtitle={TAB_SUBTITLE[activeTab] ?? 'Perbarui isi dan tampilan bagian ini di website kamu.'}
             action={(() => {
+              if (activeTab === 'nexa') {
+                const visible = settings.nexa_enabled !== '0';
+                return (
+                  <Switch
+                    checked={visible}
+                    onChange={(next) => setSettings((prev) => ({ ...prev, nexa_enabled: next ? '1' : '0' }))}
+                    label={visible ? 'Tampil di website' : 'Disembunyikan'}
+                    className="items-center"
+                  />
+                );
+              }
               const key = SECTION_KEY_OF_TAB[activeTab];
               if (!key) return undefined;
               const visible = !getHiddenSections(settings).has(key);

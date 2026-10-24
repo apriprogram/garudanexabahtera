@@ -78,7 +78,12 @@ function FloatingNexa() {
   const { pathname } = useLocation();
   const { settings } = useSiteSettings();
   if (NEXA_EXCLUDED.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return null;
-  return <FloatingWhatsApp href={whatsappUrl(getWhatsappNumber(settings), WA_GREETING)} backToTop={pathname === '/'} />;
+  // Saklar admin (Pengaturan website → Tanya Nexa): '0' menyembunyikan chat di seluruh situs; tombol "ke atas"
+  // beranda tetap tampil
+  const chat = settings.nexa_enabled !== '0';
+  const backToTop = pathname === '/';
+  if (!chat && !backToTop) return null;
+  return <FloatingWhatsApp href={whatsappUrl(getWhatsappNumber(settings), WA_GREETING)} backToTop={backToTop} chat={chat} />;
 }
 
 function App() {

@@ -6,6 +6,8 @@ interface FloatingWhatsAppProps {
   href: string;
   /** Tombol "ke atas" kaca buram di atas maskot, tampil setelah menggulir (beranda, pemilik 2026-10-24). */
   backToTop?: boolean;
+  /** Chat Nexa (saklar admin nexa_enabled). Mati: hanya tombol "ke atas" yang tersisa (bila ada). */
+  chat?: boolean;
 }
 
 /** Jarak gulir (px) sebelum tombol "ke atas" tampil. */
@@ -17,7 +19,7 @@ const TOP_AFTER = 480;
  * `href`-nya tetap dipakai chat. Dok selalu tampil di semua ukuran layar (pemilik 2026-10-24; logika sembunyi di HP
  * saat hero terlihat / menggulir ke bawah dihapus).
  */
-export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ href, backToTop = false }) => {
+export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ href, backToTop = false, chat = true }) => {
   const [chatOpen, setChatOpen] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const changeChatOpen = useCallback((next: boolean) => setChatOpen(next), []);
@@ -54,7 +56,7 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ href, backTo
           <ArrowUp className="h-5 w-5" strokeWidth={2.25} aria-hidden />
         </button>
       )}
-      <NexaChat whatsappHref={href} open={chatOpen} onOpenChange={changeChatOpen} />
+      {chat && <NexaChat whatsappHref={href} open={chatOpen} onOpenChange={changeChatOpen} />}
     </div>
   );
 };

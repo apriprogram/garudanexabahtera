@@ -13,6 +13,15 @@ import { fileURLToPath } from 'node:url';
 export const NEXA_DEFAULT_MODEL = 'claude-opus-5-5';
 const NEXA_API_URL = 'https://api.anthropic.com/v1/messages';
 const NEXA_API_VERSION = '2026-10-21';
+// Penyedia kedua (pilihan admin di tab Tanya Nexa): Google Gemini lewat REST generateContent
+export const NEXA_GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
+const NEXA_GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
+// Kunci & saklar AI dari admin (hero_settings; TIDAK pernah ikut get_settings publik — lihat server.js). nexa_enabled
+// (saklar widget) satu-satunya setting nexa_ yang publik dan boleh lewat update_settings biasa.
+export const NEXA_CONFIG_KEYS = ['nexa_enabled', 'nexa_provider', 'nexa_anthropic_on', 'nexa_gemini_on', 'nexa_anthropic_key', 'nexa_gemini_key'];
+const NEXA_PROVIDERS = ['anthropic', 'gemini'];
+// Kunci API: ASCII tercetak tanpa spasi, 8–300 karakter
+const NEXA_KEY_PATTERN = /^[\x21-\x7E]{8,300}$/;
 export const NEXA_PER_HOUR = 30; // pertanyaan per pengunjung (IP; IPv6 per /64) per jam
 export const NEXA_PER_DAY = 100; // pertanyaan per pengunjung per hari
 export const NEXA_DEFAULT_DAILY_LIMIT = 1000; // pertanyaan per hari, semua pengunjung
@@ -150,6 +159,153 @@ export function nexaCleanMessages(value) {
   while (out.length && out[0].role !== 'user') out.shift();
   if (!out.length || out[out.length - 1].role !== 'user') return null;
   return out;
+}
+
+/** Galat yang pesannya aman untuk klien (= ApiError di templates.js; modul ini tidak mengimpornya agar bebas impor). */
+class NexaConfigError extends Error {
+  constructor(message, errors = null) {
+    super(message);
+    this.status = 400;
+    this.code = 'VALIDATION';
+    this.errors = errors;
+  }
+}
+export { NexaConfigError };
+
+/** 4 karakter terakhir kunci untuk ditampilkan di admin ("••••abcd"); '' bila belum ada kunci (= nexa_mask_key). */
+export function nexaMaskKey(key) {
+  if (key === '') return '';
+  const chars = [...key];
+  return `••••${chars.slice(Math.max(0, chars.length - 4)).join('')}`;
+}
+
+/**
+ * Penyedia AI yang dipakai nexa_chat (= nexa_resolve_provider): penyedia pilihan bila saklarnya hidup dan kuncinya ada
+ * (kunci dari DB, atau ANTHROPIC_API_KEY / GEMINI_API_KEY di .env); kalau tidak, penyedia satunya; dua-duanya mati → null.
+ */
+export function nexaResolveProvider(rows, envAnthropic, envGemini) {
+  const dbKey = (name) => phpTrim(String(rows[`nexa_${name}_key`] ?? ''));
+  const keys = {
+    anthropic: dbKey('anthropic') !== '' ? dbKey('anthropic') : envAnthropic,
+    gemini: dbKey('gemini') !== '' ? dbKey('gemini') : envGemini,
+  };
+  const on = {
+    anthropic: (rows.nexa_anthropic_on ?? '1') !== '0' && keys.anthropic !== '',
+    gemini: (rows.nexa_gemini_on ?? '1') !== '0' && keys.gemini !== '',
+  };
+  const preferred = NEXA_PROVIDERS.includes(rows.nexa_provider ?? '') ? rows.nexa_provider : 'anthropic';
+  for (const provider of [preferred, preferred === 'anthropic' ? 'gemini' : 'anthropic']) {
+    if (on[provider]) return { provider, key: keys[provider] };
+  }
+  return null;
+}
+
+/** Konfigurasi untuk tab admin (= nexa_config_out): tanpa kunci, hanya topeng + ada/tidaknya kunci di .env. */
+export function nexaConfigOut(rows, envAnthropic, envGemini) {
+  return {
+    enabled: (rows.nexa_enabled ?? '1') !== '0',
+    provider: NEXA_PROVIDERS.includes(rows.nexa_provider ?? '') ? rows.nexa_provider : 'anthropic',
+    anthropic: {
+      on: (rows.nexa_anthropic_on ?? '1') !== '0',
+      key_masked: nexaMaskKey(phpTrim(String(rows.nexa_anthropic_key ?? ''))),
+      env_key: envAnthropic,
+    },
+    gemini: {
+      on: (rows.nexa_gemini_on ?? '1') !== '0',
+      key_masked: nexaMaskKey(phpTrim(String(rows.nexa_gemini_key ?? ''))),
+      env_key: envGemini,
+    },
+  };
+}
+
+/**
+ * Masukan nexa_save_config → daftar tulis + hapus (= nexa_config_writes). Kunci: string sah = simpan, null = hapus,
+ * kosong/tidak dikirim = biarkan. Masukan tidak sah → NexaConfigError (400 VALIDATION). `field(obj, k)` membaca Map
+ * dari phpRequestBody maupun objek biasa.
+ */
+export function nexaConfigWrites(input) {
+  const field = (obj, key) => (obj instanceof Map ? obj.get(key) : obj?.[key]);
+  const has = (obj, key) => (obj instanceof Map ? obj.has(key) : obj !== null && typeof obj === 'object' && key in obj);
+  const provider = field(input, 'provider') ?? 'anthropic';
+  if (!NEXA_PROVIDERS.includes(provider)) throw new NexaConfigError('Penyedia AI tidak dikenal.');
+  const writes = { nexa_provider: provider };
+  const deletes = [];
+  for (const name of NEXA_PROVIDERS) {
+    const cfg = field(input, name) ?? {};
+    // Array JSON diterima seperti objek tanpa on/key: json_decode($x, true) PHP tidak membedakan [] dan {}
+    if (typeof cfg !== 'object' || cfg === null) throw new NexaConfigError('Pengaturan AI tidak valid.');
+    const onRaw = has(cfg, 'on') ? field(cfg, 'on') : true;
+    writes[`nexa_${name}_on`] = onRaw === false || onRaw === '0' ? '0' : '1';
+    if (!has(cfg, 'key')) continue;
+    const raw = field(cfg, 'key');
+    if (raw === null) {
+      deletes.push(`nexa_${name}_key`);
+      continue;
+    }
+    if (typeof raw !== 'string') throw new NexaConfigError('Kunci API tidak valid.');
+    const key = phpTrim(raw);
+    if (key === '') continue; // kolom dibiarkan kosong = kunci lama dipertahankan
+    if (!NEXA_KEY_PATTERN.test(key)) {
+      throw new NexaConfigError('Kunci API tidak valid: 8–300 karakter tanpa spasi.', { [`${name}_key`]: 'Periksa kembali kunci yang ditempel.' });
+    }
+    writes[`nexa_${name}_key`] = key;
+  }
+  return { writes, deletes };
+}
+
+// ── Google Gemini (penyedia kedua) ──
+
+/** Isi permintaan generateContent (= nexa_gemini_body): instruksi + pengetahuan sama persis dengan blok system Claude. */
+export function nexaGeminiBody(knowledge, live, messages) {
+  const staticText = `${NEXA_INSTRUCTIONS}\n\nPENGETAHUAN SITUS (isi garudanexa.com)\n\n${knowledge !== '' ? knowledge : '(tidak tersedia; pakai DATA TERKINI)'}`;
+  return {
+    system_instruction: { parts: [{ text: staticText }, { text: live }] },
+    contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+    generationConfig: { maxOutputTokens: NEXA_MAX_TOKENS },
+  };
+}
+
+/** Teks jawaban dari respons generateContent (= nexa_gemini_text), null bila tidak bisa dipakai. */
+export function nexaGeminiText(response) {
+  const candidate = response !== null && typeof response === 'object' ? (response.candidates?.[0] ?? null) : null;
+  if (candidate === null || typeof candidate !== 'object') return null;
+  const finish = String(candidate.finishReason ?? '');
+  if (['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'RECITATION', 'SPII'].includes(finish)) return null;
+  const parts = Array.isArray(candidate.content?.parts) ? candidate.content.parts : [];
+  const text = phpTrim(parts.filter((p) => p !== null && typeof p === 'object' && typeof p.text === 'string').map((p) => p.text).join(''));
+  return text === '' ? null : text;
+}
+
+/** Panggil Gemini (= nexa_gemini_reply): { reply } atau { error } untuk log. Tidak pernah melempar. */
+export async function nexaGeminiReply(apiKey, model, body, fetchImpl = fetch) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), NEXA_TIMEOUT * 1000);
+  try {
+    const response = await fetchImpl(`${NEXA_GEMINI_URL}${encodeURIComponent(model)}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const raw = await response.text();
+    let parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = null;
+    }
+    if (response.status !== 200) {
+      const status = typeof parsed?.error?.status === 'string' ? parsed.error.status : '';
+      return { error: `gemini HTTP ${response.status}${status !== '' ? ` ${status}` : ''}` };
+    }
+    const text = nexaGeminiText(parsed);
+    if (text === null) return { error: `gemini no usable text (finishReason ${parsed?.candidates?.[0]?.finishReason ?? '?'})` };
+    return { reply: text };
+  } catch (err) {
+    return { error: controller.signal.aborted ? 'gemini timeout' : String(err?.cause?.message || err?.message || err) };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Kunci batas per pengunjung (= nexa_ip_bucket): IPv4 apa adanya, IPv6 per /64, ::ffff:a.b.c.d sebagai IPv4. */

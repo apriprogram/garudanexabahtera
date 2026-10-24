@@ -59,6 +59,7 @@ export const ADMIN_ACTIONS = new Set([
   'pd_document_change', 'pd_document_sign', 'pd_document_complete', 'pd_document_delete',
   'pd_invoice_create', 'pd_invoice_update', 'pd_invoice_cancel', 'pd_payment_record', 'pd_payment_delete',
   'pd_settings_save',
+  'nexa_get_config', 'nexa_save_config',
 ]);
 
 const STAFF_ROLES = new Set(['admin', 'user']);

@@ -166,7 +166,10 @@ app.get('/api.php', async (req, res) => {
     try {
       // Public: pd_* keys (company identity, tax, payment terms of the project documents) are read through
       // pd_settings_get only; the comparison follows the column's case-insensitive collation
-      const [rows] = await pool.query("SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_'");
+      // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik
+      const [rows] = await pool.query(
+        "SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_')",
+      );
       const settings = {};
       for (const row of rows) {
         settings[row.setting_key] = row.setting_value;
@@ -397,10 +400,19 @@ app.post('/api.php', async (req, res) => {
 
       case 'update_settings': {
         const settings = inputSettings !== null && typeof inputSettings === 'object' ? inputSettings : {};
-        // pd_* settings are admin-only and validated per field: pd_settings_save (backend/modules/project_docs.js)
-        if (Object.keys(settings).some((key) => key.toLowerCase().startsWith('pd_'))) {
-          res.status(403).json({ error: 'Pengaturan dokumen proyek hanya bisa diubah lewat Pengaturan dokumen.', code: 'FORBIDDEN' });
-          return;
+        // pd_* settings are admin-only and validated per field: pd_settings_save (backend/modules/project_docs.js).
+        // Kunci API & saklar AI hanya lewat nexa_save_config (admin); nexa_enabled (saklar widget) boleh di sini.
+        // Satu putaran per kunci seperti api.php: kunci terlarang pertama menentukan pesannya
+        for (const key of Object.keys(settings)) {
+          const lower = key.toLowerCase();
+          if (lower.startsWith('pd_')) {
+            res.status(403).json({ error: 'Pengaturan dokumen proyek hanya bisa diubah lewat Pengaturan dokumen.', code: 'FORBIDDEN' });
+            return;
+          }
+          if (lower.startsWith('nexa_') && lower !== 'nexa_enabled') {
+            res.status(403).json({ error: 'Pengaturan Nexa AI hanya bisa diubah lewat tab Tanya Nexa.', code: 'FORBIDDEN' });
+            return;
+          }
         }
         // ASCII names only, like api.php: setting_key compares with utf8mb4_unicode_ci, where "ｐd_company" or a
         // zero-width character + "pd_company" equal "pd_company", so ON DUPLICATE KEY UPDATE would overwrite it
