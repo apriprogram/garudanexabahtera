@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ARENA_PHOTOS } from '../arena-club/photos';
 import { AURA_PHOTOS } from '../aura-studio/photos';
 import { FINOVA_PHOTOS } from '../finova/photos';
+import { SERENITY_PHOTOS } from '../serenity/photos';
 import { TEMPLATES, resolveContent } from '../index';
 import type { PhotoSet } from '../kit/photos';
 
@@ -27,7 +28,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed';
   photos: PhotoSet;
 }
 
@@ -35,6 +36,8 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'arena-club', component: 'ArenaClub.tsx', heroLayout: 'banner', photos: ARENA_PHOTOS },
   { code: 'aura-studio', component: 'AuraStudio.tsx', heroLayout: 'split', photos: AURA_PHOTOS },
   { code: 'finova', component: 'Finova.tsx', heroLayout: 'panel', photos: FINOVA_PHOTOS },
+  // Template 2026-10-25 (bukan bagian brief tiga template, tetapi memenuhi kontrak yang sama)
+  { code: 'serenity', component: 'Serenity.tsx', heroLayout: 'fullbleed', photos: SERENITY_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */
@@ -54,7 +57,7 @@ const isStub = (tpl: NewTemplate) => {
 
 const publicFile = (url: string) => resolve(PUBLIC_DIR, url.replace(/^\//, ''));
 
-describe('tiga template baru terdaftar', () => {
+describe('template baru terdaftar', () => {
   it.each(NEW_TEMPLATES)('$code ada di registry dengan komponen sendiri', ({ code }) => {
     const def = TEMPLATES[code];
     expect(def?.code).toBe(code);
@@ -109,7 +112,7 @@ for (const tpl of NEW_TEMPLATES) {
   });
 }
 
-describe('hero tiga template baru saling berbeda', () => {
+describe('hero template baru saling berbeda', () => {
   it('nilai data-hero-layout unik per template', () => {
     const layouts = NEW_TEMPLATES.map((tpl) => tpl.heroLayout);
     expect(new Set(layouts).size).toBe(layouts.length);

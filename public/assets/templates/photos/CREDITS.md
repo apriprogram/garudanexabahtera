@@ -116,3 +116,25 @@ potret testimoni 4:5 `-1200.webp` + `-240.webp`. Diunduh dan dicek lisensinya (U
 | `finova-portrait-2-*` | Pria muda berkemeja garis, dinding hijau mint | https://unsplash.com/photos/gutlccGLXKI | JD Chow |
 | `finova-portrait-3-*` | Perempuan berhijab memakai blazer kotak-kotak | https://unsplash.com/photos/CnM3_sO616Y | Fajar Herlambang STUDIO |
 | `finova-portrait-4-*` | Pria berkemeja denim duduk di meja kerja | https://unsplash.com/photos/WC7KIHo13Fc | Juan Encalada |
+
+## Serenity (Aruna Yoga, fiktif)
+
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero 1920×1200, tentang 4:5 1200×1500, kartu kelas 4:3 1200×900,
+ajakan 16:9 1600×900); potret testimoni 1:1 `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash License,
+bukan Unsplash+) 2026-10-25. `serenity-hero-*` diubah: dipotong 16:10, langit atas digelapkan lembut, ditambah cahaya senja
+hangat dan pita sutra pelangi (lukisan digital orisinal Garuda Nexa) di langit.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `serenity-hero-*` | Orang merentangkan tangan di bukit hijau (diubah, lihat di atas) | https://unsplash.com/photos/K0WM5gJi7HY | Trương Tuyết Ly |
+| `serenity-about-*` | Perempuan berpose pohon di atas matras, studio putih | https://unsplash.com/photos/y1kSml9RFoU | Margaret Young |
+| `serenity-hatha-*` | Perempuan berpose lunge rendah di matras merah muda | https://unsplash.com/photos/mSJsiQCm6og | Alex Shaw |
+| `serenity-vinyasa-*` | Kelas yoga berpose lunge bersama di studio | https://unsplash.com/photos/YJdCZba0TYE | Dylan Gillis |
+| `serenity-yin-*` | Perempuan berbaring dalam pose savasana | https://unsplash.com/photos/8Z8V3XRXTvk | Margaret Young |
+| `serenity-yoga-*` | Peregangan yoga di atas matras dalam studio | https://unsplash.com/photos/DmNj1ZyXzqQ | Vitaly Gariev |
+| `serenity-privat-*` | Perempuan berpose yoga duduk di depan jendela besar | https://unsplash.com/photos/vDV-JauWp3Q | Alireza Skndari |
+| `serenity-retret-*` | Pose yoga di puncak bukit saat matahari terbit | https://unsplash.com/photos/I2YSmEUAgDY | Eneko Uruñuela |
+| `serenity-cta-*` | Langit senja ungu di atas siluet pegunungan | https://unsplash.com/photos/uwcBQUhVgXU | Ricardo Gomez Angel |
+| `serenity-portrait-1-*` | Perempuan berhijab tersenyum, latar dedaunan | https://unsplash.com/photos/2lFt6pdPPoQ | muhammad iswandi |
+| `serenity-portrait-2-*` | Pria berkemeja putih tersenyum | https://unsplash.com/photos/OFSQ6bHjFjs | Hà Nguyễn |
+| `serenity-portrait-3-*` | Perempuan berhijab hitam tersenyum di jalan | https://unsplash.com/photos/V_kHZleK2Cg | Yeremia Krisnamurti |

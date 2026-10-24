@@ -1,5 +1,5 @@
 -- ============================================================================
--- Garuda Nexa — CONTOH katalog template (2 Company Profile + 3 template 2026-10-22)
+-- Garuda Nexa — CONTOH katalog template (2 Company Profile + 3 template 2026-10-22 + Serenity 2026-10-25)
 -- ============================================================================
 -- Jalankan setelah migrasi 2026-10-19_004 (atau schema.sql untuk DB baru):
 --   mysql -u root db_garudanexabahtera < database/seed.templates.sql
@@ -78,6 +78,19 @@ Cocok untuk startup fintech, koperasi simpan pinjam, aplikasi pembayaran dan dom
    1790000.00,
    '/assets/templates/finova-preview.webp',
    '["/assets/templates/finova-1.webp","/assets/templates/finova-2.webp"]',
-   'finova', NULL, 'published', 5);
+   'finova', NULL, 'published', 5),
+
+  ('serenity',
+   'Serenity',
+   'Yoga & Wellness',
+   'Website tenang dan modern untuk studio yoga, pilates, dan kelas kebugaran yang ingin tampil profesional.',
+   'Serenity menghadirkan suasana tenang sejak layar pertama: foto pemandangan selebar layar dengan menu transparan, judul dua baris bergradasi lembut, tombol video, kartu kaca kecil, dan strip empat jenis kelas. Di bawahnya tersusun cerita studio dengan angka pencapaian, kartu kelas dengan durasi dan tombol tanya jadwal, langkah memulai, paket harga dengan paket unggulan, cerita peserta, tanya jawab, ajakan, serta kontak dengan peta lokasi.
+
+Cocok untuk studio yoga dan pilates, kelas olahraga ringan, instruktur yoga privat, hingga penyelenggara retret yoga. Pengunjung bisa mencari kelas atau pertanyaan langsung dari menu, lalu mendaftar lewat WhatsApp. Semua teks, gambar, harga paket, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero foto selebar layar dengan menu transparan dan kartu kaca","Kartu kelas yoga dengan durasi, level, dan tombol tanya jadwal ke WhatsApp","Paket harga dengan paket unggulan yang menonjol","Langkah memulai, cerita peserta, dan tanya jawab (FAQ)","Pencarian kelas dan pertanyaan langsung dari menu","Kelola teks, gambar, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1290000.00,
+   '/assets/templates/serenity-preview.webp',
+   '["/assets/templates/serenity-1.webp","/assets/templates/serenity-2.webp"]',
+   'serenity', NULL, 'published', 6);
 
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

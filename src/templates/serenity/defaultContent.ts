@@ -1,0 +1,253 @@
+// Konten bawaan Serenity: Aruna Yoga (studio yoga FIKTIF, Lembang, Bandung Barat). Salinan demo sengaja tanpa klaim
+// medis atau janji hasil: kelas adalah latihan kebugaran, bukan pengobatan (lihat FAQ). Nama orang di testimoni fiktif
+// dan tidak berhubungan dengan orang di foto.
+import type { SiteContent } from '../types';
+import { serenityPhoto } from './photos';
+
+/** Ungu lembayung: tombol aksen, ikon, label, awal gradasi judul. Teks di atasnya otomatis putih (5:1). */
+export const SERENITY_ACCENT = '#6E5BD8';
+
+export const serenityContent: SiteContent = {
+  brand: {
+    company_name: 'Aruna Yoga',
+    tagline: 'Bergerak, bernapas, dan merasa lebih baik',
+    logo: '',
+    accent_color: SERENITY_ACCENT,
+  },
+  hero: {
+    enabled: true,
+    eyebrow: 'Napas tenang, tubuh lebih bugar',
+    title: 'Temukan Keseimbangan di Setiap Gerakan',
+    highlight: 'di Setiap Gerakan',
+    subtitle:
+      'Aruna Yoga mengajak Anda bergerak pelan, bernapas lebih dalam, dan merasa nyaman di tubuh sendiri. Kelas kecil untuk pemula hingga yang sudah rutin, dipandu instruktur yang sabar.',
+    primary_label: 'Coba Kelas Pertama',
+    primary_url: '',
+    secondary_label: 'Tonton Video',
+    secondary_url: 'https://www.youtube.com/@arunayoga',
+    header_label: 'Daftar Kelas',
+    header_url: '',
+    image: serenityPhoto('hero'),
+    card_title: 'Yoga untuk Semua',
+    card_text: 'Pemula hingga mahir, mulai dari satu kelas.',
+    card_url: '',
+    features: [
+      { title: 'Hatha Yoga', text: 'Fondasi pose & napas' },
+      { title: 'Vinyasa Flow', text: 'Gerak yang mengalir' },
+      { title: 'Yin Yoga', text: 'Peregangan yang dalam' },
+      { title: 'Kelas Privat', text: 'Sesuai kebutuhan Anda' },
+    ],
+  },
+  about: {
+    enabled: true,
+    eyebrow: 'Tentang Kami',
+    title: 'Ruang untuk bergerak, bernapas, dan mengenal tubuh sendiri',
+    highlight: 'mengenal tubuh sendiri',
+    body:
+      'Aruna Yoga lahir dari keinginan sederhana: menyediakan tempat berlatih yang tenang di tengah hari-hari yang serba cepat. Di studio kami di kaki bukit Lembang, Anda bisa berlatih Hatha, Vinyasa, dan Yin bersama instruktur yang memperhatikan setiap peserta.\n\nTidak perlu lentur untuk mulai. Datang apa adanya, ikuti napas Anda, dan temukan ritme latihan yang pas untuk tubuh sendiri.',
+    image: serenityPhoto('about'),
+    badge_value: 'Sejak 2018',
+    badge_label: 'Studio yoga di Lembang',
+    points: [
+      { text: 'Kelas kecil, maksimal 12 peserta' },
+      { text: 'Instruktur berpengalaman dan ramah pemula' },
+      { text: 'Matras, balok, dan tali yoga disediakan' },
+      { text: 'Kelas pagi, sore, dan akhir pekan' },
+    ],
+    stats: [
+      { value: '8+', label: 'Tahun mengajar' },
+      { value: '25+', label: 'Kelas setiap minggu' },
+      { value: '1.500+', label: 'Anggota komunitas' },
+    ],
+  },
+  services: {
+    enabled: true,
+    eyebrow: 'Kelas',
+    title: 'Pilih kelas yang pas untuk tubuh Anda',
+    subtitle: 'Setiap kelas dipandu bertahap, dengan pilihan gerakan yang lebih ringan bila Anda baru mulai.',
+    items: [
+      {
+        title: 'Hatha Yoga',
+        description: 'Belajar pose dasar dengan tempo pelan dan fokus pada pernapasan.',
+        meta: '60 menit · Semua level',
+        image: serenityPhoto('hatha'),
+        url: '',
+      },
+      {
+        title: 'Vinyasa Flow',
+        description: 'Rangkaian gerak yang mengalir mengikuti napas untuk melatih kekuatan dan kelenturan.',
+        meta: '60 menit · Menengah',
+        image: serenityPhoto('vinyasa'),
+        url: '',
+      },
+      {
+        title: 'Yin & Restoratif',
+        description: 'Pose ditahan lebih lama dengan bantuan bantal dan balok untuk merilekskan tubuh.',
+        meta: '75 menit · Semua level',
+        image: serenityPhoto('yin'),
+        url: '',
+      },
+      {
+        title: 'Yoga Pemula',
+        description: 'Kelas pengenalan: cara bernapas, posisi yang aman, dan pose dasar selangkah demi selangkah.',
+        meta: '60 menit · Pemula',
+        image: serenityPhoto('yoga'),
+        url: '',
+      },
+      {
+        title: 'Kelas Privat',
+        description: 'Sesi satu lawan satu dengan rencana latihan yang disesuaikan dengan tujuan Anda.',
+        meta: '60 menit · Jadwal fleksibel',
+        image: serenityPhoto('privat'),
+        url: '',
+      },
+      {
+        title: 'Retret Yoga',
+        description: 'Dua hari satu malam berlatih di alam terbuka, lengkap dengan makanan sehat.',
+        meta: '2 hari · Sebulan sekali',
+        image: serenityPhoto('retret'),
+        url: '',
+      },
+    ],
+  },
+  steps: {
+    enabled: true,
+    eyebrow: 'Cara Memulai',
+    title: 'Mulai yoga dalam empat langkah sederhana',
+    subtitle: 'Tanpa syarat kelenturan. Kami menemani Anda sejak kelas pertama.',
+    items: [
+      { title: 'Pilih kelas', text: 'Lihat jadwal dan pilih kelas yang sesuai dengan pengalaman Anda.' },
+      { title: 'Daftar lewat WhatsApp', text: 'Kirim pesan, tim kami membantu memilih jadwal dan mengonfirmasi tempat Anda.' },
+      { title: 'Datang dan berlatih', text: 'Cukup pakai baju yang nyaman. Matras, balok, dan air minum sudah kami siapkan.' },
+      { title: 'Lanjutkan di rumah', text: 'Dapatkan rangkaian latihan singkat untuk dilakukan sendiri di rumah.' },
+    ],
+  },
+  pricing: {
+    enabled: true,
+    eyebrow: 'Paket',
+    title: 'Pilih paket yang pas dengan ritme Anda',
+    subtitle: 'Mulai dari satu kelas, lalu lanjutkan bila cocok. Semua paket sudah termasuk matras dan perlengkapan.',
+    note: 'Harga per orang. Pembayaran di studio atau transfer setelah jadwal dikonfirmasi.',
+    items: [
+      {
+        name: 'Coba Kelas',
+        price: 'Rp100.000',
+        period: '/kelas',
+        badge: '',
+        description: 'Untuk Anda yang ingin merasakan kelas pertama.',
+        features: 'Satu kelas pilihan\nMatras dan perlengkapan\nObrolan singkat dengan instruktur',
+        button_label: 'Pilih Coba Kelas',
+        button_url: '',
+      },
+      {
+        name: 'Member Bulanan',
+        price: 'Rp650.000',
+        period: '/bulan',
+        badge: 'Paling diminati',
+        description: 'Latihan rutin untuk membangun kebiasaan bergerak.',
+        features: '8 kelas dalam sebulan\nBebas pilih jenis kelas\nVideo latihan di rumah\nPotongan 10% kelas privat',
+        button_label: 'Pilih Member Bulanan',
+        button_url: '',
+      },
+      {
+        name: 'Kelas Privat',
+        price: 'Rp350.000',
+        period: '/sesi',
+        badge: '',
+        description: 'Latihan satu lawan satu sesuai tujuan Anda.',
+        features: 'Rencana latihan pribadi\nJadwal fleksibel\nDi studio atau di rumah Anda\nCatatan perkembangan latihan',
+        button_label: 'Tanya Kelas Privat',
+        button_url: '',
+      },
+    ],
+  },
+  testimonials: {
+    enabled: true,
+    eyebrow: 'Cerita Peserta',
+    title: 'Mereka menemukan ritme yoganya di sini',
+    items: [
+      {
+        name: 'Nadia Paramitha',
+        role: 'Desainer, Bandung',
+        quote: 'Setelah sebulan ikut kelas pagi, saya lebih semangat memulai hari. Suasana studionya bikin betah berlama-lama.',
+        photo: serenityPhoto('portrait-1'),
+      },
+      {
+        name: 'Raka Wibisono',
+        role: 'Guru SMA, Cimahi',
+        quote: 'Awalnya ragu karena sama sekali tidak lentur. Instrukturnya sabar dan selalu memberi pilihan gerakan yang lebih ringan.',
+        photo: serenityPhoto('portrait-2'),
+      },
+      {
+        name: 'Sinta Maharani',
+        role: 'Ibu dua anak, Lembang',
+        quote: 'Kelas Yin hari Sabtu jadi waktu favorit saya. Satu jam yang benar-benar untuk diri sendiri, tanpa gangguan.',
+        photo: serenityPhoto('portrait-3'),
+      },
+    ],
+  },
+  faq: {
+    enabled: true,
+    eyebrow: 'Tanya Jawab',
+    title: 'Pertanyaan yang sering diajukan',
+    subtitle: 'Belum menemukan jawabannya? Kirim pesan, kami senang membantu.',
+    help_title: 'Masih ragu memilih kelas?',
+    help_text: 'Ceritakan pengalaman yoga Anda, kami bantu pilihkan kelas yang paling pas.',
+    button_label: 'Tanya lewat WhatsApp',
+    button_url: '',
+    items: [
+      {
+        question: 'Saya belum pernah yoga dan tidak lentur. Apakah bisa ikut?',
+        answer: 'Bisa. Kelenturan bukan syarat, justru akan terbentuk perlahan. Mulailah dari kelas Yoga Pemula atau Hatha; instruktur selalu memberi pilihan gerakan yang lebih ringan.',
+      },
+      {
+        question: 'Apa yang perlu saya bawa?',
+        answer: 'Pakaian olahraga yang nyaman dan botol minum. Matras, balok, tali, dan handuk kecil sudah tersedia di studio.',
+      },
+      {
+        question: 'Apa bedanya Hatha, Vinyasa, dan Yin?',
+        answer: 'Hatha bertempo pelan untuk belajar pose dasar, Vinyasa lebih dinamis dengan gerak yang mengalir, sedangkan Yin menahan pose lebih lama untuk peregangan yang dalam.',
+      },
+      {
+        question: 'Bagaimana cara mendaftar dan membayar?',
+        answer: 'Pilih kelas lalu kirim pesan lewat WhatsApp. Setelah jadwal dikonfirmasi, pembayaran bisa di studio atau lewat transfer.',
+      },
+      {
+        question: 'Saya punya kondisi kesehatan tertentu. Bolehkah ikut?',
+        answer: 'Konsultasikan dulu dengan dokter, lalu beri tahu instruktur sebelum kelas agar gerakan bisa disesuaikan. Kelas kami adalah latihan kebugaran, bukan pengobatan.',
+      },
+    ],
+  },
+  cta: {
+    enabled: true,
+    title: 'Gelar matras Anda, mulai hari ini',
+    highlight: 'mulai hari ini',
+    subtitle: 'Coba satu kelas dulu. Kami siapkan matras dan tempat yang nyaman untuk Anda.',
+    button_label: 'Pesan Kelas Pertama',
+    button_url: '',
+    image: serenityPhoto('cta'),
+  },
+  contact: {
+    enabled: true,
+    eyebrow: 'Kunjungi Kami',
+    title: 'Studio kami di kaki bukit Lembang',
+    subtitle: 'Datang langsung atau hubungi kami untuk memesan kelas, sesi privat, maupun kelas yoga untuk kantor.',
+    address: 'Jl. Kolonel Masturi No. 88, Cikole, Lembang, Kabupaten Bandung Barat 40391',
+    phone: '(022) 2786-0188',
+    email: 'halo@arunayoga.id',
+    whatsapp: '081234567890',
+    whatsapp_message: 'Halo Aruna Yoga, saya ingin bertanya tentang jadwal kelas.',
+    hours: 'Setiap hari, 06.00–20.00 WIB',
+    maps_url: '',
+  },
+  footer: {
+    enabled: true,
+    description: 'Studio yoga di Lembang untuk pemula hingga yang sudah rutin: Hatha, Vinyasa, Yin, kelas privat, dan retret.',
+    copyright: '',
+    instagram: 'https://instagram.com/arunayoga',
+    facebook: '',
+    linkedin: '',
+    youtube: 'https://youtube.com/@arunayoga',
+    tiktok: 'https://tiktok.com/@arunayoga',
+  },
+};

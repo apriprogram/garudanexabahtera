@@ -1,0 +1,120 @@
+/*
+ * CSS lokal Serenity (diimpor ./Serenity.tsx): teks bergradasi, lapisan gelap foto hero, latar cadangan tanpa foto,
+ * panel "Cara memulai", cahaya kartu paket unggulan, buka-tutup FAQ, dan animasi masuk strip fitur hero. Gerak hanya
+ * bila root template ber-data-tpl-motion="on" (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak →
+ * statis.
+ */
+
+@layer components {
+  /* Kata sorotan di atas foto gelap: gradasi pastel (warna dihitung di model.ts agar ≥ 7:1 terhadap tinta malam) */
+  .sr-grad-pastel {
+    background-image: linear-gradient(90deg, var(--sr-hl-from) 0%, var(--sr-hl-via) 55%, var(--sr-hl-to) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  /* Kata sorotan di latar terang: tinta aksen → biru tinta (keduanya ≥ 4,5:1 di putih) */
+  .sr-grad-ink {
+    background-image: linear-gradient(90deg, var(--sr-ink-from) 0%, var(--sr-ink-to) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .sr-badge-pastel {
+    background-image: linear-gradient(90deg, var(--sr-hl-from) 0%, var(--sr-hl-via) 60%, var(--sr-hl-to) 100%);
+  }
+
+  @media (forced-colors: active) {
+    .sr-grad-pastel,
+    .sr-grad-ink {
+      background: none;
+      color: inherit;
+    }
+  }
+
+  /* Latar hero bila foto kosong/gagal: langit senja dari gradasi */
+  .sr-hero-fallback {
+    background: linear-gradient(165deg, #14356e 0%, #2b5ea6 42%, #7d6fd4 74%, #f0b98d 100%);
+  }
+
+  /*
+   * Lapisan gelap foto hero: atas (di belakang menu), kiri (di belakang judul & deskripsi), bawah (strip fitur).
+   * Wadah sempit (HP, tablet): teks melebar penuh, jadi lapisan dibuat rata atas-bawah.
+   */
+  .sr-hero-scrim {
+    background:
+      linear-gradient(180deg, rgb(8 18 44 / 0.5) 0%, rgb(8 18 44 / 0) 24%),
+      linear-gradient(90deg, rgb(8 18 44 / 0.7) 0%, rgb(8 18 44 / 0.55) 40%, rgb(8 18 44 / 0) 72%),
+      linear-gradient(0deg, rgb(6 14 30 / 0.66) 0%, rgb(6 14 30 / 0.24) 24%, rgb(6 14 30 / 0) 40%);
+  }
+
+  @container (max-width: 1023px) {
+    .sr-hero-scrim {
+      background: linear-gradient(180deg, rgb(8 18 44 / 0.6) 0%, rgb(8 18 44 / 0.44) 48%, rgb(6 14 30 / 0.8) 100%);
+    }
+  }
+
+  /* Panel "Cara memulai": tint aksen → biru sangat lembut */
+  .sr-steps-panel {
+    background: linear-gradient(135deg, var(--sr-tint) 0%, var(--sr-tint-2) 100%);
+  }
+
+  /* Cahaya lembut di sudut kartu paket unggulan (pengganti bayangan) */
+  .sr-aura {
+    border-radius: 9999px;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--tpl-accent) 60%, transparent), transparent);
+    filter: blur(8px);
+  }
+
+  /* Latar ajakan bila foto kosong */
+  .sr-cta-fallback {
+    background: linear-gradient(135deg, #1b1d4a 0%, color-mix(in srgb, var(--tpl-accent) 70%, #1b1d4a) 58%, #e39bb0 100%);
+  }
+
+  /* FAQ: tinggi panel jawaban 0fr → 1fr (transisi hanya bila gerak menyala) */
+  .sr-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .sr-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .sr-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Strip fitur hero: masuk saat halaman dibuka (selalu di tepi bawah layar, jadi bukan "muncul saat digulir") */
+  [data-tpl-motion='on'] .sr-rise {
+    animation: sr-rise 0.8s var(--tpl-ease, ease) both;
+    animation-delay: var(--sr-delay, 0ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .sr-collapse {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .sr-rise {
+      animation: none;
+    }
+  }
+}
+
+@keyframes sr-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
