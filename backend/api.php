@@ -38,6 +38,7 @@ const PUBLIC_ACTIONS = [
     'get_settings', 'track_visit', 'login', 'register', 'get_list_products', 'get_navbar_menus',
     'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
     'customer_register', 'midtrans_notification', 'get_payment_config', 'template_like', 'template_view',
+    'get_showcase_stats', 'showcase_like', 'showcase_view',
 ];
 const ANY_ROLE_ACTIONS = [
     'pd_notifications_list', 'pd_notifications_read', 'pd_file',

@@ -53,7 +53,7 @@ const GENERIC_ERROR = 'Terjadi kesalahan pada server. Silakan coba lagi.';
 
 // Reads may use GET (query string) as well as POST; every other platform action is POST only
 const GET_ACTIONS = new Set([
-  'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'get_payment_config',
+  'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'get_payment_config', 'get_showcase_stats',
   'customer_get_orders', 'customer_get_order', 'customer_get_site', 'customer_get_order_quote',
   'admin_get_template_orders', 'admin_get_template_order', 'admin_get_templates', 'admin_get_active_sites',
   'admin_dashboard_summary',
@@ -65,6 +65,9 @@ const customerRegisterLimiter = createLimiter(3600 * 1000, 5);
 // Suka / dilihat di kartu template (sama dengan PF_LIKES_PER_HOUR / PF_VIEWS_PER_HOUR di templates.php)
 const templateLikeLimiter = createLimiter(3600 * 1000, 60);
 const templateViewLimiter = createLimiter(3600 * 1000, 300);
+// Suka / dilihat kartu proyek beranda: batas sama dengan template (PF_LIKES_PER_HOUR / PF_VIEWS_PER_HOUR)
+const showcaseLikeLimiter = createLimiter(3600 * 1000, 60);
+const showcaseViewLimiter = createLimiter(3600 * 1000, 300);
 // Jumlah terjual per template (sama dengan PF_SOLD_COUNT_SQL di templates.php): pesanan dibayar, tidak dibatalkan/ditolak
 const SOLD_COUNT_SQL = `(SELECT COUNT(*) FROM template_orders o WHERE o.template_id = templates.id AND o.paid_at IS NOT NULL
     AND o.status IN ('menunggu_approval', 'proses_domain', 'aktif')) AS sold_count`;
@@ -92,6 +95,9 @@ const HANDLERS = {
   get_payment_config: getPaymentConfig,
   template_like: templateLike,
   template_view: templateView,
+  get_showcase_stats: getShowcaseStats,
+  showcase_like: showcaseLike,
+  showcase_view: showcaseView,
   // customer (own data only)
   customer_create_order: customerCreateOrder,
   customer_get_order_quote: customerGetOrderQuote,
@@ -209,6 +215,74 @@ async function getPublicProjects({ pool }) {
       description: r.description,
     })),
   };
+}
+
+// ── Suka & dilihat kartu proyek beranda (#projects, pemilik 2026-10-24; migrasi 016 showcase_stats) ──────────────
+// Sama dengan pf_showcase_* di templates.php. Kunci kartu: p-{id} (project_client tampil di website) atau
+// f-{slug judul} (portofolio cadangan: setting portfolio_data, atau daftar bawaan bila setting kosong/rusak).
+const SHOWCASE_DEFAULT_TITLES = ['Web App Dashboard', 'Mobile POS App', 'E-Commerce System', 'Corporate Website', 'Sistem Informasi Desa'];
+
+// Non-ASCII dibuang sebelum huruf kecil = strtolower PHP (hanya ASCII); toLowerCase dulu akan mengubah "İ" & tanda Kelvin
+// menjadi huruf ASCII sehingga kuncinya beda dengan pf_showcase_slug
+const showcaseSlug = (title) => String(title).replace(/[^A-Za-z0-9]+/g, '-').toLowerCase().replace(/^-+|-+$/g, '').slice(0, 100);
+
+/** Semua kunci kartu proyek yang bisa tampil di beranda saat ini. */
+async function showcaseKeys(pool) {
+  const keys = new Set((await dbAll(pool, 'SELECT id FROM project_client WHERE show_on_website = 1')).map((r) => `p-${Number(r.id)}`));
+  const row = await dbOne(pool, "SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data' LIMIT 1");
+  const raw = row ? String(row.setting_value ?? '') : '';
+  let items = null;
+  try {
+    items = raw !== '' ? JSON.parse(raw) : null;
+  } catch {
+    items = null;
+  }
+  const titles = Array.isArray(items) ? items.map((item) => (item && typeof item === 'object' ? String(item.title ?? '') : '')) : SHOWCASE_DEFAULT_TITLES;
+  for (const title of titles) {
+    const slug = showcaseSlug(title);
+    if (slug !== '') keys.add(`f-${slug}`);
+  }
+  return keys;
+}
+
+async function showcaseKey(pool, input) {
+  const key = phpTrim(inStr(input, 'key')).toLowerCase();
+  if (!/^(p-[0-9]{1,10}|f-[a-z0-9-]{1,100})$/.test(key) || !(await showcaseKeys(pool)).has(key)) {
+    throw new ApiError('Proyek tidak ditemukan.', 404, 'PROJECT_NOT_FOUND');
+  }
+  return key;
+}
+
+async function getShowcaseStats({ pool }) {
+  const keys = await showcaseKeys(pool);
+  const stats = {};
+  for (const r of await dbAll(pool, 'SELECT item_key, like_count, view_count FROM showcase_stats')) {
+    if (keys.has(r.item_key)) stats[r.item_key] = { likes: Number(r.like_count), views: Number(r.view_count) };
+  }
+  return { stats };
+}
+
+async function showcaseLike({ pool, input, req }) {
+  const limit = `sc-like|${clientIp(req)}`;
+  const wait = showcaseLikeLimiter.retryAfter(limit);
+  if (wait) tooManyAttempts(wait);
+  const key = await showcaseKey(pool, input);
+  const liked = ['1', 'true'].includes(inStr(input, 'liked').toLowerCase());
+  showcaseLikeLimiter.hit(limit);
+  await dbRun(pool, liked
+    ? 'INSERT INTO showcase_stats (item_key, like_count) VALUES (?, 1) ON DUPLICATE KEY UPDATE like_count = like_count + 1'
+    : 'INSERT INTO showcase_stats (item_key, like_count) VALUES (?, 0) ON DUPLICATE KEY UPDATE like_count = GREATEST(like_count - 1, 0)', [key]);
+  return { like_count: Number((await dbOne(pool, 'SELECT like_count FROM showcase_stats WHERE item_key = ?', [key])).like_count) };
+}
+
+async function showcaseView({ pool, input, req }) {
+  const limit = `sc-view|${clientIp(req)}`;
+  const wait = showcaseViewLimiter.retryAfter(limit);
+  if (wait) tooManyAttempts(wait);
+  const key = await showcaseKey(pool, input);
+  showcaseViewLimiter.hit(limit);
+  await dbRun(pool, 'INSERT INTO showcase_stats (item_key, view_count) VALUES (?, 1) ON DUPLICATE KEY UPDATE view_count = view_count + 1', [key]);
+  return { view_count: Number((await dbOne(pool, 'SELECT view_count FROM showcase_stats WHERE item_key = ?', [key])).view_count) };
 }
 
 // A live customer site, by id (/situs/:siteId) or by host name (SiteHostGate). Only status active.

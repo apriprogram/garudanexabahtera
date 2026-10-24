@@ -143,7 +143,8 @@ export function TemplateShot({ template, index, isNew = false, headingLevel = 3 
                 <button
                   type="button"
                   onClick={() => void toggleLike()}
-                  disabled={busy}
+                  // aria-disabled, bukan disabled: fokus tidak jatuh ke <body> selama permintaan berjalan
+                  aria-disabled={busy}
                   aria-pressed={liked}
                   aria-label={`${liked ? 'Batal suka' : 'Suka'} ${template.name}, ${likes} suka`}
                   className={`relative inline-flex items-center gap-1 rounded-full transition-colors after:absolute after:-inset-2 hover:text-fg ${liked ? 'text-[#e8466f]' : ''}`}

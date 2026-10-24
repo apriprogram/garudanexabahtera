@@ -904,6 +904,15 @@ CREATE TABLE IF NOT EXISTS monitoring_settings (
 -- ##  AKHIR BAGIAN DEPRECATED (tabel monitoring, migrasi 005)               ##
 -- ############################################################################
 
+-- Likes and views of the home project cards (#projects), keyed p-{project id} / f-{portfolio title slug} (migration 016).
+CREATE TABLE IF NOT EXISTS showcase_stats (
+  item_key    VARCHAR(120) NOT NULL,
+  like_count  INT NOT NULL DEFAULT 0,
+  view_count  INT NOT NULL DEFAULT 0,
+  updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (item_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- A fresh install already has every migration up to this baseline.
 -- (002, 003, 007 and the navbar/FAQ data steps of 004 only touch existing rows, which a
 --  fresh install does not have; with an empty navbar_menus the frontend uses its
@@ -921,7 +930,8 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-24_012', 'baseline: template_orders list_price, discount_amount, discount_code (first-order discount)'),
   ('2026-10-24_013', 'baseline: templates like_count, view_count (catalog card likes and views)'),
   ('2026-10-24_014', 'baseline: navbar Tentang + Kontak (no navbar rows; the built-in menu has them)'),
-  ('2026-10-24_015', 'baseline: navbar Kontak hidden (no navbar rows; the built-in menu has Tentang only)');
+  ('2026-10-24_015', 'baseline: navbar Kontak hidden (no navbar rows; the built-in menu has Tentang only)'),
+  ('2026-10-24_016', 'baseline: showcase_stats (project card likes and views)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

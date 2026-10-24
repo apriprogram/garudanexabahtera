@@ -31,15 +31,38 @@ const json = (status: number, body: unknown) =>
 const LONG = 'Website profil perusahaan dengan halaman layanan, galeri proyek, dan formulir kontak.';
 
 let publicProjects: unknown[] = [];
+let showcaseStats: Record<string, { likes: number; views: number }> = {};
+let posts: { action: string | null; body: Record<string, unknown> }[] = [];
+// Jawaban per aksi bisa ditahan (gates) atau dibuat gagal (failing), mis. statistik yang datang belakangan
+let gates: Partial<Record<string, Promise<void>>> = {};
+let failing: Set<string> = new Set();
 
 beforeEach(() => {
   mockSettings = {};
   publicProjects = [];
+  showcaseStats = {};
+  posts = [];
+  gates = {};
+  failing = new Set();
+  window.localStorage.clear();
+  window.sessionStorage.clear();
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const action = new URL(String(input), 'http://localhost').searchParams.get('action');
+      if (init?.method === 'POST') {
+        const body = JSON.parse(String(init.body ?? '{}')) as Record<string, unknown>;
+        delete body.action; // apiPost repeats the action in the body; the query string already carries it
+        posts.push({ action, body });
+      }
+      if (action && gates[action]) await gates[action];
+      if (action && failing.has(action)) return json(429, { success: false, error: 'Terlalu banyak permintaan' });
+      if (init?.method === 'POST') {
+        if (action === 'showcase_like') return json(200, { success: true, like_count: 8 });
+        if (action === 'showcase_view') return json(200, { success: true, view_count: 13 });
+      }
       if (action === 'get_public_projects') return json(200, { projects: publicProjects });
+      if (action === 'get_showcase_stats') return json(200, { success: true, stats: showcaseStats });
       return json(200, {});
     }),
   );
@@ -91,7 +114,7 @@ describe('Projects (#projects)', () => {
     images.forEach((img) => {
       expect(img).toHaveAttribute('alt', '');
       expect(img.className).toContain('motion-safe:group-hover/shot:scale-[1.04]');
-      expect(img.parentElement?.className).toContain('aspect-[4/3]');
+      expect(img.closest('.aspect-\\[4\\/3\\]')).not.toBeNull();
     });
     const cards = section.querySelectorAll('article');
     expect(cards).toHaveLength(2);
@@ -110,7 +133,9 @@ describe('Projects (#projects)', () => {
     expect(belowTitle.className).toContain('[@media(hover:hover)]:sr-only');
     const heading = within(card).getByRole('heading', { level: 3 });
     expect(heading.compareDocumentPosition(belowTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(heading.className).toContain('line-clamp-2');
+    // line-clamp di span dalam tombol judul: overflow di h3 akan memotong garis fokus tombol
+    expect(heading.className).not.toContain('line-clamp');
+    expect(within(heading).getByRole('button').querySelector('.line-clamp-2')).not.toBeNull();
     const similar = within(card).getByRole('link', { name: 'Pesan Serupa Website Perusahaan' });
     expect(similar).toHaveAttribute('href', '/pesan-custom');
     expect(similar.className).toContain('btn-primary');
@@ -120,6 +145,132 @@ describe('Projects (#projects)', () => {
     const action = within(section).getByRole('link', { name: /Pesan Custom/ });
     expect(action).toHaveAttribute('href', '/pesan-custom');
     expect(action.querySelector('svg')?.getAttribute('class')).toContain('motion-reduce:transition-none');
+  });
+
+  it('kategori di bawah judul (pemilik 2026-10-24): chip jenis proyek menyaring kartu; satu kategori saja → tanpa chip', async () => {
+    publicProjects = [
+      { id: 1, name: 'Website Perusahaan', service_type: 'website', image: '/p1.jpg', description: LONG },
+      { id: 2, name: 'Aplikasi Kasir', service_type: 'mobile_app', image: '/p2.jpg', description: `${LONG} Versi aplikasi.` },
+      { id: 3, name: 'Website Klinik', service_type: 'website', image: '/p3.jpg', description: `${LONG} Versi klinik.` },
+    ];
+    renderAt(<Projects />);
+    const section = document.getElementById('projects') as HTMLElement;
+    const group = await within(section).findByRole('group', { name: 'Kategori proyek' });
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Semua', 'Website', 'Aplikasi Mobile']);
+    expect(within(group).getByRole('button', { name: 'Semua' })).toHaveAttribute('aria-pressed', 'true');
+    expect(section.querySelectorAll('article')).toHaveLength(3);
+    // "Pesan Custom" sebaris dengan chip kategori, setinggi chip (btn-sm), tidak lagi di samping judul
+    const custom = within(section).getByRole('link', { name: /Pesan Custom/ });
+    expect(custom.parentElement).toContainElement(group);
+    expect(custom.className).toContain('btn-sm');
+
+    fireEvent.click(within(group).getByRole('button', { name: 'Aplikasi Mobile' }));
+    expect(within(group).getByRole('button', { name: 'Aplikasi Mobile' })).toHaveAttribute('aria-pressed', 'true');
+    expect([...section.querySelectorAll('article h3')].map((h) => h.textContent)).toEqual(['Aplikasi Kasir']);
+    // Kolom grid tetap mengikuti semua proyek (ukuran kartu tidak berubah)
+    expect((section.querySelector('ul') as HTMLElement).className).toContain('lg:grid-cols-3');
+
+    cleanup();
+    publicProjects = [
+      { id: 1, name: 'Website Perusahaan', service_type: 'website', image: '/p1.jpg', description: LONG },
+      { id: 2, name: 'Undangan Digital', service_type: 'website', image: '/p2.jpg', description: `${LONG} Versi undangan.` },
+    ];
+    renderAt(<Projects />);
+    const single = document.getElementById('projects') as HTMLElement;
+    await within(single).findByRole('heading', { name: 'Undangan Digital' });
+    expect(within(single).queryByRole('group', { name: 'Kategori proyek' })).toBeNull();
+    // Tanpa chip: tombol kembali ke samping judul, ukuran biasa
+    const action = within(single).getByRole('link', { name: /Pesan Custom/ });
+    expect(action.className).not.toContain('btn-sm');
+    expect(action).toHaveAttribute('href', '/pesan-custom');
+  });
+
+  it('♥ suka & 👁 dilihat (pemilik 2026-10-24): angka dari get_showcase_stats, suka di-toggle, membuka detail = dilihat sekali', async () => {
+    publicProjects = [
+      { id: 1, name: 'Website Perusahaan', service_type: 'website', image: '/p1.jpg', description: LONG },
+      { id: 2, name: 'Aplikasi Kasir', service_type: 'mobile_app', image: '/p2.jpg', description: `${LONG} Versi aplikasi.` },
+    ];
+    showcaseStats = { 'p-1': { likes: 7, views: 12 } };
+    renderAt(<Projects />);
+    const section = document.getElementById('projects') as HTMLElement;
+    const like = await within(section).findByRole('button', { name: 'Suka Website Perusahaan, 7 suka' });
+    expect(like).toHaveAttribute('aria-pressed', 'false');
+    expect(within(section).getByRole('button', { name: 'Suka Aplikasi Kasir, 0 suka' })).toBeInTheDocument();
+    const card = like.closest('article') as HTMLElement;
+    expect(card).toHaveTextContent(/12 kali dilihat/);
+
+    // Suka: angka dari server, status disimpan di browser
+    fireEvent.click(like);
+    await waitFor(() => expect(within(card).getByRole('button', { name: 'Batal suka Website Perusahaan, 8 suka' })).toHaveAttribute('aria-pressed', 'true'));
+    expect(posts).toContainEqual({ action: 'showcase_like', body: { key: 'p-1', liked: true } });
+
+    // Membuka detail (judul) = dilihat, sekali per sesi; dialog modal dengan judul, deskripsi & Pesan Serupa
+    fireEvent.click(within(card).getByRole('button', { name: 'Website Perusahaan' }));
+    const dialog = screen.getByRole('dialog', { name: 'Website Perusahaan' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveTextContent(LONG);
+    expect(within(dialog).getByRole('link', { name: /Pesan Serupa/ })).toHaveAttribute('href', '/pesan-custom');
+    expect(card).toHaveTextContent(/13 kali dilihat/);
+    expect(posts.filter((p) => p.action === 'showcase_view')).toEqual([{ action: 'showcase_view', body: { key: 'p-1' } }]);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tutup detail proyek' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.click(within(card).getByRole('button', { name: 'Website Perusahaan' }));
+    expect(posts.filter((p) => p.action === 'showcase_view')).toHaveLength(1);
+  });
+
+  it('statistik datang belakangan: klik sebelumnya tidak membekukan angka; fokus kembali ke judul; ♥ tetap memegang fokus', async () => {
+    publicProjects = [
+      { id: 1, name: 'Website Perusahaan', service_type: 'website', image: '/p1.jpg', description: LONG },
+      { id: 2, name: 'Aplikasi Kasir', service_type: 'mobile_app', image: '/p2.jpg', description: `${LONG} Versi aplikasi.` },
+    ];
+    showcaseStats = { 'p-1': { likes: 7, views: 40 } };
+    let releaseStats = () => {};
+    gates.get_showcase_stats = new Promise<void>((resolve) => (releaseStats = resolve));
+    failing = new Set(['showcase_like', 'showcase_view']);
+    renderAt(<Projects />);
+    const section = document.getElementById('projects') as HTMLElement;
+    const like = await within(section).findByRole('button', { name: 'Suka Website Perusahaan, 0 suka' });
+    const card = like.closest('article') as HTMLElement;
+
+    // Suka gagal sebelum statistik tiba: dikembalikan; dibuka dari gambar (bukan judul), hitungan gagal terkirim
+    fireEvent.click(like);
+    await waitFor(() => expect(within(card).getByRole('button', { name: 'Suka Website Perusahaan, 0 suka' })).toHaveAttribute('aria-pressed', 'false'));
+    fireEvent.click(card.querySelector('button[aria-hidden]') as HTMLElement);
+    await waitFor(() => expect(posts.filter((p) => p.action === 'showcase_view')).toHaveLength(1));
+    expect(card).toHaveTextContent(/1 kali dilihat/);
+
+    // Tutup: fokus ke tombol judul (pemicu yang terlihat), bukan <body> atau gambar aria-hidden
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Tutup detail proyek' }));
+    expect(within(card).getByRole('button', { name: 'Website Perusahaan' })).toHaveFocus();
+
+    // Statistik tiba: angka server + kunjungan sesi ini (bukan beku di 1), suka = angka server
+    releaseStats();
+    await waitFor(() => expect(card).toHaveTextContent(/41 kali dilihat/));
+    expect(within(card).getByRole('button', { name: 'Suka Website Perusahaan, 7 suka' })).toBeInTheDocument();
+
+    // Selama permintaan suka berjalan: aria-disabled (bukan disabled), fokus tetap di tombol
+    failing = new Set();
+    let releaseLike = () => {};
+    gates.showcase_like = new Promise<void>((resolve) => (releaseLike = resolve));
+    const heart = within(card).getByRole('button', { name: /Suka Website Perusahaan/ });
+    heart.focus();
+    fireEvent.click(heart);
+    expect(heart).toHaveAttribute('aria-disabled', 'true');
+    expect(heart).not.toBeDisabled();
+    expect(heart).toHaveFocus();
+    releaseLike();
+    await waitFor(() => expect(heart).toHaveAttribute('aria-disabled', 'false'));
+    expect(heart).toHaveAccessibleName('Batal suka Website Perusahaan, 8 suka');
+  });
+
+  it('portofolio cadangan: kunci suka/dilihat = f-{slug judul}', async () => {
+    mockSettings = { portfolio_data: JSON.stringify([{ title: 'Sistem Informasi Desa', desc: 'GOVERNMENT / WEB', image: '/assets/product/pos.png' }]) };
+    showcaseStats = { 'f-sistem-informasi-desa': { likes: 3, views: 5 } };
+    renderAt(<Projects />);
+    const section = document.getElementById('projects') as HTMLElement;
+    fireEvent.click(await within(section).findByRole('button', { name: 'Suka Sistem Informasi Desa, 3 suka' }));
+    await waitFor(() => expect(posts).toContainEqual({ action: 'showcase_like', body: { key: 'f-sistem-informasi-desa', liked: true } }));
   });
 
   it('kurang dari 2 proyek layak → portofolio cadangan, teks uji tidak pernah tampil', async () => {
