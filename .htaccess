@@ -47,24 +47,25 @@ DirectoryIndex index.html
   # Gambar proyek di assets/dokumen-client/logo/ tetap publik (beranda).
   RewriteRule ^/*assets/+dokumen-client/+dokumen(/|$) - [F,L,NC]
 
-  # File internal hasil prerender tidak bisa dibuka langsung (semua host): _pre/, app.html, seo.php hanya dipakai
-  # lewat rewrite di bawah. THE_REQUEST = baris request asli dari browser, jadi rewrite internal ke file-file ini
-  # tidak ikut tertolak (di Apache maupun LiteSpeed). REDIRECT_STATUS kosong = bukan ErrorDocument /404.html.
-  RewriteCond %{ENV:REDIRECT_STATUS} ^$
-  RewriteCond %{THE_REQUEST} \s/+(_pre([/?\s]|$)|app\.html|seo\.php) [NC]
-  RewriteRule ^ - [R=404,L]
-  # 404.html sendiri adalah ErrorDocument 404. Bila dibuka langsung lalu dijawab R=404, LiteSpeed memakai halaman itu
-  # untuk dirinya sendiri dan menjawab 500, jadi dijawab 410 (Gone) dengan halaman bawaan server.
-  RewriteCond %{ENV:REDIRECT_STATUS} ^$
-  RewriteCond %{THE_REQUEST} \s/+404\.html[\s?] [NC]
-  RewriteRule ^ - [G,L]
-  # Sama untuk request dengan %-encoding di path (/%5Fpre/index.html, /seo%2Ephp, /app%2Ehtml): THE_REQUEST belum
-  # di-decode, jadi polanya dicocokkan dengan path yang sudah di-decode. Hanya request asli yang berisi "%", sehingga
-  # rewrite internal ke _pre/ (request tanpa "%") tetap jalan.
-  RewriteCond %{ENV:REDIRECT_STATUS} ^$
+  # File internal hasil prerender tidak bisa dibuka langsung (semua host): _pre/ dan app.html hanya dipakai lewat
+  # rewrite di bawah. THE_REQUEST = baris request asli dari browser, jadi rewrite internal ke file-file ini tidak ikut
+  # tertolak (di Apache maupun LiteSpeed). Request dengan %-encoding di path (/%5Fpre/index.html, /app%2Ehtml): THE_REQUEST
+  # belum di-decode, jadi cukup berisi "%" dan pola RewriteRule mencocokkan path yang sudah di-decode; rewrite internal
+  # ke _pre/ (request tanpa "%") tetap jalan.
+  # Jawabannya 404 dari seo.php (isi 404.html), bukan R=404 + ErrorDocument: di LiteSpeed, ErrorDocument meninggalkan
+  # sisa status di koneksi keep-alive, dan request berikutnya di koneksi itu salah jawab (/404.html 200, 404 berikutnya
+  # 200 berisi halaman 404). Pola RewriteRule = path saat ini, jadi putaran kedua (path seo.php) tidak cocok lagi.
+  # seo.php sendiri menolak dibuka langsung (404, dicek di seo.php). /_pre tanpa garis miring = folder nyata: rewrite ke
+  # seo.php di situ dijawab mod_dir dengan 301 ke /_pre/?gn404=1, jadi langsung 403.
+  RewriteCond %{THE_REQUEST} \s/+_pre[?\s] [NC,OR]
   RewriteCond %{THE_REQUEST} ^\S+\s+[^?\s]*%
-  RewriteRule ^/*(_pre(/|$)|app\.html$|seo\.php$) - [R=404,L,NC]
-  RewriteCond %{ENV:REDIRECT_STATUS} ^$
+  RewriteRule ^/*_pre$ - [F,L,NC]
+  RewriteCond %{THE_REQUEST} \s/+(_pre([/?\s]|$)|app\.html) [NC,OR]
+  RewriteCond %{THE_REQUEST} ^\S+\s+[^?\s]*%
+  RewriteRule ^/*(_pre(/|$)|app\.html$) seo.php?gn404=1 [L,NC]
+  # 404.html (isi halaman 404 yang dikirim seo.php) dibuka langsung → 410 (Gone) dengan halaman bawaan server. Tanpa
+  # cek REDIRECT_STATUS: di LiteSpeed nilainya tersisa dari ErrorDocument request sebelumnya di koneksi yang sama.
+  RewriteCond %{THE_REQUEST} \s/+404\.html[\s?] [NC,OR]
   RewriteCond %{THE_REQUEST} ^\S+\s+[^?\s]*%
   RewriteRule ^/*404\.html$ - [G,L,NC]
 
@@ -110,13 +111,15 @@ DirectoryIndex index.html
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ index.html [L]
 
-  # Host utama: selebihnya 404 asli (ErrorDocument di bawah menampilkan 404.html)
+  # Host utama: selebihnya 404 dari seo.php (isi 404.html), bukan R=404 + ErrorDocument (lihat aturan file internal
+  # di atas). Query asli dibuang (?gn404=1 menggantikannya), jadi /x?slug=… tidak pernah merender template.
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ - [R=404,L]
+  RewriteRule ^ seo.php?gn404=1 [L]
 </IfModule>
 
-# Halaman 404 hasil prerender (noindex). Hanya untuk error dari server; 404 dari seo.php/api.php ditulis sendiri.
+# Halaman 404 hasil prerender (noindex), cadangan untuk 404 dari server sendiri. 404 dari aturan di atas, seo.php dan
+# api.php ditulis PHP.
 ErrorDocument 404 /404.html
 
 <IfModule mod_headers.c>

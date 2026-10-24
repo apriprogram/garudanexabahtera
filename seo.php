@@ -3,8 +3,10 @@
 //
 // Halaman template yang sudah ada saat deploy diprerender ke _pre/template/{slug}.html dan disajikan langsung oleh
 // .htaccess. Template baru yang terbit sesudahnya belum punya file itu: .htaccess mengarahkan /template/{slug} ke sini
-// (host utama saja; akses langsung ke /seo.php ditolak 404 oleh aturan THE_REQUEST). Skrip ini:
-// - template tidak ada / belum terbit / slug tidak sah → 404 dengan isi 404.html;
+// (host utama saja; akses langsung ke /seo.php dijawab 404, lihat seo_requested_directly). Skrip ini:
+// - ?gn404=1 (.htaccess: path yang tidak ada di host utama, _pre/ dan app.html yang dibuka langsung), template tidak
+//   ada / belum terbit / slug tidak sah → 404 dengan isi 404.html. Bukan R=404 + ErrorDocument: di LiteSpeed itu
+//   membuat request berikutnya di koneksi keep-alive yang sama salah status (deploy/cpanel/htaccess);
 // - selain itu index.html (cangkang aplikasi) + head lengkap (title, description, canonical, OG, JSON-LD Organization,
 //   WebSite, Product, BreadcrumbList) + <main> sederhana (H1, deskripsi, fitur, harga, tautan pesan/demo/katalog).
 //   Aplikasi React lalu dimuat seperti biasa dan menggantikan isi #root.
@@ -430,6 +432,15 @@ function seo_not_found(): void {
     else echo '<!doctype html><title>Halaman tidak ditemukan</title><h1>Halaman tidak ditemukan</h1>';
 }
 
+/**
+ * Dibuka langsung (/seo.php, //seo.php, /seo%2Ephp, /seo.php/x), bukan lewat rewrite .htaccess. REQUEST_URI = path asli
+ * dari browser, sebelum rewrite.
+ */
+function seo_requested_directly(string $requestUri): bool {
+    $path = rawurldecode(explode('?', $requestUri, 2)[0]);
+    return (bool)preg_match('#^/+seo\.php(/|$)#i', $path);
+}
+
 /** Satu baris tabel yang cocok dengan query ber-parameter slug, atau null. */
 function seo_find_row(string $sql, string $slug): ?array {
     seo_load_env();
@@ -468,6 +479,10 @@ function seo_main(): void {
     error_reporting(E_ALL);
     ini_set('display_errors', '0');
     ini_set('log_errors', '1');
+    if (isset($_GET['gn404']) || seo_requested_directly((string)($_SERVER['REQUEST_URI'] ?? ''))) {
+        seo_not_found();
+        return;
+    }
     // ?guide= → artikel panduan (/panduan/{slug}), selain itu ?slug= → template (/template/{slug})
     $isGuide = isset($_GET['guide']);
     $param = $isGuide ? $_GET['guide'] : ($_GET['slug'] ?? '');
