@@ -3,7 +3,7 @@
 // Katalog /template, kategori /template/kategori/{slug} dan detail template (SEO WP5, docs/platform/SEO-PLAN.md §5.5)
 // lewat App sungguhan: kartu & chip berupa tautan nyata, FAQ bersama, paginasi tautan ?page=N, kategori kosong / tidak
 // dikenal, template tanpa file isi (cadangan DB) dan slug tidak terbit (halaman 404).
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -55,9 +55,12 @@ const main = () => within(document.getElementById('konten') as HTMLElement);
 const mainHrefs = () => [...(document.getElementById('konten') as HTMLElement).querySelectorAll('a')].map((a) => a.getAttribute('href'));
 
 describe('/template (katalog)', () => {
-  it('H1, semua kartu & chip kategori sebagai tautan, FAQ bersama, tautan ke harga, jasa custom dan panduan', async () => {
+  it('H1 "Pilih Template", semua kartu & chip kategori sebagai tautan, kolom cari, FAQ bersama, tautan harga & Pesan Custom', async () => {
     renderAt('/template');
-    expect(await screen.findByRole('heading', { level: 1 }, { timeout: 5000 })).toHaveTextContent('Template website siap pakai');
+    expect(await screen.findByRole('heading', { level: 1 }, { timeout: 5000 })).toHaveTextContent(/^Pilih Template$/);
+    // Halaman disederhanakan (pemilik 2026-10-24): tanpa kalimat pengantar, strip "Sudah termasuk", tabel DIY & "Lanjutkan membaca"
+    expect(main().queryByText(/untuk bisnis Anda\. Lihat demonya/)).toBeNull();
+    expect(main().queryByText('Sudah termasuk')).toBeNull();
     await main().findByRole('link', { name: 'Finova' }, { timeout: 5000 });
     const hrefs = mainHrefs();
     for (const t of FIXTURE_TEMPLATES) expect(hrefs).toContain(`/template/${t.slug}`);
@@ -70,12 +73,31 @@ describe('/template (katalog)', () => {
       '/template/kategori/olahraga-komunitas',
       '/template/kategori/fintech-startup',
     ]);
-    // Panduan: artikel pertama yang terbit dari daftar prioritas (guideLink, WP8)
-    for (const href of ['/harga', '/jasa-pembuatan-website', '/panduan/template-vs-jasa-website-custom']) expect(hrefs).toContain(href);
+    for (const href of ['/harga', '/pesan-custom?layanan=website']) expect(hrefs).toContain(href);
+    expect(main().getByRole('search', { name: 'Cari template' })).toBeInTheDocument();
     // FAQ = jawaban bersama src/content/faq.ts (sama dengan beranda, /harga dan JSON-LD FAQPage)
     for (const item of faqItems(CATALOG_FAQ_IDS, faqContext(FIXTURE_TEMPLATES))) expect(main().getByText(item.answer)).toBeInTheDocument();
-    expect(main().getByRole('table', { name: /website builder DIY/ })).toBeInTheDocument();
+    expect(main().queryByRole('table')).toBeNull();
+    expect(main().queryByText(/Lanjutkan membaca|Yang Anda dapatkan/)).toBeNull();
     expect(main().queryByText(/Halaman ini sedang kami lengkapi/)).toBeNull();
+  });
+
+  it('kolom cari menyaring kartu (semua hasil, tanpa paginasi); tanpa hasil → pesan + Pesan Custom + reset', async () => {
+    renderAt('/template');
+    await main().findByRole('link', { name: 'Finova' }, { timeout: 5000 });
+    const input = main().getByRole('searchbox', { name: 'Cari template' });
+    fireEvent.change(input, { target: { value: 'finova' } });
+    await main().findByText(/^1 dari 5 template$/);
+    expect(main().getByRole('link', { name: 'Finova' })).toBeInTheDocument();
+    expect(main().queryByRole('link', { name: 'Corporate Nexa' })).toBeNull();
+
+    fireEvent.change(input, { target: { value: 'tidak ada yang cocok' } });
+    expect(await main().findByText('Tidak ada template yang cocok')).toBeInTheDocument();
+    fireEvent.click(main().getByRole('button', { name: 'Lihat Semua Template' }));
+    expect(await main().findByRole('link', { name: 'Corporate Nexa' })).toBeInTheDocument();
+    expect(input).toHaveValue('');
+    // Tombol reset hilang bersama panel, fokus pindah ke kolom cari
+    expect(input).toHaveFocus();
   });
 
   it('lebih dari 12 template: paginasi tautan ?page=N (bukan tombol), halaman 2 menampilkan sisanya', async () => {

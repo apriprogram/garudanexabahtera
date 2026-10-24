@@ -41,7 +41,7 @@ export interface CategoryMeta {
  * (categories.content.ts) berubah. lastmod sitemap = tanggal ini atau tanggal template terbaru, mana yang lebih akhir.
  * Ubah setiap kali teksnya diubah.
  */
-export const CATALOG_UPDATED = '2026-10-23';
+export const CATALOG_UPDATED = '2026-10-24';
 export const CATEGORIES_UPDATED = '2026-10-23';
 
 export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {

@@ -139,7 +139,7 @@ describe('hydrating prerendered pages', () => {
   it('/template (WP5): every template card and category chip is an <a href> in the server HTML', async () => {
     const { problems, serverH1, container: el } = await hydrate('/template');
     expect(problems).toEqual([]);
-    expect(serverH1?.textContent).toBe('Template website siap pakai');
+    expect(serverH1?.textContent).toBe('Pilih Template');
     const hrefs = mainLinks(el);
     for (const slug of ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova']) expect(hrefs).toContain(`/template/${slug}`);
     for (const slug of ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup']) expect(hrefs).toContain(`/template/kategori/${slug}`);
