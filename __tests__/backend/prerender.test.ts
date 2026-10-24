@@ -258,8 +258,8 @@ describe('.htaccess routing (main host only)', () => {
     expect(HTACCESS).toMatch(/<FilesMatch "\\\.html\$">\n\s*Header set Cache-Control "no-cache"/);
   });
 
-  it('never answers with R=404 + ErrorDocument or reads REDIRECT_STATUS (LiteSpeed carries both over a keep-alive connection)', () => {
-    // Setelah ErrorDocument, request berikutnya di koneksi yang sama salah status (/404.html 200, 404 berikutnya 200)
+  it('never answers with R=404 + ErrorDocument or reads REDIRECT_STATUS (LiteSpeed reuses the static /404.html on a keep-alive connection)', () => {
+    // Sesudah ErrorDocument, LiteSpeed memakai ulang /404.html statis di koneksi yang sama (/404.html 200, 404 berikutnya 200)
     expect(HTACCESS).not.toMatch(/\[R=404/);
     expect(HTACCESS).not.toContain('%{ENV:REDIRECT_STATUS}');
     expect(HTACCESS.match(/seo\.php\?gn404=1/g)).toHaveLength(2);
