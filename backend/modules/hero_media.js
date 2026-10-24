@@ -170,7 +170,11 @@ export function readRawBody(req, limit) {
   });
 }
 
-async function uploadHeroVideo(req) {
+/**
+ * Reads the raw video body and stores it on S3 as assets/<section>/<stem>_<12 hex>.<mp4|webm> (public, cached for a
+ * year); returns its URL. Also the project videos of the home page (upload_project_video, modules/portfolio_media.js).
+ */
+export async function storeRawVideo(req, section = FOLDER, stem = 'hero_video') {
   const headers = req.headers || {};
   if (NOT_RAW_BODY.test(String(headers['content-type'] || ''))) throw new HeroMediaError(TYPE_ERROR);
   const limit = videoLimitBytes();
@@ -180,9 +184,11 @@ async function uploadHeroVideo(req) {
   if (!body.length) throw new HeroMediaError(EMPTY_ERROR);
   const video = sniffVideo(body);
   if (!video) throw new HeroMediaError(TYPE_ERROR);
-  const key = `assets/${FOLDER}/hero_video_${randomBytes(6).toString('hex')}.${video.ext}`;
+  const key = `assets/${section}/${stem}_${randomBytes(6).toString('hex')}.${video.ext}`;
   return await uploadToS3(body, key, video.mime, 'public-read', { cacheControl: IMMUTABLE });
 }
+
+const uploadHeroVideo = (req) => storeRawVideo(req);
 
 /**
  * Runs get_hero_media_limits (GET or POST) and upload_hero_video (POST only: a GET falls through to "Invalid
@@ -208,7 +214,8 @@ export async function handleHeroMediaAction(action, req, res, pool) {
   return true;
 }
 
-function sendError(res, err, action) {
+/** Error reply of the upload actions: exposed errors with their status and message, anything else a generic 500. */
+export function sendError(res, err, action) {
   if (res.headersSent) return;
   if (err?.expose) {
     // 413 leaves the rest of the body unread: close the connection instead of keeping it alive half-read

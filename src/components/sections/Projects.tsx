@@ -1,8 +1,6 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { ArrowRight, Eye, Heart, Sparkles, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Eye, Heart, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { apiGet, peekApiGet } from '../../lib/api';
 import type { PublicProject } from '../../types/platform';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
@@ -10,6 +8,7 @@ import { Reveal } from '../ui/Reveal';
 import { SectionHeading } from '../ui/SectionHeading';
 import { LogoMark } from '../ui/LogoMark';
 import { buildProjectItems, type ProjectCardData } from './projects/projectItems';
+import ProjectDialog, { type Engagement } from './projects/ProjectDialog';
 import { shotGrid, TINT } from './templates/catalog';
 import { TemplateShotSkeleton } from './templates/TemplateShot';
 import { compactCount, useEngagement } from './templates/useTemplateEngagement';
@@ -168,10 +167,10 @@ const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = 
 };
 
 /**
- * Gambar proyek dengan cadangan logo bila gagal dimuat. Dekoratif (`alt=""`): judul proyek sudah dibacakan dari h3 di
- * bawahnya.
+ * Gambar kartu proyek dengan cadangan logo bila gagal dimuat. Dekoratif (`alt=""`): judul proyek sudah dibacakan dari h3
+ * di bawahnya.
  */
-const ProjectImage: React.FC<{ item: ProjectCardData; zoom?: boolean }> = ({ item, zoom = true }) => {
+const ProjectImage: React.FC<{ item: ProjectCardData }> = ({ item }) => {
   const [broken, setBroken] = useState(false);
   if (!item.image || broken) {
     return (
@@ -189,19 +188,16 @@ const ProjectImage: React.FC<{ item: ProjectCardData; zoom?: boolean }> = ({ ite
       loading="lazy"
       decoding="async"
       onError={() => setBroken(true)}
-      className={`h-full w-full object-cover object-top ${zoom ? 'transition-transform duration-500 ease-out motion-safe:group-hover/shot:scale-[1.04]' : ''}`}
+      className="h-full w-full object-cover object-top transition-transform duration-500 ease-out motion-safe:group-hover/shot:scale-[1.04]"
     />
   );
 };
 
-type Engagement = ReturnType<typeof useEngagement>;
-
-/** Tombol suka + jumlah dilihat (kartu & detail proyek), sama dengan kartu template. */
-const EngagementStats: React.FC<{ title: string; engagement: Engagement; large?: boolean }> = ({ title, engagement, large = false }) => {
+/** Tombol suka + jumlah dilihat di kartu proyek, sama dengan kartu template. */
+const EngagementStats: React.FC<{ title: string; engagement: Engagement }> = ({ title, engagement }) => {
   const { liked, likes, views, toggleLike, busy } = engagement;
-  const icon = large ? 'h-5 w-5' : 'h-4 w-4';
   return (
-    <div className={`flex shrink-0 items-center tabular-nums text-muted ${large ? 'gap-4 text-sm' : 'gap-3 text-[13px]'}`}>
+    <div className="flex shrink-0 items-center gap-3 tabular-nums text-[13px] text-muted">
       <button
         type="button"
         onClick={() => void toggleLike()}
@@ -212,11 +208,11 @@ const EngagementStats: React.FC<{ title: string; engagement: Engagement; large?:
         aria-label={`${liked ? 'Batal suka' : 'Suka'} ${title}, ${likes} suka`}
         className={`relative inline-flex items-center gap-1 rounded-full transition-colors after:absolute after:-inset-2 hover:text-fg ${liked ? 'text-[#e8466f]' : ''}`}
       >
-        <Heart className={`${icon} ${liked ? 'fill-current' : ''}`} aria-hidden />
+        <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} aria-hidden />
         {compactCount(likes)}
       </button>
       <span className="inline-flex items-center gap-1" title={`${views} kali dilihat`}>
-        <Eye className={icon} aria-hidden />
+        <Eye className="h-4 w-4" aria-hidden />
         {compactCount(views)}
         <span className="sr-only"> kali dilihat</span>
       </span>
@@ -229,7 +225,8 @@ const EngagementStats: React.FC<{ title: string; engagement: Engagement; large?:
  * Lapisan hover (atau fokus keyboard) berisi judul + deskripsi singkat dan tombol "Pesan Serupa" ke form custom; di layar
  * sentuh tombolnya selalu terlihat. Di bawah gambar: judul | ♥ suka · 👁 dilihat (pemilik 2026-10-24), jenis proyek, lalu
  * deskripsi (terlihat di layar sentuh, sr-only di perangkat ber-mouse; salinan di lapisan hover hanya visual).
- * Gambar & judul membuka detail proyek (ProjectDialog); membuka detail dihitung "dilihat" sekali per sesi.
+ * Gambar & judul membuka detail proyek (projects/ProjectDialog.tsx, gaya shot Dribbble); membuka detail dihitung "dilihat"
+ * sekali per sesi.
  */
 const ProjectShot: React.FC<{ item: ProjectCardData; index: number; stat?: ShowcaseStat }> = ({ item, index, stat }) => {
   const engagement = useEngagement('project', item.statsKey, stat?.likes ?? 0, stat?.views ?? 0);
@@ -305,76 +302,6 @@ const ProjectShot: React.FC<{ item: ProjectCardData; index: number; stat?: Showc
       </Reveal>
       {open && <ProjectDialog item={item} engagement={engagement} returnFocusRef={titleRef} onClose={() => setOpen(false)} />}
     </li>
-  );
-};
-
-/**
- * Detail proyek (dialog modal, portal ke <body>): gambar besar, judul, jenis, deskripsi lengkap, suka & dilihat, dan
- * "Pesan Serupa". Fokus dijaga di dalam dialog dan kembali ke pemicu saat ditutup (Esc, tombol tutup, klik latar).
- */
-const ProjectDialog: React.FC<{
-  item: ProjectCardData;
-  engagement: Engagement;
-  returnFocusRef: React.RefObject<HTMLButtonElement | null>;
-  onClose: () => void;
-}> = ({ item, engagement, returnFocusRef, onClose }) => {
-  const titleId = useId();
-  const ref = useFocusTrap<HTMLDivElement>(true, { onEscape: onClose, returnFocusRef });
-
-  // Halaman di belakang dialog tidak ikut bergulir
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, []);
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-fg/60 backdrop-blur-sm sm:items-center sm:p-6"
-      onClick={(event) => event.target === event.currentTarget && onClose()}
-    >
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative max-h-[92svh] w-full max-w-3xl overflow-y-auto overscroll-contain rounded-t-[28px] bg-surface sm:rounded-[28px]"
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Tutup detail proyek"
-          className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface/90 text-fg ring-1 ring-inset ring-line backdrop-blur transition-colors hover:text-primary"
-        >
-          <X className="h-5 w-5" aria-hidden />
-        </button>
-        <div className={`aspect-[16/10] overflow-hidden ${TINT}`}>
-          <ProjectImage item={item} zoom={false} />
-        </div>
-        <div className="p-5 sm:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-            <div className="min-w-0">
-              <h2 id={titleId} className="text-xl font-semibold leading-snug tracking-[-0.02em] text-fg sm:text-2xl">
-                {item.title}
-              </h2>
-              {item.label && <p className="mt-1 text-sm text-muted">{item.label}</p>}
-            </div>
-            <EngagementStats title={item.title} engagement={engagement} large />
-          </div>
-          {item.description && <p className="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-muted">{item.description}</p>}
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Link to="/pesan-custom" className="btn btn-primary">
-              <Sparkles className="h-4 w-4" aria-hidden />
-              Pesan Serupa
-            </Link>
-            <p className="text-sm text-muted">Ceritakan kebutuhan Anda, konsultasinya gratis.</p>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body,
   );
 };
 

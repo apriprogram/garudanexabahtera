@@ -32,7 +32,8 @@ if (skipTypecheck && !buildOnly) throw new Error('--skip-typecheck hanya untuk -
 
 // Upload folders that hold user content: never published from git (they live only on the server).
 // assets/dokumen-client = client documents and project logos uploaded from the admin; the deploy branch is public.
-const EXCLUDE = ['assets/sites', 'assets/documents', 'assets/list-products', 'assets/dokumen-client'];
+// assets/projects = images and videos of the home page projects (backend/modules/portfolio_media.php).
+const EXCLUDE = ['assets/sites', 'assets/documents', 'assets/list-products', 'assets/dokumen-client', 'assets/projects'];
 // File upload di folder yang juga berisi file ter-commit: video & poster latar hero (backend/modules/hero_media.php)
 // di assets/bg, di samping gambar slider bawaan. Dikecualikan per nama file (path relatif terhadap public/, pakai /).
 const EXCLUDE_FILES = ['assets/bg/hero_video_*', 'assets/bg/hero_poster_*', 'assets/bg/.hero_video_*'];

@@ -32,6 +32,8 @@ import { handleProjectFileAction } from './modules/project_files.js';
 // Home page hero background: raw video upload (upload_hero_video), its limits (get_hero_media_limits) and the
 // hero_bg_* / hero_images settings
 import { handleHeroMediaAction, prepareHeroMediaSettings } from './modules/hero_media.js';
+// Home page #projects: project image/video uploads and the portfolio_data project fields of update_settings
+import { handlePortfolioMediaAction, preparePortfolioSettings } from './modules/portfolio_media.js';
 // Project documents & agreements, pd_* actions (docs/platform/PROJECT-DOCS-SPEC.md)
 import { handleProjectDocsAction } from './modules/project_docs.js';
 // Visit sources for track_visit / get_visitor_details: referrer host, landing path, utm_source (docs/platform/SEO-PLAN.md §5.9)
@@ -360,6 +362,8 @@ app.post('/api.php', async (req, res) => {
   // get_hero_media_limits. Same action lookup as the auth gate (actionOf), so the action checked there is the one
   // handled here.
   if (await handleHeroMediaAction(actionOf(req), req, res, pool)) return;
+  // upload_project_video posts the raw file too; upload_project_image is JSON (modules/portfolio_media.js)
+  if (await handlePortfolioMediaAction(actionOf(req), req, res, pool)) return;
   console.log('POST /api.php action:', req.body && req.body.action);
   let { action, settings: inputSettings, ...input } = req.body;
   if (!action && req.query && req.query.action) {
@@ -431,6 +435,7 @@ app.post('/api.php', async (req, res) => {
         // First, so a refused hero value (stale tab, data: video, SVG poster) stops the save before any upload;
         // hero_media_base is the hero video/poster the admin page loaded (compare-and-swap, never stored as a setting)
         const finishHeroMedia = await prepareHeroMediaSettings(settings, pool, input.hero_media_base);
+        let finishPortfolio = async () => {};
         let allSuccess = true;
         let lastError = null;
         try {
@@ -454,16 +459,9 @@ app.post('/api.php', async (req, res) => {
             settings.products_data = JSON.stringify(newItems);
           }
 
-          // ── portfolio_data ──
-          if (settings.portfolio_data) {
-            const newItems = JSON.parse(settings.portfolio_data);
-            const [existingRows] = await pool.query("SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data'");
-            const existingArr = existingRows.length > 0 ? JSON.parse(existingRows[0].setting_value || '[]') : [];
-            for (let i = 0; i < newItems.length; i++) {
-              if (!newItems[i].image && existingArr[i]?.image) newItems[i].image = existingArr[i].image;
-            }
-            settings.portfolio_data = JSON.stringify(newItems);
-          }
+          // ── portfolio_data ── project fields of #projects (description, tools, url, gallery, video) normalized,
+          // data: gallery images/videos refused, an empty image keeps the stored one (modules/portfolio_media.js)
+          finishPortfolio = await preparePortfolioSettings(settings, pool);
 
           // ── services_data ──
           if (settings.services_data) {
@@ -516,6 +514,7 @@ app.post('/api.php', async (req, res) => {
         // Saved: garbage-collect sweep of unused hero videos/posters; not saved: as in the catch above. After the
         // reply, which it never changes
         await finishHeroMedia(allSuccess);
+        await finishPortfolio(allSuccess);
         return;
       }
 

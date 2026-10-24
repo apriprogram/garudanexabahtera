@@ -16,8 +16,6 @@ import {
   Plus,
   Trash2,
   Edit2,
-  Upload,
-  ChevronDown,
   RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -42,7 +40,6 @@ import {
   IconBox,
   IconButton,
   Input,
-  MENU_ITEM,
   Modal,
   PageHeader,
   Panel,
@@ -53,7 +50,6 @@ import {
   Tabs,
   Textarea,
   cn,
-  controlClass,
   panelClass,
 } from '../../components/admin/ui';
 import {
@@ -64,44 +60,11 @@ import {
 } from '../../hooks/useSiteSettings';
 import { GUIDES_INTRO_DEFAULT } from '../public/panduan/PanduanIndex.seo';
 import { GuidesManager } from './guides/GuidesManager';
+import type { PortfolioItem } from '../../components/sections/projects/portfolio';
+import PortfolioEditor from './portfolio/PortfolioEditor';
 
 /** Judul CTA bawaan (sentence case; baris kedua tampil lebih lembut di website). */
 const CTA_TITLE_DEFAULT = 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!';
-
-/* Kotak unggah gambar (garis putus-putus): pratinjau + lapisan "ganti" saat hover/fokus. */
-function UploadTile({
-  preview,
-  emptyLabel,
-  changeLabel,
-  onChange,
-}: {
-  preview?: React.ReactNode;
-  emptyLabel: React.ReactNode;
-  changeLabel: React.ReactNode;
-  onChange: React.ChangeEventHandler<HTMLInputElement>;
-}) {
-  return (
-    <label className="group relative flex aspect-video w-full cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border-2 border-dashed border-adm-line-strong bg-adm-ghost transition-colors hover:border-cobalt focus-within:border-cobalt">
-      {preview ? (
-        <>
-          {preview}
-          <span className="adm-keep-white absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-            <Upload className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-            <span className="text-xs font-medium">{changeLabel}</span>
-          </span>
-        </>
-      ) : (
-        <>
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-adm-surface text-adm-muted ring-1 ring-inset ring-adm-line transition-colors group-hover:text-cobalt">
-            <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-          </span>
-          <span className="text-xs font-medium text-adm-muted transition-colors group-hover:text-adm-cobalt-fg">{emptyLabel}</span>
-        </>
-      )}
-      <input type="file" accept="image/*" className="sr-only" onChange={onChange} />
-    </label>
-  );
-}
 
 /* Panel keterangan untuk tab yang isinya diatur otomatis / di kode (tanpa isian). */
 function InfoNote({ children }: { children: React.ReactNode }) {
@@ -181,14 +144,6 @@ const SAVE_BLOCK_LABEL = {
   images: 'Memproses gambar...',
 } as const;
 
-/** Satu entri portfolio_data. */
-interface PortfolioItem {
-  title: string;
-  desc: string;
-  image: string;
-  span: string;
-}
-
 /** Satu entri faq_data. */
 interface FaqItem {
   question: string;
@@ -259,14 +214,9 @@ const SiteSettings: React.FC = () => {
   // Portfolio tab States
   const [portfolioList, setPortfolioList] = useState<PortfolioItem[]>([]);
   const [editingPortfolioIndex, setEditingPortfolioIndex] = useState<number | null>(null);
-  const [portfolioForm, setPortfolioForm] = useState({
-    title: '',
-    desc: '',
-    image: '',
-    span: 'md:col-span-4'
-  });
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
-  const [isPortfolioSpanDropdownOpen, setIsPortfolioSpanDropdownOpen] = useState(false);
+  // Naik tiap kali editor dibuka: editor dipasang ulang dan mulai dari proyek yang dipilih
+  const [portfolioEditorKey, setPortfolioEditorKey] = useState(0);
 
   // FAQ tab States
   const [faqList, setFaqList] = useState<FaqItem[]>([]);
@@ -534,45 +484,20 @@ const SiteSettings: React.FC = () => {
     }
   };
 
-  // Base64 helper for local files
-  const handleImageFileLoad = (file: File, callback: (base64: string) => void) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      callback(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
   // =================== TABS ACTION HANDLERS ===================
   
-  // Portfolio CRUD
+  // Portfolio CRUD: editor proyek (portfolio/PortfolioEditor.tsx) memeriksa isian & mengunggah gambar/video sendiri
   const handleOpenPortfolioModal = (index: number | null = null) => {
-    if (index !== null) {
-      setEditingPortfolioIndex(index);
-      setPortfolioForm({ ...portfolioList[index] });
-    } else {
-      setEditingPortfolioIndex(null);
-      setPortfolioForm({
-        title: '',
-        desc: '',
-        image: '',
-        span: 'md:col-span-4'
-      });
-    }
+    setEditingPortfolioIndex(index);
+    setPortfolioEditorKey((key) => key + 1);
     setIsPortfolioModalOpen(true);
   };
 
-  const handleSavePortfolio = () => {
-    if (!portfolioForm.title || !portfolioForm.desc) {
-      showNotify('warning', 'Data belum lengkap', 'Judul dan tag/kategori wajib diisi.');
-      return;
-    }
+  const handleSavePortfolio = (item: PortfolioItem) => {
     if (editingPortfolioIndex !== null) {
-      const updated = [...portfolioList];
-      updated[editingPortfolioIndex] = portfolioForm;
-      setPortfolioList(updated);
+      setPortfolioList((prev) => prev.map((old, i) => (i === editingPortfolioIndex ? item : old)));
     } else {
-      setPortfolioList(prev => [...prev, portfolioForm]);
+      setPortfolioList((prev) => [...prev, item]);
     }
     setIsPortfolioModalOpen(false);
   };
@@ -676,14 +601,22 @@ const SiteSettings: React.FC = () => {
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-adm-subtle"><Briefcase className="h-7 w-7" strokeWidth={1.75} /></div>
                     )}
-                    <span className="adm-keep-white absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white">
-                      Lebar: {item.span || '4'}
-                    </span>
+                    {/* Isi detail proyek sekilas: jumlah gambar detail, video, tautan */}
+                    {(item.gallery?.length || item.video || item.url) && (
+                      <span className="adm-keep-white absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white">
+                        {[item.gallery?.length ? `${item.gallery.length} gambar` : '', item.video ? 'video' : '', item.url ? 'tautan' : '']
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-1 flex-col justify-between p-4">
                     <div className="min-w-0">
                       <h4 className="break-words text-sm font-semibold text-adm-fg">{item.title}</h4>
                       <p className="mt-0.5 break-words text-xs font-medium uppercase tracking-[0.04em] text-adm-cobalt-fg">{item.desc}</p>
+                      {item.tools && item.tools.length > 0 && (
+                        <p className="mt-1.5 line-clamp-1 text-xs text-adm-muted">{item.tools.join(', ')}</p>
+                      )}
                     </div>
                     <div className="mt-3 flex justify-end gap-1 pt-1">
                       <IconButton icon={<Edit2 />} label={`Edit ${item.title}`} size="sm" onClick={() => handleOpenPortfolioModal(index)} />
@@ -1162,131 +1095,13 @@ const SiteSettings: React.FC = () => {
       {/* =================== MODAL OVERLAYS FOR CRUD =================== */}
 
       {/* 2. PORTFOLIO CRUD MODAL */}
-      <Modal
+      <PortfolioEditor
+        key={portfolioEditorKey}
         open={isPortfolioModalOpen}
-        onClose={() => { setIsPortfolioModalOpen(false); setIsPortfolioSpanDropdownOpen(false); }}
-        title={editingPortfolioIndex !== null ? 'Edit portofolio' : 'Tambah portofolio'}
-        icon={<Briefcase />}
-        size="md"
-        bodyClassName="space-y-4"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setIsPortfolioModalOpen(false)}>Batal</Button>
-            <Button onClick={handleSavePortfolio}>Simpan proyek</Button>
-          </>
-        }
-      >
-        <Field label="Nama proyek">
-          <Input
-            type="text"
-            value={portfolioForm.title}
-            onChange={(e) => setPortfolioForm(prev => ({ ...prev, title: e.target.value }))}
-            placeholder="mis. Web App Dashboard"
-          />
-        </Field>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Tag / kategori">
-            <Input
-              type="text"
-              value={portfolioForm.desc}
-              onChange={(e) => setPortfolioForm(prev => ({ ...prev, desc: e.target.value }))}
-              placeholder="mis. SAAS / FINANCE"
-            />
-          </Field>
-          <Field label="Lebar grid (desktop)" className="relative">
-            <button
-              type="button"
-              onClick={() => setIsPortfolioSpanDropdownOpen(!isPortfolioSpanDropdownOpen)}
-              aria-haspopup="listbox"
-              aria-expanded={isPortfolioSpanDropdownOpen}
-              className={controlClass('md', false, 'flex cursor-pointer items-center justify-between gap-2 text-left')}
-            >
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="flex h-5 w-10 shrink-0 items-center rounded bg-adm-ghost p-0.5 ring-1 ring-inset ring-adm-line-strong" aria-hidden>
-                  {(() => {
-                    const currentSpan = portfolioForm.span || 'md:col-span-4';
-                    const activePct =
-                      currentSpan === 'md:col-span-4' ? '33.3%' :
-                      currentSpan === 'md:col-span-5' ? '41.7%' :
-                      currentSpan === 'md:col-span-6' ? '50%' :
-                      currentSpan === 'md:col-span-7' ? '58.3%' : '100%';
-                    return (
-                      <span
-                        style={{ width: activePct }}
-                        className="block h-full rounded-[1.5px] bg-cobalt transition-all duration-300"
-                      />
-                    );
-                  })()}
-                </span>
-                <span className="truncate font-medium">
-                  {portfolioForm.span === 'md:col-span-4' ? 'Ringkas (1/3 lebar)' :
-                   portfolioForm.span === 'md:col-span-5' ? 'Agak sempit (5/12)' :
-                   portfolioForm.span === 'md:col-span-6' ? 'Setengah (1/2 lebar)' :
-                   portfolioForm.span === 'md:col-span-7' ? 'Agak lebar (7/12)' :
-                   'Lebar penuh (12/12)'}
-                </span>
-              </span>
-              <ChevronDown className={cn('h-4 w-4 shrink-0 text-adm-subtle transition-transform duration-200', isPortfolioSpanDropdownOpen && 'rotate-180')} strokeWidth={1.75} aria-hidden />
-            </button>
-
-            <AnimatePresence>
-              {isPortfolioSpanDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsPortfolioSpanDropdownOpen(false)} />
-                  <motion.div
-                    role="listbox"
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    transition={{ duration: 0.15 }}
-                    className={cn(FLOAT_PANEL, 'absolute left-0 right-0 top-full z-50 mt-1 flex flex-col gap-0.5')}
-                  >
-                    {[
-                      { id: 'md:col-span-4', label: 'Ringkas (1/3 lebar)', pct: '33.3%' },
-                      { id: 'md:col-span-5', label: 'Agak sempit (5/12)', pct: '41.7%' },
-                      { id: 'md:col-span-6', label: 'Setengah (1/2 lebar)', pct: '50%' },
-                      { id: 'md:col-span-7', label: 'Agak lebar (7/12)', pct: '58.3%' },
-                      { id: 'md:col-span-12', label: 'Lebar penuh (12/12)', pct: '100%' }
-                    ].map((opt) => (
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={portfolioForm.span === opt.id}
-                        key={opt.id}
-                        onClick={() => {
-                          setPortfolioForm(prev => ({ ...prev, span: opt.id }));
-                          setIsPortfolioSpanDropdownOpen(false);
-                        }}
-                        className={cn(MENU_ITEM, 'justify-between', portfolioForm.span === opt.id && 'bg-adm-hover')}
-                      >
-                        <span className="flex min-w-0 items-center gap-3">
-                          <span className="flex h-5 w-10 shrink-0 items-center rounded bg-adm-ghost p-0.5 ring-1 ring-inset ring-adm-line-strong" aria-hidden>
-                            <span style={{ width: opt.pct }} className="block h-full rounded-[1.5px] bg-cobalt" />
-                          </span>
-                          <span className={cn('truncate', portfolioForm.span === opt.id ? 'text-adm-fg' : 'text-adm-muted')}>{opt.label}</span>
-                        </span>
-                        {portfolioForm.span === opt.id && <CheckCircle2 className="h-4 w-4 shrink-0 text-cobalt" strokeWidth={1.75} aria-hidden />}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </Field>
-        </div>
-        {/* Hero-Styled Cover Image Upload Card */}
-        <Field label="Tangkapan layar proyek">
-          <UploadTile
-            preview={portfolioForm.image ? <img src={portfolioForm.image} className="h-full w-full object-cover" alt="" /> : undefined}
-            emptyLabel="Tambah tangkapan layar"
-            changeLabel="Ganti tangkapan layar"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleImageFileLoad(file, (base64) => setPortfolioForm(prev => ({ ...prev, image: base64 })));
-            }}
-          />
-        </Field>
-      </Modal>
+        item={editingPortfolioIndex !== null ? portfolioList[editingPortfolioIndex] ?? null : null}
+        onClose={() => setIsPortfolioModalOpen(false)}
+        onSave={handleSavePortfolio}
+      />
 
       {/* 4. FAQ CRUD MODAL */}
       <Modal

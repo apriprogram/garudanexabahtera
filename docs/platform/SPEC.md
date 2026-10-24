@@ -307,6 +307,24 @@ pernah berisi `//`.
   PHP juga menghapus file sementaranya (`.hero_video_<12 hex>.part`) yang lebih dari 1 jam. File lain tidak pernah
   disentuh; error saat menyapu hanya dicatat di log dan tidak menggagalkan request.
 
+**Proyek beranda `#projects`** (`backend/modules/portfolio_media.php` / `portfolio_media.js`, aksi staf, tidak ada di
+daftar mana pun; editor: Pengaturan website › Proyek, `src/pages/admin/portfolio`):
+
+| Action | Input | Output |
+|---|---|---|
+| `upload_project_image` | POST JSON `{ data: "data:image/...;base64,..." }` (gambar sudah dikecilkan di browser: JPEG maks. 2000 px lebar, kartu 1600 px; GIF apa adanya) | `{ success, url }` (PHP `/assets/projects/project_<12 hex>.<jpg\|png\|webp\|gif>`, Node URL S3 dengan key yang sama). Jenis dari magic bytes: JPG, PNG, WEBP, GIF; lainnya (SVG, ICO) 400 `Gambar proyek harus JPG, PNG, WEBP, atau GIF.`; lebih dari `UPLOAD_MAX_IMAGE_MB` (default 10) 400; body yang dibuang PHP karena melebihi `post_max_size` 413 `Ukuran gambar melebihi batas server.` |
+| `upload_project_video` | POST `/api.php?action=upload_project_video`, body = byte file mentah seperti `upload_hero_video` | `{ success, url }` (`/assets/projects/project_video_<12 hex>.<mp4\|webm>`); pemeriksaan & batas sama dengan `upload_hero_video` (`UPLOAD_MAX_VIDEO_MB`, batasnya dibaca admin lewat `get_hero_media_limits`) |
+
+`portfolio_data` (JSON array proyek): isian lama disimpan apa adanya (`title`, `desc` = tag/kategori, `image` = gambar
+kartu, termasuk data URI lama, `span` = lebar grid lama yang tidak dipakai situs lagi); proyek tanpa `image` memakai
+gambar tersimpan di posisi yang sama. Isian baru opsional, dirapikan `update_settings` dan dibuang bila kosong:
+`description` (teks, maks. 3000 karakter), `tools` (maks. 12 nama, masing-masing maks. 40 karakter, tanpa kembar),
+`url` (http(s) atau domain saja → `https://`, karakter URL ASCII, maks. 500), `gallery` (maks. 12 tautan gambar) dan
+`video` (tautan); data URI di `gallery`/`video` ditolak 400. Sapu bersih setelah setiap unggahan dan `update_settings`
+yang berhasil: file buatan modul di `assets/projects/` yang tidak dirujuk `portfolio_data` (dibandingkan per nama) dan
+berumur lebih dari 24 jam dihapus (PHP juga `.project_video_<hex>.part` > 1 jam); tidak menyapu bila `portfolio_data`
+tersimpan bukan JSON array. `assets/projects/` hanya berisi unggahan: di-ignore git dan dikecualikan dari deploy.
+
 ### Struktur kode backend
 - PHP: `backend/modules/templates.php` berisi fungsi `handle_platform_action(mysqli $conn, string $action, array $input, ?array $user): bool`
   (return true bila action ditangani). `api.php` cukup `require_once` + memanggilnya tepat sebelum `switch ($action)`.

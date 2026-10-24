@@ -281,10 +281,14 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
 - **Strip layanan** (`LogoTicker`): satu perlakuan untuk semua item, ikon lucide per layanan atau tanda produk SVG satu warna
   (`public/assets/logo/{ischool,isantri,invitation}-mark.svg`, digambar lewat CSS mask `currentColor`) dalam `text-subtle` +
   nama 13px `text-muted` dengan ejaan aslinya (i-School, i-Santri). PNG lama di setting `hero_logos` otomatis diganti SVG.
-- **Projects**: kartu sorotan lebar (≥ 3 proyek) + grid kartu datar bergambar (tanpa naik/zoom saat hover, gambar 16:10
-  mulai 640px, `alt=""`). Hanya proyek layak tampil (`isPresentableProject`: ada gambar, deskripsi ≥ 40 karakter, bukan
-  teks uji `lorem ipsum` / `coba` / `test`); bila kurang dari 2 → portofolio cadangan `portfolio_data`. Tombol kepala
-  "Pesan Custom" → `/pesan-custom`.
+- **Projects**: grid kartu gaya kartu template (gambar 4:3 `alt=""`, chip kategori). Hanya proyek layak tampil
+  (`isPresentableProject`: ada gambar, deskripsi ≥ 40 karakter, bukan teks uji `lorem ipsum` / `coba` / `test`); bila
+  kurang dari 2 → portofolio cadangan `portfolio_data`. Tombol kepala "Pesan Custom" → `/pesan-custom`. Klik kartu →
+  detail gaya shot Dribbble (`projects/ProjectDialog.tsx`): lembar putih `rounded-t-[24px] sm:rounded-t-[28px]` hampir
+  setinggi layar yang digulir sendiri (latar `bg-fg/60` + blur, tutup di pita gelap atas / sudut lembar di HP), judul,
+  baris pembuat (logo bulat + jenis), ♥ pill, 👁, "Kunjungi Situs" `btn-outline` (tab baru), "Pesan Serupa" `btn-dark`,
+  chip tools `bg-alt`, deskripsi, lalu gambar detail + video bertumpuk dalam bingkai `rounded-2xl sm:rounded-[20px]`,
+  penutup logo + "Pesan Serupa" `btn-primary`. Isian proyek diatur di Pengaturan website › Proyek.
 - **Proses**: kontrol segmen [Template siap pakai | Website & aplikasi custom] (HP: "Siap pakai" / "Jasa custom") → bento
   (2 kartu langkah, 1 kartu tinggi, 1 kartu lebar biru muda).
 - **FAQ**: judul sticky kiri, accordion bernomor kanan (satu terbuka; terbuka = putih bergaris, tertutup = abu lembut).

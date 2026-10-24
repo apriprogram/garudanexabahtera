@@ -4,13 +4,9 @@
 import type { PublicProject } from '../../../types/platform';
 import { readList } from '../../../hooks/useSiteSettings';
 import { presentableProjects } from './presentable';
+import { mediaLink, projectDescription, projectGallery, projectTools, projectUrl, type PortfolioItem } from './portfolio';
 
-/** Satu entri `portfolio_data` lama (Pengaturan website > Portofolio), dipakai sebagai cadangan. */
-export interface PortfolioItem {
-  title: string;
-  desc?: string;
-  image: string;
-}
+export type { PortfolioItem } from './portfolio';
 
 export interface ProjectCardData {
   key: string;
@@ -19,7 +15,16 @@ export interface ProjectCardData {
   title: string;
   label: string;
   description: string;
+  /** Gambar kartu (mockup). */
   image: string | null;
+  /** Tools / teknologi (chip di dialog detail); proyek klien: []. */
+  tools: string[];
+  /** Tautan situs ("Kunjungi Situs"), atau null. */
+  url: string | null;
+  /** Gambar detail di dialog, berurutan; kosong → dialog memakai gambar kartu. */
+  gallery: string[];
+  /** Video proyek di dialog, atau null. */
+  video: string | null;
 }
 
 export const DEFAULT_PORTFOLIO: PortfolioItem[] = [
@@ -64,6 +69,10 @@ export function buildProjectItems(projects: readonly PublicProject[], portfolioR
       label: serviceLabel(project.service_type),
       description: (project.description || '').trim(),
       image: project.image || null,
+      tools: [],
+      url: null,
+      gallery: [],
+      video: null,
     }));
   }
   return readList<PortfolioItem>(portfolioRaw, DEFAULT_PORTFOLIO)
@@ -73,7 +82,12 @@ export function buildProjectItems(projects: readonly PublicProject[], portfolioR
       statsKey: `f-${showcaseSlug(item.title)}`,
       title: item.title,
       label: item.desc || '',
-      description: '',
+      // Isian baru (Pengaturan website > Proyek) opsional; entri lama tanpa isian ini tampil seperti sebelumnya
+      description: projectDescription(item.description),
       image: item.image,
+      tools: projectTools(item.tools),
+      url: projectUrl(item.url) || null,
+      gallery: projectGallery(item.gallery),
+      video: mediaLink(item.video) || null,
     }));
 }

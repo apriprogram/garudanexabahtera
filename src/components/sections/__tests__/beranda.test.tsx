@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Konten & performa beranda (paket "beranda-konten"): syarat proyek layak tampil di #projects (tanpa teks uji, cadangan
-// portofolio), kartu proyek datar, strip layanan (ikon + tanda SVG ringan, ejaan i-School), toggle & "Lihat Demo" hero,
+// portofolio), kartu proyek datar & detail proyek gaya Dribbble, strip layanan (ikon + tanda SVG ringan, ejaan i-School), toggle & "Lihat Demo" hero,
 // tombol jeda tayangan, rail langkah, dan peringatan syarat tampil di form proyek admin.
 // Jalankan: npx vitest run --dir src/components/sections
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -204,12 +204,15 @@ describe('Projects (#projects)', () => {
     await waitFor(() => expect(within(card).getByRole('button', { name: 'Batal suka Website Perusahaan, 8 suka' })).toHaveAttribute('aria-pressed', 'true'));
     expect(posts).toContainEqual({ action: 'showcase_like', body: { key: 'p-1', liked: true } });
 
-    // Membuka detail (judul) = dilihat, sekali per sesi; dialog modal dengan judul, deskripsi & Pesan Serupa
+    // Membuka detail (judul) = dilihat, sekali per sesi; dialog modal dengan judul, deskripsi & Pesan Serupa (di baris
+    // pembuat dan di penutup, gaya Dribbble)
     fireEvent.click(within(card).getByRole('button', { name: 'Website Perusahaan' }));
     const dialog = screen.getByRole('dialog', { name: 'Website Perusahaan' });
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(dialog).toHaveTextContent(LONG);
-    expect(within(dialog).getByRole('link', { name: /Pesan Serupa/ })).toHaveAttribute('href', '/pesan-custom');
+    const orders = within(dialog).getAllByRole('link', { name: /Pesan Serupa/ });
+    expect(orders).toHaveLength(2);
+    for (const link of orders) expect(link).toHaveAttribute('href', '/pesan-custom');
     expect(card).toHaveTextContent(/13 kali dilihat/);
     expect(posts.filter((p) => p.action === 'showcase_view')).toEqual([{ action: 'showcase_view', body: { key: 'p-1' } }]);
 
@@ -271,6 +274,83 @@ describe('Projects (#projects)', () => {
     const section = document.getElementById('projects') as HTMLElement;
     fireEvent.click(await within(section).findByRole('button', { name: 'Suka Sistem Informasi Desa, 3 suka' }));
     await waitFor(() => expect(posts).toContainEqual({ action: 'showcase_like', body: { key: 'f-sistem-informasi-desa', liked: true } }));
+  });
+
+  it('detail proyek gaya Dribbble (pemilik 2026-10-24): tools, deskripsi, "Kunjungi Situs", gambar detail & video bertumpuk', async () => {
+    mockSettings = {
+      portfolio_data: JSON.stringify([
+        {
+          title: 'Mobile POS App',
+          desc: 'RETAIL / ANDROID',
+          image: '/cover.jpg',
+          span: 'md:col-span-4',
+          description: '  Aplikasi kasir Android untuk toko ritel.\r\nTerhubung ke printer struk Bluetooth.  ',
+          tools: ['Flutter', '  Laravel  ', 'flutter', '', 42],
+          url: 'pos.contoh.com/demo',
+          gallery: ['/g1.jpg', 'javascript:alert(1)', ' /g2.jpg '],
+          video: '/demo.mp4',
+        },
+      ]),
+    };
+    renderAt(<Projects />);
+    const section = document.getElementById('projects') as HTMLElement;
+    // Kartu: deskripsi di bawah judul (dulu kosong untuk portofolio cadangan)
+    await waitFor(() => expect(within(section).getByRole('heading', { name: 'Mobile POS App' })).toBeInTheDocument());
+    expect(section).toHaveTextContent('Aplikasi kasir Android untuk toko ritel.');
+
+    const title = within(section).getByRole('button', { name: 'Mobile POS App' });
+    fireEvent.click(title);
+    const dialog = screen.getByRole('dialog', { name: 'Mobile POS App' });
+    expect(dialog).toHaveTextContent('RETAIL / ANDROID');
+    const tools = within(dialog).getByRole('list', { name: 'Tools yang dipakai' });
+    expect(within(tools).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Flutter', 'Laravel']);
+    expect(dialog).toHaveTextContent('Terhubung ke printer struk Bluetooth.');
+    const site = within(dialog).getByRole('link', { name: 'Kunjungi Situs Mobile POS App (tab baru)' });
+    expect(site).toHaveAttribute('href', 'https://pos.contoh.com/demo');
+    expect(site).toHaveAttribute('target', '_blank');
+    expect(site).toHaveAttribute('rel', 'noopener noreferrer');
+
+    // Gambar detail berurutan (tautan javascript: dibuang), lalu video dengan gambar kartu sebagai sampul
+    const images = within(dialog).getAllByRole('img');
+    expect(images.map((img) => [img.getAttribute('alt'), img.getAttribute('src')])).toEqual([
+      ['Mobile POS App, gambar 1 dari 2', '/g1.jpg'],
+      ['Mobile POS App, gambar 2 dari 2', '/g2.jpg'],
+    ]);
+    const video = dialog.querySelector('video') as HTMLVideoElement;
+    expect(video).toHaveAttribute('src', '/demo.mp4');
+    expect(video).toHaveAttribute('poster', '/cover.jpg');
+    expect(video).toHaveAttribute('controls');
+    expect(images[1].compareDocumentPosition(video) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // Fokus awal di tombol tutup; Esc menutup dan fokus kembali ke judul kartu; halaman dikunci selama terbuka
+    expect(within(dialog).getByRole('button', { name: 'Tutup detail proyek' })).toHaveFocus();
+    expect(document.body.style.overflow).toBe('hidden');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(title).toHaveFocus();
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('entri portofolio lama (judul, tag, gambar, lebar grid) tetap tampil; detailnya memakai gambar kartu; klik latar menutup', async () => {
+    mockSettings = {
+      portfolio_data: JSON.stringify([{ title: 'Corporate Website', desc: 'BRANDING / MODERN', image: '/assets/product/isantri.png', span: 'md:col-span-7' }]),
+    };
+    renderAt(<Projects />);
+    const section = document.getElementById('projects') as HTMLElement;
+    fireEvent.click(await within(section).findByRole('button', { name: 'Corporate Website' }));
+    const dialog = screen.getByRole('dialog', { name: 'Corporate Website' });
+    expect(within(dialog).getAllByRole('img').map((img) => [img.getAttribute('alt'), img.getAttribute('src')])).toEqual([
+      ['Tampilan Corporate Website', '/assets/product/isantri.png'],
+    ]);
+    expect(within(dialog).queryByRole('link', { name: /Kunjungi Situs/ })).toBeNull();
+    expect(within(dialog).queryByRole('list', { name: 'Tools yang dipakai' })).toBeNull();
+    expect(dialog.querySelector('video')).toBeNull();
+
+    // Klik di dalam lembar tidak menutup; klik latar gelap menutup
+    fireEvent.click(within(dialog).getByRole('heading', { name: 'Corporate Website' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(dialog.parentElement?.firstElementChild as HTMLElement);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('kurang dari 2 proyek layak → portofolio cadangan, teks uji tidak pernah tampil', async () => {

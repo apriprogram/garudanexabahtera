@@ -54,5 +54,8 @@ public/assets/bg/hero_????????????.*
 # File lama yang sudah ter-track tidak ikut terhapus oleh aturan ini.
 public/assets/dokumen-client/
 
+# Gambar & video proyek #projects (upload_project_image/video dari Pengaturan website > Proyek): hanya di server/disk lokal
+public/assets/projects/
+
 # Penyimpanan privat dokumen proyek (tanda tangan elektronik, bukti bayar): di luar web root, jangan di-commit
 storage/
