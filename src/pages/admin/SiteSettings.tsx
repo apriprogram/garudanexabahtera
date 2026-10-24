@@ -16,7 +16,8 @@ import {
   Plus,
   Trash2,
   Edit2,
-  RefreshCw
+  RefreshCw,
+  FileArchive
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import HeroSettings from './HeroSettings';
@@ -62,6 +63,8 @@ import { GUIDES_INTRO_DEFAULT } from '../public/panduan/PanduanIndex.seo';
 import { GuidesManager } from './guides/GuidesManager';
 import type { PortfolioItem } from '../../components/sections/projects/portfolio';
 import PortfolioEditor from './portfolio/PortfolioEditor';
+import PortfolioImportDialog from './portfolio/PortfolioImportDialog';
+import { addImportedProject } from './portfolio/portfolioImport';
 
 /** Judul CTA bawaan (sentence case; baris kedua tampil lebih lembut di website). */
 const CTA_TITLE_DEFAULT = 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!';
@@ -217,6 +220,9 @@ const SiteSettings: React.FC = () => {
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
   // Naik tiap kali editor dibuka: editor dipasang ulang dan mulai dari proyek yang dipilih
   const [portfolioEditorKey, setPortfolioEditorKey] = useState(0);
+  // Impor ZIP (portfolio/PortfolioImportDialog.tsx); key naik tiap kali dibuka supaya mulai dari awal
+  const [isPortfolioImportOpen, setIsPortfolioImportOpen] = useState(false);
+  const [portfolioImportKey, setPortfolioImportKey] = useState(0);
 
   // FAQ tab States
   const [faqList, setFaqList] = useState<FaqItem[]>([]);
@@ -502,6 +508,11 @@ const SiteSettings: React.FC = () => {
     setIsPortfolioModalOpen(false);
   };
 
+  const handleOpenPortfolioImport = () => {
+    setPortfolioImportKey((key) => key + 1);
+    setIsPortfolioImportOpen(true);
+  };
+
   // FAQ CRUD
   const handleOpenFaqModal = (index: number | null = null) => {
     if (index !== null) {
@@ -586,9 +597,14 @@ const SiteSettings: React.FC = () => {
               title="Proyek portofolio"
               subtitle="Cadangan section Proyek: tampil bila belum ada minimal 2 proyek klien yang layak di Project Clients."
               action={
-                <Button size="sm" icon={<Plus />} onClick={() => handleOpenPortfolioModal()}>
-                  Tambah portofolio
-                </Button>
+                <>
+                  <Button size="sm" variant="secondary" icon={<FileArchive />} onClick={handleOpenPortfolioImport}>
+                    Impor proyek
+                  </Button>
+                  <Button size="sm" icon={<Plus />} onClick={() => handleOpenPortfolioModal()}>
+                    Tambah portofolio
+                  </Button>
+                </>
               }
             />
 
@@ -1101,6 +1117,13 @@ const SiteSettings: React.FC = () => {
         item={editingPortfolioIndex !== null ? portfolioList[editingPortfolioIndex] ?? null : null}
         onClose={() => setIsPortfolioModalOpen(false)}
         onSave={handleSavePortfolio}
+      />
+      <PortfolioImportDialog
+        key={`import-${portfolioImportKey}`}
+        open={isPortfolioImportOpen}
+        existing={portfolioList}
+        onClose={() => setIsPortfolioImportOpen(false)}
+        onImport={(item, replace) => setPortfolioList((prev) => addImportedProject(prev, item, replace))}
       />
 
       {/* 4. FAQ CRUD MODAL */}
