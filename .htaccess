@@ -81,11 +81,11 @@ DirectoryIndex index.html
 
   # Halaman hasil prerender: / → _pre/index.html, /template/finova → _pre/template/finova.html. Daftar rutenya ditulis
   # scripts/prerender.mjs saat build (tanpa cek -f ke %{DOCUMENT_ROOT}, yang bisa berbeda di cPanel/LiteSpeed).
-  # BEGIN gn-prerender (diisi scripts/prerender.mjs: 21 halaman)
+  # BEGIN gn-prerender (diisi scripts/prerender.mjs: 25 halaman)
   RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
   RewriteRule ^$ _pre/index.html [L]
   RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
-  RewriteRule ^(harga|jasa-pembuatan-aplikasi-mobile|jasa-pembuatan-website|kebijakan-pengembalian-dana|kebijakan-privasi|kontak|panduan|pesan-custom|syarat-ketentuan|template|template/arena-club|template/aura-studio|template/corporate-nexa|template/finova|template/kategori/company-profile|template/kategori/fintech-startup|template/kategori/kecantikan-klinik|template/kategori/olahraga-komunitas|template/startup-clean|tentang)$ _pre/$1.html [L]
+  RewriteRule ^(harga|jasa-pembuatan-aplikasi-mobile|jasa-pembuatan-website|kebijakan-pengembalian-dana|kebijakan-privasi|kontak|panduan|panduan/biaya-aplikasi-android-ios|panduan/biaya-website-company-profile|panduan/template-vs-jasa-website-custom|panduan/website-klinik-kecantikan|pesan-custom|syarat-ketentuan|template|template/arena-club|template/aura-studio|template/corporate-nexa|template/finova|template/kategori/company-profile|template/kategori/fintech-startup|template/kategori/kecantikan-klinik|template/kategori/olahraga-komunitas|template/startup-clean|tentang)$ _pre/$1.html [L]
   # END gn-prerender
 
   # Template yang terbit setelah deploy terakhir: seo.php merender halamannya dari DB, atau 404 bila tidak ada /

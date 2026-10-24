@@ -1,9 +1,9 @@
 # Garuda Nexa
 > Garuda Nexa (PT Garuda Nexa Bahtera, Indonesia) menjual template website siap pakai yang sudah termasuk domain, hosting, dan SSL tahun pertama, serta menerima jasa pembuatan website dan aplikasi mobile Android/iOS custom.
 
-Diperbarui 24 Oktober 2026.
+Diperbarui 25 Oktober 2026.
 
-- Harga template: Rp990.000–Rp1.790.000 (per 24 Oktober 2026)
+- Harga template: Rp990.000–Rp1.790.000 (per 25 Oktober 2026)
 - Sudah termasuk: template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
 - Bayar online via Midtrans; isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
 - Jasa custom: biaya website dan aplikasi custom disampaikan lewat penawaran setelah konsultasi gratis.
@@ -28,6 +28,13 @@ Diperbarui 24 Oktober 2026.
 - [Syarat & Ketentuan](https://garudanexa.com/syarat-ketentuan): Ketentuan penggunaan garudanexa.com, pembelian template website, dan permintaan jasa website atau aplikasi mobile custom dari PT Garuda Nexa Bahtera.
 - [Kebijakan Privasi](https://garudanexa.com/kebijakan-privasi): Data pribadi yang kami kumpulkan di garudanexa.com, untuk apa dipakai, kepada siapa dibagikan, dan hak Anda sesuai UU Pelindungan Data Pribadi.
 - [Kebijakan Pengembalian Dana](https://garudanexa.com/kebijakan-pengembalian-dana): Kapan dana pembelian template website di Garuda Nexa dikembalikan, berapa jumlahnya, ke mana, dan berapa lama prosesnya.
+
+## Panduan
+- [Panduan Membuat Website untuk Bisnis](https://garudanexa.com/panduan): Panduan praktis membuat website & aplikasi bisnis: biaya website company profile, template vs jasa custom, biaya aplikasi Android & iOS, dan contoh niche.
+- [Biaya Pembuatan Aplikasi Android & iOS: Faktor Penentunya](https://garudanexa.com/panduan/biaya-aplikasi-android-ios): Kisaran biaya pembuatan aplikasi Android & iOS di Indonesia, faktor yang menentukan harga, dan biaya rutin setelah rilis seperti akun Google Play & Apple.
+- [Berapa Biaya Membuat Website Company Profile di 2026?](https://garudanexa.com/panduan/biaya-website-company-profile): Kisaran biaya website company profile 2026, dari website builder, template, sampai jasa custom, plus biaya domain, hosting, SSL dan perawatan per tahun.
+- [Template vs Jasa Website Custom: Mana yang Tepat?](https://garudanexa.com/panduan/template-vs-jasa-website-custom): Bandingkan template website siap pakai dan jasa website custom dari sisi biaya, waktu, fitur, dan perawatan, plus checklist untuk memilih.
+- [Website Klinik Kecantikan: Halaman Wajib & Contohnya](https://garudanexa.com/panduan/website-klinik-kecantikan): Halaman wajib di website klinik kecantikan & salon, cara menulis isinya tanpa janji berlebihan, reservasi WhatsApp, Google Maps, dan contoh strukturnya.
 
 ## Optional
 - [Tentang PT Garuda Nexa Bahtera](https://garudanexa.com/tentang): PT Garuda Nexa Bahtera: template website siap pakai serta jasa pembuatan website & aplikasi mobile custom di Indonesia. Kenali layanan dan cara kerja kami.
