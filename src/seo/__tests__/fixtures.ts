@@ -1,4 +1,6 @@
-// Data uji SEO: 5 template terbit seperti get_templates (DB lokal 2026-10-23, deskripsi dipendekkan) dan settings.
+// Data uji SEO: 5 template terbit seperti get_templates (DB lokal 2026-10-23, deskripsi dipendekkan), settings, dan
+// artikel panduan terbit seperti get_guides (data uji preload).
+import { FIXTURE_GUIDES, guideSummary } from '../../lib/__tests__/preloadFixture';
 import type { Template } from '../../types/platform';
 import type { SeoData } from '../types';
 
@@ -92,6 +94,7 @@ export const seoData = (templates: Template[] = TEMPLATES, settings: Record<stri
   templates,
   projects: [],
   templateBySlug: Object.fromEntries(templates.map((t) => [t.slug, t])),
+  guides: FIXTURE_GUIDES.map(guideSummary),
   builtAt: '2026-10-23T05:00:00.000Z',
 });
 

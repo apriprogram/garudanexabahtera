@@ -36,6 +36,8 @@ import { handleHeroMediaAction, prepareHeroMediaSettings } from './modules/hero_
 import { handleProjectDocsAction } from './modules/project_docs.js';
 // Visit sources for track_visit / get_visitor_details: referrer host, landing path, utm_source (docs/platform/SEO-PLAN.md §5.9)
 import { logVisit, visitSourceFields, visitSources } from './modules/visits.js';
+// Artikel panduan /panduan (guide_articles, guide_views): daftar & isi publik, jumlah dilihat, tab admin Panduan
+import { handleGuideAction } from './modules/guides.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -160,6 +162,7 @@ app.get('/api.php', async (req, res) => {
   // get_hero_media_limits; a GET upload_hero_video is not handled there and falls through to "Invalid action"
   if (await handleHeroMediaAction(actionOf(req), req, res, pool)) return;
   if (await handleProjectDocsAction(action, req.query, req, res, pool)) return;
+  if (await handleGuideAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -368,6 +371,7 @@ app.post('/api.php', async (req, res) => {
   if (await handleListProductAction(action, req.body, req, res, pool)) return;
   if (await handleProjectFileAction(action, req.body, req, res)) return;
   if (await handleProjectDocsAction(action, req.body, req, res, pool)) return;
+  if (await handleGuideAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {

@@ -90,6 +90,11 @@ DirectoryIndex index.html
   RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
   RewriteRule ^template/([a-z0-9-]{1,120})$ seo.php?slug=$1 [L]
 
+  # Artikel panduan yang terbit setelah deploy terakhir (dikelola admin, tabel guide_articles): sama, seo.php?guide=.
+  # Artikel yang sudah diprerender tertangkap aturan prerender lebih dulu. Batas 120 = batas slug guides.php/js.
+  RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
+  RewriteRule ^panduan/([a-z0-9-]{1,120})$ seo.php?guide=$1 [L]
+
   # Rute aplikasi (akun, checkout, login, demo, pratinjau situs, admin) → cangkang SPA dengan robots noindex,follow.
   # ^pesan(/…)? tidak menangkap /pesan-custom (halaman publik yang diprerender).
   RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]

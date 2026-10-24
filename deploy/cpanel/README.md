@@ -32,9 +32,24 @@ Pada `--build-only`:
 | `DEPLOY_DIR` | `../.garudanexa-deploy` (di luar proyek) | Folder kerja. Isinya: `build/` (= isi `public_html`), `ssr/` (bundel server, tidak terbit), `cpanel-branch/` (worktree), `client-manifest.json`, `prerender-data.json` |
 | `PRERENDER_API` | `https://garudanexa.com` | Sumber data prerender. Untuk uji lokal (`--build-only`): `http://127.0.0.1:8000` (php-api). Deploy sungguhan menolak sumber selain `https://garudanexa.com`, supaya data database lokal tidak pernah terbit. **Hapus variabel ini dari shell setelah uji lokal** |
 | `PRERENDER_ALLOW_NONPROD` | — | `1` = izinkan deploy sungguhan dengan `PRERENDER_API` selain production. Hanya untuk keadaan darurat yang disengaja |
-| `VITE_PANDUAN_DRAFTS` | — | `1` = build pratinjau yang ikut memuat artikel panduan draf (tanpa `reviewed:`). Deploy sungguhan menolaknya (SEO-RUNBOOK §4a) |
+| `PRERENDER_GUIDES_BOOTSTRAP` | — | `1` = hanya untuk deploy pertama sejak artikel panduan pindah ke database (§1a): bila `get_guides` dijawab dengan status HTTP gagal (api.php lama), prerender lanjut tanpa artikel panduan dan menulis peringatan. Tanpa variabel ini deploy dibatalkan. Timeout atau respons rusak tetap membatalkan deploy. **Jangan dipakai lagi setelah deploy itu** |
 | `MIN_TEMPLATES` | `5` | Jumlah minimal template terbit. Kurang dari ini, deploy dibatalkan |
 | `CPANEL_HOME` | `/home/garudanexa` | Dipakai `.cpanel.yml` di branch deploy |
+
+### 1a. Deploy pertama artikel panduan dari database (migration 017)
+
+Prerender mengambil `get_guides` dari API production, padahal `api.php` production yang lama belum mengenal aksi itu (jawabannya HTTP 401) dan baru mengenalnya setelah deploy ini sendiri terbit. Tanpa langkah di bawah, deploy dibatalkan dengan pesan `Deploy pertama sejak artikel panduan pindah ke database?`. Urutannya:
+
+1. **Migration dulu.** Jalankan `database/migrations/2026-10-24_017_guide_articles.sql` di phpMyAdmin production (Import seluruh file, atau tab SQL; file ini tidak menyebut `information_schema`). `api.php` baru membaca tabelnya, jadi migration wajib sebelum Pull.
+2. **Cek tabelnya** di tab SQL: `SELECT slug, reviewed FROM guide_articles;` → 4 baris, `reviewed` NULL (semua draf). `SELECT COUNT(*) FROM guide_views;` → 0.
+3. **Deploy sekali dengan flag**, hanya untuk perintah itu:
+   ```bash
+   PRERENDER_GUIDES_BOOTSTRAP=1 node scripts/deploy-cpanel.mjs --push
+   # PowerShell: $env:PRERENDER_GUIDES_BOOTSTRAP='1'; node scripts/deploy-cpanel.mjs --push; Remove-Item Env:PRERENDER_GUIDES_BOOTSTRAP
+   ```
+   Prerender menulis peringatan `… HTTP 401. PRERENDER_GUIDES_BOOTSTRAP=1: lanjut tanpa artikel panduan …` dan membuat situs tanpa artikel panduan (semuanya memang masih draf, `/panduan` tampil `noindex,follow`). Lalu Pull di cPanel seperti biasa.
+4. **Cek API baru:** `curl -s 'https://garudanexa.com/api.php?action=get_guides'` harus menjawab `{"success":true,"guides":[]}`. Masih 401 = Pull belum jalan. 500 = cek tabel (langkah 1–2) dan log error PHP.
+5. Deploy berikutnya **tanpa** flag. Bila flag masih terisi padahal `get_guides` sudah dijawab, prerender memberi peringatan `PRERENDER_GUIDES_BOOTSTRAP=1 tidak terpakai`. Hapus variabel itu dari shell: dengan flag, `get_guides` yang gagal di kemudian hari membuat artikel terbit hilang dari prerender, sitemap dan llms.txt.
 
 ---
 
@@ -50,8 +65,8 @@ Pada `--build-only`:
 | Langkah | Detail |
 |---|---|
 | Build SSR | `src/entry-server.tsx` → `DEPLOY_DIR/ssr`. Bundel berdiri sendiri dan tidak ikut terbit |
-| Ambil data | `get_settings`, `get_navbar_menus`, `get_templates`, `get_public_projects`, lalu `get_template&slug=` per template. Berurutan, user agent `GarudaNexaPrerender/1.0`, timeout 15 detik, 2× coba ulang |
-| Batalkan deploy bila | ada request yang gagal; respons bukan JSON atau berisi `error`; katalog kosong, rusak, atau kurang dari `MIN_TEMPLATES` |
+| Ambil data | `get_settings`, `get_navbar_menus`, `get_templates`, `get_public_projects`, lalu `get_template&slug=` per template, lalu `get_guides` dan `get_guide&slug=` per artikel panduan terbit. Berurutan, user agent `GarudaNexaPrerender/1.0`, timeout 15 detik, 2× coba ulang |
+| Batalkan deploy bila | ada request yang gagal; respons bukan JSON atau berisi `error`; katalog kosong, rusak, atau kurang dari `MIN_TEMPLATES`; `get_guides` mengirim draf. Satu pengecualian: `get_guides` yang gagal pada deploy pertama dengan `PRERENDER_GUIDES_BOOTSTRAP=1` (§1a) |
 | Halaman | untuk setiap rute dari modul `*.seo.ts`: head (`getHead` + `renderHeadTags`), HTML aplikasi (React `prerenderToNodeStream`, menunggu semua `React.lazy`), data preload `<script id="gn-preload">`, dan `<link rel="modulepreload">` chunk rutenya → `_pre/{path}.html` (`/` → `_pre/index.html`) |
 | `app.html` | cangkang SPA dengan `noindex,follow` untuk rute aplikasi |
 | `404.html` | halaman 404 hasil prerender, `noindex` |
@@ -74,6 +89,7 @@ Aturan host utama hanya berlaku untuk `HTTP_HOST = garudanexa.com`. Domain situs
 |---|---|
 | `/`, rute prerender (`/template/aura-studio`, `/pesan-custom`, legal, …) | 200, `_pre/*.html` |
 | `/template/{slug}` yang belum diprerender | `seo.php`: 200 bila template terbit, selain itu 404 dengan isi `404.html` |
+| `/panduan/{slug}` yang belum diprerender | `seo.php?guide=`: 200 bila artikel panduan terbit (`reviewed` terisi), selain itu (draf, dihapus, tidak ada) 404 dengan isi `404.html` |
 | `/akun*`, `/admin*`, `/pesan/*`, `/demo/*`, `/situs/*`, `/masuk`, `/daftar`, `/login`, `/auth` | 200, `app.html` (`noindex,follow`). `/pesan-custom` tidak termasuk |
 | Path dengan garis miring di akhir (bukan folder nyata) | 301 ke versi tanpa garis miring |
 | `/_pre/…`, `/app.html`, `/seo.php` (dibuka langsung) | 404 |
@@ -163,7 +179,8 @@ Cara menguji:
 | `getIndexableRoutes() tidak memuat halaman wajib` | Ada modul `*.seo.ts` yang rusak atau mengembalikan `noindex` untuk `/`, `/pesan-custom`, halaman legal atau template |
 | `Cek prerender gagal: … <h1>` | Halaman tidak punya tepat satu H1, atau ada komponen yang melempar error saat render server |
 | `Deploy sungguhan harus memakai data production` | `PRERENDER_API` masih terisi dari uji lokal. Hapus (`unset PRERENDER_API`, PowerShell: `Remove-Item Env:PRERENDER_API`), lalu ulangi |
-| `Artikel panduan belum ditinjau` | Build memakai `VITE_PANDUAN_DRAFTS=1`. Hapus variabel itu; draf otomatis tidak ikut |
+| `Deploy pertama sejak artikel panduan pindah ke database?` | `get_guides` dijawab dengan status HTTP gagal. Deploy pertama sejak migration 017: ikuti §1a. Selain itu cek `https://garudanexa.com/api.php?action=get_guides` dan tabel `guide_articles`; **jangan** memakai `PRERENDER_GUIDES_BOOTSTRAP` untuk memaksa, karena artikel terbit akan hilang dari prerender, sitemap dan llms.txt |
+| `get_guides mengirim artikel yang belum ditinjau` | API production mengirim draf panduan (seharusnya tidak pernah): cek `backend/modules/guides.php` dan kolom `reviewed` di tabel `guide_articles` |
 | `.htaccess punya baris ≥ 8000 karakter` | Pengaman batas baris Apache (8190). Aturan prerender sudah dipecah per 40 rute; cek perubahan manual di `deploy/cpanel/htaccess` |
 | `Render … gagal` | Komponen mengakses `window`/`localStorage`/`document` saat render. Pindahkan ke effect, atau pakai `useHydrated()` |
 | Spinner sebentar di `/template/{slug-yang-tidak-ada}` | Wajar. `404.html` dirender di `/404` dan hanya dihidrasi di path yang tidak dimiliki modul `*.seo.ts` (React Router juga merender NotFound di sana). Path milik halaman lain dirender ulang oleh React |

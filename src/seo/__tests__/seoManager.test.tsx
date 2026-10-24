@@ -3,14 +3,17 @@
 // SeoManager (docs/platform/SEO-PLAN.md §5.3 langkah 4): di host utama menerapkan head per path saat navigasi klien,
 // menunggu data sebelum menerapkan kepala halaman publik (tidak pernah menimpa head prerender dengan 404/noindex hanya
 // karena data belum datang atau API gagal), tidak menimpa judul yang dipasang halaman akun, dan tidak melakukan apa pun
-// di domain pembeli (head tetap milik siteHead.ts).
+// di domain pembeli (head tetap milik siteHead.ts). get_templates dan get_guides dimuat terpisah: yang satu gagal tidak
+// membuang yang lain.
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import { MemoryRouter, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearApiCache } from '../../lib/api';
+import { articleHeadTitle } from '../../pages/public/panduan/PanduanArticle.seo';
+import { GUIDES_TITLE } from '../../pages/public/panduan/PanduanIndex.seo';
 import { SeoManager } from '../SeoManager';
-import { TEMPLATES } from './fixtures';
+import { DATA, TEMPLATES } from './fixtures';
 
 const mainHost = vi.hoisted(() => ({ value: true }));
 vi.mock('../../templates/siteHosts', async (importOriginal) => ({
@@ -20,12 +23,15 @@ vi.mock('../../templates/siteHosts', async (importOriginal) => ({
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 let templatesResponse: () => Promise<Response>;
+let guidesResponse: () => Promise<Response>;
 const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
   const url = String(input);
   if (url.includes('action=get_templates')) return templatesResponse();
+  if (url.includes('action=get_guides')) return guidesResponse();
   if (url.includes('action=get_settings')) return json({ footer_instagram: '#' });
   return json({});
 });
+const calls = (action: string) => fetchMock.mock.calls.filter(([input]) => String(input).includes(`action=${action}`)).length;
 
 let navigate: NavigateFunction = () => undefined;
 function Navigator() {
@@ -53,12 +59,15 @@ const go = async (path: string) => {
 const canonical = () => document.head.querySelector('link[rel="canonical"]')?.getAttribute('href') ?? null;
 const description = () => document.head.querySelector('meta[name="description"]')?.getAttribute('content') ?? null;
 const robots = () => document.head.querySelector('meta[name="robots"]')?.getAttribute('content') ?? null;
+const jsonLd = () => [...document.head.querySelectorAll('script[type="application/ld+json"]')].map((s) => s.textContent).join('\n');
+const GUIDES = DATA.guides ?? [];
 
 beforeEach(() => {
   mainHost.value = true;
   clearApiCache();
   fetchMock.mockClear();
   templatesResponse = async () => json({ templates: TEMPLATES, categories: [] });
+  guidesResponse = async () => json({ success: true, guides: [] });
   vi.stubGlobal('fetch', fetchMock);
   document.head.innerHTML = '<title>Memuat situs…</title>';
 });
@@ -115,6 +124,51 @@ describe('SeoManager di host utama', () => {
     await go('/halaman-tidak-ada');
     await waitFor(() => expect(document.title).toBe('Halaman tidak ditemukan | Garuda Nexa'));
     expect(robots()).toBe('noindex,follow');
+  });
+
+  it('get_guides gagal: daftar template tetap dipakai (/ lengkap), halaman panduan tidak diturunkan; hanya get_guides dicoba lagi', async () => {
+    let guidesUp = false;
+    guidesResponse = async () => (guidesUp ? json({ success: true, guides: GUIDES }) : json({ error: 'Tabel guide_articles belum ada.' }, 500));
+    renderAt('/');
+    await waitFor(() => expect(document.title).toBe('Template Website Siap Pakai & Jasa Website | Garuda Nexa'));
+    // JSON-LD beranda tetap memuat ItemList template (dulu ikut hilang bersama get_guides)
+    await waitFor(() => expect(jsonLd()).toContain('https://garudanexa.com/template/aura-studio'));
+    expect(jsonLd()).toContain('"@type":"ItemList"');
+
+    // Artikel prerender: tidak ditimpa kepala 404 hanya karena daftar artikel gagal dimuat
+    const slug = GUIDES[0].slug;
+    document.head.innerHTML = '<title>Artikel prerender</title><meta name="robots" content="index,follow" data-gn="robots">';
+    await go(`/panduan/${slug}`);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(document.title).toBe('Artikel prerender');
+    expect(robots()).toBe('index,follow');
+    expect(calls('get_templates')).toBe(1);
+
+    // Pindah path: hanya get_guides yang diminta ulang; setelah berhasil kepala artikel diterapkan
+    guidesUp = true;
+    const guidesBefore = calls('get_guides');
+    await go('/panduan');
+    await go(`/panduan/${slug}`);
+    await waitFor(() => expect(document.title).toBe(articleHeadTitle(GUIDES[0].title)));
+    expect(robots()).toBe('index,follow');
+    expect(calls('get_guides')).toBeGreaterThan(guidesBefore);
+    expect(calls('get_templates')).toBe(1);
+  });
+
+  it('menunggu artikel panduan: /panduan prerender tidak ditimpa selama get_guides belum selesai', async () => {
+    let release: (value: Response) => void = () => undefined;
+    guidesResponse = () => new Promise<Response>((resolve) => (release = resolve));
+    document.head.innerHTML = '<title>Panduan prerender</title><meta name="robots" content="index,follow" data-gn="robots">';
+    renderAt('/panduan');
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    expect(document.title).toBe('Panduan prerender');
+    await act(async () => release(json({ success: true, guides: GUIDES })));
+    await waitFor(() => expect(document.title).toBe(GUIDES_TITLE));
+    expect(robots()).toBe('index,follow');
   });
 
   it('rute aplikasi: noindex langsung, dan judul yang dipasang halaman tidak ditimpa saat data datang', async () => {

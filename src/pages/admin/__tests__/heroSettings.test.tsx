@@ -1107,6 +1107,10 @@ function mockSiteApi({
     if (url.includes('get_hero_media_limits')) return json({ success: true, video_max_mb: 30, max_images: 12 });
     if (init?.method === 'POST') {
       const body = JSON.parse(String(init.body)) as SavedBody;
+      // Tab Panduan: daftar artikel dari database (bukan simpanan halaman ini, tidak dicatat di posts)
+      if ((body as { action?: string }).action === 'admin_get_guides') {
+        return json({ success: true, hubViews: 7, guides: [{ id: 1, slug: 'artikel-uji', title: 'Artikel uji panduan', description: 'Deskripsi artikel uji.', body: '## Isi', author: 'Tim Garuda Nexa', datePublished: '2026-10-23', dateModified: '2026-10-23', reviewed: null, cta: 'template', sources: [], related: [], views: 3, createdAt: '2026-10-24 10:00:00', updatedAt: '2026-10-24 10:00:00' }] });
+      }
       posts.push(body);
       if (post) return post(body);
       // Tab Tanya Nexa: konfigurasi AI (kunci hanya topeng)
@@ -1454,11 +1458,14 @@ describe('SiteSettings: tab mengikuti website (pemilik 2026-10-24)', () => {
       'Tanya Nexa',
     ]);
 
-    // Panduan: saklar (tautan navbar & footer), teks pembuka, daftar artikel dengan status
+    // Panduan: saklar (tautan navbar & footer), teks pembuka, daftar artikel dari database dengan status & jumlah dilihat
     fireEvent.click(within(nav).getByRole('button', { name: 'Panduan' }));
     expect(await screen.findByText('Halaman /panduan')).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: /Tampil di website/ })).toBeInTheDocument();
-    expect(screen.getAllByText(/Terbit|Draf, menunggu tinjauan/).length).toBeGreaterThan(0);
+    expect(await screen.findByText('Artikel (1)')).toBeInTheDocument();
+    expect(screen.getByText('Artikel uji panduan')).toBeInTheDocument();
+    expect(screen.getByText('Draf')).toBeInTheDocument();
+    expect(screen.getByText('3 dilihat')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Teks pembuka'), { target: { value: 'Panduan singkat untuk pemilik bisnis.' } });
 
     fireEvent.click(await readySave());

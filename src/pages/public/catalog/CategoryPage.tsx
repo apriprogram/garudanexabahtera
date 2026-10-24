@@ -9,6 +9,7 @@ import Navbar from '../../../components/layout/Navbar';
 import { CATEGORIES, CATEGORY_LIST, templatesInCategory } from '../../../content/categories';
 import { CATEGORY_CONTENT } from '../../../content/categories.content';
 import { minTemplatePrice } from '../../../content/pricing';
+import { useGuides } from '../../../hooks/useGuides';
 import { getTemplatePricing, useSiteSettings } from '../../../hooks/useSiteSettings';
 import { HUB_PATHS, isCategorySlug } from '../../../seo/paths';
 import { formatRupiah } from '../../../types/platform';
@@ -22,6 +23,7 @@ export default function CategoryPage() {
   const { category = '' } = useParams();
   const { state } = useTemplateList();
   const { settings } = useSiteSettings();
+  const { articles: guides } = useGuides();
   const priceDate = usePriceDateLabel();
   const all = useMemo(() => (state.status === 'ready' ? state.templates : []), [state]);
   const counts = useMemo(
@@ -35,7 +37,7 @@ export default function CategoryPage() {
   const templates = templatesInCategory(all, category);
   const pricing = getTemplatePricing(settings);
   const cheapest = minTemplatePrice(templates);
-  const guide = guideLink(meta.guides);
+  const guide = guideLink(meta.guides, guides);
 
   return (
     <>

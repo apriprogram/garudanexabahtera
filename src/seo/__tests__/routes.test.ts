@@ -28,6 +28,18 @@ const DATA: SeoData = {
   templates: [],
   projects: [],
   templateBySlug: {},
+  // Satu artikel panduan terbit (get_guides)
+  guides: [
+    {
+      slug: 'biaya-website-company-profile',
+      title: 'Berapa Biaya Membuat Website Company Profile di 2026?',
+      description: 'Kisaran biaya website company profile 2026, dari website builder, template, sampai jasa custom.',
+      author: 'Tim Garuda Nexa',
+      datePublished: '2026-10-23',
+      dateModified: '2026-10-23',
+      reviewed: '2026-10-24',
+    },
+  ],
   builtAt: '2026-10-23T00:00:00.000Z',
 };
 
@@ -124,8 +136,10 @@ describe('routes: modul *.seo.ts', () => {
 describe('getHead', () => {
   it("getHead('/harga') index,follow sejak halamannya terisi (WP6; kriteria WP1 berlaku untuk stub yang tersisa)", () => {
     expect(getHead('/harga', DATA).robots).toBe('index,follow');
-    // /panduan terisi artikel (WP8)
+    // /panduan terisi artikel terbit (WP8); tanpa artikel terbit noindex
     expect(getHead('/panduan', DATA).robots).toBe('index,follow');
+    expect(getHead('/panduan', { ...DATA, guides: [] }).robots).toBe('noindex,follow');
+    expect(getHead('/panduan', { ...DATA, guides: undefined }).robots).toBe('noindex,follow');
   });
 
   it('semua rute stub: noindex,follow, tanpa canonical, judul unik dan berisi', () => {

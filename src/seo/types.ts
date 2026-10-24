@@ -1,6 +1,7 @@
 // Kontrak SEO antar-paket (docs/platform/SEO-PLAN.md §4). DIBEKUKAN: perubahan hanya lewat SEO lead.
 // Setiap halaman publik baru punya `*.seo.ts` (default export `PageSeo`) di foldernya; src/seo/routes.ts
 // mengumpulkannya. Data datang dari API saat prerender (WP2) atau dari cache klien (SeoManager, WP3).
+import type { ArticleSummary } from '../content/panduan/core';
 import type { Template } from '../types/platform';
 
 export interface SeoData {
@@ -9,6 +10,8 @@ export interface SeoData {
   templates: Template[];
   projects: unknown[];
   templateBySlug: Record<string, Template>;
+  /** Artikel panduan terbit (get_guides), terbaru dulu. Tidak ada = belum ada artikel. */
+  guides?: ArticleSummary[];
   builtAt: string;
 }
 

@@ -1,9 +1,9 @@
-// /panduan (docs/platform/SEO-PLAN.md §5.8, Lampiran A): H1, pengantar, semua artikel (ringkasan dari
-// src/content/panduan, terbaru dulu), lalu tautan ke katalog, harga dan jasa. Head & JSON-LD: PanduanIndex.seo.ts.
+// /panduan (docs/platform/SEO-PLAN.md §5.8, Lampiran A): H1, pengantar, semua artikel terbit (get_guides lewat
+// useGuides, terbaru dulu), lalu tautan ke katalog, harga dan jasa. Head & JSON-LD: PanduanIndex.seo.ts.
 import { BookOpen, LayoutTemplate, PencilRuler, ReceiptText, Smartphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { DEFAULT_AUTHOR_NAME, getAuthor } from '../../../content/authors';
-import { listArticles } from '../../../content/panduan';
+import { useGuides, useGuideView } from '../../../hooks/useGuides';
 import { useSiteSettings } from '../../../hooks/useSiteSettings';
 import { HUB_PATHS } from '../../../seo/paths';
 import { InfoPage, InfoSection } from '../info/InfoPage';
@@ -33,7 +33,8 @@ const NEXT_LINKS = [
 ] as const;
 
 export default function PanduanIndex() {
-  const articles = listArticles();
+  const { status, articles, retry } = useGuides();
+  useGuideView(HUB_PATHS.guides);
   const author = getAuthor(DEFAULT_AUTHOR_NAME);
   // Teks pembuka dari admin (Pengaturan website → Panduan); kosong = bawaan
   const { settings } = useSiteSettings();
@@ -66,6 +67,30 @@ export default function PanduanIndex() {
         <div className="mt-6 sm:mt-8">
           {articles.length > 0 ? (
             <ArticleCards articles={articles} />
+          ) : status === 'loading' ? (
+            // Hanya tanpa data preload (render di browser) atau setelah "Coba lagi": kerangka dua kartu selagi daftar dimuat
+            <ul role="status" aria-label="Memuat panduan" className="grid animate-pulse gap-x-6 gap-y-10 md:grid-cols-2">
+              {[0, 1].map((i) => (
+                <li key={i}>
+                  <span className="block aspect-[16/10] rounded-[20px] bg-alt" />
+                  <span className="mt-4 block h-3 w-40 rounded-full bg-alt" />
+                  <span className="mt-3 block h-5 w-11/12 rounded-full bg-alt" />
+                  <span className="mt-2 block h-4 w-3/4 rounded-full bg-alt" />
+                </li>
+              ))}
+            </ul>
+          ) : status === 'error' ? (
+            // get_guides gagal tanpa data preload: jangan tampil seolah belum ada artikel
+            <div className="card-flat flex flex-col items-center px-6 py-12 text-center sm:py-16">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-primary">
+                <BookOpen className="h-6 w-6" aria-hidden />
+              </span>
+              <p className="mt-4 text-base font-semibold text-fg sm:text-lg">Daftar panduan gagal dimuat</p>
+              <p className="mt-1.5 max-w-md text-sm text-muted">Periksa koneksi internet Anda, lalu coba lagi.</p>
+              <button type="button" onClick={retry} className="btn btn-outline mt-5">
+                Coba lagi
+              </button>
+            </div>
           ) : (
             <div className="card-flat flex flex-col items-center px-6 py-12 text-center sm:py-16">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-primary">

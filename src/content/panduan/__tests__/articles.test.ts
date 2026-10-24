@@ -1,14 +1,14 @@
 // Jalankan: npx vitest run src/content/panduan
-// Isi artikel panduan (docs/platform/SEO-PLAN.md §5.8): ≥ 1.200 kata, pembuka yang langsung menjawab, ≥ 1 tabel, checklist,
+// Isi awal artikel panduan yang di-seed migrasi 2026-10-24_017 (salinannya: src/lib/__tests__/fixtures/panduan/*.md;
+// setelah itu admin yang menyunting isinya di database). Aturan isi (docs/platform/SEO-PLAN.md §5.8): ≥ 1.200 kata, pembuka yang langsung menjawab, ≥ 1 tabel, checklist,
 // FAQ, ≥ 3 sumber eksternal yang semuanya tercantum di frontmatter, tautan internal ke halaman yang diindeks (Lampiran
 // A.4: kategori/template, /harga, jasa), harga & nama template Garuda Nexa hanya lewat token data, penulis terdaftar.
 import { describe, expect, it } from 'vitest';
 import { findAuthor } from '../../authors';
-import { FIXTURE_BUILT_AT, FIXTURE_TEMPLATES, fixturePreload } from '../../../lib/__tests__/preloadFixture';
+import { FIXTURE_BUILT_AT, FIXTURE_GUIDES as ARTICLES, FIXTURE_TEMPLATES, fixturePreload } from '../../../lib/__tests__/preloadFixture';
 import { seoDataFromApi } from '../../../lib/preload';
 import { formatPriceFull, formatPriceShort } from '../../../seo/format';
 import { getHead } from '../../../seo/routes';
-import { ARTICLES } from '../bodies';
 import { articleHeadings, countWords, headingId, markdownLinks, proseBeforeSources, SOURCES_HEADING } from '../parse';
 import { placeholderProblems } from '../placeholders';
 

@@ -6,6 +6,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  GUIDES_BOOTSTRAP_ENV,
   HTACCESS_MAX_LINE,
   HTACCESS_ROUTES_PER_RULE,
   PRELOAD_OMIT_SETTINGS,
@@ -15,6 +16,7 @@ import {
   composePage,
   fetchJson,
   fillHtaccess,
+  guidesFetchFallback,
   hoistLeadingTags,
   htaccessRoutes,
   injectHead,
@@ -340,7 +342,43 @@ describe('data source', () => {
     expect(unreviewedArticles([{ slug: 'a', reviewed: null }, { slug: 'b', reviewed: '2026-11-06' }, { slug: 'c', reviewed: '' }])).toEqual(['a', 'c']);
     expect(unreviewedArticles([])).toEqual([]);
     const source = readFileSync(join(ROOT, 'scripts', 'prerender.mjs'), 'utf8');
-    expect(source).toMatch(/if \(strict\) throw new Error\(`Artikel panduan belum ditinjau/);
+    // Guides come from get_guides (database): the API sends published ones only, a draft there aborts the deploy
+    expect(source).toMatch(/if \(drafts\.length\) throw new Error\(`get_guides mengirim artikel yang belum ditinjau/);
+  });
+
+  it('first deploy of the database guides: a failing get_guides is skipped only with PRERENDER_GUIDES_BOOTSTRAP=1', async () => {
+    expect(GUIDES_BOOTSTRAP_ENV).toBe('PRERENDER_GUIDES_BOOTSTRAP');
+    const bootstrap = { env: { PRERENDER_GUIDES_BOOTSTRAP: '1' } };
+    // The old production api.php does not know get_guides: not a public action, so 401 (until this deploy is live)
+    const old = vi.fn(async () => new Response('{"error":"Sesi tidak valid atau sudah berakhir."}', { status: 401 }));
+    const httpError = await fetchJson('https://garudanexa.com/api.php?action=get_guides', { fetchImpl: old, retryDelayMs: 0 }).catch((e: unknown) => e);
+    expect(httpError).toMatchObject({ status: 401, message: expect.stringMatching(/3 percobaan: HTTP 401$/) });
+
+    // Without the flag (or with any other value) the deploy stops and explains the migration 017 + flag bootstrap
+    for (const env of [{}, { PRERENDER_GUIDES_BOOTSTRAP: '0' }, { PRERENDER_GUIDES_BOOTSTRAP: 'true' }]) {
+      expect(() => guidesFetchFallback(httpError, { env })).toThrow(/HTTP 401\. .*2026-10-24_017_guide_articles\.sql.*PRERENDER_GUIDES_BOOTSTRAP=1/);
+    }
+    // With the flag: an empty guide list in the get_guides shape (it also goes into gn-preload) and a warning
+    const fallback = guidesFetchFallback(httpError, bootstrap);
+    expect(fallback.body).toEqual({ success: true, guides: [] });
+    expect(fallback.warning).toMatch(/HTTP 401\. PRERENDER_GUIDES_BOOTSTRAP=1: lanjut tanpa artikel panduan/);
+
+    // Not an HTTP answer (broken body, {error} with 200, timeout): never skipped, flag or not
+    const broken = await fetchJson('u', { fetchImpl: vi.fn(async () => new Response('<html>WAF</html>', { status: 200 })), retryDelayMs: 0 }).catch(
+      (e: unknown) => e,
+    );
+    const apiError = await fetchJson('u', { fetchImpl: vi.fn(async () => new Response('{"error":"rusak"}', { status: 200 })), retryDelayMs: 0 }).catch(
+      (e: unknown) => e,
+    );
+    for (const error of [broken, apiError, new Error('Gagal mengambil u setelah 3 percobaan: The operation was aborted due to timeout')]) {
+      expect((error as { status?: number }).status).toBeUndefined();
+      expect(() => guidesFetchFallback(error, bootstrap)).toThrow(/hanya melewati jawaban HTTP gagal/);
+      expect(() => guidesFetchFallback(error, { env: {} })).toThrow(/PRERENDER_GUIDES_BOOTSTRAP=1/);
+    }
+
+    // fetchSiteData puts the substitute into `api`, so the preload matches what was rendered
+    const source = readFileSync(join(ROOT, 'scripts', 'prerender.mjs'), 'utf8').replace(/\r\n/g, '\n');
+    expect(source).toMatch(/const fallback = guidesFetchFallback\(error\);\n\s*warn\(fallback\.warning\);\n\s*guides = api\[urls\.guides\] = fallback\.body;/);
   });
 
   it('the deploy commit records where the data came from', () => {

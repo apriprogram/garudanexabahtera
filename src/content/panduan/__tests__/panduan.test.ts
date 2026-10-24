@@ -1,21 +1,19 @@
 // @vitest-environment node
 // Jalankan: npx vitest run src/content/panduan
-// Pemuat artikel panduan: frontmatter sederhana tanpa dependensi, validasi, urutan terbaru dulu, penolong Markdown.
+// Artikel panduan: pembaca respons API (get_guides, get_guide), urutan terbaru dulu, frontmatter sederhana (salinan
+// seed di data uji), penolong Markdown.
 import { describe, expect, it } from 'vitest';
-import { getArticle, listArticles, SHOW_DRAFT_ARTICLES } from '..';
+import { articleFromApi, findArticle, guidesFromApi } from '..';
 import {
   articleHeadings,
   countWords,
   headingId,
-  isPublishedArticle,
   markdownLinks,
   parseArticle,
   parseFrontmatter,
   proseBeforeSources,
   readingMinutes,
   sortArticles,
-  SUMMARY_KEYS,
-  toSummary,
   type Article,
 } from '../parse';
 
@@ -115,9 +113,12 @@ describe('parseArticle', () => {
   });
 });
 
-describe('sortArticles, listArticles, getArticle', () => {
+describe('sortArticles, guidesFromApi, articleFromApi', () => {
   const make = (slug: string, datePublished: string, dateModified = datePublished): Article => ({
     title: slug, description: slug, slug, author: 'Tim Garuda Nexa', datePublished, dateModified, reviewed: null, cta: 'template', sources: [], related: [], body: '',
+  });
+  const row = (slug: string, extra: Record<string, unknown> = {}) => ({
+    slug, title: `Judul ${slug}`, description: `Deskripsi ${slug}`, author: 'Tim Garuda Nexa', datePublished: '2026-10-23', dateModified: '2026-10-24', reviewed: '2026-10-24', ...extra,
   });
 
   it('terbaru dulu, seri → dateModified, lalu slug; slug ganda ditolak', () => {
@@ -131,30 +132,37 @@ describe('sortArticles, listArticles, getArticle', () => {
     expect(() => sortArticles([make('x', '2026-01-01'), make('x', '2026-02-01')])).toThrow(/lebih dari satu/);
   });
 
-  it('listArticles/getArticle: ringkasan saja (tanpa isi Markdown), terbaru dulu', () => {
-    const articles = listArticles();
-    expect(articles.length).toBeGreaterThan(0);
-    for (const article of articles) {
-      expect(getArticle(article.slug)).toEqual(article);
-      expect(Object.keys(article).sort()).toEqual([...SUMMARY_KEYS].sort());
-    }
-    expect(articles).toEqual(sortArticles(articles));
-    expect(getArticle('tidak-ada')).toBeUndefined();
-  });
-
-  it('draf (tanpa reviewed) tidak terbit di build production; server dev & tes menampilkannya', () => {
-    expect(isPublishedArticle({ reviewed: '2026-11-06' })).toBe(true);
-    expect(isPublishedArticle({ reviewed: null })).toBe(false);
-    expect(isPublishedArticle({ reviewed: '' })).toBe(false);
-    expect(isPublishedArticle({ reviewed: null }, true)).toBe(true);
-    // Vitest = mode dev: listArticles() memuat draf, sama seperti server dev Vite
-    expect(SHOW_DRAFT_ARTICLES).toBe(true);
-  });
-
-  it('toSummary mengambil kunci ringkasan saja', () => {
-    expect(toSummary(make('a', '2026-01-01'))).toEqual({
-      slug: 'a', title: 'a', description: 'a', author: 'Tim Garuda Nexa', datePublished: '2026-01-01', dateModified: '2026-01-01', reviewed: null,
+  it('guidesFromApi: hanya artikel terbit yang lengkap, slug ganda dibuang, terbaru dulu', () => {
+    const guides = guidesFromApi({
+      success: true,
+      guides: [
+        row('lama', { datePublished: '2026-01-01', dateModified: '2026-01-02' }),
+        row('baru'),
+        row('draf', { reviewed: null }),
+        row('baru', { title: 'Ganda' }),
+        row('Slug Salah'),
+        row('tanpa-judul', { title: '  ' }),
+        row('tanggal-salah', { datePublished: '23-10-2026' }),
+        'bukan objek',
+      ],
     });
+    expect(guides.map((g) => g.slug)).toEqual(['baru', 'lama']);
+    expect(guides[0]).toEqual(row('baru'));
+    expect(guidesFromApi(null)).toEqual([]);
+    expect(guidesFromApi({ guides: 'x' })).toEqual([]);
+    expect(findArticle(guides, 'lama')?.title).toBe('Judul lama');
+    expect(findArticle(guides, 'tidak-ada')).toBeUndefined();
+  });
+
+  it('articleFromApi: isi (CRLF → LF), ajakan sah atau template, sumber & terkait yang rapi', () => {
+    const article = articleFromApi({
+      success: true,
+      guide: row('a', { body: 'Baris 1\r\nBaris 2', cta: 'mobile', sources: [' https://contoh.test ', 3, ''], related: ['b', 'Bukan Slug'] }),
+    });
+    expect(article).toEqual({ ...row('a'), body: 'Baris 1\nBaris 2', cta: 'mobile', sources: ['https://contoh.test'], related: ['b'] });
+    expect(articleFromApi({ guide: row('a', { cta: 'lain' }) })?.cta).toBe('template');
+    expect(articleFromApi({ guide: row('a', { slug: '' }) })).toBeNull();
+    expect(articleFromApi({ success: true })).toBeNull();
   });
 });
 

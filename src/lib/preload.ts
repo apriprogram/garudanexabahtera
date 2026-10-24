@@ -8,6 +8,7 @@
 // Effect komponen tetap meminta data terbaru ke server setelah hidrasi.
 import { useSyncExternalStore } from 'react';
 import { apiUrl, clearApiCache, primeApiGet } from './api';
+import { guidesFromApi } from '../content/panduan/core';
 import { clearCachedJson, primeCachedJson } from '../hooks/useCachedJson';
 import type { SeoData } from '../seo/types';
 import type { Template } from '../types/platform';
@@ -21,6 +22,9 @@ export const PRELOAD_URLS = {
   templates: apiUrl('get_templates'),
   projects: apiUrl('get_public_projects'),
   template: (slug: string) => apiUrl('get_template', { slug }),
+  /** Artikel panduan terbit (ringkasan) dan satu artikel lengkap (src/content/panduan/index.ts) */
+  guides: apiUrl('get_guides'),
+  guide: (slug: string) => apiUrl('get_guide', { slug }),
 } as const;
 
 export interface PreloadData {
@@ -124,6 +128,7 @@ export function seoDataFromApi(api: Record<string, unknown>, builtAt: string): S
     templates,
     projects: Array.isArray(projects) ? projects : [],
     templateBySlug,
+    guides: guidesFromApi(api[PRELOAD_URLS.guides]),
     builtAt,
   };
 }

@@ -36,7 +36,7 @@ Deploy ulang (`node scripts/deploy-cpanel.mjs --push`, lalu Pull di cPanel, lalu
 | Fakta perusahaan berubah (`src/lib/companyFacts.ts`) | JSON-LD Organization, llms.txt | Isi field yang tadinya `null` hanya dengan data nyata |
 | Profil sosial resmi diisi di Admin → Pengaturan (footer_instagram, dst.) | `sameAs` Organization dibaca dari settings saat deploy | Nilai `#` atau kosong dianggap belum ada. `garudanexa.id` dan akun `@garudanexa` sengaja tidak dipakai (keputusan default 4) |
 | Admin mengubah **kontak** (nomor WhatsApp/telepon, email: `footer_whatsapp`, `footer_phone`, `cta_phone`, …), **menu navbar** (Kelola navbar), **hero** (judul, gambar, video) atau **section yang disembunyikan** | Nilai ini ikut tertulis di HTML mentah semua halaman `_pre` dan di `gn-preload`. Crawler dan mesin AI terus membaca nilai lama sampai deploy ulang, walaupun pengunjung dengan JavaScript sudah melihat yang baru | Setelah deploy, cek footer `/` dan `/kontak` tanpa JavaScript (`curl -s $B/kontak \| grep -o '62[0-9]*' \| sort -u`) |
-| Artikel panduan **selesai disunting dan dicek faktanya** | Artikel tanpa `reviewed:` di frontmatter adalah draf: tidak terbit di build production (§4a) | Tambahkan `reviewed: YYYY-MM-DD`, jalankan `npx vitest run src/content/panduan -u`, commit, lalu deploy |
+| Artikel panduan **selesai disunting dan dicek faktanya** | Artikel draf tidak dikirim API publik (§4a) | Admin → Pengaturan website → Panduan → Edit → nyalakan **Terbitkan**, lalu deploy (prerender, sitemap, llms.txt) dan IndexNow |
 
 Setelah deploy, jalankan pemeriksaan di §7.
 
@@ -99,11 +99,18 @@ Pemilik mengirim sitemap sekali di Search Console dan Bing Webmaster (SEO-PLAN �
 
 ## 4a. Artikel panduan: draf dan terbit
 
-Artikel di `src/content/panduan/*.md` ditulis dengan bantuan AI, jadi wajib disunting dan dicek faktanya oleh manusia sebelum terbit (SEO-PLAN §5.8).
+Sejak 2026-10-24 artikel disimpan di database (tabel `guide_articles`, migrasi `2026-10-24_017`) dan dikelola di admin → Pengaturan website → **Panduan**: tambah, edit, pratinjau, hapus, terbitkan, dan jumlah dilihat per halaman (`guide_views`). Isi awal 4 artikel (ditulis dengan bantuan AI) di-seed sebagai draf, jadi wajib disunting dan dicek faktanya oleh manusia sebelum terbit (SEO-PLAN §5.8).
 
-- **Draf** = frontmatter tanpa baris `reviewed:`. Draf tampil di server dev Vite (`npm run dev`) dan tes, tetapi **tidak ada** di build production: tanpa halaman (404), tanpa entri di `/panduan`, beranda, sitemap dan llms.txt. Tautan ke artikel itu dari halaman template, kategori, jasa dan `/harga` tidak dirender, atau jatuh ke `/panduan`. Selama semua artikel masih draf, `/panduan` tetap ada tetapi `noindex,follow`.
-- **Terbit:** setelah penyuntingan, tambahkan `reviewed: YYYY-MM-DD` (dan perbarui `dateModified` bila isinya berubah), lalu `npx vitest run src/content/panduan -u` untuk memperbarui `articles.generated.ts`, commit, deploy, IndexNow.
-- **Pratinjau build dengan draf:** `VITE_PANDUAN_DRAFTS=1` saat `--build-only`. Deploy sungguhan menolak build yang memuat draf.
+- **Deploy pertama (sekali saja):** prerender membaca `get_guides` dari API production, yang baru mengenal aksi itu setelah deploy ini terbit (api.php lama menjawab 401). Urutannya ([deploy/cpanel/README.md](../../deploy/cpanel/README.md) §1a):
+  1. Jalankan `database/migrations/2026-10-24_017_guide_articles.sql` di phpMyAdmin production.
+  2. Cek tabelnya: `SELECT slug, reviewed FROM guide_articles;` → 4 draf (`reviewed` NULL), `guide_views` ada.
+  3. Deploy sekali dengan `PRERENDER_GUIDES_BOOTSTRAP=1 node scripts/deploy-cpanel.mjs --push` (prerender lanjut tanpa artikel panduan, dengan peringatan), lalu Pull di cPanel.
+  4. Cek `https://garudanexa.com/api.php?action=get_guides` menjawab `{"success":true,"guides":[]}`.
+  5. Deploy berikutnya tanpa flag. Tanpa flag, `get_guides` yang gagal selalu membatalkan deploy: artikel tidak pernah dilewati diam-diam.
+
+- **Draf** = saklar **Terbitkan** mati (`reviewed` kosong). API publik (`get_guides`, `get_guide`) tidak pernah mengirimnya: tanpa halaman (404), tanpa entri di `/panduan`, sitemap dan llms.txt; tautan dari halaman template, kategori, jasa dan `/harga` tidak dirender atau jatuh ke `/panduan`. Selama belum ada artikel terbit, `/panduan` tetap ada tetapi `noindex,follow`. Draf bisa dilihat lewat **Pratinjau** di admin.
+- **Terbit:** nyalakan **Terbitkan** (server mengisi `reviewed` dengan tanggal hari ini; `dateModified` ikut hari ini bila judul, deskripsi, isi atau sumber berubah). Artikel langsung tampil di browser. Deploy berikutnya memprerender halamannya dan memperbarui sitemap & llms.txt; sampai saat itu `/panduan/{slug}` baru dilayani `seo.php` (head lengkap, isi dirender React). Lalu kirim IndexNow.
+- **Mengubah atau menghapus artikel yang sudah diprerender:** isinya langsung berubah di browser, tetapi HTML prerender (head, isi awal) baru ikut berubah setelah deploy; artikel yang dihapus tetap terlayani dari `_pre/` sampai deploy berikutnya. Deploy ulang setelah perubahan penting.
 
 ---
 

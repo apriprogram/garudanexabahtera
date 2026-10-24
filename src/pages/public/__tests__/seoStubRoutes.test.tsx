@@ -30,6 +30,17 @@ const TEMPLATE = {
   sort_order: 4,
 };
 
+/** Satu artikel panduan terbit (get_guides): artikel dikelola admin di database. */
+const GUIDE = {
+  slug: 'biaya-website-company-profile',
+  title: 'Berapa Biaya Membuat Website Company Profile di 2026?',
+  description: 'Kisaran biaya website company profile 2026, dari website builder, template, sampai jasa custom.',
+  author: 'Tim Garuda Nexa',
+  datePublished: '2026-10-23',
+  dateModified: '2026-10-23',
+  reviewed: '2026-10-24',
+};
+
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
   const url = String(input);
@@ -38,6 +49,7 @@ const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
   }
   if (url.includes('action=get_templates')) return json({ templates: [TEMPLATE], categories: [TEMPLATE.category] });
   if (url.includes('action=get_settings')) return json({});
+  if (url.includes('action=get_guides')) return json({ success: true, guides: [GUIDE] });
   return json([]);
 });
 
@@ -70,8 +82,9 @@ describe('rute SEO WP1', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(document.getElementById('konten')).toContainElement(h1);
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Beranda');
+    // Daftar artikel dimuat dari API (get_guides)
     const main = within(document.getElementById('konten')!);
-    expect(main.getAllByRole('link').some((a) => a.getAttribute('href')?.startsWith('/panduan/'))).toBe(true);
+    await waitFor(() => expect(main.getAllByRole('link').some((a) => a.getAttribute('href') === `/panduan/${GUIDE.slug}`)).toBe(true));
     // Navbar dan Footer situs
     expect(document.querySelector('header')).not.toBeNull();
     expect(document.querySelector('footer')).not.toBeNull();

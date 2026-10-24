@@ -1,17 +1,26 @@
 // /panduan/:slug (docs/platform/SEO-PLAN.md §5.8): H1, byline + "Diperbarui {tanggal}" (= tanggal JSON-LD), daftar isi
-// (sticky di desktop, disclosure di HP), isi Markdown, ajakan, kotak penulis, artikel terkait. Slug tanpa file .md →
-// halaman 404. Head & JSON-LD: PanduanArticle.seo.ts. Token data di isi ({{harga_template_min}}, {{template:slug}}, …)
-// diganti data template terbit (preload saat prerender & hidrasi, lalu API), lihat src/content/panduan/placeholders.ts.
+// (sticky di desktop, disclosure di HP), isi Markdown, ajakan, kotak penulis, artikel terkait. Artikel dari API
+// get_guide (src/hooks/useGuides.ts; preload saat prerender & hidrasi); slug yang tidak ada / belum terbit → halaman 404.
+// Head & JSON-LD: PanduanArticle.seo.ts. Token data di isi ({{harga_template_min}}, {{template:slug}}, …) diganti data
+// template terbit (preload saat prerender & hidrasi, lalu API), lihat src/content/panduan/placeholders.ts. Sumber:
+// bagian "## Sumber" di isi, atau (bila isi tidak memilikinya) daftar dari kolom Sumber admin (withSourcesSection).
 import { useMemo } from 'react';
 import { BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import Footer from '../../../components/layout/Footer';
 import Navbar from '../../../components/layout/Navbar';
 import { getAuthor } from '../../../content/authors';
-import { getArticle, listArticles } from '../../../content/panduan';
-import { articleHeadings, countWords, proseBeforeSources, readingMinutes, type ArticleHeading } from '../../../content/panduan/parse';
-import { getFullArticle } from '../../../content/panduan/bodies';
+import { findArticle } from '../../../content/panduan';
+import {
+  articleHeadings,
+  countWords,
+  proseBeforeSources,
+  readingMinutes,
+  withSourcesSection,
+  type ArticleHeading,
+} from '../../../content/panduan/parse';
 import { resolvePlaceholders } from '../../../content/panduan/placeholders';
+import { useGuide, useGuides, useGuideView } from '../../../hooks/useGuides';
 import { usePriceDate, usePublishedTemplates } from '../../../hooks/usePublishedTemplates';
 import { HUB_PATHS, TEMPLATE_PREFIX, CATEGORY_PREFIX, GUIDE_PREFIX } from '../../../seo/paths';
 import NotFound from '../NotFound';
@@ -37,26 +46,64 @@ const TocList = ({ headings }: { headings: readonly ArticleHeading[] }) => (
   </ol>
 );
 
+/** Artikel belum dimuat (render di browser tanpa data preload) atau gagal dimuat. */
+const ArticlePending = ({ failed }: { failed: boolean }) => (
+  <>
+    <Navbar />
+    <main id="konten" tabIndex={-1} className="bg-canvas pt-nav focus:outline-none">
+      <div className="container-site pb-20 pt-8 sm:pt-12">
+        <div className="mx-auto max-w-3xl">
+          {failed ? (
+            <div className="card-flat px-6 py-12 text-center">
+              <p className="text-base font-semibold text-fg sm:text-lg">Artikel gagal dimuat</p>
+              <p className="mt-1.5 text-sm text-muted">Periksa koneksi internet Anda, lalu muat ulang halaman ini.</p>
+              <button type="button" onClick={() => window.location.reload()} className="btn btn-outline mt-5">
+                Muat ulang
+              </button>
+            </div>
+          ) : (
+            <div role="status" aria-label="Memuat artikel" className="animate-pulse space-y-4">
+              <span className="block h-4 w-40 rounded-full bg-alt" />
+              <span className="block h-10 w-11/12 rounded-2xl bg-alt" />
+              <span className="block h-10 w-3/5 rounded-2xl bg-alt" />
+              <span className="block h-4 w-56 rounded-full bg-alt" />
+              <span className="mt-8 block h-64 rounded-[20px] bg-alt" />
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+    <Footer />
+  </>
+);
+
 export default function PanduanArticle() {
   const { slug = '' } = useParams();
-  const summary = getArticle(slug);
-  const article = summary ? getFullArticle(slug) : undefined;
+  const { status: articleStatus, article } = useGuide(slug);
+  const { status: guidesStatus, articles } = useGuides();
   const { status, templates } = usePublishedTemplates();
   const priceDate = usePriceDate();
+  useGuideView(article ? `${GUIDE_PREFIX}${article.slug}` : null);
 
-  const body = useMemo(() => (article ? resolvePlaceholders(article.body, { templates, priceDate }) : ''), [article, templates, priceDate]);
+  // Kolom Sumber (admin) ikut tampil bila isi belum menulis bagian "## Sumber" sendiri (daftar isi ikut memuatnya)
+  const body = useMemo(
+    () => (article ? resolvePlaceholders(withSourcesSection(article.body, article.sources), { templates, priceDate }) : ''),
+    [article, templates, priceDate],
+  );
   const headings = useMemo(() => articleHeadings(body), [body]);
   const minutes = useMemo(() => readingMinutes(countWords(proseBeforeSources(body))), [body]);
 
-  if (!summary || !article) return <NotFound />;
+  if (!article) return articleStatus === 'missing' ? <NotFound /> : <ArticlePending failed={articleStatus === 'error'} />;
 
-  // Template yang tidak lagi terbit (setelah data siap) → katalog, dan artikel lain yang belum terbit (draf) → /panduan,
-  // supaya tautan di artikel tidak berakhir 404
+  // Setelah datanya siap: template yang tidak lagi terbit → katalog, dan artikel lain yang belum terbit (draf) →
+  // /panduan, supaya tautan di artikel tidak berakhir 404. Selama daftar dimuat atau gagal dimuat tautan dibiarkan.
   const published = new Set(templates.map((t) => t.slug));
+  const guidesReady = guidesStatus === 'ready';
   const resolveHref = (href: string): string => {
     if (href.startsWith(GUIDE_PREFIX)) {
+      if (!guidesReady) return href;
       const guideSlug = href.slice(GUIDE_PREFIX.length).split(/[/?#]/, 1)[0];
-      return getArticle(guideSlug) ? href : HUB_PATHS.guides;
+      return findArticle(articles, guideSlug) ? href : HUB_PATHS.guides;
     }
     if (status !== 'ready' || !href.startsWith(TEMPLATE_PREFIX) || href.startsWith(CATEGORY_PREFIX)) return href;
     const templateSlug = href.slice(TEMPLATE_PREFIX.length).split(/[/?#]/, 1)[0];
@@ -64,7 +111,8 @@ export default function PanduanArticle() {
   };
 
   const author = getAuthor(article.author);
-  const others = listArticles().filter((a) => a.slug !== article.slug);
+  // Artikel terkait hanya dari daftar artikel terbit yang sudah dimuat
+  const others = guidesReady ? articles.filter((a) => a.slug !== article.slug) : [];
   const related = [
     ...article.related.map((s) => others.find((a) => a.slug === s)).filter((a) => a !== undefined),
     ...others.filter((a) => !article.related.includes(a.slug)),

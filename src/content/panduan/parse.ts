@@ -1,7 +1,7 @@
-// Pengurai artikel panduan (/panduan/{slug}, docs/platform/SEO-PLAN.md §5.8): frontmatter sederhana tanpa dependensi,
-// validasi, dan penolong Markdown (judul H2 untuk daftar isi, hitung kata, tautan). Modul murni (tanpa React, tanpa
-// import.meta.glob) untuk bodies.ts (chunk halaman artikel), halaman artikel dan tes. JANGAN diimpor dari bundel utama
-// (index.ts, *.seo.ts, beranda): pakai core.ts.
+// Penolong artikel panduan (/panduan/{slug}, docs/platform/SEO-PLAN.md §5.8): penolong Markdown (judul H2 untuk daftar
+// isi, hitung kata, tautan) untuk halaman artikel dan pratinjau admin, plus pengurai frontmatter sederhana tanpa
+// dependensi untuk salinan isi awal (seed migrasi 2026-10-24_017) di data uji. Modul murni (tanpa React, tanpa
+// import.meta.glob). JANGAN diimpor dari bundel utama (*.seo.ts, beranda): pakai core.ts.
 //
 // Frontmatter (subset YAML sederhana):
 //   ---
@@ -18,9 +18,8 @@
 //   related: [template-vs-jasa-website-custom, website-klinik-kecantikan]
 //   ---
 // `author` = nama di src/content/authors.ts. `cta` (opsional): template (bawaan) | website | mobile.
-// `reviewed` (opsional): tanggal artikel selesai disunting dan dicek faktanya oleh manusia (SEO-PLAN §5.8). Tanpa
-// `reviewed` artikel adalah draf: tampil di server dev dan tes, tetapi tidak terbit di build production (halaman,
-// daftar /panduan, beranda, sitemap, llms.txt, tautan dari halaman lain).
+// `reviewed` (opsional): tanggal artikel selesai disunting dan dicek faktanya oleh manusia (SEO-PLAN §5.8); tanpa
+// `reviewed` artikel adalah draf.
 // Nilai boleh diapit tanda kutip. Daftar: baris "- item" di bawah kuncinya, atau [a, b] dalam satu baris; [] = kosong.
 // Baris kosong dan baris komentar (#) diabaikan.
 import { ARTICLE_CTAS, type Article, type ArticleCta, type ArticleMeta } from './core';
@@ -175,6 +174,20 @@ export function articleHeadings(markdown: string): ArticleHeading[] {
 
 /** Judul H2 penutup yang memuat daftar sumber; teksnya tidak dihitung sebagai isi artikel. */
 export const SOURCES_HEADING = 'Sumber';
+
+const SOURCES_LINE = new RegExp(`^##\\s+${SOURCES_HEADING}\\s*$`, 'm');
+
+/**
+ * Isi yang ditampilkan: bila isi belum punya bagian "## Sumber" dan artikel punya URL sumber (kolom Sumber di admin),
+ * bagian itu ditambahkan di akhir sebagai daftar tautan, supaya sumber selalu terlihat (SEO-PLAN §5.8). Isi yang sudah
+ * menulis "## Sumber" sendiri (artikel awal) dibiarkan apa adanya.
+ */
+export function withSourcesSection(markdown: string, sources: readonly string[]): string {
+  if (sources.length === 0 || SOURCES_LINE.test(markdown)) return markdown;
+  // Tujuan tautan dalam <…>: URL dengan tanda kurung tetap utuh
+  const list = sources.map((url) => `- [${url.replace(/[[\]]/g, '\\$&')}](<${url}>)`).join('\n');
+  return `${markdown.replace(/\s+$/, '')}\n\n## ${SOURCES_HEADING}\n\n${list}\n`;
+}
 
 /** Isi artikel sebelum bagian "## Sumber" (bagian lain tetap). */
 export function proseBeforeSources(markdown: string): string {

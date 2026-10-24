@@ -27,8 +27,8 @@ export { CATEGORY_SLUGS, HUB_PATHS, LEGAL_PATHS, SITE_ORIGIN } from './seo/paths
 export { CATEGORY_LIST } from './content/categories';
 export { getTemplatePricing } from './hooks/useSiteSettings';
 export { COMPANY_FACTS } from './lib/companyFacts';
-export { listArticles } from './content/panduan';
 export { faqForLlms } from './content/faq';
+export { guideFallbackContext } from './pages/public/panduan/PanduanArticle.seo';
 export { isPresentableProject, presentableProjects } from './components/sections/projects/presentable';
 export { PRELOAD_ELEMENT_ID, PRELOAD_URLS, seoDataFromApi, type PreloadData } from './lib/preload';
 

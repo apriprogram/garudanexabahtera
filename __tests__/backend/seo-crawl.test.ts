@@ -38,6 +38,8 @@ describe('robots.txt', () => {
         'Allow: /api.php?action=get_templates',
         'Allow: /api.php?action=get_template&',
         'Allow: /api.php?action=get_public_projects',
+        'Allow: /api.php?action=get_guides',
+        'Allow: /api.php?action=get_guide&',
         'Disallow: /api.php',
         'Disallow: /admin',
         'Disallow: /login',
@@ -68,6 +70,8 @@ describe('robots.txt', () => {
       '/', '/template/aura-studio', '/template/kategori/company-profile', '/harga', '/panduan/biaya-website-company-profile',
       '/api.php?action=get_settings', '/api.php?action=get_navbar_menus', '/api.php?action=get_templates',
       '/api.php?action=get_template&slug=aura-studio', '/api.php?action=get_public_projects',
+      // /panduan pages render their articles from these (an article published after the last deploy has no preload)
+      '/api.php?action=get_guides', '/api.php?action=get_guide&slug=biaya-website-company-profile',
       // app pages stay crawlable so crawlers can read their noindex (WP2)
       '/akun', '/masuk', '/daftar', '/pesan/aura-studio', '/demo/finova',
     ]) {
@@ -75,6 +79,8 @@ describe('robots.txt', () => {
     }
     for (const path of [
       '/api.php', '/api.php?action=login', '/api.php?action=customer_get_orders', '/api.php?action=get_site_public',
+      // get_guide is opened only with its slug parameter ("&", like get_template&), never as a bare get_guide* prefix
+      '/api.php?action=get_guide', '/api.php?action=guide_view', '/api.php?action=admin_get_guides',
       '/admin', '/admin/templates', '/login', '/auth', '/auth?type=login',
     ]) {
       expect(allowed(path), path).toBe(false);

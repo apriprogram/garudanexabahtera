@@ -16,6 +16,12 @@
 //
 // Aturan proses: setelah harga/nama/deskripsi template berubah atau template baru terbit, deploy ulang
 // (deploy/cpanel/README.md); skrip ini hanya penambal sampai deploy berikutnya.
+//
+// Artikel panduan (?guide={slug}, .htaccess untuk /panduan/{slug} yang belum diprerender): artikel dikelola admin dan
+// bisa terbit kapan saja. Artikel terbit → cangkang + head yang sama dengan src/pages/public/panduan/PanduanArticle.seo.ts
+// (judul, deskripsi, canonical, OG article, JSON-LD Article + BreadcrumbList; akhiran judul, kartu OG dan penulis dari
+// `guide` di seo-fallback.json) + <main> sederhana (H1, deskripsi); draf / tidak ada → 404. Data lewat
+// backend/modules/guides.php (gd_article_out), sama dengan get_guide.
 
 const SEO_SLUG_PATTERN = '/^[a-z0-9-]{1,120}$/';
 const SEO_TITLE_MAX = 60;
@@ -221,6 +227,47 @@ function seo_template_head(array $t, array $ctx): array {
     return $head;
 }
 
+// ── Isi head artikel panduan (sama dengan src/pages/public/panduan/PanduanArticle.seo.ts) ──
+
+/** SeoHead untuk satu artikel panduan terbit (bentuk get_guide). */
+function seo_guide_head(array $g, array $ctx): array {
+    $guide = $ctx['guide'];
+    $path = '/panduan/' . $g['slug'];
+    $url = seo_page_url($ctx['origin'], $path);
+    $author = $guide['authors'][$g['author']] ?? $guide['authors'][$guide['defaultAuthor']];
+    $crumbs = [['Beranda', '/'], ['Panduan', '/panduan'], [$g['title'], $path]];
+    $items = [];
+    foreach ($crumbs as $i => [$name, $crumbPath]) {
+        $items[] = ['@type' => 'ListItem', 'position' => $i + 1, 'name' => $name, 'item' => seo_page_url($ctx['origin'], $crumbPath)];
+    }
+    return [
+        'title' => seo_first_that_fits([$g['title'] . $guide['titleSuffix'], $g['title']], SEO_TITLE_MAX),
+        'description' => $g['description'],
+        'canonical' => $url,
+        'robots' => 'index,follow',
+        'ogType' => 'article',
+        'ogImage' => $guide['ogImage'],
+        'ogImageAlt' => $g['title'],
+        'jsonLd' => array_merge($ctx['globalJsonLd'], [
+            [
+                '@type' => 'Article',
+                '@id' => "$url#article",
+                'headline' => $g['title'],
+                'description' => seo_collapse($g['description']),
+                'url' => $url,
+                'mainEntityOfPage' => $url,
+                'image' => [$guide['ogImage']],
+                'datePublished' => $g['datePublished'],
+                'dateModified' => $g['dateModified'],
+                'inLanguage' => 'id-ID',
+                'author' => $author,
+                'publisher' => ['@id' => $ctx['organizationId']],
+            ],
+            ['@type' => 'BreadcrumbList', '@id' => "$url#breadcrumb", 'itemListElement' => $items],
+        ]),
+    ];
+}
+
 // ── Tag head (sama dengan src/seo/head.ts renderHeadTags) ──
 
 function seo_escape($value): string {
@@ -309,6 +356,17 @@ function seo_render_main(array $t, array $ctx): string {
     return $html . '</main>';
 }
 
+/** <main> artikel panduan: remah, H1, deskripsi dan tautan ke daftar; isi lengkap dirender React. */
+function seo_render_guide_main(array $g): string {
+    $e = 'seo_escape';
+    $html = '<main id="konten" class="container-site pt-nav pb-16">';
+    $html .= '<nav aria-label="Breadcrumb"><a href="/">Beranda</a> › <a href="/panduan">Panduan</a> › <span aria-current="page">' . $e($g['title']) . '</span></nav>';
+    $html .= '<h1>' . $e($g['title']) . '</h1>';
+    $html .= '<p>' . $e($g['description']) . '</p>';
+    $html .= '<p><a href="/panduan">Semua panduan</a></p>';
+    return $html . '</main>';
+}
+
 /** Hapus tag head per halaman dari cangkang index.html (sama dengan stripPageHead di scripts/prerender.mjs). */
 function seo_strip_page_head(string $shell): string {
     $end = strpos($shell, '</head>');
@@ -327,10 +385,18 @@ function seo_strip_page_head(string $shell): string {
     return $head . substr($shell, $end);
 }
 
-/** Halaman utuh: cangkang + head + <main> di dalam #root. */
+/** Halaman template utuh: cangkang + head + <main> di dalam #root. */
 function seo_render_page(array $t, array $ctx, string $shell): string {
-    $head = seo_template_head($t, $ctx);
-    $tags = seo_render_head_tags($head, $ctx);
+    return seo_compose_page($shell, seo_render_head_tags(seo_template_head($t, $ctx), $ctx), seo_render_main($t, $ctx));
+}
+
+/** Halaman artikel panduan utuh. */
+function seo_render_guide_page(array $g, array $ctx, string $shell): string {
+    return seo_compose_page($shell, seo_render_head_tags(seo_guide_head($g, $ctx), $ctx), seo_render_guide_main($g));
+}
+
+/** Cangkang tanpa head per halaman + tag head setelah meta viewport + <main> di dalam #root. */
+function seo_compose_page(string $shell, string $tags, string $main): string {
     $html = seo_strip_page_head($shell);
     if (preg_match('/<meta\s+name="viewport"[^>]*>/i', $html, $m, PREG_OFFSET_CAPTURE)) {
         $at = $m[0][1] + strlen($m[0][0]);
@@ -338,7 +404,7 @@ function seo_render_page(array $t, array $ctx, string $shell): string {
     } else {
         $html = str_replace('</head>', $tags . "\n</head>", $html);
     }
-    return str_replace('<div id="root"></div>', '<div id="root">' . seo_render_main($t, $ctx) . '</div>', $html);
+    return str_replace('<div id="root"></div>', '<div id="root">' . $main . '</div>', $html);
 }
 
 // ── Request ──
@@ -364,9 +430,8 @@ function seo_not_found(): void {
     else echo '<!doctype html><title>Halaman tidak ditemukan</title><h1>Halaman tidak ditemukan</h1>';
 }
 
-/** Template terbit untuk slug ini (bentuk get_template), atau null. */
-function seo_find_template(string $slug): ?array {
-    require_once __DIR__ . '/modules/templates.php';
+/** Satu baris tabel yang cocok dengan query ber-parameter slug, atau null. */
+function seo_find_row(string $sql, string $slug): ?array {
     seo_load_env();
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     $conn = new mysqli(
@@ -376,21 +441,38 @@ function seo_find_template(string $slug): ?array {
         getenv('MYSQL_DB') ?: 'db_garudanexabahtera'
     );
     $conn->set_charset('utf8mb4');
-    $stmt = $conn->prepare("SELECT * FROM templates WHERE slug = ? AND status = 'published' LIMIT 1");
+    $stmt = $conn->prepare($sql);
     $stmt->bind_param('s', $slug);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     $conn->close();
+    return $row ?: null;
+}
+
+/** Template terbit untuk slug ini (bentuk get_template), atau null. */
+function seo_find_template(string $slug): ?array {
+    require_once __DIR__ . '/modules/templates.php';
+    $row = seo_find_row("SELECT * FROM templates WHERE slug = ? AND status = 'published' LIMIT 1", $slug);
     return $row ? pf_template_out($row) : null;
+}
+
+/** Artikel panduan terbit untuk slug ini (bentuk get_guide), atau null. */
+function seo_find_guide(string $slug): ?array {
+    require_once __DIR__ . '/modules/guides.php';
+    $row = seo_find_row("SELECT * FROM guide_articles WHERE slug = ? AND reviewed IS NOT NULL LIMIT 1", $slug);
+    return $row ? gd_article_out($row) : null;
 }
 
 function seo_main(): void {
     error_reporting(E_ALL);
     ini_set('display_errors', '0');
     ini_set('log_errors', '1');
-    $slug = isset($_GET['slug']) && is_string($_GET['slug']) ? strtolower($_GET['slug']) : '';
-    if (!preg_match(SEO_SLUG_PATTERN, $slug) || $slug === 'kategori') {
+    // ?guide= → artikel panduan (/panduan/{slug}), selain itu ?slug= → template (/template/{slug})
+    $isGuide = isset($_GET['guide']);
+    $param = $isGuide ? $_GET['guide'] : ($_GET['slug'] ?? '');
+    $slug = is_string($param) ? strtolower($param) : '';
+    if (!preg_match(SEO_SLUG_PATTERN, $slug) || (!$isGuide && $slug === 'kategori')) {
         seo_not_found();
         return;
     }
@@ -398,7 +480,7 @@ function seo_main(): void {
     $ctx = is_file($ctxFile) ? json_decode((string)file_get_contents($ctxFile), true) : null;
     $shell = is_file(__DIR__ . '/index.html') ? (string)file_get_contents(__DIR__ . '/index.html') : '';
     try {
-        $template = seo_find_template($slug);
+        $item = $isGuide ? seo_find_guide($slug) : seo_find_template($slug);
     } catch (Throwable $e) {
         error_log('[seo.php] ' . $e);
         http_response_code(503);
@@ -407,20 +489,20 @@ function seo_main(): void {
         echo 'Layanan sedang sibuk. Silakan coba lagi beberapa saat lagi.';
         return;
     }
-    if (!$template) {
+    if (!$item) {
         seo_not_found();
         return;
     }
-    if (!is_array($ctx) || $shell === '') {
+    if (!is_array($ctx) || $shell === '' || ($isGuide && !is_array($ctx['guide'] ?? null))) {
         // Build tidak lengkap: tetap sajikan aplikasinya (tanpa head SEO) daripada halaman kosong
-        error_log('[seo.php] _pre/seo-fallback.json atau index.html tidak ada');
+        error_log('[seo.php] _pre/seo-fallback.json (bagian guide) atau index.html tidak ada');
         header('Content-Type: text/html; charset=utf-8');
         echo $shell;
         return;
     }
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: no-cache');
-    echo seo_render_page($template, $ctx, $shell);
+    echo $isGuide ? seo_render_guide_page($item, $ctx, $shell) : seo_render_page($item, $ctx, $shell);
 }
 
 // Tes (seo-fallback.test.ts) memuat file ini sebagai pustaka tanpa menjalankan request

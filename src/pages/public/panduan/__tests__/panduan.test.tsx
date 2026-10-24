@@ -3,17 +3,19 @@
 // /panduan dan /panduan/{slug} (docs/platform/SEO-PLAN.md §5.8): head (Article + BreadcrumbList, tanggal = tanggal yang
 // terlihat), rute untuk prerender/sitemap/llms, lalu render seperti prerender (StaticRouter + data preload) dan hidrasi:
 // tanpa mismatch, satu H1, daftar isi = H2, token data terganti, tautan internal <a href> asli, eksternal di tab baru.
+// Lalu data yang hanya ada di API (artikel terbit setelah deploy, get_guides gagal): bukan 404 saat navigasi, tautan
+// tidak dialihkan tanpa daftar artikel, Sumber dari kolom sumber, dan pesan gagal + "Coba lagi" di /panduan.
 import { StrictMode } from 'react';
 import { act } from '@testing-library/react';
-import { hydrateRoot, type Root } from 'react-dom/client';
+import { createRoot, hydrateRoot, type Root } from 'react-dom/client';
 import { prerender } from 'react-dom/static';
 import * as Router from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../../App';
-import { listArticles } from '../../../../content/panduan';
-import { ARTICLES } from '../../../../content/panduan/bodies';
-import { FIXTURE_BUILT_AT, fixtureFetch, fixturePreload } from '../../../../lib/__tests__/preloadFixture';
-import { primePreload, resetPreload, seoDataFromApi } from '../../../../lib/preload';
+import type { Article } from '../../../../content/panduan';
+import { proseBeforeSources } from '../../../../content/panduan/parse';
+import { FIXTURE_BUILT_AT, FIXTURE_GUIDES as ARTICLES, fixtureFetch, fixturePreload, guideSummary } from '../../../../lib/__tests__/preloadFixture';
+import { PRELOAD_URLS, primePreload, resetPreload, seoDataFromApi } from '../../../../lib/preload';
 import { formatDateId } from '../../../../seo/format';
 import { getHead, getIndexableRoutes } from '../../../../seo/routes';
 import type { SeoData } from '../../../../seo/types';
@@ -68,7 +70,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function hydrate(path: string) {
+async function hydrate(path: string, fetchImpl: typeof fixtureFetch = fixtureFetch) {
   const html = await serverHtml(path);
   expect(html).not.toMatch(/<!--\$[!?]-->/);
   container = document.createElement('div');
@@ -78,7 +80,7 @@ async function hydrate(path: string) {
   const serverH1 = container.querySelector('h1');
   resetPreload();
   primePreload(fixturePreload(path));
-  vi.stubGlobal('fetch', vi.fn(fixtureFetch));
+  vi.stubGlobal('fetch', vi.fn(fetchImpl));
   const problems: string[] = [];
   const consoleError = console.error;
   vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
@@ -104,6 +106,43 @@ async function hydrate(path: string) {
   return { html, problems, serverH1, el: container! };
 }
 
+/** Render biasa di browser tanpa HTML prerender dan tanpa data preload (app.html, seo.php, 404.html di path lain). */
+async function renderClient(path: string, fetchImpl: typeof fixtureFetch) {
+  resetPreload();
+  container = document.createElement('div');
+  container.id = 'root';
+  document.body.appendChild(container);
+  vi.stubGlobal('fetch', vi.fn(fetchImpl));
+  await act(async () => {
+    root = createRoot(container!);
+    root.render(
+      <StrictMode>
+        <Router.MemoryRouter initialEntries={[path]}>
+          <App />
+        </Router.MemoryRouter>
+      </StrictMode>,
+    );
+  });
+  return container!;
+}
+
+const jsonResponse = (body: unknown, status = 200) =>
+  Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } }));
+const requestPath = (input: RequestInfo | URL) =>
+  (typeof input === 'string' ? input : input instanceof URL ? input.pathname + input.search : input.url).replace(/^https?:\/\/[^/]+/, '');
+
+/** Artikel yang terbit setelah deploy terakhir: tidak ada di data preload, hanya di API. */
+const KLINIK = ARTICLES.find((a) => a.slug === 'website-klinik-kecantikan')!;
+const FRESH: Article = {
+  ...KLINIK,
+  slug: 'artikel-baru-setelah-deploy',
+  title: 'Artikel baru yang terbit setelah deploy terakhir',
+  datePublished: '2026-10-24',
+  dateModified: '2026-10-24',
+  reviewed: '2026-10-24',
+  related: [],
+};
+
 describe('head panduan', () => {
   it('/panduan: index, judul & deskripsi Lampiran A, CollectionPage + ItemList semua artikel + BreadcrumbList', () => {
     const head = getHead('/panduan', DATA);
@@ -113,7 +152,7 @@ describe('head panduan', () => {
     expect(GUIDES_DESCRIPTION.length).toBeLessThanOrEqual(155);
     expect(head.canonical).toBe('https://garudanexa.com/panduan');
     const list = nodeOfType('/panduan', 'ItemList') as { itemListElement: { url: string }[] };
-    expect(list.itemListElement.map((i) => i.url)).toEqual(listArticles().map((a) => `https://garudanexa.com/panduan/${a.slug}`));
+    expect(list.itemListElement.map((i) => i.url)).toEqual(ARTICLES.map((a) => `https://garudanexa.com/panduan/${a.slug}`));
     expect(nodeOfType('/panduan', 'CollectionPage')).toMatchObject({ mainEntity: { '@id': 'https://garudanexa.com/panduan#itemlist' } });
     expect(nodeOfType('/panduan', 'BreadcrumbList')).toBeDefined();
   });
@@ -178,7 +217,7 @@ describe('halaman panduan: prerender + hidrasi', SLOW, () => {
     expect(el.querySelectorAll('h1')).toHaveLength(1);
     expect(serverH1?.textContent).toBe('Panduan website untuk bisnis');
     const main = el.querySelector('main')!;
-    for (const a of listArticles()) {
+    for (const a of ARTICLES) {
       const link = main.querySelector(`a[href="/panduan/${a.slug}"]`);
       expect(link, a.slug).not.toBeNull();
       expect(link!.textContent).toContain(a.title);
@@ -224,7 +263,8 @@ describe('halaman panduan: prerender + hidrasi', SLOW, () => {
     for (const region of el.querySelectorAll('main [role="region"]')) expect(region.className).toMatch(/(^|\s)relative(\s|$)/);
     expect(el.querySelector('main input[type="checkbox"]')).toBeNull();
     expect(el.querySelector('#pertanyaan-yang-sering-diajukan')).not.toBeNull();
-    expect(el.querySelector('#sumber')).not.toBeNull();
+    // Isi sudah menulis "## Sumber" sendiri: kolom sumber tidak menambah bagian kedua
+    expect(el.querySelectorAll('#sumber')).toHaveLength(1);
 
     // Tautan: internal = <a href="/…"> tanpa target; eksternal = tab baru + noopener
     const links = [...el.querySelectorAll('main article a')];
@@ -242,9 +282,112 @@ describe('halaman panduan: prerender + hidrasi', SLOW, () => {
     expect(el.querySelectorAll('#panduan-terkait ~ * a[href^="/panduan/"], section[aria-labelledby="panduan-terkait"] a[href^="/panduan/"]').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('kunjungan dihitung sekali per sesi browser (guide_view): /panduan dan artikel', async () => {
+    window.sessionStorage.clear();
+    const viewPosts = () =>
+      vi
+        .mocked(fetch)
+        .mock.calls.map(([, init]) => (init?.method === 'POST' ? (JSON.parse(String(init.body)) as Record<string, unknown>) : null))
+        .filter((body) => body?.action === 'guide_view');
+    // Halaman berikutnya di sesi yang sama: bongkar seperti afterEach (fetch & console dipasang ulang hydrate)
+    const leave = () => {
+      act(() => root?.unmount());
+      root = null;
+      container?.remove();
+      container = null;
+      resetPreload();
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    };
+    await hydrate('/panduan');
+    // StrictMode menjalankan effect dua kali: tetap satu request
+    expect(viewPosts()).toEqual([{ page: '/panduan', action: 'guide_view' }]);
+    leave();
+    const slug = ARTICLES[0].slug;
+    await hydrate(`/panduan/${slug}`);
+    expect(viewPosts()).toEqual([{ page: `/panduan/${slug}`, action: 'guide_view' }]);
+    leave();
+    // Sudah dihitung di sesi ini: tidak dikirim lagi
+    await hydrate('/panduan');
+    expect(viewPosts()).toEqual([]);
+  });
+
   it('slug tanpa artikel → halaman 404', async () => {
     const html = await serverHtml('/panduan/belum-ada-artikel');
     const text = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
     expect(text).toContain('Halaman ini tidak ditemukan.');
+  });
+});
+
+describe('halaman panduan: artikel dan daftar dari API (setelah deploy terakhir)', SLOW, () => {
+  it('navigasi di situs ke artikel yang terbit setelah deploy: kerangka memuat (bukan 404), lalu artikelnya', async () => {
+    let releaseGuide: () => void = () => undefined;
+    const guideHeld = new Promise<void>((resolve) => (releaseGuide = resolve));
+    const { problems, el } = await hydrate('/panduan', async (input) => {
+      const path = requestPath(input);
+      if (path === PRELOAD_URLS.guides) return jsonResponse({ success: true, guides: [FRESH, ...ARTICLES].map(guideSummary) });
+      if (path === PRELOAD_URLS.guide(FRESH.slug)) {
+        await guideHeld;
+        return jsonResponse({ success: true, guide: FRESH });
+      }
+      return fixtureFetch(input);
+    });
+    expect(problems).toEqual([]);
+    // Daftar disegarkan dari API: kartu artikel baru muncul (data preload belum memuatnya)
+    const link = await vi.waitFor(() => {
+      const found = el.querySelector<HTMLAnchorElement>(`main a[href="/panduan/${FRESH.slug}"]`);
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    await act(async () => link.click());
+    await vi.waitFor(() => expect(el.querySelector('[aria-label="Memuat artikel"]')).not.toBeNull(), { timeout: 10_000 });
+    expect(el.textContent).not.toContain('tidak ditemukan.');
+    await act(async () => releaseGuide());
+    await vi.waitFor(() => expect(el.querySelector('h1')?.textContent).toBe(FRESH.title), { timeout: 10_000 });
+    expect(el.textContent).not.toContain('tidak ditemukan.');
+  });
+
+  it('dibuka langsung tanpa preload, get_guides gagal: tautan ke artikel lain tetap, Sumber dari kolom sumber', async () => {
+    // Isi tanpa bagian "## Sumber": daftar sumber diambil dari kolom Sumber admin
+    const fresh: Article = { ...FRESH, body: proseBeforeSources(FRESH.body) };
+    expect(fresh.body).not.toMatch(/^##\s+Sumber/m);
+    expect(fresh.sources.length).toBeGreaterThan(0);
+    const el = await renderClient(`/panduan/${fresh.slug}`, (input) => {
+      const path = requestPath(input);
+      if (path === PRELOAD_URLS.guides) return jsonResponse({ error: 'Server sibuk.' }, 503);
+      if (path === PRELOAD_URLS.guide(fresh.slug)) return jsonResponse({ success: true, guide: fresh });
+      return fixtureFetch(input);
+    });
+    await vi.waitFor(() => expect(el.querySelector('h1')?.textContent).toBe(fresh.title), { timeout: 10_000 });
+    const article = el.querySelector('main article')!;
+    // Daftar artikel tidak diketahui: tautan tidak dialihkan ke /panduan, "Panduan lainnya" tidak tampil
+    expect(article.querySelector('a[href="/panduan/template-vs-jasa-website-custom"]')).not.toBeNull();
+    expect(el.querySelector('#panduan-terkait')).toBeNull();
+    // Bagian Sumber ditambahkan sekali, ikut daftar isi, tautannya eksternal (tab baru)
+    expect(el.querySelectorAll('#sumber')).toHaveLength(1);
+    const toc = el.querySelector('nav[aria-label="Daftar isi"]')!;
+    expect([...toc.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toContain('#sumber');
+    const links = [...article.querySelectorAll('a')];
+    for (const source of fresh.sources) {
+      const external = links.find((a) => a.getAttribute('href') === source);
+      expect(external, source).toBeDefined();
+      expect(external!.getAttribute('target')).toBe('_blank');
+    }
+  });
+
+  it('/panduan tanpa preload dan get_guides gagal: pesan gagal + "Coba lagi", bukan "sedang kami tulis"', async () => {
+    let up = false;
+    const el = await renderClient('/panduan', (input) => {
+      if (requestPath(input) !== PRELOAD_URLS.guides) return fixtureFetch(input);
+      return up ? jsonResponse({ success: true, guides: ARTICLES.map(guideSummary) }) : jsonResponse({ error: 'Server sibuk.' }, 503);
+    });
+    await vi.waitFor(() => expect(el.textContent).toContain('Daftar panduan gagal dimuat'), { timeout: 10_000 });
+    expect(el.textContent).not.toContain('sedang kami tulis');
+    up = true;
+    const retry = [...el.querySelectorAll('button')].find((button) => button.textContent === 'Coba lagi')!;
+    expect(retry).toBeDefined();
+    await act(async () => retry.click());
+    await vi.waitFor(() => expect(el.querySelector(`main a[href="/panduan/${ARTICLES[0].slug}"]`)).not.toBeNull(), { timeout: 10_000 });
+    expect(el.textContent).not.toContain('Daftar panduan gagal dimuat');
   });
 });

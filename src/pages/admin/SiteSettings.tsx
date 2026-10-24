@@ -10,7 +10,6 @@ import {
   Table2,
   BookOpen,
   Bot,
-  ExternalLink,
   Save,
   CheckCircle2,
   AlertCircle,
@@ -36,7 +35,6 @@ import {
 import { ApiError, apiPost, errorMessage } from '../../lib/api';
 import {
   Button,
-  Chip,
   Field,
   FLOAT_PANEL,
   FOCUS_INSET,
@@ -63,10 +61,8 @@ import {
   TEMPLATE_PRICE_INCLUDES_DEFAULT,
   TEMPLATE_PRICE_NOTE_DEFAULT,
 } from '../../hooks/useSiteSettings';
-import { ARTICLE_SUMMARIES } from '../../content/panduan/articles.generated';
-import { isPublishedArticle, sortArticles } from '../../content/panduan/core';
 import { GUIDES_INTRO_DEFAULT } from '../public/panduan/PanduanIndex.seo';
-import { formatDateId } from '../../seo/format';
+import { GuidesManager } from './guides/GuidesManager';
 
 /** Judul CTA bawaan (sentence case; baris kedua tampil lebih lembut di website). */
 const CTA_TITLE_DEFAULT = 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!';
@@ -158,9 +154,6 @@ const TAB_SUBTITLE: Partial<Record<string, string>> = {
   guides: 'Halaman /panduan dan artikel panduan.',
   nexa: 'Chat Nexa AI melayang di seluruh situs: penyedia jawaban dan kunci API-nya.',
 };
-
-/** Artikel panduan untuk tab Panduan: terbaru dulu, status terbit seperti build production (draf = belum ditinjau). */
-const GUIDE_ROWS = sortArticles(ARTICLE_SUMMARIES).map((article) => ({ ...article, published: isPublishedArticle(article, false) }));
 
 /** Error simpan dengan pesan dari server yang ditampilkan apa adanya (mis. 409 latar hero diubah di tab lain). */
 class SaveError extends Error {}
@@ -835,40 +828,8 @@ const SiteSettings: React.FC = () => {
               </Field>
             </Panel>
 
-            <div>
-              <PanelHeader
-                title={`Artikel (${GUIDE_ROWS.length})`}
-                titleAs="h4"
-                subtitle="Artikel ditulis sebagai file Markdown oleh pengembang (src/content/panduan) dan terbit setelah ditinjau manusia."
-              />
-              <ul className="divide-y divide-adm-line overflow-hidden rounded-2xl ring-1 ring-inset ring-adm-line">
-                {GUIDE_ROWS.map((article) => (
-                  <li key={article.slug} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="break-words text-sm font-semibold text-adm-fg">{article.title}</p>
-                      <p className="mt-0.5 text-xs text-adm-muted">
-                        {article.author} · Diperbarui {formatDateId(article.dateModified)}
-                      </p>
-                    </div>
-                    <Chip className={article.published ? 'bg-adm-mint-soft text-adm-mint-fg' : undefined}>
-                      {article.published ? 'Terbit' : 'Draf, menunggu tinjauan'}
-                    </Chip>
-                    {article.published && (
-                      <a
-                        href={`/panduan/${article.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-adm-cobalt-fg hover:underline"
-                      >
-                        Lihat
-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                        <span className="sr-only"> {article.title} (tab baru)</span>
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Artikel dari database: tambah/edit/hapus tersimpan lewat tombolnya sendiri, bukan "Simpan semua perubahan" */}
+            <GuidesManager notify={showNotify} />
           </div>
         );
 

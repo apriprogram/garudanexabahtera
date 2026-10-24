@@ -7,6 +7,7 @@ import { FaqAccordion } from '../../../components/sections/faq/FaqAccordion';
 import { faqItems } from '../../../content/faq';
 import { CUSTOM_COST_FACTORS } from '../../../content/pricing';
 import { SERVICES, type ServiceContent, type ServiceGuide } from '../../../content/services';
+import { useGuides } from '../../../hooks/useGuides';
 import { getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../../hooks/useSiteSettings';
 import { HUB_PATHS } from '../../../seo/paths';
 import { guideLink } from '../catalog/guideLink';
@@ -23,7 +24,8 @@ const TextLink: React.FC<{ to: string; children: React.ReactNode }> = ({ to, chi
 
 /** " {lead} {tautan}." ke artikel panduan, atau tidak ada apa-apa selama artikelnya belum terbit. */
 const GuideSentence: React.FC<{ guide?: ServiceGuide }> = ({ guide }) => {
-  const link = guide ? guideLink([guide.slug]) : null;
+  const { articles } = useGuides();
+  const link = guide ? guideLink([guide.slug], articles) : null;
   if (!guide || !link?.article) return null;
   return (
     <>

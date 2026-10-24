@@ -10,6 +10,7 @@ import { COMPANY_FACTS } from '../../../lib/companyFacts';
 import { faqContext, faqItems, PRICING_FAQ_IDS } from '../../../content/faq';
 import { buildOptionsTable, CMS_INCLUDE, CUSTOM_COST_FACTORS, shortPriceRange, templateVsCustomTable } from '../../../content/pricing';
 import { getTemplatePricing, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../../hooks/useSiteSettings';
+import { useGuides } from '../../../hooks/useGuides';
 import { usePriceDate, usePublishedTemplates } from '../../../hooks/usePublishedTemplates';
 import { formatDateId, formatPriceFull, formatPriceRange, isPrice } from '../../../seo/format';
 import { ARTICLE_SLUGS, HUB_PATHS, LEGAL_PATHS, categoryPath, templatePath } from '../../../seo/paths';
@@ -31,7 +32,8 @@ const COST_GUIDES = [
 ] as const;
 
 const CostGuides: React.FC = () => {
-  const guides = COST_GUIDES.map((guide) => ({ ...guide, link: guideLink([guide.slug]) })).filter((guide) => guide.link.article);
+  const { articles } = useGuides();
+  const guides = COST_GUIDES.map((guide) => ({ ...guide, link: guideLink([guide.slug], articles) })).filter((guide) => guide.link.article);
   if (guides.length === 0) return null;
   return (
     <>

@@ -4,6 +4,7 @@
 //   1. build SSR src/entry-server.tsx ke DEPLOY_DIR/ssr (di luar OUT, tidak ikut terbit)
 //   2. ambil data dari API (PRERENDER_API, default https://garudanexa.com): berurutan, UA GarudaNexaPrerender/1.0,
 //      timeout 15 detik, 2× coba ulang. Gagal atau template < MIN_TEMPLATES (default 5) → deploy dibatalkan.
+//      Satu-satunya pengecualian: get_guides dengan PRERENDER_GUIDES_BOOTSTRAP=1 (deploy pertama, guidesFetchFallback).
 //   3. per rute: head (getHead + renderHeadTags) + HTML aplikasi + <script id="gn-preload"> → OUT/_pre/{path}.html
 //   4. OUT/app.html (cangkang noindex untuk rute aplikasi), OUT/404.html (NotFound, noindex)
 //   5. sitemap.xml, llms.txt, llms-full.txt (scripts/seo/*.mjs, WP4), OG (opsional, WP3)
@@ -117,7 +118,8 @@ export async function fetchJson(url, { fetchImpl = fetch, retries = FETCH_RETRIE
         signal: AbortSignal.timeout(timeoutMs),
       });
       const text = await res.text();
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // `status` ikut di error akhir: guidesFetchFallback membedakan jawaban HTTP gagal dari timeout/bukan JSON
+      if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
       let body;
       try {
         body = JSON.parse(text);
@@ -130,7 +132,9 @@ export async function fetchJson(url, { fetchImpl = fetch, retries = FETCH_RETRIE
       lastError = error;
     }
   }
-  throw new Error(`Gagal mengambil ${url} setelah ${retries + 1} percobaan: ${lastError?.message ?? lastError}`);
+  throw Object.assign(new Error(`Gagal mengambil ${url} setelah ${retries + 1} percobaan: ${lastError?.message ?? lastError}`), {
+    status: lastError?.status,
+  });
 }
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -153,6 +157,38 @@ export function validateCatalog(templatesBody, minTemplates) {
   return slugs;
 }
 
+/** Variabel lingkungan untuk deploy pertama artikel panduan dari database (guidesFetchFallback). */
+export const GUIDES_BOOTSTRAP_ENV = 'PRERENDER_GUIDES_BOOTSTRAP';
+
+/**
+ * Keputusan saat get_guides gagal. Deploy pertama sejak artikel panduan pindah ke database: api.php production yang lama
+ * belum mengenal get_guides (aksi tak dikenal → HTTP 401) dan baru mengenalnya setelah deploy ini sendiri terbit.
+ * PRERENDER_GUIDES_BOOTSTRAP=1 = pengecualian sadar untuk deploy itu: jawaban HTTP gagal → lanjut dengan daftar panduan
+ * kosong (semua artikel seed masih draf) + peringatan. Tanpa flag, atau bila gagalnya bukan jawaban HTTP (timeout,
+ * bukan JSON, {error}), deploy dibatalkan dengan penjelasan: artikel tidak pernah dilewati diam-diam.
+ * Hasil: { body: pengganti respons get_guides, warning }.
+ */
+export function guidesFetchFallback(error, { env = process.env } = {}) {
+  const reason = error?.message ?? String(error);
+  const bootstrap = env[GUIDES_BOOTSTRAP_ENV] === '1';
+  if (bootstrap && Number.isInteger(error?.status)) {
+    return {
+      body: { success: true, guides: [] },
+      warning:
+        `${reason}. ${GUIDES_BOOTSTRAP_ENV}=1: lanjut tanpa artikel panduan (deploy pertama, api.php production belum ` +
+        'mengenal get_guides). Setelah Pull, cek https://garudanexa.com/api.php?action=get_guides, lalu hapus variabel ini dari shell.',
+    };
+  }
+  if (bootstrap) {
+    throw new Error(`${reason}. ${GUIDES_BOOTSTRAP_ENV}=1 hanya melewati jawaban HTTP gagal (mis. 401 dari api.php lama), bukan timeout atau respons rusak.`);
+  }
+  throw new Error(
+    `${reason}. Deploy pertama sejak artikel panduan pindah ke database? api.php production yang lama belum mengenal ` +
+      'get_guides: jalankan migration 2026-10-24_017_guide_articles.sql di phpMyAdmin, cek tabelnya, lalu deploy sekali ' +
+      `dengan ${GUIDES_BOOTSTRAP_ENV}=1 (deploy/cpanel/README.md §1a). Bukan deploy pertama: cek get_guides di API production.`,
+  );
+}
+
 async function fetchSiteData(apiBase, urls, minTemplates) {
   const base = apiBase.replace(/\/+$/, '');
   const api = {};
@@ -171,6 +207,28 @@ async function fetchSiteData(apiBase, urls, minTemplates) {
   for (const slug of slugs) {
     const body = await get(urls.template(slug));
     if (body?.template?.slug !== slug) throw new Error(`get_template ${slug} mengembalikan template lain`);
+  }
+  // Artikel panduan terbit (database, dikelola admin): daftar + isi tiap artikel untuk preload halamannya
+  let guides;
+  try {
+    guides = await get(urls.guides);
+    if (process.env[GUIDES_BOOTSTRAP_ENV] === '1') {
+      warn(`${GUIDES_BOOTSTRAP_ENV}=1 tidak terpakai: get_guides sudah dijawab API. Hapus variabel ini dari shell.`);
+    }
+  } catch (error) {
+    // Deploy pertama (api.php lama tanpa get_guides): lanjut hanya dengan PRERENDER_GUIDES_BOOTSTRAP=1, selain itu batal.
+    // Pengganti masuk `api` supaya gn-preload sama dengan data render (daftar kosong), hidrasi tetap cocok.
+    const fallback = guidesFetchFallback(error);
+    warn(fallback.warning);
+    guides = api[urls.guides] = fallback.body;
+  }
+  if (!Array.isArray(guides?.guides)) throw new Error('get_guides tidak berisi daftar guides');
+  // API publik hanya mengirim artikel yang sudah ditinjau manusia (SEO-PLAN §5.8); draf di sini = backend rusak
+  const drafts = unreviewedArticles(guides.guides);
+  if (drafts.length) throw new Error(`get_guides mengirim artikel yang belum ditinjau (draf): ${drafts.join(', ')}`);
+  for (const { slug } of guides.guides) {
+    const body = await get(urls.guide(slug));
+    if (body?.guide?.slug !== slug) throw new Error(`get_guide ${slug} mengembalikan artikel lain`);
   }
   return { api, slugs };
 }
@@ -412,6 +470,8 @@ export function seoFallbackContext(ssr, data, sampleSlug, builtAt) {
     // Nama halaman kategori untuk remah BreadcrumbList (sama dengan template-detail.seo.ts)
     categoryNames: Object.fromEntries((ssr.CATEGORY_LIST ?? []).map((meta) => [meta.slug, meta.name])),
     pricingIncludes: ssr.getTemplatePricing(data.settings).includes,
+    // Artikel panduan yang terbit setelah deploy (seo.php?guide=…): akhiran judul, kartu OG, penulis JSON-LD
+    guide: ssr.guideFallbackContext?.() ?? null,
   };
 }
 
@@ -433,7 +493,7 @@ async function optionalModule(root, rel, exportsNeeded, strict, { required = tru
 
 // ─── Utama ───────────────────────────────────────────────────────────────────
 
-/** Slug artikel panduan yang belum ditinjau manusia (frontmatter tanpa `reviewed`, SEO-PLAN §5.8). */
+/** Slug artikel panduan yang belum ditinjau manusia (tanpa `reviewed`, SEO-PLAN §5.8). */
 export const unreviewedArticles = (articles) => articles.filter((article) => !article?.reviewed).map((article) => article.slug);
 
 /**
@@ -481,14 +541,6 @@ export async function prerender({ root, outDir, deployDir, strict }) {
   log('build SSR…');
   const ssr = await buildServerBundle(root, join(deployDir, 'ssr'));
 
-  // Artikel panduan yang belum disunting & dicek faktanya oleh manusia (draf, tanpa `reviewed`) tidak boleh terbit
-  // (SEO-PLAN §5.8). Build production sudah menyaringnya; yang sampai ke sini hanya draf dari VITE_PANDUAN_DRAFTS=1.
-  const drafts = unreviewedArticles(ssr.listArticles?.() ?? []);
-  if (drafts.length) {
-    if (strict) throw new Error(`Artikel panduan belum ditinjau (tanpa "reviewed"): ${drafts.join(', ')}. Deploy tanpa VITE_PANDUAN_DRAFTS=1.`);
-    warn(`draf panduan ikut build pratinjau (VITE_PANDUAN_DRAFTS=1): ${drafts.join(', ')}`);
-  }
-
   log(`data dari ${apiBase} (minimal ${minTemplates} template)…`);
   const { api, slugs } = await fetchSiteData(apiBase, ssr.PRELOAD_URLS, minTemplates);
   const builtAt = new Date().toISOString();
@@ -517,12 +569,15 @@ export async function prerender({ root, outDir, deployDir, strict }) {
   const shell = readFileSync(join(outDir, 'index.html'), 'utf8');
   const preDir = join(outDir, '_pre');
   rmSync(preDir, { recursive: true, force: true });
-  const common = [ssr.PRELOAD_URLS.settings, ssr.PRELOAD_URLS.navbar, ssr.PRELOAD_URLS.templates];
+  // get_guides di semua halaman: tautan panduan di /harga, jasa, kategori dan detail template (guideLink)
+  const common = [ssr.PRELOAD_URLS.settings, ssr.PRELOAD_URLS.navbar, ssr.PRELOAD_URLS.templates, ssr.PRELOAD_URLS.guides];
   const apiFor = (path) => {
     const urls = [...common];
     if (path === '/') urls.push(ssr.PRELOAD_URLS.projects);
     const slug = /^\/template\/([a-z0-9-]+)$/.exec(path)?.[1];
     if (slug && api[ssr.PRELOAD_URLS.template(slug)]) urls.push(ssr.PRELOAD_URLS.template(slug));
+    const guideSlug = /^\/panduan\/([a-z0-9-]+)$/.exec(path)?.[1];
+    if (guideSlug && api[ssr.PRELOAD_URLS.guide(guideSlug)]) urls.push(ssr.PRELOAD_URLS.guide(guideSlug));
     const trim = (url) =>
       url === ssr.PRELOAD_URLS.settings
         ? preloadSettings(api[url])
@@ -595,7 +650,7 @@ export async function prerender({ root, outDir, deployDir, strict }) {
   if (llmsMod) {
     // Argumen opsional WP4: judul/deskripsi halaman dari head, dan artikel panduan (hanya yang index yang ditulis)
     const pages = Object.fromEntries(entries.map(({ path }) => [path, pick(ssr.getHead(path, data), ['title', 'description'])]));
-    const guides = (ssr.listArticles?.() ?? []).map((a) => pick(a, ['slug', 'title', 'description', 'dateModified']));
+    const guides = (data.guides ?? []).map((a) => pick(a, ['slug', 'title', 'description', 'dateModified']));
     // FAQ gabungan dengan teks yang sama persis dengan di situs (WP6, src/content/faq.ts)
     const faqs = ssr.faqForLlms?.(data) ?? [];
     const input = { facts: ssr.COMPANY_FACTS, templates: data.templates, entries, builtAt, pages, guides, faqs };

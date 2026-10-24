@@ -1,9 +1,11 @@
-// /panduan/{slug} (docs/platform/SEO-PLAN.md §5.8): head artikel panduan. Slug tanpa file .md → head null → kepala 404.
+// /panduan/{slug} (docs/platform/SEO-PLAN.md §5.8): head artikel panduan. Slug yang tidak ada di SeoData.guides (artikel
+// terbit dari get_guides) → head null → kepala 404.
 // JSON-LD: Article (penulis dari src/content/authors.ts, datePublished/dateModified = tanggal yang terlihat di halaman)
 // + BreadcrumbList Beranda › Panduan › artikel. routes() memuat semua artikel → prerender, sitemap (lastmod =
-// dateModified) dan llms.txt. Modul murni (bundel utama): hanya ringkasan artikel, tanpa isi Markdown.
-import { authorForJsonLd, getAuthor } from '../../../content/authors';
-import { getArticle, listArticles, type ArticleSummary } from '../../../content/panduan';
+// dateModified) dan llms.txt. Modul murni (bundel utama): hanya ringkasan artikel, tanpa isi Markdown. backend/seo.php
+// membuat head yang sama untuk artikel yang terbit setelah deploy terakhir.
+import { AUTHORS, DEFAULT_AUTHOR_NAME, authorForJsonLd, getAuthor } from '../../../content/authors';
+import { findArticle, type ArticleSummary } from '../../../content/panduan';
 import { TITLE_SUFFIX } from '../../../seo/defaults';
 import { firstThatFits } from '../../../seo/format';
 import { article, breadcrumb } from '../../../seo/jsonld';
@@ -41,10 +43,28 @@ export function articleJsonLd(summary: ArticleSummary): object[] {
   ];
 }
 
+/**
+ * Bagian head artikel yang sama untuk semua artikel baru, untuk backend/seo.php (artikel yang terbit setelah deploy
+ * terakhir; prerender menulisnya ke _pre/seo-fallback.json): akhiran judul, kartu OG /panduan, dan node `author`
+ * JSON-LD per nama penulis (nama tak dikenal → defaultAuthor, seperti getAuthor).
+ */
+export function guideFallbackContext(): { titleSuffix: string; ogImage: string; defaultAuthor: string; authors: Record<string, unknown> } {
+  const authorNode = (author: string) => {
+    const sample: ArticleSummary = { slug: 'x', title: 'x', description: 'x', author, datePublished: '2026-01-01', dateModified: '2026-01-01', reviewed: null };
+    return (articleJsonLd(sample)[0] as { author: unknown }).author;
+  };
+  return {
+    titleSuffix: TITLE_SUFFIX,
+    ogImage: ogCardUrl('panduan'),
+    defaultAuthor: DEFAULT_AUTHOR_NAME,
+    authors: Object.fromEntries(Object.keys(AUTHORS).map((name) => [name, authorNode(name)])),
+  };
+}
+
 const seo: PageSeo = {
   match: (pathname) => pathname.startsWith(GUIDE_PREFIX) && PATTERN.test(pathname),
   head: (pathname, data) => {
-    const summary = getArticle(pathname.match(PATTERN)?.[1] ?? '');
+    const summary = findArticle(data.guides ?? [], pathname.match(PATTERN)?.[1] ?? '');
     if (!summary) return null;
     return pageHead(data, {
       path: articlePath(summary.slug),
@@ -56,7 +76,7 @@ const seo: PageSeo = {
       jsonLd: articleJsonLd(summary),
     });
   },
-  routes: (): SitemapEntry[] => listArticles().map((a) => ({ path: articlePath(a.slug), lastmod: a.dateModified })),
+  routes: (data): SitemapEntry[] => (data.guides ?? []).map((a) => ({ path: articlePath(a.slug), lastmod: a.dateModified })),
 };
 
 export default seo;

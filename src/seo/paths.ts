@@ -32,8 +32,8 @@ export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
 export const isCategorySlug = (value: string): value is CategorySlug => (CATEGORY_SLUGS as readonly string[]).includes(value);
 
 /**
- * Slug 4 artikel panduan pertama (rencana §5.8). Artikel baru ada setelah file .md-nya ada di src/content/panduan;
- * tautkan hanya artikel yang sudah terbit (cek dengan getArticle(slug)).
+ * Slug 4 artikel panduan pertama (rencana §5.8), yang ditautkan dari halaman lain. Artikelnya dikelola admin
+ * (database); tautkan hanya artikel yang sudah terbit (guideLink dengan daftar dari useGuides()).
  */
 export const ARTICLE_SLUGS = {
   websiteCost: 'biaya-website-company-profile',

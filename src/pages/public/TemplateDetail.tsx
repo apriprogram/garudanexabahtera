@@ -30,6 +30,7 @@ import Navbar from '../../components/layout/Navbar';
 import { categoryOf, type CategoryMeta } from '../../content/categories';
 import { faqContext, faqItem } from '../../content/faq';
 import { fillName, templateH1, templateNicheText } from '../../content/templateCopy';
+import { useGuides } from '../../hooks/useGuides';
 import { getTemplatePricing, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
 import { COMPANY_FACTS } from '../../lib/companyFacts';
 import { LEGAL_LABELS, LEGAL_PATHS } from '../../lib/legal';
@@ -140,6 +141,7 @@ function DetailContent({ template, category }: { template: Template; category: C
   const [ctaVisible, setCtaVisible] = useState(true);
   const [asideHeight, setAsideHeight] = useState(0);
   const { settings } = useSiteSettings();
+  const { articles: guides } = useGuides();
   const slug = encodeURIComponent(template.slug);
   const demo = demoLink(template);
   const content = templateContent(template.slug);
@@ -151,7 +153,7 @@ function DetailContent({ template, category }: { template: Template; category: C
   const pricing = getTemplatePricing(settings);
   const summary = includesSummary(pricing.includes);
   const niche = templateNicheText(template);
-  const guide = guideLink(content?.guides ?? category?.guides ?? []);
+  const guide = guideLink(content?.guides ?? category?.guides ?? [], guides);
   const priceSentence = includesSentence(pricing.includes, `Harga ${formatRupiah(template.price)}`);
   const priceDate = usePriceDateLabel();
   // Jawaban bersama (src/content/faq.ts): kalimat paket & waktu aktif sama persis dengan beranda, /harga dan llms.txt

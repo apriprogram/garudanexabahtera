@@ -1,7 +1,6 @@
-// /panduan (docs/platform/SEO-PLAN.md §5.8, Lampiran A): daftar artikel panduan. Diindeks bila sudah ada artikel;
+// /panduan (docs/platform/SEO-PLAN.md §5.8, Lampiran A): daftar artikel panduan. Diindeks bila sudah ada artikel terbit;
 // tanpa artikel noindex,follow. JSON-LD: CollectionPage + ItemList artikel + BreadcrumbList. Modul murni (bundel utama):
-// hanya ringkasan artikel (src/content/panduan/index.ts), tanpa isi Markdown.
-import { listArticles } from '../../../content/panduan';
+// artikel dari SeoData.guides (get_guides, src/content/panduan/index.ts), tanpa isi Markdown.
 import { TITLE_SUFFIX } from '../../../seo/defaults';
 import { latestDate } from '../../../seo/format';
 import { breadcrumb, collectionPage, itemList } from '../../../seo/jsonld';
@@ -22,9 +21,9 @@ export const GUIDES_DESCRIPTION =
 export default staticPage({
   path: HUB_PATHS.guides,
   updated: GUIDES_INDEX_UPDATED,
-  lastmod: () => latestDate([GUIDES_INDEX_UPDATED, ...listArticles().map((a) => a.dateModified)]) ?? GUIDES_INDEX_UPDATED,
+  lastmod: (data) => latestDate([GUIDES_INDEX_UPDATED, ...(data.guides ?? []).map((a) => a.dateModified)]) ?? GUIDES_INDEX_UPDATED,
   head: (data) => {
-    const articles = listArticles();
+    const articles = data.guides ?? [];
     const list = itemList({
       path: HUB_PATHS.guides,
       name: GUIDES_H1,

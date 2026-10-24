@@ -187,6 +187,8 @@ export interface PageSeo {
    Allow: /api.php?action=get_templates
    Allow: /api.php?action=get_template&
    Allow: /api.php?action=get_public_projects
+   Allow: /api.php?action=get_guides
+   Allow: /api.php?action=get_guide&
    Disallow: /api.php
    Disallow: /admin
    Disallow: /login

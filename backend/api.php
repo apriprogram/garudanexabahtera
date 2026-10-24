@@ -39,6 +39,7 @@ const PUBLIC_ACTIONS = [
     'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
     'customer_register', 'midtrans_notification', 'get_payment_config', 'template_like', 'template_view',
     'get_showcase_stats', 'showcase_like', 'showcase_view', 'nexa_chat',
+    'get_guides', 'get_guide', 'guide_view',
 ];
 const ANY_ROLE_ACTIONS = [
     'pd_notifications_list', 'pd_notifications_read', 'pd_file',
@@ -60,6 +61,7 @@ const ADMIN_ACTIONS = [
     'pd_invoice_create', 'pd_invoice_update', 'pd_invoice_cancel', 'pd_payment_record', 'pd_payment_delete',
     'pd_settings_save',
     'nexa_get_config', 'nexa_save_config',
+    'admin_get_guides', 'admin_save_guide', 'admin_delete_guide',
 ];
 const STAFF_ROLES = ['admin', 'user'];
 const USER_ROLES = ['admin', 'user', 'customer'];
@@ -99,6 +101,9 @@ require_once __DIR__ . '/modules/project_docs.php';
 // Visit sources for track_visit / get_visitor_details: referrer host, landing path, utm_source (visit_source_fields,
 // visit_log, visit_sources; docs/platform/SEO-PLAN.md §5.9)
 require_once __DIR__ . '/modules/visits.php';
+// Artikel panduan /panduan dari tabel guide_articles: daftar & isi publik, jumlah dilihat (guide_views), kelola di tab
+// admin Panduan (handle_guide_action)
+require_once __DIR__ . '/modules/guides.php';
 
 load_env_file();
 
@@ -164,6 +169,11 @@ if (handle_hero_media_action($conn, $action, $input, $authUser)) {
 }
 // Project documents & agreements (pd_*): staff workspace, customer approvals, notifications (backend/modules/project_docs.php)
 if (handle_project_docs_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Artikel panduan: get_guides/get_guide/guide_view publik, admin_*_guide(s) admin saja (backend/modules/guides.php)
+if (handle_guide_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }

@@ -3,7 +3,7 @@
 // Katalog /template, kategori /template/kategori/{slug} dan detail template (SEO WP5, docs/platform/SEO-PLAN.md §5.5)
 // lewat App sungguhan: kartu & chip berupa tautan nyata, FAQ bersama, paginasi tautan ?page=N, kategori kosong / tidak
 // dikenal, template tanpa file isi (cadangan DB) dan slug tidak terbit (halaman 404).
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,7 +11,7 @@ import App from '../../../../App';
 import { CATALOG_FAQ_IDS, faqContext, faqItems } from '../../../../content/faq';
 import { clearCachedJson } from '../../../../hooks/useCachedJson';
 import { clearApiCache } from '../../../../lib/api';
-import { FIXTURE_TEMPLATES } from '../../../../lib/__tests__/preloadFixture';
+import { FIXTURE_GUIDES, FIXTURE_TEMPLATES, guideSummary } from '../../../../lib/__tests__/preloadFixture';
 import type { Template } from '../../../../types/platform';
 
 vi.mock('../../../../components/sections/hero/HeroBackground', () => ({ HeroBackground: () => null }));
@@ -28,6 +28,8 @@ const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
   }
   if (action === 'get_templates') return json({ templates });
   if (action === 'get_settings') return json({});
+  // Artikel panduan terbit (database): tautan "panduan" di kategori & detail template
+  if (action === 'get_guides') return json({ success: true, guides: FIXTURE_GUIDES.map(guideSummary) });
   return json([]);
 });
 
@@ -124,7 +126,9 @@ describe('/template/kategori/:category', () => {
       'aria-current',
       'page',
     );
-    for (const href of ['/panduan/website-klinik-kecantikan', '/jasa-pembuatan-website', '/harga']) expect(mainHrefs()).toContain(href);
+    // Tautan artikel muncul setelah get_guides dimuat
+    await waitFor(() => expect(mainHrefs()).toContain('/panduan/website-klinik-kecantikan'));
+    for (const href of ['/jasa-pembuatan-website', '/harga']) expect(mainHrefs()).toContain(href);
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent(/Beranda.*Template.*Klinik kecantikan & salon/);
   });
 
@@ -162,6 +166,7 @@ describe('/template/:slug', () => {
     );
     expect(main().getByText(/Harga per \d{1,2} \w+ \d{4}/)).toBeInTheDocument();
     expect(main().getByText(/Pembayaran aman via Midtrans/)).toBeInTheDocument();
+    await waitFor(() => expect(mainHrefs()).toContain('/panduan/template-vs-jasa-website-custom'));
     const hrefs = mainHrefs();
     for (const href of ['/template/kategori/olahraga-komunitas', '/harga', '/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/panduan/template-vs-jasa-website-custom', '/pesan/arena-club', '/demo/arena-club']) {
       expect(hrefs).toContain(href);

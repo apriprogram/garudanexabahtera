@@ -913,6 +913,37 @@ CREATE TABLE IF NOT EXISTS showcase_stats (
   PRIMARY KEY (item_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Guide articles /panduan/{slug}, managed in the admin panel (migration 017). reviewed NULL = draft (not on the
+-- website), a date = published. sources / related: JSON arrays (http(s) URLs / guide slugs).
+-- The 4 first articles (drafts) are data of migration 017, not of this file: run that migration after a fresh install
+-- to get them (it is idempotent and is therefore not in the baseline list below).
+CREATE TABLE IF NOT EXISTS guide_articles (
+  id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  slug           VARCHAR(120) NOT NULL,
+  title          VARCHAR(255) NOT NULL,
+  description    VARCHAR(255) NOT NULL,
+  body           MEDIUMTEXT NOT NULL,                       -- Markdown
+  author         VARCHAR(120) NOT NULL,                     -- name in src/content/authors.ts
+  cta            VARCHAR(20) NOT NULL DEFAULT 'template',   -- template | website | mobile
+  sources        TEXT NOT NULL,                             -- JSON array of http(s) URLs
+  related        TEXT NOT NULL,                             -- JSON array of guide slugs
+  date_published DATE NOT NULL,
+  date_modified  DATE NOT NULL,
+  reviewed       DATE NULL DEFAULT NULL,                    -- NULL = draft
+  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_guide_articles_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Page views of /panduan (the list) and /panduan/{slug} (migration 017, action guide_view)
+CREATE TABLE IF NOT EXISTS guide_views (
+  page        VARCHAR(140) NOT NULL,                        -- /panduan or /panduan/{slug}
+  view_count  INT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (page)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- A fresh install already has every migration up to this baseline.
 -- (002, 003, 007 and the navbar/FAQ data steps of 004 only touch existing rows, which a
 --  fresh install does not have; with an empty navbar_menus the frontend uses its

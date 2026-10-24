@@ -39,6 +39,7 @@ export const PUBLIC_ACTIONS = new Set([
   'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
   'customer_register', 'midtrans_notification', 'get_payment_config', 'template_like', 'template_view',
   'get_showcase_stats', 'showcase_like', 'showcase_view', 'nexa_chat',
+  'get_guides', 'get_guide', 'guide_view',
 ]);
 export const ANY_ROLE_ACTIONS = new Set([
   'pd_notifications_list', 'pd_notifications_read', 'pd_file',
@@ -60,6 +61,7 @@ export const ADMIN_ACTIONS = new Set([
   'pd_invoice_create', 'pd_invoice_update', 'pd_invoice_cancel', 'pd_payment_record', 'pd_payment_delete',
   'pd_settings_save',
   'nexa_get_config', 'nexa_save_config',
+  'admin_get_guides', 'admin_save_guide', 'admin_delete_guide',
 ]);
 
 const STAFF_ROLES = new Set(['admin', 'user']);
