@@ -47,7 +47,7 @@ const PF_GENERATED_ASSET = '/_[0-9a-f]{12}\.[a-z0-9]+$/'; // names made by save_
 
 // Reads may use GET (query string) as well as POST; every other platform action is POST only
 const PF_GET_ACTIONS = [
-    'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'get_payment_config',
+    'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'get_payment_config', 'get_showcase_stats',
     'customer_get_orders', 'customer_get_order', 'customer_get_site', 'customer_get_order_quote',
     'admin_get_template_orders', 'admin_get_template_order', 'admin_get_templates', 'admin_get_active_sites',
     'admin_dashboard_summary',
@@ -66,6 +66,10 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
         'get_payment_config' => 'pf_get_payment_config',
         'template_like' => 'pf_template_like',
         'template_view' => 'pf_template_view',
+        'get_showcase_stats' => 'pf_get_showcase_stats',
+        'showcase_like' => 'pf_showcase_like',
+        'showcase_view' => 'pf_showcase_view',
+        'nexa_chat' => 'pf_nexa_chat', // backend/modules/nexa.php
         // customer (own data only)
         'customer_create_order' => 'pf_customer_create_order',
         'customer_get_order_quote' => 'pf_customer_get_order_quote',
@@ -160,6 +164,82 @@ function pf_get_site_public(mysqli $conn, array $input, ?array $user): array {
         'domain' => $row['domain'],
         'content' => pf_content_out($row['content']),
     ]];
+}
+
+// ── Suka & dilihat kartu proyek beranda (#projects, pemilik 2026-10-24; migrasi 016 showcase_stats) ──────────────
+// Kunci kartu: p-{id} (project_client tampil di website) atau f-{slug judul} (portofolio cadangan: setting
+// portfolio_data, atau daftar bawaan bila setting kosong/rusak — sama dengan readList + DEFAULT_PORTFOLIO di
+// Projects.tsx). Sama dengan showcase* di templates.js.
+const PF_SHOWCASE_DEFAULT_TITLES = ['Web App Dashboard', 'Mobile POS App', 'E-Commerce System', 'Corporate Website', 'Sistem Informasi Desa'];
+
+// Non-ASCII dibuang dulu, baru huruf kecil (ASCII saja): sama persis dengan showcaseSlug() di templates.js & Projects.tsx
+function pf_showcase_slug(string $title): string {
+    return substr(trim(strtolower(preg_replace('/[^A-Za-z0-9]+/', '-', $title)), '-'), 0, 100);
+}
+
+/** Semua kunci kartu proyek yang bisa tampil di beranda saat ini (key => true). */
+function pf_showcase_keys(mysqli $conn): array {
+    $keys = [];
+    foreach (db_all($conn, "SELECT id FROM project_client WHERE show_on_website = 1") as $r) $keys['p-' . (int)$r['id']] = true;
+    $row = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data' LIMIT 1");
+    $raw = $row ? (string)$row['setting_value'] : '';
+    $items = $raw !== '' ? json_decode($raw, true) : null;
+    $titles = is_array($items) && pf_is_json_list($items)
+        ? array_map(function ($item) { return is_array($item) ? (string)($item['title'] ?? '') : ''; }, $items)
+        : PF_SHOWCASE_DEFAULT_TITLES;
+    foreach ($titles as $title) {
+        $slug = pf_showcase_slug($title);
+        if ($slug !== '') $keys['f-' . $slug] = true;
+    }
+    return $keys;
+}
+
+/** array_is_list (PHP 8.1) untuk PHP lama: array JSON berupa daftar, bukan objek. */
+function pf_is_json_list(array $value): bool {
+    return $value === [] || array_keys($value) === range(0, count($value) - 1);
+}
+
+function pf_showcase_key(mysqli $conn, array $input): string {
+    $key = strtolower(trim(in_str($input, 'key')));
+    if (!preg_match('/^(p-[0-9]{1,10}|f-[a-z0-9-]{1,100})$/', $key) || !isset(pf_showcase_keys($conn)[$key])) {
+        throw new ApiError('Proyek tidak ditemukan.', 404, 'PROJECT_NOT_FOUND');
+    }
+    return $key;
+}
+
+// Angka suka & dilihat semua kartu proyek yang tampil: { stats: { key: { likes, views } } }
+function pf_get_showcase_stats(mysqli $conn, array $input, ?array $user): array {
+    $keys = pf_showcase_keys($conn);
+    $stats = [];
+    foreach (db_all($conn, "SELECT item_key, like_count, view_count FROM showcase_stats") as $r) {
+        if (isset($keys[$r['item_key']])) $stats[$r['item_key']] = ['likes' => (int)$r['like_count'], 'views' => (int)$r['view_count']];
+    }
+    return ['stats' => (object)$stats];
+}
+
+// Suka / batal suka kartu proyek (status per pengunjung di browser), dibatasi per IP seperti template_like
+function pf_showcase_like(mysqli $conn, array $input, ?array $user): array {
+    $limit = 'sc-like|' . client_ip();
+    $wait = rate_limit_wait($limit, PF_LIKES_PER_HOUR);
+    if ($wait) too_many_attempts($wait);
+    $key = pf_showcase_key($conn, $input);
+    $liked = in_array(strtolower(in_str($input, 'liked')), ['1', 'true'], true);
+    rate_limit_hit($limit, 3600);
+    db_run($conn, $liked
+        ? "INSERT INTO showcase_stats (item_key, like_count) VALUES (?, 1) ON DUPLICATE KEY UPDATE like_count = like_count + 1"
+        : "INSERT INTO showcase_stats (item_key, like_count) VALUES (?, 0) ON DUPLICATE KEY UPDATE like_count = GREATEST(like_count - 1, 0)", [$key]);
+    return ['like_count' => (int)db_one($conn, "SELECT like_count FROM showcase_stats WHERE item_key = ?", [$key])['like_count']];
+}
+
+// Detail proyek dibuka: view_count +1 (sekali per sesi per proyek di browser), dibatasi per IP seperti template_view
+function pf_showcase_view(mysqli $conn, array $input, ?array $user): array {
+    $limit = 'sc-view|' . client_ip();
+    $wait = rate_limit_wait($limit, PF_VIEWS_PER_HOUR);
+    if ($wait) too_many_attempts($wait);
+    $key = pf_showcase_key($conn, $input);
+    rate_limit_hit($limit, 3600);
+    db_run($conn, "INSERT INTO showcase_stats (item_key, view_count) VALUES (?, 1) ON DUPLICATE KEY UPDATE view_count = view_count + 1", [$key]);
+    return ['view_count' => (int)db_one($conn, "SELECT view_count FROM showcase_stats WHERE item_key = ?", [$key])['view_count']];
 }
 
 // Template terbit dari input `slug` (huruf kecil, angka, tanda hubung); tidak ada → 404
