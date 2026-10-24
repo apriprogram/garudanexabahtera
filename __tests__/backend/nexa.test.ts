@@ -6,6 +6,7 @@
 // ke Claude diuji dengan fetch palsu: header versi API & beta fallback, tanpa temperature, kegagalan → { error }.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const { fakeS3Sdk } = vi.hoisted(() => {
@@ -61,11 +62,22 @@ import {
   nexaReplyText,
   nexaRequestBody,
   nexaResolveProvider,
+  nexaProjectsHidden,
+  nexaShowcaseFacts,
 } from '../../backend/modules/nexa.js';
+import { presentableProjects } from '../../src/components/sections/projects/presentable';
 import { handlePlatformAction } from '../../backend/modules/templates.js';
 
 const ROOT = resolve(__dirname, '..', '..');
 const NEXA_PHP = resolve(ROOT, 'backend', 'modules', 'nexa.php');
+// pf_is_json_list & pf_showcase_slug (templates.php) dipakai nexa_showcase_facts: salinan persis dari sumbernya
+const TEMPLATES_PHP_SRC = readFileSync(resolve(ROOT, 'backend', 'modules', 'templates.php'), 'utf8');
+const phpFunction = (name: string) => {
+  const match = TEMPLATES_PHP_SRC.match(new RegExp(`^function ${name}\\([\\s\\S]*?^\\}`, 'm'));
+  if (!match) throw new Error(`${name} tidak ditemukan di templates.php`);
+  return match[0];
+};
+const PF_HELPERS = [phpFunction('pf_is_json_list'), phpFunction('pf_showcase_slug')].join('\n');
 
 const TEMPLATES = [
   { name: 'Corporate Nexa', slug: 'corporate-nexa', category: 'Company Profile', price: '1500000.00' },
@@ -177,6 +189,47 @@ const GEMINI_TEXT_CASES: unknown[] = [
   null,
 ];
 
+// [baris project_client show_on_website = 1, setting portfolio_data, section Projects disembunyikan] → blok proyek DATA TERKINI
+const LONG_DESC = 'Sistem kasir dan laporan stok untuk toko ritel dengan banyak cabang di Jawa Barat.';
+const NBSP = String.fromCharCode(0xa0);
+const ROCKET = String.fromCodePoint(0x1f680);
+// Aturan layak tampil = presentable.ts (frontend): .length JS (emoji = 2), .trim() JS (juga NBSP), baris tanpa nama dibuang
+const JS_RULE_ROWS: Record<string, unknown>[] = [
+  { id: 5, name: 'Kasir UMKM', service_type: 'mobile_app', image: '/p5.jpg', description: `Aplikasi kasir modern untuk UMKM ${ROCKET.repeat(4)}` },
+  { id: 4, name: 'Toko Daring', service_type: 'website', image: '/p4.jpg', description: LONG_DESC },
+  { id: 3, name: '', service_type: 'website', image: '/p3.jpg', description: LONG_DESC },
+  { id: 2, name: 'Spasi Lebar', service_type: 'website', image: '/p2.jpg', description: `${NBSP.repeat(5)}${'x'.repeat(36)}${NBSP}` },
+];
+const SHOWCASE_CASES: [Record<string, unknown>[], string | null, boolean?][] = [
+  [
+    [
+      { id: 9, name: 'Kasir Toko', service_type: 'mobile_app', image: '/p9.jpg', description: LONG_DESC },
+      { id: 8, name: 'Lorem Uji', service_type: 'website', image: '/p8.jpg', description: 'Lorem ipsum dolor sit amet consectetur adipiscing.' },
+      { id: 7, name: 'Website Klinik', service_type: 'web_custom', image: '/p7.jpg', description: `${LONG_DESC} ${'x'.repeat(120)}` },
+    ],
+    null,
+  ],
+  [[{ id: 3, name: 'Hanya Satu', service_type: 'website', image: '/p3.jpg', description: LONG_DESC }], '[{"title":"Sistem Desa","desc":"GOV / WEB","image":"/d.png"},{"title":"Tanpa Gambar","image":""},{"desc":"tanpa judul","image":"/x.png"}]'],
+  [[], null],
+  [[], '[]'],
+  [[], '{rusak'],
+  [JS_RULE_ROWS, null],
+  [JS_RULE_ROWS, null, true],
+];
+
+// Setting disabled_sections → section Projects disembunyikan? (= getHiddenSections di useSiteSettings.ts)
+const HIDDEN_CASES: (string | null)[] = [
+  '["projects"]',
+  '[" Projects "]',
+  `["projects${NBSP}"]`,
+  '["pricing","cta"]',
+  '{"0":"projects"}',
+  '[1,"projects"]',
+  '',
+  null,
+  '{rusak',
+];
+
 // Model dari NEXA_GEMINI_MODEL (kosong = bawaan) → urutan percobaan; dan payload per model (thinking hanya 3+)
 const GEMINI_MODEL_CASES = ['', 'gemini-3.5-flash', '  gemini-3.8-flash ', 'gemini-flash-latest'];
 const GEMINI_PAYLOAD_CASES = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
@@ -213,11 +266,12 @@ function db_run($conn, $sql, $params = []) {
     if (stripos($sql, 'INSERT') === 0) $GLOBALS['rows'][$params[0]] = $params[1];
     if (stripos($sql, 'DELETE') === 0) unset($GLOBALS['rows'][$params[0]]);
 }
+eval(getenv('PF_HELPERS'));
 require getenv('NEXA_PHP');
 $in = json_decode(stream_get_contents(STDIN), true);
 $out = ['instructions' => NEXA_INSTRUCTIONS, 'live' => [], 'clean' => [], 'body' => [], 'reply' => [], 'ip' => [], 'handler' => [],
     'resolve' => [], 'mask' => [], 'cfgout' => [], 'save' => [], 'gbody' => [], 'gtext' => [], 'config_handler' => [],
-    'gmodels' => [], 'gpayload' => []];
+    'gmodels' => [], 'gpayload' => [], 'showcase' => [], 'hidden' => []];
 foreach ($in['live'] as $c) $out['live'][] = nexa_live_facts($c['templates'], $c['settings']);
 foreach ($in['clean'] as $c) $out['clean'][] = nexa_clean_messages($c);
 foreach ($in['body'] as $c) $out['body'][] = nexa_request_body($c[0], $c[1], $c[2], $c[3]);
@@ -233,6 +287,8 @@ foreach ($in['save'] as $c) {
 foreach ($in['gbody'] as $c) $out['gbody'][] = nexa_gemini_body($c[0], $c[1], $c[2]);
 foreach ($in['gtext'] as $c) $out['gtext'][] = nexa_gemini_text($c);
 foreach ($in['gmodels'] as $c) $out['gmodels'][] = nexa_gemini_models($c);
+foreach ($in['showcase'] as $c) $out['showcase'][] = nexa_showcase_facts($c[0], $c[1], $c[2] ?? false);
+foreach ($in['hidden'] as $c) $out['hidden'][] = nexa_projects_hidden($c);
 foreach ($in['gpayload'] as $c) $out['gpayload'][] = nexa_gemini_payload(nexa_gemini_body('', 'DATA', [['role' => 'user', 'content' => 'Halo']]), $c);
 // Handler get/save config dengan database tiruan ($GLOBALS['rows'] + catatan tulis)
 foreach ($in['config_handler'] as $c) {
@@ -268,9 +324,10 @@ function runPhp() {
       live: LIVE_CASES, clean: CLEAN_CASES, body: BODY_CASES, reply: REPLY_CASES, ip: IP_CASES, handler: HANDLER_CASES,
       resolve: RESOLVE_CASES, mask: MASK_CASES, cfgout: CONFIG_OUT_CASES, save: SAVE_CASES, gbody: GEMINI_BODY_CASES,
       gtext: GEMINI_TEXT_CASES, config_handler: CONFIG_HANDLER_CASES, gmodels: GEMINI_MODEL_CASES, gpayload: GEMINI_PAYLOAD_CASES,
+      showcase: SHOWCASE_CASES, hidden: HIDDEN_CASES,
     }),
     encoding: 'utf8',
-    env: { ...process.env, NEXA_PHP, ANTHROPIC_API_KEY: '', GEMINI_API_KEY: '' },
+    env: { ...process.env, NEXA_PHP, PF_HELPERS, ANTHROPIC_API_KEY: '', GEMINI_API_KEY: '' },
   });
   expect(result.stderr).toBe('');
   return JSON.parse(result.stdout) as Record<string, unknown[]> & { instructions: string };
@@ -329,6 +386,8 @@ const nodeOutputs = () => ({
   gbody: GEMINI_BODY_CASES.map(([k, l, m]) => nexaGeminiBody(k, l, m)),
   gtext: GEMINI_TEXT_CASES.map((c) => nexaGeminiText(c)),
   gmodels: GEMINI_MODEL_CASES.map((c) => nexaGeminiModels(c)),
+  showcase: SHOWCASE_CASES.map(([projects, portfolio, hidden]) => nexaShowcaseFacts(projects, portfolio, hidden)),
+  hidden: HIDDEN_CASES.map((c) => nexaProjectsHidden(c)),
   gpayload: GEMINI_PAYLOAD_CASES.map((c) => nexaGeminiPayload(nexaGeminiBody('', 'DATA', [{ role: 'user', content: 'Halo' }]), c)),
 });
 
@@ -418,6 +477,26 @@ describe('Nexa AI: fungsi murni (Node)', () => {
     expect(system[1].text).toBe('DATA');
     expect(haiku).not.toHaveProperty('fallbacks');
     expect((haiku.system as { text: string }[])[0].text).toContain('(tidak tersedia; pakai DATA TERKINI)');
+  });
+
+  it('blok proyek: proyek layak (≥ 2) dengan kode p-…; selain itu portofolio cadangan dengan kode f-…', () => {
+    const [clients, portfolio, defaults, empty, broken, jsRule, hidden] = nodeOutputs().showcase;
+    expect(clients).toContain('- Kasir Toko (Aplikasi Mobile): ' + LONG_DESC + ' Kode: [proyek:p-9]');
+    expect(clients).not.toMatch(/Lorem Uji/);
+    expect(clients).toMatch(/- Website Klinik \(web custom\): .{150,}… Kode: \[proyek:p-7\]/);
+    expect(portfolio).toContain('- Sistem Desa (GOV / WEB). Kode: [proyek:f-sistem-desa]');
+    expect(portfolio).not.toMatch(/Tanpa Gambar|tanpa judul|Hanya Satu/);
+    expect(defaults).toContain('- Web App Dashboard (SAAS / FINANCE). Kode: [proyek:f-web-app-dashboard]');
+    expect(empty).toContain('- (belum ada proyek yang ditampilkan)');
+    expect(broken).toBe(defaults);
+    // Proyek yang sama dengan kartu beranda (presentable.ts): kode backend = kunci kartu frontend
+    const shown = presentableProjects(JS_RULE_ROWS.filter((p) => p.name) as { id: number; name: string; image: string; description: string }[]);
+    expect(shown.map((p) => p.id)).toEqual([5, 4]);
+    expect([...jsRule.matchAll(/\[proyek:(p-\d+)\]/g)].map((m) => m[1])).toEqual(['p-5', 'p-4']);
+    // Section Projects disembunyikan admin: tanpa proyek & kode, AI diarahkan ke konsultasi
+    expect(hidden).not.toMatch(/\[proyek:[pf]-/);
+    expect(hidden).toContain('/pesan-custom');
+    expect(nodeOutputs().hidden).toEqual([true, true, true, false, false, true, false, false, false]);
   });
 
   it('teks jawaban: blok text saja; penolakan / kosong → null', () => {
@@ -608,6 +687,8 @@ describe('Nexa AI: handler nexa_chat', () => {
     expect(fromPhp.gtext).toEqual(fromNode.gtext);
     expect(fromPhp.gmodels).toEqual(fromNode.gmodels);
     expect(fromPhp.gpayload).toEqual(fromNode.gpayload);
+    expect(fromPhp.showcase).toEqual(fromNode.showcase);
+    expect(fromPhp.hidden).toEqual(fromNode.hidden);
     // Handler get/save config: hasil + urutan tulis SQL sama
     const nodeConfig = [];
     for (const c of CONFIG_HANDLER_CASES) {

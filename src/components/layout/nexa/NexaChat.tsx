@@ -1,11 +1,13 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUp, Mic, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, ArrowUpRight, Mic, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiPost } from '../../../lib/api';
 import { FIRST_ORDER_DISCOUNT_PERCENT } from '../../../lib/firstOrderDiscount';
 import { HUB_PATHS } from '../../../seo/paths';
 import { answerLocally, type NexaAction, type NexaAnswer, type NexaMood } from './localAnswer';
+import { NexaReply } from './NexaReply';
+import { PROJECT_QUESTION, useNexaCatalog, type NexaCards } from './replyModel';
 
 /**
  * Maskot Nexa tanpa latar (dipotong dari gambar pemilik 2026-10-24) dalam 3 lebar; browser memilih sesuai ukuran tampil
@@ -46,6 +48,8 @@ interface NexaTopic {
   label: string;
   reply: string;
   action: NexaAction;
+  /** Kartu bergambar di bawah jawaban (topik "Pilih template" → kartu template) */
+  cards?: NexaCards;
 }
 
 /** Topik cepat: jawaban tetap (fakta yang juga tertulis di situs) + tautan halaman, tanpa memanggil AI. */
@@ -54,6 +58,7 @@ const TOPICS: NexaTopic[] = [
     label: 'Pilih template',
     reply: `Kami punya template siap pakai untuk company profile, klinik & salon, klub olahraga, sampai fintech. Harganya sudah termasuk setup, domain, hosting, dan SSL tahun pertama, plus diskon ${FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama.`,
     action: { label: 'Lihat katalog template', to: HUB_PATHS.catalog },
+    cards: 'templates',
   },
   {
     label: 'Pesan website custom',
@@ -185,59 +190,23 @@ export const NexaAvatar: React.FC<{ className?: string; sizes: string; mood?: Ne
 
 const ActionLink: React.FC<{ action: NexaAction; onNavigate: () => void }> = ({ action, onNavigate }) => {
   const className =
-    'mt-3 inline-flex h-9 items-center rounded-full bg-surface px-4 text-[13px] font-semibold text-primary ring-1 ring-inset ring-brand-200 transition-colors hover:bg-brand-50';
+    'group/action mt-3 inline-flex h-8 items-center gap-1.5 rounded-full bg-brand-50 pl-3.5 pr-3 text-[12px] font-semibold text-primary ring-1 ring-inset ring-brand-100 transition-colors hover:bg-brand-100 sm:text-[12.5px]';
+  const arrow = 'h-3.5 w-3.5 transition-transform duration-200 ease-calm motion-reduce:transition-none';
   if (action.href) {
     return (
       <a href={action.href} target="_blank" rel="noopener noreferrer" className={className}>
         {action.label}
         <span className="sr-only"> (tab baru)</span>
+        <ArrowUpRight className={`${arrow} group-hover/action:-translate-y-px group-hover/action:translate-x-px`} strokeWidth={2.25} aria-hidden />
       </a>
     );
   }
   return (
     <Link to={action.to as string} onClick={onNavigate} className={className}>
       {action.label}
+      <ArrowRight className={`${arrow} group-hover/action:translate-x-0.5`} strokeWidth={2.25} aria-hidden />
     </Link>
   );
-};
-
-/**
- * Tautan di jawaban AI: path halaman situs yang dikenal (bukan path lain yang mungkin ditulis model) atau wa.me/nomor.
- * Grup 1 = karakter sebelum tautan (awal teks / bukan huruf, "/" atau "."), grup 2 = path, grup 3 = nomor WhatsApp.
- * Tanpa lookbehind: Safari lama gagal mengurai regex lookbehind dan seluruh skrip halaman ikut gagal.
- */
-const LINKS =
-  /(^|[^\w/.])(?:(\/(?:template|harga|pesan-custom|jasa-pembuatan-website|jasa-pembuatan-aplikasi-mobile|tentang|kontak|panduan|syarat-ketentuan|kebijakan-privasi|kebijakan-pengembalian-dana)(?:\/[a-z0-9-]+)*)|(?:https?:\/\/)?wa\.me\/(\d{8,15}))/g;
-
-/**
- * Teks jawaban Nexa: path situs (/harga, /template/aura-studio) menjadi tautan internal, wa.me/… menjadi tautan WhatsApp
- * (tab baru). Alamat lengkap garudanexa.com dipendekkan ke path-nya; sisa Markdown tebal (**…**) dibuang.
- */
-const RichText: React.FC<{ text: string; onNavigate: () => void }> = ({ text, onNavigate }) => {
-  const clean = text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/https?:\/\/(?:www\.)?garudanexa\.com(?=\/)/g, '');
-  const linkClass = 'font-medium text-primary underline decoration-brand-300 underline-offset-2 hover:decoration-primary';
-  const parts: React.ReactNode[] = [];
-  let cursor = 0;
-  for (const match of clean.matchAll(LINKS)) {
-    const start = (match.index ?? 0) + match[1].length;
-    const label = match[0].slice(match[1].length);
-    if (start > cursor) parts.push(clean.slice(cursor, start));
-    parts.push(
-      match[3] ? (
-        <a key={start} href={`https://wa.me/${match[3]}`} target="_blank" rel="noopener noreferrer" className={linkClass}>
-          {label}
-          <span className="sr-only"> (WhatsApp, tab baru)</span>
-        </a>
-      ) : (
-        <Link key={start} to={match[2]} onClick={onNavigate} className={linkClass}>
-          {label}
-        </Link>
-      ),
-    );
-    cursor = start + label.length;
-  }
-  parts.push(clean.slice(cursor));
-  return <>{parts}</>;
 };
 
 interface NexaChatProps {
@@ -281,6 +250,8 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
   const requestCloseRef = useRef<(focusLauncher: boolean) => void>(() => {});
   // Pesan galat input suara (tampil di bawah form & dibacakan lewat role=status)
   const [micNote, setMicNote] = useState('');
+  // Template & proyek untuk kartu bergambar di jawaban (dimuat saat panel pertama kali dibuka)
+  const catalog = useNexaCatalog(open);
   // Maskot tombol menyapa saat disorot/difokus; selebihnya hidup sendiri (berkedip dkk. tiap beberapa detik)
   const [greetingLauncher, setGreetingLauncher] = useState(false);
   const idleMood = useIdleMood('netral', true, LAUNCHER_CYCLE);
@@ -391,7 +362,11 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
       });
     try {
       const data = await apiPost<{ reply?: unknown }>('nexa_chat', { messages: history });
-      if (typeof data?.reply === 'string' && data.reply.trim() !== '') return { text: data.reply.trim() };
+      if (typeof data?.reply === 'string' && data.reply.trim() !== '') {
+        // Pertanyaan tentang hasil kerja kami → galeri proyek, juga bila AI tidak menulis kode [proyek:…] (jawaban bawaan
+        // sudah memilih kartunya sendiri lewat maksud proyek di localAnswer)
+        return { text: data.reply.trim(), ...(PROJECT_QUESTION.test(question) ? { cards: 'projects' as const } : {}) };
+      }
     } catch {
       // jawab dari data situs di bawah (status "mengetik" selalu selesai)
     }
@@ -400,7 +375,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
 
   const askTopic = (topic: NexaTopic) => {
     if (typing) return;
-    send(topic.label, async () => ({ text: topic.reply, action: topic.action }));
+    send(topic.label, async () => ({ text: topic.reply, action: topic.action, cards: topic.cards }));
   };
 
   const stopListening = () => {
@@ -492,25 +467,26 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
             role="dialog"
             aria-modal="false"
             aria-labelledby={titleId}
-            // Di atas dok (48/56px + jarak bawah), di bawah navbar. HP: hampir selebar layar; desktop: 460 px, tinggi
-            // tetap maks. 740 px (pemilik 2026-10-24: lebih tinggi & luas). Layar sangat pendek (HP mendatar, zoom besar):
-            // log tetap minimal 8rem dan panel sendiri yang bergulir
-            className={`fixed inset-x-3 bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+3.75rem)] z-40 flex h-[min(620px,calc(100svh-var(--nav-offset)-6rem))] custom-scrollbar flex-col overflow-y-auto overscroll-contain rounded-[28px] bg-surface text-left shadow-float ring-1 ring-inset ring-line/70 transition-[opacity,translate,scale] duration-200 ease-calm starting:translate-y-3 starting:scale-[0.98] starting:opacity-0 motion-reduce:transition-none sm:inset-x-auto sm:bottom-[6.25rem] sm:right-8 sm:h-[min(740px,calc(100svh-var(--nav-offset)-7.25rem))] sm:w-[440px] lg:w-[460px] ${
+            // Di atas dok (48/56px + jarak bawah), di bawah navbar. HP: selebar layar dikurangi 8 px tiap sisi, isi lebih
+            // ringkas; desktop: 520–740 px, tinggi maks. 820 px, kepala/kolom/tombol ringkas (pemilik 2026-10-24: HP lebih
+            // lebar & kecil, desktop lebih lebar, bayangan lebih lembut). Layar sangat pendek (HP mendatar, zoom besar): log
+            // tetap minimal 8rem dan panel yang bergulir
+            className={`fixed inset-x-2 bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+3.75rem)] z-40 flex h-[min(620px,calc(100svh-var(--nav-offset)-6rem))] custom-scrollbar flex-col overflow-y-auto overscroll-contain rounded-3xl bg-surface text-left shadow-[0_24px_64px_-24px_rgba(24,29,37,0.14),0_2px_12px_-4px_rgba(24,29,37,0.05)] ring-1 ring-inset ring-line/50 transition-[opacity,translate,scale] duration-200 ease-calm starting:translate-y-3 starting:scale-[0.98] starting:opacity-0 motion-reduce:transition-none sm:inset-x-auto sm:bottom-[6.25rem] sm:right-8 sm:h-[min(820px,calc(100svh-var(--nav-offset)-7.25rem))] sm:w-[520px] sm:rounded-[28px] lg:w-[620px] xl:w-[680px] 2xl:w-[740px] ${
               closing ? 'pointer-events-none translate-y-3 scale-[0.98] opacity-0' : ''
             }`}
           >
             {/* Kepala ringkas (pemilik 2026-10-24: lebih kecil) */}
-            <header className="flex shrink-0 items-center justify-between gap-3 px-6 pb-1 pt-3.5 sm:px-7 sm:pt-4">
-              <h2 id={titleId} className="text-[15px] font-semibold tracking-[-0.01em] text-fg">
+            <header className="flex shrink-0 items-center justify-between gap-3 px-4 pb-1 pt-3 sm:px-6 sm:pt-3.5">
+              <h2 id={titleId} className="text-[14px] font-semibold tracking-[-0.01em] text-fg">
                 Tanya Nexa AI
               </h2>
               <button
                 type="button"
                 onClick={close}
                 aria-label="Tutup chat Nexa"
-                className="-mr-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-fg transition-colors hover:bg-fg/5"
+                className="-mr-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-fg transition-colors hover:bg-fg/5 sm:h-7 sm:w-7"
               >
-                <X className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+                <X className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
               </button>
             </header>
 
@@ -519,7 +495,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
               role="log"
               aria-live="polite"
               aria-label="Percakapan dengan Nexa"
-              className="custom-scrollbar relative min-h-32 flex-1 space-y-4 overflow-y-auto overscroll-contain px-6 py-4 sm:px-7"
+              className="custom-scrollbar relative min-h-32 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-3 sm:space-y-4 sm:px-6 sm:py-4"
             >
               <Bubble from="nexa" mood="ceria" live={messages.length === 0 && !typing}>
                 {GREETING}
@@ -532,7 +508,11 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
                   mood={message.mood}
                   live={!typing && index === messages.length - 1}
                 >
-                  {message.from === 'nexa' ? <RichText text={message.text} onNavigate={() => requestClose(false)} /> : message.text}
+                  {message.from === 'nexa' ? (
+                    <NexaReply text={message.text} cards={message.cards} catalog={catalog} onNavigate={() => requestClose(false)} />
+                  ) : (
+                    message.text
+                  )}
                   {message.action && (
                     <span className="block">
                       <ActionLink action={message.action} onNavigate={() => requestClose(false)} />
@@ -542,7 +522,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
               ))}
               {typing && (
                 <NexaRow mood="pikir" live>
-                  <div className="flex items-center gap-1.5 rounded-[22px] bg-fg/[0.045] px-5 py-4" aria-hidden>
+                  <div className="flex items-center gap-1.5 rounded-[20px] rounded-bl-md bg-fg/[0.045] px-4 py-3.5 sm:rounded-[22px] sm:rounded-bl-md sm:px-5 sm:py-4" aria-hidden>
                     {[0, 1, 2].map((i) => (
                       <span key={i} className="h-2 w-2 rounded-full bg-fg/40 motion-safe:animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
                     ))}
@@ -557,15 +537,15 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
 
             {/* Topik cepat di luar log (tidak dibacakan ulang); tidak pernah dilepas dari DOM agar fokus tidak hilang.
                 HP: satu baris yang bisa digeser; desktop: membungkus agar semua chip terlihat tanpa scroll */}
-            <div className="shrink-0 px-6 pb-3 max-sm:overflow-x-auto max-sm:[scrollbar-width:none] sm:px-7 max-sm:[&::-webkit-scrollbar]:hidden">
-              <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="group" aria-label="Topik cepat">
+            <div className="shrink-0 px-4 pb-2.5 max-sm:overflow-x-auto max-sm:[scrollbar-width:none] sm:px-6 sm:pb-2.5 max-sm:[&::-webkit-scrollbar]:hidden">
+              <div className="flex w-max gap-1.5 sm:w-auto sm:flex-wrap sm:gap-2" role="group" aria-label="Topik cepat">
                 {TOPICS.map((topic) => (
                   <button
                     key={topic.label}
                     type="button"
                     onClick={() => askTopic(topic)}
                     aria-disabled={typing || undefined}
-                    className="inline-flex h-9 items-center whitespace-nowrap rounded-full bg-surface px-4 text-[13px] font-medium text-fg ring-1 ring-inset ring-line transition-colors hover:bg-fg/5 hover:ring-line-strong aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-surface"
+                    className="inline-flex h-8 items-center whitespace-nowrap rounded-full bg-surface px-3 text-[12px] font-medium text-fg ring-1 sm:px-3.5 sm:text-[12.5px] ring-inset ring-line transition-colors hover:bg-fg/5 hover:ring-line-strong aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-surface"
                   >
                     {topic.label}
                   </button>
@@ -573,8 +553,8 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
               </div>
             </div>
 
-            <form onSubmit={onSubmit} className="flex shrink-0 items-center gap-3 px-6 pb-3 sm:px-7">
-              <div className="flex h-14 min-w-0 flex-1 items-center rounded-full bg-fg/[0.045] pl-5 pr-2 ring-1 ring-inset ring-transparent transition-[box-shadow,background-color] duration-300 ease-calm focus-within:bg-surface focus-within:ring-primary motion-reduce:transition-none">
+            <form onSubmit={onSubmit} className="flex shrink-0 items-center gap-2 px-4 pb-3 sm:gap-2.5 sm:px-6 sm:pb-5">
+              <div className="flex h-11 min-w-0 flex-1 items-center rounded-full bg-fg/[0.045] pl-4 pr-1 ring-1 sm:h-12 sm:pl-5 sm:pr-1.5 ring-inset ring-transparent transition-[box-shadow,background-color] duration-300 ease-calm focus-within:bg-surface focus-within:ring-primary motion-reduce:transition-none">
                 <label htmlFor={inputId} className="sr-only">
                   Tulis pesan untuk Nexa
                 </label>
@@ -589,7 +569,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
                   autoComplete="off"
                   enterKeyHint="send"
                   // 16px di HP agar iOS tidak memperbesar halaman saat kolom difokus
-                  className="h-full min-w-0 flex-1 bg-transparent text-base text-fg outline-none placeholder:text-muted focus-visible:outline-none sm:text-[15px]"
+                  className="h-full min-w-0 flex-1 bg-transparent text-base text-fg outline-none placeholder:text-muted focus-visible:outline-none sm:text-[14px]"
                 />
                 {canListen && (
                   <button
@@ -597,11 +577,11 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
                     onClick={toggleListening}
                     aria-pressed={listening}
                     aria-label={listening ? 'Berhenti mendengarkan' : 'Bicara (isi pesan dengan suara)'}
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-[background-color,color,scale] duration-200 ease-calm active:scale-90 motion-reduce:transition-none ${
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-[background-color,color,scale] duration-200 ease-calm active:scale-90 motion-reduce:transition-none ${
                       listening ? 'bg-brand-50 text-primary motion-safe:animate-pulse' : 'text-fg hover:bg-fg/5'
                     }`}
                   >
-                    <Mic className="h-5 w-5" aria-hidden />
+                    <Mic className="h-[18px] w-[18px]" aria-hidden />
                   </button>
                 )}
               </div>
@@ -610,14 +590,13 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
                 type="submit"
                 aria-label="Kirim pesan"
                 aria-disabled={!canSend || undefined}
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-[background-color,color,scale] duration-200 ease-calm hover:bg-primary-hover active:scale-90 aria-disabled:cursor-not-allowed aria-disabled:bg-fg/[0.045] aria-disabled:text-muted aria-disabled:active:scale-100 aria-disabled:hover:bg-fg/[0.045] motion-reduce:transition-none"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white sm:h-12 sm:w-12 transition-[background-color,color,scale] duration-200 ease-calm hover:bg-primary-hover active:scale-90 aria-disabled:cursor-not-allowed aria-disabled:bg-fg/[0.045] aria-disabled:text-muted aria-disabled:active:scale-100 aria-disabled:hover:bg-fg/[0.045] motion-reduce:transition-none"
               >
-                <ArrowUp className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+                <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
               </button>
             </form>
-            <p className={`shrink-0 px-6 pb-4 text-center text-[11px] leading-snug ${micNote ? 'text-fg' : 'text-subtle'}`}>
-              {micNote || 'Nexa AI bisa keliru. Pastikan detail penting di halaman terkait.'}
-            </p>
+            {/* Catatan "Nexa AI bisa keliru" dihapus (pemilik 2026-10-24); yang tersisa hanya galat input suara */}
+            {micNote && <p className="-mt-1 shrink-0 px-4 pb-3 text-center text-[11px] leading-snug text-fg sm:px-6 sm:pb-4">{micNote}</p>}
           </section>,
           document.body,
         )}
@@ -663,11 +642,12 @@ const NexaRow: React.FC<{ id?: number; mood?: NexaMood; live?: boolean; children
   const shown = useIdleMood(mood, live, CHAT_CYCLE);
   return (
     <div
-      className="flex items-end gap-3 transition-[opacity,translate] duration-300 ease-calm starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none"
+      className="flex items-end gap-2 transition-[opacity,translate] duration-300 ease-calm starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none sm:gap-3"
       data-message-id={id}
     >
-      <NexaAvatar className="h-10 w-10 shrink-0" sizes="40px" mood={shown} animate={live} />
-      <div className="min-w-0 max-w-[85%]">{children}</div>
+      <NexaAvatar className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" sizes="(min-width: 640px) 40px, 32px" mood={shown} animate={live} />
+      {/* HP: gelembung boleh memakai seluruh sisa lebar di samping maskot */}
+      <div className="min-w-0 max-w-full sm:max-w-[85%]">{children}</div>
     </div>
   );
 };
@@ -678,10 +658,10 @@ const Bubble: React.FC<{ from: 'nexa' | 'user'; id?: number; mood?: NexaMood; li
   if (from === 'user') {
     return (
       <div
-        className="flex justify-end pl-10 transition-[opacity,translate] duration-300 ease-calm starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none"
+        className="flex justify-end pl-8 transition-[opacity,translate] duration-300 ease-calm starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none sm:pl-10"
         data-message-id={id}
       >
-        <div className="max-w-[85%] whitespace-pre-line break-words rounded-[22px] bg-brand-50 px-5 py-3.5 text-[15px] leading-relaxed text-primary">
+        <div className="max-w-[88%] whitespace-pre-line break-words rounded-[20px] rounded-br-md bg-brand-50 px-4 py-2.5 text-[14px] leading-relaxed text-primary sm:max-w-[85%] sm:rounded-[22px] sm:rounded-br-md sm:px-5 sm:py-3.5 sm:text-[15px]">
           {label}
           {children}
         </div>
@@ -690,7 +670,7 @@ const Bubble: React.FC<{ from: 'nexa' | 'user'; id?: number; mood?: NexaMood; li
   }
   return (
     <NexaRow id={id} mood={mood} live={live}>
-      <div className="whitespace-pre-line break-words rounded-[22px] bg-fg/[0.045] px-5 py-3.5 text-[15px] leading-relaxed text-fg">
+      <div className="break-words rounded-[20px] rounded-bl-md bg-fg/[0.045] px-4 py-3 text-[14px] leading-relaxed text-fg sm:rounded-[22px] sm:rounded-bl-md sm:px-5 sm:py-3.5 sm:text-[15px]">
         {label}
         {children}
       </div>

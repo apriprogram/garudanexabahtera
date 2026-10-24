@@ -348,8 +348,14 @@ describe('Nexa AI', () => {
   }
 
   /** fetch: nexa_chat dijawab `respond` (status/isi bebas); body POST dicatat. Aksi lain seperti mock bawaan. */
-  const mockNexa = (respond: (body: Record<string, unknown>) => Response) => {
+  /** fetch: nexa_chat dijawab `respond`; get_templates / get_public_projects dari `catalog` (kartu bergambar). */
+  const mockNexa = (
+    respond: (body: Record<string, unknown>) => Response,
+    catalog: { templates?: unknown[]; projects?: unknown[] } = {},
+  ) => {
     const posts: Record<string, unknown>[] = [];
+    // get_templates di-cache bersama di lib/api: tiap tes mulai bersih
+    clearApiCache();
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const action = new URL(String(input), 'http://localhost').searchParams.get('action');
       if (action === 'nexa_chat') {
@@ -358,6 +364,8 @@ describe('Nexa AI', () => {
         return respond(body);
       }
       if (action === 'get_settings') return json(200, {});
+      if (action === 'get_templates') return json(200, { success: true, templates: catalog.templates ?? [], categories: [] });
+      if (action === 'get_public_projects') return json(200, { success: true, projects: catalog.projects ?? [] });
       return json(200, []);
     });
     return posts;
@@ -389,7 +397,8 @@ describe('Nexa AI', () => {
     expect(launcher).toHaveAttribute('aria-controls', panel.id);
     expect(document.activeElement).toBe(within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' }));
     expect(within(panel).getByRole('log', { name: 'Percakapan dengan Nexa' })).toHaveTextContent(/Halo, saya Nexa/);
-    expect(panel).toHaveTextContent('Nexa AI bisa keliru');
+    // Catatan "Nexa AI bisa keliru" dihapus (pemilik 2026-10-24)
+    expect(panel).not.toHaveTextContent('bisa keliru');
 
     // Esc dari kontrol lain di halaman (fokus di luar panel) tidak menutup chat
     const outside = document.createElement('input');
@@ -473,14 +482,17 @@ describe('Nexa AI', () => {
     );
     const panel = openPanel();
     ask(panel, 'Template untuk klinik kecantikan?');
-    const toTemplate = await within(panel).findByRole('link', { name: '/template/aura-studio' }, { timeout: 2000 });
+    // Label ramah: path template → nama template, /harga → "halaman Harga", wa.me → "WhatsApp"
+    const toTemplate = await within(panel).findByRole('link', { name: 'Aura Studio' }, { timeout: 2000 });
     expect(toTemplate).toHaveAttribute('href', '/template/aura-studio');
-    expect(within(panel).getByRole('link', { name: '/harga' })).toHaveAttribute('href', '/harga');
-    const wa = within(panel).getByRole('link', { name: /wa\.me\/6285188009152/ });
+    expect(within(panel).getByRole('link', { name: 'halaman Harga' })).toHaveAttribute('href', '/harga');
+    const wa = within(panel).getByRole('link', { name: /WhatsApp \(wa\.me\/6285188009152/ });
     expect(wa).toHaveAttribute('href', 'https://wa.me/6285188009152');
     expect(wa).toHaveAttribute('target', '_blank');
     expect(within(panel).getByRole('log')).toHaveTextContent(/Template Aura Studio cocok/);
     expect(within(panel).getByRole('log')).not.toHaveTextContent(/\*\*/);
+    // **tebal** dirender sebagai <strong>, bukan dibuang
+    expect(within(panel).getByText('Aura Studio', { selector: 'strong' })).toBeInTheDocument();
     expect(posts[0].messages).toEqual([{ role: 'user', content: 'Template untuk klinik kecantikan?' }]);
 
     // Klik tautan internal menutup panel (pengunjung pindah halaman)
@@ -543,6 +555,69 @@ describe('Nexa AI', () => {
     act(() => second.abort());
     expect(within(panel).queryByText('berapa')).toBeNull();
     expect(within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' })).toHaveValue('berapa');
+  });
+
+  it('jawaban rapi: daftar jadi <ul>, template disebut → kartu mockup + harga, kode [proyek:…] → kartu proyek', async () => {
+    const LONG = 'Sistem kasir dan laporan stok untuk toko ritel dengan banyak cabang di Jawa Barat.';
+    mockNexa(
+      () =>
+        json(200, {
+          success: true,
+          reply:
+            'Untuk klinik, dua pilihan ini paling pas:\n- **Aura Studio** (/template/aura-studio): desain lembut, **Rp1.390.000**.\n- Contoh proyek kami: **Kasir Toko** — Kode: [proyek:p-1]\n\nMau saya bantu pilih?',
+        }),
+      {
+        templates: [
+          { id: 4, slug: 'aura-studio', name: 'Aura Studio', category: 'Kecantikan & Klinik', price: 1390000, preview_image: '/assets/templates/aura.webp', status: 'published' },
+        ],
+        projects: [
+          { id: 1, name: 'Kasir Toko', service_type: 'website', image: '/p1.jpg', description: LONG },
+          { id: 2, name: 'Website Klinik', service_type: 'website', image: '/p2.jpg', description: `${LONG} Versi klinik.` },
+        ],
+      },
+    );
+    const panel = openPanel();
+    ask(panel, 'Template untuk klinik?');
+    const templates = await within(panel).findByRole('list', { name: 'Template yang disebut' }, { timeout: 2000 });
+    const card = within(templates).getByRole('link', { name: /Aura Studio/ });
+    expect(card).toHaveAttribute('href', '/template/aura-studio');
+    expect(card.querySelector('img')).toHaveAttribute('src', '/assets/templates/aura.webp');
+    // Harga pembelian pertama (diskon 20%) + harga normal dicoret
+    expect(card).toHaveTextContent(/Rp\s?1\.112\.000/);
+    expect(card).toHaveTextContent(/Rp\s?1\.390\.000/);
+    const projects = within(panel).getByRole('list', { name: 'Proyek yang sudah dikerjakan' });
+    expect(within(projects).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(projects).getByRole('link', { name: /Kasir Toko/ }).querySelector('img')).toHaveAttribute('src', '/p1.jpg');
+    // Daftar dirender sebagai <ul>; kode proyek tidak terlihat pengunjung
+    const log = within(panel).getByRole('log');
+    expect(log.querySelectorAll('ul[data-block="ul"] > li')).toHaveLength(2);
+    // Nama tebal + path dalam kurung = satu tautan, nama tidak diulang "(Aura Studio)"
+    expect(log.querySelectorAll('ul[data-block="ul"] > li')[0]).toHaveTextContent(/^Aura Studio: desain lembut, Rp1\.390\.000\.$/);
+    expect(log).not.toHaveTextContent(/\[proyek:/);
+    // Pemisah di depan kode ikut dibuang ("— Kode:"), tidak tersisa tanda baca menggantung
+    expect(log.querySelectorAll('ul[data-block="ul"] > li')[1]).toHaveTextContent(/^Contoh proyek kami: Kasir Toko$/);
+  });
+
+  it('pertanyaan tentang proyek → galeri proyek (juga tanpa AI); chip "Pilih template" → kartu template', async () => {
+    const LONG = 'Website profil perusahaan dengan halaman layanan, galeri proyek, dan formulir kontak.';
+    mockNexa(() => json(503, { error: 'Nexa AI belum aktif.', code: 'NEXA_OFFLINE' }), {
+      templates: [
+        { id: 1, slug: 'corporate-nexa', name: 'Corporate Nexa', category: 'Company Profile', price: 1500000, preview_image: '/c.webp', status: 'published' },
+        { id: 2, slug: 'finova', name: 'Finova', category: 'Fintech & Startup', price: 1790000, preview_image: '/f.webp', status: 'published' },
+      ],
+      projects: [
+        { id: 7, name: 'Website Perusahaan', service_type: 'website', image: '/p7.jpg', description: LONG },
+        { id: 8, name: 'Aplikasi Kasir', service_type: 'mobile_app', image: '/p8.jpg', description: `${LONG} Versi aplikasi.` },
+      ],
+    });
+    const panel = openPanel();
+    ask(panel, 'Boleh lihat proyek yang sudah kalian kerjakan?');
+    const projects = await within(panel).findByRole('list', { name: 'Proyek yang sudah dikerjakan' }, { timeout: 2000 });
+    expect(within(projects).getAllByRole('link').map((a) => a.textContent)).toEqual(['Website PerusahaanWebsite', 'Aplikasi KasirAplikasi Mobile']);
+
+    fireEvent.click(within(panel).getByRole('button', { name: 'Pilih template' }));
+    const templates = await within(panel).findByRole('list', { name: 'Template yang disebut' }, { timeout: 2000 });
+    expect(within(templates).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/template/corporate-nexa', '/template/finova']);
   });
 
   it('riwayat ke nexa_chat: jawaban AI panjang dipotong 4000 karakter, jadi percakapan tetap sah di backend', async () => {

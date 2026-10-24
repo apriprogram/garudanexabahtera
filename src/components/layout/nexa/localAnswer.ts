@@ -1,6 +1,7 @@
 import { FAQ_ENTRIES, faqItem, type FaqId } from '../../../content/faq';
 import { FIRST_ORDER_DISCOUNT_PERCENT } from '../../../lib/firstOrderDiscount';
 import { HUB_PATHS, LEGAL_PATHS } from '../../../seo/paths';
+import { PROJECT_QUESTION, type NexaCards } from './replyModel';
 
 /**
  * Jawaban bawaan Nexa tanpa AI: dipakai bila aksi nexa_chat tidak bisa menjawab (ANTHROPIC_API_KEY belum dipasang,
@@ -26,6 +27,8 @@ export interface NexaAnswer {
   action?: NexaAction;
   /** Ekspresi maskot di samping jawaban (kosong = dipilih dari isi jawaban, lihat replyMood di NexaChat) */
   mood?: NexaMood;
+  /** Kartu bergambar di bawah jawaban: semua template / proyek teratas */
+  cards?: NexaCards;
 }
 
 /** Huruf kecil tanpa tanda baca/diakritik, spasi tunggal. */
@@ -101,6 +104,17 @@ const INTENTS: Intent[] = [
   },
   faqIntent('pembayaran', /(bayar|midtrans|transfer|qris|cicil|metode pembayaran)/),
   faqIntent('harga-template', PRICE_WORDS),
+  // Hasil kerja kami ("proyek apa saja yang sudah kalian kerjakan?"): setelah diskon/bayar/harga, yang selalu menang,
+  // sebelum jenis layanan. Teks tetap masuk akal tanpa kartu (section Projects bisa disembunyikan admin).
+  {
+    when: [PROJECT_QUESTION],
+    answer: () => ({
+      text: 'Kami sudah mengerjakan website dan aplikasi custom, dari company profile sampai toko online dan sistem informasi. Mau dibuatkan yang serupa? Ceritakan kebutuhan Anda lewat form pesan custom.',
+      action: CUSTOM,
+      mood: 'kilau',
+      cards: 'projects',
+    }),
+  },
   faqIntent('rilis-store', /(play ?store|app ?store|rilis)/),
   faqIntent('server-aplikasi', /(server|panel admin|backend)/, /\b(aplikasi|apk|mobile)/),
   faqIntent('android-ios', /\b(aplikasi|apk|mobile|android|ios|iphone)/),
@@ -133,6 +147,7 @@ const INTENTS: Intent[] = [
     answer: () => ({
       text: `Kami punya template siap pakai untuk company profile, klinik & salon, klub olahraga, sampai fintech. Harganya sudah termasuk setup, domain, hosting, dan SSL tahun pertama, plus diskon ${FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama.`,
       action: CATALOG,
+      cards: 'templates',
     }),
   },
 ];

@@ -1,7 +1,7 @@
 // @vitest-environment node
 // Kunci suka/dilihat kartu proyek portofolio cadangan = "f-" + slug judul. Slug itu dibuat di tiga tempat dan harus sama
 // persis, kalau tidak suka/dilihat kartu itu ditolak (PROJECT_NOT_FOUND) di satu backend saja:
-//   src/components/sections/Projects.tsx  showcaseSlug (kunci yang dikirim browser)
+//   src/components/sections/projects/projectItems.ts  showcaseSlug (kunci yang dikirim browser)
 //   backend/modules/templates.js           showcaseSlug (Node)
 //   backend/modules/templates.php          pf_showcase_slug (PHP, produksi)
 // strtolower PHP hanya mengubah ASCII, sedangkan toLowerCase JS juga mengubah "İ" (U+0130) dan tanda Kelvin (U+212A)
@@ -21,7 +21,7 @@ function jsSlug(source: string, pattern: RegExp): (title: string) => string {
   return new Function('title', `return ${match[1]};`) as (title: string) => string;
 }
 
-const frontendSlug = jsSlug(read('src', 'components', 'sections', 'Projects.tsx'), /const showcaseSlug = \(title: string\) =>\s*([^;]+);/);
+const frontendSlug = jsSlug(read('src', 'components', 'sections', 'projects', 'projectItems.ts'), /const showcaseSlug = \(title: string\) =>\s*([^;]+);/);
 const nodeSlug = jsSlug(read('backend', 'modules', 'templates.js'), /const showcaseSlug = \(title\) => ([^;]+);/);
 
 const CASES: [string, string][] = [

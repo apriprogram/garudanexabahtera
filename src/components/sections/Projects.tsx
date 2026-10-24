@@ -5,53 +5,14 @@ import { Link } from 'react-router-dom';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { apiGet, peekApiGet } from '../../lib/api';
 import type { PublicProject } from '../../types/platform';
-import { readList, useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { Reveal } from '../ui/Reveal';
 import { SectionHeading } from '../ui/SectionHeading';
 import { LogoMark } from '../ui/LogoMark';
-import { presentableProjects } from './projects/presentable';
+import { buildProjectItems, type ProjectCardData } from './projects/projectItems';
 import { shotGrid, TINT } from './templates/catalog';
 import { TemplateShotSkeleton } from './templates/TemplateShot';
 import { compactCount, useEngagement } from './templates/useTemplateEngagement';
-
-/** Satu entri `portfolio_data` lama (Pengaturan website > Portofolio), dipakai sebagai cadangan. */
-interface PortfolioItem {
-  title: string;
-  desc?: string;
-  image: string;
-}
-
-interface ProjectCardData {
-  key: string;
-  /** Kunci suka & dilihat di server (showcase_stats): p-{id} proyek, f-{slug judul} portofolio cadangan. */
-  statsKey: string;
-  title: string;
-  label: string;
-  description: string;
-  image: string | null;
-}
-
-const DEFAULT_PORTFOLIO: PortfolioItem[] = [
-  { title: 'Web App Dashboard', desc: 'SAAS / FINANCE', image: '/assets/portofolio/portfolio1.png' },
-  { title: 'Mobile POS App', desc: 'RETAIL / ANDROID', image: '/assets/portofolio/portfolio2.png' },
-  { title: 'E-Commerce System', desc: 'SHOPPING / WEB', image: '/assets/product/ischool.png' },
-  { title: 'Corporate Website', desc: 'BRANDING / MODERN', image: '/assets/product/isantri.png' },
-  { title: 'Sistem Informasi Desa', desc: 'GOVERNMENT / WEB', image: '/assets/product/pos.png' },
-];
-
-const SERVICE_LABEL: Record<string, string> = {
-  website: 'Website',
-  web: 'Website',
-  mobile_app: 'Aplikasi Mobile',
-  mobile: 'Aplikasi Mobile',
-  android: 'Aplikasi Android',
-  ios: 'Aplikasi iOS',
-};
-
-const serviceLabel = (value: string | null | undefined) => {
-  const raw = (value || '').trim();
-  return SERVICE_LABEL[raw.toLowerCase()] ?? raw.replace(/_/g, ' ');
-};
 
 type LoadState = { status: 'loading' } | { status: 'done'; projects: PublicProject[] };
 
@@ -61,14 +22,6 @@ const doneState = (data: ProjectsResponse): LoadState => ({
   status: 'done',
   projects: Array.isArray(data.projects) ? data.projects.filter((p) => p && p.name) : [],
 });
-
-/**
- * Slug judul portofolio = showcaseSlug() di backend/modules/templates.js (pf_showcase_slug di templates.php). Huruf non-ASCII
- * dibuang SEBELUM huruf kecil: strtolower PHP hanya mengubah ASCII, sedangkan toLowerCase JS mengubah "İ" → "i̇" dan tanda
- * Kelvin → "k", jadi urutan sebaliknya membuat kunci beda antara backend.
- */
-const showcaseSlug = (title: string) =>
-  title.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase().replace(/^-+|-+$/g, '').slice(0, 100);
 
 interface ShowcaseStat {
   likes: number;
@@ -137,31 +90,8 @@ const Projects: React.FC<{ alt?: boolean; number?: string }> = ({ alt, number = 
     };
   }, []);
 
-  let items: ProjectCardData[] = [];
-  if (state.status === 'done') {
-    // Teks uji (Lorem ipsum, "Coba text") tidak boleh sampai ke beranda; satu proyek saja juga tampak sepi
-    const presentable = presentableProjects(state.projects);
-    items =
-      presentable.length > 0
-        ? presentable.map((project) => ({
-            key: `p-${project.id}`,
-            statsKey: `p-${project.id}`,
-            title: project.name,
-            label: serviceLabel(project.service_type),
-            description: (project.description || '').trim(),
-            image: project.image || null,
-          }))
-        : readList<PortfolioItem>(settings.portfolio_data, DEFAULT_PORTFOLIO)
-            .filter((item) => item && item.title && item.image)
-            .map((item, index) => ({
-              key: `f-${index}-${item.title}`,
-              statsKey: `f-${showcaseSlug(item.title)}`,
-              title: item.title,
-              label: item.desc || '',
-              description: '',
-              image: item.image,
-            }));
-  }
+  // Proyek layak tampil atau portofolio cadangan (projects/projectItems.ts, dipakai juga kartu proyek Nexa)
+  const items: ProjectCardData[] = state.status === 'done' ? buildProjectItems(state.projects, settings.portfolio_data) : [];
 
   // Kategori = jenis proyek di kartu (urutan kemunculan); kategori yang hilang setelah data baru → kembali ke "Semua"
   const categories = [...new Set(items.map((item) => item.label).filter(Boolean))];

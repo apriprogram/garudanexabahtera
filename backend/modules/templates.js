@@ -27,7 +27,7 @@ import { uploadBase64ToS3, parseUpload, deleteFromS3, S3_PUBLIC_URL } from '../s
 import {
   NEXA_CONFIG_KEYS, NEXA_DEFAULT_DAILY_LIMIT, NEXA_DEFAULT_MODEL, NEXA_GEMINI_DEFAULT_MODEL, NEXA_PER_DAY, NEXA_PER_HOUR,
   NexaConfigError, nexaCleanMessages, nexaClaudeReply, nexaConfigOut, nexaConfigWrites, nexaGeminiBody, nexaGeminiModels, nexaGeminiReply,
-  nexaIpBucket, nexaKnowledge, nexaLiveFacts, nexaRequestBody, nexaResolveProvider,
+  nexaIpBucket, nexaKnowledge, nexaLiveFacts, nexaProjectsHidden, nexaRequestBody, nexaResolveProvider, nexaShowcaseFacts,
 } from './nexa.js';
 
 const STATUS_LABEL = {
@@ -319,7 +319,12 @@ async function nexaChat({ pool, body, req }) {
   }
   const templates = await dbAll(pool, "SELECT name, slug, category, price FROM templates WHERE status = 'published' ORDER BY sort_order ASC, id ASC");
 
-  const live = nexaLiveFacts(templates, settings);
+  const projects = await dbAll(pool, 'SELECT id, name, service_type, image, description FROM project_client WHERE show_on_website = 1 ORDER BY id DESC LIMIT 60');
+  const showcase = {};
+  for (const row of await dbAll(pool, "SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN ('portfolio_data', 'disabled_sections')")) {
+    showcase[row.setting_key] = String(row.setting_value ?? '');
+  }
+  const live = `${nexaLiveFacts(templates, settings)}\n\n${nexaShowcaseFacts(projects, showcase.portfolio_data ?? null, nexaProjectsHidden(showcase.disabled_sections ?? null))}`;
   let result;
   if (active.provider === 'gemini') {
     const model = envValue('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
