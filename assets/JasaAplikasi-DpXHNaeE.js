@@ -1,0 +1,1 @@
+import{n as e,t}from"./ServicePage-D7LKp_7p.js";import{xt as n}from"./index-CFipikL6.js";var r=n();function i(){return(0,r.jsx)(t,{service:e})}export{i as default};

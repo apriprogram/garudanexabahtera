@@ -114,8 +114,9 @@ function hm_too_large(): ApiError {
     return new ApiError('Ukuran video maksimal ' . hm_video_limit_mb() . ' MB.', 413);
 }
 
-// Streams the request body into public/assets/bg/ and returns the stored path
-function hm_store_video(): string {
+// Streams the request body into public/assets/<$section>/ and returns the stored path /assets/<$section>/<$stem>_<12
+// hex>.<ext>. Also the project videos of the home page (upload_project_video, backend/modules/portfolio_media.php).
+function hm_store_video(string $section = HM_FOLDER, string $stem = 'hero_video'): string {
     $type = (string)($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '');
     if (preg_match(HM_NOT_RAW_BODY, $type)) throw new ApiError(HM_TYPE_ERROR);
     $max = upload_limit_bytes('UPLOAD_MAX_VIDEO_MB', HM_VIDEO_MAX_MB_DEFAULT);
@@ -123,10 +124,10 @@ function hm_store_video(): string {
     // Announced size over the limit: refused without reading the body
     if ($declared > $max) throw hm_too_large();
 
-    $folder = public_dir() . '/assets/' . HM_FOLDER;
+    $folder = public_dir() . '/assets/' . $section;
     if (!is_dir($folder) && !mkdir($folder, 0755, true)) throw new RuntimeException("Cannot create upload folder $folder");
     // Dot file until it is checked: the web server refuses dot files (deploy/cpanel/htaccess, nginx.conf)
-    $tmp = $folder . '/.hero_video_' . bin2hex(random_bytes(6)) . '.part';
+    $tmp = $folder . '/.' . $stem . '_' . bin2hex(random_bytes(6)) . '.part';
     $in = fopen('php://input', 'rb');
     $out = $in ? fopen($tmp, 'xb') : false;
     try {
@@ -142,10 +143,10 @@ function hm_store_video(): string {
         if ($declared > 0 && $copied < $declared) throw new ApiError(HM_ABORTED_ERROR);
         $video = hm_sniff_video((string)file_get_contents($tmp, false, null, 0, 64));
         if (!$video) throw new ApiError(HM_TYPE_ERROR);
-        $name = 'hero_video_' . bin2hex(random_bytes(6)) . '.' . $video['ext'];
+        $name = $stem . '_' . bin2hex(random_bytes(6)) . '.' . $video['ext'];
         if (!rename($tmp, $folder . '/' . $name)) throw new RuntimeException("Cannot store upload $folder/$name");
         $tmp = null;
-        return '/assets/' . HM_FOLDER . '/' . $name;
+        return '/assets/' . $section . '/' . $name;
     } finally {
         if ($out) fclose($out);
         if ($in) fclose($in);

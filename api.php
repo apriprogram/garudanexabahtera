@@ -96,6 +96,9 @@ require_once __DIR__ . '/modules/project_files.php';
 // Home page hero background: raw video upload, upload limits and the hero_bg_* / hero_images settings
 // (handle_hero_media_action, hero_media_prepare_settings)
 require_once __DIR__ . '/modules/hero_media.php';
+// Home page #projects: project image/video uploads and the portfolio_data project fields
+// (handle_portfolio_media_action, portfolio_prepare_settings)
+require_once __DIR__ . '/modules/portfolio_media.php';
 // Project documents & agreements, pd_* actions (handle_project_docs_action, docs/platform/PROJECT-DOCS-SPEC.md)
 require_once __DIR__ . '/modules/project_docs.php';
 // Visit sources for track_visit / get_visitor_details: referrer host, landing path, utm_source (visit_source_fields,
@@ -130,8 +133,8 @@ $conn = new mysqli($host, $user, $pass, $db);
 $conn->set_charset('utf8mb4');
 
 $method = $_SERVER['REQUEST_METHOD'];
-// upload_hero_video posts the raw video file (not JSON): hero_media.php streams php://input itself
-$rawBody = ($_GET['action'] ?? '') === 'upload_hero_video';
+// upload_hero_video and upload_project_video post the raw video file (not JSON): hero_media.php streams php://input itself
+$rawBody = in_array($_GET['action'] ?? '', ['upload_hero_video', 'upload_project_video'], true);
 $input = $rawBody ? null : json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) $input = [];
 // Read actions may be called with a query string (GET); the body wins over the query
@@ -164,6 +167,11 @@ if (handle_project_file_action($conn, $action, $input, $authUser)) {
 }
 // Hero background video upload and the admin page's limits, staff only (backend/modules/hero_media.php)
 if (handle_hero_media_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Project images and videos of the home page #projects, staff only (backend/modules/portfolio_media.php)
+if (handle_portfolio_media_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }
@@ -292,20 +300,9 @@ switch ($action) {
                 }
             }
 
-            // Special handling for portfolio_data - sama seperti products
-            if (isset($settings['portfolio_data'])) {
-                $newItems = json_decode((string)$settings['portfolio_data'], true);
-                if (is_array($newItems)) {
-                    $existingRow = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = 'portfolio_data'");
-                    $existingArr = $existingRow ? (json_decode($existingRow['setting_value'], true) ?: []) : [];
-                    foreach ($newItems as $idx => &$item) {
-                        // Jika image kosong, gunakan image yang sudah ada berdasarkan posisi
-                        if (empty($item['image']) && !empty($existingArr[$idx]['image'])) $item['image'] = $existingArr[$idx]['image'];
-                    }
-                    unset($item);
-                    $settings['portfolio_data'] = json_encode($newItems);
-                }
-            }
+            // portfolio_data: project fields of #projects (description, tools, url, gallery, video) normalized, data:
+            // gallery images/videos refused, an empty image keeps the stored one (backend/modules/portfolio_media.php)
+            $finishPortfolio = portfolio_prepare_settings($conn, $settings);
 
             // Special handling for services_data
             if (isset($settings['services_data'])) {
@@ -345,8 +342,9 @@ switch ($action) {
             throw $e;
         }
         echo json_encode(["success" => true, "error" => null]);
-        // Garbage-collect sweep of unused hero videos/posters, after the reply; it never changes it
+        // Garbage-collect sweeps of unused hero videos/posters and project media, after the reply; they never change it
         $finishHeroMedia(true);
+        $finishPortfolio(true);
         break;
 
     case 'get_projects':

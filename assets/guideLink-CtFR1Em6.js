@@ -1,0 +1,1 @@
+import{ln as e,on as t,rt as n}from"./index-CFipikL6.js";function r(r,i){for(let t of r){let r=n(i,t);if(r)return{href:e(r.slug),label:r.title,article:!0}}return{href:t.guides,label:`Panduan website untuk bisnis`,article:!1}}export{r as t};
