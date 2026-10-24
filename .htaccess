@@ -52,9 +52,12 @@ DirectoryIndex index.html
   # tertolak (di Apache maupun LiteSpeed). Request dengan %-encoding di path (/%5Fpre/index.html, /app%2Ehtml): THE_REQUEST
   # belum di-decode, jadi cukup berisi "%" dan pola RewriteRule mencocokkan path yang sudah di-decode; rewrite internal
   # ke _pre/ (request tanpa "%") tetap jalan.
-  # Jawabannya 404 dari seo.php (isi 404.html), bukan R=404 + ErrorDocument: di LiteSpeed, ErrorDocument meninggalkan
-  # sisa status di koneksi keep-alive, dan request berikutnya di koneksi itu salah jawab (/404.html 200, 404 berikutnya
-  # 200 berisi halaman 404). Pola RewriteRule = path saat ini, jadi putaran kedua (path seo.php) tidak cocok lagi.
+  # Jawabannya 404 dari seo.php (isi 404.html), bukan R=404 + ErrorDocument. Di koneksi keep-alive LiteSpeed memakai
+  # ulang file statis hasil rewrite internal sebelumnya tanpa menjalankan aturan ini: sesudah ErrorDocument /404.html,
+  # /404.html langsung dijawab 200 dan 404 berikutnya 200 berisi halaman 404. seo.php dijalankan ulang, jadi aman. Sisa
+  # yang sama: /app.html atau /_pre/x.html langsung tepat sesudah rute yang di-rewrite ke file itu bisa 200 (tidak
+  # ditautkan; app.html noindex, _pre/ ber-canonical ke URL aslinya). Pola RewriteRule = path saat ini, jadi putaran kedua
+  # (path seo.php) tidak cocok lagi.
   # seo.php sendiri menolak dibuka langsung (404, dicek di seo.php). /_pre tanpa garis miring = folder nyata: rewrite ke
   # seo.php di situ dijawab mod_dir dengan 301 ke /_pre/?gn404=1, jadi langsung 403.
   RewriteCond %{THE_REQUEST} \s/+_pre[?\s] [NC,OR]
@@ -64,7 +67,7 @@ DirectoryIndex index.html
   RewriteCond %{THE_REQUEST} ^\S+\s+[^?\s]*%
   RewriteRule ^/*(_pre(/|$)|app\.html$) seo.php?gn404=1 [L,NC]
   # 404.html (isi halaman 404 yang dikirim seo.php) dibuka langsung → 410 (Gone) dengan halaman bawaan server. Tanpa
-  # cek REDIRECT_STATUS: di LiteSpeed nilainya tersisa dari ErrorDocument request sebelumnya di koneksi yang sama.
+  # cek REDIRECT_STATUS: aturan 404 di sini tidak lagi membuka 404.html lewat ErrorDocument.
   RewriteCond %{THE_REQUEST} \s/+404\.html[\s?] [NC,OR]
   RewriteCond %{THE_REQUEST} ^\S+\s+[^?\s]*%
   RewriteRule ^/*404\.html$ - [G,L,NC]
