@@ -59,7 +59,7 @@ export const serenitySections: TemplateSection[] = [
   {
     key: 'hero',
     label: 'Hero (foto layar penuh)',
-    description: 'Foto pemandangan selebar layar dengan menu transparan, judul dua baris, kartu kaca kecil, dan strip empat fitur di bagian bawah.',
+    description: 'Slider foto selebar layar dengan menu transparan, judul dua baris, kartu kaca kecil, dan strip empat fitur di bagian bawah. Isi di bawah ini adalah slide pertama; tambah hingga 3 slide lagi di "Slide tambahan".',
     toggleable: true,
     fields: [
       t('eyebrow', 'Label kecil di atas judul', { placeholder: 'mis. Napas tenang, tubuh lebih bugar', maxLength: 60, help: 'Kosongkan untuk menyembunyikan.' }),
@@ -80,6 +80,19 @@ export const serenitySections: TemplateSection[] = [
       t('card_title', 'Kartu kaca: judul', { placeholder: 'mis. Yoga untuk Semua', maxLength: 30, help: 'Kartu kecil di kanan atas (layar lebar). Kosongkan judul & teks untuk menyembunyikan.' }),
       t('card_text', 'Kartu kaca: teks', { placeholder: 'mis. Pemula hingga mahir, mulai dari satu kelas.', maxLength: 70 }),
       url('card_url', 'Kartu kaca: tautan', { help: 'Kosongkan untuk menuju bagian Kelas.' }),
+      listField(
+        'slides',
+        'Slide tambahan',
+        'Slide',
+        [
+          img('image', 'Foto latar', 'Foto mendatar, disarankan 1920×1200 px. Slide hanya tampil bila fotonya diisi.'),
+          t('eyebrow', 'Label kecil', { placeholder: 'mis. Retret akhir pekan', maxLength: 60, help: 'Kosongkan untuk memakai label slide pertama.' }),
+          t('title', 'Judul', { placeholder: 'mis. Retret Yoga di Alam Terbuka', maxLength: 80, help: 'Kosongkan untuk memakai judul slide pertama.' }),
+          t('highlight', 'Baris kedua bergradasi', { placeholder: 'mis. di Alam Terbuka', maxLength: 50, help: 'Akhir judul yang diberi warna gradasi. Tulis persis seperti di judul.' }),
+          ta('subtitle', 'Deskripsi', { placeholder: 'Kosongkan untuk memakai deskripsi slide pertama.', maxLength: 260 }),
+        ],
+        3,
+      ),
       listField(
         'features',
         'Strip fitur di bawah hero',

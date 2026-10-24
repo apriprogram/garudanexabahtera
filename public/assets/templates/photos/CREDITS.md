@@ -119,7 +119,7 @@ potret testimoni 4:5 `-1200.webp` + `-240.webp`. Diunduh dan dicek lisensinya (U
 
 ## Serenity (Aruna Yoga, fiktif)
 
-Foto suasana `-<lebar>.webp` + `-800.webp` (hero 1920×1200, tentang 4:5 1200×1500, kartu kelas 4:3 1200×900,
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero & slide 1920×1200, tentang 4:5 1200×1500, kelas 4:3 1200×900,
 ajakan 16:9 1600×900); potret testimoni 1:1 `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash License,
 bukan Unsplash+) 2026-10-25. `serenity-hero-*` diubah: dipotong 16:10, langit atas digelapkan lembut, ditambah cahaya senja
 hangat dan pita sutra pelangi (lukisan digital orisinal Garuda Nexa) di langit.
@@ -127,6 +127,9 @@ hangat dan pita sutra pelangi (lukisan digital orisinal Garuda Nexa) di langit.
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
 | `serenity-hero-*` | Orang merentangkan tangan di bukit hijau (diubah, lihat di atas) | https://unsplash.com/photos/K0WM5gJi7HY | Trương Tuyết Ly |
+| `serenity-slide-gunung-*` | Pose yoga di tembok batu, pegunungan bersalju | https://unsplash.com/photos/UGiAFwbxQBI | madison lavern |
+| `serenity-slide-kelas-*` | Kelas yoga di taman saat matahari sore | https://unsplash.com/photos/CAMTvmtpuCE | Vitaly Gariev |
+| `serenity-slide-langit-*` | Awan besar di atas bukit hijau | https://unsplash.com/photos/4QBrM5evR_4 | Radomir Moysia |
 | `serenity-about-*` | Perempuan berpose pohon di atas matras, studio putih | https://unsplash.com/photos/y1kSml9RFoU | Margaret Young |
 | `serenity-hatha-*` | Perempuan berpose lunge rendah di matras merah muda | https://unsplash.com/photos/mSJsiQCm6og | Alex Shaw |
 | `serenity-vinyasa-*` | Kelas yoga berpose lunge bersama di studio | https://unsplash.com/photos/YJdCZba0TYE | Dylan Gillis |

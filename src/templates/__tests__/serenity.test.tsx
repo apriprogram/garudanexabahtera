@@ -13,7 +13,7 @@ import { SectionEditor } from '../../pages/account/cms/SectionEditor';
 import { validateContent } from '../../pages/account/cms/validation';
 import { TEMPLATES, resolveContent } from '../index';
 import { iconKey } from '../serenity/icons';
-import { featureLines, featuredPlan, navItems, searchEntries, searchFilter, serenityVars } from '../serenity/model';
+import { featureLines, featuredPlan, heroSlides, navItems, searchEntries, searchFilter, serenityVars } from '../serenity/model';
 import { SERENITY_PHOTOS } from '../serenity/photos';
 import { SiteRenderer } from '../SiteRenderer';
 import { contrast, parseHex } from '../shared/utils';
@@ -44,7 +44,7 @@ describe('Serenity: skema & konten bawaan', () => {
     const fields = (key: string) => def.sections.find((s) => s.key === key)!.fields.map((f) => f.key);
     expect(fields('brand')).toEqual(['company_name', 'tagline', 'logo', 'accent_color']);
     expect(fields('hero')).toEqual(
-      expect.arrayContaining(['highlight', 'secondary_label', 'secondary_url', 'header_label', 'header_url', 'image', 'card_title', 'card_text', 'card_url', 'features']),
+      expect.arrayContaining(['highlight', 'secondary_label', 'secondary_url', 'header_label', 'header_url', 'image', 'slides', 'card_title', 'card_text', 'card_url', 'features']),
     );
     expect(fields('about')).toEqual(expect.arrayContaining(['highlight', 'badge_value', 'badge_label', 'points', 'stats']));
     expect(fields('services')).toEqual(['eyebrow', 'title', 'subtitle', 'items']);
@@ -67,7 +67,7 @@ describe('Serenity: skema & konten bawaan', () => {
     expect(c.brand.logo).toBe('');
     expect(c.hero.image).toBe('/assets/templates/photos/serenity-hero-1920.webp');
     const photos = JSON.stringify(c).match(/\/assets\/templates\/photos\/[a-z0-9-]+\.webp/g) ?? [];
-    expect(photos.length).toBeGreaterThanOrEqual(12);
+    expect(photos.length).toBeGreaterThanOrEqual(15);
     for (const src of photos) expect(SERENITY_PHOTOS.asset(src), src).not.toBeNull();
     const credits = readFileSync(resolve(ROOT, 'public/assets/templates/photos/CREDITS.md'), 'utf8');
     for (const key of SERENITY_PHOTOS.keys) {
@@ -120,6 +120,19 @@ describe('Serenity: helper model', () => {
     expect(searchFilter(entries, 'VÍNYASA').map((e) => e.label)).toContain('Vinyasa Flow');
     expect(searchFilter(entries, '   ')).toEqual([]);
     expect(searchFilter(entries, 'zzz')).toEqual([]);
+  });
+
+  it('slide hero: slide pertama = isi hero, slide tambahan hanya yang berfoto, teks kosong ikut slide pertama', () => {
+    const base = { image: '/a.webp', eyebrow: 'Label', title: 'Judul utama', highlight: 'utama', subtitle: 'Deskripsi' };
+    expect(heroSlides({ ...base, slides: [{ image: '' , title: 'Tanpa foto' }, { image: '/b.webp' }, { image: '/c.webp', title: 'Judul C', highlight: 'C' }] }, 'Usaha')).toEqual([
+      base,
+      { image: '/b.webp', eyebrow: 'Label', title: 'Judul utama', highlight: 'utama', subtitle: 'Deskripsi' },
+      { image: '/c.webp', eyebrow: 'Label', title: 'Judul C', highlight: 'C', subtitle: 'Deskripsi' },
+    ]);
+    expect(heroSlides({}, 'Usaha')).toEqual([{ image: '', eyebrow: '', title: 'Usaha', highlight: '', subtitle: '' }]);
+    const many = Array.from({ length: 6 }, (_, i) => ({ image: `/s${i}.webp` }));
+    expect(heroSlides({ slides: many }, 'Usaha')).toHaveLength(4);
+    expect(heroSlides({ slides: [{ image: 'javascript:alert(1)' }] }, 'Usaha')).toHaveLength(1);
   });
 
   it('isi paket per baris, paket unggulan = paket berlabel pertama, ikon otomatis dari nama kelas', () => {
@@ -183,6 +196,45 @@ describe('Serenity: demo', () => {
       'Kelas PrivatSesuai kebutuhan Anda',
     ]);
     expect(hero.textContent).toContain('0104');
+  });
+
+  it('hero slider: 4 slide, kontrol per slide, klik mengganti foto & teks, hanya foto pertama yang eager', () => {
+    const hero = section(demo(), 'hero');
+    expect(hero.getAttribute('aria-roledescription')).toBe('carousel');
+    const controls = within(hero).getByRole('group', { name: 'Kontrol slide' });
+    const dots = within(controls).getAllByRole('button', { name: /^Slide \d dari 4$/ });
+    expect(dots).toHaveLength(4);
+    expect(dots[0]).toHaveAttribute('aria-current', 'true');
+    // Demo bergerak: bilah progres berjalan (memicu slide berikut saat animasinya selesai) dan bisa dijeda
+    const pause = within(controls).getByRole('button', { name: 'Jeda slide otomatis' });
+    expect(controls.querySelector('.sr-progress')).toHaveAttribute('data-run', 'true');
+    fireEvent.click(pause);
+    expect(within(controls).getByRole('button', { name: 'Putar slide otomatis' })).toBeInTheDocument();
+    expect(controls.querySelector('.sr-progress')).toHaveAttribute('data-run', 'false');
+    expect(hero.querySelectorAll('img')).toHaveLength(1);
+
+    fireEvent.click(dots[1]);
+    expect(dots[1]).toHaveAttribute('aria-current', 'true');
+    expect(hero.querySelector('h1')!.textContent).toBe('Rehat Sejenakdi Alam Terbuka');
+    expect(within(hero).getByText('Retret yoga setiap bulan')).toBeInTheDocument();
+    // Setelah pengunjung memilih slide, foto slide lain ikut dimuat (lazy) agar pergantian berikutnya mulus
+    const imgs = Array.from(hero.querySelectorAll<HTMLImageElement>('img'));
+    expect(imgs.map((img) => img.getAttribute('src'))).toEqual([
+      '/assets/templates/photos/serenity-hero-1920.webp',
+      '/assets/templates/photos/serenity-slide-gunung-1920.webp',
+      '/assets/templates/photos/serenity-slide-kelas-1920.webp',
+      '/assets/templates/photos/serenity-slide-langit-1920.webp',
+    ]);
+    expect(imgs.map((img) => img.getAttribute('fetchpriority'))).toEqual(['high', null, null, null]);
+    expect(imgs.slice(1).every((img) => img.getAttribute('loading') === 'lazy')).toBe(true);
+    expect(imgs.map((img) => img.getAttribute('alt') !== '')).toEqual([false, true, false, false]);
+    expect(imgs[1].getAttribute('alt')).toMatch(/pegunungan/);
+    // Teks slide lain tetap di DOM (tinggi hero stabil) tetapi tersembunyi dari pembaca layar; tetap satu h1
+    expect(hero.querySelectorAll('h1')).toHaveLength(1);
+    expect(within(hero).getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    // Tombol & strip fitur tetap sama di setiap slide
+    expect(within(hero).getByRole('link', { name: 'Coba Kelas Pertama' })).toBeInTheDocument();
+    expect(within(hero).getByRole('list', { name: 'Yang bisa Anda temukan' })).toBeInTheDocument();
   });
 
   it('tentang, kelas, langkah, paket unggulan gelap, cerita peserta, FAQ accordion, ajakan, kontak, footer', () => {
@@ -280,13 +332,15 @@ describe('Serenity: pencarian di menu', () => {
 
 describe('Serenity: konten opsional kosong', () => {
   it('hero tanpa foto → latar gradasi tanpa img; tanpa tautan video → tanpa tombol video; kartu kaca & fitur kosong → disembunyikan', () => {
-    const hero = section(demo({ hero: { image: '', secondary_url: '', card_title: '', card_text: '', features: [] } }), 'hero');
+    const hero = section(demo({ hero: { image: '', slides: [], secondary_url: '', card_title: '', card_text: '', features: [] } }), 'hero');
     expect(hero.querySelector('img')).toBeNull();
     expect(hero.className).toContain('sr-hero-fallback');
     expect(within(hero).queryByRole('link', { name: 'Tonton Video' })).toBeNull();
     expect(within(hero).queryByRole('link', { name: /Yoga untuk Semua/ })).toBeNull();
     expect(within(hero).queryByRole('list', { name: 'Yang bisa Anda temukan' })).toBeNull();
     expect(within(hero).getByRole('link', { name: 'Coba Kelas Pertama' })).toBeInTheDocument();
+    expect(within(hero).queryByRole('group', { name: 'Kontrol slide' })).toBeNull();
+    expect(hero.hasAttribute('aria-roledescription')).toBe(false);
   });
 
   it('kelas tanpa gambar → gradasi bawaan; paket tanpa label → tanpa kartu gelap; tanpa WhatsApp → tombol ke Kontak', () => {
@@ -318,6 +372,9 @@ describe('Serenity: pratinjau CMS', () => {
   it('pratinjau diam (gerak mati bila Component dirender langsung) dan tanpa tautan wa.me', () => {
     const { container } = render(<def.Component content={resolveContent(def, null)} preview />);
     expect(container.querySelector('[data-tpl-root]')).toHaveAttribute('data-tpl-motion', 'off');
+    // Slider tidak berputar sendiri di pratinjau (tanpa tombol jeda), tetapi slide tetap bisa dipilih
+    expect(container.querySelector('.sr-progress')).toHaveAttribute('data-run', 'false');
+    expect(container.querySelector('[aria-label="Jeda slide otomatis"]')).toBeNull();
     expect(container.querySelector('a[href^="https://wa.me"]')).toBeNull();
     expect(container.querySelector('a[href^="https://www.youtube.com"]')).toBeNull();
   });

@@ -27,7 +27,7 @@ export const content: TemplatePageContent = {
     },
     {
       name: 'Hero (bagian pembuka)',
-      text: 'Foto pemandangan selebar layar dengan menu transparan, judul dua baris yang baris keduanya bergradasi, tombol utama, tombol video, kartu kaca kecil, dan strip empat jenis kelas di bawahnya.',
+      text: 'Slider foto selebar layar hingga 4 slide (geser di HP, bisa dijeda) dengan menu transparan, judul dua baris yang baris keduanya bergradasi, tombol utama, tombol video, kartu kaca kecil, dan strip empat jenis kelas.',
     },
     { name: 'Tentang', text: 'Foto tegak dengan kartu keterangan, cerita studio, hingga 6 poin unggulan, dan 3 angka pencapaian.' },
     {
@@ -48,7 +48,7 @@ export const content: TemplatePageContent = {
   partsNote: 'Setiap bagian bisa disembunyikan dari CMS bila belum Anda perlukan, misalnya Paket atau Cerita peserta.',
   cms: [
     'Nama studio, tagline, logo, dan satu warna aksen yang ikut mewarnai ikon, label, dan gradasi judul.',
-    'Foto latar hero, judul, kata yang bergradasi, tombol utama, tautan video, kartu kaca, dan empat jenis kelas di bawah hero.',
+    'Foto, judul, dan deskripsi tiap slide hero (hingga 4), tombol utama, tautan video, kartu kaca, dan empat jenis kelas di bawah hero.',
     'Kelas lengkap dengan foto, durasi, level, dan tautan sendiri bila tidak ingin memakai WhatsApp.',
     'Langkah memulai, paket dan harganya, cerita peserta, serta tanya jawab.',
     'Nomor WhatsApp dan pesan awal untuk semua tombol daftar, jam buka, alamat, dan link Google Maps.',

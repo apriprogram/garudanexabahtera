@@ -3,7 +3,7 @@
 // cahaya senja hangat dan pita sutra pelangi (lukisan digital orisinal) agar senada dengan referensi pemilik.
 //
 // Konvensi file (kit/photos.ts):
-//   suasana → `<kunci>-<lebar>.webp` + `<kunci>-800.webp` (hero 1920×1200 agar tajam sebagai latar layar penuh;
+//   suasana → `<kunci>-<lebar>.webp` + `<kunci>-800.webp` (hero & slide 1920×1200 agar tajam sebagai latar penuh;
 //             tentang 4:5 1200×1500; kartu program 4:3 1200×900; ajakan 16:9 1600×900)
 //   potret  → `<kunci>-480.webp` + `<kunci>-240.webp`
 import { definePhotos } from '../kit/photos';
@@ -11,6 +11,9 @@ import { definePhotos } from '../kit/photos';
 export const SERENITY_PHOTOS = definePhotos({
   scenes: [
     ['serenity-hero', 1920, 1200, 'Orang merentangkan tangan di puncak bukit berumput di bawah langit biru dengan pita cahaya pelangi melengkung di langit'],
+    ['serenity-slide-gunung', 1920, 1200, 'Perempuan berpose yoga di atas tembok batu dengan latar pegunungan bersalju dan langit biru'],
+    ['serenity-slide-kelas', 1920, 1200, 'Empat orang berpose yoga sudut samping di taman saat matahari sore menembus pepohonan'],
+    ['serenity-slide-langit', 1920, 1200, 'Awan putih besar menjulang di atas bukit hijau di bawah langit biru'],
     ['serenity-about', 1200, 1500, 'Perempuan berpose pohon (vrksasana) di atas matras dalam studio yoga yang terang'],
     ['serenity-hatha', 1200, 900, 'Perempuan melakukan pose lunge rendah dengan tangan terangkat di atas matras'],
     ['serenity-vinyasa', 1200, 900, 'Peserta kelas yoga melakukan pose lunge bersama di studio'],

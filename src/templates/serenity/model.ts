@@ -12,6 +12,7 @@ import {
   list,
   parseHex,
   resolveAction,
+  safeImage,
   safeUrl,
   text,
   whatsappHref,
@@ -142,6 +143,43 @@ export function searchFilter(entries: SearchEntry[], query: string, max = 8): Se
     const haystack = normalize(`${entry.label} ${entry.group}`);
     return words.every((word) => haystack.includes(word));
   }).slice(0, max);
+}
+
+// ─── Slide hero ───────────────────────────────────────────────────────────────
+
+export interface HeroSlide {
+  image: string;
+  eyebrow: string;
+  title: string;
+  highlight: string;
+  subtitle: string;
+}
+
+/**
+ * Slide hero: slide pertama = isi hero; slide tambahan (`hero.slides`, maks. 3) hanya bila fotonya bisa ditampilkan.
+ * Teks slide tambahan yang kosong memakai teks slide pertama (sorotan ikut judul pertama bila judulnya kosong).
+ */
+export function heroSlides(hero: SectionContent, fallbackTitle: string): HeroSlide[] {
+  const first: HeroSlide = {
+    image: text(hero, 'image'),
+    eyebrow: text(hero, 'eyebrow'),
+    title: text(hero, 'title') || fallbackTitle,
+    highlight: text(hero, 'highlight'),
+    subtitle: text(hero, 'subtitle'),
+  };
+  const extra = list(hero, 'slides', 3)
+    .filter((item) => safeImage(field(item, 'image')))
+    .map((item): HeroSlide => {
+      const title = field(item, 'title');
+      return {
+        image: field(item, 'image'),
+        eyebrow: field(item, 'eyebrow') || first.eyebrow,
+        title: title || first.title,
+        highlight: title ? field(item, 'highlight') : first.highlight,
+        subtitle: field(item, 'subtitle') || first.subtitle,
+      };
+    });
+  return [first, ...extra];
 }
 
 // ─── Tautan ───────────────────────────────────────────────────────────────────

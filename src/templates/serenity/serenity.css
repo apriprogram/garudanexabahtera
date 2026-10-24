@@ -97,7 +97,25 @@
     animation-delay: var(--sr-delay, 0ms);
   }
 
+  /* Bilah progres slide hero: penuh bila tidak berganti otomatis; saat berjalan mengisi dari 0 → 100% lalu memicu
+     slide berikutnya (onAnimationEnd). Berhenti saat kontrol disorot / hero difokus. */
+  .sr-progress {
+    width: 100%;
+  }
+
+  [data-tpl-motion='on'] .sr-progress[data-run='true'] {
+    animation: sr-progress var(--sr-autoplay, 6500ms) linear both;
+  }
+
+  [data-tpl-motion='on'] .sr-progress[data-run='true'][data-hold='true'] {
+    animation-play-state: paused;
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .sr-progress[data-run='true'] {
+      animation: none;
+    }
+
     [data-tpl-motion='on'] .sr-collapse {
       transition: none;
     }
@@ -105,6 +123,15 @@
     [data-tpl-motion='on'] .sr-rise {
       animation: none;
     }
+  }
+}
+
+@keyframes sr-progress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
   }
 }
 
