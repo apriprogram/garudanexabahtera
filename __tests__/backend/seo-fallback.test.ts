@@ -164,6 +164,30 @@ describe.skipIf(!PHP_AVAILABLE)('backend/seo.php matches the prerendered templat
       expect(result.stdout, slug).toContain('Halaman tidak ditemukan');
     }
   });
+
+  it('answers 404 for ?gn404=1 (.htaccess 404s) and for direct requests to seo.php, without touching the database', () => {
+    const direct = ['/seo.php?slug=finova', '//seo.php?slug=finova', '/seo%2Ephp?slug=finova', '/SEO.php?slug=finova', '/seo.php/x?slug=finova'];
+    const setups = [
+      `$_GET['gn404'] = '1'; $_SERVER['REQUEST_URI'] = '/halaman-tidak-ada';`,
+      `$_GET['gn404'] = '1'; $_GET['slug'] = 'finova'; $_SERVER['REQUEST_URI'] = '/app.html';`,
+      ...direct.map((uri) => `$_GET['slug'] = 'finova'; $_SERVER['REQUEST_URI'] = ${JSON.stringify(uri)};`),
+    ];
+    for (const setup of setups) {
+      writeFileSync(join(dir, 'notfound.php'), `<?php ${setup} require getenv('SEO_PHP');`);
+      const result = runPhp('notfound.php');
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout, setup).toContain('Halaman tidak ditemukan');
+    }
+    // Lewat rewrite .htaccess, REQUEST_URI = path asli (/template/…), jadi bukan akses langsung
+    writeFileSync(
+      join(dir, 'direct.php'),
+      `<?php define('GN_SEO_LIBRARY', true); require getenv('SEO_PHP'); echo json_encode(array_map('seo_requested_directly', json_decode(stream_get_contents(STDIN))));`,
+    );
+    const uris = [...direct, '/template/finova', '/panduan/seo-php', '/x/seo.php', '/seo.phpx', '/template/finova?seo.php'];
+    const result = runPhp('direct.php', JSON.stringify(uris));
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual(uris.map((uri) => direct.includes(uri)));
+  });
 });
 
 // ── Artikel panduan yang terbit setelah deploy terakhir (seo.php?guide=…, dikelola admin) ──

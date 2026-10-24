@@ -16,6 +16,9 @@
 // 3. Tes negatif (tabel §5.2): 404 untuk halaman yang tidak ada dan file internal (_pre/, app.html, seo.php), 410
 //    untuk 404.html yang dibuka langsung, 200 + noindex untuk rute aplikasi, 301 satu lompatan untuk www, /index.html dan garis miring di akhir,
 //    llms.txt / llms-full.txt / robots.txt sebagai text/plain.
+// 4. Urutan keep-alive: di satu koneksi, setiap tes file internal (dan 404 biasa) langsung sesudah 404 biasa. LiteSpeed
+//    pernah menjawab /404.html 200 dan 404 berikutnya 200 (soft 404) setelah ErrorDocument di koneksi yang sama
+//    (deploy/cpanel/htaccess), padahal di koneksi baru benar.
 //
 // Sopan: request berurutan dengan jeda, User-Agent jujur "GarudaNexaSeoCheck/1.0" (bukan UA crawler), tanpa coba
 // ulang. Jika server menjawab 429/503 (WAF membatasi), pengecekan langsung berhenti.
@@ -336,6 +339,27 @@ export function negativeCases(host, slug) {
   return cases;
 }
 
+/** 404 biasa yang mendahului setiap kasus urutan keep-alive. */
+export const KEEP_ALIVE_LEAD = '/halaman-tidak-ada-seo-check';
+
+/**
+ * Urutan keep-alive (satu koneksi): 404 biasa, lalu kasus; 404 biasa, lalu kasus berikutnya; dst. Yang terakhir 404
+ * biasa sesudah 404 biasa (soft 404 = 200 berisi halaman 404). Diulang `rounds` kali: di balik Cloudflare, koneksi
+ * berikutnya ke origin tidak selalu sama, jadi satu putaran bisa lolos walau masalahnya ada.
+ */
+export function keepAliveCases(rounds = 2) {
+  const lead = { path: KEEP_ALIVE_LEAD, expect: { status: 404 } };
+  const round = [
+    { path: '/404.html', expect: { status: 410 } },
+    { path: '/404%2Ehtml', expect: { status: 410 } },
+    { path: '/app.html', expect: { status: 404 } },
+    { path: '/_pre/index.html', expect: { status: 404 } },
+    { path: '/seo.php', expect: { status: 404 } },
+    lead,
+  ].flatMap((testCase) => [lead, testCase]);
+  return Array.from({ length: rounds }, () => round).flat();
+}
+
 /** Hasil satu tes negatif. */
 export function checkNegative(testCase, res) {
   const { expect } = testCase;
@@ -360,8 +384,8 @@ export function checkNegative(testCase, res) {
 
 // ─── Jaringan ────────────────────────────────────────────────────────────────
 
-/** GET tanpa mengikuti redirect: { status, headers, body }. */
-export function httpGet({ url, hostHeader }, { timeoutMs = 15000 } = {}) {
+/** GET tanpa mengikuti redirect: { status, headers, body, reused }. `reused` = socket keep-alive dipakai ulang. */
+export function httpGet({ url, hostHeader }, { timeoutMs = 15000, agent } = {}) {
   const target = new URL(url);
   const lib = target.protocol === 'https:' ? https : http;
   const headers = { 'User-Agent': USER_AGENT, Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Encoding': 'identity' };
@@ -369,7 +393,7 @@ export function httpGet({ url, hostHeader }, { timeoutMs = 15000 } = {}) {
   return new Promise((resolve, reject) => {
     const req = lib.request(
       target,
-      { method: 'GET', headers, timeout: timeoutMs, ...(hostHeader && target.protocol === 'https:' ? { servername: hostHeader } : {}) },
+      { method: 'GET', headers, timeout: timeoutMs, ...(agent ? { agent } : {}), ...(hostHeader && target.protocol === 'https:' ? { servername: hostHeader } : {}) },
       (res) => {
         const chunks = [];
         let size = 0;
@@ -381,7 +405,7 @@ export function httpGet({ url, hostHeader }, { timeoutMs = 15000 } = {}) {
           }
           chunks.push(chunk);
         });
-        res.on('end', () => resolve({ status: res.statusCode ?? 0, headers: res.headers, body: Buffer.concat(chunks).toString('utf8') }));
+        res.on('end', () => resolve({ status: res.statusCode ?? 0, headers: res.headers, body: Buffer.concat(chunks).toString('utf8'), reused: req.reusedSocket }));
         res.on('error', reject);
       },
     );
@@ -391,15 +415,24 @@ export function httpGet({ url, hostHeader }, { timeoutMs = 15000 } = {}) {
   });
 }
 
+/** Satu koneksi keep-alive (agent dengan satu socket): { get(target), close() }. */
+export function keepAliveConnection({ base, timeout }) {
+  const agent = new (new URL(base).protocol === 'https:' ? https : http).Agent({ keepAlive: true, maxSockets: 1 });
+  return { get: (target) => httpGet(target, { timeoutMs: timeout, agent }), close: () => agent.destroy() };
+}
+
 class RateLimited extends Error {}
 
 // ─── Jalankan ────────────────────────────────────────────────────────────────
 
 /**
- * Semua pengecekan, berurutan. `get(target)` → { status, headers, body } (bawaan httpGet). Mengembalikan
- * { problems: [{ where, message }], pages, negatives }.
+ * Semua pengecekan, berurutan. `get(target)` → { status, headers, body } (bawaan httpGet). `connect()` → satu koneksi
+ * keep-alive { get, close } untuk urutan keep-alive (bawaan keepAliveConnection; bila hanya `get` yang diberikan, `get`
+ * itu yang dipakai). Mengembalikan { problems: [{ where, message }], pages, negatives, keepAlive }.
  */
-export async function runSeoCheck(opts, { get = (target) => httpGet(target, { timeoutMs: opts.timeout }), log = console.log, sleep } = {}) {
+export async function runSeoCheck(opts, { get, connect, log = console.log, sleep } = {}) {
+  const plainGet = get ?? ((target) => httpGet(target, { timeoutMs: opts.timeout }));
+  const openConnection = connect ?? (get ? () => ({ get, close: () => {} }) : () => keepAliveConnection(opts));
   const wait = sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   const problems = [];
   const report = (where, list) => {
@@ -407,12 +440,12 @@ export async function runSeoCheck(opts, { get = (target) => httpGet(target, { ti
     log(`${list.length ? 'GAGAL' : 'OK   '} ${where}${list.length ? `\n      - ${list.join('\n      - ')}` : ''}`);
   };
   let requests = 0;
-  const fetchOnce = async (target) => {
+  const fetchOnce = async (target, via = plainGet) => {
     if (requests > 0 && opts.delay > 0) await wait(opts.delay);
     requests += 1;
     let res;
     try {
-      res = await get(target);
+      res = await via(target);
     } catch (error) {
       return { status: 0, headers: {}, body: '', error: error.message };
     }
@@ -492,7 +525,20 @@ export async function runSeoCheck(opts, { get = (target) => httpGet(target, { ti
       const label = `${testCase.www ? `www.${opts.host}` : ''}${testCase.path} → ${testCase.expect.status}${testCase.expect.noindex ? ' noindex' : ''}`;
       report(label, failed(res) ?? checkNegative(testCase, res));
     }
-    return { problems, pages: pages.length, negatives: cases.length, requests };
+
+    // 5. Urutan keep-alive (satu koneksi)
+    const sequence = keepAliveCases();
+    const connection = openConnection();
+    try {
+      for (const [i, testCase] of sequence.entries()) {
+        const res = await fetchOnce(requestTarget(opts, testCase.path), connection.get);
+        const fresh = i > 0 && res.reused === false ? ' (koneksi baru, urutan tidak teruji)' : '';
+        report(`keep-alive #${i + 1} ${testCase.path} → ${testCase.expect.status}${fresh}`, failed(res) ?? checkNegative(testCase, res));
+      }
+    } finally {
+      connection.close();
+    }
+    return { problems, pages: pages.length, negatives: cases.length, keepAlive: sequence.length, requests };
   } catch (error) {
     if (!(error instanceof RateLimited)) throw error;
     report('batas request', [error.message]);
@@ -515,7 +561,7 @@ async function main() {
   console.log(`[seo-check] ${opts.base} (host ${opts.host}), jeda ${opts.delay} ms`);
   const result = await runSeoCheck(opts);
   console.log(
-    `\n[seo-check] ${result.pages} halaman sitemap, ${result.negatives} tes negatif, ${result.requests} request: ` +
+    `\n[seo-check] ${result.pages} halaman sitemap, ${result.negatives} tes negatif, ${result.keepAlive ?? 0} request keep-alive, ${result.requests} request: ` +
       (result.problems.length ? `${result.problems.length} masalah` : 'semua lulus'),
   );
   if (result.problems.length) process.exitCode = 1;

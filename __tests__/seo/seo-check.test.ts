@@ -14,6 +14,8 @@ import {
   checkTemplatePrice,
   countWords,
   decodeEntities,
+  KEEP_ALIVE_LEAD,
+  keepAliveCases,
   ldNodes,
   negativeCases,
   pageFacts,
@@ -234,6 +236,18 @@ describe('tes negatif', () => {
     expect(negativeCases(HOST, null).some((c: { path: string }) => c.path.includes('null'))).toBe(false);
   });
 
+  it('urutan keep-alive: setiap file internal dan 404 biasa langsung sesudah 404 biasa', () => {
+    const sequence = keepAliveCases(1);
+    expect(sequence).toHaveLength(12);
+    sequence.forEach((c: { path: string }, i: number) => {
+      if (i % 2 === 0) expect(c).toEqual({ path: KEEP_ALIVE_LEAD, expect: { status: 404 } });
+    });
+    const tested = sequence.filter((_: unknown, i: number) => i % 2 === 1).map((c: { path: string; expect: { status: number } }) => `${c.path} ${c.expect.status}`);
+    expect(tested).toEqual(['/404.html 410', '/404%2Ehtml 410', '/app.html 404', '/_pre/index.html 404', '/seo.php 404', `${KEEP_ALIVE_LEAD} 404`]);
+    // Bawaan dua putaran (koneksi ke origin di balik Cloudflare tidak selalu sama)
+    expect(keepAliveCases()).toEqual([...sequence, ...sequence]);
+  });
+
   it('404.html yang dibuka langsung harus 410, bukan 404 atau 500', () => {
     expect(checkNegative(byPath('/404.html'), { status: 410, headers: {}, body: '' })).toEqual([]);
     expect(checkNegative(byPath('/404.html'), { status: 500, headers: {}, body: '' })).toEqual(['HTTP 500 (harus 410)']);
@@ -360,5 +374,54 @@ describe('runSeoCheck (server tiruan)', () => {
     };
     const result = await run({ ...site, get: flaky });
     expect(result.problems).toEqual([{ where: '/llms.txt → 200', message: 'request gagal: ECONNRESET' }]);
+  });
+
+  it('urutan keep-alive lewat satu koneksi; sisa ErrorDocument LiteSpeed (/404.html 200, soft 404) tertangkap', async () => {
+    const site = fakeSite();
+    const opened: { calls: string[]; closed: boolean }[] = [];
+    /** Seperti LiteSpeed lama: sesudah 404 di koneksi yang sama, /404.html 200 dan 404 berikutnya 200 berisi halaman 404. */
+    const connect = (buggy: boolean) => () => {
+      const conn = { calls: [] as string[], closed: false };
+      opened.push(conn);
+      let after404 = false;
+      return {
+        get: async (target: { url: string; hostHeader: string | null }) => {
+          const res = await site.get(target);
+          conn.calls.push(new URL(target.url).pathname);
+          const status = buggy && after404 ? 200 : res.status;
+          after404 = status === 404;
+          return { ...res, status, reused: conn.calls.length > 1 };
+        },
+        close: () => {
+          conn.closed = true;
+        },
+      };
+    };
+    const args = ['--base', 'http://127.0.0.1:8909', '--host', HOST, '--delay', '0'];
+    const ok = await runSeoCheck(parseArgs(args), { get: site.get, connect: connect(false), log: () => {} });
+    expect(ok.problems).toEqual([]);
+    expect(ok.keepAlive).toBe(24);
+    expect(opened).toHaveLength(1);
+    expect(opened[0].calls).toEqual(keepAliveCases().map((c: { path: string }) => c.path));
+    expect(opened[0].closed).toBe(true);
+
+    const bad = await runSeoCheck(parseArgs(args), { get: site.get, connect: connect(true), log: () => {} });
+    const wrong = ['/404.html → 410', '/404%2Ehtml → 410', '/app.html → 404', '/_pre/index.html → 404', '/seo.php → 404', `${KEEP_ALIVE_LEAD} → 404`];
+    expect(bad.problems.map((p: { where: string }) => p.where)).toEqual([
+      ...wrong.map((label, i) => `keep-alive #${2 * i + 2} ${label}`),
+      ...wrong.map((label, i) => `keep-alive #${2 * i + 14} ${label}`),
+    ]);
+    expect(bad.problems[0].message).toBe('HTTP 200 (harus 410)');
+    expect(opened[1].closed).toBe(true);
+  });
+
+  it('keep-alive yang tidak dipakai ulang server dicatat di label', async () => {
+    const site = fakeSite();
+    const lines: string[] = [];
+    const connect = () => ({ get: async (target: { url: string; hostHeader: string | null }) => ({ ...(await site.get(target)), reused: false }), close: () => {} });
+    const result = await runSeoCheck(parseArgs(['--base', 'http://127.0.0.1:8909', '--host', HOST, '--delay', '0']), { get: site.get, connect, log: (line: string) => lines.push(line) });
+    expect(result.problems).toEqual([]);
+    expect(lines).toContain('OK    keep-alive #1 /halaman-tidak-ada-seo-check → 404');
+    expect(lines).toContain('OK    keep-alive #2 /404.html → 410 (koneksi baru, urutan tidak teruji)');
   });
 });

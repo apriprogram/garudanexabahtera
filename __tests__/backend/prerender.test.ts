@@ -218,18 +218,39 @@ describe('.htaccess routing (main host only)', () => {
     return at;
   };
 
+  const INTERNAL_RULE = [
+    'RewriteCond %{THE_REQUEST} \\s/+(_pre([/?\\s]|$)|app\\.html) [NC,OR]',
+    'RewriteCond %{THE_REQUEST} ^\\S+\\s+[^?\\s]*%',
+    'RewriteRule ^/*(_pre(/|$)|app\\.html$) seo.php?gn404=1 [L,NC]',
+  ].join('\n  ');
+  const GONE_RULE = [
+    'RewriteCond %{THE_REQUEST} \\s/+404\\.html[\\s?] [NC,OR]',
+    'RewriteCond %{THE_REQUEST} ^\\S+\\s+[^?\\s]*%',
+    'RewriteRule ^/*404\\.html$ - [G,L,NC]',
+  ].join('\n  ');
+  const NOT_FOUND_RULE = ['RewriteCond %{REQUEST_FILENAME} !-f', 'RewriteCond %{REQUEST_FILENAME} !-d', 'RewriteRule ^ seo.php?gn404=1 [L]'].join('\n  ');
+  /**
+   * Satu putaran aturan seperti mod_rewrite di .htaccess: `requestPath` = path di baris request asli (THE_REQUEST),
+   * `current` = path saat ini tanpa "/" di depan (berbeda pada putaran sesudah rewrite internal).
+   */
+  const matches = (cond: RegExp, rule: RegExp, requestPath: string, current: string) =>
+    (cond.test(`GET ${requestPath} HTTP/1.1`) || /^\S+\s+[^?\s]*%/.test(`GET ${requestPath} HTTP/1.1`)) && rule.test(current);
+  const blocksInternal = (requestPath: string, current = decodeURIComponent(requestPath.split('?')[0]).replace(/^\//, '')) =>
+    matches(/\s\/+(_pre([/?\s]|$)|app\.html)/i, /^\/*(_pre(\/|$)|app\.html$)/i, requestPath, current);
+  const gone = (requestPath: string, current = decodeURIComponent(requestPath.split('?')[0]).replace(/^\//, '')) =>
+    matches(/\s\/+404\.html[\s?]/i, /^\/*404\.html$/i, requestPath, current);
+
   it('keeps the rule order: internal files blocked → ai-chat → trailing slash → prerender → seo.php → app → buyer SPA → 404', () => {
     const order = [
-      pos('RewriteCond %{THE_REQUEST} \\s/+(_pre([/?\\s]|$)|app\\.html|seo\\.php) [NC]'),
-      pos('RewriteCond %{THE_REQUEST} \\s/+404\\.html[\\s?] [NC]'),
+      pos(INTERNAL_RULE),
+      pos(GONE_RULE),
       pos('RewriteRule ^api/ai-chat/?$ api.php?action=ai_chat [QSA,L]'),
       pos('RewriteRule ^(.+?)/+$ https://garudanexa.com/$1 [R=301,L]'),
       pos('# BEGIN gn-prerender'),
       pos('RewriteRule ^template/([a-z0-9-]{1,120})$ seo.php?slug=$1 [L]'),
       pos('RewriteRule ^(akun|admin|pesan|demo|situs|masuk|daftar|login|auth)(/.*)?$ app.html [L]'),
       pos('RewriteCond %{HTTP_HOST} !^garudanexa\\.com$ [NC]'),
-      // yang pertama R=404 = blok file internal; yang terakhir = 404 asli host utama
-      HTACCESS.lastIndexOf('RewriteRule ^ - [R=404,L]'),
+      pos(NOT_FOUND_RULE),
     ];
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(pos('ErrorDocument 404 /404.html')).toBeLessThan(pos('# php -- BEGIN cPanel-generated handler'));
@@ -237,51 +258,49 @@ describe('.htaccess routing (main host only)', () => {
     expect(HTACCESS).toMatch(/<FilesMatch "\\\.html\$">\n\s*Header set Cache-Control "no-cache"/);
   });
 
-  it('blocks direct requests for internal files but not similar public paths', () => {
-    expect(HTACCESS).toContain('RewriteCond %{THE_REQUEST} \\s/+(_pre([/?\\s]|$)|app\\.html|seo\\.php) [NC]');
-    const rule = new RegExp(String.raw`\s/+(_pre([/?\s]|$)|app\.html|seo\.php)`, 'i');
-    const line = (path: string) => `GET ${path} HTTP/1.1`;
-    for (const path of ['/_pre/index.html', '/_pre', '/_pre?x', '//_pre/template/finova.html', '/app.html', '/seo.php?slug=finova']) {
-      expect(rule.test(line(path)), path).toBe(true);
-    }
-    for (const path of ['/', '/template/finova', '/pesan-custom', '/_preview', '/api.php?action=get_settings', '/assets/app.js']) {
-      expect(rule.test(line(path)), path).toBe(false);
-    }
+  it('never answers with R=404 + ErrorDocument or reads REDIRECT_STATUS (LiteSpeed carries both over a keep-alive connection)', () => {
+    // Setelah ErrorDocument, request berikutnya di koneksi yang sama salah status (/404.html 200, 404 berikutnya 200)
+    expect(HTACCESS).not.toMatch(/\[R=404/);
+    expect(HTACCESS).not.toContain('%{ENV:REDIRECT_STATUS}');
+    expect(HTACCESS.match(/seo\.php\?gn404=1/g)).toHaveLength(2);
   });
 
-  it('answers a direct /404.html with 410, never R=404 (LiteSpeed returns 500 for a 404 on its own ErrorDocument)', () => {
-    const goneRule = ['RewriteCond %{ENV:REDIRECT_STATUS} ^$', 'RewriteCond %{THE_REQUEST} \\s/+404\\.html[\\s?] [NC]', 'RewriteRule ^ - [G,L]'].join('\n  ');
-    expect(HTACCESS).toContain(goneRule);
-    expect(HTACCESS).toContain('RewriteRule ^/*404\\.html$ - [G,L,NC]');
-    expect(HTACCESS).not.toMatch(/404\\\.html[^\n]*\[R=404/);
-    const rule = new RegExp(String.raw`\s/+404\.html[\s?]`, 'i');
-    for (const path of ['/404.html', '//404.html', '/404.html?x']) expect(rule.test(`GET ${path} HTTP/1.1`), path).toBe(true);
-    // The ErrorDocument subrequest of an ordinary 404 keeps the original request line, so it is never caught
-    for (const path of ['/halaman-tidak-ada', '/template/tidak-ada', '/x404.html']) expect(rule.test(`GET ${path} HTTP/1.1`), path).toBe(false);
+  it('blocks direct requests for internal files, plain or percent-encoded, but not similar public paths', () => {
+    for (const path of ['/_pre/index.html', '/_pre', '/_pre?x', '//_pre/template/finova.html', '/app.html', '/app.html?x=1']) {
+      expect(blocksInternal(path), path).toBe(true);
+    }
+    for (const path of ['/%5Fpre/index.html', '/%5fpre/template/finova.html', '/%5Fpre/seo-fallback.json', '/app%2Ehtml', '/%61pp.html']) {
+      expect(blocksInternal(path), path).toBe(true);
+    }
+    for (const path of ['/', '/template/finova', '/pesan-custom', '/_preview', '/%5Fpreview', '/api.php?action=get_settings', '/assets/app.js']) {
+      expect(blocksInternal(path), path).toBe(false);
+    }
+    for (const path of ['/harga', '/template?q=%5Fpre', '/assets/foto%20baru.jpg', '/seo.php?slug=finova']) {
+      expect(blocksInternal(path), path).toBe(false);
+    }
+    // /_pre tanpa garis miring (folder nyata) langsung 403, sebelum rewrite ke seo.php (mod_dir akan menjawab 301)
+    expect(HTACCESS).toContain(['RewriteCond %{THE_REQUEST} \\s/+_pre[?\\s] [NC,OR]', 'RewriteCond %{THE_REQUEST} ^\\S+\\s+[^?\\s]*%', 'RewriteRule ^/*_pre$ - [F,L,NC]'].join('\n  '));
+    expect(pos('RewriteRule ^/*_pre$ - [F,L,NC]')).toBeLessThan(pos(INTERNAL_RULE));
+    // Rewrite internal ke _pre/ dan app.html tidak ikut tertolak; putaran sesudah rewrite ke seo.php tidak berputar
+    expect(blocksInternal('/', '_pre/index.html')).toBe(false);
+    expect(blocksInternal('/template/finova', '_pre/template/finova.html')).toBe(false);
+    expect(blocksInternal('/akun/pesanan/GN-1', 'app.html')).toBe(false);
+    expect(blocksInternal('/app.html', 'seo.php')).toBe(false);
+    expect(blocksInternal('/%5Fpre/index.html', 'seo.php')).toBe(false);
   });
 
-  it('also blocks percent-encoded requests for internal files (matched on the decoded path)', () => {
-    const encodedRule = [
-      'RewriteCond %{ENV:REDIRECT_STATUS} ^$',
-      'RewriteCond %{THE_REQUEST} ^\\S+\\s+[^?\\s]*%',
-      'RewriteRule ^/*(_pre(/|$)|app\\.html$|seo\\.php$) - [R=404,L,NC]',
-    ].join('\n  ');
-    expect(HTACCESS).toContain(encodedRule);
-    // Sebelum aturan rute (garis miring, prerender, seo.php), sesudah blok file internal biasa
-    expect(pos(encodedRule)).toBeGreaterThan(pos('RewriteCond %{THE_REQUEST} \\s/+(_pre'));
-    expect(pos(encodedRule)).toBeLessThan(pos('# BEGIN gn-prerender'));
-    const hasPercent = /^\S+\s+[^?\s]*%/;
-    const decodedPath = /^\/*(_pre(\/|$)|app\.html$|seo\.php$)/i;
-    const blocked = (requestPath: string) => {
-      const [path] = requestPath.split('?');
-      return hasPercent.test(`GET ${requestPath} HTTP/1.1`) && decodedPath.test(decodeURIComponent(path).replace(/^\//, ''));
-    };
-    for (const path of ['/%5Fpre/index.html', '/%5fpre/template/finova.html', '/%5Fpre/seo-fallback.json', '/seo%2Ephp?slug=finova', '/app%2Ehtml', '/%61pp.html']) {
-      expect(blocked(path), path).toBe(true);
-    }
-    for (const path of ['/harga', '/template/finova', '/template?q=%5Fpre', '/assets/foto%20baru.jpg', '/%5Fpreview']) {
-      expect(blocked(path), path).toBe(false);
-    }
+  it('answers a direct /404.html with 410, never a 404 on the page seo.php sends for 404s', () => {
+    for (const path of ['/404.html', '//404.html', '/404.html?x', '/404%2Ehtml', '/404%2ehtml?x']) expect(gone(path), path).toBe(true);
+    for (const path of ['/halaman-tidak-ada', '/template/tidak-ada', '/x404.html', '/404.htmlx']) expect(gone(path), path).toBe(false);
+    // ErrorDocument cadangan (404 dari server sendiri) memakai baris request asli, jadi tidak tertangkap
+    expect(gone('/halaman-tidak-ada', '404.html')).toBe(false);
+  });
+
+  it('answers every other missing main-host path with a 404 from seo.php, dropping the original query', () => {
+    // Tanpa QSA: ?gn404=1 menggantikan query asli, jadi /x?slug=finova tidak merender template
+    expect(NOT_FOUND_RULE).not.toMatch(/QSA/);
+    // Sesudah rewrite, seo.php adalah file nyata: aturan ini tidak cocok lagi (tidak berputar)
+    expect(HTACCESS.indexOf(NOT_FOUND_RULE)).toBeGreaterThan(HTACCESS.indexOf('RewriteRule ^ index.html [L]'));
   });
 
   it('sends app routes to app.html, but never /pesan-custom', () => {

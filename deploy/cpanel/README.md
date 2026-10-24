@@ -92,14 +92,15 @@ Aturan host utama hanya berlaku untuk `HTTP_HOST = garudanexa.com`. Domain situs
 | `/panduan/{slug}` yang belum diprerender | `seo.php?guide=`: 200 bila artikel panduan terbit (`reviewed` terisi), selain itu (draf, dihapus, tidak ada) 404 dengan isi `404.html` |
 | `/akun*`, `/admin*`, `/pesan/*`, `/demo/*`, `/situs/*`, `/masuk`, `/daftar`, `/login`, `/auth` | 200, `app.html` (`noindex,follow`). `/pesan-custom` tidak termasuk |
 | Path dengan garis miring di akhir (bukan folder nyata) | 301 ke versi tanpa garis miring |
-| `/_pre/…`, `/app.html`, `/seo.php` (dibuka langsung) | 404 |
-| `/404.html` (dibuka langsung) | 410. Halaman itu sendiri adalah ErrorDocument 404; LiteSpeed menjawab 500 bila diminta menampilkannya untuk 404 atas dirinya |
-| Selebihnya (bukan file atau folder nyata) | 404 asli, isi `404.html` |
+| `/_pre/…`, `/app.html`, `/seo.php` (dibuka langsung) | 404 dari `seo.php`, isi `404.html`. `/_pre` tanpa garis miring: 403 |
+| `/404.html` (dibuka langsung) | 410 |
+| Selebihnya (bukan file atau folder nyata) | 404 dari `seo.php?gn404=1`, isi `404.html` |
 | File nyata (`/assets/…`, `/api.php`, `/robots.txt`, `/llms.txt`, `/.well-known/…`) | tetap dilayani. `modules/` tetap 403 |
 
 Catatan:
 - **Tanpa `%{DOCUMENT_ROOT}`.** Daftar rute prerender ditulis apa adanya ke blok `gn-prerender`, jadi tidak ada cek `-f` ke `%{DOCUMENT_ROOT}` yang di cPanel/LiteSpeed bisa menunjuk ke folder lain. Kalau blok ini kosong (misalnya `.htaccess` dari repo disalin tanpa prerender), hanya `/` yang tampil (cangkang SPA); halaman lain di host utama 404.
-- **File internal** diblok lewat `%{THE_REQUEST}` (baris request asli), sehingga rewrite internal ke `_pre/`, `app.html`, `seo.php` dan ErrorDocument tetap jalan, baik di Apache maupun LiteSpeed.
+- **File internal** diblok lewat `%{THE_REQUEST}` (baris request asli), sehingga rewrite internal ke `_pre/`, `app.html` dan `seo.php` tetap jalan, baik di Apache maupun LiteSpeed. `seo.php` sendiri menolak dibuka langsung.
+- **404 tanpa ErrorDocument.** Semua 404 dari aturan `.htaccess` ditulis `seo.php` (`http_response_code(404)` + isi `404.html`), bukan `R=404` + ErrorDocument, dan tidak ada aturan yang membaca `REDIRECT_STATUS`. Di LiteSpeed, ErrorDocument meninggalkan sisa status di koneksi keep-alive: request berikutnya di koneksi yang sama menjawab `/404.html` 200 dan 404 berikutnya 200 berisi halaman 404 (soft 404), padahal di koneksi baru benar. `seo-check` mengujinya lewat urutan keep-alive (404 biasa lalu kasus, dua putaran).
 - **Midtrans:**
   - `callbacks.finish` diarahkan ke `/akun/pesanan/{nomor}`, yang disajikan oleh `app.html`.
   - Notifikasi dikirim ke `api.php?action=midtrans_notification`, yang merupakan file nyata.
