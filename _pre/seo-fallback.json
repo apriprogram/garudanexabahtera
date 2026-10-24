@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-10-24T15:16:46.151Z",
+  "builtAt": "2026-10-24T16:53:32.943Z",
   "origin": "https://garudanexa.com",
   "brandName": "Garuda Nexa",
   "organizationId": "https://garudanexa.com/#organization",
@@ -74,5 +74,17 @@
     "Domain tahun pertama",
     "Hosting tahun pertama",
     "Sertifikat SSL (HTTPS) tahun pertama"
-  ]
+  ],
+  "guide": {
+    "titleSuffix": " | Garuda Nexa",
+    "ogImage": "https://garudanexa.com/og/panduan.jpg",
+    "defaultAuthor": "Tim Garuda Nexa",
+    "authors": {
+      "Tim Garuda Nexa": {
+        "@type": "Organization",
+        "name": "Tim Garuda Nexa",
+        "url": "https://garudanexa.com/tentang"
+      }
+    }
+  }
 }
