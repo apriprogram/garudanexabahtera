@@ -276,17 +276,18 @@ describe('Footer', () => {
 });
 
 describe('FloatingWhatsApp', () => {
-  it('dok hanya berisi tombol Nexa (WhatsApp melayang dihapus); di HP mulai tersembunyi bila menjaga hero', () => {
-    const { unmount } = renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" hideOverId="beranda" />);
+  it('dok hanya tombol Nexa (WhatsApp melayang dihapus), selalu tampil di semua ukuran, tanpa lencana "AI"', () => {
+    renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" />);
     const launcher = screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' });
     const dock = launcher.parentElement as HTMLElement;
-    expect(dock.className).toContain('max-sm:invisible');
-    // Tombol WhatsApp melayang dihapus (pemilik 2026-10-24); jalur WhatsApp lewat jawaban Nexa & footer
+    // Tidak pernah disembunyikan di HP (pemilik 2026-10-24: tampil di semua ukuran)
+    expect(dock.className).not.toMatch(/max-sm:invisible|invisible/);
+    // Tombol WhatsApp melayang dihapus; jalur WhatsApp lewat jawaban Nexa & footer. Lencana teks "AI" juga dihapus
     expect(screen.queryByRole('link', { name: 'Chat WhatsApp' })).toBeNull();
-    unmount();
-    renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" />);
-    const always = screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' }).parentElement as HTMLElement;
-    expect(always.className).not.toContain('max-sm:invisible');
+    expect(launcher.textContent).not.toContain('AI');
+    // Label "Tanya Nexa" di samping kiri maskot (right-full)
+    const label = [...launcher.querySelectorAll('span')].find((el) => el.textContent === 'Tanya Nexa') as HTMLElement;
+    expect(label.className).toContain('right-full');
   });
 
   it('tombol "Kembali ke atas" (beranda): muncul setelah menggulir, kaca buram, gulir halus ke atas', async () => {
@@ -391,8 +392,16 @@ describe('Nexa AI', () => {
 
     within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' }).focus();
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Escape' });
-    expect(screen.queryByRole('dialog')).toBeNull();
+    // Menutup beranimasi dulu (kelas closing), lalu dilepas dari DOM dan fokus kembali
+    expect(panel.className).toContain('opacity-0');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(document.activeElement).toBe(launcher);
+
+    // Dibuka lagi: klik/sentuh di luar panel menutupnya (fokus tidak direbut kembali)
+    fireEvent.click(launcher);
+    expect(await screen.findByRole('dialog', { name: 'Tanya Nexa AI' })).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
   it('topik cepat dijawab teks tetap tanpa AI; AI belum aktif -> jawaban bawaan dari tanya jawab situs', async () => {
@@ -467,7 +476,7 @@ describe('Nexa AI', () => {
 
     // Klik tautan internal menutup panel (pengunjung pindah halaman)
     fireEvent.click(toTemplate);
-    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
     status = 429;
     fireEvent.click(screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' }));

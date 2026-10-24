@@ -87,7 +87,7 @@ export default function Home() {
       {/* Setelah Footer: lapisan fixed (tampilan sama), tetapi titik section di akhir urutan Tab, bukan sebelum logo/menu */}
       <SectionChrome sections={chrome} />
 
-      {/* Chat Nexa melayang dipasang global di App (FloatingNexa): di beranda disembunyikan selama hero terlihat */}
+      {/* Chat Nexa melayang dipasang global di App (FloatingNexa), selalu tampil di semua ukuran layar */}
     </div>
   );
 }

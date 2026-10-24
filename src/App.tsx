@@ -71,22 +71,14 @@ const WA_GREETING = 'Halo Admin, saya tertarik dengan template website atau jasa
 const NEXA_EXCLUDED = ['/demo', '/situs', '/akun', '/login', '/auth', '/admin', '/masuk', '/daftar'];
 
 /**
- * Chat Nexa AI melayang di semua halaman situs utama (pemilik 2026-10-24; tombol WhatsApp melayang dihapus, jalur
- * WhatsApp lewat jawaban Nexa & footer). Beranda juga mendapat tombol "ke atas" dan menyembunyikan dok selama hero
- * terlihat (hideOverId).
+ * Chat Nexa AI melayang di semua halaman situs utama, selalu tampil di semua ukuran layar (pemilik 2026-10-24; tombol
+ * WhatsApp melayang dihapus, jalur WhatsApp lewat jawaban Nexa & footer). Beranda juga mendapat tombol "ke atas".
  */
 function FloatingNexa() {
   const { pathname } = useLocation();
   const { settings } = useSiteSettings();
   if (NEXA_EXCLUDED.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return null;
-  const home = pathname === '/';
-  return (
-    <FloatingWhatsApp
-      href={whatsappUrl(getWhatsappNumber(settings), WA_GREETING)}
-      hideOverId={home ? 'beranda' : undefined}
-      backToTop={home}
-    />
-  );
+  return <FloatingWhatsApp href={whatsappUrl(getWhatsappNumber(settings), WA_GREETING)} backToTop={pathname === '/'} />;
 }
 
 function App() {

@@ -21,6 +21,8 @@ const moodSrcSet = (mood: NexaMood): string => `${moodFile(mood, 128)} 128w, ${m
 
 /** Jeda minimum "Nexa sedang mengetik" sebelum balasan tampil (ms), juga untuk jawaban bawaan yang instan. */
 export const NEXA_REPLY_DELAY = 700;
+/** Lama animasi panel menutup (ms) sebelum dilepas dari DOM; = duration-200 di kelas panel. */
+const CLOSE_MOTION = 200;
 /** Riwayat yang dikirim ke nexa_chat (= NEXA_MAX_MESSAGES di backend/modules/nexa.php). */
 const HISTORY_LIMIT = 12;
 /** Panjang maksimum (code point) per pesan yang dikirim (= NEXA_MAX_USER_CHARS / NEXA_MAX_ASSISTANT_CHARS di backend). */
@@ -272,6 +274,11 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState('');
   const [listening, setListening] = useState(false);
+  // Panel sedang beranimasi menutup (melorot & memudar dulu, baru dilepas dari DOM)
+  const [closing, setClosing] = useState(false);
+  const closingRef = useRef(false);
+  const closeTimer = useRef(0);
+  const requestCloseRef = useRef<(focusLauncher: boolean) => void>(() => {});
   // Pesan galat input suara (tampil di bawah form & dibacakan lewat role=status)
   const [micNote, setMicNote] = useState('');
   // Maskot tombol menyapa saat disorot/difokus; selebihnya hidup sendiri (berkedip dkk. tiap beberapa detik)
@@ -296,6 +303,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
     return () => {
       alive.current = false;
       recognitionRef.current?.abort();
+      window.clearTimeout(closeTimer.current);
     };
   }, []);
 
@@ -308,12 +316,21 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
       if (event.key !== 'Escape' || event.defaultPrevented) return;
       const active = document.activeElement;
       if (!panelRef.current?.contains(active) && active !== launcherRef.current) return;
-      onOpenChange(false);
-      launcherRef.current?.focus();
+      requestCloseRef.current(true);
+    };
+    // Klik/sentuh di luar panel & tombol maskot menutup chat (pemilik 2026-10-24); fokus tetap di yang diklik
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (panelRef.current?.contains(target) || launcherRef.current?.contains(target)) return;
+      requestCloseRef.current(false);
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, onOpenChange]);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [open]);
 
   // Panel ditutup: hentikan rekaman suara yang masih berjalan
   useEffect(() => {
@@ -332,10 +349,23 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
     log.scrollTop = reply ? Math.max(0, reply.offsetTop - 16) : log.scrollHeight;
   }, [open, messages, typing]);
 
-  const close = () => {
-    onOpenChange(false);
-    launcherRef.current?.focus();
+  /** Tutup dengan animasi (pemilik 2026-10-24): kelas `closing` dipasang dulu, panel dilepas setelah CLOSE_MOTION. */
+  const requestClose = (focusLauncher: boolean) => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    closeTimer.current = window.setTimeout(() => {
+      closingRef.current = false;
+      if (!alive.current) return;
+      setClosing(false);
+      onOpenChange(false);
+      if (focusLauncher) launcherRef.current?.focus();
+    }, CLOSE_MOTION);
   };
+  const close = () => requestClose(true);
+  useEffect(() => {
+    requestCloseRef.current = requestClose;
+  });
 
   /** Tampilkan pertanyaan, lalu balasan yang dihasilkan `reply` (minimal NEXA_REPLY_DELAY "sedang mengetik"). */
   const send = (text: string, reply: () => Promise<NexaAnswer>) => {
@@ -465,7 +495,9 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
             // Di atas dok (48/56px + jarak bawah), di bawah navbar. HP: hampir selebar layar; desktop: 460 px, tinggi
             // tetap maks. 740 px (pemilik 2026-10-24: lebih tinggi & luas). Layar sangat pendek (HP mendatar, zoom besar):
             // log tetap minimal 8rem dan panel sendiri yang bergulir
-            className="fixed inset-x-3 bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+3.75rem)] z-40 flex h-[min(620px,calc(100svh-var(--nav-offset)-6rem))] custom-scrollbar flex-col overflow-y-auto overscroll-contain rounded-[28px] bg-surface text-left shadow-float ring-1 ring-inset ring-line/70 transition-[opacity,translate] duration-200 ease-calm starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none sm:inset-x-auto sm:bottom-[6.25rem] sm:right-8 sm:h-[min(740px,calc(100svh-var(--nav-offset)-7.25rem))] sm:w-[440px] lg:w-[460px]"
+            className={`fixed inset-x-3 bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+3.75rem)] z-40 flex h-[min(620px,calc(100svh-var(--nav-offset)-6rem))] custom-scrollbar flex-col overflow-y-auto overscroll-contain rounded-[28px] bg-surface text-left shadow-float ring-1 ring-inset ring-line/70 transition-[opacity,translate,scale] duration-200 ease-calm starting:translate-y-3 starting:scale-[0.98] starting:opacity-0 motion-reduce:transition-none sm:inset-x-auto sm:bottom-[6.25rem] sm:right-8 sm:h-[min(740px,calc(100svh-var(--nav-offset)-7.25rem))] sm:w-[440px] lg:w-[460px] ${
+              closing ? 'pointer-events-none translate-y-3 scale-[0.98] opacity-0' : ''
+            }`}
           >
             {/* Kepala ringkas (pemilik 2026-10-24: lebih kecil) */}
             <header className="flex shrink-0 items-center justify-between gap-3 px-6 pb-1 pt-3.5 sm:px-7 sm:pt-4">
@@ -500,10 +532,10 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
                   mood={message.mood}
                   live={!typing && index === messages.length - 1}
                 >
-                  {message.from === 'nexa' ? <RichText text={message.text} onNavigate={() => onOpenChange(false)} /> : message.text}
+                  {message.from === 'nexa' ? <RichText text={message.text} onNavigate={() => requestClose(false)} /> : message.text}
                   {message.action && (
                     <span className="block">
-                      <ActionLink action={message.action} onNavigate={() => onOpenChange(false)} />
+                      <ActionLink action={message.action} onNavigate={() => requestClose(false)} />
                     </span>
                   )}
                 </Bubble>
@@ -593,7 +625,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
       <button
         ref={launcherRef}
         type="button"
-        onClick={() => onOpenChange(!open)}
+        onClick={() => (open ? requestClose(true) : onOpenChange(true))}
         aria-label={open ? 'Tutup chat Nexa' : 'Tanya Nexa, asisten AI'}
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
@@ -606,25 +638,18 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
         className="group relative flex h-12 w-12 items-center justify-center rounded-full transition-[translate] duration-300 ease-calm motion-safe:hover:-translate-y-0.5 sm:h-14 sm:w-14"
       >
         {!open && (
-          <span className="pointer-events-none absolute bottom-full right-0 mb-3 hidden whitespace-nowrap rounded-full bg-surface px-3.5 py-2 text-[13px] font-semibold text-fg opacity-0 shadow-float ring-1 ring-inset ring-line transition-opacity group-hover:opacity-100 sm:block">
+          // Label di samping kiri maskot (pemilik 2026-10-24), hanya saat disorot (desktop)
+          <span className="pointer-events-none absolute right-full top-1/2 mr-3 hidden -translate-y-1/2 whitespace-nowrap rounded-full bg-surface px-3.5 py-2 text-[13px] font-semibold text-fg opacity-0 shadow-float ring-1 ring-inset ring-line transition-opacity group-hover:opacity-100 sm:block">
             Tanya Nexa
           </span>
         )}
+        {/* Hanya gambar maskot: lencana teks "AI" dihapus (pemilik 2026-10-24) */}
         <NexaAvatar
           className="h-12 w-12 sm:h-14 sm:w-14"
           sizes="(min-width: 640px) 56px, 48px"
           mood={greetingLauncher ? 'ceria' : idleMood}
           animate
         />
-        {/* Lencana "AI": lingkaran hitam kecil, teks putih, tanpa garis, di kiri agak ke bawah (pemilik 2026-10-24) */}
-        {!open && (
-          <span
-            className="absolute -left-0.5 top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-black text-[8px] font-bold leading-none text-white sm:top-2 sm:h-5 sm:w-5 sm:text-[9px]"
-            aria-hidden
-          >
-            AI
-          </span>
-        )}
       </button>
     </>
   );
