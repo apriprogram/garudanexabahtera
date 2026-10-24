@@ -57,19 +57,26 @@ export default function PanduanIndex() {
         </>
       }
     >
-      <InfoSection id="artikel" title="Semua panduan">
-        {articles.length > 0 ? (
-          <ArticleCards articles={articles} />
-        ) : (
-          <div className="card-flat flex flex-col items-center px-6 py-12 text-center sm:py-16">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-primary">
-              <BookOpen className="h-6 w-6" aria-hidden />
-            </span>
-            <p className="mt-4 text-base font-semibold text-fg sm:text-lg">Artikel panduan sedang kami tulis</p>
-            <p className="mt-1.5 max-w-md text-sm text-muted">Sementara itu, lihat katalog template atau konsultasikan kebutuhan Anda.</p>
-          </div>
-        )}
-      </InfoSection>
+      {/* Bukan InfoSection: tepat di bawah kepala halaman, jarak cukup padding bawah kepala (40/64px) tanpa pt-12/pt-20
+          section (permintaan pemilik 2026-10-24: jarak "Ditulis oleh" ke "Semua panduan" terlalu jauh). Judul sama dengan InfoSection. */}
+      <section id="artikel" aria-labelledby="artikel-judul" className="scroll-mt-[calc(var(--nav-offset)+1.5rem)]">
+        <h2 id="artikel-judul" className="text-xl font-semibold leading-tight tracking-[-0.02em] text-fg sm:text-[34px] sm:leading-[1.12]">
+          Semua panduan
+        </h2>
+        <div className="mt-6 sm:mt-8">
+          {articles.length > 0 ? (
+            <ArticleCards articles={articles} />
+          ) : (
+            <div className="card-flat flex flex-col items-center px-6 py-12 text-center sm:py-16">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-primary">
+                <BookOpen className="h-6 w-6" aria-hidden />
+              </span>
+              <p className="mt-4 text-base font-semibold text-fg sm:text-lg">Artikel panduan sedang kami tulis</p>
+              <p className="mt-1.5 max-w-md text-sm text-muted">Sementara itu, lihat katalog template atau konsultasikan kebutuhan Anda.</p>
+            </div>
+          )}
+        </div>
+      </section>
 
       <InfoSection id="mulai" title="Siap membuat website atau aplikasi?" intro={<p>Lanjutkan dari halaman yang paling sesuai dengan kebutuhan Anda.</p>}>
         <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">

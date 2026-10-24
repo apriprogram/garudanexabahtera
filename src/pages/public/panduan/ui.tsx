@@ -1,6 +1,6 @@
 // Komponen bersama halaman /panduan dan /panduan/{slug}: kartu artikel (judul = heading, tanggal <time>), ajakan di
 // akhir artikel, dan kotak penulis. Semua tautan berupa <a href> asli (Link) supaya terbaca crawler di HTML prerender.
-import { ArrowRight, BookOpen, MessageCircle, ReceiptText, Scale, Smartphone, Sparkles, type LucideIcon } from 'lucide-react';
+import { ArrowRight, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Author } from '../../../content/authors';
 import type { ArticleCta, ArticleSummary } from '../../../content/panduan';
@@ -8,6 +8,7 @@ import { getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../../hooks/
 import { LogoMark } from '../../../components/ui/LogoMark';
 import { formatDateId } from '../../../seo/format';
 import { articlePath } from '../../../seo/paths';
+import { CoverArt, type CoverKind } from './CoverArt';
 import { CTA_COPY } from './cta';
 
 /** "Diperbarui 23 Oktober 2026" (+ "Terbit …" bila tanggalnya berbeda), sama dengan datePublished/dateModified JSON-LD. */
@@ -29,25 +30,30 @@ export function ArticleDates({ article }: { article: Pick<ArticleSummary, 'dateP
 
 interface ArticleTopic {
   label: string;
-  icon: LucideIcon;
+  /** Ilustrasi sampul (CoverArt) */
+  cover: CoverKind;
   /** Latar sampul */
   tone: string;
 }
 
-// Topik dari kata di slug (artikel tidak punya gambar): label kecil + ikon & warna sampul. Urutan = prioritas.
+const BRAND_TONE = 'bg-linear-to-br from-brand-100 to-brand-50';
+const NEUTRAL_TONE = 'bg-linear-to-br from-fg/5 to-brand-50';
+
+// Topik dari kata di slug (artikel tidak punya gambar): label kecil + ilustrasi & warna sampul. Urutan = prioritas.
 const TOPICS: { match: RegExp; topic: ArticleTopic }[] = [
-  { match: /(^|-)vs(-|$)/, topic: { label: 'Perbandingan', icon: Scale, tone: 'bg-fg/5' } },
-  { match: /(^|-)biaya(-|$)/, topic: { label: 'Biaya', icon: ReceiptText, tone: 'bg-linear-to-br from-brand-100 to-brand-50' } },
-  { match: /(^|-)aplikasi(-|$)/, topic: { label: 'Aplikasi', icon: Smartphone, tone: 'bg-linear-to-br from-brand-50 to-brand-100' } },
-  { match: /(^|-)(klinik|salon|kecantikan)(-|$)/, topic: { label: 'Inspirasi', icon: Sparkles, tone: 'bg-linear-to-br from-success-50 to-brand-50' } },
+  { match: /(^|-)vs(-|$)/, topic: { label: 'Perbandingan', cover: 'compare', tone: NEUTRAL_TONE } },
+  { match: /^(?=.*(^|-)biaya(-|$))(?=.*(^|-)aplikasi(-|$))/, topic: { label: 'Biaya', cover: 'appCost', tone: 'bg-linear-to-br from-brand-50 to-brand-100' } },
+  { match: /(^|-)biaya(-|$)/, topic: { label: 'Biaya', cover: 'webCost', tone: BRAND_TONE } },
+  { match: /(^|-)aplikasi(-|$)/, topic: { label: 'Aplikasi', cover: 'app', tone: BRAND_TONE } },
+  { match: /(^|-)(klinik|salon|kecantikan)(-|$)/, topic: { label: 'Inspirasi', cover: 'showcase', tone: 'bg-linear-to-br from-success-50 to-brand-50' } },
 ];
-const DEFAULT_TOPIC: ArticleTopic = { label: 'Panduan', icon: BookOpen, tone: 'bg-fg/5' };
+const DEFAULT_TOPIC: ArticleTopic = { label: 'Panduan', cover: 'guide', tone: NEUTRAL_TONE };
 
 const articleTopic = (slug: string): ArticleTopic => TOPICS.find(({ match }) => match.test(slug))?.topic ?? DEFAULT_TOPIC;
 
 /**
- * Kartu artikel gaya kartu template (permintaan pemilik 2026-10-24): sampul 16:10 bertint dengan ilustrasi "halaman"
- * kecil + ikon topik (dekoratif), lalu topik · tanggal, judul (heading), ringkasan 3 baris, dan "Baca panduan →".
+ * Kartu artikel gaya kartu template (permintaan pemilik 2026-10-24): sampul 16:10 bertint dengan ilustrasi topik
+ * (CoverArt, dekoratif), lalu topik · tanggal, judul (heading), ringkasan 3 baris, dan "Baca panduan →".
  * Seluruh kartu satu tautan; tanpa garis & bayangan.
  */
 export function ArticleCards({ articles, headingLevel = 'h3' }: { articles: readonly ArticleSummary[]; headingLevel?: 'h2' | 'h3' }) {
@@ -57,20 +63,12 @@ export function ArticleCards({ articles, headingLevel = 'h3' }: { articles: read
     <ul className={`grid gap-x-6 gap-y-10 sm:gap-y-12 ${articles.length % 3 === 0 ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2'}`}>
       {articles.map((article) => {
         const topic = articleTopic(article.slug);
-        const Icon = topic.icon;
         return (
           <li key={article.slug}>
             <Link to={articlePath(article.slug)} className="group flex h-full flex-col rounded-[20px]">
-              <span className={`flex aspect-[16/10] items-center justify-center overflow-hidden rounded-[20px] ${topic.tone}`} aria-hidden>
-                <span className="w-[56%] max-w-60 rounded-2xl bg-surface p-4 ring-1 ring-inset ring-line transition-transform duration-500 ease-calm motion-safe:group-hover:-translate-y-1.5 motion-safe:group-hover:-rotate-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-primary">
-                    <Icon className="h-[18px] w-[18px]" />
-                  </span>
-                  <span className="mt-4 block h-2 w-11/12 rounded-full bg-fg/15" />
-                  <span className="mt-2 block h-2 w-3/4 rounded-full bg-fg/10" />
-                  <span className="mt-2 block h-2 w-5/6 rounded-full bg-fg/10" />
-                  <span className="mt-2 block h-2 w-1/2 rounded-full bg-fg/10" />
-                </span>
+              <span className={`relative block aspect-[16/10] overflow-hidden rounded-[20px] ${topic.tone}`} aria-hidden>
+                <span className="grid-dots absolute inset-0" />
+                <CoverArt kind={topic.cover} />
               </span>
               <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-subtle sm:text-[13px]">
                 <span className="font-semibold text-primary">{topic.label}</span>
