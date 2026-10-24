@@ -26,7 +26,7 @@ import { issueToken, createLimiter, isAuthConfigured } from '../security.js';
 import { uploadBase64ToS3, parseUpload, deleteFromS3, S3_PUBLIC_URL } from '../s3-client.js';
 import {
   NEXA_CONFIG_KEYS, NEXA_DEFAULT_DAILY_LIMIT, NEXA_DEFAULT_MODEL, NEXA_GEMINI_DEFAULT_MODEL, NEXA_PER_DAY, NEXA_PER_HOUR,
-  NexaConfigError, nexaCleanMessages, nexaClaudeReply, nexaConfigOut, nexaConfigWrites, nexaGeminiBody, nexaGeminiReply,
+  NexaConfigError, nexaCleanMessages, nexaClaudeReply, nexaConfigOut, nexaConfigWrites, nexaGeminiBody, nexaGeminiModels, nexaGeminiReply,
   nexaIpBucket, nexaKnowledge, nexaLiveFacts, nexaRequestBody, nexaResolveProvider,
 } from './nexa.js';
 
@@ -323,7 +323,7 @@ async function nexaChat({ pool, body, req }) {
   let result;
   if (active.provider === 'gemini') {
     const model = envValue('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
-    result = await nexaGeminiReply(active.key, model, nexaGeminiBody(nexaKnowledge(), live, messages));
+    result = await nexaGeminiReply(active.key, nexaGeminiModels(model), nexaGeminiBody(nexaKnowledge(), live, messages));
   } else {
     const model = envValue('NEXA_MODEL', NEXA_DEFAULT_MODEL);
     result = await nexaClaudeReply(active.key, nexaRequestBody(model, nexaKnowledge(), live, messages));

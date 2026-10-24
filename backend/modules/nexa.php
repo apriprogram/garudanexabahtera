@@ -22,7 +22,12 @@ const NEXA_DEFAULT_MODEL = 'claude-opus-5-5';
 const NEXA_API_URL = 'https://api.anthropic.com/v1/messages';
 const NEXA_API_VERSION = '2026-10-21';
 // Penyedia kedua (pilihan admin di tab Tanya Nexa): Google Gemini lewat REST generateContent
-const NEXA_GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
+// gemini-2.5-flash sudah tidak tersedia untuk pengguna baru (404, 2026-10-24); model ini diuji: jawab ±4 detik
+const NEXA_GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash';
+// Cadangan bila model utama dipensiunkan (404), padat (429/503), galat server, atau lambat: alias Flash terbaru Google
+const NEXA_GEMINI_FALLBACK_MODEL = 'gemini-flash-latest';
+const NEXA_GEMINI_TIMEOUT = 25; // detik per percobaan; dua percobaan tetap di bawah batas ±100 detik Cloudflare
+const NEXA_GEMINI_RETRY_CODES = [0, 404, 429, 500, 503, 504];
 const NEXA_GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
 // Kunci & saklar AI dari admin (hero_settings; TIDAK pernah ikut get_settings publik — lihat api.php). nexa_enabled
 // (saklar widget) satu-satunya setting nexa_ yang publik dan boleh lewat update_settings biasa.
@@ -287,33 +292,52 @@ function nexa_gemini_text($response): ?string {
     return $text === '' ? null : $text;
 }
 
-/** Panggil Gemini. ['reply' => teks] atau ['error' => alasan untuk log]. Tidak pernah melempar. */
-function nexa_gemini_reply(string $apiKey, string $model, array $body): array {
-    $ch = curl_init(NEXA_GEMINI_URL . rawurlencode($model) . ':generateContent');
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . $apiKey],
-        CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE),
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT => NEXA_TIMEOUT,
-        CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
-    ]);
-    $raw = curl_exec($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err = curl_error($ch);
-    curl_close($ch);
-    $response = is_string($raw) ? json_decode($raw, true) : null;
-    if ($code !== 200) {
-        $status = is_array($response) ? (string)($response['error']['status'] ?? '') : '';
-        return ['error' => 'gemini HTTP ' . $code . ($status !== '' ? " $status" : '') . ($err !== '' ? " $err" : '')];
+/** Urutan model yang dicoba: model pilihan lalu cadangan (tanpa duplikat). */
+function nexa_gemini_models(string $model): array {
+    $model = trim($model) !== '' ? trim($model) : NEXA_GEMINI_DEFAULT_MODEL;
+    return $model === NEXA_GEMINI_FALLBACK_MODEL ? [$model] : [$model, NEXA_GEMINI_FALLBACK_MODEL];
+}
+
+/** Isi permintaan untuk satu model: Gemini 3+ berpikir singkat (thinkingLevel low, obrolan cepat); 2.x apa adanya. */
+function nexa_gemini_payload(array $body, string $model): array {
+    if (strpos($model, 'gemini-2') !== 0) $body['generationConfig']['thinkingConfig'] = ['thinkingLevel' => 'low'];
+    return $body;
+}
+
+/**
+ * Panggil Gemini dengan model cadangan: model berikutnya dicoba bila yang sekarang 404/429/5xx/putus/lewat waktu;
+ * galat kunci (400/401/403) tidak dicoba ulang. ['reply' => teks] atau ['error' => alasan untuk log]. Tidak melempar.
+ */
+function nexa_gemini_reply(string $apiKey, array $models, array $body): array {
+    $errors = [];
+    foreach ($models as $model) {
+        $ch = curl_init(NEXA_GEMINI_URL . rawurlencode($model) . ':generateContent');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . $apiKey],
+            CURLOPT_POSTFIELDS => json_encode(nexa_gemini_payload($body, $model), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE),
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => NEXA_GEMINI_TIMEOUT,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+        ]);
+        $raw = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        $response = is_string($raw) ? json_decode($raw, true) : null;
+        if ($code !== 200) {
+            $status = is_array($response) ? (string)($response['error']['status'] ?? '') : '';
+            $errors[] = "$model HTTP $code" . ($status !== '' ? " $status" : '') . ($err !== '' ? " $err" : '');
+            if (in_array($code, NEXA_GEMINI_RETRY_CODES, true)) continue;
+            break;
+        }
+        $text = nexa_gemini_text($response);
+        if ($text !== null) return ['reply' => $text];
+        $errors[] = "$model no usable text (finishReason " . (is_array($response) ? (string)($response['candidates'][0]['finishReason'] ?? '?') : '?') . ')';
+        break;
     }
-    $text = nexa_gemini_text($response);
-    if ($text === null) {
-        $finish = is_array($response) ? (string)($response['candidates'][0]['finishReason'] ?? '?') : '?';
-        return ['error' => "gemini no usable text (finishReason $finish)"];
-    }
-    return ['reply' => $text];
+    return ['error' => 'gemini ' . implode('; ', $errors)];
 }
 
 /**
@@ -432,7 +456,7 @@ function pf_nexa_chat(mysqli $conn, array $input, ?array $user): array {
     $live = nexa_live_facts($templates, $settings);
     if ($active['provider'] === 'gemini') {
         $model = env_value('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
-        $result = nexa_gemini_reply($active['key'], $model, nexa_gemini_body(nexa_knowledge(), $live, $messages));
+        $result = nexa_gemini_reply($active['key'], nexa_gemini_models($model), nexa_gemini_body(nexa_knowledge(), $live, $messages));
     } else {
         $model = env_value('NEXA_MODEL', NEXA_DEFAULT_MODEL);
         $result = nexa_claude_reply($active['key'], nexa_request_body($model, nexa_knowledge(), $live, $messages));

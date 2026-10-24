@@ -51,6 +51,8 @@ import {
   nexaConfigOut,
   nexaConfigWrites,
   nexaGeminiBody,
+  nexaGeminiModels,
+  nexaGeminiPayload,
   nexaGeminiReply,
   nexaGeminiText,
   nexaIpBucket,
@@ -175,6 +177,10 @@ const GEMINI_TEXT_CASES: unknown[] = [
   null,
 ];
 
+// Model dari NEXA_GEMINI_MODEL (kosong = bawaan) → urutan percobaan; dan payload per model (thinking hanya 3+)
+const GEMINI_MODEL_CASES = ['', 'gemini-3.5-flash', '  gemini-3.8-flash ', 'gemini-flash-latest'];
+const GEMINI_PAYLOAD_CASES = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
+
 const REPLY_CASES: unknown[] = [
   { stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: '  Halo!  ' }, { type: 'text', text: 'Kedua.' }] },
   { stop_reason: 'refusal', content: [{ type: 'text', text: 'Tidak.' }] },
@@ -210,7 +216,8 @@ function db_run($conn, $sql, $params = []) {
 require getenv('NEXA_PHP');
 $in = json_decode(stream_get_contents(STDIN), true);
 $out = ['instructions' => NEXA_INSTRUCTIONS, 'live' => [], 'clean' => [], 'body' => [], 'reply' => [], 'ip' => [], 'handler' => [],
-    'resolve' => [], 'mask' => [], 'cfgout' => [], 'save' => [], 'gbody' => [], 'gtext' => [], 'config_handler' => []];
+    'resolve' => [], 'mask' => [], 'cfgout' => [], 'save' => [], 'gbody' => [], 'gtext' => [], 'config_handler' => [],
+    'gmodels' => [], 'gpayload' => []];
 foreach ($in['live'] as $c) $out['live'][] = nexa_live_facts($c['templates'], $c['settings']);
 foreach ($in['clean'] as $c) $out['clean'][] = nexa_clean_messages($c);
 foreach ($in['body'] as $c) $out['body'][] = nexa_request_body($c[0], $c[1], $c[2], $c[3]);
@@ -225,6 +232,8 @@ foreach ($in['save'] as $c) {
 }
 foreach ($in['gbody'] as $c) $out['gbody'][] = nexa_gemini_body($c[0], $c[1], $c[2]);
 foreach ($in['gtext'] as $c) $out['gtext'][] = nexa_gemini_text($c);
+foreach ($in['gmodels'] as $c) $out['gmodels'][] = nexa_gemini_models($c);
+foreach ($in['gpayload'] as $c) $out['gpayload'][] = nexa_gemini_payload(nexa_gemini_body('', 'DATA', [['role' => 'user', 'content' => 'Halo']]), $c);
 // Handler get/save config dengan database tiruan ($GLOBALS['rows'] + catatan tulis)
 foreach ($in['config_handler'] as $c) {
     $GLOBALS['rows'] = $c['rows'];
@@ -258,7 +267,7 @@ function runPhp() {
     input: JSON.stringify({
       live: LIVE_CASES, clean: CLEAN_CASES, body: BODY_CASES, reply: REPLY_CASES, ip: IP_CASES, handler: HANDLER_CASES,
       resolve: RESOLVE_CASES, mask: MASK_CASES, cfgout: CONFIG_OUT_CASES, save: SAVE_CASES, gbody: GEMINI_BODY_CASES,
-      gtext: GEMINI_TEXT_CASES, config_handler: CONFIG_HANDLER_CASES,
+      gtext: GEMINI_TEXT_CASES, config_handler: CONFIG_HANDLER_CASES, gmodels: GEMINI_MODEL_CASES, gpayload: GEMINI_PAYLOAD_CASES,
     }),
     encoding: 'utf8',
     env: { ...process.env, NEXA_PHP, ANTHROPIC_API_KEY: '', GEMINI_API_KEY: '' },
@@ -319,6 +328,8 @@ const nodeOutputs = () => ({
   }),
   gbody: GEMINI_BODY_CASES.map(([k, l, m]) => nexaGeminiBody(k, l, m)),
   gtext: GEMINI_TEXT_CASES.map((c) => nexaGeminiText(c)),
+  gmodels: GEMINI_MODEL_CASES.map((c) => nexaGeminiModels(c)),
+  gpayload: GEMINI_PAYLOAD_CASES.map((c) => nexaGeminiPayload(nexaGeminiBody('', 'DATA', [{ role: 'user', content: 'Halo' }]), c)),
 });
 
 /** Kasus handler get/save config (PHP; Node diuji terpisah dengan pool tiruan). */
@@ -513,17 +524,37 @@ describe('Nexa AI: panggilan Claude (Node, fetch palsu)', () => {
     expect(JSON.parse(String(init.body))).toEqual(body);
   });
 
-  it('panggilan Gemini: model di URL + x-goog-api-key; galat → { error } tanpa melempar', async () => {
+  it('panggilan Gemini: model di URL + x-goog-api-key + thinking low; kunci ditolak → tidak dicoba ulang', async () => {
     const fetchImpl = vi.fn(async () =>
       new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'Dari Gemini' }] } }] }), { status: 200 }));
     const body = nexaGeminiBody('', 'DATA', [{ role: 'user', content: 'Halo' }]);
-    expect(await nexaGeminiReply('g-key-123456', 'gemini-2.5-flash', body, fetchImpl)).toEqual({ reply: 'Dari Gemini' });
+    const models = nexaGeminiModels('');
+    expect(models).toEqual(['gemini-3.5-flash', 'gemini-flash-latest']);
+    expect(await nexaGeminiReply('g-key-123456', models, body, fetchImpl)).toEqual({ reply: 'Dari Gemini' });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent');
     expect(init.headers).toEqual({ 'Content-Type': 'application/json', 'x-goog-api-key': 'g-key-123456' });
-    expect(JSON.parse(String(init.body))).toEqual(body);
+    expect(JSON.parse(String(init.body)).generationConfig).toEqual({ maxOutputTokens: 2048, thinkingConfig: { thinkingLevel: 'low' } });
+    // 403 (kunci): tidak ada percobaan ke model cadangan
     const denied = vi.fn(async () => new Response(JSON.stringify({ error: { status: 'PERMISSION_DENIED' } }), { status: 403 }));
-    expect(await nexaGeminiReply('g-key-123456', 'gemini-2.5-flash', body, denied)).toEqual({ error: 'gemini HTTP 403 PERMISSION_DENIED' });
+    expect(await nexaGeminiReply('g-key-123456', models, body, denied)).toEqual({ error: 'gemini gemini-3.5-flash HTTP 403 PERMISSION_DENIED' });
+    expect(denied).toHaveBeenCalledTimes(1);
+  });
+
+  it('model Gemini dipensiunkan (404) atau padat (503) → otomatis coba gemini-flash-latest', async () => {
+    const body = nexaGeminiBody('', 'DATA', [{ role: 'user', content: 'Halo' }]);
+    const retired = vi.fn(async (url: string) =>
+      url.includes('gemini-3.5-flash')
+        ? new Response(JSON.stringify({ error: { code: 404, status: 'NOT_FOUND' } }), { status: 404 })
+        : new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'Dari cadangan' }] } }] }), { status: 200 }));
+    expect(await nexaGeminiReply('g-key-123456', nexaGeminiModels(''), body, retired)).toEqual({ reply: 'Dari cadangan' });
+    expect((retired.mock.calls[1] as unknown as [string])[0]).toContain('/models/gemini-flash-latest:generateContent');
+    // Dua-duanya padat → galat gabungan untuk log (widget menjawab dari data situs)
+    const busy = vi.fn(async () => new Response(JSON.stringify({ error: { code: 503, status: 'UNAVAILABLE' } }), { status: 503 }));
+    expect(await nexaGeminiReply('g-key-123456', nexaGeminiModels(''), body, busy)).toEqual({
+      error: 'gemini gemini-3.5-flash HTTP 503 UNAVAILABLE; gemini-flash-latest HTTP 503 UNAVAILABLE',
+    });
   });
 
   it('galat API, penolakan, dan jaringan putus → { error } tanpa melempar', async () => {
@@ -575,6 +606,8 @@ describe('Nexa AI: handler nexa_chat', () => {
     expect(fromPhp.save).toEqual(fromNode.save);
     expect(fromPhp.gbody).toEqual(fromNode.gbody);
     expect(fromPhp.gtext).toEqual(fromNode.gtext);
+    expect(fromPhp.gmodels).toEqual(fromNode.gmodels);
+    expect(fromPhp.gpayload).toEqual(fromNode.gpayload);
     // Handler get/save config: hasil + urutan tulis SQL sama
     const nodeConfig = [];
     for (const c of CONFIG_HANDLER_CASES) {

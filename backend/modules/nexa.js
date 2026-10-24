@@ -14,7 +14,12 @@ export const NEXA_DEFAULT_MODEL = 'claude-opus-5-5';
 const NEXA_API_URL = 'https://api.anthropic.com/v1/messages';
 const NEXA_API_VERSION = '2026-10-21';
 // Penyedia kedua (pilihan admin di tab Tanya Nexa): Google Gemini lewat REST generateContent
-export const NEXA_GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
+// gemini-2.5-flash sudah tidak tersedia untuk pengguna baru (404, 2026-10-24); model ini diuji: jawab ±4 detik
+export const NEXA_GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash';
+// Cadangan bila model utama dipensiunkan (404), padat (429/503), galat server, atau lambat: alias Flash terbaru Google
+const NEXA_GEMINI_FALLBACK_MODEL = 'gemini-flash-latest';
+const NEXA_GEMINI_TIMEOUT = 25; // detik per percobaan (= nexa.php)
+const NEXA_GEMINI_RETRY_CODES = [0, 404, 429, 500, 503, 504];
 const NEXA_GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
 // Kunci & saklar AI dari admin (hero_settings; TIDAK pernah ikut get_settings publik — lihat server.js). nexa_enabled
 // (saklar widget) satu-satunya setting nexa_ yang publik dan boleh lewat update_settings biasa.
@@ -276,36 +281,62 @@ export function nexaGeminiText(response) {
   return text === '' ? null : text;
 }
 
-/** Panggil Gemini (= nexa_gemini_reply): { reply } atau { error } untuk log. Tidak pernah melempar. */
-export async function nexaGeminiReply(apiKey, model, body, fetchImpl = fetch) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), NEXA_TIMEOUT * 1000);
-  try {
-    const response = await fetchImpl(`${NEXA_GEMINI_URL}${encodeURIComponent(model)}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    const raw = await response.text();
+/** Urutan model yang dicoba (= nexa_gemini_models): model pilihan lalu cadangan, tanpa duplikat. */
+export function nexaGeminiModels(model) {
+  const chosen = phpTrim(String(model ?? '')) !== '' ? phpTrim(String(model)) : NEXA_GEMINI_DEFAULT_MODEL;
+  return chosen === NEXA_GEMINI_FALLBACK_MODEL ? [chosen] : [chosen, NEXA_GEMINI_FALLBACK_MODEL];
+}
+
+/** Isi permintaan untuk satu model (= nexa_gemini_payload): Gemini 3+ berpikir singkat; 2.x apa adanya. */
+export function nexaGeminiPayload(body, model) {
+  if (model.startsWith('gemini-2')) return body;
+  return { ...body, generationConfig: { ...body.generationConfig, thinkingConfig: { thinkingLevel: 'low' } } };
+}
+
+/**
+ * Panggil Gemini dengan model cadangan (= nexa_gemini_reply): model berikutnya dicoba bila yang sekarang
+ * 404/429/5xx/putus/lewat waktu; galat kunci (400/401/403) tidak dicoba ulang. { reply } atau { error }. Tidak melempar.
+ */
+export async function nexaGeminiReply(apiKey, models, body, fetchImpl = fetch) {
+  const errors = [];
+  for (const model of models) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), NEXA_GEMINI_TIMEOUT * 1000);
+    let code = 0;
     let parsed = null;
+    let netError = '';
     try {
-      parsed = JSON.parse(raw);
-    } catch {
-      parsed = null;
+      const response = await fetchImpl(`${NEXA_GEMINI_URL}${encodeURIComponent(model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify(nexaGeminiPayload(body, model)),
+        signal: controller.signal,
+      });
+      code = response.status;
+      const raw = await response.text();
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = null;
+      }
+    } catch (err) {
+      code = 0;
+      netError = controller.signal.aborted ? 'timeout' : String(err?.cause?.message || err?.message || err);
+    } finally {
+      clearTimeout(timer);
     }
-    if (response.status !== 200) {
+    if (code !== 200) {
       const status = typeof parsed?.error?.status === 'string' ? parsed.error.status : '';
-      return { error: `gemini HTTP ${response.status}${status !== '' ? ` ${status}` : ''}` };
+      errors.push(`${model} HTTP ${code}${status !== '' ? ` ${status}` : ''}${netError !== '' ? ` ${netError}` : ''}`);
+      if (NEXA_GEMINI_RETRY_CODES.includes(code)) continue;
+      break;
     }
     const text = nexaGeminiText(parsed);
-    if (text === null) return { error: `gemini no usable text (finishReason ${parsed?.candidates?.[0]?.finishReason ?? '?'})` };
-    return { reply: text };
-  } catch (err) {
-    return { error: controller.signal.aborted ? 'gemini timeout' : String(err?.cause?.message || err?.message || err) };
-  } finally {
-    clearTimeout(timer);
+    if (text !== null) return { reply: text };
+    errors.push(`${model} no usable text (finishReason ${parsed?.candidates?.[0]?.finishReason ?? '?'})`);
+    break;
   }
+  return { error: `gemini ${errors.join('; ')}` };
 }
 
 /** Kunci batas per pengunjung (= nexa_ip_bucket): IPv4 apa adanya, IPv6 per /64, ::ffff:a.b.c.d sebagai IPv4. */
