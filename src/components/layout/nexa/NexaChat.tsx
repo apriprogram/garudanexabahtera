@@ -115,15 +115,58 @@ const speechErrorText = (code: string | undefined): string | null => {
   return 'Input suara tidak tersedia. Silakan ketik pertanyaan Anda.';
 };
 
+// ── Maskot hidup: tiap beberapa detik berganti ekspresi sebentar tanpa disorot (pemilik 2026-10-24) ──
+const IDLE_EVERY = 5000;
+const IDLE_FOR = 850;
+/** Urutan ekspresi selingan tombol maskot (kembali ke netral di antaranya). */
+const LAUNCHER_CYCLE: readonly NexaMood[] = ['kedip', 'ceria', 'kedip', 'kilau'];
+/** Avatar di percakapan cukup berkedip. */
+const CHAT_CYCLE: readonly NexaMood[] = ['kedip'];
+
+/**
+ * Ekspresi maskot yang hidup: selama `active`, setiap IDLE_EVERY ms ekspresi selingan dari `cycle` tampil IDLE_FOR ms,
+ * lalu kembali ke `base`. Pergantian gambar kecil seperti kedipan (bukan gerakan besar), jadi aman tanpa prefers-reduced-motion;
+ * lompatannya sendiri (nexa-hop) hanya jalan di motion-safe.
+ */
+function useIdleMood(base: NexaMood, active: boolean, cycle: readonly NexaMood[]): NexaMood {
+  const [peek, setPeek] = useState<NexaMood | null>(null);
+  useEffect(() => {
+    if (!active) return undefined;
+    let step = 0;
+    const timers: number[] = [];
+    const interval = window.setInterval(() => {
+      const mood = cycle[step % cycle.length];
+      step += 1;
+      setPeek(mood);
+      timers.push(window.setTimeout(() => setPeek(null), IDLE_FOR));
+    }, IDLE_EVERY);
+    return () => {
+      window.clearInterval(interval);
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [active, cycle]);
+  // Saat tidak aktif, `peek` lama diabaikan saja (tanpa reset state di effect)
+  return active ? (peek ?? base) : base;
+}
+
 /** Potong ke `max` code point (bukan unit UTF-16, sama dengan mb_substr di backend). */
 const clip = (text: string, max: number): string => {
   const chars = [...text];
   return chars.length > max ? chars.slice(0, max).join('') : text;
 };
 
-/** Gambar maskot (dekoratif: nama "Nexa" selalu tertulis di dekatnya). */
-export const NexaAvatar: React.FC<{ className?: string; sizes: string; mood?: NexaMood }> = ({ className = '', sizes, mood = 'netral' }) => (
+/**
+ * Gambar maskot (dekoratif: nama "Nexa" selalu tertulis di dekatnya). `animate` membuat maskot melompat kecil setiap
+ * ekspresinya berganti (key = mood, animasi jalan saat elemen dipasang); disorot juga melompat. Keduanya motion-safe.
+ */
+export const NexaAvatar: React.FC<{ className?: string; sizes: string; mood?: NexaMood; animate?: boolean }> = ({
+  className = '',
+  sizes,
+  mood = 'netral',
+  animate = false,
+}) => (
   <img
+    key={animate ? mood : undefined}
     src={moodFile(mood, 128)}
     srcSet={moodSrcSet(mood)}
     sizes={sizes}
@@ -132,7 +175,9 @@ export const NexaAvatar: React.FC<{ className?: string; sizes: string; mood?: Ne
     height={118}
     decoding="async"
     draggable={false}
-    className={`select-none object-contain ${className}`}
+    className={`select-none object-contain motion-safe:hover:animate-[nexa-hop_0.6s_ease-in-out] ${
+      animate ? 'motion-safe:animate-[nexa-hop_0.55s_ease-in-out]' : ''
+    } ${className}`}
   />
 );
 
@@ -229,8 +274,9 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
   const [listening, setListening] = useState(false);
   // Pesan galat input suara (tampil di bawah form & dibacakan lewat role=status)
   const [micNote, setMicNote] = useState('');
-  // Maskot tombol menyapa (senang) saat disorot/difokus
+  // Maskot tombol menyapa saat disorot/difokus; selebihnya hidup sendiri (berkedip dkk. tiap beberapa detik)
   const [greetingLauncher, setGreetingLauncher] = useState(false);
+  const idleMood = useIdleMood('netral', true, LAUNCHER_CYCLE);
   // Panel hanya dirender di klien (tidak ada di HTML prerender), jadi deteksi fitur saat render pertama aman
   const [canListen] = useState(() => speechRecognition() !== null && microphoneAllowed());
 
@@ -443,11 +489,17 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
               aria-label="Percakapan dengan Nexa"
               className="custom-scrollbar relative min-h-32 flex-1 space-y-4 overflow-y-auto overscroll-contain px-6 py-4 sm:px-7"
             >
-              <Bubble from="nexa" mood="ceria">
+              <Bubble from="nexa" mood="ceria" live={messages.length === 0 && !typing}>
                 {GREETING}
               </Bubble>
-              {messages.map((message) => (
-                <Bubble key={message.id} id={message.id} from={message.from} mood={message.mood}>
+              {messages.map((message, index) => (
+                <Bubble
+                  key={message.id}
+                  id={message.id}
+                  from={message.from}
+                  mood={message.mood}
+                  live={!typing && index === messages.length - 1}
+                >
                   {message.from === 'nexa' ? <RichText text={message.text} onNavigate={() => onOpenChange(false)} /> : message.text}
                   {message.action && (
                     <span className="block">
@@ -457,7 +509,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
                 </Bubble>
               ))}
               {typing && (
-                <NexaRow mood="pikir">
+                <NexaRow mood="pikir" live>
                   <div className="flex items-center gap-1.5 rounded-[22px] bg-fg/[0.045] px-5 py-4" aria-hidden>
                     {[0, 1, 2].map((i) => (
                       <span key={i} className="h-2 w-2 rounded-full bg-fg/40 motion-safe:animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
@@ -558,7 +610,12 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
             Tanya Nexa
           </span>
         )}
-        <NexaAvatar className="h-12 w-12 sm:h-14 sm:w-14" sizes="(min-width: 640px) 56px, 48px" mood={greetingLauncher ? 'ceria' : 'netral'} />
+        <NexaAvatar
+          className="h-12 w-12 sm:h-14 sm:w-14"
+          sizes="(min-width: 640px) 56px, 48px"
+          mood={greetingLauncher ? 'ceria' : idleMood}
+          animate
+        />
         {/* Lencana "AI": lingkaran hitam kecil, teks putih, tanpa garis, di kiri agak ke bawah (pemilik 2026-10-24) */}
         {!open && (
           <span
@@ -573,19 +630,25 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
   );
 };
 
-/** Baris pesan Nexa: maskot berekspresi (hanya gambar, tanpa latar & garis) di kiri bawah, sejajar dasar gelembung. */
-const NexaRow: React.FC<{ id?: number; mood?: NexaMood; children: React.ReactNode }> = ({ id, mood, children }) => (
-  <div
-    className="flex items-end gap-3 transition-[opacity,translate] duration-300 ease-calm starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none"
-    data-message-id={id}
-  >
-    <NexaAvatar className="h-10 w-10 shrink-0" sizes="40px" mood={mood} />
-    <div className="min-w-0 max-w-[85%]">{children}</div>
-  </div>
-);
+/**
+ * Baris pesan Nexa: maskot berekspresi (hanya gambar, tanpa latar & garis) di kiri bawah, sejajar dasar gelembung.
+ * `live` (baris terakhir / sedang mengetik): maskot berkedip sendiri tiap beberapa detik.
+ */
+const NexaRow: React.FC<{ id?: number; mood?: NexaMood; live?: boolean; children: React.ReactNode }> = ({ id, mood = 'netral', live = false, children }) => {
+  const shown = useIdleMood(mood, live, CHAT_CYCLE);
+  return (
+    <div
+      className="flex items-end gap-3 transition-[opacity,translate] duration-300 ease-calm starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none"
+      data-message-id={id}
+    >
+      <NexaAvatar className="h-10 w-10 shrink-0" sizes="40px" mood={shown} animate={live} />
+      <div className="min-w-0 max-w-[85%]">{children}</div>
+    </div>
+  );
+};
 
-/** Gelembung pesan: Nexa kiri (abu, avatar berekspresi `mood`), pengunjung kanan (biru muda). `id` = data-message-id. */
-const Bubble: React.FC<{ from: 'nexa' | 'user'; id?: number; mood?: NexaMood; children: React.ReactNode }> = ({ from, id, mood, children }) => {
+/** Gelembung pesan: Nexa kiri (abu, avatar berekspresi `mood`, hidup bila `live`), pengunjung kanan (biru muda). */
+const Bubble: React.FC<{ from: 'nexa' | 'user'; id?: number; mood?: NexaMood; live?: boolean; children: React.ReactNode }> = ({ from, id, mood, live, children }) => {
   const label = <span className="sr-only">{from === 'user' ? 'Anda: ' : 'Nexa: '}</span>;
   if (from === 'user') {
     return (
@@ -601,7 +664,7 @@ const Bubble: React.FC<{ from: 'nexa' | 'user'; id?: number; mood?: NexaMood; ch
     );
   }
   return (
-    <NexaRow id={id} mood={mood}>
+    <NexaRow id={id} mood={mood} live={live}>
       <div className="whitespace-pre-line break-words rounded-[22px] bg-fg/[0.045] px-5 py-3.5 text-[15px] leading-relaxed text-fg">
         {label}
         {children}

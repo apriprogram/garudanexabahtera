@@ -582,6 +582,14 @@
   to { transform: translate3d(120px, 60px, 0) scale(1.15); }
 }
 
+/* Maskot Nexa: lompatan kecil elastis saat ganti ekspresi atau disorot (NexaChat) */
+@keyframes nexa-hop {
+  0% { translate: 0 0; scale: 1 1; }
+  35% { translate: 0 -9%; scale: 1.05 0.95; }
+  70% { translate: 0 1%; scale: 0.97 1.04; }
+  100% { translate: 0 0; scale: 1 1; }
+}
+
 /*
  * Beranda: latar halaman ber-crossfade per section (SectionChrome memasang lapisan warna fixed di belakang).
  * Section langsung di dalam <main class="page-chrome"> dibuat transparan agar lapisan itu terlihat.

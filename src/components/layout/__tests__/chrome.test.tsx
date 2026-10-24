@@ -481,6 +481,24 @@ describe('Nexa AI', () => {
     expect(posts[1].messages).toHaveLength(3);
   });
 
+  it('maskot hidup: tombol berganti ekspresi sendiri tiap beberapa detik lalu kembali netral', () => {
+    vi.useFakeTimers();
+    try {
+      renderAt(<FloatingWhatsApp href={WA} />);
+      const launcher = () => screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' });
+      expect(launcher().querySelector('img')).toHaveAttribute('src', '/assets/nexa/nexa-128.webp');
+      act(() => vi.advanceTimersByTime(5100));
+      expect(launcher().querySelector('img')?.getAttribute('src')).toContain('nexa-kedip');
+      act(() => vi.advanceTimersByTime(900));
+      expect(launcher().querySelector('img')).toHaveAttribute('src', '/assets/nexa/nexa-128.webp');
+      // Putaran kedua (detik ke-10): giliran ekspresi ceria
+      act(() => vi.advanceTimersByTime(4100));
+      expect(launcher().querySelector('img')?.getAttribute('src')).toContain('nexa-ceria');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('input suara: hasil final terkirim otomatis saat selesai bicara; dibatalkan tidak terkirim', async () => {
     FakeRecognition.instances = [];
     vi.stubGlobal('SpeechRecognition', FakeRecognition);
