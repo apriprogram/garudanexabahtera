@@ -115,4 +115,11 @@
       <image:loc>https://garudanexa.com/assets/templates/finova-preview.webp</image:loc>
     </image:image>
   </url>
+  <url>
+    <loc>https://garudanexa.com/template/serenity</loc>
+    <lastmod>2026-10-25</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/serenity-preview.webp</image:loc>
+    </image:image>
+  </url>
 </urlset>

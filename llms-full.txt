@@ -85,6 +85,19 @@ Finova memberi kesan aman, modern, dan meyakinkan untuk produk keuangan. Bagian 
 
 Cocok untuk startup fintech, koperasi simpan pinjam, aplikasi pembayaran dan dompet digital, konsultan keuangan, hingga produk SaaS. Semua isi, angka, logo mitra, dan dua warna merek bisa Anda kelola sendiri lewat CMS tanpa coding.
 
+### Serenity
+- Halaman: https://garudanexa.com/template/serenity
+- Kategori: Yoga & Wellness
+- Harga: Rp1.290.000 (per 25 Oktober 2026), sudah termasuk template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Ringkasan: Website tenang dan modern untuk studio yoga, pilates, dan kelas kebugaran yang ingin tampil profesional.
+- Fitur: Hero slider foto selebar layar (hingga 4 slide) dengan menu transparan; Kartu kelas yoga dengan durasi, level, dan tombol tanya jadwal ke WhatsApp; Paket harga dengan paket unggulan yang menonjol; Langkah memulai, cerita peserta, dan tanya jawab (FAQ); Pencarian kelas dan pertanyaan langsung dari menu; Kelola teks, gambar, harga, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/serenity (konten demo fiktif)
+
+Serenity menghadirkan suasana tenang sejak layar pertama: slider foto selebar layar (hingga 4 slide) dengan menu transparan, judul dua baris bergradasi lembut, tombol video, kartu kaca kecil, dan strip empat jenis kelas. Di bawahnya tersusun cerita studio dengan angka pencapaian, kartu kelas dengan durasi dan tombol tanya jadwal, langkah memulai, paket harga dengan paket unggulan, cerita peserta, tanya jawab, ajakan, serta kontak dengan peta lokasi.
+
+Cocok untuk studio yoga dan pilates, kelas olahraga ringan, instruktur yoga privat, hingga penyelenggara retret yoga. Pengunjung bisa mencari kelas atau pertanyaan langsung dari menu, lalu mendaftar lewat WhatsApp. Semua teks, gambar, harga paket, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.
+
 ## Jasa custom
 Diperbarui 25 Oktober 2026.
 
