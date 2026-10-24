@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
-import { FloatingWhatsApp } from '../../components/layout/FloatingWhatsApp';
 import { SectionChrome, type ChromeSection } from '../../components/layout/SectionChrome';
 import { holdSectionInView } from '../../components/layout/scroll';
 import Hero from '../../components/sections/Hero';
@@ -11,7 +10,7 @@ import Projects from '../../components/sections/Projects';
 import FAQ from '../../components/sections/FAQ';
 import HomeCompare from '../../components/sections/home/HomeCompare';
 import HomeFeatures from '../../components/sections/home/HomeFeatures';
-import { getHiddenSections, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../hooks/useSiteSettings';
+import { getHiddenSections, useSiteSettings } from '../../hooks/useSiteSettings';
 import { useTranslation } from '../../hooks/useTranslation';
 
 /**
@@ -41,7 +40,6 @@ export default function Home() {
   // Section menunggu setting dimuat agar yang disembunyikan admin tidak sempat tampil
   const hidden = getHiddenSections(settings);
   const sections = loaded ? SECTIONS.filter(({ id }) => !hidden.has(id)) : [];
-  const whatsapp = getWhatsappNumber(settings);
 
   const labels: Record<string, string> = {
     perbandingan: 'Perbandingan',
@@ -89,11 +87,7 @@ export default function Home() {
       {/* Setelah Footer: lapisan fixed (tampilan sama), tetapi titik section di akhir urutan Tab, bukan sebelum logo/menu */}
       <SectionChrome sections={chrome} />
 
-      {/* HP: tersembunyi selama hero terlihat & saat menggulir ke bawah, agar tidak menutupi rail hero / harga kartu */}
-      <FloatingWhatsApp
-        href={whatsappUrl(whatsapp, 'Halo Admin, saya tertarik dengan template website atau jasa pembuatan website/aplikasi Garuda Nexa.')}
-        hideOverId="beranda"
-      />
+      {/* Chat Nexa melayang dipasang global di App (FloatingNexa): di beranda disembunyikan selama hero terlihat */}
     </div>
   );
 }

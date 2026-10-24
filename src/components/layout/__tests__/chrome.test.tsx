@@ -276,21 +276,93 @@ describe('Footer', () => {
 });
 
 describe('FloatingWhatsApp', () => {
-  it('di HP mulai tersembunyi bila menjaga hero (Nexa + WhatsApp sekaligus); tanpa hideOverId selalu tampil', () => {
+  it('dok hanya berisi tombol Nexa (WhatsApp melayang dihapus); di HP mulai tersembunyi bila menjaga hero', () => {
     const { unmount } = renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" hideOverId="beranda" />);
-    const dock = screen.getByRole('link', { name: 'Chat WhatsApp' }).parentElement as HTMLElement;
+    const launcher = screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' });
+    const dock = launcher.parentElement as HTMLElement;
     expect(dock.className).toContain('max-sm:invisible');
-    expect(within(dock).getByRole('button', { name: 'Tanya Nexa, asisten AI' })).toBeInTheDocument();
+    // Tombol WhatsApp melayang dihapus (pemilik 2026-10-24); jalur WhatsApp lewat jawaban Nexa & footer
+    expect(screen.queryByRole('link', { name: 'Chat WhatsApp' })).toBeNull();
     unmount();
     renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" />);
-    const link = screen.getByRole('link', { name: 'Chat WhatsApp' });
-    expect((link.parentElement as HTMLElement).className).not.toContain('max-sm:invisible');
-    expect(link).toHaveAttribute('target', '_blank');
+    const always = screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' }).parentElement as HTMLElement;
+    expect(always.className).not.toContain('max-sm:invisible');
+  });
+
+  it('tombol "Kembali ke atas" (beranda): muncul setelah menggulir, kaca buram, gulir halus ke atas', async () => {
+    const scrollTo = vi.fn();
+    vi.stubGlobal('scrollTo', scrollTo);
+    renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" backToTop />);
+    // Di atas halaman: belum ada tombolnya
+    expect(screen.queryByRole('button', { name: 'Kembali ke atas' })).toBeNull();
+    Object.defineProperty(window, 'scrollY', { value: 600, configurable: true });
+    fireEvent.scroll(window);
+    const top = await screen.findByRole('button', { name: 'Kembali ke atas' });
+    // Kaca cair: latar putih tembus bergradasi dengan blur latar belakang
+    expect(top.className).toContain('backdrop-blur');
+    expect(top.className).toContain('from-white/80');
+    fireEvent.click(top);
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+    fireEvent.scroll(window);
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Kembali ke atas' })).toBeNull());
   });
 });
 
-describe('Nexa (calon agen AI)', () => {
+describe('Nexa AI', () => {
   const WA = 'https://wa.me/6285188009152';
+
+  /** Web Speech API palsu untuk menguji input suara. */
+  class FakeRecognition {
+    static instances: FakeRecognition[] = [];
+    lang = '';
+    interimResults = false;
+    continuous = false;
+    started = false;
+    onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> }) => void) | null = null;
+    onend: (() => void) | null = null;
+    onerror: ((event: { error?: string }) => void) | null = null;
+    constructor() {
+      FakeRecognition.instances.push(this);
+    }
+    start() {
+      this.started = true;
+    }
+    stop() {
+      this.onend?.();
+    }
+    abort() {
+      this.onerror?.({ error: 'aborted' });
+      this.onend?.();
+    }
+  }
+
+  /** fetch: nexa_chat dijawab `respond` (status/isi bebas); body POST dicatat. Aksi lain seperti mock bawaan. */
+  const mockNexa = (respond: (body: Record<string, unknown>) => Response) => {
+    const posts: Record<string, unknown>[] = [];
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const action = new URL(String(input), 'http://localhost').searchParams.get('action');
+      if (action === 'nexa_chat') {
+        const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+        posts.push(body);
+        return respond(body);
+      }
+      if (action === 'get_settings') return json(200, {});
+      return json(200, []);
+    });
+    return posts;
+  };
+
+  const openPanel = () => {
+    renderAt(<FloatingWhatsApp href={WA} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' }));
+    return screen.getByRole('dialog', { name: 'Tanya Nexa AI' });
+  };
+
+  const ask = (panel: HTMLElement, text: string) => {
+    fireEvent.change(within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' }), { target: { value: text } });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Kirim pesan' }));
+  };
 
   it('tombol maskot membuka panel percakapan non-modal; fokus ke kolom pesan; Esc menutup & fokus kembali', async () => {
     renderAt(<FloatingWhatsApp href={WA} />);
@@ -301,20 +373,20 @@ describe('Nexa (calon agen AI)', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
 
     fireEvent.click(launcher);
-    const panel = screen.getByRole('dialog', { name: 'Nexa' });
+    const panel = screen.getByRole('dialog', { name: 'Tanya Nexa AI' });
     expect(panel).toHaveAttribute('aria-modal', 'false');
     expect(launcher).toHaveAttribute('aria-expanded', 'true');
     expect(launcher).toHaveAttribute('aria-controls', panel.id);
     expect(document.activeElement).toBe(within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' }));
     expect(within(panel).getByRole('log', { name: 'Percakapan dengan Nexa' })).toHaveTextContent(/Halo, saya Nexa/);
-    expect(panel).toHaveTextContent('belum terhubung ke AI');
+    expect(panel).toHaveTextContent('Nexa AI bisa keliru');
 
     // Esc dari kontrol lain di halaman (fokus di luar panel) tidak menutup chat
     const outside = document.createElement('input');
     document.body.appendChild(outside);
     outside.focus();
     fireEvent.keyDown(outside, { key: 'Escape' });
-    expect(screen.getByRole('dialog', { name: 'Nexa' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Tanya Nexa AI' })).toBeInTheDocument();
     outside.remove();
 
     within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' }).focus();
@@ -323,10 +395,9 @@ describe('Nexa (calon agen AI)', () => {
     expect(document.activeElement).toBe(launcher);
   });
 
-  it('topik cepat dijawab teks tetap + tautan halaman; pesan bebas dijawab jujur + tautan WhatsApp', async () => {
-    renderAt(<FloatingWhatsApp href={WA} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' }));
-    const panel = screen.getByRole('dialog', { name: 'Nexa' });
+  it('topik cepat dijawab teks tetap tanpa AI; AI belum aktif -> jawaban bawaan dari tanya jawab situs', async () => {
+    const posts = mockNexa(() => json(503, { error: 'Nexa AI belum aktif.', code: 'NEXA_OFFLINE' }));
+    const panel = openPanel();
 
     // Chip tetap di DOM (fokus keyboard tidak hilang), hanya aria-disabled selama Nexa mengetik; chip di luar role=log
     const chip = within(panel).getByRole('button', { name: 'Berapa harganya?' });
@@ -337,9 +408,12 @@ describe('Nexa (calon agen AI)', () => {
     expect(chip).toHaveAttribute('aria-disabled', 'true');
     expect(within(panel).getByRole('log').contains(chip)).toBe(false);
     expect(within(panel).getByRole('status')).toHaveTextContent('Nexa sedang mengetik');
+    // Saat mengetik maskot berpikir (melirik ke atas)
+    expect(within(panel).getByRole('log').querySelector('img[src*="nexa-pikir"]')).not.toBeNull();
     const toPricing = await within(panel).findByRole('link', { name: 'Lihat halaman harga' }, { timeout: 2000 });
     expect(toPricing).toHaveAttribute('href', '/harga');
     expect(chip).not.toHaveAttribute('aria-disabled');
+    expect(posts).toHaveLength(0);
 
     const input = within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' });
     const send = within(panel).getByRole('button', { name: 'Kirim pesan' });
@@ -348,10 +422,104 @@ describe('Nexa (calon agen AI)', () => {
     fireEvent.click(send);
     expect(within(panel).getByText('Bisa bikin toko online?')).toBeInTheDocument();
     expect(input).toHaveValue('');
+    // AI belum aktif (503): jawaban tanya jawab situs yang paling cocok + halaman yang tepat
+    const service = await within(panel).findByRole('link', { name: 'Jasa pembuatan website' }, { timeout: 2000 });
+    expect(service).toHaveAttribute('href', '/jasa-pembuatan-website');
+    expect(panel).toHaveTextContent(/Website custom bisa berupa company profile, toko online/);
+    // Riwayat dikirim ke nexa_chat: chip + jawabannya, lalu pertanyaan baru di akhir
+    expect(posts).toHaveLength(1);
+    expect(posts[0].messages).toEqual([
+      { role: 'user', content: 'Berapa harganya?' },
+      { role: 'assistant', content: expect.stringMatching(/^Harga template tertera/) },
+      { role: 'user', content: 'Bisa bikin toko online?' },
+    ]);
+
+    // Tidak ada yang cocok: jujur + WhatsApp; maskot menyesal (maaf)
+    ask(panel, 'Siapa juara piala dunia?');
     const wa = await within(panel).findByRole('link', { name: /Chat WhatsApp/ }, { timeout: 2000 });
     expect(wa).toHaveAttribute('href', WA);
     expect(wa).toHaveAttribute('target', '_blank');
-    expect(panel).toHaveTextContent(/belum bisa menjawab pertanyaan bebas/);
+    expect(panel).toHaveTextContent(/belum punya jawabannya/);
+    expect(wa.closest('[data-message-id]')?.querySelector('img')?.getAttribute('src')).toContain('nexa-maaf');
+  });
+
+  it('jawaban AI: path situs & wa.me jadi tautan, Markdown tebal dibuang; batas pertanyaan (429) -> jawaban dari data situs', async () => {
+    let status = 200;
+    const posts = mockNexa(() =>
+      status === 200
+        ? json(200, {
+            success: true,
+            reply: 'Template **Aura Studio** cocok untuk klinik: lihat /template/aura-studio atau https://garudanexa.com/harga. Tanya tim kami di wa.me/6285188009152.',
+          })
+        : json(429, { error: 'Terlalu banyak percobaan. Coba lagi dalam 5 menit.' }),
+    );
+    const panel = openPanel();
+    ask(panel, 'Template untuk klinik kecantikan?');
+    const toTemplate = await within(panel).findByRole('link', { name: '/template/aura-studio' }, { timeout: 2000 });
+    expect(toTemplate).toHaveAttribute('href', '/template/aura-studio');
+    expect(within(panel).getByRole('link', { name: '/harga' })).toHaveAttribute('href', '/harga');
+    const wa = within(panel).getByRole('link', { name: /wa\.me\/6285188009152/ });
+    expect(wa).toHaveAttribute('href', 'https://wa.me/6285188009152');
+    expect(wa).toHaveAttribute('target', '_blank');
+    expect(within(panel).getByRole('log')).toHaveTextContent(/Template Aura Studio cocok/);
+    expect(within(panel).getByRole('log')).not.toHaveTextContent(/\*\*/);
+    expect(posts[0].messages).toEqual([{ role: 'user', content: 'Template untuk klinik kecantikan?' }]);
+
+    // Klik tautan internal menutup panel (pengunjung pindah halaman)
+    fireEvent.click(toTemplate);
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    status = 429;
+    fireEvent.click(screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' }));
+    const again = screen.getByRole('dialog', { name: 'Tanya Nexa AI' });
+    ask(again, 'Berapa harga Finova?');
+    // Batas tercapai: Nexa tetap menjawab dari data situs (bukan pesan "sibuk" tanpa jawaban)
+    const pricing = await within(again).findByRole('link', { name: 'Lihat halaman harga' }, { timeout: 2000 });
+    expect(pricing).toHaveAttribute('href', '/harga');
+    expect(again).toHaveTextContent(/Harga setiap template tertera/);
+    // Riwayat percakapan tetap terkirim (jawaban AI sebelumnya ikut sebagai assistant)
+    expect(posts[1].messages).toHaveLength(3);
+  });
+
+  it('input suara: hasil final terkirim otomatis saat selesai bicara; dibatalkan tidak terkirim', async () => {
+    FakeRecognition.instances = [];
+    vi.stubGlobal('SpeechRecognition', FakeRecognition);
+    mockNexa(() => json(503, { error: 'Nexa AI belum aktif.', code: 'NEXA_OFFLINE' }));
+    const panel = openPanel();
+    fireEvent.click(within(panel).getByRole('button', { name: /Bicara/ }));
+    const rec = FakeRecognition.instances.at(-1) as FakeRecognition;
+    expect(rec.started).toBe(true);
+    expect(rec.lang).toBe('id-ID');
+    const final = Object.assign([{ transcript: 'ada diskon' }], { isFinal: true });
+    act(() => rec.onresult?.({ results: [final] }));
+    expect(within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' })).toHaveValue('ada diskon');
+    act(() => rec.onend?.());
+    // Pertanyaan terkirim tanpa menekan Kirim; jawaban bawaan diskon menyusul
+    expect(within(panel).getByText('ada diskon')).toBeInTheDocument();
+    expect(within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' })).toHaveValue('');
+    await within(panel).findByRole('link', { name: 'Lihat katalog template' }, { timeout: 2000 });
+
+    // Dikte kedua dibatalkan (abort) → tidak ada kiriman baru
+    fireEvent.click(within(panel).getByRole('button', { name: /Bicara/ }));
+    const second = FakeRecognition.instances.at(-1) as FakeRecognition;
+    const partial = Object.assign([{ transcript: 'berapa' }], { isFinal: true });
+    act(() => second.onresult?.({ results: [partial] }));
+    act(() => second.abort());
+    expect(within(panel).queryByText('berapa')).toBeNull();
+    expect(within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' })).toHaveValue('berapa');
+  });
+
+  it('riwayat ke nexa_chat: jawaban AI panjang dipotong 4000 karakter, jadi percakapan tetap sah di backend', async () => {
+    const long = 'Panjang. '.repeat(600);
+    const posts = mockNexa(() => json(200, { success: true, reply: long }));
+    const panel = openPanel();
+    ask(panel, 'Ceritakan semua layanan');
+    await waitFor(() => expect(within(panel).getByRole('log')).toHaveTextContent(/Panjang\. Panjang\./), { timeout: 2000 });
+    ask(panel, 'Lanjut');
+    await waitFor(() => expect(posts).toHaveLength(2), { timeout: 2000 });
+    const sent = posts[1].messages as { role: string; content: string }[];
+    expect(sent.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
+    expect([...sent[1].content]).toHaveLength(4000);
   });
 });
 

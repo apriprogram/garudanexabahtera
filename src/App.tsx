@@ -1,6 +1,8 @@
 import { Suspense, lazy, useEffect, type ReactNode } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useStore } from './store/useStore';
+import { FloatingWhatsApp } from './components/layout/FloatingWhatsApp';
+import { getWhatsappNumber, useSiteSettings, whatsappUrl } from './hooks/useSiteSettings';
 import Home from './pages/public/Home';
 import { adminRoutes } from './pages/admin/routes';
 import SiteHostGate from './templates/SiteHostGate';
@@ -62,6 +64,30 @@ const PageFallback = () => (
 );
 
 const lazyPage = (node: ReactNode) => <Suspense fallback={<PageFallback />}>{node}</Suspense>;
+
+/** Pesan pembuka tautan "Chat WhatsApp" di jawaban Nexa. */
+const WA_GREETING = 'Halo Admin, saya tertarik dengan template website atau jasa pembuatan website/aplikasi Garuda Nexa.';
+// Halaman tanpa chat Nexa: alur fokus (masuk/daftar/login), demo template & situs pelanggan, akun, dan panel admin
+const NEXA_EXCLUDED = ['/demo', '/situs', '/akun', '/login', '/auth', '/admin', '/masuk', '/daftar'];
+
+/**
+ * Chat Nexa AI melayang di semua halaman situs utama (pemilik 2026-10-24; tombol WhatsApp melayang dihapus, jalur
+ * WhatsApp lewat jawaban Nexa & footer). Beranda juga mendapat tombol "ke atas" dan menyembunyikan dok selama hero
+ * terlihat (hideOverId).
+ */
+function FloatingNexa() {
+  const { pathname } = useLocation();
+  const { settings } = useSiteSettings();
+  if (NEXA_EXCLUDED.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return null;
+  const home = pathname === '/';
+  return (
+    <FloatingWhatsApp
+      href={whatsappUrl(getWhatsappNumber(settings), WA_GREETING)}
+      hideOverId={home ? 'beranda' : undefined}
+      backToTop={home}
+    />
+  );
+}
 
 function App() {
   const { theme } = useStore();
@@ -131,6 +157,7 @@ function App() {
 
           <Route path="*" element={lazyPage(<NotFound />)} />
         </Routes>
+        <FloatingNexa />
       </SiteHostGate>
     </div>
   );
