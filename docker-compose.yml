@@ -46,6 +46,11 @@ services:
       - AI_BASE_URL=${AI_BASE_URL:-}
       - AI_API_KEY=${AI_API_KEY:-}
       - AI_MODEL=${AI_MODEL:-}
+      # Nexa AI, public chat on the home page (backend/modules/nexa.js); empty key = built-in answers only
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - NEXA_MODEL=${NEXA_MODEL:-}
+      - NEXA_DAILY_LIMIT=${NEXA_DAILY_LIMIT:-}
+      - NEXA_KNOWLEDGE_FILE=${NEXA_KNOWLEDGE_FILE:-}
       # Midtrans Snap for template orders; empty server key = orders without online payment (see .env.example)
       - MIDTRANS_SERVER_KEY=${MIDTRANS_SERVER_KEY:-}
       - MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY:-}

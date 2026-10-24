@@ -69,6 +69,7 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
         'get_showcase_stats' => 'pf_get_showcase_stats',
         'showcase_like' => 'pf_showcase_like',
         'showcase_view' => 'pf_showcase_view',
+        'nexa_chat' => 'pf_nexa_chat', // backend/modules/nexa.php
         // customer (own data only)
         'customer_create_order' => 'pf_customer_create_order',
         'customer_get_order_quote' => 'pf_customer_get_order_quote',

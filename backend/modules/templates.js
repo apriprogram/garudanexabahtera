@@ -24,6 +24,10 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { issueToken, createLimiter, isAuthConfigured } from '../security.js';
 import { uploadBase64ToS3, parseUpload, deleteFromS3, S3_PUBLIC_URL } from '../s3-client.js';
+import {
+  NEXA_DEFAULT_DAILY_LIMIT, NEXA_DEFAULT_MODEL, NEXA_PER_DAY, NEXA_PER_HOUR, nexaCleanMessages, nexaClaudeReply, nexaIpBucket,
+  nexaKnowledge, nexaLiveFacts, nexaRequestBody,
+} from './nexa.js';
 
 const STATUS_LABEL = {
   menunggu_pembayaran: 'Menunggu Pembayaran',
@@ -68,6 +72,11 @@ const templateViewLimiter = createLimiter(3600 * 1000, 300);
 // Suka / dilihat kartu proyek beranda: batas sama dengan template (PF_LIKES_PER_HOUR / PF_VIEWS_PER_HOUR)
 const showcaseLikeLimiter = createLimiter(3600 * 1000, 60);
 const showcaseViewLimiter = createLimiter(3600 * 1000, 300);
+// Nexa AI (nexa_chat): per pengunjung per jam & per hari, dan batas harian semua pengunjung (NEXA_DAILY_LIMIT, dibaca
+// saat dipakai)
+const nexaIpLimiter = createLimiter(3600 * 1000, NEXA_PER_HOUR);
+const nexaIpDayLimiter = createLimiter(86400 * 1000, NEXA_PER_DAY);
+const nexaDailyLimiters = new Map();
 // Jumlah terjual per template (sama dengan PF_SOLD_COUNT_SQL di templates.php): pesanan dibayar, tidak dibatalkan/ditolak
 const SOLD_COUNT_SQL = `(SELECT COUNT(*) FROM template_orders o WHERE o.template_id = templates.id AND o.paid_at IS NOT NULL
     AND o.status IN ('menunggu_approval', 'proses_domain', 'aktif')) AS sold_count`;
@@ -98,6 +107,7 @@ const HANDLERS = {
   get_showcase_stats: getShowcaseStats,
   showcase_like: showcaseLike,
   showcase_view: showcaseView,
+  nexa_chat: nexaChat, // backend/modules/nexa.js
   // customer (own data only)
   customer_create_order: customerCreateOrder,
   customer_get_order_quote: customerGetOrderQuote,
@@ -273,6 +283,43 @@ async function showcaseLike({ pool, input, req }) {
     ? 'INSERT INTO showcase_stats (item_key, like_count) VALUES (?, 1) ON DUPLICATE KEY UPDATE like_count = like_count + 1'
     : 'INSERT INTO showcase_stats (item_key, like_count) VALUES (?, 0) ON DUPLICATE KEY UPDATE like_count = GREATEST(like_count - 1, 0)', [key]);
   return { like_count: Number((await dbOne(pool, 'SELECT like_count FROM showcase_stats WHERE item_key = ?', [key])).like_count) };
+}
+
+// Aksi publik nexa_chat (= pf_nexa_chat di nexa.php): {messages: [{role, content}]} → {reply}. 503 NEXA_OFFLINE tanpa
+// kunci API, 503 NEXA_UNAVAILABLE bila Claude gagal; 429 bila batas per pengunjung atau batas harian tercapai.
+async function nexaChat({ pool, body, req }) {
+  // body = isi POST seperti json_decode PHP (Map), jadi daftar & kunci dibaca persis seperti pf_nexa_chat
+  const messages = nexaCleanMessages(body instanceof Map ? body.get('messages') : undefined);
+  if (messages === null) throw new ApiError('Pesan untuk Nexa tidak valid.', 400, 'VALIDATION');
+  const apiKey = envValue('ANTHROPIC_API_KEY');
+  if (apiKey === '') throw new ApiError('Nexa AI belum aktif.', 503, 'NEXA_OFFLINE');
+
+  const visitor = nexaIpBucket(clientIp(req));
+  const hourKey = `nexa|${visitor}`;
+  const dayKey = `nexa-day|${visitor}`;
+  const dailyLimit = Math.max(1, Number.parseInt(envValue('NEXA_DAILY_LIMIT', String(NEXA_DEFAULT_DAILY_LIMIT)), 10) || 0);
+  if (!nexaDailyLimiters.has(dailyLimit)) nexaDailyLimiters.set(dailyLimit, createLimiter(86400 * 1000, dailyLimit));
+  const daily = nexaDailyLimiters.get(dailyLimit);
+  const wait = Math.max(nexaIpLimiter.retryAfter(hourKey), nexaIpDayLimiter.retryAfter(dayKey), daily.retryAfter('nexa|all'));
+  if (wait) tooManyAttempts(wait);
+  nexaIpLimiter.hit(hourKey);
+  nexaIpDayLimiter.hit(dayKey);
+  daily.hit('nexa|all');
+
+  const settings = {};
+  for (const row of await dbAll(pool, `SELECT setting_key, setting_value FROM hero_settings
+                                       WHERE setting_key IN ('footer_whatsapp', 'footer_email', 'template_price_includes', 'template_price_note')`)) {
+    settings[row.setting_key] = String(row.setting_value ?? '');
+  }
+  const templates = await dbAll(pool, "SELECT name, slug, category, price FROM templates WHERE status = 'published' ORDER BY sort_order ASC, id ASC");
+
+  const model = envValue('NEXA_MODEL', NEXA_DEFAULT_MODEL);
+  const result = await nexaClaudeReply(apiKey, nexaRequestBody(model, nexaKnowledge(), nexaLiveFacts(templates, settings), messages));
+  if (result.reply === undefined) {
+    console.error(`[nexa] ${result.error}`);
+    throw new ApiError('Nexa AI sedang tidak tersedia.', 503, 'NEXA_UNAVAILABLE');
+  }
+  return { reply: result.reply };
 }
 
 async function showcaseView({ pool, input, req }) {
