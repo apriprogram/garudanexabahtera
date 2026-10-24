@@ -1,1 +1,0 @@
-import{dr as e}from"./index-nw341_Mz.js";var t=e(`ChevronLeft`,[[`path`,{d:`m15 18-6-6 6-6`,key:`1wnfg3`}]]);export{t};

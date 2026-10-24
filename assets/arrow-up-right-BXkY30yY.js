@@ -1,1 +1,0 @@
-import{dr as e}from"./index-nw341_Mz.js";var t=e(`ArrowUpRight`,[[`path`,{d:`M7 7h10v10`,key:`1tivn9`}],[`path`,{d:`M7 17 17 7`,key:`1vkiza`}]]);export{t};

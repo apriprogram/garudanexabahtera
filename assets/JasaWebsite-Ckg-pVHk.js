@@ -1,1 +1,0 @@
-import{Ht as e}from"./index-nw341_Mz.js";import{r as t,t as n}from"./ServicePage-6MRkGjXR.js";var r=e();function i(){return(0,r.jsx)(n,{service:t})}export{i as default};
