@@ -124,6 +124,20 @@ export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
     hasGuide: true,
     guides: ['template-vs-jasa-website-custom'],
   },
+  // Sekolah (2026-10-25): Madani (SMA Islam, hijau) dan Cakrawala (SMK, biru), kategori DB "Sekolah & Pendidikan"
+  'sekolah-pendidikan': {
+    slug: 'sekolah-pendidikan',
+    name: 'Sekolah & pendidikan',
+    h1: 'Template website sekolah',
+    title: 'Template Website Sekolah & PPDB Online | Garuda Nexa',
+    description:
+      'Template website sekolah untuk SMA, SMK & sekolah islam: berita, pengumuman, PPDB online. Mulai {harga_min}, termasuk domain, hosting & SSL. Lihat demonya.',
+    descriptionNoPrice:
+      'Template website sekolah untuk SMA, SMK & sekolah islam: berita, pengumuman, PPDB online, sudah termasuk domain, hosting & SSL. Lihat demonya.',
+    niche: 'sekolah',
+    hasGuide: true,
+    guides: ['template-vs-jasa-website-custom'],
+  },
 };
 
 /** Urutan tampil kategori (chip katalog, footer, beranda). */

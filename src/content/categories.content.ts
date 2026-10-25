@@ -396,4 +396,74 @@ export const CATEGORY_CONTENT: Readonly<Record<CategorySlug, CategoryPageContent
       },
     ],
   },
+  'sekolah-pendidikan': {
+    intro:
+      'Template di kategori ini dibuat untuk sekolah menengah, dari SMA dan SMK sampai sekolah islam dan madrasah. Slider foto sekolah, statistik, sambutan kepala sekolah, berita, pengumuman, informasi PPDB, alumni, peta lokasi, dan kontak sudah tersusun, dan semuanya bisa Anda ubah sendiri lewat CMS. Template ini adalah website profil sekolah, bukan sistem akademik atau aplikasi PPDB dengan database.',
+    guideIntro:
+      'Orang tua dan calon siswa membuka website sekolah untuk mencari kepastian: sekolah seperti apa ini, bagaimana cara mendaftar, dan apakah informasinya masih berlaku. Siapkan isi berikut agar website sekolah Anda menjawab pertanyaan itu tanpa harus menelepon tata usaha, sekaligus membantu sekolah muncul saat orang mencari sekolah di daerah Anda.',
+    checklist: [
+      {
+        title: 'Profil, visi-misi, dan akreditasi',
+        text: 'Tulis sejarah singkat, visi-misi, status akreditasi, dan nilai yang dipegang sekolah. Orang tua ingin tahu karakter sekolah sebelum membandingkan biaya dan jarak.',
+      },
+      {
+        title: 'Sambutan kepala sekolah yang personal',
+        text: 'Sambutan singkat dengan foto dan nama kepala sekolah membuat sekolah terasa dekat. Hindari kalimat umum yang bisa ditempel di sekolah mana pun; sebutkan hal yang benar-benar khas.',
+      },
+      {
+        title: 'Informasi PPDB yang lengkap dan bertanggal',
+        text: 'Cantumkan jalur pendaftaran, jadwal, syarat berkas, alur, biaya bila ada, dan kontak panitia. Tanggal yang jelas mencegah pertanyaan berulang, dan informasi tahun lalu sebaiknya segera diperbarui atau dihapus.',
+      },
+      {
+        title: 'Program unggulan atau jurusan',
+        text: 'SMA dapat menonjolkan program seperti tahfidz, kelas sains, atau bilingual. SMK sebaiknya menjelaskan setiap kompetensi keahlian, mitra industri, praktik kerja lapangan, dan peluang kerja lulusannya.',
+      },
+      {
+        title: 'Berita dan pengumuman yang rutin diperbarui',
+        text: 'Pisahkan berita kegiatan dari pengumuman resmi seperti libur, jadwal ujian, atau hasil seleksi. Website yang beritanya berhenti setahun lalu membuat orang ragu sekolahnya masih aktif.',
+      },
+      {
+        title: 'Agenda dan kalender kegiatan',
+        text: 'Daftar kegiatan mendatang membantu orang tua menyiapkan waktu, misalnya pengambilan rapor, pentas seni, atau kunjungan industri. Hapus agenda yang sudah lewat agar informasinya tetap akurat.',
+      },
+      {
+        title: 'Prestasi siswa dan sekolah',
+        text: 'Tampilkan prestasi dengan tingkat lomba, tahun, dan nama kegiatan. Prestasi yang spesifik lebih meyakinkan daripada daftar panjang tanpa keterangan.',
+      },
+      {
+        title: 'Galeri dan fasilitas',
+        text: 'Foto kelas, laboratorium, perpustakaan, masjid atau tempat ibadah, dan lapangan memberi gambaran nyata. Mintalah izin sebelum memajang foto siswa yang wajahnya terlihat jelas.',
+      },
+      {
+        title: 'Cerita alumni',
+        text: 'Kutipan alumni beserta tempat mereka melanjutkan kuliah atau bekerja menunjukkan hasil pendidikan sekolah. Gunakan cerita nyata dengan izin, bukan testimoni karangan.',
+      },
+      {
+        title: 'Lokasi, kontak, dan jam layanan',
+        text: 'Alamat lengkap dengan peta, nomor telepon atau WhatsApp, email, jam layanan tata usaha, dan media sosial memudahkan calon siswa datang langsung. Pastikan nomor yang dicantumkan memang dipantau selama masa pendaftaran.',
+      },
+    ],
+    faq: [
+      {
+        question: 'Apakah template sekolah punya sistem PPDB online dengan database?',
+        answer:
+          'Tidak. Formulir pendaftaran di halaman menyusun pesan WhatsApp untuk panitia; data tidak disimpan di server dan tidak ada pembayaran online. Sistem PPDB dengan akun calon siswa, unggah berkas, dan dasbor panitia bisa dibuat lewat jasa website custom.',
+      },
+      {
+        question: 'Bisakah dipakai untuk SMP, MA, atau madrasah?',
+        answer:
+          'Bisa. Nama sekolah, jenjang, program, dan judul setiap bagian bisa diganti dari CMS, dan bagian yang tidak relevan bisa disembunyikan.',
+      },
+      {
+        question: 'Apakah berita dan pengumuman bisa diperbarui sendiri?',
+        answer:
+          'Bisa. Berita, pengumuman, agenda, dan prestasi ditulis lewat CMS tanpa menyentuh kode, jadi staf sekolah bisa memperbaruinya kapan saja.',
+      },
+      {
+        question: 'Apakah template sekolah sudah punya rapor online atau absensi siswa?',
+        answer:
+          'Belum. Template ini adalah website profil dan informasi sekolah. Rapor online, absensi, dan sistem akademik lain termasuk aplikasi custom yang bisa kami buatkan setelah konsultasi.',
+      },
+    ],
+  },
 };

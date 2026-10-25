@@ -198,6 +198,7 @@ describe('Footer', () => {
       '/template/kategori/fintech-startup',
       '/template/kategori/yoga-wellness',
       '/template/kategori/toko-online',
+      '/template/kategori/sekolah-pendidikan',
     ]);
     expect(hrefs('Jasa')).toEqual(['/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/pesan-custom', '/harga']);
     expect(hrefs('Perusahaan')).toEqual(['/tentang', '/panduan', '/kontak']);

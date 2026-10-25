@@ -40,6 +40,7 @@ describe('getHead: semua rute index', () => {
     expect(withTemplates).toEqual(['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup', 'yoga-wellness']);
     expect(paths).toEqual(expect.arrayContaining(['/template', ...withTemplates.map(categoryPath)]));
     expect(paths).not.toContain(categoryPath('toko-online'));
+    expect(paths).not.toContain(categoryPath('sekolah-pendidikan'));
   });
 
   it('title ≤ 60 & description 50–155 karakter, keduanya unik', () => {
