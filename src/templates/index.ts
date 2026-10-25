@@ -2,6 +2,7 @@
 // Kunci = `template_code` di tabel templates / template_orders / template_sites.
 import { arenaClub } from './arena-club';
 import { auraStudio } from './aura-studio';
+import { cakrawala } from './cakrawala';
 import { corporateNexa } from './corporate-nexa';
 import { finova } from './finova';
 import { gadgetku } from './gadgetku';
@@ -23,6 +24,7 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // PuncakGear (2026-10-25): toko perlengkapan mendaki, panduan per gunung + sewa alat (src/templates/puncakgear/PuncakGear.tsx).
 // GadgetKu.id (2026-10-25): toko aksesori HP, cari per tipe HP + custom casing (src/templates/gadgetku/GadgetKu.tsx).
 // GlowStory (2026-10-25): toko online kecantikan, kuis jenis kulit + langganan isi ulang (src/templates/glowstory/GlowStory.tsx).
+// Cakrawala (2026-10-25): website SMK/SMA, hero slider foto + PPDB lewat WhatsApp (src/templates/cakrawala/Cakrawala.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -35,6 +37,7 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [puncakgear.code]: puncakgear,
   [gadgetku.code]: gadgetku,
   [glowstory.code]: glowstory,
+  [cakrawala.code]: cakrawala,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */

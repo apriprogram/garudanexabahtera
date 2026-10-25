@@ -10,6 +10,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ARENA_PHOTOS } from '../arena-club/photos';
 import { AURA_PHOTOS } from '../aura-studio/photos';
+import { CAKRAWALA_PHOTOS } from '../cakrawala/photos';
 import { FINOVA_PHOTOS } from '../finova/photos';
 import { GADGETKU_PHOTOS } from '../gadgetku/photos';
 import { GLOWSTORY_PHOTOS } from '../glowstory/photos';
@@ -33,7 +34,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'horizon';
   photos: PhotoSet;
 }
 
@@ -48,6 +49,7 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'gadgetku', component: 'GadgetKu.tsx', heroLayout: 'inset-card', photos: GADGETKU_PHOTOS },
   { code: 'glowstory', component: 'GlowStory.tsx', heroLayout: 'collage', photos: GLOWSTORY_PHOTOS },
   { code: 'skynusa', component: 'SkyNusa.tsx', heroLayout: 'specsheet', photos: SKYNUSA_PHOTOS },
+  { code: 'cakrawala', component: 'Cakrawala.tsx', heroLayout: 'horizon', photos: CAKRAWALA_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */

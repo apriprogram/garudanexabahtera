@@ -188,4 +188,23 @@ Tiga fitur mendorong pembelian berulang: kuis jenis kulit yang menyusun rutinita
    '["/assets/templates/glowstory-1.webp","/assets/templates/glowstory-2.webp"]',
    'glowstory', NULL, 'published', 11);
 
+-- Cakrawala (2026-10-25, Sekolah & Pendidikan; DB lama: migrasi 2026-10-25_025). Satu statement per template agar
+-- baris yang dirilis bersamaan bisa ditambah tanpa mengubah daftar VALUES lain. Demo: SMK Cakrawala Karya (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('cakrawala',
+   'Cakrawala',
+   'Sekolah & Pendidikan',
+   'Template website SMK dan SMA yang modern: hero slider foto, PPDB dengan formulir ke WhatsApp, berita, pengumuman, alumni, dan BKK.',
+   'Cakrawala membuat website sekolah tampil rapi dan meyakinkan sejak layar pertama: slider foto besar di dalam bingkai membulat, menu pil, pengumuman PPDB di bagian paling atas, dan tiga kartu info. Di bawahnya tersusun statistik sekolah, sambutan kepala sekolah, profil dengan visi dan misi, program keahlian, teaching factory dan mitra industri, prestasi, PPDB (jalur, jadwal, syarat, alur, biaya, dan formulir singkat), berita dengan filter kategori, pengumuman, agenda, cerita alumni, Bursa Kerja Khusus, fasilitas, galeri, tanya jawab, serta lokasi dengan Google Maps.
+
+Cocok untuk SMK negeri maupun swasta, dan bisa dipakai SMA dengan mengganti program keahlian menjadi peminatan. Formulir PPDB menyusun pesan WhatsApp untuk panitia; tidak ada penyimpanan data pendaftar atau pembayaran online. Semua teks, foto, jadwal, dan satu warna tema (misalnya biru atau hijau) bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero slider foto dengan menu pil, pengumuman PPDB, dan kartu info","PPDB bertab: jalur, jadwal, syarat, alur, dan biaya","Formulir pendaftaran singkat yang menyusun pesan WhatsApp untuk panitia","Berita dengan filter kategori, pengumuman bertanggal, dan agenda kegiatan","Sambutan kepala sekolah, profil, visi & misi, program keahlian, dan prestasi","Teaching factory, mitra industri, alumni, dan Bursa Kerja Khusus","Satu warna tema yang bisa diganti, misalnya biru atau hijau","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/cakrawala-preview.webp',
+   '["/assets/templates/cakrawala-1.webp","/assets/templates/cakrawala-2.webp"]',
+   'cakrawala', NULL, 'published', 13);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

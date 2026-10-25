@@ -12,7 +12,7 @@ const defs = Object.values(TEMPLATES);
 
 describe('registry', () => {
   it('memuat semua template katalog', () => {
-    expect(Object.keys(TEMPLATES).sort()).toEqual(['arena-club', 'aura-studio', 'corporate-nexa', 'finova', 'gadgetku', 'glowstory', 'puncakgear', 'serenity', 'skynusa', 'startup-clean', 'tanimakmur']);
+    expect(Object.keys(TEMPLATES).sort()).toEqual(['arena-club', 'aura-studio', 'cakrawala', 'corporate-nexa', 'finova', 'gadgetku', 'glowstory', 'puncakgear', 'serenity', 'skynusa', 'startup-clean', 'tanimakmur']);
     for (const def of defs) {
       expect(def.code).toBeTruthy();
       expect(def.sections.length).toBeGreaterThan(5);
@@ -32,6 +32,7 @@ describe('registry', () => {
     expect(getTemplate('GadgetKu')?.name).toBe('GadgetKu.id');
     expect(getTemplate('GlowStory')?.name).toBe('GlowStory');
     expect(getTemplate('SkyNusa')?.name).toBe('SkyNusa');
+    expect(getTemplate('Cakrawala')?.name).toBe('Cakrawala');
     for (const code of ['constructor', '__proto__', 'toString', '', null, undefined, 'tidak-ada']) expect(getTemplate(code)).toBeUndefined();
   });
 });
