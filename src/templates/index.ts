@@ -2,6 +2,7 @@
 // Kunci = `template_code` di tabel templates / template_orders / template_sites.
 import { arenaClub } from './arena-club';
 import { auraStudio } from './aura-studio';
+import { bestari } from './bestari';
 import { cakrawala } from './cakrawala';
 import { corporateNexa } from './corporate-nexa';
 import { finova } from './finova';
@@ -27,6 +28,7 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // GlowStory (2026-10-25): toko online kecantikan, kuis jenis kulit + langganan isi ulang (src/templates/glowstory/GlowStory.tsx).
 // Madani (2026-10-25): website sekolah Islam SMA/MA, slider foto berbingkai + PPDB ke WhatsApp (src/templates/madani/Madani.tsx).
 // Cakrawala (2026-10-25): website SMK/SMA, hero slider foto + PPDB lewat WhatsApp (src/templates/cakrawala/Cakrawala.tsx).
+// Bestari (2026-10-26): website SD, hero slider foto + menu pil putih + PPDB lewat WhatsApp (src/templates/bestari/Bestari.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -41,6 +43,7 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [glowstory.code]: glowstory,
   [madani.code]: madani,
   [cakrawala.code]: cakrawala,
+  [bestari.code]: bestari,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */

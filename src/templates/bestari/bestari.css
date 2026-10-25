@@ -1,0 +1,162 @@
+/*
+ * CSS lokal Bestari (diimpor ./Bestari.tsx): lapisan gelap foto hero (cokelat malam dari warna tema), latar cadangan
+ * tanpa foto, pita gelap footer, pergantian slide (pudar + zoom pelan HANYA setelah slide berganti, jadi foto pertama
+ * tidak dianimasikan masuk dan LCP tidak tertunda), bilah progres slide, teks slide yang naik pelan, buka-tutup
+ * (akordeon "+", alasan bernomor, isi berita), dan rel geser tanpa scrollbar. Gerak hanya bila root template
+ * ber-data-tpl-motion="on" (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak → statis. Tanpa bayangan.
+ */
+
+@layer components {
+  /*
+   * Lapisan gelap foto hero: atas (bilah info + menu pil), kiri-bawah (judul & tombol), bawah (angka & kontrol).
+   * Teks putih tetap ≥ 4,5:1 di atas foto terang. Wadah sempit (HP, CMS): rata atas-bawah, makin gelap ke bawah.
+   */
+  .bs-hero-scrim {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--bs-deep) 62%, transparent) 0%, transparent 26%),
+      linear-gradient(90deg, color-mix(in srgb, var(--bs-deep) 72%, transparent) 0%, color-mix(in srgb, var(--bs-deep) 36%, transparent) 46%, transparent 72%),
+      linear-gradient(0deg, color-mix(in srgb, var(--bs-deep) 88%, transparent) 0%, color-mix(in srgb, var(--bs-deep) 52%, transparent) 30%, transparent 60%);
+  }
+
+  @container (max-width: 1023px) {
+    .bs-hero-scrim {
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bs-deep) 66%, transparent) 0%,
+        color-mix(in srgb, var(--bs-deep) 28%, transparent) 30%,
+        color-mix(in srgb, var(--bs-deep) 52%, transparent) 52%,
+        color-mix(in srgb, var(--bs-deep) 92%, transparent) 100%
+      );
+    }
+  }
+
+  /* Hero tanpa foto: gradasi cokelat malam → warna tema */
+  .bs-hero-fallback {
+    background:
+      radial-gradient(70% 60% at 85% 18%, color-mix(in srgb, var(--tpl-accent) 50%, transparent), transparent 70%),
+      linear-gradient(165deg, var(--bs-deep) 0%, color-mix(in srgb, var(--tpl-accent) 38%, var(--bs-deep)) 100%);
+  }
+
+  /* Pita gelap footer: cokelat malam + cahaya lembut warna tema di sudut (pengganti bayangan) */
+  .bs-deep {
+    background:
+      radial-gradient(60% 50% at 0% 0%, color-mix(in srgb, var(--tpl-accent) 22%, transparent), transparent 70%),
+      var(--bs-deep);
+  }
+
+  /* Foto slide: pudar antar-slide */
+  .bs-slide {
+    transition: opacity 1.1s var(--tpl-ease, ease);
+  }
+
+  /* Zoom pelan 1.06 → 1 hanya untuk slide yang tampil SETELAH pergantian (data-zoom), bukan foto pertama saat dimuat.
+     Dua nama animasi bergantian ("a"/"b") agar zoom diputar ulang setiap slide itu tampil lagi; slide yang sedang
+     memudar keluar mempertahankan animasinya sehingga tidak meloncat. */
+  [data-tpl-motion='on'] .bs-slide[data-zoom='a'] img {
+    animation: bs-zoom-a 8s ease-out both;
+  }
+
+  [data-tpl-motion='on'] .bs-slide[data-zoom='b'] img {
+    animation: bs-zoom-b 8s ease-out both;
+  }
+
+  /* Bilah progres slide: penuh bila tidak berganti otomatis; saat berjalan mengisi 0 → 100% lalu memicu slide
+     berikutnya (onAnimationEnd). Berhenti saat hero disorot / difokus / dijeda. */
+  .bs-progress {
+    transform-origin: left center;
+  }
+
+  [data-tpl-motion='on'] .bs-progress[data-run='true'] {
+    animation: bs-progress var(--bs-autoplay, 6500ms) linear both;
+  }
+
+  [data-tpl-motion='on'] .bs-progress[data-run='true'][data-hold='true'] {
+    animation-play-state: paused;
+  }
+
+  /* Teks slide naik pelan, hanya setelah pergantian (slide pertama saat dimuat langsung tampil) */
+  [data-tpl-motion='on'] [data-enter='true'] .bs-rise {
+    animation: bs-rise 0.75s var(--tpl-ease, ease) both;
+    animation-delay: var(--bs-delay, 0ms);
+  }
+
+  /* Buka-tutup (akordeon "+", alasan bernomor, isi berita): 0fr → 1fr, transisi hanya bila gerak menyala */
+  .bs-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .bs-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .bs-collapse {
+    transition: grid-template-rows 0.35s var(--tpl-ease, ease);
+  }
+
+  /* Rel geser horizontal (tab PPDB, filter berita, kartu guru di HP) tanpa scrollbar */
+  .bs-rail {
+    scrollbar-width: none;
+  }
+
+  .bs-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .bs-progress[data-run='true'],
+    [data-tpl-motion='on'] .bs-slide[data-zoom] img,
+    [data-tpl-motion='on'] [data-enter='true'] .bs-rise {
+      animation: none;
+    }
+
+    .bs-slide,
+    [data-tpl-motion='on'] .bs-collapse {
+      transition: none;
+    }
+  }
+
+  @media print {
+    .bs-hero-scrim {
+      display: none;
+    }
+  }
+}
+
+@keyframes bs-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes bs-zoom-a {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes bs-zoom-b {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes bs-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

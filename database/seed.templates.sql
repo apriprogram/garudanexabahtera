@@ -226,4 +226,22 @@ Cocok untuk SMK negeri maupun swasta, dan bisa dipakai SMA dengan mengganti prog
    '["/assets/templates/cakrawala-1.webp","/assets/templates/cakrawala-2.webp"]',
    'cakrawala', NULL, 'published', 13);
 
+-- Bestari (2026-10-26, Sekolah & Pendidikan; DB lama: migrasi 2026-10-26_028). Demo: SD Bestari Cendekia (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('bestari',
+   'Bestari',
+   'Sekolah & Pendidikan',
+   'Template website SD yang hangat dan modern: hero slider foto, PPDB dengan formulir ke WhatsApp, berita, pengumuman, guru, dan testimoni orang tua.',
+   'Bestari membuat website sekolah dasar terasa tenang dan meyakinkan sejak layar pertama: slider foto besar selebar layar dengan menu pil putih yang melayang, bilah info kontak dan pengumuman PPDB, tiga angka sekolah, dan kartu sorotan. Di bawahnya tersusun lencana sekolah, profil dengan visi dan misi, angka sekolah, sambutan kepala sekolah, alasan memilih sekolah, program unggulan, prestasi, guru, PPDB (jalur, jadwal, syarat, alur, biaya, dan formulir singkat yang menghitung usia calon murid), berita dengan filter kategori, pengumuman, agenda, testimoni orang tua dan alumni, galeri, tanya jawab, serta lokasi dengan Google Maps.
+
+Cocok untuk SD swasta maupun negeri, dan bisa dipakai SMP dengan mengganti isi program. Formulir PPDB menyusun pesan WhatsApp untuk panitia; tidak ada penyimpanan data pendaftar atau pembayaran online. Semua teks, foto, jadwal, dan satu warna tema (misalnya terakota, hijau, atau biru) bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero slider foto selebar layar dengan menu pil putih dan pengumuman PPDB","PPDB bertab: jalur, jadwal, syarat, alur, dan biaya","Formulir pendaftaran SD yang menghitung usia calon murid dan menyusun pesan WhatsApp untuk panitia","Berita dengan filter kategori, pengumuman bertanggal, dan agenda kegiatan","Profil, sambutan kepala sekolah, program unggulan, prestasi, dan guru","Testimoni orang tua & alumni, galeri, dan tanya jawab","Satu warna tema yang bisa diganti, misalnya terakota, hijau, atau biru","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/bestari-preview.webp',
+   '["/assets/templates/bestari-1.webp","/assets/templates/bestari-2.webp"]',
+   'bestari', NULL, 'published', 14);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;
