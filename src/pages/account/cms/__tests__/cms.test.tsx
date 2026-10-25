@@ -290,15 +290,23 @@ describe('SiteEditor', { timeout: 30_000 }, () => {
     await screen.findByRole('heading', { name: 'Kelola konten situs' });
     const confirm = vi.spyOn(window, 'confirm');
     // Tanpa perubahan: tidak bertanya
-    expect(confirmLeave()).toBe(true);
-    expect(confirm).not.toHaveBeenCalled();
+    await expect(confirmLeave()).resolves.toBe(true);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 
+    // Dialog akun (bukan window.confirm): "Tetap di sini" = batal, "Tinggalkan" = lanjut
     fireEvent.change(screen.getByLabelText('Nama perusahaan'), { target: { value: 'PT Belum Simpan' } });
-    confirm.mockReturnValueOnce(false);
-    expect(confirmLeave()).toBe(false);
-    confirm.mockReturnValueOnce(true);
-    expect(confirmLeave()).toBe(true);
-    expect(confirm).toHaveBeenCalledTimes(2);
+    let answer = confirmLeave();
+    let dialog = await screen.findByRole('alertdialog', { name: 'Perubahan belum disimpan' });
+    expect(dialog).toHaveTextContent('Perubahan yang belum disimpan akan hilang');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tetap di sini' }));
+    await expect(answer).resolves.toBe(false);
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+
+    answer = confirmLeave();
+    dialog = await screen.findByRole('alertdialog', { name: 'Perubahan belum disimpan' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tinggalkan' }));
+    await expect(answer).resolves.toBe(true);
+    expect(confirm).not.toHaveBeenCalled();
 
     // Sudah setuju pergi: beforeunload (logout → /masuk) tidak memunculkan dialog kedua
     const event = new Event('beforeunload', { cancelable: true });

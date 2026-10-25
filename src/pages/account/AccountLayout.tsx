@@ -188,8 +188,8 @@ function UserMenu({ user }: { user: SessionUser | null }) {
   }, [open]);
 
   // Keluar menghapus sesi lebih dulu, jadi perubahan CMS yang belum disimpan ditanyakan SEBELUM logout()
-  const signOut = () => {
-    if (!confirmLeave()) return;
+  const signOut = async () => {
+    if (!(await confirmLeave())) return;
     logout();
   };
 
