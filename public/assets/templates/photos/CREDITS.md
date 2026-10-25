@@ -249,3 +249,35 @@ dan garis HP adalah SVG buatan sendiri di kode template.
 | `gadgetku-portrait-1-*` | Pria muda berkaus putih | https://unsplash.com/photos/kw9kHqYuc3g | Adismara Putri Pradiri |
 | `gadgetku-portrait-2-*` | Perempuan muda berhijab biru tersenyum | https://unsplash.com/photos/O1z8oNDidaM | irwan wahyudi |
 | `gadgetku-portrait-3-*` | Perempuan muda tersenyum, dagu bertumpu di tangan | https://unsplash.com/photos/jBqMJdzTcgA | Phước Sang |
+
+## GlowStory (Seruni Beauty, fiktif)
+
+Foto suasana `-1200.webp` + `-800.webp` (hero besar, kategori, produk, kuis, isi ulang, dan foto ulasan 4:5 1200×1500;
+dua foto kecil hero & panel ajakan 4:3 1200×900). Diunduh dan dicek lisensinya (Unsplash License, bukan Unsplash+)
+2026-10-25. Dipilih tanpa merek asli yang terbaca karena merek & produk demo fiktif (kandidat berlabel Le Labo, OUAI,
+Endless Pure, Kalos, Poko, Nude by Nature, dsb. dibuang). Semua foto hanya dipotong & diperkecil; `glowstory-review-4-*`
+dipotong 4% di tiap sisi untuk membuang bingkai putih foto aslinya.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `glowstory-hero-*` | Botol serum kaca amber di atas alas kayu, bayangan daun | https://unsplash.com/photos/GDSNp1RJyLE | Kadarius Seegars |
+| `glowstory-hero-2-*` | Tetesan serum & krim dalam cawan kaca dengan daun | https://unsplash.com/photos/g6q3lFAe3kA | ibnu ihza |
+| `glowstory-hero-3-*` | Olesan lipstik empat warna di latar merah muda | https://unsplash.com/photos/crSkE1CKQL0 | Ashley Piszek |
+| `glowstory-skincare-*` | Botol serum merah muda dan spons putih | https://unsplash.com/photos/87UiYDcK3_I | Marina Zaharkina |
+| `glowstory-makeup-*` | Kuas rias, lipstik, dan bedak padat di latar krem | https://unsplash.com/photos/xwM61TPMlYk | Shamblen Studios |
+| `glowstory-bodycare-*` | Handuk, garam mandi, sikat badan, dan sabun dari atas | https://unsplash.com/photos/pBBxMUCgwuU | Diana Light |
+| `glowstory-serum-*` | Botol serum amber berlabel polos di atas balok beton | https://unsplash.com/photos/MkuwnDkT1s0 | Avtar Singh |
+| `glowstory-pelembap-*` | Toples kaca buram di samping kotak kemasan polos | https://unsplash.com/photos/w-IvqlYGYAU | Avtar Singh |
+| `glowstory-sunscreen-*` | Dua tube putih polos di atas balok peach | https://unsplash.com/photos/Xp0bTCLD07k | Point Normal |
+| `glowstory-pembersih-*` | Tube putih polos di atas olesan krim | https://unsplash.com/photos/4uN0JxJGRQE | Birgith Roosipuu |
+| `glowstory-lipstik-*` | Tiga lipstik silver dengan batu kristal, latar merah muda | https://unsplash.com/photos/-NLfVaPLwmQ | Jen Vazquez |
+| `glowstory-bedak-*` | Dua wadah bedak tabur dan kuas kecil | https://unsplash.com/photos/8JsIE0k0aLU | Superkitina |
+| `glowstory-losion-*` | Botol pompa putih polos di atas kain cokelat | https://unsplash.com/photos/LtGwgq7r_mc | Sincerely Media |
+| `glowstory-lulur-*` | Toples lulur kopi dengan sendok kayu dan biji kopi | https://unsplash.com/photos/uTbHMwAhuwg | Anish Raheja |
+| `glowstory-quiz-*` | Perempuan dengan titik krim di pipi, dinding terakota | https://unsplash.com/photos/YG1ZAl9Sb20 | Cherrydeck |
+| `glowstory-refill-*` | Botol pompa merah muda di latar oranye | https://unsplash.com/photos/gUZv1Fdkfgw | Birgith Roosipuu |
+| `glowstory-review-1-*` | Tetesan serum dari pipet ke punggung tangan | https://unsplash.com/photos/80wCkpt-IKE | Enecta Cannabis extracts |
+| `glowstory-review-2-*` | Dua perempuan bermasker wajah berswafoto | https://unsplash.com/photos/XKXWkJEQmcs | Thomas Lee |
+| `glowstory-review-3-*` | Tiga olesan losion di lengan, latar linen | https://unsplash.com/photos/CxmQXVqzyIE | xandro Vandewalle |
+| `glowstory-review-4-*` | Perempuan mengedipkan mata sambil memegang cermin bedak (dipotong, lihat di atas) | https://unsplash.com/photos/0ZPo-47oWY4 | Le Tran Hoang Oanh |
+| `glowstory-cta-*` | Aneka botol perawatan kulit di latar terakota | https://unsplash.com/photos/wy7OK3cFqAY | pmv chamara |

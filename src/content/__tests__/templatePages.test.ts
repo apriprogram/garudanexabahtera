@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -39,7 +39,9 @@ const TANIMAKMUR: Template = { ...FIXTURE_TEMPLATES[4], id: 33, slug: 'tanimakmu
 const PUNCAKGEAR: Template = { ...FIXTURE_TEMPLATES[4], id: 31, slug: 'puncakgear', name: 'PuncakGear', category: 'Toko Online', price: 1590000, template_code: 'puncakgear', sort_order: 9 };
 // GadgetKu.id (2026-10-25, migrasi 022) juga belum ada di fixture prerender bersama
 const GADGETKU: Template = { ...FIXTURE_TEMPLATES[4], id: 30, slug: 'gadgetku', name: 'GadgetKu.id', category: 'Toko Online', price: 1590000, template_code: 'gadgetku', sort_order: 10 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU].find((t) => t.slug === slug) as Template;
+// GlowStory (2026-10-25, migrasi 023) juga belum ada di fixture prerender bersama
+const GLOWSTORY: Template = { ...FIXTURE_TEMPLATES[4], id: 32, slug: 'glowstory', name: 'GlowStory', category: 'Toko Online', price: 1590000, template_code: 'glowstory', sort_order: 11 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -63,6 +65,7 @@ describe('src/content/templates', () => {
       tanimakmur: 'TaniMakmur: Template Website Toko Pertanian & Urban Farming',
       puncakgear: 'PuncakGear: Template Website Toko Outdoor & Perlengkapan Pendakian',
       gadgetku: 'GadgetKu.id: Template Website Toko Aksesoris HP',
+      glowstory: 'GlowStory: Template Website Toko Skincare & Kosmetik Online',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -75,6 +78,7 @@ describe('src/content/templates', () => {
       tanimakmur: 'TaniMakmur: Template Website Toko Pertanian – Rp1,59 jt',
       puncakgear: 'PuncakGear: Template Website Toko Outdoor – Rp1,59 jt',
       gadgetku: 'GadgetKu.id: Template Website Toko Aksesoris HP – Rp1,59 jt',
+      glowstory: 'GlowStory: Template Website Toko Skincare – Rp1,59 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -205,6 +209,10 @@ describe('src/content/templates', () => {
     expect(text).toContain('tidak punya keranjang dan pembayaran online');
     expect(text).not.toMatch(/checkout otomatis|pembayaran online tersedia|stok otomatis/);
     for (const keyword of ['website toko perlengkapan pendakian', 'website toko alat gunung', 'website sewa alat pendakian', 'website toko aksesoris handphone', 'website toko online aksesoris hp', 'website toko casing hp']) expect(text, keyword).toContain(keyword);
+    const glowstory = visibleText(templateContent('glowstory') as TemplatePageContent);
+    expect(glowstory).not.toMatch(/menyembuhkan|mengobati|memutihkan|terbukti secara klinis|hasil permanen/i);
+    expect(glowstory).toMatch(/bukan diagnosis/);
+    expect(glowstory).toMatch(/tidak memproses pembayaran online/);
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

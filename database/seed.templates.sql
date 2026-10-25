@@ -118,7 +118,6 @@ VALUES
    'PuncakGear tampil gagah sejak layar pertama: foto pendaki selebar layar dengan menu transparan, judul huruf kapital besar, tombol pil warna terang, dan kartu produk kecil. Di bawahnya tersusun kategori perlengkapan, produk terlaris dengan filter kategori dan tombol pesan, panduan per gunung (misalnya Rinjani, Semeru, Prau) berisi jalur populer, catatan keselamatan, dan daftar perlengkapan yang bisa dicentang pengunjung, lalu bagian sewa alat dengan kalkulator biaya per hari, tips keselamatan, cerita pendaki, tanya jawab, dan lokasi basecamp.
 
 Cocok untuk toko outdoor, penyewaan alat camping dan mendaki, maupun basecamp yang juga menjual perlengkapan. Pesanan, sewa, dan konsultasi dikirim lewat WhatsApp lengkap dengan nama produk, daftar alat, lama sewa, dan perkiraan totalnya. Semua teks, foto, harga, daftar gunung, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
-   '["Hero poster foto selebar layar dengan kartu produk","Produk terlaris dengan filter kategori dan tombol pesan ke WhatsApp","Panduan per gunung dengan daftar perlengkapan yang bisa dicentang","Kalkulator sewa alat per hari dengan diskon lama sewa","Tips keselamatan, cerita pendaki, dan tanya jawab (FAQ)","Pencarian produk, gunung, dan alat sewa langsung dari menu","Kelola teks, foto, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
    1590000.00,
    '/assets/templates/puncakgear-preview.webp',
    '["/assets/templates/puncakgear-1.webp","/assets/templates/puncakgear-2.webp"]',
@@ -135,5 +134,17 @@ Cocok untuk toko aksesoris HP di ruko atau mal, penjual online yang juga berjual
    '["/assets/templates/gadgetku-1.webp","/assets/templates/gadgetku-2.webp"]',
    'gadgetku', NULL, 'published', 10);
    '["Hero foto ladang selebar layar dengan kartu angka dan strip keunggulan","Pilih Tanamanmu: paket per jenis tanaman dengan isi, jadwal tanam, dan harga hemat","Produk terlaris dengan rating, harga coret, dan filter kategori","Pesan produk dan paket langsung lewat WhatsApp","Konsultasi penyuluh, panduan urban farming, testimoni, dan FAQ","Pencarian produk dan paket langsung dari menu","Kelola teks, gambar, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)", "Pencarian aksesoris berdasarkan merek dan tipe HP","Baris produk terbaru dengan harga coret, label diskon otomatis, dan penyaring kategori","Paket bundling hemat dengan potongan harga yang dihitung otomatis","Coba casing custom dengan foto sendiri langsung di browser","Pesan lewat WhatsApp berisi nama produk, dan tipe HP","Kelola produk, tipe HP]',
+  ('glowstory',
+   'GlowStory',
+   'Toko Online',
+   'Template website toko skincare & kosmetik online untuk brand lokal: kuis jenis kulit, pesanan lewat WhatsApp, dan kalkulator langganan isi ulang.',
+   'GlowStory adalah template website toko skincare dan kosmetik dengan suasana hangat seperti katalog butik: kolase foto produk dengan kartu produk unggulan dan lencana rating, strip keunggulan toko, kategori, serta produk terlaris lengkap dengan harga coret, rating, dan saringan per kategori. Pengunjung menyusun daftar belanja di halaman lalu mengirimnya sebagai pesanan WhatsApp lengkap dengan subtotal; ongkir dan pembayaran Anda konfirmasi lewat chat.
+
+Tiga fitur mendorong pembelian berulang: kuis jenis kulit yang menyusun rutinitas pagi dan malam beserta produknya, kalkulator langganan isi ulang yang langsung menunjukkan hemat per kiriman dan per tahun (dikonfirmasi lewat WhatsApp, tanpa penagihan otomatis), serta ulasan pelanggan berfoto. Ada juga strip brand lokal, tanya jawab, dan pita ajakan. Semua teks, foto, harga, pertanyaan kuis, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   1590000.00,
+   '/assets/templates/glowstory-preview.webp',
+   '["/assets/templates/glowstory-1.webp","/assets/templates/glowstory-2.webp"]',
+   'glowstory', NULL, 'published', 11);
+   '["Hero poster foto selebar layar dengan kartu produk","Produk terlaris dengan filter kategori dan tombol pesan ke WhatsApp","Panduan per gunung dengan daftar perlengkapan yang bisa dicentang","Kalkulator sewa alat per hari dengan diskon lama sewa","Tips keselamatan, cerita pendaki, dan tanya jawab (FAQ)","Pencarian produk, gunung, dan alat sewa langsung dari menu","Kelola teks, foto, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)", "Kuis jenis kulit dengan hasil rutinitas pagi & malam beserta produknya","Daftar belanja yang dikirim sebagai pesanan WhatsApp lengkap dengan subtotal","Kalkulator langganan isi ulang: harga per kiriman dan hemat setahun","Produk terlaris dengan harga coret, rating, label, dan saringan kategori","Ulasan pelanggan berfoto yang bisa diperbesar","Kelola teks, kuis]',
 
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;
