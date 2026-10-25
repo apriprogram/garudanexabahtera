@@ -82,8 +82,27 @@ export function accountCrumbs(pathname: string): Crumb[] {
         { label: id, to: null },
       ];
     }
-    case 'situs':
-      return id ? [{ label: 'Situs saya', to: '/akun/situs' }, { label: 'Kelola situs', to: null }] : [{ label: 'Situs saya', to: null }];
+    case 'situs': {
+      if (!id) return [{ label: 'Situs saya', to: null }];
+      const siteTo = `/akun/situs/${encodeURIComponent(id)}`;
+      // Berita & pengumuman dan SEO situs (docs/platform/SITE-POSTS-SEO-SPEC.md §8)
+      if (sub === 'berita') {
+        return [
+          { label: 'Situs saya', to: '/akun/situs' },
+          { label: 'Kelola situs', to: siteTo },
+          { label: 'Berita & Pengumuman', to: subId ? `${siteTo}/berita` : null },
+          ...(subId ? [{ label: subId === 'baru' ? 'Tulisan baru' : 'Edit tulisan', to: null }] : []),
+        ];
+      }
+      if (sub === 'seo') {
+        return [
+          { label: 'Situs saya', to: '/akun/situs' },
+          { label: 'Kelola situs', to: siteTo },
+          { label: 'SEO situs', to: null },
+        ];
+      }
+      return [{ label: 'Situs saya', to: '/akun/situs' }, { label: 'Kelola situs', to: null }];
+    }
     case 'proyek':
       if (!id) return [{ label: 'Proyek saya', to: null }];
       if (sub === 'dokumen') {

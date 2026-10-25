@@ -17,11 +17,14 @@ import {
   Hourglass,
   LayoutTemplate,
   LoaderCircle,
+  Newspaper,
   ReceiptText,
   RefreshCw,
+  Search,
   ShoppingBag,
   SquarePen,
 } from 'lucide-react';
+import { templateHasPosts } from '../../templates/postTemplates';
 import { ApiError, apiPost, errorMessage } from '../../lib/api';
 import { getCurrentUser } from '../../lib/auth';
 import { formatRupiah, formatTanggal, type Order, type OrderStatus } from '../../types/platform';
@@ -473,6 +476,16 @@ function SiteCard({ order, now }: { order: Order; now: Date }) {
           <Link to={`/akun/situs/${order.site_id}`} className="btn btn-primary btn-sm">
             <SquarePen className="h-4 w-4" aria-hidden />
             Kelola Situs
+          </Link>
+          {templateHasPosts(order.template_code) && (
+            <Link to={`/akun/situs/${order.site_id}/berita`} className="btn btn-outline btn-sm" aria-label={`Berita & pengumuman ${domain}`}>
+              <Newspaper className="h-4 w-4" aria-hidden />
+              Berita
+            </Link>
+          )}
+          <Link to={`/akun/situs/${order.site_id}/seo`} className="btn btn-outline btn-sm" aria-label={`SEO situs ${domain}`}>
+            <Search className="h-4 w-4" aria-hidden />
+            SEO
           </Link>
           <a href={`/situs/${order.site_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
             <ExternalLink className="h-4 w-4" aria-hidden />
