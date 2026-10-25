@@ -231,6 +231,8 @@ content: object|null, activated_at, updated_at, owner_name, owner_email }` (owne
 | `get_site_public` | `site_id` atau `domain` | `{ site: { id, template_code, domain, content } }` hanya status `active` |
 | `submit_custom_order` | `name, email, phone, company?, service_type ('website'|'mobile_app'), project_name?, description, budget_note?` | `{ success, reference }` → insert `project_client` (status `pending`, source `website`, client_* dari input, `name` = project_name atau "Pesanan custom - <name>", deskripsi gabungan); rate limit 5/jam/IP; honeypot field `website` harus kosong |
 | `customer_register` | `name, email, phone, password` | `{ success, user, token, expires_at }` role customer, status active; rate limit sama seperti `register` |
+| `google_auth_config` | – | `{ success, client_id }`: client ID Google (setting `google_client_id` atau env `GOOGLE_CLIENT_ID`), null = tombol Google disembunyikan. Lihat GOOGLE-LOGIN.md |
+| `customer_google_auth` | `credential` (ID token Google), lalu untuk akun baru `phone, name?` | sesi `{ success, user, token, expires_at, account: login\|linked\|created }` atau `{ success, signup_required, profile: { name, email } }`; token diverifikasi di server (tanda tangan, iss, aud, exp, email_verified). Lihat GOOGLE-LOGIN.md |
 | `midtrans_notification` | payload Midtrans | lihat §5 |
 | `get_payment_config` | – | lihat §5 |
 

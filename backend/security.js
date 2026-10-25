@@ -40,6 +40,7 @@ export const PUBLIC_ACTIONS = new Set([
   'customer_register', 'midtrans_notification', 'get_payment_config', 'template_like', 'template_view',
   'get_showcase_stats', 'showcase_like', 'showcase_view', 'nexa_chat',
   'get_guides', 'get_guide', 'guide_view',
+  'google_auth_config', 'customer_google_auth',
 ]);
 export const ANY_ROLE_ACTIONS = new Set([
   'pd_notifications_list', 'pd_notifications_read', 'pd_file',

@@ -47,7 +47,8 @@ beforeEach(() => {
       const url = new URL(String(input), 'http://localhost');
       const action = url.searchParams.get('action') ?? '';
       const body = init?.body ? JSON.parse(String(init.body)) : {};
-      calls.push({ action, body });
+      // Konfigurasi tombol Google dimuat sendiri oleh /masuk dan /daftar (diuji di googleAuth.test.tsx)
+      if (action !== 'google_auth_config') calls.push({ action, body });
       return handler(action, body);
     }),
   );

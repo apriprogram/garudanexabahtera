@@ -46,9 +46,12 @@ CREATE TABLE IF NOT EXISTS users (
   role       ENUM('admin','user','customer') DEFAULT 'user',
   status     ENUM('active','inactive') DEFAULT 'active',
   avatar     LONGTEXT DEFAULT NULL,           -- currently base64 data URI
+  google_sub VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL, -- Google account id (ID token `sub`) of a
+                                              -- customer who signs in with Google (migration 027, docs/platform/GOOGLE-LOGIN.md)
   created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY email (email)
+  UNIQUE KEY email (email),
+  UNIQUE KEY uq_users_google_sub (google_sub)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Key/value store for all landing-page content (hero, products_data, portfolio_data, footer…).
@@ -962,7 +965,8 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-24_013', 'baseline: templates like_count, view_count (catalog card likes and views)'),
   ('2026-10-24_014', 'baseline: navbar Tentang + Kontak (no navbar rows; the built-in menu has them)'),
   ('2026-10-24_015', 'baseline: navbar Kontak hidden (no navbar rows; the built-in menu has Tentang only)'),
-  ('2026-10-24_016', 'baseline: showcase_stats (project card likes and views)');
+  ('2026-10-24_016', 'baseline: showcase_stats (project card likes and views)'),
+  ('2026-10-25_027', 'baseline: users.google_sub (Google sign-in)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

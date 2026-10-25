@@ -40,6 +40,8 @@ import { handleProjectDocsAction } from './modules/project_docs.js';
 import { logVisit, visitSourceFields, visitSources } from './modules/visits.js';
 // Artikel panduan /panduan (guide_articles, guide_views): daftar & isi publik, jumlah dilihat, tab admin Panduan
 import { handleGuideAction } from './modules/guides.js';
+// Masuk & daftar pembeli dengan Google: client ID publik + verifikasi ID token Google (docs/platform/GOOGLE-LOGIN.md)
+import { handleGoogleAuthAction } from './modules/google_auth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -165,6 +167,7 @@ app.get('/api.php', async (req, res) => {
   if (await handleHeroMediaAction(actionOf(req), req, res, pool)) return;
   if (await handleProjectDocsAction(action, req.query, req, res, pool)) return;
   if (await handleGuideAction(action, req.query, req, res, pool)) return;
+  if (await handleGoogleAuthAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -376,6 +379,7 @@ app.post('/api.php', async (req, res) => {
   if (await handleProjectFileAction(action, req.body, req, res)) return;
   if (await handleProjectDocsAction(action, req.body, req, res, pool)) return;
   if (await handleGuideAction(action, req.body, req, res, pool)) return;
+  if (await handleGoogleAuthAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {

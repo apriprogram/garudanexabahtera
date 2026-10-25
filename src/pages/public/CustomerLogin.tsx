@@ -1,5 +1,7 @@
 // Halaman masuk pembeli (/masuk). Satu action `login` untuk semua peran: customer → ?next (path relatif saja) atau
 // /akun, staf → /admin. Tampilan: kerangka auth terang bersama (src/components/auth). Lihat docs/platform/SPEC.md §2.
+// Opsi tambahan "Login dengan Google" untuk pembeli (docs/platform/GOOGLE-LOGIN.md): email Google yang belum terdaftar
+// langsung lanjut ke langkah kedua pendaftaran (nomor WhatsApp) di kartu yang sama.
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -11,6 +13,9 @@ import { AuthLayout, AuthSwitch } from '../../components/auth/AuthLayout';
 import { AuthTabs } from '../../components/auth/AuthTabs';
 import { AuthField, AuthTextButton } from '../../components/auth/AuthField';
 import { AuthAlert, AuthSubmit } from '../../components/auth/AuthFeedback';
+import { GoogleAuthButton } from '../../components/auth/GoogleAuthButton';
+import { GoogleSignupStep } from '../../components/auth/GoogleSignupForm';
+import { useGoogleAuth } from '../../components/auth/useGoogleAuth';
 import {
   pathAfterLogin,
   useAuthTitle,
@@ -39,6 +44,8 @@ export default function CustomerLogin() {
   const [submitting, setSubmitting] = useState(false);
   const [expired, setExpired] = useState(params.get('expired') === '1');
   const [forgotOpen, setForgotOpen] = useState(false);
+  // Email Google yang sudah terdaftar tapi harus masuk dengan kata sandi: isi kolom email
+  const google = useGoogleAuth({ next, onPasswordRequired: setEmail });
 
   // Muat halaman daftar lebih dulu agar pindah tab tidak menampilkan layar memuat
   useEffect(() => {
@@ -47,7 +54,7 @@ export default function CustomerLogin() {
 
   // Sudah masuk: langsung ke tujuan
   const role = getRole();
-  if (role && !submitting) return <Navigate to={pathAfterLogin(role, next)} replace />;
+  if (role && !submitting && !google.busy) return <Navigate to={pathAfterLogin(role, next)} replace />;
 
   const validate = (): FieldErrors<LoginField> => ({
     email: checkEmail(email),
@@ -81,6 +88,8 @@ export default function CustomerLogin() {
   };
 
   const withNext = (path: string) => (next ? `${path}?next=${encodeURIComponent(nextPath)}` : path);
+
+  if (google.signup) return <GoogleSignupStep google={google} signup={google.signup} />;
 
   return (
     <AuthLayout
@@ -122,6 +131,11 @@ export default function CustomerLogin() {
         {formError && (
           <AuthAlert key={formError} tone="danger" onClose={() => setFormError(null)}>
             {formError}
+          </AuthAlert>
+        )}
+        {google.error && (
+          <AuthAlert key={`google:${google.error}`} tone="danger" onClose={google.clearError}>
+            {google.error}
           </AuthAlert>
         )}
       </AnimatePresence>
@@ -184,6 +198,8 @@ export default function CustomerLogin() {
 
         <AuthSubmit loading={submitting}>Masuk</AuthSubmit>
       </form>
+
+      <GoogleAuthButton text="signin_with" onCredential={google.onCredential} disabled={submitting || google.busy} />
     </AuthLayout>
   );
 }

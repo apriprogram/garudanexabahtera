@@ -117,6 +117,11 @@ menjalankan ulang MENIMPA perubahan admin pada tiga baris itu. Jalankan setelah 
 `template_code` ter-deploy. DB baru tidak membutuhkannya: barisnya sudah ada di `seed.templates.sql` (karena itu 008
 tidak dicatat sebagai baseline di `schema.sql`).
 
+`2026-10-25_027` (skema saja, docs/platform/GOOGLE-LOGIN.md): `users.google_sub` (id akun Google, `ascii_bin`, NULL)
+dengan `UNIQUE KEY uq_users_google_sub`, untuk tombol "Daftar/Login dengan Google" di `/daftar` dan `/masuk`. Idempoten.
+Jalankan SEBELUM deploy kode yang memakainya (`customer_google_auth` membaca kolom ini). Client ID Google tidak ada di
+migrasi: diisi pemilik lewat setting `google_client_id` atau env `GOOGLE_CLIENT_ID` (GOOGLE-LOGIN.md §3).
+
 `2026-10-25_018` (data saja) membuat/menyamakan baris katalog `serenity` (template wellness) berdasarkan slug, pola sama
 dengan 008: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan
 `template_code` `serenity` ter-deploy. DB baru cukup `seed.templates.sql`.

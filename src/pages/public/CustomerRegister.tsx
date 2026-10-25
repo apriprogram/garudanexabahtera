@@ -2,6 +2,8 @@
 // lalu ke ?next (path relatif saja) atau /akun. Tampilan: kerangka auth terang bersama (src/components/auth).
 // Tanpa "Ulangi kata sandi": field kata sandi punya tombol tampilkan untuk memeriksa salah ketik, dan form jadi
 // cukup pendek agar tombol daftar terlihat di layar pertama. Lihat docs/platform/SPEC.md §2 & §6.
+// Opsi tambahan "Daftar dengan Google" di bawah tombol daftar (docs/platform/GOOGLE-LOGIN.md): email yang sudah
+// terdaftar langsung masuk (Gmail/Workspace ditautkan), email baru lanjut ke langkah kedua (nomor WhatsApp).
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -13,6 +15,9 @@ import { AuthLayout, AuthSwitch } from '../../components/auth/AuthLayout';
 import { AuthTabs } from '../../components/auth/AuthTabs';
 import { AuthField } from '../../components/auth/AuthField';
 import { AuthAlert, AuthSubmit } from '../../components/auth/AuthFeedback';
+import { GoogleAuthButton } from '../../components/auth/GoogleAuthButton';
+import { GoogleSignupStep } from '../../components/auth/GoogleSignupForm';
+import { useGoogleAuth } from '../../components/auth/useGoogleAuth';
 import {
   pathAfterLogin,
   useAuthTitle,
@@ -55,6 +60,7 @@ export default function CustomerRegister() {
   const [formError, setFormError] = useState<string | null>(null);
   const [emailTaken, setEmailTaken] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const google = useGoogleAuth({ next });
 
   // Muat halaman masuk lebih dulu agar pindah tab tidak menampilkan layar memuat
   useEffect(() => {
@@ -62,7 +68,7 @@ export default function CustomerRegister() {
   }, []);
 
   const role = getRole();
-  if (role && !submitting) return <Navigate to={pathAfterLogin(role, next)} replace />;
+  if (role && !submitting && !google.busy) return <Navigate to={pathAfterLogin(role, next)} replace />;
 
   const check = (key: RegisterField): string | undefined => {
     switch (key) {
@@ -138,6 +144,8 @@ export default function CustomerRegister() {
 
   const withNext = (path: string) => (next ? `${path}?next=${encodeURIComponent(nextPath)}` : path);
 
+  if (google.signup) return <GoogleSignupStep google={google} signup={google.signup} />;
+
   return (
     <AuthLayout
       title="Buat akun pembeli"
@@ -173,6 +181,24 @@ export default function CustomerRegister() {
         {formError && (
           <AuthAlert key={formError} tone="danger" onClose={() => setFormError(null)}>
             {formError}
+          </AuthAlert>
+        )}
+        {google.error && (
+          <AuthAlert key={`google:${google.error}`} tone="danger" onClose={google.clearError}>
+            {google.error}
+            {google.passwordEmail && (
+              <>
+                {' '}
+                <Link
+                  to={withNext('/masuk')}
+                  state={{ authTab: 'register', email: google.passwordEmail } satisfies AuthNavState}
+                  replace
+                  className="font-semibold underline underline-offset-4"
+                >
+                  Masuk dengan email ini
+                </Link>
+              </>
+            )}
           </AuthAlert>
         )}
       </AnimatePresence>
@@ -244,6 +270,7 @@ export default function CustomerRegister() {
           <AuthSubmit loading={submitting} loadingText="Mendaftarkan akun...">
             Daftar Akun
           </AuthSubmit>
+          <GoogleAuthButton text="signup_with" onCredential={google.onCredential} disabled={submitting || google.busy} />
           {/* Persetujuan dokumen legal (UU PDP: form ini mengumpulkan nama, email, dan nomor HP). Tab baru agar isian
               form tidak hilang. */}
           <p className="mt-3 text-center text-xs leading-relaxed text-subtle">

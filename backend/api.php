@@ -40,6 +40,7 @@ const PUBLIC_ACTIONS = [
     'customer_register', 'midtrans_notification', 'get_payment_config', 'template_like', 'template_view',
     'get_showcase_stats', 'showcase_like', 'showcase_view', 'nexa_chat',
     'get_guides', 'get_guide', 'guide_view',
+    'google_auth_config', 'customer_google_auth',
 ];
 const ANY_ROLE_ACTIONS = [
     'pd_notifications_list', 'pd_notifications_read', 'pd_file',
@@ -107,6 +108,9 @@ require_once __DIR__ . '/modules/visits.php';
 // Artikel panduan /panduan dari tabel guide_articles: daftar & isi publik, jumlah dilihat (guide_views), kelola di tab
 // admin Panduan (handle_guide_action)
 require_once __DIR__ . '/modules/guides.php';
+// Masuk & daftar pembeli dengan Google: client ID publik + verifikasi ID token Google (handle_google_auth_action,
+// docs/platform/GOOGLE-LOGIN.md)
+require_once __DIR__ . '/modules/google_auth.php';
 
 load_env_file();
 
@@ -182,6 +186,11 @@ if (handle_project_docs_action($conn, $action, $input, $authUser)) {
 }
 // Artikel panduan: get_guides/get_guide/guide_view publik, admin_*_guide(s) admin saja (backend/modules/guides.php)
 if (handle_guide_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Masuk & daftar pembeli dengan Google: google_auth_config, customer_google_auth (backend/modules/google_auth.php)
+if (handle_google_auth_action($conn, $action, $input)) {
     $conn->close();
     exit();
 }
