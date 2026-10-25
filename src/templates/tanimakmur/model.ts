@@ -90,6 +90,10 @@ export interface SearchEntry {
   group: string;
   /** Kunci section tujuan */
   target: string;
+  /** Urutan item yang tampil di section (paket tanam: tab, FAQ: pertanyaan) agar hasil yang diklik ikut dipilih/dibuka */
+  index?: number;
+  /** Kategori produk (hasil "Terlaris"): filter disamakan agar produk yang dicari terlihat */
+  category?: string;
 }
 
 /** Huruf kecil tanpa diakritik, spasi dirapatkan. */
@@ -109,19 +113,25 @@ export function searchEntries(content: SiteContent, nav: TaniNavItem[]): SearchE
     const title = text(getSection(content, item.key), 'title');
     entries.push({ label: title || item.label, group: item.label, target: item.key });
   }
-  const add = (key: string, labelOf: (item: ListItem) => string, fallbackGroup: string) => {
+  // Batas & penyaring sama dengan komponen section, jadi `index` = urutan item yang benar-benar tampil
+  const add = (
+    key: string,
+    max: number,
+    labelOf: (item: ListItem) => string,
+    fallbackGroup: string,
+    extra?: (item: ListItem, i: number) => Partial<SearchEntry>,
+  ) => {
     const section = getSection(content, key);
     if (!isEnabled(section)) return;
-    for (const item of list(section, 'items')) {
-      const label = labelOf(item);
-      if (label) entries.push({ label, group: groupOf(key, fallbackGroup), target: key });
-    }
+    list(section, 'items', max)
+      .filter((item) => labelOf(item))
+      .forEach((item, i) => entries.push({ label: labelOf(item), group: groupOf(key, fallbackGroup), target: key, ...extra?.(item, i) }));
   };
-  add('categories', (item) => field(item, 'title'), 'Kategori');
-  add('bundles', (item) => field(item, 'title') || field(item, 'crop'), 'Paket Tanam');
-  add('products', (item) => field(item, 'name'), 'Terlaris');
-  add('tips', (item) => field(item, 'title'), 'Panduan');
-  add('faq', (item) => field(item, 'question'), shortLabel(getSection(content, 'faq'), 'Tanya jawab'));
+  add('categories', 6, (item) => field(item, 'title'), 'Kategori');
+  add('bundles', 6, (item) => field(item, 'title') || field(item, 'crop'), 'Paket Tanam', (_, i) => ({ index: i }));
+  add('products', 12, (item) => field(item, 'name'), 'Terlaris', (item) => ({ category: field(item, 'category') }));
+  add('tips', 6, (item) => field(item, 'title'), 'Panduan');
+  add('faq', 8, (item) => field(item, 'question'), shortLabel(getSection(content, 'faq'), 'Tanya jawab'), (_, i) => ({ index: i }));
   return entries;
 }
 

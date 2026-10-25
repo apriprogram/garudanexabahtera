@@ -94,7 +94,7 @@ export const taniSections: TemplateSection[] = [
         'Angka',
         'Angka',
         [
-          t('value', 'Angka', { placeholder: 'mis. 4,9/5', maxLength: 12 }),
+          t('value', 'Angka', { placeholder: 'mis. 4,9/5', maxLength: 8, help: 'Pendek, tampil satu baris (mis. 12 rb+).' }),
           t('label', 'Keterangan', { placeholder: 'mis. Rata-rata ulasan pembeli', maxLength: 60 }),
         ],
         3,
@@ -144,6 +144,11 @@ export const taniSections: TemplateSection[] = [
       sectionHighlight('mis. kami siapkan paketnya'),
       sectionSubtitle('Kalimat pengantar singkat.'),
       ta('note', 'Catatan kecil di bawah panel', { placeholder: 'mis. Perkiraan panen tergantung cuaca dan perawatan.', maxLength: 200 }),
+      t('ask_label', 'Teks tombol tanya', {
+        placeholder: 'mis. Tanya penyuluh',
+        maxLength: 30,
+        help: 'Tombol berbingkai di samping tombol pesan, membuka WhatsApp berisi nama paket. Kosongkan untuk menyembunyikan (mis. bila toko tidak punya penyuluh).',
+      }),
       listField(
         'items',
         'Daftar paket',

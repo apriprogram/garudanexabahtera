@@ -21,7 +21,7 @@ import { Faq } from './Faq';
 import { Footer } from './Footer';
 import { Header } from './Header';
 import { Hero } from './Hero';
-import { ShopFilterContext } from './hooks';
+import { PageSelectionContext, ShopFilterContext } from './hooks';
 import { readTani } from './model';
 import { TANI_PHOTOS } from './photos';
 import { Products } from './Products';
@@ -35,26 +35,32 @@ export default function TaniMakmur({ content, preview = false, motion }: Templat
   const fontStyle = useKitFont(INTER_TIGHT);
   const [category, setCategory] = useState('');
   const filter = useMemo(() => ({ category, setCategory }), [category]);
+  // Tab paket tanam & pertanyaan FAQ terbuka hidup di sini agar hasil pencarian di menu bisa memilihnya
+  const [bundle, setBundle] = useState(0);
+  const [faq, setFaq] = useState<number | null>(0);
+  const selection = useMemo(() => ({ bundle, setBundle, faq, setFaq }), [bundle, faq]);
   const heroOn = isEnabled(m.hero);
   return (
     <TemplateShell content={content} preview={preview} motion={motion} displayFont="inter" defaultAccent={TANI_ACCENT}>
       <PhotoSetContext.Provider value={TANI_PHOTOS}>
         <ShopFilterContext.Provider value={filter}>
-          <div style={{ ...fontStyle, ...m.colors }} className="relative bg-[#F6F2E3] text-[#18230F]">
-            <Header m={m} overlay={heroOn} />
-            <main>
-              {heroOn && <Hero m={m} />}
-              {isEnabled(m.categories) && <Categories m={m} />}
-              {isEnabled(m.bundles) && <Bundles m={m} />}
-              {isEnabled(m.products) && <Products m={m} />}
-              {isEnabled(m.consult) && <Consult m={m} />}
-              {isEnabled(m.tips) && <Tips m={m} />}
-              {isEnabled(m.testimonials) && <Testimonials m={m} />}
-              {isEnabled(m.faq) && <Faq m={m} />}
-              {isEnabled(m.contact) && <Contact m={m} />}
-            </main>
-            {isEnabled(m.footer) && <Footer m={m} />}
-          </div>
+          <PageSelectionContext.Provider value={selection}>
+            <div style={{ ...fontStyle, ...m.colors }} className="relative bg-[#F6F2E3] text-[#18230F]">
+              <Header m={m} overlay={heroOn} />
+              <main>
+                {heroOn && <Hero m={m} />}
+                {isEnabled(m.categories) && <Categories m={m} />}
+                {isEnabled(m.bundles) && <Bundles m={m} />}
+                {isEnabled(m.products) && <Products m={m} />}
+                {isEnabled(m.consult) && <Consult m={m} />}
+                {isEnabled(m.tips) && <Tips m={m} />}
+                {isEnabled(m.testimonials) && <Testimonials m={m} />}
+                {isEnabled(m.faq) && <Faq m={m} />}
+                {isEnabled(m.contact) && <Contact m={m} />}
+              </main>
+              {isEnabled(m.footer) && <Footer m={m} />}
+            </div>
+          </PageSelectionContext.Provider>
         </ShopFilterContext.Provider>
       </PhotoSetContext.Provider>
     </TemplateShell>

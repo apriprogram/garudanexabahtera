@@ -4,13 +4,14 @@
 // + hemat; tombol pesan (WhatsApp berisi nama paket) dan tanya penyuluh. Demo sisi klien, tanpa keranjang.
 // HP: tombol tanaman bisa digeser, foto di atas, isi paket satu kolom.
 import { CalendarDays, Check, MapPin, MessageCircle, Signal } from 'lucide-react';
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useId, useRef, type KeyboardEvent } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER, SECTION_Y } from '../shared/layout';
 import { TemplateSection } from '../shared/Shell';
 import type { ListItem } from '../types';
 import { field, hasImage, list, resolveAction, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
+import { usePageSelection } from './hooks';
 import { LeafArt } from './marks';
 import { bundleLines, formatWeeks, savings, stageLines, type TaniModel } from './model';
 import { TANI_PHOTOS } from './photos';
@@ -81,7 +82,8 @@ function BundlePanel({ m, item }: { m: TaniModel; item: ListItem }) {
   const compare = field(item, 'compare_price');
   const saved = savings(price, compare);
   const action = resolveAction(field(item, 'button_url'), m.orderAbout(title));
-  const ask = m.askAbout(title);
+  const askLabel = text(m.bundles, 'ask_label');
+  const ask = askLabel ? m.askAbout(title) : null;
   const chips = [
     level && { key: 'level', icon: Signal, value: level },
     place && { key: 'place', icon: MapPin, value: place },
@@ -161,7 +163,7 @@ function BundlePanel({ m, item }: { m: TaniModel; item: ListItem }) {
             {ask && (
               <PillLink
                 action={ask}
-                label="Tanya penyuluh"
+                label={askLabel}
                 arrow={false}
                 icon={<MessageCircle aria-hidden className="h-4 w-4 shrink-0" />}
                 className={`${BTN.ghostDark} ${BTN.lg}`}
@@ -177,7 +179,8 @@ function BundlePanel({ m, item }: { m: TaniModel; item: ListItem }) {
 export function Bundles({ m }: { m: TaniModel }) {
   const { bundles } = m;
   const items = list(bundles, 'items', 6).filter((item) => field(item, 'title') || field(item, 'crop'));
-  const [active, setActive] = useState(0);
+  // Tab terpilih dibagi dengan pencarian di menu (TaniMakmur.tsx), jadi hasil paket yang diklik langsung tampil
+  const { bundle: active, setBundle: setActive } = usePageSelection();
   const baseId = useId();
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   if (items.length === 0) return null;

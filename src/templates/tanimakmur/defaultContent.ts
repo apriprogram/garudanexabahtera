@@ -92,6 +92,7 @@ export const taniContent: SiteContent = {
     title: 'Pilih tanamanmu, kami siapkan paketnya',
     highlight: 'kami siapkan paketnya',
     subtitle: 'Setiap paket berisi benih, media, pupuk, dan perlindungan hama yang cocok untuk satu jenis tanaman, lengkap dengan jadwal tanamnya.',
+    ask_label: 'Tanya penyuluh',
     note: 'Perkiraan panen dihitung dari semai dan bisa bergeser karena cuaca, sinar matahari, dan perawatan. Ongkos kirim dihitung saat konfirmasi pesanan.',
     items: [
       {
