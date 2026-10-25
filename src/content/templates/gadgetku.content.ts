@@ -48,17 +48,17 @@ export const content: TemplatePageContent = {
       text: 'Mockup casing tempat pengunjung memilih foto dari perangkatnya, menggeser dan memperbesarnya, memilih warna casing dan tipe HP, lalu memesan lewat WhatsApp.',
     },
     { name: 'Strip layanan', text: 'Panel hitam dengan hingga 4 keunggulan toko dan ikon otomatis dari judulnya.' },
-    { name: 'Ulasan pembeli', text: 'Ringkasan rating toko dan hingga 6 ulasan dengan bintang, produk yang dibeli, nama, dan foto atau inisial.' },
-    { name: 'Tanya jawab', text: 'Hingga 8 pertanyaan yang bisa dibuka-tutup, ditemani kartu bantuan dengan tombol WhatsApp.' },
+    { name: 'Ulasan pembeli', text: 'Rating toko dan hingga 6 ulasan berbintang lengkap dengan produk yang dibeli.' },
+    { name: 'Tanya jawab', text: 'Hingga 8 pertanyaan buka-tutup dan kartu bantuan WhatsApp.' },
     { name: 'Kontak & toko', text: 'Alamat dengan tautan peta, jam buka, telepon, email, WhatsApp, serta tautan ke toko Anda di Shopee dan Tokopedia.' },
     { name: 'Footer', text: 'Panel hitam berisi menu belanja per kategori, menu bantuan, kontak, metode pembayaran, dan media sosial.' },
   ],
-  partsNote: 'Setiap bagian bisa disembunyikan dari CMS, misalnya Custom Casing bila toko Anda belum menawarkannya.',
+  partsNote: 'Setiap bagian bisa disembunyikan dari CMS bila belum Anda perlukan.',
   cms: [
     'Nama toko, tagline, logo, warna aksen, dan teks pengumuman di bilah atas.',
     'Daftar merek dan tipe HP beserta port pengisiannya, yang dipakai pencarian per tipe dan baris merek di hero.',
     'Produk lengkap dengan foto, kategori, harga, harga coret, label, rating, jumlah terjual, dan kolom "Cocok untuk".',
-    'Kategori berfoto, paket bundling dan isinya, serta foto contoh, harga, dan langkah layanan custom casing.',
+    'Kategori berfoto, paket bundling dan isinya, serta foto contoh, harga, pilihan warna, dan langkah custom casing.',
     'Keunggulan toko, ulasan pembeli, dan tanya jawab.',
     'Nomor WhatsApp dan pesan awal, alamat, jam buka, tautan Shopee dan Tokopedia, metode pembayaran, dan media sosial.',
   ],
@@ -85,7 +85,7 @@ export const content: TemplatePageContent = {
     {
       question: 'Apakah foto custom casing dari pembeli tersimpan di server saya?',
       answer:
-        'Tidak. Foto hanya dibaca di browser pengunjung untuk pratinjau dan hilang saat halaman ditutup. Pembeli mengirim fotonya lewat chat WhatsApp ketika memesan, jadi Anda tetap bisa memeriksa resolusi foto sebelum mencetak.',
+        'Tidak. Foto hanya dibaca di browser pengunjung untuk pratinjau dan hilang saat halaman ditutup. Pembeli mengirim fotonya lewat WhatsApp saat memesan, jadi Anda bisa memeriksa resolusinya sebelum mencetak.',
     },
     {
       question: 'Apakah stok bisa tersambung dengan Shopee atau Tokopedia?',
@@ -95,7 +95,7 @@ export const content: TemplatePageContent = {
     {
       question: 'Bisakah dipakai untuk toko selain aksesoris HP?',
       answer:
-        'Bisa, selama barangnya dipilih per tipe perangkat, misalnya aksesoris laptop atau tali smartwatch. Daftar tipe, kategori, judul bagian, dan warna bisa Anda ganti dari CMS.',
+        'Template ini dirancang untuk aksesoris HP. Produk, kategori, daftar tipe, dan judul bagian bisa Anda ganti dari CMS, tetapi teks bawaan seperti "Pilih tipe HP" dan mockup casing HP tertanam di template; menyesuaikannya untuk aksesoris laptop atau smartwatch termasuk jasa custom.',
     },
   ],
   imageAlts: {

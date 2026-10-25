@@ -1,9 +1,9 @@
 // Custom casing (kunci `custom`): panel tint aksen; kiri label + H2 (kata sorotan) + deskripsi + langkah bernomor +
 // harga; kanan "studio" putih — mockup casing (bingkai warna casing, modul kamera SVG) berisi foto contoh atau foto
-// pengunjung, dengan kontrol: pilih foto, perbesar, warna casing, tipe HP (dibagi dengan pencarian per tipe), dan tombol
-// pesan WhatsApp berisi tipe + warna. Foto pengunjung HANYA dibaca di browser (URL.createObjectURL), tidak dikirim ke
-// server dan tidak disimpan; dilepas saat diganti / komponen dilepas. Foto bisa digeser (seret, atau tombol panah saat
-// mockup difokus) dan selalu menutupi bidang casing.
+// pengunjung, dengan kontrol: pilih foto, perbesar, warna casing (daftar dari CMS), tipe HP (dibagi dengan pencarian per
+// tipe), dan tombol pesan WhatsApp berisi tipe + warna. Foto pengunjung HANYA dibaca di browser (URL.createObjectURL),
+// tidak dikirim ke server dan tidak disimpan; dilepas saat diganti / komponen dilepas. Foto bisa digeser (seret, atau
+// tombol panah saat mockup difokus) dan selalu menutupi bidang casing.
 import { ImagePlus, Lock, Move, RotateCcw } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type ChangeEvent, type KeyboardEvent, type PointerEvent } from 'react';
 import { WhatsAppIcon } from '../shared/icons';
@@ -13,19 +13,10 @@ import { stagger } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
 import { field, list, resolveAction, safeImage, text } from '../shared/utils';
 import { useAspect } from './hooks';
-import { brandsOf, type GadgetkuModel, type Shop } from './model';
+import { DEFAULT_CASE_FRAME, brandsOf, caseColors, type GadgetkuModel, type Shop } from './model';
 import { GADGETKU_PHOTOS } from './photos';
 import { BTN, C, CARD, TYPE_G } from './styles';
 import { Highlighted, PillLink, SectionLabel } from './ui';
-
-/** Warna bingkai casing di mockup. */
-const CASE_COLORS = [
-  { key: 'bening', label: 'Bening', frame: 'rgb(208 214 222 / 0.7)', swatch: 'bg-[linear-gradient(135deg,#ffffff_0%,#d5dbe3_100%)]' },
-  { key: 'hitam', label: 'Hitam', frame: '#16181B', swatch: 'bg-[#16181B]' },
-  { key: 'putih', label: 'Putih', frame: '#F4F4F1', swatch: 'bg-[#F4F4F1]' },
-] as const;
-
-type CaseColor = (typeof CASE_COLORS)[number]['key'];
 
 /** Rasio tinggi ÷ lebar bidang foto di dalam mockup (sebelum terukur). */
 const FRAME_RATIO = 2.13;
@@ -65,7 +56,7 @@ export function CustomCase({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
   const [zoom, setZoom] = useState(1);
   const [pos, setPos] = useState({ x: 0.5, y: 0.5 });
   const [imageRatio, setImageRatio] = useState(0);
-  const [color, setColor] = useState<CaseColor>('bening');
+  const [colorKey, setColorKey] = useState('');
   const frameRatio = useAspect(frame, FRAME_RATIO);
 
   // Foto pengunjung dilepas dari memori saat diganti atau saat komponen dilepas
@@ -77,7 +68,9 @@ export function CustomCase({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
   const sample = safeImage(text(custom, 'image'));
   const src = upload || sample;
   const asset = !upload && sample ? GADGETKU_PHOTOS.asset(sample) : null;
-  const caseColor = CASE_COLORS.find((c) => c.key === color) ?? CASE_COLORS[0];
+  // Pilihan warna dari CMS (`custom.case_colors`); pilihan yang hilang setelah diedit → warna pertama, kosong → tanpa pilihan
+  const colors = caseColors(text(custom, 'case_colors'));
+  const caseColor = colors.find((c) => c.key === colorKey) ?? colors[0] ?? null;
   const phone = m.models.find((p) => p.id === shop.phoneId) ?? null;
   const brands = brandsOf(m.models);
   const eyebrow = text(custom, 'eyebrow');
@@ -86,7 +79,7 @@ export function CustomCase({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
   const priceLabel = text(custom, 'price_label');
   const priceNote = text(custom, 'price_note');
   const steps = list(custom, 'steps', 3).filter((item) => field(item, 'title') || field(item, 'text'));
-  const subject = `casing custom untuk ${phone?.label ?? 'HP saya'}, warna ${caseColor.label.toLowerCase()}. Fotonya saya kirim di chat ini`;
+  const subject = `casing custom untuk ${phone?.label ?? 'HP saya'}${caseColor ? `, warna ${caseColor.label.toLowerCase()}` : ''}. Fotonya saya kirim di chat ini`;
   const action = resolveAction(text(custom, 'button_url'), m.orderAction(subject));
   const buttonLabel = text(custom, 'button_label') || 'Pesan Casing Custom';
   const isWa = action?.kind === 'external' && /wa\.me/.test(action.href);
@@ -202,13 +195,13 @@ export function CustomCase({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
                 {/* Mockup: bingkai warna casing, bidang foto yang bisa digeser, modul kamera */}
                 <div
                   className="relative aspect-[72/148] w-[210px] rounded-[38px] p-[7px] ring-1 ring-inset ring-black/10 transition-colors @3xl:w-[240px] @3xl:rounded-[42px]"
-                  style={{ background: caseColor.frame }}
+                  style={{ background: caseColor?.frame ?? DEFAULT_CASE_FRAME }}
                 >
                   <div
                     ref={frame}
                     role="group"
                     aria-roledescription="pratinjau casing"
-                    aria-label={`Pratinjau casing ${caseColor.label.toLowerCase()}${upload ? ' dengan foto pilihanmu' : ' dengan foto contoh'}`}
+                    aria-label={`Pratinjau casing ${caseColor ? `${caseColor.label.toLowerCase()} ` : ''}${upload ? 'dengan foto pilihanmu' : 'dengan foto contoh'}`}
                     aria-describedby={hintId}
                     tabIndex={src ? 0 : -1}
                     onPointerDown={onPointerDown}
@@ -306,23 +299,25 @@ export function CustomCase({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
                   />
                 </label>
 
-                <fieldset>
-                  <legend className="text-[14px] font-semibold text-[#0B0C0E]">Warna casing</legend>
-                  <div className="mt-2.5 flex flex-wrap gap-2">
-                    {CASE_COLORS.map((c) => (
-                      <button
-                        key={c.key}
-                        type="button"
-                        aria-pressed={color === c.key}
-                        onClick={() => setColor(c.key)}
-                        className="inline-flex h-10 items-center gap-2 rounded-full bg-[#F2F3F5] pl-1.5 pr-4 text-[14px] font-medium text-[#0B0C0E] ring-inset transition-colors hover:bg-[#E6E8EB] aria-pressed:ring-2 aria-pressed:ring-[#0B0C0E]"
-                      >
-                        <span aria-hidden className={`h-7 w-7 rounded-full ring-1 ring-inset ring-black/15 ${c.swatch}`} />
-                        {c.label}
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
+                {colors.length > 0 && (
+                  <fieldset>
+                    <legend className="text-[14px] font-semibold text-[#0B0C0E]">Warna casing</legend>
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      {colors.map((c) => (
+                        <button
+                          key={c.key}
+                          type="button"
+                          aria-pressed={caseColor?.key === c.key}
+                          onClick={() => setColorKey(c.key)}
+                          className="inline-flex h-10 items-center gap-2 rounded-full bg-[#F2F3F5] pl-1.5 pr-4 text-[14px] font-medium text-[#0B0C0E] ring-inset transition-colors hover:bg-[#E6E8EB] aria-pressed:ring-2 aria-pressed:ring-[#0B0C0E]"
+                        >
+                          <span aria-hidden className="h-7 w-7 rounded-full ring-1 ring-inset ring-black/15" style={{ background: c.swatch }} />
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
 
                 {m.models.length > 0 && (
                   <label className="block">
