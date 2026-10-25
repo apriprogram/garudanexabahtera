@@ -1,0 +1,106 @@
+/*
+ * CSS lokal GadgetKu (diimpor ./GadgetKu.tsx): lapisan gelap foto hero, latar cadangan tanpa foto, cincin dekoratif hero,
+ * baris produk tanpa scrollbar, buka-tutup FAQ, dan cahaya lembut di kartu paket gelap. Gerak hanya bila root template
+ * ber-data-tpl-motion="on" (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak → statis.
+ */
+
+@layer components {
+  /* Hero: foto di kanan, judul di kiri. Lapisan gelap dari kiri (judul ≥ 4,5:1) dan dari bawah (daftar merek). */
+  .gk-hero-scrim {
+    background:
+      linear-gradient(90deg, rgb(11 12 14 / 0.92) 0%, rgb(11 12 14 / 0.78) 34%, rgb(11 12 14 / 0.2) 62%, rgb(11 12 14 / 0) 80%),
+      linear-gradient(0deg, rgb(11 12 14 / 0.7) 0%, rgb(11 12 14 / 0) 30%);
+  }
+
+  /* Wadah sempit (HP, tablet): teks melebar penuh di atas foto, jadi lapisan dibuat rata */
+  @container (max-width: 1023px) {
+    .gk-hero-scrim {
+      background: linear-gradient(180deg, rgb(11 12 14 / 0.55) 0%, rgb(11 12 14 / 0.82) 45%, rgb(11 12 14 / 0.94) 100%);
+    }
+  }
+
+  /* Latar hero bila foto kosong/gagal: hitam dengan cahaya aksen di kanan atas */
+  .gk-hero-fallback {
+    background:
+      radial-gradient(60% 70% at 85% 15%, color-mix(in srgb, var(--gk-on-dark) 28%, transparent), transparent 70%),
+      #0b0c0e;
+  }
+
+  /* Cincin dekoratif hero (referensi "Lanot"): berputar pelan hanya bila gerak menyala */
+  [data-tpl-motion='on'] .gk-ring-spin {
+    animation: gk-spin 60s linear infinite;
+    transform-origin: 50% 50%;
+  }
+
+  /* Cahaya lembut di sudut kartu paket gelap (pengganti bayangan) */
+  .gk-glow {
+    border-radius: 9999px;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--gk-on-dark) 45%, transparent), transparent);
+    filter: blur(10px);
+  }
+
+  /* Baris produk & chip yang bisa digeser: tanpa scrollbar (tombol panah + geser jari) */
+  .gk-scroller {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gk-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  [data-tpl-motion='on'] .gk-scroller {
+    scroll-behavior: smooth;
+  }
+
+  /* FAQ: tinggi panel jawaban 0fr → 1fr (transisi hanya bila gerak menyala) */
+  .gk-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .gk-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .gk-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Hasil pencarian per tipe HP: muncul pelan saat tipe HP berganti */
+  [data-tpl-motion='on'] .gk-fade-in {
+    animation: gk-fade 0.45s var(--tpl-ease, ease) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .gk-ring-spin,
+    [data-tpl-motion='on'] .gk-fade-in {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .gk-collapse {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .gk-scroller {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+@keyframes gk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gk-fade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
