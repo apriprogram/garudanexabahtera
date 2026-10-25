@@ -25,6 +25,10 @@
     <lastmod>2026-10-25</lastmod>
   </url>
   <url>
+    <loc>https://garudanexa.com/template/kategori/toko-online</loc>
+    <lastmod>2026-10-25</lastmod>
+  </url>
+  <url>
     <loc>https://garudanexa.com/harga</loc>
     <lastmod>2026-10-25</lastmod>
   </url>
@@ -124,6 +128,41 @@
     <lastmod>2026-10-25</lastmod>
     <image:image>
       <image:loc>https://garudanexa.com/assets/templates/serenity-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/skynusa</loc>
+    <lastmod>2026-10-25</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/skynusa-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/tanimakmur</loc>
+    <lastmod>2026-10-25</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/tanimakmur-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/puncakgear</loc>
+    <lastmod>2026-10-25</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/puncakgear-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/gadgetku</loc>
+    <lastmod>2026-10-25</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/gadgetku-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/glowstory</loc>
+    <lastmod>2026-10-25</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/glowstory-preview.webp</image:loc>
     </image:image>
   </url>
 </urlset>
