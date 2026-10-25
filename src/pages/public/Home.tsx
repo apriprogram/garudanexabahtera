@@ -18,7 +18,7 @@ import { useTranslation } from '../../hooks/useTranslation';
  * `disabled_sections` untuk menyembunyikan section, mis. `["projects"]`. `tone` = warna latar halaman saat section itu
  * dibaca (crossfade lewat SectionChrome, gaya BELAJAR CPNS); prop `alt` section mengikuti tone ini.
  * - section #kategori ("Template website untuk setiap jenis usaha") dihapus atas permintaan pemilik 2026-10-24; halaman
- *   kategori tetap ditautkan dari footer & katalog, "Sudah termasuk" pindah ke bawah kolom cari #templates
+ *   kategori tetap ditautkan dari footer & katalog; strip "Sudah termasuk" di #templates juga dihapus (2026-10-25)
  * - perbandingan: tabel template vs custom (Lampiran D, versi pendek)
  * - section #panduan (artikel terbaru) dihapus atas permintaan pemilik 2026-10-24; panduan tetap di menu & /panduan
  */

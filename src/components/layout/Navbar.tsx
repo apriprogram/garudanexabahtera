@@ -349,16 +349,18 @@ const Navbar: React.FC = () => {
         {/* Kanan: Sign up + Log in (belum masuk) atau tombol akun (sudah masuk), tombol menu HP */}
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           {role ? (
-            <Link to={account.to} className="btn btn-primary btn-sm sm:h-10 sm:px-5 sm:text-sm lg:h-12 lg:px-6 lg:text-[15px]">
-              <UserRound className="h-4 w-4" strokeWidth={2} aria-hidden />
+            // Tombol akun (Panel Admin / Akun Saya): ringkas, 36px & teks 13px di desktop (pemilik 2026-10-25)
+            <Link to={account.to} className="btn btn-primary btn-sm sm:px-3.5">
+              <UserRound className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
               {account.label}
             </Link>
           ) : (
             <>
-              <Link to={SIGNUP_PATH} className={`btn ${look.signup} btn-sm hidden sm:inline-flex sm:h-10 sm:px-5 sm:text-sm lg:h-12 lg:px-6 lg:text-[15px]`}>
+              {/* Sign up & Log in: 40px di desktop; di HP Log in 28px, huruf 11px (pemilik 2026-10-25) */}
+              <Link to={SIGNUP_PATH} className={`btn ${look.signup} btn-sm hidden sm:inline-flex sm:h-10 sm:px-4 sm:text-sm`}>
                 {SIGNUP_LABEL}
               </Link>
-              <Link to={account.to} className="btn btn-primary btn-sm sm:h-10 sm:px-5 sm:text-sm lg:h-12 lg:px-6 lg:text-[15px]">
+              <Link to={account.to} className="btn btn-primary btn-sm max-sm:h-7 max-sm:px-3 max-sm:text-[11px] sm:h-10 sm:px-4 sm:text-sm">
                 {LOGIN_LABEL}
               </Link>
             </>
@@ -440,10 +442,11 @@ const Navbar: React.FC = () => {
                 </Link>
               ) : (
                 <>
-                  <Link to={SIGNUP_PATH} onClick={closeMenu} className="btn btn-outline">
+                  {/* Panel menu HP: tombol ringkas 36px, huruf 12px (pemilik 2026-10-25) */}
+                  <Link to={SIGNUP_PATH} onClick={closeMenu} className="btn btn-outline h-9 text-xs">
                     {SIGNUP_LABEL}
                   </Link>
-                  <Link to={account.to} onClick={closeMenu} className="btn btn-primary">
+                  <Link to={account.to} onClick={closeMenu} className="btn btn-primary h-9 text-xs">
                     {LOGIN_LABEL}
                   </Link>
                 </>

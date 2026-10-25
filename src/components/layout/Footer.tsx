@@ -112,20 +112,21 @@ const EmailText: React.FC<{ email: string }> = ({ email }) => {
   );
 };
 
-/** Tombol ajakan: pil 48px di desktop (sama dengan tombol hero), teks 15px */
-const CTA_BTN = 'btn sm:h-12 sm:px-6 sm:text-[15px]';
+/** Tombol ajakan: pil 48px di desktop (sama dengan tombol hero), teks 15px; HP 36px, teks 12px (pemilik 2026-10-25) */
+const CTA_BTN = 'btn max-sm:h-9 max-sm:gap-1.5 max-sm:px-4 max-sm:text-xs sm:h-12 sm:px-6 sm:text-[15px]';
+const CTA_ICON = 'h-3.5 w-3.5 sm:h-4 sm:w-4';
 
 // Footer gelap gaya Mobbin: judul kolom abu kecil, tautan putih
 const linkClass =
-  'inline-flex min-h-10 items-center gap-2.5 text-sm text-white transition-colors hover:text-white/65 sm:min-h-0 sm:text-[15px]';
+  'inline-flex min-h-8 items-center gap-2.5 text-xs text-white transition-colors hover:text-white/65 sm:min-h-0 sm:text-[15px]';
 
 const socialClass =
   'relative flex h-9 w-9 items-center justify-center rounded-full text-white/60 transition-colors after:absolute after:-inset-1 hover:bg-white/10 hover:text-white';
 
-/** Kolom tautan (judul abu kecil). Di HP tiap tautan setinggi 40px. */
+/** Kolom tautan (judul abu kecil). Di HP tiap tautan setinggi 32px (rapat, pemilik 2026-10-25). */
 const LinkColumn: React.FC<{ title: string; links: FooterLink[]; className?: string }> = ({ title, links, className = '' }) => (
   <nav aria-label={title} className={className}>
-    <h3 className="text-[13px] font-medium text-white/55 sm:text-sm">{title}</h3>
+    <h3 className="text-xs font-medium text-white/55 sm:text-sm">{title}</h3>
     <ul className="mt-2 sm:mt-4 sm:space-y-3">
       {links.map((link) => (
         <li key={`${link.label}-${link.href}`}>
@@ -153,7 +154,7 @@ interface FooterProps {
 /**
  * Footer publik gaya Mobbin (permintaan pemilik 2026-10-24): ajakan `#kontak` putih — judul besar dua baris, satu kalimat,
  * tombol gelap WhatsApp + tombol abu "Pesan Custom" — yang sudut bawahnya membulat di atas footer gelap (bg-fg): logo +
- * deskripsi, kolom tautan, hak cipta, akun & media sosial, lalu teks besar "GARUDA NEXA" yang terpotong di tepi bawah.
+ * deskripsi, kolom tautan, hak cipta, akun & media sosial, lalu teks besar "GARUDA NEXA" selebar layar.
  * Nomor & email ada di footer gelap, tidak diulang di ajakan.
  */
 const Footer: React.FC<FooterProps> = ({ alt, chrome, cta = true }) => {
@@ -195,13 +196,13 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome, cta = true }) => {
       <div className={`rounded-b-[28px] pb-20 pt-20 sm:rounded-b-[40px] sm:pb-28 sm:pt-28 lg:pb-36 lg:pt-36 ${!chrome && alt ? 'bg-alt' : 'bg-canvas'}`}>
         {/* Anchor #kontak di pembungkus polos (bukan di dalam Reveal yang ber-transform), agar scroll-margin tepat */}
         <div id="kontak" className="container-site scroll-mt-[calc(var(--nav-offset)+1rem)] text-center lg:scroll-mt-[calc(var(--nav-offset)+1.5rem)]">
-          <h2 className="mx-auto max-w-4xl text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-fg sm:text-5xl sm:leading-[1.04] lg:text-6xl">
+          <h2 className="mx-auto max-w-4xl text-[24px] font-semibold leading-[1.15] tracking-[-0.03em] text-fg sm:text-5xl sm:leading-[1.04] sm:tracking-[-0.035em] lg:text-6xl">
             <SplitText delay={80} className="block" parts={ctaLead} />
             {ctaAccent && <SplitText delay={ctaAccentDelay} className="block" parts={ctaAccent} />}
           </h2>
 
           <Reveal delay={0.25}>
-            <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-muted sm:mt-5 sm:text-base">
+            <p className="mx-auto mt-3 max-w-md text-[13px] leading-relaxed text-muted sm:mt-5 sm:text-base">
               Ceritakan kebutuhan Anda. Tim kami bantu memilih template yang pas atau menyusun solusi website dan aplikasi
               mobile custom, gratis tanpa komitmen.
             </p>
@@ -210,12 +211,12 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome, cta = true }) => {
           <Reveal delay={0.35}>
             <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 sm:mt-8">
               <a href={ctaHref} target="_blank" rel="noopener noreferrer" className={`${CTA_BTN} btn-dark`}>
-                <MessageCircle className="h-4 w-4" aria-hidden />
+                <MessageCircle className={CTA_ICON} aria-hidden />
                 {pick('cta_button')}
               </a>
               <Link to="/pesan-custom" className={`${CTA_BTN} group bg-fg/6 text-fg hover:bg-fg/10 active:bg-fg/15`}>
                 Pesan Custom
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+                <ArrowRight className={`${CTA_ICON} transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none`} aria-hidden />
               </Link>
             </div>
           </Reveal>
@@ -234,9 +235,9 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome, cta = true }) => {
             <Link to="/" className="inline-flex rounded-full" aria-label="Garuda Nexa Bahtera, ke beranda">
               <BrandLogo tone="onMedia" />
             </Link>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/60">{pick('footer_address')}</p>
+            <p className="mt-4 max-w-xs text-xs leading-relaxed text-white/60 sm:text-sm">{pick('footer_address')}</p>
             {/* Baris fakta (NAP): nama badan hukum, alamat bila sudah ada, WhatsApp, email */}
-            <address className="mt-5 max-w-sm text-[13px] not-italic leading-relaxed text-white/60 sm:text-sm">
+            <address className="mt-5 max-w-sm text-xs not-italic leading-relaxed text-white/60 sm:text-sm">
               <span className="block font-semibold text-white">{COMPANY_FACTS.legalName}</span>
               {addressLine && <span className="mt-0.5 block">{addressLine}</span>}
               <span className="mt-1 flex flex-col items-start sm:flex-row sm:flex-wrap sm:gap-x-4">
@@ -244,7 +245,7 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome, cta = true }) => {
                   href={whatsappUrl(COMPANY_FACTS.whatsapp, CONTACT_MESSAGE)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-10 items-center gap-2 transition-colors hover:text-white sm:min-h-8"
+                  className="inline-flex min-h-8 items-center gap-2 transition-colors hover:text-white"
                 >
                   <MessageCircle className="h-4 w-4 shrink-0 text-white/45" aria-hidden />
                   <span>
@@ -252,7 +253,7 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome, cta = true }) => {
                   </span>
                   <span className="sr-only"> (tab baru)</span>
                 </a>
-                <a href={`mailto:${COMPANY_FACTS.email}`} className="inline-flex min-h-10 min-w-0 max-w-full items-center gap-2 transition-colors hover:text-white sm:min-h-8">
+                <a href={`mailto:${COMPANY_FACTS.email}`} className="inline-flex min-h-8 min-w-0 max-w-full items-center gap-2 transition-colors hover:text-white">
                   <Mail className="h-4 w-4 shrink-0 text-white/45" aria-hidden />
                   <EmailText email={COMPANY_FACTS.email} />
                 </a>
@@ -266,18 +267,18 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome, cta = true }) => {
           <LinkColumn title="Legal" links={LEGAL_COLUMN} className="lg:col-span-2" />
         </div>
 
-        {/* Bar bawah: hak cipta + akun (kiri), media sosial (kanan) */}
-        <div className="container-site flex flex-col-reverse items-start gap-4 pb-8 pt-2 sm:flex-row sm:items-center sm:justify-between sm:pb-10">
-          <div className="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-6">
-            <p className="text-xs text-white/60 sm:text-[13px]">{pick('footer_copyright')}</p>
+        {/* Bar bawah: hak cipta + akun (kiri), media sosial (kanan); di HP rata tengah (pemilik 2026-10-25) */}
+        <div className="container-site flex flex-col-reverse items-center gap-4 pb-8 pt-2 text-center sm:flex-row sm:items-center sm:justify-between sm:pb-10 sm:text-left">
+          <div className="flex flex-col items-center gap-1 sm:items-start lg:flex-row lg:items-center lg:gap-6">
+            <p className="text-[11px] text-white/60 sm:text-[13px]">{pick('footer_copyright')}</p>
             {/* Akun mengikuti sesi (sama dengan tombol akun di Navbar): tamu, pembeli template, atau staf */}
             <nav aria-label="Akun">
-              <ul className="flex flex-wrap gap-x-4">
+              <ul className="flex flex-wrap justify-center gap-x-4 sm:justify-start">
                 {ACCOUNT_LINKS[session].map((link) => (
                   <li key={link.href}>
                     <Link
                       to={link.href}
-                      className="inline-flex min-h-10 items-center text-xs text-white/60 transition-colors hover:text-white sm:min-h-8 sm:text-[13px]"
+                      className="inline-flex min-h-8 items-center text-[11px] text-white/60 transition-colors hover:text-white sm:text-[13px]"
                     >
                       {link.label}
                     </Link>
@@ -300,9 +301,10 @@ const Footer: React.FC<FooterProps> = ({ alt, chrome, cta = true }) => {
           )}
         </div>
 
-        {/* Teks merek raksasa ala Mobbin: selebar layar (textLength), terpotong di tepi bawah halaman; dekoratif */}
-        <svg viewBox="0 0 1000 92" className="block w-full select-none text-white/[0.06]" aria-hidden focusable="false">
-          <text x="0" y="128" textLength="1000" lengthAdjust="spacingAndGlyphs" fill="currentColor" fontSize="142" fontWeight="600">
+        {/* Teks merek raksasa ala Mobbin: selebar layar (textLength), huruf utuh tanpa terpotong (pemilik 2026-10-25);
+            dekoratif. viewBox setinggi huruf kapital (± 0,73 em) + sedikit ruang di bawah */}
+        <svg viewBox="0 0 1000 120" className="block w-full select-none text-white/[0.06]" aria-hidden focusable="false">
+          <text x="0" y="110" textLength="1000" lengthAdjust="spacingAndGlyphs" fill="currentColor" fontSize="142" fontWeight="600">
             GARUDA NEXA
           </text>
         </svg>

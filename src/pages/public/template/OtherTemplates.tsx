@@ -31,7 +31,7 @@ function Thumb({ template, className = '' }: { template: Template; className?: s
           loading="lazy"
           decoding="async"
           onError={() => setBroken(true)}
-          className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none"
+          className="h-full w-full object-cover object-top"
         />
       ) : (
         <div className="flex h-full min-h-full items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100">

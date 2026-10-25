@@ -18,7 +18,6 @@ import {
   TINT,
   type SortKey,
 } from './templates/catalog';
-import { IncludesStrip } from './templates/IncludesStrip';
 import { SortMenu } from './templates/SortMenu';
 import { TemplateSearchBox } from './templates/TemplateSearchBox';
 import { TemplateShot, TemplateShotSkeleton } from './templates/TemplateShot';
@@ -177,90 +176,93 @@ const Templates: React.FC<{ alt?: boolean; number?: string }> = ({ alt = false, 
       className={`section-screen ${alt ? 'bg-alt' : 'bg-canvas'}`}
     >
       <div className="container-site w-full">
-        <SectionHeading
-          index={number}
-          label="Template"
-          title="Pilih"
-          accent="Template"
-          titleId={titleId}
-          // Biasanya tombol katalog duduk sejajar tab kategori; tanpa tab (katalog kecil) tetap di samping judul
-          action={!showTabs && state.status !== 'loading' ? <CatalogLink /> : undefined}
-        />
+        {/* Judul & filter selebar isi hero (Hero.tsx: container-site max-w-[1584px]); grid kartu tetap selebar layar */}
+        <div className="mx-auto w-full max-w-[calc(1584px-2*var(--gutter))]">
+          <SectionHeading
+            index={number}
+            label="Template"
+            title="Pilih"
+            accent="Template"
+            titleId={titleId}
+            // Biasanya tombol katalog duduk sejajar tab kategori; tanpa tab (katalog kecil) tetap di samping judul
+            action={!showTabs && state.status !== 'loading' ? <CatalogLink /> : undefined}
+          />
 
-        {state.status === 'loading' && <ToolbarSkeleton />}
+          {state.status === 'loading' && <ToolbarSkeleton />}
 
-        {ready && templates.length > 0 && (
-          <div className="mt-8 sm:mt-10 xl:mt-12">
-            {/* Tab kategori (seperti Shots / Designers / Services di Dribbble), hanya bila ada pilihan nyata */}
-            {showTabs && (
-              // Tab di kiri, "Lihat Semua Template" di kanan pada baris yang sama (pemilik 2026-10-24)
-              <div className="flex items-center gap-4">
-                {/* Padding kiri (HP: selebar gutter, desktop: 4px) agar outline fokus tidak terpotong overflow */}
-                <div className={`-ml-5 min-w-0 flex-1 overflow-x-auto pl-5 pr-1 sm:-ml-1 sm:pl-1 ${NO_SCROLLBAR}`}>
-                  <div className="flex w-max gap-2 py-1.5" role="group" aria-label="Kategori template">
-                    {[ALL, ...categories].map((name) => (
-                      // chip-site: aktif = aria-pressed (biru solid), jelas beda dari chip kata kunci "Populer" (tonal)
-                      <button
-                        key={name}
-                        type="button"
-                        aria-pressed={category === name}
-                        onClick={() => changeCategory(name)}
-                        className="chip-site max-sm:h-8 max-sm:px-3 max-sm:text-xs max-sm:after:-inset-y-1.5"
-                      >
-                        {name === ALL ? 'Semua' : name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <CatalogLink />
-              </div>
-            )}
-
-            {/* Kolom cari besar, tombol bulat biru di kanan (sama dengan katalog /template) */}
-            {showSearch && <TemplateSearchBox value={query} onChange={changeQuery} className={showTabs ? 'mt-3 sm:mt-4' : ''} />}
-
-            {/* "Sudah termasuk" tepat di bawah kolom cari (pil penuh di desktop) */}
-            <IncludesStrip className={showTabs || showSearch ? 'mt-3 sm:mt-4' : ''} />
-
-            {/* Populer + jumlah hasil + Urutkan (katalog kecil: jumlah saja) */}
-            <div className={`flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-6 ${showTabs || showSearch ? 'mt-2 sm:mt-3' : ''}`}>
-              {showExtras && popular.length > 0 && (
-                <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-                  <span className="shrink-0 text-[13px] font-semibold text-fg sm:text-sm">Populer:</span>
-                  <div className={`-ml-1 -mr-5 min-w-0 flex-1 overflow-x-auto pl-1 pr-5 sm:-mr-1 sm:pr-1 ${NO_SCROLLBAR}`}>
-                    <div className="flex w-max gap-1.5 py-2 sm:gap-2" role="group" aria-label="Kata kunci populer">
-                      {popular.map((label) => {
-                        const active = normalizedQuery === normalize(label);
-                        return (
-                          <button
-                            key={label}
-                            type="button"
-                            aria-pressed={active}
-                            onClick={() => togglePopular(label)}
-                            className={`relative inline-flex h-8 items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium ring-1 ring-inset transition-colors max-sm:h-7 max-sm:px-3 max-sm:text-xs max-sm:after:absolute max-sm:after:inset-x-0 max-sm:after:-inset-y-2 ${
-                              active
-                                ? 'bg-brand-50 text-brand-700 ring-brand-200'
-                                : 'bg-surface text-muted ring-line hover:text-fg hover:ring-line-strong'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
+          {ready && templates.length > 0 && (
+            <div className="mt-8 sm:mt-10 xl:mt-12">
+              {/* Tab kategori (seperti Shots / Designers / Services di Dribbble), hanya bila ada pilihan nyata */}
+              {showTabs && (
+                // Tab di kiri, "Lihat Semua Template" di kanan pada baris yang sama (pemilik 2026-10-24)
+                <div className="flex items-center gap-4">
+                  {/* Padding kiri (HP: selebar gutter, desktop: 4px) agar outline fokus tidak terpotong overflow */}
+                  <div className={`-ml-5 min-w-0 flex-1 overflow-x-auto pl-5 pr-1 sm:-ml-1 sm:pl-1 ${NO_SCROLLBAR}`}>
+                    <div className="flex w-max gap-2 py-1.5" role="group" aria-label="Kategori template">
+                      {[ALL, ...categories].map((name) => (
+                        // chip-site: aktif = aria-pressed (biru solid), jelas beda dari chip kata kunci "Populer" (tonal)
+                        <button
+                          key={name}
+                          type="button"
+                          aria-pressed={category === name}
+                          onClick={() => changeCategory(name)}
+                          className="chip-site max-sm:h-8 max-sm:px-3 max-sm:text-xs max-sm:after:-inset-y-1.5"
+                        >
+                          {name === ALL ? 'Semua' : name}
+                        </button>
+                      ))}
                     </div>
                   </div>
+                  <CatalogLink />
                 </div>
               )}
-              {/* Jumlah di kanan hanya bila ada kolom cari selebar penuh; katalog kecil: rata kiri, sejajar grid */}
-              <div className={`flex items-center justify-between gap-3 sm:gap-4 ${showSearch ? 'sm:ml-auto sm:justify-end' : ''}`}>
-                <p role="status" className="text-[13px] tabular-nums text-subtle sm:text-sm">
-                  {countText}
-                </p>
-                {showExtras && <SortMenu value={sort} options={SORT_OPTIONS} onChange={changeSort} />}
+
+              {/* Kolom cari besar, tombol bulat biru di kanan (sama dengan katalog /template) */}
+              {showSearch && <TemplateSearchBox value={query} onChange={changeQuery} className={showTabs ? 'mt-3 sm:mt-4' : ''} />}
+
+              {/* Strip "Sudah termasuk" di bawah kolom cari dihapus (pemilik 2026-10-25); daftarnya tetap di detail template,
+                  halaman pesan, dan /harga */}
+
+              {/* Populer + jumlah hasil + Urutkan (katalog kecil: jumlah saja) */}
+              <div className={`flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-6 ${showTabs || showSearch ? 'mt-2 sm:mt-3' : ''}`}>
+                {showExtras && popular.length > 0 && (
+                  <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                    <span className="shrink-0 text-[13px] font-semibold text-fg sm:text-sm">Populer:</span>
+                    <div className={`-ml-1 -mr-5 min-w-0 flex-1 overflow-x-auto pl-1 pr-5 sm:-mr-1 sm:pr-1 ${NO_SCROLLBAR}`}>
+                      <div className="flex w-max gap-1.5 py-2 sm:gap-2" role="group" aria-label="Kata kunci populer">
+                        {popular.map((label) => {
+                          const active = normalizedQuery === normalize(label);
+                          return (
+                            <button
+                              key={label}
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => togglePopular(label)}
+                              className={`relative inline-flex h-8 items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium ring-1 ring-inset transition-colors max-sm:h-7 max-sm:px-3 max-sm:text-xs max-sm:after:absolute max-sm:after:inset-x-0 max-sm:after:-inset-y-2 ${
+                                active
+                                  ? 'bg-brand-50 text-brand-700 ring-brand-200'
+                                  : 'bg-surface text-muted ring-line hover:text-fg hover:ring-line-strong'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Jumlah di kanan hanya bila ada kolom cari selebar penuh; katalog kecil: rata kiri, sejajar grid */}
+                <div className={`flex items-center justify-between gap-3 sm:gap-4 ${showSearch ? 'sm:ml-auto sm:justify-end' : ''}`}>
+                  <p role="status" className="text-[13px] tabular-nums text-subtle sm:text-sm">
+                    {countText}
+                  </p>
+                  {showExtras && <SortMenu value={sort} options={SORT_OPTIONS} onChange={changeSort} />}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className={countOnly ? 'mt-3 sm:mt-4' : 'mt-6 sm:mt-8'} aria-busy={state.status === 'loading'}>
           {state.status === 'loading' && (

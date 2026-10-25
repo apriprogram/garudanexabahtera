@@ -107,13 +107,14 @@ describe('Projects (#projects)', () => {
     expect(within(section).getByRole('heading', { name: 'Undangan Digital' })).toBeInTheDocument();
     expect(section).not.toHaveTextContent(/Lorem Ipsum|Coba text|Undangan Lama/);
 
-    // Kartu gaya kartu template: gambar 4:3 dekoratif (judul dari h3) yang sedikit membesar saat di-hover, tanpa kartu
-    // sorotan; lapisan hover = deskripsi + "Pesan Serupa" ke form custom; di bawah gambar judul lalu jenis proyek
+    // Kartu gaya kartu template: gambar 4:3 dekoratif (judul dari h3) yang diam saat di-hover (tanpa zoom, pemilik
+    // 2026-10-25), tanpa kartu sorotan; lapisan hover = deskripsi + "Pesan Serupa" ke form custom; di bawah gambar judul
+    // lalu jenis proyek
     const images = section.querySelectorAll('img');
     expect(images).toHaveLength(2);
     images.forEach((img) => {
       expect(img).toHaveAttribute('alt', '');
-      expect(img.className).toContain('motion-safe:group-hover/shot:scale-[1.04]');
+      expect(img.className).not.toMatch(/scale-|transition/);
       expect(img.closest('.aspect-\\[4\\/3\\]')).not.toBeNull();
     });
     const cards = section.querySelectorAll('article');
@@ -127,7 +128,9 @@ describe('Projects (#projects)', () => {
     const overlay = inOverlay.closest('.pointer-events-none') as HTMLElement;
     expect(overlay.className).toContain('[@media(hover:hover)]:opacity-0');
     expect(overlay.className).toContain('group-focus-within/shot:opacity-100');
-    expect(overlay.className).toContain('from-fg/90');
+    // Gradasi tipis, teks tanpa bayangan (pemilik 2026-10-25)
+    expect(overlay.className).toContain('from-fg/55');
+    expect(overlay.innerHTML).not.toContain('text-shadow');
     expect(inOverlay.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(belowTitle.closest('.pointer-events-none')).toBeNull();
     expect(belowTitle.className).toContain('[@media(hover:hover)]:sr-only');

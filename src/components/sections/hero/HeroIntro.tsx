@@ -42,7 +42,7 @@ const MODES: Mode[] = [
 ];
 
 const TITLE_CLASS =
-  'block text-[24px] font-semibold leading-[1.18] tracking-[-0.02em] sm:text-[44px] sm:leading-[1.04] sm:tracking-[-0.035em] lg:text-[42px] xl:text-[52px] 2xl:text-[60px]';
+  'block text-[22px] font-semibold leading-[1.2] tracking-[-0.02em] sm:text-[44px] sm:leading-[1.04] sm:tracking-[-0.035em] lg:text-[42px] xl:text-[52px] 2xl:text-[60px]';
 
 /**
  * Sisi kiri hero (port HeroIntro BELAJAR CPNS): toggle mode berindikator meluncur
@@ -140,7 +140,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
               aria-controls={`${baseId}-panel-${item.key}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setMode(index)}
-              className={`relative z-10 inline-flex h-8 items-center justify-center whitespace-nowrap rounded-full px-4 text-[11px] font-semibold uppercase tracking-[0.06em] transition-colors duration-300 after:absolute after:inset-x-0 after:-inset-y-1.5 sm:h-10 sm:px-5 sm:text-xs sm:after:hidden ${
+              className={`relative z-10 inline-flex h-7 items-center justify-center whitespace-nowrap rounded-full px-3 text-[10px] font-semibold uppercase tracking-[0.06em] transition-colors duration-300 after:absolute after:inset-x-0 after:-inset-y-1.5 sm:h-10 sm:px-5 sm:text-xs sm:after:hidden ${
                 selected ? tone.toggleActive : tone.toggleIdle
               }`}
             >
@@ -153,7 +153,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
       </div>
 
       {/* Panel per mode, ditumpuk; yang tidak aktif tak terlihat & tidak bisa difokus */}
-      <div className="mt-4 grid sm:mt-8">
+      <div className="mt-6 grid sm:mt-8">
         {MODES.map((item, index) => {
           const active = index === mode;
           const animate = active && switched;
@@ -184,17 +184,17 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
                 parts={titleParts}
               />
 
-              <ul className="mt-5 space-y-2.5 sm:mt-9 sm:space-y-4">
+              <ul className="mt-5 space-y-3 sm:mt-9 sm:space-y-4">
                 {item.points.map((point, i) => (
                   <li
                     key={point}
-                    className={`flex items-center gap-2 text-[14px] leading-snug sm:gap-3 sm:text-[17px] sm:leading-normal ${tone.point} ${
+                    className={`flex items-center gap-2 text-[13px] leading-snug sm:gap-3 sm:text-[17px] sm:leading-normal ${tone.point} ${
                       animate ? 'animate-fade-up motion-reduce:animate-none' : ''
                     }`}
                     style={animate ? { animationDelay: `${450 + i * 90}ms` } : undefined}
                   >
-                    <span className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full sm:h-6 sm:w-6 ${tone.check}`}>
-                      <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" strokeWidth={3} aria-hidden />
+                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full sm:h-6 sm:w-6 ${tone.check}`}>
+                      <Check className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" strokeWidth={3} aria-hidden />
                     </span>
                     {t(point)}
                   </li>
@@ -202,7 +202,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
               </ul>
 
               <div
-                className={`mt-7 flex flex-wrap items-center gap-3 sm:mt-11 ${animate ? 'animate-fade-up motion-reduce:animate-none' : ''}`}
+                className={`mt-8 flex flex-wrap items-center gap-2 sm:mt-11 sm:gap-3 ${animate ? 'animate-fade-up motion-reduce:animate-none' : ''}`}
                 style={animate ? { animationDelay: '750ms' } : undefined}
               >
                 {item.key === 'template' ? (
@@ -230,15 +230,15 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
 };
 
 /**
- * Tombol hero tanpa panah: utama biru solid, kedua garis saja tanpa latar (ikon polos 16px); ukuran seperti Dribbble
- * (permintaan pemilik 2026-10-23): tinggi 48px, padding 24px, huruf 15px (HP 40px). HP: berbagi satu baris sama lebar, turun
- * ke baris baru (selebar kolom) bila tidak muat.
+ * Tombol hero tanpa panah: utama biru solid, kedua garis saja tanpa latar (ikon polos); ukuran seperti Dribbble
+ * (permintaan pemilik 2026-10-23): tinggi 48px, padding 24px, huruf 15px. HP lebih ringkas (pemilik 2026-10-25): tinggi
+ * 36px, huruf 12px, ikon 14px, selebar isinya (bukan selebar kolom); turun ke baris baru bila tidak muat.
  */
-const PRIMARY_BTN = 'btn btn-primary max-sm:flex-1 sm:h-12 sm:px-6 sm:text-[15px]';
+const PRIMARY_BTN = 'btn btn-primary max-sm:h-9 max-sm:gap-1.5 max-sm:px-3.5 max-sm:text-xs sm:h-12 sm:px-6 sm:text-[15px]';
 /** Ukuran tombol kedua; warnanya (btn-outline-clear / btn-outline-on-media) mengikuti nada teks hero */
-const SECONDARY_SIZE = 'max-sm:flex-1 sm:h-12 sm:px-6 sm:text-[15px]';
-const ICON = 'h-4 w-4';
-const SECONDARY_ICON = 'h-4 w-4';
+const SECONDARY_SIZE = 'max-sm:h-9 max-sm:gap-1.5 max-sm:px-3.5 max-sm:text-xs sm:h-12 sm:px-6 sm:text-[15px]';
+const ICON = 'h-3.5 w-3.5 sm:h-4 sm:w-4';
+const SECONDARY_ICON = 'h-3.5 w-3.5 sm:h-4 sm:w-4';
 
 /**
  * Tombol utama mode Template: "Pilih Template" → katalog #templates. Bila katalog disembunyikan admin, ke halaman

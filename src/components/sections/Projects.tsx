@@ -188,7 +188,7 @@ const ProjectImage: React.FC<{ item: ProjectCardData }> = ({ item }) => {
       loading="lazy"
       decoding="async"
       onError={() => setBroken(true)}
-      className="h-full w-full object-cover object-top transition-transform duration-500 ease-out motion-safe:group-hover/shot:scale-[1.04]"
+      className="h-full w-full object-cover object-top"
     />
   );
 };
@@ -249,9 +249,9 @@ const ProjectShot: React.FC<{ item: ProjectCardData; index: number; stat?: Showc
               <ProjectImage item={item} />
             </button>
 
-            {/* Lapisan hover: gradasi bawah (cukup gelap untuk teks putih di atas tangkapan layar terang) + judul &
-                deskripsi (perangkat ber-mouse, hanya visual) + tombol Pesan Serupa */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-linear-to-t from-fg/90 via-fg/55 to-transparent p-3 pt-16 transition-opacity duration-300 group-focus-within/shot:opacity-100 sm:p-4 sm:pt-20 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/shot:opacity-100">
+            {/* Lapisan hover: gradasi bawah tipis, teks tanpa bayangan (pemilik 2026-10-25) + judul & deskripsi
+                (perangkat ber-mouse, hanya visual) + tombol Pesan Serupa */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-linear-to-t from-fg/55 via-fg/20 to-transparent p-3 pt-12 transition-opacity duration-300 group-focus-within/shot:opacity-100 sm:p-4 sm:pt-14 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/shot:opacity-100">
               <div className="min-w-0 flex-1 [@media(hover:none)]:hidden" aria-hidden>
                 <p className="truncate text-sm font-semibold text-white sm:text-[15px]">{item.title}</p>
                 {item.description && (
@@ -260,10 +260,10 @@ const ProjectShot: React.FC<{ item: ProjectCardData; index: number; stat?: Showc
               </div>
               <Link
                 to="/pesan-custom"
-                className="btn btn-primary btn-sm pointer-events-auto ml-auto h-9 shrink-0 px-3.5 focus-visible:outline-white"
+                className="btn btn-primary btn-sm pointer-events-auto ml-auto h-8 shrink-0 gap-1 px-3 text-xs focus-visible:outline-white"
                 aria-label={`Pesan Serupa ${item.title}`}
               >
-                <Sparkles className="h-4 w-4" aria-hidden />
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
                 Pesan Serupa
               </Link>
             </div>

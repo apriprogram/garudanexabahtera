@@ -136,7 +136,7 @@ const Hero: React.FC = () => {
 
       {/* Isi hero lebih sempit dari navbar (seperti Dribbble): ±1500px di tengah layar lebar. Tinggi minimum = layar
           dikurangi navbar + banner promo, jadi isi tetap di tengah layar pertama */}
-      <div className="container-site max-w-[1584px] grid items-center gap-8 pb-12 pt-6 sm:min-h-[calc(100svh-var(--nav-offset)-4.5rem)] sm:gap-12 sm:pb-16 sm:pt-10 lg:grid-cols-2 lg:gap-12 lg:pb-20 lg:pt-8 xl:gap-16 2xl:gap-24">
+      <div className="container-site max-w-[1584px] grid items-center gap-10 pb-12 pt-6 sm:min-h-[calc(100svh-var(--nav-offset)-4.5rem)] sm:gap-12 sm:pb-16 sm:pt-10 lg:grid-cols-2 lg:gap-12 lg:pb-20 lg:pt-8 xl:gap-16 2xl:gap-24">
         <div
           ref={textRef}
           className="hero-parallax lg:pl-[2%]"

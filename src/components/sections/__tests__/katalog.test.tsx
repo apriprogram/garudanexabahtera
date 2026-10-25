@@ -215,12 +215,9 @@ describe('Templates (#templates), katalog besar', SLOW, () => {
 
     expect(within(section).getByRole('searchbox', { name: 'Cari template' }).className).toContain('placeholder:text-muted');
 
-    // "Sudah termasuk" tepat di bawah kolom cari, pil penuh di desktop (pindahan dari #kategori, 2026-10-24)
-    const form = within(section).getByRole('search', { name: 'Cari template' });
-    const strip = within(section).getByText('Sudah termasuk').parentElement as HTMLElement;
-    expect(form.nextElementSibling).toBe(strip);
-    expect(strip.className).toContain('lg:rounded-full');
-    expect(within(strip).getAllByRole('listitem').length).toBeGreaterThan(1);
+    // Strip "Sudah termasuk" di bawah kolom cari dihapus (pemilik 2026-10-25)
+    expect(within(section).getByRole('search', { name: 'Cari template' })).toBeInTheDocument();
+    expect(within(section).queryByText('Sudah termasuk')).toBeNull();
     expect(within(section).getByRole('group', { name: 'Kata kunci populer' })).toBeInTheDocument();
     expect(within(section).getByRole('button', { name: /Urutkan/ })).toBeInTheDocument();
 

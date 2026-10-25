@@ -120,7 +120,7 @@ const NEXA_CUSTOM_EMPTY: NexaCustomConfig = { on: true, key_masked: '', env_key:
 const TAB_SUBTITLE: Partial<Record<string, string>> = {
   templates: 'Section "Pilih Template" di beranda. Katalognya diambil dari template yang terbit.',
   compare: 'Tabel "Pilih sesuai kebutuhanmu" di beranda.',
-  pricing: 'Tampil di detail template, halaman pesan, akun pembeli, dan strip "Sudah termasuk" di beranda.',
+  pricing: 'Tampil di detail template, halaman pesan, akun pembeli, dan halaman Harga.',
   guides: 'Halaman /panduan dan artikel panduan.',
   nexa: 'Chat Nexa AI melayang di seluruh situs: penyedia jawaban dan kunci API-nya.',
 };
@@ -586,7 +586,6 @@ const SiteSettings: React.FC = () => {
               </a>
               .
             </p>
-            <p>Daftar &ldquo;Sudah termasuk&rdquo; di bawah kolom cari diatur di tab Harga template.</p>
           </InfoNote>
         );
 

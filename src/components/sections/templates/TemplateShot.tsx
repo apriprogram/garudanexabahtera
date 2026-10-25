@@ -84,34 +84,35 @@ export function TemplateShot({ template, index, isNew = false, headingLevel = 3 
                   loading="lazy"
                   decoding="async"
                   onError={() => setImageBroken(true)}
-                  className="h-full w-full object-cover object-top transition-transform duration-500 ease-out motion-safe:group-hover/shot:scale-[1.04]"
+                  className="h-full w-full object-cover object-top"
                 />
               ) : (
                 <span className="block h-full w-full bg-linear-to-br from-brand-50 to-brand-100" />
               )}
             </Link>
 
-            {/* Lapisan hover: gradasi bawah (cukup gelap untuk teks putih di atas pratinjau terang) + judul & deskripsi
-                (perangkat ber-mouse) + tombol Demo & Pesan (cincin fokus putih di atas gradasi gelap) */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-linear-to-t from-fg/90 via-fg/55 to-transparent p-3 pt-16 transition-opacity duration-300 group-focus-within/shot:opacity-100 sm:p-4 sm:pt-20 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/shot:opacity-100">
+            {/* Lapisan hover: gradasi bawah tipis, teks tanpa bayangan (pemilik 2026-10-25) + judul & deskripsi (perangkat
+                ber-mouse) + tombol Demo & Pesan */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-linear-to-t from-fg/55 via-fg/20 to-transparent p-3 pt-12 transition-opacity duration-300 group-focus-within/shot:opacity-100 sm:p-4 sm:pt-14 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/shot:opacity-100">
               <div className="min-w-0 flex-1 [@media(hover:none)]:hidden">
                 <p className="truncate text-sm font-semibold text-white sm:text-[15px]">{template.name}</p>
                 {template.short_description && (
                   <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-white/85 sm:text-[13px]">{template.short_description}</p>
                 )}
               </div>
-              <div className="pointer-events-auto ml-auto flex shrink-0 items-center gap-2">
-                <DemoLink template={template} className="btn btn-sm h-9 bg-white px-3.5 text-fg hover:bg-white/90 focus-visible:outline-white" onClick={recordView}>
-                  <Eye className="h-4 w-4" aria-hidden />
+              {/* Tombol ringkas: 32px, teks 12px (pemilik 2026-10-25) */}
+              <div className="pointer-events-auto ml-auto flex shrink-0 items-center gap-1.5">
+                <DemoLink template={template} className="btn btn-sm h-8 gap-1 bg-white px-3 text-xs text-fg hover:bg-white/90 focus-visible:outline-white" onClick={recordView}>
+                  <Eye className="h-3.5 w-3.5" aria-hidden />
                   Demo
                 </DemoLink>
                 <Link
                   to={orderHref}
                   onClick={recordView}
-                  className="btn btn-primary btn-sm h-9 px-3.5 focus-visible:outline-white"
+                  className="btn btn-primary btn-sm h-8 gap-1 px-3 text-xs focus-visible:outline-white"
                   aria-label={`Pesan Template ${template.name}`}
                 >
-                  <ShoppingBag className="h-4 w-4" aria-hidden />
+                  <ShoppingBag className="h-3.5 w-3.5" aria-hidden />
                   Pesan
                 </Link>
               </div>
