@@ -175,8 +175,8 @@ describe('sanity checks', () => {
 describe('API data', () => {
   it('rejects an empty, short or broken catalog', () => {
     const body = FIXTURE_API['/api.php?action=get_templates'];
-    expect(validateCatalog(body, 5)).toEqual(FIXTURE_TEMPLATES.map((t) => t.slug));
-    expect(() => validateCatalog(body, 6)).toThrow(/minimal 6/);
+    expect(validateCatalog(body, 6)).toEqual(FIXTURE_TEMPLATES.map((t) => t.slug));
+    expect(() => validateCatalog(body, 7)).toThrow(/minimal 7/);
     expect(() => validateCatalog({ templates: [] }, 1)).toThrow(/minimal 1/);
     expect(() => validateCatalog({}, 1)).toThrow(/daftar templates/);
     expect(() => validateCatalog({ templates: [{ ...FIXTURE_TEMPLATES[0], slug: 'kategori' }] }, 1)).toThrow(/Slug/);

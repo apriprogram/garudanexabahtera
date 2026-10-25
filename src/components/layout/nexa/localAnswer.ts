@@ -143,9 +143,9 @@ const INTENTS: Intent[] = [
     }),
   },
   {
-    when: [/(template|tema|katalog|desain|contoh|demo|company profile|klinik|salon|sekolah|olahraga|fintech)/],
+    when: [/(template|tema|katalog|desain|contoh|demo|company profile|klinik|salon|sekolah|olahraga|fintech|yoga|pilates)/],
     answer: () => ({
-      text: `Kami punya template siap pakai untuk company profile, klinik & salon, klub olahraga, sampai fintech. Harganya sudah termasuk setup, domain, hosting, dan SSL tahun pertama, plus diskon ${FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama.`,
+      text: `Kami punya template siap pakai untuk company profile, klinik & salon, klub olahraga, studio yoga, sampai fintech. Harganya sudah termasuk setup, domain, hosting, dan SSL tahun pertama, plus diskon ${FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama.`,
       action: CATALOG,
       cards: 'templates',
     }),

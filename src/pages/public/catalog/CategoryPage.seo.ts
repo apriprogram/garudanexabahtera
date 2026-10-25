@@ -1,5 +1,5 @@
 // /template/kategori/{slug}: halaman kategori (docs/platform/SEO-PLAN.md §2, §5.5 langkah 2, Lampiran A).
-// Slug di luar 4 kategori → head null → kepala 404. Aturan index (§2, src/content/categories.ts): ≥ 2 template terbit,
+// Slug di luar CATEGORY_SLUGS → head null → kepala 404. Aturan index (§2, src/content/categories.ts): ≥ 2 template terbit,
 // atau panduan ≥ 300 kata + FAQ dengan minimal 1 template; selain itu noindex,follow (tanpa canonical & JSON-LD).
 // JSON-LD: CollectionPage + ItemList (template kategori ini) + BreadcrumbList. Modul murni (bundel utama).
 import {

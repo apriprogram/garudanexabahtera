@@ -273,7 +273,7 @@ describe('beranda', () => {
     expect(text).not.toMatch(/0\d\s*Kategori/);
     expect(text).toContain('Apa saja yang sudah termasuk');
     expect(text).toContain('Sudah termasuk');
-    for (const slug of ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup']) {
+    for (const slug of ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup', 'yoga-wellness']) {
       expect(el.querySelector(`a[href="/template/kategori/${slug}"]`), slug).not.toBeNull();
     }
     // Kategori: section #kategori dihapus (pemilik 2026-10-24), tautan halaman kategori tetap ada lewat footer. H2 berkata

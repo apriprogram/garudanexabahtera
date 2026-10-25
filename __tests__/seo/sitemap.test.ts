@@ -26,7 +26,7 @@ describe('buildSitemap dari getIndexableRoutes', () => {
     expect(xml).not.toMatch(/changefreq|priority/);
   });
 
-  it('memuat beranda, /pesan-custom, legal dan 5 template; tanpa rute aplikasi/demo/query/stub', () => {
+  it('memuat beranda, /pesan-custom, legal dan 6 template; tanpa rute aplikasi/demo/query/stub', () => {
     const locs = parseSitemap(xml).map((e) => e.loc);
     expect(locs).toContain(`${ORIGIN}/`);
     expect(locs).toContain(`${ORIGIN}/pesan-custom`);
@@ -46,6 +46,7 @@ describe('buildSitemap dari getIndexableRoutes', () => {
       '/template/kategori/kecantikan-klinik',
       '/template/kategori/olahraga-komunitas',
       '/template/kategori/fintech-startup',
+      '/template/kategori/yoga-wellness',
       '/harga',
       '/tentang',
       '/kontak',

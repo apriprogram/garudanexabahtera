@@ -20,7 +20,7 @@ describe('primePreload', () => {
   it('makes API responses readable synchronously (peekApiGet) by request URL', () => {
     expect(peekApiGet('get_templates')).toBeUndefined();
     primePreload(fixturePreload('/template/finova'));
-    expect(peekApiGet<{ templates: unknown[] }>('get_templates')?.templates).toHaveLength(5);
+    expect(peekApiGet<{ templates: unknown[] }>('get_templates')?.templates).toHaveLength(6);
     expect(peekApiGet<{ template: { slug: string } }>('get_template', { slug: 'finova' })?.template.slug).toBe('finova');
     expect(peekApiGet('get_template', { slug: 'aura-studio' })).toBeUndefined();
     resetPreload();

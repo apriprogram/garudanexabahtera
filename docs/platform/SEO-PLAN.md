@@ -57,7 +57,7 @@ Pekerjaan ini dijalankan **setelah** workflow template (Arena Club, Aura Studio,
 | Topik | Keputusan | Catatan |
 |---|---|---|
 | URL katalog | `/template` (bukan `/template-website`) | Satu hierarki dengan `/template/{slug}`; kata kunci ditaruh di title dan H1 |
-| Kategori | `/template/kategori/{slug}`: `company-profile`, `kecantikan-klinik`, `olahraga-komunitas`, `fintech-startup` (dipetakan dari kolom `category` di DB) | Diindeks hanya jika ada ≥2 template **atau** ≥300 kata unik + FAQ. Selain itu `noindex,follow`. Slug template tidak boleh bernama `kategori` |
+| Kategori | `/template/kategori/{slug}`: `company-profile`, `kecantikan-klinik`, `olahraga-komunitas`, `fintech-startup`, `yoga-wellness` (dipetakan dari kolom `category` di DB) | Diindeks hanya jika ada ≥2 template **atau** ≥300 kata unik + FAQ. Selain itu `noindex,follow`. Slug template tidak boleh bernama `kategori` |
 | Jasa custom | `/jasa-pembuatan-website`, `/jasa-pembuatan-aplikasi-mobile` | `/jasa-pembuatan-website-sekolah-pesantren` hanya dibuat jika ada portofolio nyata (i-School/i-Santri) |
 | Harga | `/harga` menargetkan "harga template website / Garuda Nexa" | Kata kunci "harga pembuatan website company profile 2026" dipegang artikel di `/panduan` agar dua halaman tidak saling bersaing |
 | Panduan | `/panduan`, `/panduan/{slug}` | Artikel ditulis sebagai sumber Markdown yang ikut di-bundle, lalu di-prerender |
@@ -896,11 +896,12 @@ Panjang karakter sudah dihitung. Harga dibuat dari DB saat build, tidak di-hardc
 | Rute | Title (karakter) | Meta description (karakter) | H1 |
 |---|---|---|---|
 | `/` | Template Website Siap Pakai & Jasa Website \| Garuda Nexa (56) | Beli template website siap pakai, sudah termasuk domain, hosting & SSL tahun pertama. Juga jasa pembuatan website & aplikasi Android/iOS custom. (144) | Template website siap pakai, termasuk domain & hosting. |
-| `/template` | Template Website Siap Pakai + Domain & Hosting \| Garuda Nexa (60) | Katalog template website siap pakai untuk company profile, klinik, klub olahraga & fintech. Harga jelas, lihat demo, bayar online, kelola lewat CMS. (148) | Template website siap pakai |
+| `/template` | Template Website Siap Pakai + Domain & Hosting \| Garuda Nexa (60) | Katalog template website siap pakai: company profile, klinik, klub olahraga, studio yoga & fintech. Harga jelas, lihat demo, bayar online, edit lewat CMS. (154) | Template website siap pakai |
 | `/template/kategori/company-profile` | Template Website Company Profile Siap Pakai \| Garuda Nexa (57) | Template website company profile untuk perusahaan, UMKM & startup. Mulai Rp990 rb, termasuk domain, hosting & SSL tahun pertama. Lihat demonya. | Template website company profile |
 | `/template/kategori/kecantikan-klinik` | Template Website Klinik Kecantikan & Salon \| Garuda Nexa (56) | Contoh website klinik kecantikan, salon, spa & barbershop yang siap dipakai: daftar perawatan, harga, galeri, reservasi WhatsApp. Lihat demonya. | Template website klinik kecantikan & salon |
 | `/template/kategori/olahraga-komunitas` | Template Website Klub Olahraga, Padel & Futsal \| Garuda Nexa (60) | Website klub olahraga siap pakai untuk padel, tenis, futsal, badminton & gym: paket membership, pelatih, jadwal, pesan lapangan via WhatsApp. | Template website klub olahraga |
 | `/template/kategori/fintech-startup` | Template Website Fintech & Startup \| Garuda Nexa (48) | Template landing page untuk fintech, aplikasi pembayaran & SaaS. Tampilan modern, FAQ, testimoni, tautan unduh aplikasi. Lihat demonya. | Template website fintech & startup |
+| `/template/kategori/yoga-wellness` | Template Website Studio Yoga & Pilates \| Garuda Nexa (52) | Website studio yoga, pilates & retret siap pakai: kelas, paket member, cerita peserta, daftar via WhatsApp. Mulai Rp1,29 jt. Lihat demonya. | Template website studio yoga & pilates |
 | `/template/corporate-nexa` | Corporate Nexa: Template Company Profile – Rp1,5 jt | Template company profile perusahaan… Rp1.500.000 sudah termasuk domain, hosting & SSL tahun pertama… | Corporate Nexa: Template Website Company Profile Perusahaan |
 | `/template/startup-clean` | Startup Clean: Template Website UMKM & Startup – Rp990 rb (57) | (pola sama) | Startup Clean: Template Website UMKM & Startup |
 | `/template/arena-club` | Arena Club: Template Website Klub Olahraga – Rp1,29 jt (54) | (pola sama; sebut "pesan lapangan via WhatsApp") | Arena Club: Template Website Klub Olahraga, Padel & Futsal |

@@ -12,7 +12,7 @@ const EMPTY = { templates: [], priceDate: '2026-10-23' };
 describe('resolvePlaceholders', () => {
   it('harga, jumlah, tanggal dan nama template dari data', () => {
     expect(resolvePlaceholders('Harga {{harga_template_rentang}} per {{tanggal_harga}}.', CTX)).toBe('Harga Rp990.000–Rp1.790.000 per 23 Oktober 2026.');
-    expect(resolvePlaceholders('Mulai {{harga_template_min}}, {{jumlah_template}} template.', CTX)).toBe('Mulai Rp990.000, 5 template.');
+    expect(resolvePlaceholders('Mulai {{harga_template_min}}, {{jumlah_template}} template.', CTX)).toBe('Mulai Rp990.000, 6 template.');
     expect(resolvePlaceholders('[{{template:aura-studio}}](/template/aura-studio) {{harga:aura-studio}}', CTX)).toBe(
       '[Aura Studio](/template/aura-studio) Rp1.390.000',
     );

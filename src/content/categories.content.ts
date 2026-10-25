@@ -260,4 +260,70 @@ export const CATEGORY_CONTENT: Readonly<Record<CategorySlug, CategoryPageContent
       },
     ],
   },
+  'yoga-wellness': {
+    intro:
+      'Calon peserta kelas yoga dan pilates, terutama pemula, biasanya ingin tahu suasana studio, kelas yang cocok untuk level mereka, dan harga paketnya sebelum berani datang. Template di kategori ini menyusun semuanya dalam satu halaman yang lapang dan tenang: foto besar, kartu kelas, paket harga, cerita peserta, dan tombol daftar yang membuka WhatsApp studio Anda. Jadwal dan pembayaran tetap Anda atur sendiri; template ini tidak memiliki kalender pemesanan otomatis.',
+    guideIntro:
+      'Orang yang baru mulai berlatih sering ragu: apakah tubuhnya cukup lentur, kelas mana yang aman untuk pemula, dan apa yang perlu dibawa. Siapkan informasi berikut agar website studio Anda menjawab keraguan itu sebelum mereka bertanya. Daftar ini berlaku untuk studio yoga, studio pilates, instruktur privat, maupun penyelenggara retret, dan isi yang jelas juga membantu studio muncul saat orang mencari kelas di kota mereka.',
+    checklist: [
+      {
+        title: 'Jenis kelas dengan level yang jelas',
+        text: 'Sebutkan setiap kelas dengan nama yang biasa dicari orang, misalnya Hatha, Vinyasa, Yin, atau mat pilates, lalu tulis durasi, level, dan intensitasnya. Calon peserta jadi tahu kelas mana yang ramah pemula dan mana yang butuh pengalaman.',
+      },
+      {
+        title: 'Jadwal yang mudah dicek',
+        text: 'Calon peserta perlu tahu hari dan jam setiap kelas. Bila jadwal sering berubah, tulis jadwal tetap di deskripsi kelas dan arahkan pertanyaan jadwal terbaru ke WhatsApp, supaya informasi di website tidak tertinggal dari kenyataan.',
+      },
+      {
+        title: 'Paket dan harga yang terbuka',
+        text: 'Tampilkan harga kelas percobaan, kelas lepas, paket beberapa kali datang, dan member bulanan beserta masa berlakunya. Calon peserta yang sudah tahu harga lebih cepat memutuskan, dan admin studio tidak perlu menjawab pertanyaan yang sama berulang kali.',
+      },
+      {
+        title: 'Profil instruktur',
+        text: 'Nama, latar belakang pelatihan, dan gaya mengajar instruktur membantu peserta memilih kelas. Cantumkan sertifikasi hanya bila memang dimiliki, lengkap dengan nama lembaganya, dan hindari gelar yang tidak bisa diperiksa.',
+      },
+      {
+        title: 'Panduan untuk peserta pertama kali',
+        text: 'Jelaskan apa yang perlu dibawa (misalnya matras, handuk, dan botol minum), pakaian yang nyaman, kapan sebaiknya datang sebelum kelas dimulai, serta apakah matras bisa dipinjam. Informasi kecil ini mengurangi rasa canggung pemula di hari pertama.',
+      },
+      {
+        title: 'Bahasa yang aman soal kesehatan',
+        text: 'Gambarkan gerakan, suasana, dan pengalaman kelas tanpa menjanjikan kesembuhan, berat badan turun sekian kilo, atau hasil medis lain. Sarankan peserta yang sedang cedera, hamil, atau punya kondisi kesehatan tertentu untuk berkonsultasi dulu dan memberi tahu instruktur sebelum kelas.',
+      },
+      {
+        title: 'Foto asli studio dan suasana kelas',
+        text: 'Foto ruang latihan, cahaya, matras, dan kelas yang sedang berjalan membantu calon peserta membayangkan suasananya. Hindari foto stok berisi pose ekstrem yang membuat pemula merasa tidak sanggup, dan mintalah izin sebelum memajang wajah peserta.',
+      },
+      {
+        title: 'Cara mendaftar dan kebijakan kelas',
+        text: 'Bila pendaftaran lewat WhatsApp, siapkan pesan awal berisi nama kelas atau paket supaya Anda tidak perlu bertanya ulang. Tulis juga kebijakan pembatalan, keterlambatan, dan batas waktu memakai sisa kelas dalam paket.',
+      },
+      {
+        title: 'Lokasi dan kelas di luar studio',
+        text: 'Alamat, peta, petunjuk parkir, dan jam buka memudahkan peserta baru menemukan studio. Bila Anda juga mengajar privat di rumah peserta, kelas online, atau retret akhir pekan, jelaskan area layanan, perlengkapan yang dibutuhkan, dan cara memesannya.',
+      },
+    ],
+    faq: [
+      {
+        question: 'Apakah template yoga punya jadwal kelas dan pembayaran online?',
+        answer:
+          'Tidak. Tombol daftar membuka WhatsApp dengan pesan awal yang Anda atur, sedangkan tautan tanya jadwal di kartu kelas dan tombol paket otomatis menyertakan nama kelas atau paketnya. Jadwal dan pembayaran Anda konfirmasi lewat chat. Jadwal dengan kuota, pembayaran member online, atau kartu member dengan sisa kelas bisa dibuat lewat jasa website custom.',
+      },
+      {
+        question: 'Bisakah dipakai untuk studio pilates, instruktur privat, atau retret?',
+        answer:
+          'Bisa. Nama kelas, paket, langkah memulai, dan foto bisa Anda ganti sesuai layanan Anda, misalnya kelas mat pilates, sesi privat di rumah peserta, atau retret akhir pekan. Bagian yang belum diperlukan bisa disembunyikan lewat CMS.',
+      },
+      {
+        question: 'Apakah harga paket bisa saya ubah sendiri?',
+        answer:
+          'Bisa. Nama paket, harga, dan isi paket per baris ditulis di CMS dan bisa Anda ubah kapan saja, misalnya saat mengadakan kelas percobaan atau promo member. Satu paket bisa diberi label sorotan supaya tampil lebih menonjol.',
+      },
+      {
+        question: 'Apakah cocok untuk spa atau pijat?',
+        answer:
+          'Template di kategori ini disusun untuk kelas: kartu kelas dengan durasi dan level, paket member, dan langkah memulai. Untuk spa, pijat, atau perawatan tubuh yang dipesan per layanan, kategori klinik kecantikan & salon biasanya lebih pas karena berisi daftar perawatan dengan harga per layanan.',
+      },
+    ],
+  },
 };

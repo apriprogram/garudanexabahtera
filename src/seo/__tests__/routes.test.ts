@@ -53,7 +53,7 @@ const STUB_PATHS = [
 const WP6_PATHS = ['/jasa-pembuatan-website', '/jasa-pembuatan-aplikasi-mobile', '/harga', '/tentang', '/kontak'];
 
 describe('paths', () => {
-  it('memuat semua hub, 4 kategori, dan 4 artikel rencana §5.8', () => {
+  it('memuat semua hub, 5 kategori, dan 4 artikel rencana §5.8', () => {
     expect(HUB_PATHS).toEqual({
       home: '/',
       catalog: '/template',
@@ -65,7 +65,7 @@ describe('paths', () => {
       guides: '/panduan',
       customOrder: '/pesan-custom',
     });
-    expect(CATEGORY_SLUGS).toEqual(['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup']);
+    expect(CATEGORY_SLUGS).toEqual(['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup', 'yoga-wellness']);
     expect(PLANNED_ARTICLE_SLUGS).toEqual([
       'biaya-website-company-profile',
       'template-vs-jasa-website-custom',

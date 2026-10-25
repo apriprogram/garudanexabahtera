@@ -74,6 +74,7 @@ describe('/template (katalog)', () => {
       '/template/kategori/kecantikan-klinik',
       '/template/kategori/olahraga-komunitas',
       '/template/kategori/fintech-startup',
+      '/template/kategori/yoga-wellness',
     ]);
     for (const href of ['/harga', '/pesan-custom?layanan=website']) expect(hrefs).toContain(href);
     expect(main().getByRole('search', { name: 'Cari template' })).toBeInTheDocument();
@@ -89,7 +90,7 @@ describe('/template (katalog)', () => {
     await main().findByRole('link', { name: 'Finova' }, { timeout: 5000 });
     const input = main().getByRole('searchbox', { name: 'Cari template' });
     fireEvent.change(input, { target: { value: 'finova' } });
-    await main().findByText(/^1 dari 5 template$/);
+    await main().findByText(/^1 dari 6 template$/);
     expect(main().getByRole('link', { name: 'Finova' })).toBeInTheDocument();
     expect(main().queryByRole('link', { name: 'Corporate Nexa' })).toBeNull();
 
@@ -130,6 +131,19 @@ describe('/template/kategori/:category', () => {
     await waitFor(() => expect(mainHrefs()).toContain('/panduan/website-klinik-kecantikan'));
     for (const href of ['/jasa-pembuatan-website', '/harga']) expect(mainHrefs()).toContain(href);
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent(/Beranda.*Template.*Klinik kecantikan & salon/);
+  });
+
+  it('yoga & wellness: hanya Serenity, chip aktif, checklist studio yoga, breadcrumb', async () => {
+    renderAt('/template/kategori/yoga-wellness');
+    expect(await screen.findByRole('heading', { level: 1 }, { timeout: 5000 })).toHaveTextContent('Template website studio yoga & pilates');
+    expect(await main().findByRole('link', { name: 'Serenity' }, { timeout: 5000 })).toHaveAttribute('href', '/template/serenity');
+    expect(main().queryByRole('link', { name: 'Arena Club' })).toBeNull();
+    expect(main().getByRole('heading', { name: 'Apa yang perlu ada di website studio yoga & pilates' })).toBeInTheDocument();
+    expect(within(screen.getByRole('navigation', { name: 'Kategori template' })).getByRole('link', { name: /Yoga & wellness/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent(/Beranda.*Template.*Yoga & wellness/);
   });
 
   it('kategori tanpa template: pesan kosong dengan tautan ke katalog dan Pesan Custom', async () => {

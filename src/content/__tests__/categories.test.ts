@@ -36,12 +36,14 @@ const data = (templates: Template[]): SeoData => ({
 });
 
 describe('src/content/categories', () => {
-  it('memetakan nama kategori di DB ke 4 slug (aturan sama dengan categorySlugOf & seo.php)', () => {
+  it('memetakan nama kategori di DB ke 5 slug (aturan sama dengan categorySlugOf & seo.php)', () => {
     expect(CATEGORY_LIST.map((c) => c.slug)).toEqual([...CATEGORY_SLUGS]);
     expect(categoryOf('Company Profile')?.slug).toBe('company-profile');
     expect(categoryOf('Kecantikan & Klinik')?.slug).toBe('kecantikan-klinik');
     expect(categoryOf('Olahraga & Komunitas')?.slug).toBe('olahraga-komunitas');
     expect(categoryOf('Fintech & Startup')?.slug).toBe('fintech-startup');
+    expect(categoryOf('Yoga & Wellness')?.slug).toBe('yoga-wellness');
+    expect(templatesInCategory(FIXTURE_TEMPLATES, 'yoga-wellness').map((t) => t.slug)).toEqual(['serenity']);
     expect(categoryOf(' company profile ')?.slug).toBe('company-profile');
     expect(categoryOf('Kuliner')).toBeNull();
     expect(categoryOf('')).toBeNull();
@@ -129,6 +131,6 @@ describe('src/content/categories', () => {
     ]);
     const routes = Object.fromEntries((CategorySeo.routes?.(full) ?? []).map((e) => [e.path, e.lastmod]));
     expect(routes['/template/kategori/olahraga-komunitas']).toBe('2026-11-02');
-    expect(routes['/template/kategori/company-profile']).toBe('2026-10-23');
+    expect(routes['/template/kategori/company-profile']).toBe('2026-10-25');
   });
 });

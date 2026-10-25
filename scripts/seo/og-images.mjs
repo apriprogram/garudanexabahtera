@@ -29,7 +29,7 @@ export const OG_MAX_BYTES = 150 * 1024;
 const OG_TARGET_BYTES = 140 * 1024;
 
 /** Slug halaman kategori (sama dengan CATEGORY_SLUGS di src/seo/paths.ts). */
-export const CATEGORY_SLUGS = ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup'];
+export const CATEGORY_SLUGS = ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup', 'yoga-wellness'];
 
 const BRAND = {
   primary: '#211FFE',

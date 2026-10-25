@@ -56,7 +56,7 @@ interface NexaTopic {
 const TOPICS: NexaTopic[] = [
   {
     label: 'Pilih template',
-    reply: `Kami punya template siap pakai untuk company profile, klinik & salon, klub olahraga, sampai fintech. Harganya sudah termasuk setup, domain, hosting, dan SSL tahun pertama, plus diskon ${FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama.`,
+    reply: `Kami punya template siap pakai untuk company profile, klinik & salon, klub olahraga, studio yoga, sampai fintech. Harganya sudah termasuk setup, domain, hosting, dan SSL tahun pertama, plus diskon ${FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama.`,
     action: { label: 'Lihat katalog template', to: HUB_PATHS.catalog },
     cards: 'templates',
   },

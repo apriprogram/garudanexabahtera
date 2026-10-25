@@ -10,6 +10,7 @@ export const OG_CARDS: readonly string[] = [
   'kategori-fintech-startup',
   'kategori-kecantikan-klinik',
   'kategori-olahraga-komunitas',
+  'kategori-yoga-wellness',
   'kontak',
   'panduan',
   'template-arena-club',

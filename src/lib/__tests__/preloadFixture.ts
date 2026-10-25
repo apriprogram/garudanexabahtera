@@ -27,6 +27,7 @@ export const FIXTURE_TEMPLATES: Template[] = [
   template({ id: 14, slug: 'arena-club', name: 'Arena Club', category: 'Olahraga & Komunitas', price: 1290000 }),
   template({ id: 15, slug: 'aura-studio', name: 'Aura Studio', category: 'Kecantikan & Klinik', price: 1390000 }),
   template({ id: 16, slug: 'finova', name: 'Finova', category: 'Fintech & Startup', price: 1790000 }),
+  template({ id: 17, slug: 'serenity', name: 'Serenity', category: 'Yoga & Wellness', price: 1290000 }),
 ];
 
 export const FIXTURE_SETTINGS = {
@@ -72,7 +73,7 @@ export const FIXTURE_API: Record<string, unknown> = {
   [PRELOAD_URLS.templates]: {
     success: true,
     templates: FIXTURE_TEMPLATES,
-    categories: ['Company Profile', 'Olahraga & Komunitas', 'Kecantikan & Klinik', 'Fintech & Startup'],
+    categories: ['Company Profile', 'Olahraga & Komunitas', 'Kecantikan & Klinik', 'Fintech & Startup', 'Yoga & Wellness'],
   },
   [PRELOAD_URLS.projects]: { success: true, projects: [] },
   ...Object.fromEntries(FIXTURE_TEMPLATES.map((t) => [PRELOAD_URLS.template(t.slug), { success: true, template: t }])),

@@ -1,5 +1,5 @@
-// Data uji SEO: 5 template terbit seperti get_templates (DB lokal 2026-10-23, deskripsi dipendekkan), settings, dan
-// artikel panduan terbit seperti get_guides (data uji preload).
+// Data uji SEO: 6 template terbit seperti get_templates (DB lokal 2026-10-23 + Serenity dari produksi 2026-10-25,
+// deskripsi dipendekkan), settings, dan artikel panduan terbit seperti get_guides (data uji preload).
 import { FIXTURE_GUIDES, guideSummary } from '../../lib/__tests__/preloadFixture';
 import type { Template } from '../../types/platform';
 import type { SeoData } from '../types';
@@ -74,6 +74,18 @@ export const TEMPLATES: Template[] = [
     updated_at: '2026-10-23 02:37:00',
     short_description: 'Landing page modern untuk fintech, koperasi, aplikasi pembayaran, konsultan keuangan, dan produk SaaS.',
     description: 'Finova memberi kesan aman, modern, dan meyakinkan untuk produk keuangan.',
+  }),
+  base({
+    id: 17,
+    slug: 'serenity',
+    name: 'Serenity',
+    category: 'Yoga & Wellness',
+    price: 1290000,
+    sort_order: 6,
+    updated_at: '2026-10-23 02:37:00',
+    short_description: 'Website tenang dan modern untuk studio yoga, pilates, dan kelas kebugaran yang ingin tampil profesional.',
+    description: 'Serenity menghadirkan suasana tenang sejak layar pertama: slider foto selebar layar dan kartu kelas yoga.',
+    features: ['Kartu kelas yoga dengan durasi, level, dan tombol tanya jadwal ke WhatsApp'],
   }),
 ];
 

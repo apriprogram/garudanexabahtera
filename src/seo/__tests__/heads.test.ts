@@ -34,7 +34,7 @@ describe('getHead: semua rute index', () => {
     expect(new Set(paths).size).toBe(paths.length);
   });
 
-  it('katalog /template dan 4 halaman kategori (WP5) diindeks bila punya template', () => {
+  it('katalog /template dan 5 halaman kategori (WP5) diindeks bila punya template', () => {
     expect(paths).toEqual(expect.arrayContaining(['/template', ...CATEGORY_SLUGS.map(categoryPath)]));
   });
 
@@ -229,6 +229,7 @@ describe('penolong', () => {
     expect(categorySlugOf('Olahraga & Komunitas')).toBe('olahraga-komunitas');
     expect(categorySlugOf('Company Profile')).toBe('company-profile');
     expect(categorySlugOf('Fintech & Startup')).toBe('fintech-startup');
+    expect(categorySlugOf('Yoga & Wellness')).toBe('yoga-wellness');
     expect(categorySlugOf('Lain-lain')).toBeNull();
   });
 

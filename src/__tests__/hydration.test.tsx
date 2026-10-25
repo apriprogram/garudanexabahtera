@@ -141,8 +141,10 @@ describe('hydrating prerendered pages', () => {
     expect(problems).toEqual([]);
     expect(serverH1?.textContent).toBe('Pilih Template');
     const hrefs = mainLinks(el);
-    for (const slug of ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova']) expect(hrefs).toContain(`/template/${slug}`);
-    for (const slug of ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup']) expect(hrefs).toContain(`/template/kategori/${slug}`);
+    for (const slug of ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity']) expect(hrefs).toContain(`/template/${slug}`);
+    for (const slug of ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup', 'yoga-wellness']) {
+      expect(hrefs).toContain(`/template/kategori/${slug}`);
+    }
   }, 30_000);
 
   it('/template/kategori/kecantikan-klinik (WP5): template links and the checklist in the server HTML', async () => {
@@ -151,6 +153,15 @@ describe('hydrating prerendered pages', () => {
     expect(serverH1?.textContent).toBe('Template website klinik kecantikan & salon');
     expect(mainLinks(el)).toContain('/template/aura-studio');
     expect(el.textContent).toContain('Apa yang perlu ada di website klinik kecantikan & salon');
+  }, 30_000);
+
+  it('/template/kategori/yoga-wellness: Serenity link and the checklist in the server HTML', async () => {
+    const { problems, serverH1, container: el } = await hydrate('/template/kategori/yoga-wellness');
+    expect(problems).toEqual([]);
+    expect(serverH1?.textContent).toBe('Template website studio yoga & pilates');
+    expect(mainLinks(el)).toContain('/template/serenity');
+    expect(mainLinks(el)).not.toContain('/template/arena-club');
+    expect(el.textContent).toContain('Apa yang perlu ada di website studio yoga & pilates');
   }, 30_000);
 
   it('/pesan-custom?layanan=mobile: query string and session are applied only after hydration', async () => {

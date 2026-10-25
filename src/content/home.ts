@@ -14,6 +14,7 @@ const NICHE_PHRASE: Record<CategorySlug, string> = {
   'kecantikan-klinik': 'klinik kecantikan',
   'olahraga-komunitas': 'klub olahraga',
   'fintech-startup': 'fintech',
+  'yoga-wellness': 'studio yoga',
 };
 
 /** "a" / "a dan b" / "a, b, dan c". */

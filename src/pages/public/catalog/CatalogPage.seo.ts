@@ -14,7 +14,7 @@ import type { SeoData } from '../../../seo/types';
 
 export const CATALOG_TITLE = `Template Website Siap Pakai + Domain & Hosting${TITLE_SUFFIX}`;
 export const CATALOG_DESCRIPTION =
-  'Katalog template website siap pakai untuk company profile, klinik, klub olahraga & fintech. Harga jelas, lihat demo, bayar online, kelola lewat CMS.';
+  'Katalog template website siap pakai: company profile, klinik, klub olahraga, studio yoga & fintech. Harga jelas, lihat demo, bayar online, edit lewat CMS.';
 
 const path = HUB_PATHS.catalog;
 

@@ -73,7 +73,7 @@ describe('beranda', () => {
   it('intro: nama badan hukum, niche dari kategori DB, harga termurah, jasa custom', () => {
     const intro = homeIntro(ALL);
     expect(intro).toBe(
-      'Garuda Nexa (PT Garuda Nexa Bahtera) menyediakan template website untuk company profile, klub olahraga, klinik kecantikan, dan fintech, mulai Rp990 ribu sudah termasuk domain, hosting, dan SSL tahun pertama. Butuh fitur khusus? Kami juga membuat website dan aplikasi Android/iOS custom.',
+      'Garuda Nexa (PT Garuda Nexa Bahtera) menyediakan template website untuk company profile, klub olahraga, klinik kecantikan, fintech, dan studio yoga, mulai Rp990 ribu sudah termasuk domain, hosting, dan SSL tahun pertama. Butuh fitur khusus? Kami juga membuat website dan aplikasi Android/iOS custom.',
     );
     expect(intro).not.toContain('undangan');
     expect(homeIntro([])).toBe(
@@ -85,7 +85,7 @@ describe('beranda', () => {
     expect(joinId(['a'])).toBe('a');
     expect(joinId(['a', 'b'])).toBe('a dan b');
     expect(joinId(['a', 'b', 'c'])).toBe('a, b, dan c');
-    expect(nichePhrases(FIXTURE_TEMPLATES)).toEqual(['company profile', 'klub olahraga', 'klinik kecantikan', 'fintech']);
+    expect(nichePhrases(FIXTURE_TEMPLATES)).toEqual(['company profile', 'klub olahraga', 'klinik kecantikan', 'fintech', 'studio yoga']);
   });
 
   it('ubin kategori: hanya kategori berhalaman, jumlah dan harga termurah per kategori', () => {
@@ -95,6 +95,7 @@ describe('beranda', () => {
       ['olahraga-komunitas', 1, 1290000, '/template/kategori/olahraga-komunitas'],
       ['kecantikan-klinik', 1, 1390000, '/template/kategori/kecantikan-klinik'],
       ['fintech-startup', 1, 1790000, '/template/kategori/fintech-startup'],
+      ['yoga-wellness', 1, 1290000, '/template/kategori/yoga-wellness'],
     ]);
     expect(tiles[0].templateNames).toEqual(['Corporate Nexa', 'Startup Clean']);
     expect(tiles[0].image).toBe('/assets/templates/corporate-nexa-preview.webp');

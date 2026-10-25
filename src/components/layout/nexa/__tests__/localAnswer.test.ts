@@ -20,6 +20,7 @@ describe('answerLocally', () => {
     ['malam, cara pesan gimana?', '/template'],
     ['website template bisa diedit?', '/template'],
     ['ada template website untuk sekolah?', '/template'],
+    ['punya untuk studio yoga atau pilates?', '/template'],
     ['Bisa bikin toko online?', '/jasa-pembuatan-website'],
     ['bisa rilis ke play store?', '/jasa-aplikasi-mobile'.replace('jasa-aplikasi-mobile', 'jasa-pembuatan-aplikasi-mobile')],
     ['domain saya bagaimana?', '/harga'],

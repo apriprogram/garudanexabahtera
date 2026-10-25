@@ -1,6 +1,6 @@
 // /template/kategori/:category (docs/platform/SEO-PLAN.md §5.5 langkah 2): H1 + intro, chip kategori, kartu template
 // kategori ini, panduan "Apa yang perlu ada di website {niche}" (checklist), FAQ, tautan ke panduan niche, jasa custom
-// dan harga. Slug di luar 4 kategori → halaman 404. Head & JSON-LD: CategoryPage.seo.ts (aturan index di sana).
+// dan harga. Slug di luar CATEGORY_SLUGS → halaman 404. Head & JSON-LD: CategoryPage.seo.ts (aturan index di sana).
 import { BookOpen, CircleCheck, LayoutTemplate, PencilRuler, ReceiptText } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
