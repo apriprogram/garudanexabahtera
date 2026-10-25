@@ -14,6 +14,7 @@ import {
   resolveAction,
   safeUrl,
   text,
+  toListItem,
   whatsappHref,
   type LinkAction,
 } from '../shared/utils';
@@ -194,7 +195,7 @@ export const matchCategory = (name: string, categories: string[]): string => cat
 
 export interface QuizAnswer {
   label: string;
-  /** Indeks tipe kulit yang mendapat poin (jawaban ke-n → tipe ke-n) */
+  /** Indeks di daftar `quizTypes` yang mendapat poin (jawaban ke-n → tipe di posisi CMS ke-n) */
   type: number;
 }
 
@@ -210,6 +211,8 @@ export interface RoutineStep {
 }
 
 export interface SkinType {
+  /** Posisi tipe di list CMS (0–3), juga bila tipe sebelumnya tanpa nama: jawaban ke-(slot + 1) memberi poin ke tipe ini */
+  slot: number;
   name: string;
   summary: string;
   tip: string;
@@ -217,12 +220,20 @@ export interface SkinType {
   night: RoutineStep[];
 }
 
-/** Pertanyaan berisi teks dengan ≥ 2 jawaban (jawaban kosong dilewati tapi nomor poinnya tetap). Maks. 4. */
-export function quizQuestions(quiz: SectionContent): QuizQuestion[] {
+/**
+ * Pertanyaan berisi teks dengan ≥ 2 jawaban yang tampil. Jawaban ke-n hanya tampil bila tipe kulit di posisi CMS ke-n
+ * ada dan bernama (tipe dihapus/dikosongkan → jawabannya ikut hilang, tidak ada pilihan tanpa poin), dan poinnya
+ * dipetakan ke indeks tipe itu di `types`. Maks. 4 pertanyaan.
+ */
+export function quizQuestions(quiz: SectionContent, types: SkinType[] = quizTypes(quiz)): QuizQuestion[] {
   return list(quiz, 'questions', 4)
     .map((item) => ({
       question: field(item, 'question'),
-      answers: [1, 2, 3, 4].map((n) => ({ label: field(item, `answer_${n}`), type: n - 1 })).filter((a) => a.label),
+      answers: [1, 2, 3, 4].flatMap((n): QuizAnswer[] => {
+        const label = field(item, `answer_${n}`);
+        const type = types.findIndex((t) => t.slot === n - 1);
+        return label && type >= 0 ? [{ label, type }] : [];
+      }),
     }))
     .filter((q) => q.question && q.answers.length >= 2);
 }
@@ -245,17 +256,28 @@ export function parseRoutine(raw: string): RoutineStep[] {
     .slice(0, 8);
 }
 
-/** Tipe kulit bernama. Maks. 4. */
+/**
+ * Tipe kulit bernama dari 4 posisi pertama list CMS, dengan posisi aslinya (`slot`): item tanpa nama atau kosong tetap
+ * memakan nomor, sehingga "Jawaban 2 (poin untuk tipe 2)" di CMS selalu menunjuk item ke-2.
+ */
 export function quizTypes(quiz: SectionContent): SkinType[] {
-  return list(quiz, 'types', 4)
-    .filter((item) => field(item, 'name'))
-    .map((item) => ({
-      name: field(item, 'name'),
-      summary: field(item, 'summary'),
-      tip: field(item, 'tip'),
-      morning: parseRoutine(field(item, 'morning')),
-      night: parseRoutine(field(item, 'night')),
-    }));
+  const raw = (quiz as Record<string, unknown> | null | undefined)?.types;
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 4).flatMap((value, slot): SkinType[] => {
+    const item = toListItem(value);
+    const name = field(item, 'name');
+    if (!item || !name) return [];
+    return [
+      {
+        slot,
+        name,
+        summary: field(item, 'summary'),
+        tip: field(item, 'tip'),
+        morning: parseRoutine(field(item, 'morning')),
+        night: parseRoutine(field(item, 'night')),
+      },
+    ];
+  });
 }
 
 /**

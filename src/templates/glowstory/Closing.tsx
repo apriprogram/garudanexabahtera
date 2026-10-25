@@ -113,7 +113,8 @@ export function Contact({ m }: { m: GlowModel }) {
     address && {
       key: 'address',
       icon: MapPin,
-      label: 'Ambil di gudang',
+      // Netral: alamat bisa toko, kantor, atau gudang; layanan ambil sendiri ditulis pemilik di deskripsi
+      label: 'Alamat',
       value: address,
       action: null,
       extra: map.link ? (

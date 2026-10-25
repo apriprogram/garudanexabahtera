@@ -20,6 +20,13 @@ import { Eyebrow, Highlighted } from './ui';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
+/**
+ * Tombol "Masukkan rutinitas ke keranjang · Rp…": BOLEH membungkus baris (BTN.lg memaksa satu baris + truncate, sehingga
+ * di kartu kuis HP ± 270px harganya terpotong). Harga sendiri tidak pernah terpecah. Satu baris lagi mulai @xl.
+ */
+const ROUTINE_BUTTON =
+  'inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-(--tpl-accent) px-6 py-3 text-center text-[15px] font-medium leading-snug text-(--tpl-on-accent) transition-colors hover:bg-(--gs-accent-hover) @xl:whitespace-nowrap @3xl:min-h-[52px]';
+
 function Routine({ title, icon: Icon, steps }: { title: string; icon: typeof Sun; steps: RoutineStep[] }) {
   if (steps.length === 0) return null;
   return (
@@ -91,10 +98,12 @@ function Result({ m, type, onRestart, headingRef }: { m: GlowModel; type: SkinTy
           <button
             type="button"
             onClick={() => store.addMany(items.map((s) => ({ name: s.product, price: s.price })), 'rutinitas')}
-            className={`${BTN.accent} ${BTN.lg}`}
+            className={ROUTINE_BUTTON}
           >
             <ShoppingBag className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="truncate">Masukkan rutinitas ke keranjang · {formatRupiah(total)}</span>
+            <span>
+              Masukkan rutinitas ke keranjang <span className="whitespace-nowrap">· {formatRupiah(total)}</span>
+            </span>
           </button>
         )}
         {ask && (
@@ -114,8 +123,9 @@ function Result({ m, type, onRestart, headingRef }: { m: GlowModel; type: SkinTy
 
 export function Quiz({ m }: { m: GlowModel }) {
   const { quiz } = m;
-  const questions = quizQuestions(quiz);
   const types = quizTypes(quiz);
+  // Hanya jawaban yang tipe kulitnya tampil (model.ts quizQuestions)
+  const questions = quizQuestions(quiz, types);
   const [step, setStep] = useState(-1);
   const [answers, setAnswers] = useState<number[]>([]);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -236,7 +246,7 @@ export function Quiz({ m }: { m: GlowModel }) {
                         {current.question}
                       </h3>
                       <div className="mt-6 grid gap-2.5 @3xl:grid-cols-2">
-                        {current.answers.map((a) => {
+                        {current.answers.map((a, ai) => {
                           const picked = answers[step] === a.type;
                           return (
                             <button
@@ -254,7 +264,7 @@ export function Quiz({ m }: { m: GlowModel }) {
                                   picked ? 'bg-[#F6F1EA] text-[#2B211C]' : 'bg-[#FCFAF6] text-(--gs-accent-text) ring-1 ring-inset ring-[#2B211C]/10'
                                 }`}
                               >
-                                {LETTERS[a.type]}
+                                {LETTERS[ai]}
                               </span>
                               {a.label}
                             </button>

@@ -40,7 +40,7 @@ import { INSTRUMENT } from '../glowstory/styles';
 import { SiteRenderer } from '../SiteRenderer';
 import { applySiteHead, siteTitle } from '../siteHead';
 import { contrast, parseHex } from '../shared/utils';
-import { isListField, type ListItem, type SiteContent } from '../types';
+import { isListField, type ListItem, type SectionContent, type SiteContent } from '../types';
 
 const ROOT = process.cwd();
 const def = TEMPLATES.glowstory;
@@ -175,7 +175,9 @@ describe('GlowStory: helper model', () => {
     const quiz = resolveContent(def, null).quiz;
     expect(quizQuestions(quiz)).toHaveLength(4);
     expect(quizTypes(quiz).map((t) => t.name)).toEqual(['Kulit Kering', 'Kulit Berminyak', 'Kulit Kombinasi', 'Kulit Sensitif']);
-    expect(quizQuestions({ questions: [{ question: 'Satu jawaban', answer_1: 'A' }, { question: 'Q', answer_1: '', answer_2: 'B', answer_4: 'D' }] })).toEqual([
+    expect(quizTypes(quiz).map((t) => t.slot)).toEqual([0, 1, 2, 3]);
+    const four = { types: [{ name: 'T1' }, { name: 'T2' }, { name: 'T3' }, { name: 'T4' }] };
+    expect(quizQuestions({ ...four, questions: [{ question: 'Satu jawaban', answer_1: 'A' }, { question: 'Q', answer_1: '', answer_2: 'B', answer_4: 'D' }] })).toEqual([
       { question: 'Q', answers: [{ label: 'B', type: 1 }, { label: 'D', type: 3 }] },
     ]);
     expect(parseRoutine('Pembersih | Gel | Rp65.000\n- Serum: Niasinamida\n\nTabir surya saja')).toEqual([
@@ -184,6 +186,17 @@ describe('GlowStory: helper model', () => {
       { step: '', product: 'Tabir surya saja', price: '' },
     ]);
     expect(quizResult([1, 1, 2, 1], 4)).toBe(1);
+    // Tipe ke-2 tanpa nama & tipe ke-4 dihapus: jawaban B dan D disembunyikan, jawaban C memberi poin ke tipe ke-3
+    // ("Jawaban 3 (poin untuk tipe 3)" di CMS), bukan ke tipe yang bergeser
+    const sparse: SectionContent = { types: [{ name: 'Kering' }, { name: '', summary: 'masih ada isi' }, { name: 'Kombinasi' }] as ListItem[], questions: [{ question: 'Q', answer_1: 'a', answer_2: 'b', answer_3: 'c', answer_4: 'd' }] };
+    expect(quizTypes(sparse).map((t) => [t.slot, t.name])).toEqual([
+      [0, 'Kering'],
+      [2, 'Kombinasi'],
+    ]);
+    expect(quizQuestions(sparse)).toEqual([{ question: 'Q', answers: [{ label: 'a', type: 0 }, { label: 'c', type: 1 }] }]);
+    // Item kosong tetap memakan nomor; hanya 4 posisi pertama yang dihitung
+    expect(quizTypes({ types: [{}, { name: 'Kedua' }, null, { name: 'Keempat' }, { name: 'Kelima' }] } as unknown as SectionContent).map((t) => t.slot)).toEqual([1, 3]);
+    expect(quizQuestions({ types: [{ name: 'Satu' }], questions: [{ question: 'Q', answer_1: 'a', answer_2: 'b' }] })).toEqual([]);
     expect(quizResult([2, 0, 0, 2], 4)).toBe(2);
     expect(quizResult([3, 9, -1], 4)).toBe(3);
     expect(quizResult([], 4)).toBe(0);
@@ -306,7 +319,13 @@ describe('GlowStory: demo', { timeout: 30_000 }, () => {
     expect(quiz.textContent).toContain('Toner BHA 1%');
     const ask = within(quiz).getByRole('link', { name: /Tanya lewat WhatsApp/ });
     expect(waText(ask.getAttribute('href'))).toContain('hasil kuis kulit saya: Kulit Berminyak');
-    fireEvent.click(within(quiz).getByRole('button', { name: /Masukkan rutinitas ke keranjang · Rp444\.000/ }));
+    const routine = within(quiz).getByRole('button', { name: /Masukkan rutinitas ke keranjang · Rp444\.000/ });
+    // Di HP (kartu ± 270px) tombol membungkus baris, bukan memotong harga; harga sendiri tidak terpecah
+    expect(routine.querySelector('.truncate')).toBeNull();
+    expect(routine.className.split(/\s+/)).not.toContain('whitespace-nowrap');
+    expect(routine.className).toContain('@xl:whitespace-nowrap');
+    expect(routine.querySelector('.whitespace-nowrap')?.textContent).toBe('· Rp444.000');
+    fireEvent.click(routine);
     expect(within(container.querySelector('header')!).getByRole('button', { name: 'Keranjang, 5 barang' })).toBeInTheDocument();
     fireEvent.click(within(quiz).getByRole('button', { name: /Ulangi kuis/ }));
     expect(quiz.textContent).toContain('Pertanyaan 1 dari 4');
@@ -335,6 +354,12 @@ describe('GlowStory: demo', { timeout: 30_000 }, () => {
     for (const img of reviews.querySelectorAll('img')) expect(img.getAttribute('loading')).toBe('lazy');
     fireEvent.click(within(reviews).getByRole('button', { name: 'Perbesar foto dari Laras Pramesti' }));
     let dialog = within(container).getByRole('dialog', { name: 'Foto ulasan Laras Pramesti' });
+    // HP: foto tidak boleh meluber menutupi tombol tutup/penghitung (dicek juga di Chrome 390px): wadah memotong, foto
+    // mengisi wadah, spacer 4:5 memberi tinggi alami
+    const frame = dialog.querySelector<HTMLElement>('[data-photo-frame]')!;
+    for (const cls of ['min-h-0', 'flex-1', 'overflow-hidden']) expect(frame.className.split(/\s+/), cls).toContain(cls);
+    for (const cls of ['absolute', 'inset-0', 'h-full', 'w-full', 'object-cover']) expect(frame.querySelector('img')!.className.split(/\s+/), cls).toContain(cls);
+    expect(frame.querySelector('[aria-hidden]')!.className).toContain('aspect-[4/5]');
     expect(dialog.querySelector('img')).toHaveAttribute('src', '/assets/templates/photos/glowstory-review-1-1200.webp');
     expect(dialog.textContent).toContain('Foto 1 / 4');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Foto berikutnya' }));
@@ -360,6 +385,9 @@ describe('GlowStory: demo', { timeout: 30_000 }, () => {
     const contact = section(container, 'contact');
     expect(within(contact).getByRole('link', { name: /WhatsApp 081234567890/ })).toHaveAttribute('href', expect.stringMatching(/^https:\/\/wa\.me\//));
     expect(within(contact).getByRole('link', { name: /Buka di Google Maps/ })).toHaveAttribute('href', expect.stringContaining('google.com/maps'));
+    // Label alamat netral: tidak menjanjikan layanan ambil sendiri yang tidak bisa diubah pemilik
+    expect(within(contact).getByText('Alamat')).toBeInTheDocument();
+    expect(contact.textContent).not.toMatch(/Ambil di gudang/i);
     expect(contact.querySelector('iframe')).toBeNull();
 
     const footer = container.querySelector('footer')!;
@@ -464,6 +492,22 @@ describe('GlowStory: SEO situs demo', { timeout: 30_000 }, () => {
     } finally {
       restore();
     }
+  });
+});
+
+describe('GlowStory: kuis dengan tipe kulit dihapus/dikosongkan', { timeout: 30_000 }, () => {
+  it('jawaban tanpa tipe tidak tampil; jawaban ke-3 tetap memberi poin ke tipe ke-3', () => {
+    const types = def.defaultContent.quiz.types as ListItem[];
+    // Tipe ke-2 dikosongkan namanya, tipe ke-4 dihapus
+    const quiz = section(demo({ quiz: { types: [types[0], { ...types[1], name: '' }, types[2]] } }), 'quiz');
+    expect(quiz.textContent).toContain('hasil 2 tipe kulit');
+    fireEvent.click(within(quiz).getByRole('button', { name: /Mulai kuis/ }));
+    const options = () => Array.from(quiz.querySelectorAll('fieldset button[aria-pressed]')).map((b) => b.textContent);
+    expect(options()).toEqual(['AKencang, kering, kadang mengelupas', 'BMengilap di dahi dan hidung saja']);
+    expect(quiz.textContent).not.toContain('Mengilap di seluruh wajah');
+    expect(quiz.textContent).not.toContain('Mudah merah, gatal, atau perih');
+    for (const answer of [/Mengilap di dahi/, /Terlihat jelas di area T/, /Pipi kering/, /Tekstur yang tidak rata/]) fireEvent.click(within(quiz).getByRole('button', { name: answer }));
+    expect(within(quiz).getByRole('heading', { level: 3, name: /Kulitmu cenderung kombinasi/ })).toBeInTheDocument();
   });
 });
 
