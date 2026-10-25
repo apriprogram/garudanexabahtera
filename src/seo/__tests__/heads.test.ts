@@ -34,8 +34,12 @@ describe('getHead: semua rute index', () => {
     expect(new Set(paths).size).toBe(paths.length);
   });
 
-  it('katalog /template dan 4 halaman kategori (WP5) diindeks bila punya template', () => {
-    expect(paths).toEqual(expect.arrayContaining(['/template', ...CATEGORY_SLUGS.map(categoryPath)]));
+  it('katalog /template dan halaman kategori (WP5) diindeks bila punya template', () => {
+    // Fixture bersama belum punya template "Toko Online": kategori itu dicek terpisah di categories.test.ts
+    const withTemplates = CATEGORY_SLUGS.filter((slug) => TEMPLATES.some((t) => categorySlugOf(t.category) === slug));
+    expect(withTemplates).toEqual(['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup']);
+    expect(paths).toEqual(expect.arrayContaining(['/template', ...withTemplates.map(categoryPath)]));
+    expect(paths).not.toContain(categoryPath('toko-online'));
   });
 
   it('title ≤ 60 & description 50–155 karakter, keduanya unik', () => {

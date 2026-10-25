@@ -260,4 +260,74 @@ export const CATEGORY_CONTENT: Readonly<Record<CategorySlug, CategoryPageContent
       },
     ],
   },
+  'toko-online': {
+    intro:
+      'Template di kategori ini dibuat untuk toko yang menjual barang fisik, dari drone, kebutuhan tani, dan perlengkapan mendaki sampai aksesoris HP dan skincare. Katalog berfoto, harga, paket hemat, dan fitur pembeda tiap jenis toko sudah tersusun; pembeli lalu memesan lewat WhatsApp dengan nama produk di pesannya. Template ini tidak punya keranjang belanja maupun pembayaran online.',
+    guideIntro:
+      'Pembeli online membandingkan beberapa toko sebelum memesan. Mereka mencari tahu apakah barangnya cocok, berapa total harganya, dan apakah tokonya bisa dipercaya. Siapkan informasi berikut agar website toko Anda menjawab pertanyaan itu sebelum pembeli menutup halaman, sekaligus memberi Google alasan untuk menampilkan toko Anda.',
+    checklist: [
+      {
+        title: 'Foto produk yang jujur dan seragam',
+        text: 'Pakai latar dan pencahayaan yang sama untuk semua produk, tampilkan beberapa sudut, dan sertakan foto ukuran asli atau saat dipakai. Foto yang konsisten membuat katalog terlihat rapi dan mengurangi retur karena barang tidak sesuai bayangan pembeli.',
+      },
+      {
+        title: 'Harga lengkap dengan varian',
+        text: 'Tulis harga untuk setiap varian, misalnya ukuran, warna, atau tipe HP. Bila ada harga coret, pastikan harga normalnya memang pernah berlaku. Pembeli yang sudah tahu harga datang dengan pesanan, bukan dengan pertanyaan.',
+      },
+      {
+        title: 'Cara memesan yang tidak membingungkan',
+        text: 'Jelaskan apa yang perlu dikirim pembeli lewat WhatsApp: nama produk, varian, jumlah, dan kota tujuan. Tombol pesan yang sudah berisi nama produk menghemat waktu admin dan pembeli sekaligus.',
+      },
+      {
+        title: 'Pencarian sesuai cara pembeli berpikir',
+        text: 'Pembeli aksesoris mencari berdasarkan tipe HP, pendaki berdasarkan gunung tujuan, petani berdasarkan jenis tanaman, dan pembeli skincare berdasarkan jenis kulit. Pengelompokan seperti ini lebih cepat mengantar mereka ke produk yang tepat daripada daftar panjang tanpa filter.',
+      },
+      {
+        title: 'Paket bundling yang masuk akal',
+        text: 'Gabungkan barang yang memang biasa dibeli bersama, lalu tunjukkan harga paket dan harga bila dibeli terpisah. Paket yang jelas menaikkan nilai belanja tanpa membuat pembeli merasa dipaksa.',
+      },
+      {
+        title: 'Ongkos kirim, area, dan metode pembayaran',
+        text: 'Sebutkan kota asal pengiriman, kurir yang dipakai, perkiraan lama kirim, dan cara bayar seperti transfer bank, QRIS, atau bayar di tempat. Ketidakjelasan ongkos kirim adalah alasan paling umum pembeli batal di tengah jalan.',
+      },
+      {
+        title: 'Garansi, retur, dan layanan purna jual',
+        text: 'Tulis syarat tukar barang, masa garansi, dan ke mana pembeli menghubungi bila ada masalah. Untuk barang elektronik seperti drone atau power bank, garansi servis lokal sering menjadi alasan utama orang memilih toko Anda.',
+      },
+      {
+        title: 'Ulasan pembeli yang nyata',
+        text: 'Tampilkan ulasan beserta produk yang dibeli dan, bila diizinkan, foto dari pembeli. Ulasan yang spesifik lebih dipercaya daripada pujian umum; jangan menulis ulasan karangan.',
+      },
+      {
+        title: 'Konten panduan yang membantu memilih',
+        text: 'Tips memilih produk, daftar perlengkapan per kebutuhan, atau panduan perawatan menjawab pertanyaan yang diketik orang di Google. Konten seperti ini membawa pengunjung baru dan menunjukkan bahwa toko Anda paham produknya.',
+      },
+      {
+        title: 'Identitas toko dan kontak yang lengkap',
+        text: 'Cantumkan nama toko, alamat atau kota, jam operasional, nomor WhatsApp, dan tautan toko Anda di marketplace bila ada. Pembeli yang baru pertama kali mampir ingin tahu bahwa ada orang dan tempat nyata di balik toko ini.',
+      },
+    ],
+    faq: [
+      {
+        question: 'Apakah template toko online punya keranjang belanja dan pembayaran online?',
+        answer:
+          'Tidak. Tombol pesan membuka WhatsApp dengan nama produk di pesannya, lalu pembayaran Anda konfirmasi sendiri, misalnya lewat transfer, QRIS, atau bayar di tempat. Keranjang belanja, payment gateway, dan ongkos kirim otomatis bisa dibuat lewat jasa website custom.',
+      },
+      {
+        question: 'Apakah produk, harga, dan foto bisa saya ubah sendiri?',
+        answer:
+          'Bisa. Produk, harga, foto, kategori, dan paket ditulis di CMS dan bisa Anda ubah kapan saja tanpa menyentuh kode, misalnya saat ada promo atau produk baru.',
+      },
+      {
+        question: 'Saya sudah berjualan di marketplace. Apakah masih perlu website?',
+        answer:
+          'Website memberi toko Anda alamat sendiri yang bisa ditemukan di Google, tempat menampilkan panduan dan paket tanpa batasan format marketplace, dan tautan yang mudah dibagikan. Anda tetap bisa berjualan di marketplace seperti biasa.',
+      },
+      {
+        question: 'Bisakah template ini dipakai untuk jenis produk lain?',
+        answer:
+          'Bisa. Demo memakai contoh toko tertentu, tetapi kategori, produk, foto, judul bagian, dan warna bisa diganti sesuai barang yang Anda jual, dan bagian yang tidak relevan bisa disembunyikan.',
+      },
+    ],
+  },
 };

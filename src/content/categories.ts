@@ -1,5 +1,5 @@
 // Halaman kategori /template/kategori/{slug} (docs/platform/SEO-PLAN.md §2, §5.5 langkah 2, Lampiran A): pemetaan
-// kolom `category` di DB ke 4 slug kategori, plus judul, meta, H1 dan nama di breadcrumb/menu.
+// kolom `category` di DB ke 5 slug kategori, plus judul, meta, H1 dan nama di breadcrumb/menu.
 //
 // File ini kecil dan ikut bundel utama (modul *.seo.ts, Navbar, Footer, beranda). Isi panjang halaman kategori
 // (intro, checklist "Apa yang perlu ada di website …" ≥ 300 kata, FAQ) ada di categories.content.ts, yang hanya dimuat
@@ -42,7 +42,7 @@ export interface CategoryMeta {
  * Ubah setiap kali teksnya diubah.
  */
 export const CATALOG_UPDATED = '2026-10-24';
-export const CATEGORIES_UPDATED = '2026-10-23';
+export const CATEGORIES_UPDATED = '2026-10-25';
 
 export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
   'company-profile': {
@@ -96,6 +96,20 @@ export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
     niche: 'fintech & startup',
     hasGuide: true,
     guides: ['biaya-aplikasi-android-ios', 'template-vs-jasa-website-custom'],
+  },
+  // Toko online (2026-10-25): SkyNusa, TaniMakmur, PuncakGear, GadgetKu.id, GlowStory (kategori DB "Toko Online")
+  'toko-online': {
+    slug: 'toko-online',
+    name: 'Toko online',
+    h1: 'Template website toko online',
+    title: 'Template Website Toko Online Siap Pakai | Garuda Nexa',
+    description:
+      'Template website toko online untuk drone, pertanian, outdoor, aksesoris HP & skincare. Mulai {harga_min}, termasuk domain, hosting & SSL. Lihat demonya.',
+    descriptionNoPrice:
+      'Template website toko online untuk drone, pertanian, outdoor, aksesoris HP & skincare, sudah termasuk domain, hosting & SSL. Lihat demonya.',
+    niche: 'toko online',
+    hasGuide: true,
+    guides: ['template-vs-jasa-website-custom'],
   },
 };
 
