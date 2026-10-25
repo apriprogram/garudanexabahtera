@@ -4,6 +4,20 @@
  * (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak → statis.
  */
 
+/*
+ * Font cadangan judul seukuran Instrument Serif agar judul tidak bergeser (CLS) saat font web selesai dimuat:
+ * Times New Roman / Liberation Serif diperkecil ke lebar rata-rata Instrument Serif (diukur dari teks judul demo:
+ * 0,849×), ascent/descent disamakan (990/310 per 1000, dibagi size-adjust).
+ */
+@font-face {
+  font-family: 'Instrument Serif Fallback';
+  src: local('Times New Roman'), local('TimesNewRomanPSMT'), local('Times'), local('Liberation Serif');
+  size-adjust: 84.9%;
+  ascent-override: 116.6%;
+  descent-override: 36.5%;
+  line-gap-override: 0%;
+}
+
 @layer components {
   /* Kata sorotan miring: Instrument Serif miring sedikit dirapatkan agar sejajar huruf tegak di sekitarnya */
   .gs-italic {

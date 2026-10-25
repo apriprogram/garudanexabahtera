@@ -12,6 +12,7 @@ import { ActionLink, TemplateSection } from '../shared/Shell';
 import { hasImage, mailHref, mapsInfo, resolveAction, telHref, text, type LinkAction } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
 import type { GlowModel } from './model';
+import { GLOWSTORY_PHOTOS } from './photos';
 import { BTN, C, MONO, TYPE_G } from './styles';
 import { Eyebrow, Highlighted, PillLink } from './ui';
 
@@ -51,7 +52,16 @@ export function Cta({ m }: { m: GlowModel }) {
               </ActionLink>
             )}
           </div>
-          {withImage && <KitPhoto src={image} alt="" fallback="none" zoom sizes="(min-width: 896px) 45vw, 100vw" className="aspect-[4/3] rounded-[22px] @3xl:rounded-[26px]" />}
+          {withImage && (
+            <KitPhoto
+              src={image}
+              alt={GLOWSTORY_PHOTOS.alt(image, title || `Produk ${m.companyName}`)}
+              fallback="none"
+              zoom
+              sizes="(min-width: 896px) 45vw, 100vw"
+              className="aspect-[4/3] rounded-[22px] @3xl:rounded-[26px]"
+            />
+          )}
         </Reveal>
       </div>
     </TemplateSection>

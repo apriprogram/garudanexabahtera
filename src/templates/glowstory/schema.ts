@@ -49,7 +49,7 @@ export const glowstorySections: TemplateSection[] = [
     description: 'Nama toko, logo, dan warna aksen (tombol utama, label diskon, dan kata miring di judul).',
     fields: [
       t('company_name', 'Nama toko', { placeholder: 'mis. Seruni Beauty', maxLength: 80 }),
-      t('tagline', 'Tagline', { placeholder: 'mis. Perawatan harian dari brand lokal pilihan', maxLength: 100, help: 'Tampil di footer dan judul tab browser.' }),
+      t('tagline', 'Tagline', { placeholder: 'mis. Toko skincare & kosmetik lokal', maxLength: 100, help: 'Tampil di footer dan judul tab browser (mis. "Seruni Beauty — Toko skincare & kosmetik lokal").' }),
       img('logo', 'Logo', 'PNG/SVG berlatar transparan, maks. 2 MB. Kosongkan untuk memakai simbol tetes & kilau bawaan template dan nama toko.'),
       {
         type: 'color',

@@ -36,7 +36,9 @@ import {
   searchFilter,
 } from '../glowstory/model';
 import { GLOWSTORY_PHOTOS } from '../glowstory/photos';
+import { INSTRUMENT } from '../glowstory/styles';
 import { SiteRenderer } from '../SiteRenderer';
+import { applySiteHead, siteTitle } from '../siteHead';
 import { contrast, parseHex } from '../shared/utils';
 import { isListField, type ListItem, type SiteContent } from '../types';
 
@@ -386,6 +388,82 @@ describe('GlowStory: demo', { timeout: 30_000 }, () => {
     const container = demo();
     const shadows = Array.from(container.querySelectorAll('[class*="shadow"]')).filter((el) => !el.closest('[aria-label="Chat WhatsApp"]') && !/Chat WhatsApp/.test(el.getAttribute('aria-label') ?? ''));
     expect(shadows.map((el) => el.className)).toEqual([]);
+  });
+});
+
+// SEO situs demo (permintaan pemilik 2026-10-25): struktur judul, alt bahasa Indonesia, gambar cepat tanpa layout
+// shift, dan meta bawaan situs (siteHead) yang terbaca seperti toko kecantikan.
+describe('GlowStory: SEO situs demo', { timeout: 30_000 }, () => {
+  it('satu H1, urutan H2/H3 tidak melompat, setiap section isi punya H2', () => {
+    const container = demo();
+    const levels = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6')).map((h) => Number(h.tagName[1]));
+    expect(levels[0]).toBe(1);
+    expect(levels.filter((l) => l === 1)).toHaveLength(1);
+    levels.forEach((level, i) => {
+      if (i > 0) expect(level, `judul ke-${i + 1}`).toBeLessThanOrEqual(levels[i - 1] + 1);
+    });
+    for (const key of ['categories', 'products', 'quiz', 'refill', 'testimonials', 'brands', 'faq', 'cta', 'contact']) {
+      expect(section(container, key).querySelector('h2'), key).not.toBeNull();
+    }
+  });
+
+  it('alt bahasa Indonesia di semua foto isi; SVG dekoratif disembunyikan dari pembaca layar', () => {
+    const container = demo();
+    const imgs = Array.from(container.querySelectorAll('img'));
+    expect(imgs.length).toBeGreaterThanOrEqual(15);
+    for (const img of imgs) {
+      const src = img.getAttribute('src') ?? '';
+      const alt = img.getAttribute('alt') ?? '';
+      expect(alt.trim(), src).not.toBe('');
+      expect(alt, src).toBe(GLOWSTORY_PHOTOS.alt(src, ''));
+      expect(alt, src).not.toMatch(/\b(the|with|and|bottle|woman|photo)\b/i);
+    }
+    const exposed = Array.from(container.querySelectorAll('svg')).filter((svg) => !svg.closest('[aria-hidden="true"], [aria-hidden=""]'));
+    expect(exposed.map((svg) => svg.parentElement?.outerHTML.slice(0, 80))).toEqual([]);
+  });
+
+  it('gambar cepat: hanya foto hero eager + fetchpriority; foto lain lazy; semua ber-srcset/sizes WebP dan width/height (tanpa layout shift)', () => {
+    const container = demo();
+    const imgs = Array.from(container.querySelectorAll('img'));
+    const [hero, ...rest] = imgs;
+    expect(hero.closest('[data-tpl-section="hero"]')).not.toBeNull();
+    expect(hero).toHaveAttribute('fetchpriority', 'high');
+    expect(hero).toHaveAttribute('loading', 'eager');
+    for (const img of imgs) {
+      const src = img.getAttribute('src') ?? '';
+      expect(src, src).toMatch(/\.webp$/);
+      expect(img.getAttribute('srcset'), src).toMatch(/-800\.webp 800w, .+-1200\.webp 1200w$/);
+      expect(img.getAttribute('sizes'), src).toBeTruthy();
+      expect(Number(img.getAttribute('width')), src).toBeGreaterThan(0);
+      expect(Number(img.getAttribute('height')), src).toBeGreaterThan(0);
+    }
+    for (const img of rest) {
+      expect(img.getAttribute('loading'), img.getAttribute('src') ?? '').toBe('lazy');
+      expect(img.hasAttribute('fetchpriority'), img.getAttribute('src') ?? '').toBe(false);
+    }
+    // Wadah foto memakai rasio tetap: ruang tersedia sebelum foto dimuat
+    for (const img of rest.slice(0, 6)) expect(img.parentElement?.className ?? '', img.getAttribute('src') ?? '').toMatch(/aspect-\[|absolute inset-0/);
+  });
+
+  it('judul serif memakai font cadangan seukuran Instrument Serif (pertukaran font tanpa geser)', () => {
+    expect(INSTRUMENT.family).toMatch(/^"Instrument Serif", "Instrument Serif Fallback"/);
+    expect(INSTRUMENT.href).toContain('display=swap');
+    const css = readFileSync(resolve(ROOT, 'src/templates/glowstory/glowstory.css'), 'utf8');
+    expect(css).toMatch(/font-family: 'Instrument Serif Fallback';[\s\S]*size-adjust: 84\.9%/);
+  });
+
+  it('meta bawaan situs (siteHead): judul tab & description toko kecantikan, theme-color aksen', () => {
+    expect(siteTitle('glowstory', null)).toBe('Seruni Beauty — Toko skincare & kosmetik lokal');
+    const restore = applySiteHead('glowstory', null);
+    try {
+      expect(document.title).toBe('Seruni Beauty — Toko skincare & kosmetik lokal');
+      const description = document.head.querySelector('meta[name="description"]')?.getAttribute('content') ?? '';
+      expect(description).toMatch(/^Skincare, makeup, dan perawatan tubuh dari brand lokal/);
+      expect(description.length).toBeLessThanOrEqual(160);
+      expect(document.head.querySelector('meta[name="theme-color"]')).toHaveAttribute('content', '#A9502B');
+    } finally {
+      restore();
+    }
   });
 });
 

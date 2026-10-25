@@ -8,7 +8,8 @@ import { FONT_DISPLAY } from '../shared/layout';
 /** Huruf judul lokal (Google Fonts, SIL Open Font License): satu ketebalan + miring, dimuat lewat useKitFont. */
 export const INSTRUMENT: KitFont = {
   id: 'tpl-font-instrument-serif',
-  family: '"Instrument Serif", "Iowan Old Style", "Times New Roman", ui-serif, Georgia, serif',
+  // Cadangan seukuran (glowstory.css) dulu, agar pertukaran font tidak menggeser tata letak
+  family: '"Instrument Serif", "Instrument Serif Fallback", "Times New Roman", ui-serif, Georgia, serif',
   href: 'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap',
 };
 

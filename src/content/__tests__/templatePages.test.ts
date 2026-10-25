@@ -56,7 +56,7 @@ describe('src/content/templates', () => {
       'aura-studio': 'Aura Studio: Template Website Klinik Kecantikan & Salon',
       finova: 'Finova: Template Website Fintech & Startup',
       serenity: 'Serenity: Template Website Studio Yoga & Pilates',
-      glowstory: 'GlowStory: Template Website Toko Kecantikan & Skincare',
+      glowstory: 'GlowStory: Template Website Toko Skincare & Kosmetik Online',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -66,7 +66,7 @@ describe('src/content/templates', () => {
       'aura-studio': 'Aura Studio: Template Website Klinik & Salon – Rp1,39 jt',
       finova: 'Finova: Template Website Fintech & Startup – Rp1,79 jt',
       serenity: 'Serenity: Template Website Studio Yoga – Rp1,29 jt',
-      glowstory: 'GlowStory: Template Website Toko Kecantikan – Rp1,59 jt',
+      glowstory: 'GlowStory: Template Website Toko Skincare – Rp1,59 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);

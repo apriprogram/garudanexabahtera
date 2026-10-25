@@ -11,7 +11,8 @@ export const GLOWSTORY_ACCENT = '#A9502B';
 export const glowstoryContent: SiteContent = {
   brand: {
     company_name: 'Seruni Beauty',
-    tagline: 'Perawatan harian dari brand lokal pilihan',
+    // Judul tab situs (siteHead): "Seruni Beauty — Toko skincare & kosmetik lokal"
+    tagline: 'Toko skincare & kosmetik lokal',
     logo: '',
     accent_color: GLOWSTORY_ACCENT,
   },
@@ -20,8 +21,9 @@ export const glowstoryContent: SiteContent = {
     eyebrow: 'Sejak 2019 — brand lokal terkurasi',
     title: 'Kulit sehat dimulai dari rutinitas kecil.',
     highlight: 'rutinitas',
+    // Juga meta description situs (siteHead), jadi ≤ 160 karakter
     subtitle:
-      'Skincare, makeup, dan perawatan tubuh dari brand lokal yang kami coba sendiri. Ikuti kuis jenis kulit, temukan rutinitas pagi dan malam yang pas, lalu isi ulang otomatis sebelum habis.',
+      'Skincare, makeup, dan perawatan tubuh dari brand lokal yang kami coba sendiri. Ikuti kuis kulit, temukan rutinitas yang pas, lalu isi ulang sebelum habis.',
     primary_label: 'Belanja sekarang',
     primary_url: '',
     secondary_label: 'Ikuti kuis kulit',

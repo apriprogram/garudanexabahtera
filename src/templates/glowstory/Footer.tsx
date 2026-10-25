@@ -46,7 +46,10 @@ export function Footer({ m }: { m: GlowModel }) {
                       aria-label={label}
                       className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F6F1EA]/10 text-[#F6F1EA] transition-colors hover:bg-[#F6F1EA]/20"
                     >
-                      <Icon className="h-[18px] w-[18px]" />
+                      {/* Ikon dekoratif: nama media sosial sudah di aria-label tautan */}
+                      <span aria-hidden className="flex">
+                        <Icon className="h-[18px] w-[18px]" />
+                      </span>
                     </ActionLink>
                   </li>
                 ))}
