@@ -40,11 +40,13 @@ describe('GlowStory: SEO halaman katalog', () => {
     expect(templateTitle({ ...GLOWSTORY, name: 'GlowStory Pro' })).toContain('GlowStory Pro:');
   });
 
-  it('meta description: kata kunci utama, harga, manfaat domain/hosting/SSL, ≤ 155 karakter (juga harga 8 digit)', () => {
+  it('meta description: kata kunci utama, harga, hosting/SSL termasuk + domain terpisah, ≤ 155 karakter (juga harga 8 digit)', () => {
     const description = templateDescription(GLOWSTORY);
     expect(lower(description)).toContain(PRIMARY);
     expect(description).toContain('Rp1.590.000');
-    expect(description).toContain('sudah termasuk domain, hosting & SSL tahun pertama');
+    // Domain tidak termasuk harga template (pemilik 2026-10-25)
+    expect(description).toContain('sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(description).not.toMatch(/termasuk domain/);
     expect(description.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
     expect(templateDescription({ ...GLOWSTORY, price: 12_490_000 }).length).toBeLessThanOrEqual(DESCRIPTION_MAX);
   });

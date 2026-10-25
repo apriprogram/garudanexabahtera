@@ -39,7 +39,7 @@ const PUBLIC_ACTIONS = [
     'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
     'customer_register', 'midtrans_notification', 'get_payment_config', 'template_like', 'template_view',
     'get_showcase_stats', 'showcase_like', 'showcase_view', 'nexa_chat',
-    'get_guides', 'get_guide', 'guide_view',
+    'get_guides', 'get_guide', 'guide_view', 'get_domain_prices',
     'google_auth_config', 'customer_google_auth',
     'get_site_seo', 'get_site_posts', 'get_site_post', 'site_post_view',
 ];
@@ -49,6 +49,8 @@ const ANY_ROLE_ACTIONS = [
 const CUSTOMER_ACTIONS = [
     'customer_create_order', 'customer_pay_order', 'customer_get_orders', 'customer_get_order',
     'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment', 'customer_get_order_quote',
+    'customer_check_domain', 'customer_create_renewal', 'customer_pay_renewal', 'customer_cancel_renewal', 'dev_simulate_renewal_payment',
+    'customer_get_invoice', 'customer_get_invoices', 'customer_get_profile', 'customer_update_profile',
     'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
     'customer_get_site_posts', 'customer_save_site_post', 'customer_delete_site_post', 'customer_get_site_seo', 'customer_save_site_seo',
 ];
@@ -90,6 +92,8 @@ set_exception_handler(function ($e) {
 
 // Template marketplace + custom orders (handle_platform_action)
 require_once __DIR__ . '/modules/templates.php';
+// Domain berbayar: harga per ekstensi, validasi & cek ketersediaan RDAP (dipakai templates.php)
+require_once __DIR__ . '/modules/domains.php';
 // Nexa AI, asisten chat publik beranda: instruksi, data terkini & panggilan Claude (aksi nexa_chat di templates.php)
 require_once __DIR__ . '/modules/nexa.php';
 // Company products, users column (product login accounts) encrypted at rest (handle_list_product_action)
@@ -268,9 +272,13 @@ switch ($action) {
         // Public: pd_* keys (company identity, tax, payment terms of the project documents) are read through
         // pd_settings_get only; the comparison follows the column's case-insensitive collation
         $settings = [];
-        // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik
+        // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik.
+        // domain_markup_percent: markup harga beli DewaBiz, hanya lewat admin_get_domain_pricing (backend/modules/domains.php)
         foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings
-                                WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_')") as $row) {
+                                WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_')
+                                  AND setting_key <> 'domain_markup_percent'") as $row) {
+            // google_client_id: aud yang dipercaya customer_google_auth, hanya lewat database/env (publik lewat google_auth_config)
+            if (strcasecmp((string)$row['setting_key'], 'google_client_id') === 0) continue;
             $settings[$row['setting_key']] = $row['setting_value'];
         }
         // Always a JSON object like server.js: {} for an empty table (never []), numeric keys stay keys
@@ -286,6 +294,10 @@ switch ($action) {
             // Kunci API & saklar AI hanya lewat nexa_save_config (admin); nexa_enabled (saklar widget) boleh di sini
             if (stripos((string)$key, 'nexa_') === 0 && strtolower((string)$key) !== 'nexa_enabled') {
                 throw new ApiError('Pengaturan Nexa AI hanya bisa diubah lewat tab Tanya Nexa.', 403, 'FORBIDDEN');
+            }
+            // Client ID Google = aud yang dipercaya customer_google_auth: staf tidak boleh menggantinya (hanya database/env)
+            if (strtolower(trim((string)$key)) === 'google_client_id') {
+                throw new ApiError('Client ID Google hanya bisa diubah lewat database atau env server.', 403, 'FORBIDDEN');
             }
         }
         // hero_bg_mode, hero_text_tone, hero_overlay, hero_bg_video, hero_bg_video_poster, hero_images

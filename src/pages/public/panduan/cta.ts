@@ -2,6 +2,7 @@
 // mengikuti glosarium design.md; tanpa angka harga jasa custom.
 import { LayoutTemplate, PencilRuler, ReceiptText, Smartphone } from 'lucide-react';
 import type { ArticleCta } from '../../../content/panduan';
+import { DOMAIN_PRICE_FROM, rupiahCompact } from '../../../lib/domainPricing';
 import { HUB_PATHS } from '../../../seo/paths';
 
 export interface CtaCopy {
@@ -14,7 +15,8 @@ export interface CtaCopy {
 export const CTA_COPY: Readonly<Record<ArticleCta, CtaCopy>> = {
   template: {
     title: 'Ingin website bisnis yang cepat online?',
-    text: 'Pilih template siap pakai: harganya sudah termasuk setup, domain, hosting, dan SSL tahun pertama, lalu isinya Anda ubah sendiri lewat CMS. Butuh fitur di luar template? Konsultasikan dulu, gratis.',
+    // Domain tidak termasuk harga template (pemilik 2026-10-25): dipilih saat memesan, harga dari domainPricing.ts
+    text: `Pilih template siap pakai: harganya sudah termasuk setup, hosting, dan SSL tahun pertama, domain dipilih saat memesan (mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun), lalu isinya Anda ubah sendiri lewat CMS. Butuh fitur di luar template? Konsultasikan dulu, gratis.`,
     primary: { label: 'Pilih Template', to: HUB_PATHS.catalog },
     more: { label: 'Lihat harga semua template', to: HUB_PATHS.pricing, icon: ReceiptText },
   },

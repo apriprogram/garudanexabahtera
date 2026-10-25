@@ -3,6 +3,8 @@
 // Harga "Sudah termasuk" & catatan perpanjangan dari useTemplatePricing (keputusan pemilik 2026-10-21); pesanan lunas
 // yang ditolak → dana kembali penuh ke metode bayar semula maks. 7 hari kerja (sama dengan /kebijakan-pengembalian-dana).
 // Di bawah lg: ringkasan ringkas di atas form, rincian (termasuk, langkah) di dekat tombol bayar; urutan DOM = urutan tampil.
+// Domain (keputusan pemilik 2026-10-25, ACCOUNT-DOMAIN-RENEWAL-SPEC.md): tidak termasuk harga template; dipilih & dicek
+// ketersediaannya di form (customer_check_domain), harganya ditambahkan ke total di semua ringkasan.
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -25,26 +27,27 @@ import { FIRST_ORDER_DISCOUNT_PERCENT } from '../../lib/firstOrderDiscount';
 import { getWhatsappNumber, useSiteSettings, useTemplatePricing, whatsappUrl, type TemplatePricing } from '../../hooks/useSiteSettings';
 import { ApiError, apiGet, apiPost, errorMessage } from '../../lib/api';
 import { clearSession, customerLoginPath, getCurrentUser, getRole } from '../../lib/auth';
+import { useDomainPrices } from '../../lib/useDomainPrices';
 import { LEGAL_LABELS, LEGAL_PATHS } from '../../lib/legal';
-import { formatRupiah, type Order, type Template } from '../../types/platform';
+import { formatRupiah, type DomainCheck, type Order, type Template } from '../../types/platform';
 import { Field } from '../account/components/Field';
 import { fieldProps } from '../account/components/fieldProps';
 import { Notice } from '../account/components/Notice';
 import { goToPayment, isPaymentUrl, useDocumentTitle, type OrderCreatedState } from '../account/components/payment';
 import { ErrorState, EmptyState, Skeleton } from '../account/components/States';
-import {
-  checkDomain,
-  checkEmail,
-  checkText,
-  focusFirstError,
-  hasErrors,
-  normalizeDomain,
-  normalizePhone,
-  type FieldErrors,
-} from '../account/components/validation';
+import { checkEmail, checkText, focusFirstError, hasErrors, normalizePhone, type FieldErrors } from '../account/components/validation';
 import { CharCounter } from './custom-order/CharCounter';
 import { checkWhatsapp } from './custom-order/validation';
 import { WhatsAppIcon } from './custom-order/WhatsAppIcon';
+import { DOMAIN_FIELD_ID, DOMAIN_FIELD_LABEL, DomainSearch } from './order/DomainSearch';
+import {
+  domainTakenError,
+  moneyLabel,
+  orderAmounts,
+  splitDomainInput,
+  type OrderAmounts,
+  type OrderQuote,
+} from './order/orderAmounts';
 
 type LoadState =
   | { status: 'loading' }
@@ -58,20 +61,10 @@ type OrderField =
   | 'customer_phone'
   | 'company_name'
   | 'domain_primary'
-  | 'domain_alternative'
   | 'notes'
   | 'agree';
 
-const FIELD_ORDER: OrderField[] = [
-  'customer_name',
-  'customer_email',
-  'customer_phone',
-  'company_name',
-  'domain_primary',
-  'domain_alternative',
-  'notes',
-  'agree',
-];
+const FIELD_ORDER: OrderField[] = ['customer_name', 'customer_email', 'customer_phone', 'company_name', 'domain_primary', 'notes', 'agree'];
 /** Field wajib (aria-required); sisanya bertanda "(opsional)". */
 const REQUIRED_FIELDS: ReadonlySet<OrderField> = new Set(['customer_name', 'customer_email', 'customer_phone', 'domain_primary', 'agree']);
 const NOTES_MAX = 2000;
@@ -83,13 +76,6 @@ interface CreateOrderResponse {
   order: Order;
   payment_url: string | null;
   payment_error?: string;
-}
-
-/** Domain tanpa akhiran ("namabisnis") mendapat pesan yang lebih jelas daripada "format tidak valid". */
-function checkOrderDomain(value: string, label: string, required: boolean): string | undefined {
-  const domain = normalizeDomain(value);
-  if (domain && !domain.includes('.') && /^[a-z0-9-]+$/.test(domain)) return 'Tambahkan akhiran domain, mis. .com atau .id';
-  return checkDomain(value, label, required);
 }
 
 export default function OrderTemplate() {
@@ -120,6 +106,8 @@ export default function OrderTemplate() {
     };
   }, [wantsQuote, readyTemplateId]);
   const quote = wantsQuote && fetchedQuote?.templateId === readyTemplateId ? fetchedQuote.quote : null;
+  // Hasil cek domain terakhir dari form (null = belum dicek / isian berubah); harganya ikut di semua ringkasan
+  const [domainCheck, setDomainCheck] = useState<DomainCheck | null>(null);
 
   useDocumentTitle(state.status === 'ready' ? `Pesan ${state.template.name}` : 'Pesan template');
 
@@ -150,6 +138,7 @@ export default function OrderTemplate() {
 
   const onSessionLost = () => {
     clearSession();
+    setDomainCheck(null);
     setSessionExpired(true);
     setSessionVersion((n) => n + 1);
   };
@@ -219,22 +208,34 @@ export default function OrderTemplate() {
             {state.status === 'ready' && (
               <>
                 {/* HP & tablet: ringkasan satu baris di atas form, agar "Masuk" / field pertama terlihat di layar pertama */}
-                <CompactSummary template={state.template} quote={quote} />
+                <CompactSummary template={state.template} amounts={orderAmounts(state.template, quote, domainCheck)} />
                 <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
                   <div className="min-w-0">
                     {role === 'customer' ? (
-                      <OrderForm template={state.template} pricing={pricing} quote={quote} onSessionLost={onSessionLost} />
+                      <OrderForm
+                        template={state.template}
+                        pricing={pricing}
+                        quote={quote}
+                        domainCheck={domainCheck}
+                        onDomainCheck={setDomainCheck}
+                        onSessionLost={onSessionLost}
+                      />
                     ) : role ? (
                       <StaffNotice orderPath={orderPath} onLogout={onSessionLost} />
                     ) : (
                       <>
                         <LoginPrompt orderPath={orderPath} expired={sessionExpired} />
-                        <OrderInfoCard template={state.template} pricing={pricing} />
+                        <OrderInfoCard pricing={pricing} />
                       </>
                     )}
                   </div>
                   <StickySummary>
-                    <OrderSummary template={state.template} pricing={pricing} quote={quote} guest={!role} />
+                    <OrderSummary
+                      template={state.template}
+                      pricing={pricing}
+                      amounts={orderAmounts(state.template, quote, domainCheck)}
+                      guest={!role}
+                    />
                   </StickySummary>
                 </div>
               </>
@@ -360,56 +361,99 @@ function TemplateLinks({ template }: { template: Template }) {
   );
 }
 
-const priceLabel = (template: Template) => (Number(template.price) <= 0 ? 'Gratis' : formatRupiah(template.price));
+/** Teks domain sebelum dipilih dari hasil cek (sama di semua ringkasan). */
+const DOMAIN_PENDING_TEXT = 'belum dipilih';
 
-/** Harga untuk akun yang masuk (customer_get_order_quote): diskon otomatis 20% pesanan template pertama. */
-interface OrderQuote {
-  list_price: number;
-  discount_percent: number;
-  discount_amount: number;
-  price: number;
-}
+/** Baris "Domain <nama> (1 tahun)" (nama panjang boleh patah baris). */
+const domainLineLabel = (name: string) => (
+  <>
+    Domain <span className="break-all">{name}</span> (1 tahun)
+  </>
+);
 
-const hasDiscount = (quote: OrderQuote | null): quote is OrderQuote => Boolean(quote && quote.discount_amount > 0);
-/** Harga yang dibayar: setelah diskon bila ada, selain itu harga template. */
-const payLabel = (template: Template, quote: OrderQuote | null) =>
-  hasDiscount(quote) ? (quote.price <= 0 ? 'Gratis' : formatRupiah(quote.price)) : priceLabel(template);
-
-/** Baris harga katalog (dicoret) + diskon pembelian pertama, di atas Total. */
-function DiscountLines({ quote }: { quote: OrderQuote | null }) {
-  if (!hasDiscount(quote)) return null;
+/**
+ * Rincian harga: harga template, diskon pembelian pertama (bila ada), domain tahun pertama, lalu Total = template
+ * setelah diskon + domain. Sebelum domain dipilih & dicek: ajakan memilih domain dan subtotal tanpa domain.
+ */
+function PriceLines({ amounts }: { amounts: OrderAmounts }) {
   return (
-    <>
+    <dl className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-4 text-muted">
         <dt>Harga template</dt>
-        <dd className="tabular-nums line-through">{formatRupiah(quote.list_price)}</dd>
+        <dd className="shrink-0 tabular-nums">{moneyLabel(amounts.listPrice)}</dd>
       </div>
-      <div className="mt-1.5 flex items-baseline justify-between gap-4 text-success-700">
-        <dt>Diskon pembelian pertama ({quote.discount_percent}%)</dt>
-        <dd className="tabular-nums">-{formatRupiah(quote.discount_amount)}</dd>
+      {amounts.discountAmount > 0 && (
+        <div className="flex items-baseline justify-between gap-4 text-success-700">
+          <dt>Diskon pembelian pertama ({amounts.discountPercent}%)</dt>
+          <dd className="shrink-0 tabular-nums">-{formatRupiah(amounts.discountAmount)}</dd>
+        </div>
+      )}
+      <div className="flex items-baseline justify-between gap-4 text-muted">
+        {amounts.domain ? (
+          <>
+            <dt className="min-w-0">{domainLineLabel(amounts.domain.name)}</dt>
+            <dd className="shrink-0 tabular-nums">{formatRupiah(amounts.domain.price)}</dd>
+          </>
+        ) : (
+          <>
+            <dt>Domain</dt>
+            <dd className="text-right text-subtle">{DOMAIN_PENDING_TEXT}</dd>
+          </>
+        )}
       </div>
-    </>
+      <div className="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-4 border-t border-dashed border-line pt-2.5">
+        <dt className="font-semibold text-fg">{amounts.domain ? 'Total' : 'Subtotal tanpa domain'}</dt>
+        <dd className="text-2xl font-semibold tabular-nums tracking-tight text-fg">{moneyLabel(amounts.total)}</dd>
+      </div>
+    </dl>
   );
 }
 
-/** Ringkasan HP & tablet (< lg): gambar kecil, nama + harga sebaris, tautan demo. Rincian ada di dekat tombol bayar. */
-function CompactSummary({ template, quote }: { template: Template; quote: OrderQuote | null }) {
+/**
+ * Ringkasan HP & tablet (< lg): gambar kecil, nama + harga template sebaris, tautan demo, lalu domain + total. Rincian
+ * lain ada di dekat tombol bayar.
+ */
+function CompactSummary({ template, amounts }: { template: Template; amounts: OrderAmounts }) {
+  const discounted = amounts.discountAmount > 0;
   return (
-    <aside aria-label="Ringkasan pesanan" className="card-site mb-5 flex items-center gap-3 p-3 sm:gap-4 sm:p-4 lg:hidden">
-      <TemplateThumb template={template} className="w-16 rounded-lg sm:w-32 sm:rounded-xl" />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="truncate text-sm font-semibold text-fg sm:text-base">{template.name}</h2>
-          <p className="shrink-0 text-sm font-semibold tabular-nums text-fg sm:text-base">
-            <span className="sr-only">Harga: </span>
-            {hasDiscount(quote) && <span className="mr-1.5 text-xs font-normal text-subtle line-through">{formatRupiah(quote.list_price)}</span>}
-            {payLabel(template, quote)}
-          </p>
-        </div>
-        <div className="sm:mt-1">
-          <TemplateLinks template={template} />
+    <aside aria-label="Ringkasan pesanan" className="card-site mb-5 p-3 sm:p-4 lg:hidden">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <TemplateThumb template={template} className="w-16 rounded-lg sm:w-32 sm:rounded-xl" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="truncate text-sm font-semibold text-fg sm:text-base">{template.name}</h2>
+            <p className="shrink-0 text-sm font-semibold tabular-nums text-fg sm:text-base">
+              <span className="sr-only">Harga template: </span>
+              {discounted && <span className="mr-1.5 text-xs font-normal text-subtle line-through">{formatRupiah(amounts.listPrice)}</span>}
+              {moneyLabel(amounts.templatePrice)}
+            </p>
+          </div>
+          <div className="sm:mt-1">
+            <TemplateLinks template={template} />
+          </div>
         </div>
       </div>
+      <dl className="mt-3 space-y-1 border-t border-line pt-2.5 text-[13px]">
+        <div className="flex items-baseline justify-between gap-3 text-muted">
+          {amounts.domain ? (
+            <>
+              <dt className="min-w-0">{domainLineLabel(amounts.domain.name)}</dt>
+              <dd className="shrink-0 tabular-nums">{formatRupiah(amounts.domain.price)}</dd>
+            </>
+          ) : (
+            <>
+              <dt>Domain</dt>
+              <dd className="text-right text-subtle">{DOMAIN_PENDING_TEXT}</dd>
+            </>
+          )}
+        </div>
+        {amounts.domain && (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="font-semibold text-fg">Total</dt>
+            <dd className="text-sm font-semibold tabular-nums text-fg sm:text-base">{moneyLabel(amounts.total)}</dd>
+          </div>
+        )}
+      </dl>
     </aside>
   );
 }
@@ -498,19 +542,22 @@ function StickySummary({ children }: { children: ReactNode }) {
   );
 }
 
-/** Ringkasan checkout (≥ lg, kolom kanan sticky): template, yang sudah termasuk, total, dan langkah setelah membayar. */
+/**
+ * Ringkasan checkout (≥ lg, kolom kanan sticky): template, yang sudah termasuk, rincian harga + domain, total, dan
+ * langkah setelah membayar.
+ */
 function OrderSummary({
   template,
   pricing,
-  quote,
+  amounts,
   guest,
 }: {
   template: Template;
   pricing: TemplatePricing;
-  quote: OrderQuote | null;
+  amounts: OrderAmounts;
   guest: boolean;
 }) {
-  const free = Number(template.price) <= 0;
+  const free = amounts.free;
 
   return (
     <aside aria-label="Ringkasan pesanan" className="card-site overflow-hidden">
@@ -528,14 +575,10 @@ function OrderSummary({
 
       <div className="space-y-3 border-t border-line px-5 py-4 text-sm">
         <IncludesList includes={pricing.includes} />
-        <dl className={pricing.includes.length > 0 ? 'border-t border-dashed border-line pt-3' : ''}>
-          <DiscountLines quote={quote} />
-          <div className={`flex items-baseline justify-between gap-4 ${hasDiscount(quote) ? 'mt-2.5' : ''}`}>
-            <dt className="font-semibold text-fg">Total</dt>
-            <dd className="text-2xl font-semibold tabular-nums tracking-tight text-fg">{payLabel(template, quote)}</dd>
-          </div>
-        </dl>
-        {guest && !free && (
+        <div className={pricing.includes.length > 0 ? 'border-t border-dashed border-line pt-3' : ''}>
+          <PriceLines amounts={amounts} />
+        </div>
+        {guest && amounts.listPrice > 0 && (
           <p className="rounded-xl bg-success-50 px-3 py-2 text-xs leading-relaxed text-success-700">
             Akun baru: diskon {FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama Anda.
           </p>
@@ -557,13 +600,13 @@ function OrderSummary({
 }
 
 /** Tamu di HP & tablet: apa yang termasuk dan langkah setelah membayar, di bawah ajakan masuk (≥ lg ada di ringkasan). */
-function OrderInfoCard({ template, pricing }: { template: Template; pricing: TemplatePricing }) {
-  const free = Number(template.price) <= 0;
+function OrderInfoCard({ pricing }: { pricing: TemplatePricing }) {
   return (
     <section aria-label="Rincian harga" className="card-site mt-5 space-y-4 p-5 lg:hidden">
       <IncludesList includes={pricing.includes} />
       {pricing.note && <p className="text-xs leading-relaxed text-muted">{pricing.note}</p>}
-      <StepsDisclosure free={free} />
+      {/* Domain selalu berbayar, jadi setiap pesanan melewati pembayaran (juga template gratis) */}
+      <StepsDisclosure free={false} />
     </section>
   );
 }
@@ -676,11 +719,16 @@ function OrderForm({
   template,
   pricing,
   quote,
+  domainCheck,
+  onDomainCheck,
   onSessionLost,
 }: {
   template: Template;
   pricing: TemplatePricing;
   quote: OrderQuote | null;
+  /** Hasil cek domain untuk isian sekarang (disimpan induk agar ringkasan ikut menghitung harganya) */
+  domainCheck: DomainCheck | null;
+  onDomainCheck: (check: DomainCheck | null) => void;
   onSessionLost: () => void;
 }) {
   const navigate = useNavigate();
@@ -693,7 +741,6 @@ function OrderForm({
       customer_phone: typeof user?.phone === 'string' ? user.phone : '',
       company_name: '',
       domain_primary: '',
-      domain_alternative: '',
       notes: '',
     };
   });
@@ -704,7 +751,26 @@ function OrderForm({
   const [formError, setFormError] = useState<{ text: string; pendingLimit?: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
-  const free = Number(template.price) <= 0;
+  // Cek domain: domain yang sedang dicek, galat cek (batas cek / jaringan), dan cek yang dipicu tombol kirim.
+  // Nomor urut: hasil yang datang setelah isian berubah (atau setelah cek baru) diabaikan.
+  const [checking, setChecking] = useState<string | null>(null);
+  const [checkError, setCheckError] = useState<string | null>(null);
+  const [checkingForSubmit, setCheckingForSubmit] = useState(false);
+  const checkSeq = useRef(0);
+  // Domain = isian nama (values.domain_primary, tanpa ekstensi) + ekstensi dropdown; hasil cek = nama yang sama di
+  // beberapa ekstensi, yang dipilih disimpan induk (domainCheck) agar ringkasan ikut menghitung harganya
+  const { domains: tlds } = useDomainPrices();
+  const [domainTld, setDomainTld] = useState('com');
+  const [checks, setChecks] = useState<DomainCheck[] | null>(null);
+  // Galat dari server saat kirim: field baru bisa difokus setelah tidak nonaktif lagi (submitting selesai dan dirender)
+  const focusAfterSubmit = useRef<FieldErrors<OrderField> | null>(null);
+  useEffect(() => {
+    if (submitting || !focusAfterSubmit.current) return;
+    focusFirstError(FIELD_ORDER, focusAfterSubmit.current);
+    focusAfterSubmit.current = null;
+  }, [submitting]);
+  const amounts = orderAmounts(template, quote, domainCheck);
+  const free = amounts.free;
   const helpHref = whatsappUrl(
     getWhatsappNumber(settings),
     `Halo Garuda Nexa, saya punya pertanyaan tentang pemesanan template ${template.name}.`,
@@ -725,16 +791,7 @@ function OrderForm({
       case 'company_name':
         return checkText(vals.company_name, 'Nama perusahaan', { required: false, max: 150 });
       case 'domain_primary':
-        return checkOrderDomain(vals.domain_primary, 'Domain utama', true);
-      case 'domain_alternative': {
-        const alternative = normalizeDomain(vals.domain_alternative);
-        return (
-          checkOrderDomain(vals.domain_alternative, 'Domain alternatif', false) ??
-          (alternative && alternative === normalizeDomain(vals.domain_primary)
-            ? 'Domain alternatif harus berbeda dari domain utama.'
-            : undefined)
-        );
-      }
+        return splitDomainInput(vals.domain_primary, domainTld, tlds, DOMAIN_FIELD_LABEL).error;
       case 'notes':
         return checkText(vals.notes, 'Catatan', { required: false, max: NOTES_MAX });
       case 'agree':
@@ -742,37 +799,139 @@ function OrderForm({
     }
   };
 
-  const recheck = (keys: OrderField[], vals: FormValues) =>
-    setErrors((prev) => {
-      const next = { ...prev };
-      for (const key of keys) next[key] = checkField(key, vals);
-      return next;
-    });
-
-  /** Field yang ikut diperiksa ulang: domain alternatif bergantung pada domain utama ("harus berbeda"). */
-  const dependents = (key: TextField, vals: FormValues): OrderField[] =>
-    key === 'domain_primary' && (submitted || errors.domain_alternative || vals.domain_alternative.trim())
-      ? ['domain_primary', 'domain_alternative']
-      : [key];
+  const recheck = (key: OrderField, vals: FormValues) => setErrors((prev) => ({ ...prev, [key]: checkField(key, vals) }));
 
   const set = (key: TextField) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const next = { ...values, [key]: e.target.value };
     setValues(next);
     // Error tidak dihapus begitu saja: field diperiksa ulang, jadi pesan hilang hanya bila isiannya sudah benar
-    if (submitted || errors[key]) recheck(dependents(key, next), next);
+    if (submitted || errors[key]) recheck(key, next);
   };
 
   const blur = (key: TextField) => () => {
     // Field kosong yang belum pernah diisi tidak langsung dimarahi; cukup saat kirim
     if (!submitted && !values[key].trim()) return;
-    recheck(dependents(key, values), values);
+    recheck(key, values);
   };
 
-  const tidyDomain = (key: 'domain_primary' | 'domain_alternative') => () => {
-    const next = { ...values, [key]: normalizeDomain(values[key]) };
+  const focusDomain = () => focusFirstError([DOMAIN_FIELD_ID], { [DOMAIN_FIELD_ID]: 'cek' });
+
+  /** Cek yang sedang berjalan tidak berlaku lagi (isian berubah). */
+  const cancelCheck = () => {
+    if (checking === null) return;
+    checkSeq.current += 1;
+    setChecking(null);
+  };
+
+  /** Hasil cek & pilihan dibuang: domain harus dicek ulang. */
+  const clearChecks = () => {
+    setChecks(null);
+    onDomainCheck(null);
+  };
+
+  const changeDomain = (raw: string) => {
+    const next = { ...values, domain_primary: raw };
     setValues(next);
-    if (!submitted && !values[key].trim()) return;
-    recheck(dependents(key, next), next);
+    setCheckError(null);
+    cancelCheck();
+    // Isian berubah: hasil cek sebelumnya tidak berlaku lagi (kecuali hanya beda huruf besar/spasi)
+    if (checks && splitDomainInput(raw, domainTld, tlds).domain !== checks[0]?.domain) clearChecks();
+    if (submitted || errors.domain_primary) recheck('domain_primary', next);
+  };
+
+  /**
+   * Ganti ekstensi di dropdown: bila nama yang sama dengan ekstensi itu ada di hasil cek, langsung terpilih (yang sudah
+   * dipakai tidak); selain itu perlu dicek ulang.
+   */
+  const changeTld = (tld: string) => {
+    setDomainTld(tld);
+    setCheckError(null);
+    cancelCheck();
+    const domain = splitDomainInput(values.domain_primary, tld, tlds).domain;
+    const row = checks?.find((c) => c.domain === domain);
+    if (row) onDomainCheck(row.status === 'taken' ? null : row);
+    else clearChecks();
+    if (submitted || errors.domain_primary) {
+      setErrors((prev) => ({ ...prev, domain_primary: splitDomainInput(values.domain_primary, tld, tlds, DOMAIN_FIELD_LABEL).error }));
+    }
+  };
+
+  /** Pilih domain dari hasil cek: dropdown ikut ke ekstensinya. */
+  const selectDomain = (check: DomainCheck) => {
+    if (check.status === 'taken') return;
+    setDomainTld(check.tld);
+    onDomainCheck(check);
+    setErrors((prev) => ({ ...prev, domain_primary: undefined }));
+  };
+
+  /** Keluar dari isian: rapikan (huruf kecil, tanpa https://, www., path); ekstensi yang diketik pindah ke dropdown. */
+  const blurDomain = () => {
+    if (!values.domain_primary.trim()) {
+      if (submitted) recheck('domain_primary', values);
+      return;
+    }
+    const split = splitDomainInput(values.domain_primary, domainTld, tlds, DOMAIN_FIELD_LABEL);
+    setValues((prev) => ({ ...prev, domain_primary: split.name }));
+    if (split.tld !== domainTld) setDomainTld(split.tld);
+    if (checks && split.domain !== checks[0]?.domain) clearChecks();
+    setErrors((prev) => ({ ...prev, domain_primary: split.error }));
+  };
+
+  /**
+   * Cek ketersediaan (customer_check_domain, spec §4): nama + ekstensi, server membalas nama yang sama di beberapa
+   * ekstensi. Format diperiksa dulu di sini (pesan sama dengan server). Hasil: domain yang diminta (terpilih bila bisa
+   * dipakai), atau null bila format salah / gagal / dibatalkan (pesannya sudah ditampilkan).
+   */
+  const runCheck = async (): Promise<DomainCheck | null> => {
+    const split = splitDomainInput(values.domain_primary, domainTld, tlds, DOMAIN_FIELD_LABEL);
+    const domain = split.domain;
+    const seq = ++checkSeq.current;
+    setValues((prev) => ({ ...prev, domain_primary: split.name }));
+    setDomainTld(split.tld);
+    setCheckError(null);
+    clearChecks();
+    if (split.error) {
+      setChecking(null);
+      setErrors((prev) => ({ ...prev, domain_primary: split.error }));
+      focusDomain();
+      return null;
+    }
+    setErrors((prev) => ({ ...prev, domain_primary: undefined }));
+    setChecking(domain);
+    try {
+      const data = await apiPost<{ check?: DomainCheck; checks?: DomainCheck[] }>('customer_check_domain', { domain });
+      if (seq !== checkSeq.current) return null;
+      const list = (Array.isArray(data.checks) && data.checks.length ? data.checks : data.check ? [data.check] : []).filter(
+        (c): c is DomainCheck => Boolean(c?.domain && c.status),
+      );
+      if (!list.length) {
+        setCheckError('Ketersediaan domain belum bisa dicek. Silakan coba lagi.');
+        return null;
+      }
+      setChecks(list);
+      const requested = list.find((c) => c.domain === domain) ?? list[0];
+      if (requested.status !== 'taken') onDomainCheck(requested);
+      return requested;
+    } catch (err) {
+      if (seq !== checkSeq.current) return null;
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          onSessionLost();
+          return null;
+        }
+        // 400 VALIDATION {domain}: pesan di bawah field; 429 (batas cek) & lainnya: pesan server di hasil cek
+        const fieldError = err.fieldErrors?.domain ?? err.fieldErrors?.domain_primary;
+        if (fieldError) {
+          setErrors((prev) => ({ ...prev, domain_primary: fieldError }));
+          focusDomain();
+          return null;
+        }
+      }
+      setCheckError(errorMessage(err, 'Ketersediaan domain belum bisa dicek. Silakan coba lagi.'));
+      return null;
+    } finally {
+      if (seq === checkSeq.current) setChecking(null);
+    }
   };
 
   const validate = (): FieldErrors<OrderField> => {
@@ -783,6 +942,7 @@ function OrderForm({
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting || checkingForSubmit) return;
     setFormError(null);
     setSubmitted(true);
     const found = validate();
@@ -790,6 +950,30 @@ function OrderForm({
     if (hasErrors(found)) {
       focusFirstError(FIELD_ORDER, found);
       return;
+    }
+
+    // Domain wajib dipilih dari hasil cek (tersedia / belum pasti). Belum dicek → cek dulu; yang diminta dipakai bila bisa.
+    let check = domainCheck;
+    if (!check) {
+      const requested = splitDomainInput(values.domain_primary, domainTld, tlds).domain;
+      let row = checks?.find((c) => c.domain === requested) ?? null;
+      if (!checks) {
+        setCheckingForSubmit(true);
+        row = await runCheck();
+        setCheckingForSubmit(false);
+        if (!row) {
+          focusDomain();
+          return;
+        }
+      }
+      if (!row || row.status === 'taken') {
+        const message = row ? domainTakenError(row.domain) : 'Pilih domain dari daftar hasil cek.';
+        const notUsable = { domain_primary: `${message} Pilih domain lain yang tersedia di daftar.` };
+        setErrors(notUsable);
+        focusFirstError(FIELD_ORDER, notUsable);
+        return;
+      }
+      check = row;
     }
 
     setSubmitting(true);
@@ -801,8 +985,9 @@ function OrderForm({
         customer_phone: normalizePhone(values.customer_phone),
         company_name: values.company_name.trim() || null,
         notes: values.notes.trim() || null,
-        domain_primary: normalizeDomain(values.domain_primary),
-        domain_alternative: normalizeDomain(values.domain_alternative) || null,
+        domain_primary: check.domain,
+        // Field lama, masih diterima server sebagai opsional; domain kini dicek sebelum memesan
+        domain_alternative: null,
       });
       if (isPaymentUrl(res.payment_url)) {
         setRedirectUrl(res.payment_url);
@@ -818,14 +1003,23 @@ function OrderForm({
           onSessionLost();
           return;
         }
+        // 409 DOMAIN_UNAVAILABLE: domain ternyata sudah dipakai saat dipesan → hasil cek direset, pilih/cek nama lain
+        if (err.code === 'DOMAIN_UNAVAILABLE') {
+          const unavailable = { domain_primary: err.fieldErrors?.domain_primary || domainTakenError(check.domain) };
+          clearChecks();
+          setErrors(unavailable);
+          focusAfterSubmit.current = unavailable;
+          return;
+        }
         if (err.fieldErrors) {
           const serverErrors: FieldErrors<OrderField> = {};
           for (const key of FIELD_ORDER) {
             if (err.fieldErrors[key]) serverErrors[key] = err.fieldErrors[key];
           }
           if (hasErrors(serverErrors)) {
+            if (serverErrors.domain_primary) clearChecks();
             setErrors(serverErrors);
-            focusFirstError(FIELD_ORDER, serverErrors);
+            focusAfterSubmit.current = serverErrors;
             return;
           }
         }
@@ -845,11 +1039,6 @@ function OrderForm({
     onBlur: blur(key),
     disabled: submitting,
   });
-
-  const domainHelp = (value: string, fallback: string) =>
-    normalizeDomain(value).endsWith('.co.id')
-      ? 'Domain .co.id butuh dokumen perusahaan (mis. NIB). Kami hubungi Anda bila dokumen diperlukan.'
-      : fallback;
 
   return (
     <form onSubmit={onSubmit} noValidate className="card-site overflow-hidden">
@@ -918,47 +1107,24 @@ function OrderForm({
       <FormSection
         step={2}
         title="Domain website"
-        description="Kami pastikan ketersediaannya setelah pembayaran. Bila domain utama dan alternatif sudah dipakai orang lain, kami hubungi Anda untuk memilih nama lain."
+        description="Ketik nama domain, pilih ekstensinya, lalu cek. Pilih domain yang tersedia dari daftar; kami daftarkan untuk Anda setelah pembayaran."
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            id="domain_primary"
-            label="Domain utama"
-            error={errors.domain_primary}
-            help={domainHelp(values.domain_primary, 'Contoh: namabisnis.com atau namabisnis.id')}
-          >
-            <input
-              {...text('domain_primary', true)}
-              type="text"
-              inputMode="url"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              placeholder="mis. namabisnis.com"
-              onBlur={tidyDomain('domain_primary')}
-              className="input-site"
-            />
-          </Field>
-          <Field
-            id="domain_alternative"
-            label="Domain alternatif"
-            optional
-            error={errors.domain_alternative}
-            help={domainHelp(values.domain_alternative, 'Disarankan diisi. Dipakai bila domain utama sudah dimiliki orang lain.')}
-          >
-            <input
-              {...text('domain_alternative', true)}
-              type="text"
-              inputMode="url"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              placeholder="mis. namabisnis.id"
-              onBlur={tidyDomain('domain_alternative')}
-              className="input-site"
-            />
-          </Field>
-        </div>
+        <DomainSearch
+          name={values.domain_primary}
+          tld={domainTld}
+          tlds={tlds}
+          error={errors.domain_primary}
+          checks={checks}
+          selected={domainCheck}
+          checking={checking}
+          checkError={checkError}
+          disabled={submitting}
+          onNameChange={changeDomain}
+          onTldChange={changeTld}
+          onBlur={blurDomain}
+          onCheck={() => void runCheck()}
+          onSelect={selectDomain}
+        />
       </FormSection>
 
       <FormSection step={3} title="Catatan" description="Kebutuhan khusus atau info tambahan untuk tim kami.">
@@ -1027,17 +1193,29 @@ function OrderForm({
         </div>
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+          {/* Total = template (setelah diskon) + domain tahun pertama; sebelum domain dicek: subtotal tanpa domain */}
+          <div className="min-w-0">
             <p className="text-xs text-subtle">
-              Total pembayaran{hasDiscount(quote) ? ` (sudah dipotong diskon ${quote.discount_percent}%)` : ''}
+              {amounts.domain ? 'Total pembayaran' : 'Subtotal tanpa domain'}
+              {amounts.discountAmount > 0 ? ` (sudah dipotong diskon ${amounts.discountPercent}%)` : ''}
             </p>
-            <p className="text-xl font-semibold tabular-nums tracking-tight text-fg sm:text-2xl">{payLabel(template, quote)}</p>
+            <p className="text-xl font-semibold tabular-nums tracking-tight text-fg sm:text-2xl">{moneyLabel(amounts.total)}</p>
+            <p className="mt-0.5 break-words text-xs text-muted">
+              {amounts.domain ? (
+                <>
+                  Template {moneyLabel(amounts.templatePrice)} + {domainLineLabel(amounts.domain.name)}{' '}
+                  {formatRupiah(amounts.domain.price)}
+                </>
+              ) : (
+                `Domain: ${DOMAIN_PENDING_TEXT}`
+              )}
+            </p>
           </div>
-          <button type="submit" className="btn btn-primary btn-lg w-full sm:w-auto" disabled={submitting}>
-            {submitting ? (
+          <button type="submit" className="btn btn-primary btn-lg w-full shrink-0 sm:w-auto" disabled={submitting || checkingForSubmit}>
+            {submitting || checkingForSubmit ? (
               <>
                 <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
-                {redirectUrl ? 'Membuka pembayaran...' : 'Membuat pesanan...'}
+                {checkingForSubmit ? 'Mengecek domain...' : redirectUrl ? 'Membuka pembayaran...' : 'Membuat pesanan...'}
               </>
             ) : (
               <>

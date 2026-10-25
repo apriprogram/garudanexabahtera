@@ -112,8 +112,111 @@ export interface Order {
   created_at: string;
   updated_at: string;
   site_id: number | null;
+  /**
+   * Harga domain tahun pertama yang ikut dibayar (sudah termasuk di `price`); 0 = pesanan dari sebelum domain dijual
+   * terpisah (migrasi 026). Docs: ACCOUNT-DOMAIN-RENEWAL-SPEC.md.
+   */
+  domain_price?: number;
+  /** Hasil cek ketersediaan domain saat dipesan ('available' | 'unknown'), null untuk pesanan lama. */
+  domain_check?: string | null;
+  /** "INV-" + order_number setelah dibayar, null sebelumnya. */
+  invoice_number?: string | null;
+  /** Masa aktif hosting & jasa template dan domain (mulai saat situs aktif, bertambah saat diperpanjang). */
+  service_started_at?: string | null;
+  service_expires_at?: string | null;
+  domain_started_at?: string | null;
+  domain_expires_at?: string | null;
   /** Hanya untuk staf */
   user?: OrderUser;
+}
+
+export type RenewalStatus = 'menunggu_pembayaran' | 'lunas' | 'dibatalkan';
+
+export const RENEWAL_STATUS_LABEL: Record<RenewalStatus, string> = {
+  menunggu_pembayaran: 'Menunggu Pembayaran',
+  lunas: 'Lunas',
+  dibatalkan: 'Dibatalkan',
+};
+
+/** Tagihan perpanjangan masa aktif (hosting & jasa + domain) untuk 1–3 tahun. */
+export interface Renewal {
+  id: number;
+  renewal_number: string;
+  order_number: string;
+  domain: string;
+  years: number;
+  hosting_price_per_year: number;
+  domain_price_per_year: number;
+  price_per_year: number;
+  /** Jumlah yang dibayar = years × price_per_year */
+  price: number;
+  status: RenewalStatus;
+  status_label: string;
+  payment_status: string;
+  payment_type: string | null;
+  /** Hanya pemilik, dan hanya selama menunggu pembayaran */
+  payment_url: string | null;
+  paid_at: string | null;
+  cancelled_at: string | null;
+  service_expires_before: string | null;
+  service_expires_after: string | null;
+  domain_expires_before: string | null;
+  domain_expires_after: string | null;
+  /** "INV-" + renewal_number setelah lunas */
+  invoice_number: string | null;
+  created_at: string;
+}
+
+/** Penawaran perpanjangan untuk pesanan (customer_get_order). Tanggal berakhir baru dihitung database. */
+export interface RenewalOffer {
+  available: boolean;
+  /** Alasan tidak tersedia (kalimat untuk pembeli), null bila tersedia */
+  reason: string | null;
+  hosting_price_per_year: number;
+  domain_price_per_year: number | null;
+  price_per_year: number | null;
+  max_years: number;
+  options: { years: number; price: number; service_expires_after: string; domain_expires_after: string }[];
+}
+
+/** Satu baris daftar nota pembeli (customer_get_invoices, menu Nota di /akun). */
+export interface CustomerInvoiceItem {
+  type: 'pembelian' | 'perpanjangan';
+  invoice_number: string;
+  order_number: string;
+  renewal_number: string | null;
+  /** Nama template pesanan */
+  title: string;
+  domain: string;
+  /** Lama perpanjangan (tahun); null untuk nota pembelian */
+  years: number | null;
+  amount: number;
+  paid_at: string;
+  payment_status: string;
+  payment_type: string | null;
+  /** Status pesanan (nota pembelian saja; ditolak = dana dikembalikan) */
+  order_status: OrderStatus | null;
+}
+
+/** Hasil customer_check_domain. */
+export interface DomainCheck {
+  domain: string;
+  tld: string;
+  status: 'available' | 'taken' | 'unknown';
+  price: number;
+}
+
+/** Biodata akun pembeli (customer_get_profile / customer_update_profile). */
+export interface CustomerProfile {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  company_name: string | null;
+  address: string | null;
+  city: string | null;
+  /** Path/URL foto profil, null = inisial nama */
+  avatar: string | null;
 }
 
 export interface OrderLog {
@@ -143,6 +246,9 @@ export interface Site {
   content: Record<string, unknown> | null;
   activated_at: string | null;
   updated_at: string;
+  /** Masa aktif pesanan induk (hosting & jasa, domain); null sebelum migrasi 026 diisi */
+  service_expires_at?: string | null;
+  domain_expires_at?: string | null;
   /** Hanya untuk staf */
   owner_name?: string;
   owner_email?: string;

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-// Akun pembeli: dashboard (/akun), detail pesanan, kerangka akun (menu, skip link, keluar), dialog konfirmasi.
+// Akun pembeli: Beranda (/akun), Pesanan saya (/akun/pesanan), Situs saya (/akun/situs), detail pesanan, kerangka akun
+// (sidebar, topbar, drawer HP, menu profil, skip link, keluar), dialog konfirmasi.
 // Jalankan: npx vitest run --dir src/pages/account/__tests__
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
@@ -7,7 +8,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Order, OrderLog } from '../../../types/platform';
-import AccountHome from '../AccountHome';
+import AccountHome, { type AccountHomeView } from '../AccountHome';
 import AccountLayout from '../AccountLayout';
 import AccountOrderDetail from '../AccountOrderDetail';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -141,35 +142,37 @@ describe('status pembayaran & riwayat untuk pembeli', () => {
   });
 });
 
-/* ─────────────────────────── Dashboard /akun ─────────────────────────── */
+/* ─────────────────────────── Beranda, Pesanan saya, Situs saya ─────────────────────────── */
 
-const renderHome = () =>
+const renderHome = (view?: AccountHomeView) =>
   render(
-    <MemoryRouter initialEntries={['/akun']}>
+    <MemoryRouter initialEntries={['/akun/x']}>
       <Routes>
-        <Route path="/akun" element={<AccountHome />} />
+        <Route path="/akun/x" element={<AccountHome view={view} />} />
       </Routes>
     </MemoryRouter>,
   );
 
-describe('dashboard /akun', () => {
-  it('ringkasan = filter (aria-pressed), urutan prioritas, pesanan ditutup dilipat, kartu Situs Anda', async () => {
+describe('Pesanan saya /akun/pesanan', { timeout: 20_000 }, () => {
+  it('ringkasan = filter (aria-pressed), urutan prioritas, pesanan ditutup dilipat', async () => {
     const rejected = makeOrder({ template_name: 'Ditolak Lunas', status: 'ditolak', payment_status: 'settlement', paid_at: '2026-10-19 11:00:00', rejected_reason: 'Domain tidak tersedia', created_at: '2026-10-21 09:00:00' });
     const cancelled = makeOrder({ template_name: 'Batal', status: 'dibatalkan', created_at: '2026-10-21 08:00:00' });
     const active = makeOrder({ template_name: 'Situs Aktif', status: 'aktif', site_id: 7, domain: 'aktif-budi.com', paid_at: '2026-10-01 10:00:00', created_at: '2026-10-01 09:00:00' });
     const unpaid = makeOrder({ template_name: 'Belum Bayar', status: 'menunggu_pembayaran', created_at: '2026-09-01 09:00:00' });
     const review = makeOrder({ template_name: 'Ditinjau Bank', status: 'menunggu_pembayaran', payment_status: 'capture', created_at: '2026-10-02 09:00:00' });
     api.customer_get_orders = () => json(200, { orders: [rejected, cancelled, active, unpaid, review] });
-    renderHome();
+    renderHome('orders');
+    expect(screen.getByRole('heading', { level: 1, name: 'Pesanan saya' })).toBeInTheDocument();
 
-    // Tile = tombol filter; tidak ada baris chip yang mengulang angkanya
-    const total = await screen.findByRole('button', { name: /Total pesanan\s*5/ });
+    // Tile = tombol filter; tidak ada baris chip yang mengulang angkanya. Render pertama di file ini memuat banyak modul:
+    // batas tunggu dilonggarkan agar tidak gagal saat mesin sibuk
+    const total = await screen.findByRole('button', { name: /Total pesanan\s*5/ }, { timeout: 5000 });
     expect(total).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /Perlu dibayar\s*1/ })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.queryByRole('group', { name: 'Filter status pesanan' })).not.toBeInTheDocument();
 
     // Urutan: perlu dibayar → aktif → diproses; ditutup di <details> tertutup
-    const section = screen.getByRole('heading', { name: 'Pesanan saya' }).closest('section')!;
+    const section = screen.getByRole('heading', { name: 'Daftar pesanan' }).closest('section')!;
     const titles = () => Array.from(section.querySelectorAll('h3'), (h) => h.textContent);
     expect(titles()).toEqual(['Belum Bayar', 'Situs Aktif', 'Ditinjau Bank', 'Ditolak Lunas', 'Batal']);
     const closed = screen.getByText('Pesanan dibatalkan/ditolak').closest('details')!;
@@ -180,9 +183,8 @@ describe('dashboard /akun', () => {
     expect(within(closed).getByText(/Pesanan ditolak: Domain tidak tersedia\. Dana Rp\s?1\.500\.000 dikembalikan penuh/)).toBeInTheDocument();
     expect(within(closed).getByText('Menunggu pengembalian dana')).toBeInTheDocument();
 
-    // Situs Anda di atas daftar
-    const sites = screen.getByRole('heading', { name: 'Situs Anda' }).closest('section')!;
-    expect(within(sites).getByRole('link', { name: /Kelola Situs/ })).toHaveAttribute('href', '/akun/situs/7');
+    // Kartu situs hanya di Beranda & Situs saya
+    expect(screen.queryByRole('heading', { name: 'Situs Anda' })).not.toBeInTheDocument();
 
     // Label glosarium: ke katalog = "Pilih Template" ("Pesan Template" khusus /pesan/:slug)
     expect(screen.getByRole('link', { name: /Pilih Template/ })).toHaveAttribute('href', '/#templates');
@@ -196,9 +198,65 @@ describe('dashboard /akun', () => {
 
   it('hanya pesanan ditutup: lipatan langsung terbuka', async () => {
     api.customer_get_orders = () => json(200, { orders: [makeOrder({ status: 'dibatalkan' })] });
-    renderHome();
+    renderHome('orders');
     const summary = await screen.findByText('Pesanan dibatalkan/ditolak');
     expect(summary.closest('details')).toHaveAttribute('open');
+  });
+});
+
+describe('Beranda /akun', { timeout: 20_000 }, () => {
+  it('sapaan; maks. 3 pesanan berjalan tanpa pesanan ditutup + "Lihat semua pesanan"; kartu Situs Anda', async () => {
+    const active = makeOrder({ template_name: 'Situs Aktif', status: 'aktif', site_id: 7, domain: 'aktif-budi.com', paid_at: '2026-10-01 10:00:00' });
+    const orders = [
+      active,
+      makeOrder({ template_name: 'Belum Bayar A', created_at: '2026-10-03 09:00:00' }),
+      makeOrder({ template_name: 'Belum Bayar B', created_at: '2026-10-02 09:00:00' }),
+      makeOrder({ template_name: 'Ditinjau', status: 'menunggu_approval', payment_status: 'settlement', paid_at: '2026-10-02 10:00:00' }),
+      makeOrder({ template_name: 'Batal', status: 'dibatalkan' }),
+    ];
+    api.customer_get_orders = () => json(200, { orders });
+    renderHome();
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Halo, Budi' })).toBeInTheDocument();
+    const all = await screen.findByRole('link', { name: /Lihat semua pesanan \(5\)/ }, { timeout: 5000 });
+    expect(all).toHaveAttribute('href', '/akun/pesanan');
+    const section = screen.getByRole('heading', { name: 'Pesanan terbaru' }).closest('section')!;
+    expect(section.querySelectorAll('h3')).toHaveLength(3);
+    expect(screen.queryByText('Pesanan dibatalkan/ditolak')).not.toBeInTheDocument();
+
+    const sites = screen.getByRole('heading', { name: 'Situs Anda' }).closest('section')!;
+    expect(within(sites).getByRole('link', { name: /Kelola Situs/ })).toHaveAttribute('href', '/akun/situs/7');
+    expect(within(sites).getByRole('link', { name: /Semua situs/ })).toHaveAttribute('href', '/akun/situs');
+  });
+
+  it('tanpa pesanan berlebih: tidak ada tautan "Lihat semua pesanan"', async () => {
+    api.customer_get_orders = () => json(200, { orders: [makeOrder({ template_name: 'Satu-satunya' })] });
+    renderHome();
+    expect(await screen.findByRole('heading', { level: 3, name: 'Satu-satunya' }, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Lihat semua pesanan/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('Situs saya /akun/situs', { timeout: 20_000 }, () => {
+  it('hanya situs aktif (tanpa ringkasan pesanan); kosong → ajakan ke Pesanan saya', async () => {
+    api.customer_get_orders = () =>
+      json(200, {
+        orders: [
+          makeOrder({ template_name: 'Situs Aktif', status: 'aktif', site_id: 9, domain: 'aktif-budi.com', paid_at: '2026-10-01 10:00:00' }),
+          makeOrder({ template_name: 'Belum Bayar' }),
+        ],
+      });
+    renderHome('sites');
+    expect(screen.getByRole('heading', { level: 1, name: 'Situs saya' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /Kelola Situs/ }, { timeout: 5000 })).toHaveAttribute('href', '/akun/situs/9');
+    expect(screen.queryByText('Belum Bayar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Total pesanan/ })).not.toBeInTheDocument();
+    cleanup();
+
+    api.customer_get_orders = () => json(200, { orders: [makeOrder({ template_name: 'Belum Bayar' })] });
+    renderHome('sites');
+    expect(await screen.findByText('Belum ada situs aktif')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Lihat pesanan saya/ })).toHaveAttribute('href', '/akun/pesanan');
   });
 });
 
@@ -281,19 +339,23 @@ describe('detail pesanan', () => {
 
 /* ─────────────────────────── Kerangka akun ─────────────────────────── */
 
-const renderLayout = () =>
+const renderLayout = (path = '/akun/x') =>
   render(
-    <MemoryRouter initialEntries={['/akun/x']}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/akun" element={<AccountLayout />}>
-          <Route path="x" element={<p>Isi halaman</p>} />
+          <Route index element={<p>Beranda</p>} />
+          <Route path="*" element={<p>Isi halaman</p>} />
         </Route>
       </Routes>
     </MemoryRouter>,
   );
 
+/** Sidebar desktop (drawer HP memakai label yang sama, tapi hanya ada saat dibuka). */
+const sidebarNav = () => screen.getAllByRole('navigation', { name: 'Menu akun' })[0];
+
 describe('kerangka akun', () => {
-  it('skip link pertama, menu pengguna = disclosure (tanpa role menu), fokus ke item pertama, Esc menutup', () => {
+  it('skip link pertama, menu profil = disclosure (tanpa role menu), fokus ke item pertama, Esc menutup', () => {
     const { container } = renderLayout();
     const skip = screen.getByRole('link', { name: 'Lewati ke konten' });
     expect(container.querySelector('a[href], button')).toBe(skip);
@@ -315,11 +377,70 @@ describe('kerangka akun', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it('Keluar langsung logout bila tidak ada perubahan CMS yang belum disimpan', () => {
+  it('Keluar (menu profil & sidebar) langsung logout bila tidak ada perubahan CMS yang belum disimpan', async () => {
     renderLayout();
-    fireEvent.click(screen.getByRole('button', { name: /Menu akun/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Keluar' }));
-    expect(logoutMock).toHaveBeenCalledTimes(1);
+    const trigger = screen.getByRole('button', { name: /Menu akun/ });
+    fireEvent.click(trigger);
+    const panel = document.getElementById(trigger.getAttribute('aria-controls')!)!;
+    fireEvent.click(within(panel).getByRole('button', { name: 'Keluar' }));
+    // confirmLeave() bisa menunggu dialog konfirmasi, jadi logout tidak harus sinkron
+    await waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(within(sidebarNav().parentElement!).getByRole('button', { name: 'Keluar' }));
+    await waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(2));
+  });
+
+  it('sidebar bergrup seperti panel admin: item aktif aria-current, breadcrumb, nota masuk menu Nota', () => {
+    renderLayout('/akun/pesanan');
+    const nav = sidebarNav();
+    const links = within(nav).getAllByRole('link');
+    expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
+      ['Beranda', '/akun'],
+      ['Pesanan saya', '/akun/pesanan'],
+      ['Situs saya', '/akun/situs'],
+      ['Proyek saya', '/akun/proyek'],
+      ['Nota', '/akun/nota'],
+      ['Profil', '/akun/profil'],
+      ['Lihat Template', '/#templates'],
+    ]);
+    expect(within(nav).getByRole('link', { name: 'Pesanan saya' })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByText('Layanan')).toBeInTheDocument();
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(crumbs).getByRole('link', { name: 'Akun' })).toHaveAttribute('href', '/akun');
+    expect(within(crumbs).getByText('Pesanan saya')).toHaveAttribute('aria-current', 'page');
+    cleanup();
+
+    renderLayout('/akun/pesanan/GN-1/nota/GNR-2');
+    expect(within(sidebarNav()).getByRole('link', { name: 'Nota' })).toHaveAttribute('aria-current', 'page');
+    expect(within(sidebarNav()).getByRole('link', { name: 'Pesanan saya' })).not.toHaveAttribute('aria-current');
+    expect(within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText('Nota GNR-2')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('ciutkan sidebar: label jadi sr-only, tersimpan di localStorage', () => {
+    renderLayout();
+    fireEvent.click(screen.getByRole('button', { name: 'Ciutkan sidebar' }));
+    const toggle = screen.getByRole('button', { name: 'Lebarkan sidebar' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(within(sidebarNav()).getByText('Beranda')).toHaveClass('sr-only');
+    expect(localStorage.getItem('accountSidebarCollapsed')).toBe('1');
+    fireEvent.click(toggle);
+    expect(localStorage.getItem('accountSidebarCollapsed')).toBe('0');
+  });
+
+  it('HP: Buka menu → drawer "Menu akun"; Esc menutup dan fokus kembali ke tombol', async () => {
+    renderLayout();
+    const open = screen.getByRole('button', { name: 'Buka menu' });
+    fireEvent.click(open);
+    const drawer = screen.getByRole('dialog', { name: 'Menu akun' });
+    expect(open).toHaveAttribute('aria-expanded', 'true');
+    expect(within(drawer).getByRole('link', { name: 'Nota' })).toHaveAttribute('href', '/akun/nota');
+    expect(document.activeElement).toBe(within(drawer).getByRole('button', { name: 'Tutup menu' }));
+    expect(document.body.style.overflow).toBe('hidden');
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Menu akun' })).not.toBeInTheDocument());
+    expect(document.activeElement).toBe(open);
+    expect(document.body.style.overflow).toBe('');
   });
 
   it('Hubungi kami di footer membuka WhatsApp', async () => {

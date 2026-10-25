@@ -9,7 +9,7 @@ import type { TemplatePageCopy } from './page.types';
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website Toko Aksesoris HP – {harga_singkat}',
   description:
-    'Template website toko aksesoris HP: cari per tipe HP, bundling, custom casing. {harga} sudah termasuk domain, hosting & SSL tahun pertama.',
+    'Template website toko aksesoris HP: cari per tipe HP & custom casing. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Toko Aksesoris HP',
   // Isi halaman (gadgetku.ts, gadgetku.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-25',

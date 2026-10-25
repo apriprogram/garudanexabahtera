@@ -1,3 +1,4 @@
+import { DOMAIN_PRICE_FROM, hostingRenewalPrice, rupiahCompact } from '../lib/domainPricing';
 import { useCachedJson } from './useCachedJson';
 
 /** Isi tabel hero_settings dari /api.php?action=get_settings (semua nilai berupa string). */
@@ -85,18 +86,17 @@ export const telHref = (raw: string): string => {
 };
 
 /**
- * Isi harga template Rp 1.500.000 (keputusan pemilik 2026-10-21): termasuk template + setup, domain, hosting dan SSL
- * tahun pertama; perpanjangan domain & hosting ditagih per tahun mulai tahun ke-2 (nominal diinformasikan sebelum
- * jatuh tempo). Admin bisa mengubahnya di Pengaturan website > Harga.
+ * Isi harga template (keputusan pemilik 2026-10-21, diubah 2026-10-25: domain TIDAK lagi termasuk): template + setup,
+ * hosting dan SSL tahun pertama. Domain dipilih dan dibayar saat memesan (harga per ekstensi di src/lib/domainPricing.ts);
+ * mulai tahun ke-2 perpanjangan = hosting & jasa (setting template_hosting_renewal_price) + domain sesuai ekstensi.
+ * Admin bisa mengubah teksnya di Pengaturan website > Harga.
  */
 export const TEMPLATE_PRICE_INCLUDES_DEFAULT: readonly string[] = [
   'Template website + setup awal',
-  'Domain tahun pertama',
   'Hosting tahun pertama',
   'Sertifikat SSL (HTTPS) tahun pertama',
 ];
-export const TEMPLATE_PRICE_NOTE_DEFAULT =
-  'Mulai tahun ke-2, perpanjangan domain & hosting ditagih per tahun. Biayanya kami informasikan sebelum jatuh tempo.';
+export const TEMPLATE_PRICE_NOTE_DEFAULT = `Domain dipilih saat memesan, mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun. Mulai tahun ke-2, hosting & jasa serta domain diperpanjang per tahun lewat Akun Saya.`;
 
 export interface TemplatePricing {
   /** Daftar "Sudah termasuk" (kosong = jangan tampilkan daftarnya). */
@@ -127,4 +127,13 @@ export const getTemplatePricing = (settings: SiteSettings): TemplatePricing => {
 export const useTemplatePricing = (): TemplatePricing & { loaded: boolean } => {
   const { settings, loaded } = useSiteSettings();
   return { ...getTemplatePricing(settings), loaded };
+};
+
+/**
+ * Biaya hosting & jasa per tahun mulai tahun ke-2 dari setting `template_hosting_renewal_price` (kosong/tidak valid →
+ * bawaan Rp500.000, sama dengan backend). Perpanjangan domain dihitung terpisah sesuai ekstensi (domainPricing.ts).
+ */
+export const useHostingRenewalPrice = (): { price: number; loaded: boolean } => {
+  const { settings, loaded } = useSiteSettings();
+  return { price: hostingRenewalPrice(settings), loaded };
 };

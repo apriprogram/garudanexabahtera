@@ -32,6 +32,9 @@ const NotFound = lazy(() => import('./pages/public/NotFound'));
 const AccountLayout = lazy(() => import('./pages/account/AccountLayout'));
 const AccountHome = lazy(() => import('./pages/account/AccountHome'));
 const AccountOrderDetail = lazy(() => import('./pages/account/AccountOrderDetail'));
+const AccountInvoice = lazy(() => import('./pages/account/AccountInvoice'));
+const AccountInvoices = lazy(() => import('./pages/account/AccountInvoices'));
+const AccountProfile = lazy(() => import('./pages/account/AccountProfile'));
 const SiteEditor = lazy(() => import('./pages/account/SiteEditor'));
 const SyaratKetentuan = lazy(() => import('./pages/public/legal/SyaratKetentuan'));
 const KebijakanPrivasi = lazy(() => import('./pages/public/legal/KebijakanPrivasi'));
@@ -141,8 +144,16 @@ function App() {
 
           {/* Akun pembeli template */}
           <Route caseSensitive path="/akun" element={lazyPage(<AccountLayout />)}>
+            {/* Menu sidebar akun (src/pages/account/components/accountNav.ts): Beranda, Pesanan saya, Situs saya, Nota */}
             <Route index element={lazyPage(<AccountHome />)} />
+            <Route caseSensitive path="pesanan" element={lazyPage(<AccountHome view="orders" />)} />
+            <Route caseSensitive path="situs" element={lazyPage(<AccountHome view="sites" />)} />
+            <Route caseSensitive path="nota" element={lazyPage(<AccountInvoices />)} />
             <Route caseSensitive path="pesanan/:orderNumber" element={lazyPage(<AccountOrderDetail />)} />
+            {/* Nota pembelian & perpanjangan, profil pembeli (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md §4, §6) */}
+            <Route caseSensitive path="pesanan/:orderNumber/nota" element={lazyPage(<AccountInvoice />)} />
+            <Route caseSensitive path="pesanan/:orderNumber/nota/:renewalNumber" element={lazyPage(<AccountInvoice />)} />
+            <Route caseSensitive path="profil" element={lazyPage(<AccountProfile />)} />
             <Route caseSensitive path="situs/:siteId" element={lazyPage(<SiteEditor />)} />
             {/* Dokumen proyek custom (docs/platform/PROJECT-DOCS-SPEC.md §7) */}
             <Route caseSensitive path="proyek" element={lazyPage(<MyProjects />)} />

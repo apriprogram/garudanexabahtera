@@ -32,7 +32,9 @@ import {
   type HeroBgMode,
   type HeroMediaBaseline,
 } from './hero/heroMedia';
-import { ApiError, apiPost, errorMessage } from '../../lib/api';
+import { ApiError, apiGet, apiPost, errorMessage } from '../../lib/api';
+import { DOMAIN_TLDS, HOSTING_RENEWAL_DEFAULT, HOSTING_RENEWAL_SETTING, hostingRenewalPrice, rupiahCompact } from '../../lib/domainPricing';
+import { useDomainPrices } from '../../lib/useDomainPrices';
 import {
   Button,
   Field,
@@ -68,6 +70,161 @@ import { addImportedProject } from './portfolio/portfolioImport';
 
 /** Judul CTA bawaan (sentence case; baris kedua tampil lebih lembut di website). */
 const CTA_TITLE_DEFAULT = 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!';
+
+/**
+ * Nilai isian rupiah untuk disimpan: hanya angka (dibulatkan); kosong/tidak valid → '' (= bawaan
+ * HOSTING_RENEWAL_DEFAULT di website & backend, sama dengan pf_hosting_renewal_price).
+ */
+const rupiahDigits = (value: string): string => {
+  const text = value.trim();
+  const number = Number(text);
+  return text && Number.isFinite(number) && number >= 0 ? String(Math.round(number)) : '';
+};
+
+/*
+ * Hosting & jasa per tahun mulai tahun ke-2 (setting template_hosting_renewal_price). Tidak terkontrol seperti isian
+ * lain di tab ini (dibaca lewat id saat simpan); state hanya untuk petunjuk nilai yang akan dibayar pembeli.
+ */
+function HostingRenewalField({ stored }: { stored: string | undefined }) {
+  const initial = stored ?? String(HOSTING_RENEWAL_DEFAULT);
+  const [draft, setDraft] = useState(initial);
+  const price = hostingRenewalPrice({ [HOSTING_RENEWAL_SETTING]: rupiahDigits(draft) });
+  const hintId = `${HOSTING_RENEWAL_SETTING}_hint`;
+  return (
+    <Field
+      label="Hosting & jasa per tahun (mulai tahun ke-2)"
+      htmlFor={HOSTING_RENEWAL_SETTING}
+      hint={
+        <span id={hintId}>
+          Pembeli membayar {rupiahCompact(price)}/tahun ditambah perpanjangan domain sesuai daftar harga ekstensi di bawah. Kosong atau 0
+          = bawaan {rupiahCompact(HOSTING_RENEWAL_DEFAULT)}.
+        </span>
+      }
+    >
+      <Input
+        id={HOSTING_RENEWAL_SETTING}
+        name={HOSTING_RENEWAL_SETTING}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        step={1000}
+        defaultValue={initial}
+        onChange={(event) => setDraft(event.target.value)}
+        aria-describedby={hintId}
+        className="tabular-nums"
+      />
+    </Field>
+  );
+}
+
+const DOMAIN_MARKUP_SETTING = 'domain_markup_percent';
+const DOMAIN_MARKUP_MAX = 500;
+
+/** Markup untuk disimpan: bilangan bulat 0–500 (sama dengan domain_markup_percent di backend); selain itu '' (= bawaan). */
+const percentDigits = (value: string): string => {
+  const text = value.trim();
+  const number = Number(text);
+  return /^\d{1,3}$/.test(text) && number <= DOMAIN_MARKUP_MAX ? String(number) : '';
+};
+
+/** Ekstensi berharga tetap dari pemilik (tidak ikut markup), sama dengan DOMAIN_FIXED_PRICES di backend. */
+const FIXED_PRICE_TLDS = ['com', 'id', 'my.id', 'web.id'];
+
+interface DomainPricingInfo {
+  source: 'default' | 'dewabiz';
+  markup_percent: number;
+  markup_default: number;
+}
+
+/*
+ * Markup harga beli DewaBiz untuk ekstensi selain yang harganya tetap (setting domain_markup_percent). Tidak ikut
+ * get_settings publik, jadi dimuat lewat admin_get_domain_pricing; isian baru muncul setelah nilainya dimuat sehingga
+ * simpan tidak pernah menimpa markup dengan nilai yang belum dibaca (dibaca lewat id saat simpan).
+ */
+function DomainMarkupField() {
+  const [state, setState] = useState<{ status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; info: DomainPricingInfo }>({
+    status: 'loading',
+  });
+  useEffect(() => {
+    let alive = true;
+    apiGet<Partial<DomainPricingInfo>>('admin_get_domain_pricing')
+      .then((data) => {
+        const markupDefault = Number.isInteger(data.markup_default) ? Number(data.markup_default) : 25;
+        const info: DomainPricingInfo = {
+          source: data.source === 'dewabiz' ? 'dewabiz' : 'default',
+          markup_percent: Number.isInteger(data.markup_percent) ? Number(data.markup_percent) : markupDefault,
+          markup_default: markupDefault,
+        };
+        if (alive) setState({ status: 'ready', info });
+      })
+      .catch((err: unknown) => alive && setState({ status: 'error', message: errorMessage(err, 'Markup harga domain belum bisa dimuat.') }));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (state.status === 'loading') return <p className="text-[13px] text-adm-muted">Memuat markup harga domain…</p>;
+  if (state.status === 'error') return <p className="text-[13px] text-danger-700">{state.message}</p>;
+  const { info } = state;
+  const fixed = DOMAIN_TLDS.filter((t) => FIXED_PRICE_TLDS.includes(t.tld))
+    .map((t) => `.${t.tld}`)
+    .join(', ');
+  const hintId = `${DOMAIN_MARKUP_SETTING}_hint`;
+  return (
+    <Field
+      label="Markup harga domain dari DewaBiz (%)"
+      htmlFor={DOMAIN_MARKUP_SETTING}
+      hint={
+        <span id={hintId}>
+          Untuk ekstensi selain {fixed} (harganya tetap): harga jual = harga beli DewaBiz + markup, dibulatkan ke atas ke
+          Rp100. Kosong = bawaan {info.markup_default}%.{' '}
+          {info.source === 'dewabiz'
+            ? 'Sumber harga saat ini: DewaBiz.'
+            : 'Belum berlaku: DewaBiz belum terhubung (isi DEWABIZ_RESELLER_ID dan DEWABIZ_API_KEY di .env server), jadi harga memakai tabel bawaan.'}
+        </span>
+      }
+    >
+      <Input
+        id={DOMAIN_MARKUP_SETTING}
+        name={DOMAIN_MARKUP_SETTING}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={DOMAIN_MARKUP_MAX}
+        step={1}
+        defaultValue={String(info.markup_percent)}
+        aria-describedby={hintId}
+        className="tabular-nums"
+      />
+    </Field>
+  );
+}
+
+/* Harga domain yang dibayar pembeli (get_domain_prices: DewaBiz bila terhubung, selain itu tabel bawaan), hanya dibaca. */
+function DomainPriceList() {
+  const { domains } = useDomainPrices();
+  return (
+    <div className="min-w-0">
+      <p id="domain-price-list-label" className="mb-1.5 text-[13px] font-medium text-adm-fg">
+        Harga domain per tahun (tahun pertama & perpanjangan)
+      </p>
+      <ul aria-labelledby="domain-price-list-label" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {domains.map((row) => (
+          <li key={row.tld} className="rounded-xl border border-adm-line px-3 py-2 text-[13px]">
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="font-medium text-adm-fg">.{row.tld}</span>
+              <span className="tabular-nums text-adm-fg">{rupiahCompact(row.price)}</span>
+            </span>
+            {row.requirement && <span className="mt-0.5 block text-xs leading-relaxed text-adm-muted">{row.requirement}</span>}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1.5 text-xs leading-relaxed text-adm-muted">
+        Hanya dibaca: harga domain diatur di kode situs (atau dari DewaBiz bila terhubung) dan tampil di halaman Harga serta halaman pesan.
+      </p>
+    </div>
+  );
+}
 
 /* Panel keterangan untuk tab yang isinya diatur otomatis / di kode (tanpa isian). */
 function InfoNote({ children }: { children: React.ReactNode }) {
@@ -392,6 +549,9 @@ const SiteSettings: React.FC = () => {
     // barisnya di website); setting yang belum pernah disimpan memakai teks bawaan di useSiteSettings.
     const priceIncludesEl = document.getElementById('template_price_includes') as HTMLTextAreaElement | null;
     const priceNoteEl = document.getElementById('template_price_note') as HTMLTextAreaElement | null;
+    const hostingRenewalEl = document.getElementById(HOSTING_RENEWAL_SETTING) as HTMLInputElement | null;
+    // Markup DewaBiz: hanya bila isiannya tampil (tab Harga terbuka dan nilainya sudah dimuat)
+    const domainMarkupEl = document.getElementById(DOMAIN_MARKUP_SETTING) as HTMLInputElement | null;
     // Teks pembuka /panduan (hanya bila tab Panduan terbuka; kosong = teks bawaan)
     const guidesIntroEl = document.getElementById('guides_intro') as HTMLTextAreaElement | null;
 
@@ -418,6 +578,10 @@ const SiteSettings: React.FC = () => {
       // Harga template
       ...(priceIncludesEl ? { template_price_includes: priceIncludesEl.value.trim() } : {}),
       ...(priceNoteEl ? { template_price_note: priceNoteEl.value.trim() } : {}),
+      // Hosting & jasa per tahun mulai tahun ke-2: angka saja (kosong = bawaan Rp500.000)
+      ...(hostingRenewalEl ? { [HOSTING_RENEWAL_SETTING]: rupiahDigits(hostingRenewalEl.value) } : {}),
+      // Markup harga domain DewaBiz: bilangan bulat 0–500 (kosong = bawaan 25%)
+      ...(domainMarkupEl ? { [DOMAIN_MARKUP_SETTING]: percentDigits(domainMarkupEl.value) } : {}),
 
       // FAQ data
       faq_data: JSON.stringify(faqList),
@@ -680,7 +844,7 @@ const SiteSettings: React.FC = () => {
       case 'pricing':
         return (
           <div className="space-y-4 sm:space-y-6">
-            {/* Isi harga template: tampil di detail template, halaman pesan, akun pembeli, dan strip beranda */}
+            {/* Isi harga template: tampil di detail template, halaman pesan, akun pembeli, dan halaman Harga */}
             <Panel className="space-y-4">
               <PanelHeader
                 title="Harga template"
@@ -690,7 +854,7 @@ const SiteSettings: React.FC = () => {
               <Field
                 label="Sudah termasuk"
                 htmlFor="template_price_includes"
-                hint="Satu item per baris."
+                hint="Satu item per baris. Domain tidak termasuk harga template: dipilih dan dibayar terpisah saat memesan."
               >
                 <Textarea
                   id="template_price_includes"
@@ -699,7 +863,11 @@ const SiteSettings: React.FC = () => {
                   defaultValue={settings.template_price_includes ?? TEMPLATE_PRICE_INCLUDES_DEFAULT.join('\n')}
                 />
               </Field>
-              <Field label="Catatan harga" htmlFor="template_price_note" hint="Satu kalimat, mis. tentang biaya perpanjangan mulai tahun ke-2.">
+              <Field
+                label="Catatan harga"
+                htmlFor="template_price_note"
+                hint="Satu kalimat, mis. tentang domain dan biaya perpanjangan mulai tahun ke-2."
+              >
                 <Textarea
                   id="template_price_note"
                   className="min-h-[60px] resize-y"
@@ -709,6 +877,17 @@ const SiteSettings: React.FC = () => {
               </Field>
             </Panel>
 
+            {/* Perpanjangan tahun ke-2 = hosting & jasa (setting ini) + domain sesuai ekstensi; dibayar dari Akun Saya */}
+            <Panel className="space-y-4">
+              <PanelHeader
+                title="Biaya perpanjangan & domain"
+                titleAs="h4"
+                subtitle="Mulai tahun ke-2 pembeli memperpanjang 1, 2, atau 3 tahun sekaligus dari Akun Saya: hosting & jasa ditambah domain per tahun. Tampil di halaman Harga dan saat perpanjangan."
+              />
+              <HostingRenewalField stored={settings[HOSTING_RENEWAL_SETTING]} />
+              <DomainMarkupField />
+              <DomainPriceList />
+            </Panel>
           </div>
         );
 

@@ -49,9 +49,15 @@ const NEXA_KNOWLEDGE_MAX_BYTES = 120000;
 const NEXA_DISCOUNT_PERCENT = 20; // = FIRST_ORDER_DISCOUNT_PERCENT (templates.js)
 const NEXA_DEFAULT_WHATSAPP = '6285188009152';
 const NEXA_DEFAULT_EMAIL = 'info@garudanexa.com';
-// Teks bawaan = TEMPLATE_PRICE_INCLUDES_DEFAULT / TEMPLATE_PRICE_NOTE_DEFAULT di src/hooks/useSiteSettings.ts
-const NEXA_DEFAULT_INCLUDES = ['Template website + setup awal', 'Domain tahun pertama', 'Hosting tahun pertama', 'Sertifikat SSL (HTTPS) tahun pertama'];
-const NEXA_DEFAULT_NOTE = 'Mulai tahun ke-2, perpanjangan domain & hosting ditagih per tahun. Biayanya kami informasikan sebelum jatuh tempo.';
+// Teks bawaan = TEMPLATE_PRICE_INCLUDES_DEFAULT / TEMPLATE_PRICE_NOTE_DEFAULT di src/hooks/useSiteSettings.ts. Domain
+// TIDAK termasuk harga template sejak 2026-10-25 (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md).
+const NEXA_DEFAULT_INCLUDES = ['Template website + setup awal', 'Hosting tahun pertama', 'Sertifikat SSL (HTTPS) tahun pertama'];
+const NEXA_DEFAULT_NOTE = 'Domain dipilih saat memesan, mulai Rp50.000/tahun. Mulai tahun ke-2, hosting & jasa serta domain diperpanjang per tahun lewat Akun Saya.';
+// Harga domain tetap dari pemilik per tahun, sama untuk tahun pertama dan perpanjangan (= NEXA_DOMAIN_PRICES di nexa.php,
+// DOMAIN_FIXED_PRICES di domains.js, DOMAIN_TLDS di src/lib/domainPricing.ts); urutan = urutan tampil
+export const NEXA_DOMAIN_PRICES = [['com', 250000], ['id', 250000], ['my.id', 50000], ['web.id', 50000]];
+// Hosting & jasa per tahun mulai tahun ke-2 bila setting template_hosting_renewal_price kosong (= HOSTING_RENEWAL_DEFAULT)
+const NEXA_HOSTING_RENEWAL_DEFAULT = 500000;
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -64,7 +70,8 @@ Yang kamu bantu:
 
 Aturan isi:
 - Pakai hanya fakta di bagian PENGETAHUAN SITUS dan DATA TERKINI. Bila keduanya berbeda, DATA TERKINI yang berlaku.
-- Jangan mengarang angka atau janji yang tidak tertulis, misalnya biaya perpanjangan tahun ke-2, lama website aktif, alamat kantor, jam layanan, harga dan lama pengerjaan proyek custom, jumlah revisi, nama metode pembayaran (cukup "lewat Midtrans"), spesifikasi hosting, atau garansi. Katakan terus terang bahwa informasinya belum tertulis di situs, lalu arahkan ke WhatsApp atau form pesan custom.
+- Harga template TIDAK termasuk domain: domain dipilih dan dibayar saat memesan. Jangan pernah menulis bahwa domain sudah termasuk atau gratis; sebut harga domain dan biaya perpanjangan tahun ke-2 dari DATA TERKINI.
+- Jangan mengarang angka atau janji yang tidak tertulis, misalnya harga ekstensi domain yang tidak disebut, lama website aktif, alamat kantor, jam layanan, harga dan lama pengerjaan proyek custom, jumlah revisi, nama metode pembayaran (cukup "lewat Midtrans"), spesifikasi hosting, atau garansi. Katakan terus terang bahwa informasinya belum tertulis di situs, lalu arahkan ke /harga, WhatsApp, atau form pesan custom.
 - Kamu tidak bisa membuat pesanan, menerima pembayaran, melihat status pesanan, atau menyimpan data. Arahkan ke halaman yang tepat dan jangan meminta nomor telepon, email, atau data pribadi lain di chat.
 - Isi demo template hanya contoh (fiktif), bukan klien sungguhan.
 - Pertanyaan di luar Garuda Nexa dan pembuatan website atau aplikasi: tolak singkat dengan ramah, lalu tawarkan bantuan seputar Garuda Nexa.
@@ -172,6 +179,14 @@ const rupiah = (value) => `Rp${String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '.
 
 const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
+/** Hosting & jasa per tahun dari setting template_hosting_renewal_price (= nexa_hosting_renewal_price, hostingRenewalPrice). */
+export function nexaHostingRenewalPrice(settings) {
+  const raw = phpTrim(String(settings.template_hosting_renewal_price ?? ''));
+  if (!/^\d+(\.\d+)?$/.test(raw)) return NEXA_HOSTING_RENEWAL_DEFAULT;
+  const value = Math.round(Number(raw));
+  return value > 0 && value <= 1e12 ? value : NEXA_HOSTING_RENEWAL_DEFAULT;
+}
+
 /** Blok DATA TERKINI (= nexa_live_facts di nexa.php). */
 export function nexaLiveFacts(templates, settings) {
   const lines = ['DATA TERKINI (dari database situs saat ini)', '', 'Template yang dijual:'];
@@ -208,6 +223,14 @@ export function nexaLiveFacts(templates, settings) {
   if (includes.length) lines.push(`Harga template sudah termasuk: ${includes.join('; ')}.`);
   const note = has(settings, 'template_price_note') ? phpTrim(settings.template_price_note) : NEXA_DEFAULT_NOTE;
   if (note !== '') lines.push(`Catatan harga: ${note}`);
+  // Domain & perpanjangan (pemilik 2026-10-25): selalu ditulis, tidak bergantung pada teks isi paket/catatan dari admin
+  const domains = NEXA_DOMAIN_PRICES.map(([tld, price]) => `.${tld} ${rupiah(price)}`);
+  lines.push(
+    `Domain: TIDAK termasuk harga template. Pembeli memilih nama domain saat memesan (ketersediaannya dicek langsung di formulir) dan harganya ditambahkan ke total pesanan. Harga domain per tahun, sama untuk tahun pertama dan perpanjangan: ${domains.join(', ')}; ekstensi lain (mis. .co.id, .sch.id) tercantum di /harga.`,
+  );
+  lines.push(
+    `Perpanjangan mulai tahun ke-2: hosting & jasa ${rupiah(nexaHostingRenewalPrice(settings))} per tahun ditambah harga domain sesuai ekstensinya. Bisa 1, 2, atau 3 tahun sekaligus dari halaman pesanan di Akun Saya, dibayar lewat Midtrans; pengingat tampil di akun mulai 30 hari sebelum masa aktif berakhir.`,
+  );
 
   const email = phpTrim(settings.footer_email ?? '');
   lines.push(`Kontak: WhatsApp wa.me/${whatsappNumber(settings)}, email ${email !== '' ? email : NEXA_DEFAULT_EMAIL}.`);

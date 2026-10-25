@@ -97,7 +97,9 @@ describe('src/content/templates', () => {
       expect(templateTitle(t).length, slug).toBeLessThanOrEqual(TITLE_MAX);
       const description = templateDescription(t);
       expect(description.length, slug).toBeLessThanOrEqual(DESCRIPTION_MAX);
-      expect(description, slug).toContain('sudah termasuk domain, hosting & SSL tahun pertama');
+      // Domain tidak termasuk harga template (pemilik 2026-10-25): harga domain termurah dari domainPricing.ts
+      expect(description, slug).toContain('sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun.');
+      expect(description, slug).not.toMatch(/termasuk domain|domain, hosting/);
       // Harga di meta selalu harga DB, juga bila harganya naik ke 8 digit
       expect(templateDescription({ ...t, price: 12_490_000 }).length, slug).toBeLessThanOrEqual(DESCRIPTION_MAX);
       expect(templateDescription({ ...t, price: 12_490_000 }), slug).toContain('Rp12.490.000');
@@ -206,7 +208,7 @@ describe('src/content/templates', () => {
     expect(templateTitle(t)).toMatch(primary);
     expect(templateDescription(t)).toMatch(primary);
     expect(templateDescription(t)).toBe(
-      'Template website toko outdoor & sewa alat pendakian, lengkap panduan per gunung. Rp1.590.000 sudah termasuk domain, hosting & SSL tahun pertama.',
+      'Template website toko outdoor & sewa alat pendakian + panduan gunung. Rp1.590.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun.',
     );
     expect(templateH1(t)).toMatch(primary);
     const c = templateContent('puncakgear') as TemplatePageContent;
@@ -250,7 +252,7 @@ describe('src/content/templates', () => {
     const keyword = /template website toko drone/i;
     expect(templateTitle(t)).toMatch(keyword);
     expect(templateDescription(t)).toMatch(/^Template website toko drone: /);
-    expect(templateDescription(t)).toContain('Rp1.590.000 sudah termasuk domain, hosting & SSL tahun pertama');
+    expect(templateDescription(t)).toContain('Rp1.590.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
     expect(templateH1(t)).toMatch(keyword);
     const c = templateContent('skynusa') as TemplatePageContent;
     expect(fillName(c.lead, t)).toMatch(/^SkyNusa adalah template website toko drone /);
@@ -265,7 +267,7 @@ describe('src/content/templates', () => {
     const keyword = /template website sekolah islam/i;
     expect(templateTitle(t)).toMatch(keyword);
     expect(templateDescription(t)).toMatch(/^Template website sekolah Islam /);
-    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk domain, hosting & SSL tahun pertama');
+    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
     expect(templateH1(t)).toMatch(keyword);
     const c = templateContent('madani') as TemplatePageContent;
     expect(fillName(c.lead, t)).toMatch(/^Madani adalah template website sekolah Islam /);
@@ -283,7 +285,7 @@ describe('src/content/templates', () => {
     const keyword = /template website SMK/i;
     expect(templateTitle(t)).toMatch(keyword);
     expect(templateDescription(t)).toMatch(/^Template website SMK /);
-    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk domain, hosting & SSL tahun pertama');
+    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
     expect(templateH1(t)).toMatch(keyword);
     const c = templateContent('cakrawala') as TemplatePageContent;
     expect(fillName(c.lead, t)).toMatch(/^Cakrawala adalah template website SMK /);

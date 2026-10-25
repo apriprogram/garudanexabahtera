@@ -68,7 +68,7 @@ export function priceRange(templates) {
 /** Huruf pertama kecil, kecuali singkatan ("SSL", "CMS"). */
 const lowerWord = (value) => (/^[A-Z][a-z]/.test(value) ? value.charAt(0).toLowerCase() + value.slice(1) : value);
 
-/** ["Template website + setup awal", "Domain tahun pertama", …] → "template website + setup awal, domain …, dan …". */
+/** ["Template website + setup awal", "Hosting tahun pertama", …] → "template website + setup awal, hosting …, dan …". */
 const joinList = (items) => {
   const list = items.map(clean).filter(Boolean).map(lowerWord);
   if (list.length <= 1) return list.join('');
@@ -77,6 +77,25 @@ const joinList = (items) => {
 
 const lowerFirst = (value) => (value ? value.charAt(0).toLowerCase() + value.slice(1) : value);
 
+/**
+ * Harga domain per ekstensi (COMPANY_FACTS.templatePackage.domainPrices: [{ tld, price }], urutan data). Domain tidak
+ * termasuk harga template sejak 2026-10-25: dipilih & dibayar saat memesan, harga yang sama untuk perpanjangan.
+ */
+const domainPrices = (pkg) =>
+  (Array.isArray(pkg?.domainPrices) ? pkg.domainPrices : []).filter((d) => d && typeof d.tld === 'string' && d.tld && isPrice(Number(d.price)));
+
+/** Harga domain termurah per tahun, atau null bila daftar harga domain tidak ada. */
+const domainPriceFrom = (pkg) => {
+  const list = domainPrices(pkg);
+  return list.length ? Math.min(...list.map((d) => Number(d.price))) : null;
+};
+
+/** ".com Rp250.000, .id Rp250.000, …". */
+const domainPriceList = (pkg) =>
+  domainPrices(pkg)
+    .map((d) => `.${clean(d.tld)} ${formatPrice(Number(d.price))}`)
+    .join(', ');
+
 /** Label & keterangan bawaan per path (dipakai bila `pages` tidak diberikan). Hanya ditulis bila path-nya `index`. */
 const PAGE_LABELS = {
   '/': ['Beranda', 'template website siap pakai dan jasa custom'],
@@ -84,7 +103,7 @@ const PAGE_LABELS = {
   '/jasa-pembuatan-website': ['Jasa pembuatan website', 'website custom, konsultasi gratis lalu penawaran'],
   '/jasa-pembuatan-aplikasi-mobile': ['Jasa pembuatan aplikasi mobile', 'aplikasi Android & iOS custom, konsultasi gratis'],
   '/pesan-custom': ['Pesan custom', 'formulir kebutuhan website atau aplikasi, konsultasi gratis'],
-  '/harga': ['Harga', 'harga template, yang sudah termasuk, dan cara penentuan biaya custom'],
+  '/harga': ['Harga', 'harga template, yang sudah termasuk, harga domain, biaya perpanjangan, dan cara penentuan biaya custom'],
   '/syarat-ketentuan': ['Syarat & Ketentuan', ''],
   '/kebijakan-privasi': ['Kebijakan Privasi', ''],
   '/kebijakan-pengembalian-dana': ['Kebijakan Pengembalian Dana', ''],
@@ -115,8 +134,11 @@ function context({ facts, templates, entries, date, builtAt, pages = {}, guides 
   return { facts, origin, list, indexable, url, link, label, date: toDate(date ?? builtAt) ?? today(), guides: indexGuides };
 }
 
-const summary = (facts) =>
-  `> ${facts.name} (${facts.legalName}, Indonesia) menjual template website siap pakai yang sudah termasuk domain, hosting, dan SSL tahun pertama, serta menerima jasa pembuatan website dan aplikasi mobile Android/iOS custom.`;
+const summary = (facts) => {
+  const from = domainPriceFrom(facts.templatePackage);
+  const domain = from ? ` (domain dipilih saat memesan, mulai ${formatPrice(from)}/tahun)` : '';
+  return `> ${facts.name} (${facts.legalName}, Indonesia) menjual template website siap pakai yang sudah termasuk setup awal, hosting, dan SSL tahun pertama${domain}, serta menerima jasa pembuatan website dan aplikasi mobile Android/iOS custom.`;
+};
 
 function factLines({ facts, list, date }) {
   const pkg = facts.templatePackage ?? {};
@@ -124,6 +146,9 @@ function factLines({ facts, list, date }) {
   const lines = [];
   if (range) lines.push(`- Harga template: ${range} (per ${formatDateId(date)})${pkg.renewalCost ? `; tahun ke-2: ${clean(pkg.renewalCost)}` : ''}`);
   if (Array.isArray(pkg.includes) && pkg.includes.length) lines.push(`- Sudah termasuk: ${lowerFirst(joinList(pkg.includes))}`);
+  if (domainPrices(pkg).length) {
+    lines.push(`- Domain (tidak termasuk harga template; dipilih dan dicek ketersediaannya saat memesan), harga per tahun, sama untuk perpanjangan: ${domainPriceList(pkg)}`);
+  }
   if (pkg.activationTime) lines.push(`- Website template aktif: ${clean(pkg.activationTime)} setelah pembayaran dikonfirmasi`);
   lines.push(`- Bayar online via ${clean(pkg.paymentProvider || 'Midtrans')}; ${lowerFirst(sentence(pkg.contentManagement || 'isi website dikelola sendiri lewat CMS.'))}`);
   if (facts.customPricing) lines.push(`- Jasa custom: ${lowerFirst(sentence(facts.customPricing))}`);
@@ -183,11 +208,19 @@ export function buildLlmsTxt(input) {
 export function factFaqs(facts, list) {
   const pkg = facts.templatePackage ?? {};
   const range = priceRange(list);
+  const from = domainPriceFrom(pkg);
   const faqs = [];
   if (Array.isArray(pkg.includes) && pkg.includes.length) {
+    const domain = from ? ` Domain tidak termasuk: dipilih dan dibayar saat memesan, mulai ${formatPrice(from)}/tahun.` : '';
     faqs.push({
       question: 'Apa saja yang sudah termasuk dalam harga template?',
-      answer: `Harga template sudah termasuk ${joinList(pkg.includes)}.${range ? ` Harga template saat ini ${range}.` : ''}`,
+      answer: `Harga template sudah termasuk ${joinList(pkg.includes)}.${domain}${range ? ` Harga template saat ini ${range}.` : ''}`,
+    });
+  }
+  if (from) {
+    faqs.push({
+      question: 'Berapa harga domain?',
+      answer: `Domain dipilih dan dibayar saat memesan template. Harga per tahun, sama untuk perpanjangan: ${domainPriceList(pkg)}.`,
     });
   }
   if (pkg.renewalCost) faqs.push({ question: 'Berapa biaya mulai tahun ke-2?', answer: sentence(pkg.renewalCost) });
@@ -205,6 +238,7 @@ export function buildLlmsFullTxt(input) {
   const ctx = context(input);
   const { facts, list, url, indexable, date } = ctx;
   const pkg = facts.templatePackage ?? {};
+  const domainFrom = domainPriceFrom(pkg);
   const cms = input.cmsSections ?? {};
   const out = [`# ${facts.name}: informasi lengkap`, summary(facts), '', `Diperbarui ${formatDateId(date)}. Versi ringkas: ${url('/llms.txt')}`, ''];
 
@@ -232,7 +266,8 @@ export function buildLlmsFullTxt(input) {
       if (t.category) out.push(`- Kategori: ${clean(t.category)}`);
       if (isPrice(Number(t.price))) {
         const includes = Array.isArray(pkg.includes) && pkg.includes.length ? `, sudah termasuk ${lowerFirst(joinList(pkg.includes))}` : '';
-        out.push(`- Harga: ${formatPrice(Number(t.price))} (per ${formatDateId(date)})${includes}`);
+        const domain = domainFrom ? `; domain terpisah, mulai ${formatPrice(domainFrom)}/tahun` : '';
+        out.push(`- Harga: ${formatPrice(Number(t.price))} (per ${formatDateId(date)})${includes}${domain}`);
       }
       if (t.short_description) out.push(`- Ringkasan: ${sentence(t.short_description)}`);
       if (features.length) out.push(`- Fitur: ${features.join('; ')}`);

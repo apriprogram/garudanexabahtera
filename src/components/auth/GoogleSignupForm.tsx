@@ -1,6 +1,9 @@
-// Langkah kedua daftar dengan Google (/daftar dan /masuk, email Google belum terdaftar): Google tidak memberi nomor
-// WhatsApp, padahal tim memakainya untuk konfirmasi pesanan, jadi nomor diminta di sini sebelum akun dibuat. Nama terisi
-// dari akun Google dan boleh diubah. Persetujuan dokumen legal sama dengan form daftar biasa.
+// Layar lanjutan "Masuk/Daftar dengan Google" di /daftar dan /masuk:
+// - GoogleSignupStep: email Google belum terdaftar. Google tidak memberi nomor WhatsApp, padahal tim memakainya untuk
+//   konfirmasi pesanan, jadi nomor diminta di sini sebelum akun dibuat. Nama terisi dari akun Google dan boleh diubah.
+//   Persetujuan dokumen legal sama dengan form daftar biasa.
+// - GoogleLinkedStep: akun lama baru ditautkan; server mengganti kata sandinya (lihat google_auth.php), jadi pembeli
+//   diberi tahu sebelum lanjut.
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -17,7 +20,7 @@ import {
 import { AuthLayout } from './AuthLayout';
 import { AuthField } from './AuthField';
 import { AuthAlert, AuthSubmit } from './AuthFeedback';
-import type { GoogleSignup, GoogleSignupField, useGoogleAuth } from './useGoogleAuth';
+import type { GoogleLinked, GoogleSignup, GoogleSignupField, useGoogleAuth } from './useGoogleAuth';
 
 const FIELD_ORDER: GoogleSignupField[] = ['name', 'phone'];
 
@@ -39,6 +42,26 @@ export function GoogleSignupStep({ google, signup }: { google: ReturnType<typeof
         onSubmit={google.completeSignup}
         onCancel={google.cancelSignup}
       />
+    </AuthLayout>
+  );
+}
+
+/** Akun lama yang baru ditautkan ke Google: sesi sudah tersimpan, "Lanjut" membuka tujuan (?next atau /akun). */
+export function GoogleLinkedStep({ linked, onContinue }: { linked: GoogleLinked; onContinue: () => void }) {
+  return (
+    <AuthLayout title="Akun tertaut ke Google" subtitle="Mulai sekarang Anda masuk dengan tombol Google.">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onContinue();
+        }}
+      >
+        <AuthAlert tone="success" title="Berhasil ditautkan">
+          Akun <span className="font-semibold">{linked.email}</span> sekarang masuk lewat Google. Demi keamanan, kata sandi
+          lama tidak berlaku lagi; bila ingin masuk dengan kata sandi, pakai "Lupa kata sandi?" di halaman masuk.
+        </AuthAlert>
+        <AuthSubmit loading={false}>Lanjut</AuthSubmit>
+      </form>
     </AuthLayout>
   );
 }

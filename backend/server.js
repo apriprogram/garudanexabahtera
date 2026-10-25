@@ -178,12 +178,15 @@ app.get('/api.php', async (req, res) => {
     try {
       // Public: pd_* keys (company identity, tax, payment terms of the project documents) are read through
       // pd_settings_get only; the comparison follows the column's case-insensitive collation
-      // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik
+      // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik.
+      // domain_markup_percent: markup harga beli DewaBiz, hanya lewat admin_get_domain_pricing (backend/modules/domains.js)
       const [rows] = await pool.query(
-        "SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_')",
+        "SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_') AND setting_key <> 'domain_markup_percent'",
       );
       const settings = {};
       for (const row of rows) {
+        // google_client_id: aud yang dipercaya customer_google_auth, hanya lewat database/env (publik lewat google_auth_config)
+        if (String(row.setting_key).toLowerCase() === 'google_client_id') continue;
         settings[row.setting_key] = row.setting_value;
       }
       res.json(settings);
@@ -428,6 +431,11 @@ app.post('/api.php', async (req, res) => {
           }
           if (lower.startsWith('nexa_') && lower !== 'nexa_enabled') {
             res.status(403).json({ error: 'Pengaturan Nexa AI hanya bisa diubah lewat tab Tanya Nexa.', code: 'FORBIDDEN' });
+            return;
+          }
+          // Client ID Google = aud yang dipercaya customer_google_auth: staf tidak boleh menggantinya (hanya database/env)
+          if (lower.trim() === 'google_client_id') {
+            res.status(403).json({ error: 'Client ID Google hanya bisa diubah lewat database atau env server.', code: 'FORBIDDEN' });
             return;
           }
         }

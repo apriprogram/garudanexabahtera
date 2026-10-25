@@ -4,6 +4,7 @@
 // description ≤ 155, keduanya unik, canonical absolut ke apex tanpa query/garis miring, OG lengkap, JSON-LD
 // Organization + WebSite; rute aplikasi, demo dan 404 noindex tanpa canonical; harga dari data, bukan teks tetap.
 import { describe, expect, it } from 'vitest';
+import { DOMAIN_PRICE_FROM, rupiahCompact } from '../../lib/domainPricing';
 import { LEGAL_PATHS, LEGAL_UPDATED_AT } from '../../lib/legal';
 import { formatPriceFull, formatPriceShort, toIsoDate } from '../format';
 import { DEFAULT_OG_IMAGE, notFoundHead } from '../defaults';
@@ -15,7 +16,7 @@ import { appTitle } from '../pages/app.seo';
 import { NOT_FOUND_PATH } from '../pages/not-found.seo';
 import { CATEGORY_SLUGS, HUB_PATHS, SITE_ORIGIN, categoryPath, isAppPath, templatePath } from '../paths';
 import { SEO_MODULES, findSeoModule, getHead, getIndexableRoutes } from '../routes';
-import { categorySlugOf, templateDescription, templateTitle } from '../templateSeo';
+import { categorySlugOf, DOMAIN_FROM_TEXT, templateDescription, templateTitle } from '../templateSeo';
 import type { SeoHead } from '../types';
 import { DATA, TEMPLATES, seoData } from './fixtures';
 
@@ -71,12 +72,12 @@ describe('getHead: semua rute index', () => {
 
   it('lastmod jujur: tanggal YYYY-MM-DD dari data/konten, bukan tanggal build', () => {
     const byPath = Object.fromEntries(entries.map((e) => [e.path, e]));
-    expect(byPath['/template/aura-studio'].lastmod).toBe('2026-10-23');
-    // updated_at DB 2026-10-22, tetapi isi halamannya (corporate-nexa.ts/.content.ts) berubah 2026-10-23
-    expect(byPath['/template/corporate-nexa'].lastmod).toBe('2026-10-23');
+    // updated_at DB 2026-10-23, tetapi bagian bersama halaman template (FAQ & kalimat paket tanpa domain) berubah 2026-10-25
+    expect(byPath['/template/aura-studio'].lastmod).toBe('2026-10-25');
+    expect(byPath['/template/corporate-nexa'].lastmod).toBe('2026-10-25');
     expect(byPath['/template/aura-studio'].images).toEqual([`${SITE_ORIGIN}/assets/templates/aura-studio-preview.webp`]);
     expect(byPath[LEGAL_PATHS.terms].lastmod).toBe(LEGAL_UPDATED_AT);
-    expect(byPath['/'].lastmod).toBe('2026-10-23'); // max(HOME_UPDATED, updated_at template)
+    expect(byPath['/'].lastmod).toBe('2026-10-25'); // max(HOME_UPDATED, updated_at template)
     for (const entry of entries) expect(toIsoDate(entry.lastmod), entry.path).toBe(entry.lastmod);
     // beranda mengikuti template yang diperbarui belakangan
     const later = seoData(TEMPLATES.map((t) => (t.slug === 'finova' ? { ...t, updated_at: '2026-12-01 10:00:00' } : t)));
@@ -97,6 +98,10 @@ describe('beranda, /pesan-custom, legal (Lampiran A)', () => {
     expect(head.title).toBe('Template Website Siap Pakai & Jasa Website | Garuda Nexa');
     expect(head.title).toBe(HOME_TITLE);
     expect(head.description).toBe(HOME_DESCRIPTION);
+    // Domain tidak termasuk harga template (pemilik 2026-10-25)
+    expect(HOME_DESCRIPTION).toBe(
+      'Beli template website siap pakai, termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun. Juga jasa website & aplikasi Android/iOS custom.',
+    );
     expect(head.ogImage).toBe(ogCardUrl('default'));
     expect(head.ogImage).toMatch(/^https:\/\/garudanexa\.com\/og\/default\.jpg\?v=[0-9a-f]{8}$/);
     expect(types(head)).toEqual(['Organization', 'WebSite', 'WebPage', 'ItemList', 'FAQPage']);
@@ -129,11 +134,20 @@ describe('halaman template (Lampiran A.1/A.2)', () => {
     for (const t of TEMPLATES) expect(getHead(templatePath(t.slug), DATA).title).not.toContain('| Garuda Nexa');
   });
 
-  it('description memuat harga lengkap dari DB dan "sudah termasuk domain, hosting & SSL tahun pertama"', () => {
+  it('description memuat harga lengkap dari DB, "sudah termasuk hosting & SSL tahun pertama" dan harga domain termurah', () => {
     for (const t of TEMPLATES) {
       const { description } = getHead(templatePath(t.slug), DATA);
-      expect(description, t.slug).toContain(`${formatPriceFull(t.price)} sudah termasuk domain, hosting & SSL tahun pertama.`);
+      // Domain tidak termasuk harga template (pemilik 2026-10-25): dipilih saat memesan, mulai DOMAIN_PRICE_FROM
+      expect(description, t.slug).toContain(
+        `${formatPriceFull(t.price)} sudah termasuk hosting & SSL tahun pertama; domain mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun.`,
+      );
+      expect(description, t.slug).not.toMatch(/termasuk domain|domain, hosting/);
     }
+    // Template baru tanpa salinan & tanpa harga: pola cadangan juga tanpa "termasuk domain"
+    const fresh = { ...TEMPLATES[0], id: 98, slug: 'resto-hangat', name: 'Resto Hangat', category: 'Kuliner', short_description: '', price: 0 };
+    expect(getHead('/template/resto-hangat', seoData([...TEMPLATES, fresh])).description).toBe(
+      'Template website kuliner siap pakai. Sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun. Kelola isi lewat CMS. Lihat demo.',
+    );
     // harga berubah di DB → kepala ikut berubah (tidak ada angka tetap di kode)
     const repriced = seoData(TEMPLATES.map((t) => (t.slug === 'aura-studio' ? { ...t, price: 1450000 } : t)));
     expect(getHead('/template/aura-studio', repriced).title).toContain('Rp1,45 jt');
@@ -176,7 +190,9 @@ describe('halaman template (Lampiran A.1/A.2)', () => {
     expect(templateTitle(long).length).toBeLessThanOrEqual(60);
     expect(templateDescription(long).length).toBeLessThanOrEqual(155);
     const free = { ...TEMPLATES[0], price: 0 };
-    expect(`${templateTitle(free)} ${templateDescription(free)}`).not.toMatch(/Rp\d/);
+    // Tanpa harga template; yang tersisa hanya harga domain termurah (bukan harga template)
+    expect(templateDescription(free)).toContain(DOMAIN_FROM_TEXT);
+    expect(`${templateTitle(free)} ${templateDescription(free).replace(DOMAIN_FROM_TEXT, '')}`).not.toMatch(/Rp\d/);
   });
 });
 

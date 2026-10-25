@@ -5,7 +5,7 @@ import type { TemplatePageCopy } from './page.types';
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website UMKM & Startup – {harga_singkat}',
   description:
-    'Website company profile modern untuk UMKM & startup. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Kelola isi lewat CMS. Lihat demo.',
+    'Website company profile modern untuk UMKM & startup. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun. Lihat demo.',
   niche: 'UMKM & Startup',
   // Isi halaman (startup-clean.ts, startup-clean.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-23',

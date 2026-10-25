@@ -130,6 +130,17 @@ describe('/template/:slug: harga & bar pesan HP', () => {
     expect(within(card).getByText(TEMPLATE_PRICE_NOTE_DEFAULT)).toBeInTheDocument();
   });
 
+  it('cara memesan & jaminan refund: domain dipilih dan dibayar saat memesan, dana kembali termasuk harga domain', async () => {
+    renderDetail();
+    await screen.findByRole('heading', { level: 1, name: H1 });
+    const steps = screen.getByRole('region', { name: 'Cara memesan & kapan website aktif' });
+    expect(steps).toHaveTextContent('isi data pemesan, lalu pilih nama domain dan cek ketersediaannya. Bayar template dan domain online lewat Midtrans.');
+    expect(steps).not.toHaveTextContent(/domain utama dan alternatif/);
+    const card = await priceCard();
+    const aside = card.closest('aside') as HTMLElement;
+    expect(aside).toHaveTextContent('Pesanan lunas yang ditolak (mis. domain tidak bisa didaftarkan): dana kembali penuh, termasuk harga domain.');
+  });
+
   it('setting harga yang dikosongkan admin menyembunyikan daftar, catatan, dan ringkasan bar HP', async () => {
     mockSettings = { template_price_includes: '', template_price_note: '' };
     renderDetail();
@@ -146,7 +157,8 @@ describe('/template/:slug: harga & bar pesan HP', () => {
     const order = screen.getByRole('link', { name: 'Pesan Template Corporate Nexa', hidden: true });
     const bar = order.closest('[aria-hidden]') as HTMLElement;
     expect(bar).toHaveAttribute('aria-hidden', 'true');
-    expect(within(bar).getByText('Termasuk domain, hosting & SSL tahun pertama')).toBeInTheDocument();
+    // Domain tidak lagi termasuk harga template (pemilik 2026-10-25): ringkasan dari daftar bawaan tanpa domain
+    expect(within(bar).getByText('Termasuk hosting & SSL tahun pertama')).toBeInTheDocument();
     const links = within(bar).getAllByRole('link', { hidden: true });
     expect(links.map((link) => link.getAttribute('href'))).toEqual(['/demo/corporate-nexa', '/pesan/corporate-nexa']);
     expect(links[0]).toHaveAccessibleName('Lihat Demo Corporate Nexa');

@@ -7,7 +7,7 @@ import type { TemplatePageCopy } from './page.types';
 
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website SMK & SMA – {harga_singkat}',
-  description: 'Template website SMK dengan hero slider, PPDB lewat WhatsApp, berita & BKK. {harga} sudah termasuk domain, hosting & SSL tahun pertama.',
+  description: 'Template website SMK dengan slider, PPDB via WhatsApp, berita & BKK. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Sekolah SMK & SMA',
   // Isi halaman (cakrawala.ts, cakrawala.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-25',

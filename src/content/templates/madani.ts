@@ -8,7 +8,7 @@ import type { TemplatePageCopy } from './page.types';
 
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website Sekolah Islam – {harga_singkat}',
-  description: 'Template website sekolah Islam untuk SMA IT & MA: PPDB via WhatsApp, berita, agenda. {harga} sudah termasuk domain, hosting & SSL tahun pertama.',
+  description: 'Template website sekolah Islam untuk SMA IT & MA, PPDB via WhatsApp. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Sekolah Islam',
   // Isi halaman (madani.ts, madani.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-25',

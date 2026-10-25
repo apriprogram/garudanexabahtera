@@ -207,7 +207,8 @@ export function hubCardSpecs(templates) {
     {
       name: 'default',
       eyebrow: 'Template website & jasa custom',
-      headline: 'Template website siap pakai, termasuk <em>domain &amp; hosting</em>',
+      // Domain tidak termasuk harga template (pemilik 2026-10-25): kartu hanya menyebut yang memang termasuk
+      headline: 'Template website siap pakai, termasuk <em>hosting &amp; SSL</em>',
       sub: 'Bayar online via Midtrans, kelola isi lewat CMS. Juga jasa website & aplikasi Android/iOS custom.',
       shots: shots(list.slice(0, 2)),
     },
@@ -235,7 +236,7 @@ export function hubCardSpecs(templates) {
       name: 'harga',
       eyebrow: 'Harga',
       headline: 'Harga template website &amp; <em>jasa website</em>',
-      sub: 'Harga template tertera, sudah termasuk domain, hosting & SSL tahun pertama. Custom lewat penawaran.',
+      sub: 'Harga template & domain per ekstensi, plus biaya perpanjangan tahun berikutnya. Custom lewat penawaran.',
     },
     {
       name: 'panduan',
@@ -263,7 +264,7 @@ export function hubCardSpecs(templates) {
       name: `kategori-${slug}`,
       eyebrow: 'Kategori template',
       headline: `Template website <em>${escapeHtml(lower(items[0].category))}</em>`,
-      sub: 'Siap pakai, sudah termasuk domain, hosting & SSL tahun pertama. Lihat demonya.',
+      sub: 'Siap pakai, sudah termasuk hosting & SSL tahun pertama. Lihat demonya.',
       shots: shots(items),
     });
   }

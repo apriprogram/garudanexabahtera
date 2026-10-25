@@ -1,6 +1,7 @@
-// Beranda / (docs/platform/SEO-PLAN.md Lampiran A). Title & description dari Lampiran A (tanpa angka harga, jadi tidak
-// basi). JSON-LD: Organization + WebSite + WebPage (+ ItemList template bila section katalog tampil, + FAQPage dengan teks
-// yang sama persis dengan section #faq bila section itu tampil).
+// Beranda / (docs/platform/SEO-PLAN.md Lampiran A). Title & description dari Lampiran A (tanpa angka harga template, jadi
+// tidak basi; domain tidak termasuk harga template sejak 2026-10-25, harga domain termurah dari domainPricing.ts).
+// JSON-LD: Organization + WebSite + WebPage (+ ItemList template bila section katalog tampil, + FAQPage dengan teks yang
+// sama persis dengan section #faq bila section itu tampil).
 import { heroPreloadImage } from '../../components/sections/hero/heroPreload';
 import { TITLE_SUFFIX } from '../defaults';
 import { latestDate } from '../format';
@@ -8,15 +9,14 @@ import { faqContext, homeFaqs } from '../../content/faq';
 import { faqPage, itemList, webPage } from '../jsonld';
 import { pageHead, staticPage } from '../page';
 import { HUB_PATHS, templatePath } from '../paths';
-import { publishedTemplates } from '../templateSeo';
+import { DOMAIN_FROM_TEXT, publishedTemplates } from '../templateSeo';
 import type { SeoData } from '../types';
 
 /** Tanggal terakhir isi beranda berubah (Home.tsx dan section-nya). Ubah setiap kali isinya diubah. */
-export const HOME_UPDATED = '2026-10-23';
+export const HOME_UPDATED = '2026-10-25';
 
 export const HOME_TITLE = `Template Website Siap Pakai & Jasa Website${TITLE_SUFFIX}`;
-export const HOME_DESCRIPTION =
-  'Beli template website siap pakai, sudah termasuk domain, hosting & SSL tahun pertama. Juga jasa pembuatan website & aplikasi Android/iOS custom.';
+export const HOME_DESCRIPTION = `Beli template website siap pakai, termasuk hosting & SSL tahun pertama; ${DOMAIN_FROM_TEXT}. Juga jasa website & aplikasi Android/iOS custom.`;
 
 /** Section beranda `id` disembunyikan admin lewat setting disabled_sections. */
 function sectionHidden(settings: Record<string, unknown>, id: string): boolean {

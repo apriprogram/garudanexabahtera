@@ -2,7 +2,8 @@
 // Jalankan: npx vitest run src/pages/public/info/__tests__/wp6Pages.test.tsx
 // Halaman WP6 (docs/platform/SEO-PLAN.md §5.6) dirender seperti prerender (StaticRouter + data preload), lalu dihidrasi:
 // tanpa hydration mismatch, tepat satu H1, isi cukup panjang, harga hanya dari data, jasa custom tanpa angka, fakta null
-// tidak dirender, dan FAQPage di head sama persis dengan FAQ yang terlihat.
+// tidak dirender, dan FAQPage di head sama persis dengan FAQ yang terlihat. /harga juga memuat harga domain per ekstensi,
+// biaya tahun ke-2 (hosting & jasa dari setting + domain) dan cara memperpanjang (pemilik 2026-10-25).
 import { StrictMode } from 'react';
 import { act } from '@testing-library/react';
 import { hydrateRoot, type Root } from 'react-dom/client';
@@ -11,8 +12,9 @@ import * as Router from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../../App';
 import { faqItems, MOBILE_SERVICE_FAQ_IDS, WEB_SERVICE_FAQ_IDS } from '../../../../content/faq';
-import { FIXTURE_BUILT_AT, FIXTURE_TEMPLATES, fixtureFetch, fixturePreload } from '../../../../lib/__tests__/preloadFixture';
-import { primePreload, resetPreload, seoDataFromApi } from '../../../../lib/preload';
+import { DOMAIN_TLDS } from '../../../../lib/domainPricing';
+import { FIXTURE_BUILT_AT, FIXTURE_SETTINGS, FIXTURE_TEMPLATES, fixtureFetch, fixturePreload } from '../../../../lib/__tests__/preloadFixture';
+import { PRELOAD_URLS, primePreload, resetPreload, seoDataFromApi, type PreloadData } from '../../../../lib/preload';
 import { getHead, getIndexableRoutes } from '../../../../seo/routes';
 
 type ContextObject = { $$typeof: symbol; _currentValue: unknown; _currentValue2: unknown };
@@ -30,9 +32,15 @@ const restoreRouterContexts = () => {
 const HYDRATION_PROBLEM = /hydrat|did(?: not|n't) match|server rendered|Suspense boundary received an update/i;
 const PRICE = /Rp\s?\d|\d\.\d{3}\.\d{3}/;
 
-async function serverHtml(path: string): Promise<string> {
+/** Preload uji dengan setting tambahan (mis. biaya hosting dari admin). */
+const preloadFor = (path: string, settings?: Record<string, string>): PreloadData => {
+  const data = fixturePreload(path);
+  return settings ? { ...data, api: { ...data.api, [PRELOAD_URLS.settings]: { ...FIXTURE_SETTINGS, ...settings } } } : data;
+};
+
+async function serverHtml(path: string, settings?: Record<string, string>): Promise<string> {
   resetPreload();
-  primePreload(fixturePreload(path));
+  primePreload(preloadFor(path, settings));
   const { prelude } = await prerender(
     <StrictMode>
       <Router.StaticRouter location={path}>
@@ -61,8 +69,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function hydrate(path: string) {
-  const html = await serverHtml(path);
+async function hydrate(path: string, settings?: Record<string, string>) {
+  const html = await serverHtml(path, settings);
   expect(html).not.toMatch(/<!--\$[!?]-->/);
   container = document.createElement('div');
   container.id = 'root';
@@ -70,8 +78,15 @@ async function hydrate(path: string) {
   document.body.appendChild(container);
   const serverH1 = container.querySelector('h1');
   resetPreload();
-  primePreload(fixturePreload(path));
-  vi.stubGlobal('fetch', vi.fn(fixtureFetch));
+  primePreload(preloadFor(path, settings));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: RequestInfo | URL) =>
+      settings && String(input).endsWith(PRELOAD_URLS.settings)
+        ? Promise.resolve(new Response(JSON.stringify({ ...FIXTURE_SETTINGS, ...settings }), { status: 200 }))
+        : fixtureFetch(input),
+    ),
+  );
   const problems: string[] = [];
   const consoleError = console.error;
   vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
@@ -175,7 +190,8 @@ describe('halaman WP6: prerender + hidrasi', () => {
       expect(text).toContain(`Rp${t.price.toLocaleString('id-ID')}`);
     }
     expect(text).toContain('Rp990.000–Rp1.790.000');
-    expect(el.querySelectorAll('main table')).toHaveLength(3);
+    // Template, harga domain, contoh biaya tahun ke-2, dan dua tabel perbandingan
+    expect(el.querySelectorAll('main table')).toHaveLength(5);
     expect(text).toContain('Website builder (rakit sendiri)');
     expect(text).toContain('Midtrans');
     expect(text).toContain('paling lambat 7 hari kerja');
@@ -185,6 +201,94 @@ describe('halaman WP6: prerender + hidrasi', () => {
     for (const faq of faqs) expect(visibleText(html)).toContain(faq.answer);
     expect(getHead('/harga', DATA).title).toBe('Harga Template Website & Jasa Website 2026 | Garuda Nexa');
     expect(getHead('/harga', DATA).description).toContain('mulai Rp990 rb');
+  });
+
+  it('/harga: domain tidak termasuk harga template, harga domain per ekstensi, biaya tahun ke-2, cara memperpanjang (pemilik 2026-10-25)', async () => {
+    const { problems, el } = await hydrate('/harga');
+    expect(problems).toEqual([]);
+    const textOf = (selector: string) => (el.querySelector(selector)?.textContent ?? '').replace(/\s+/g, ' ');
+
+    // Pengantar: setup, hosting & SSL tahun pertama; domain terpisah mulai Rp50.000/tahun. Tidak pernah "termasuk domain"
+    const lead = textOf('main header');
+    expect(lead).toContain('sudah termasuk setup awal, hosting, serta SSL tahun pertama');
+    expect(lead).toContain('Domain dipilih saat memesan, mulai Rp50.000/tahun');
+    expect(lead).not.toMatch(/termasuk[^.]*domain/i);
+
+    // Harga domain: semua ekstensi bawaan, .com/.id disorot, keterangan syarat, cek ketersediaan & atas nama pembeli
+    const domainRows = [...el.querySelectorAll('#harga-domain tbody tr')];
+    const extension = (tr: Element) => tr.querySelector('th span span')?.textContent;
+    expect(domainRows.map(extension)).toEqual(DOMAIN_TLDS.map((t) => `.${t.tld}`));
+    const row = (tld: string) => domainRows.find((tr) => extension(tr) === tld)!;
+    expect(row('.com').querySelector('td')).toHaveTextContent('Rp250.000');
+    expect(row('.id').querySelector('td')).toHaveTextContent('Rp250.000');
+    expect(row('.my.id').querySelector('td')).toHaveTextContent('Rp50.000');
+    expect(row('.web.id').querySelector('td')).toHaveTextContent('Rp50.000');
+    expect(row('.com')).toHaveTextContent('Populer');
+    expect(row('.id')).toHaveTextContent('Populer');
+    expect(row('.my.id')).not.toHaveTextContent('Populer');
+    expect(row('.co.id')).toHaveTextContent('Untuk badan usaha: butuh NIB atau akta perusahaan');
+    const domainSection = textOf('#harga-domain');
+    expect(domainSection).toContain('Ketersediaan nama domain dicek langsung di halaman pesan');
+    expect(domainSection).toContain('domain didaftarkan atas nama Anda');
+
+    // Sudah termasuk tanpa domain; mulai tahun ke-2: hosting & jasa bawaan Rp500.000 + domain, dengan contoh total
+    const included = [...el.querySelectorAll('#sudah-termasuk ul li')].map((li) => li.textContent);
+    expect(included).toEqual(['Template website + setup awal', 'Hosting tahun pertama', 'Sertifikat SSL (HTTPS) tahun pertama', 'Kelola isi lewat CMS']);
+    const renewal = textOf('#sudah-termasuk');
+    expect(renewal).toContain('Hosting & jasaRp500.000/tahun');
+    expect(renewal).toContain('1, 2, atau 3 tahun sekaligus');
+    const examples = [...el.querySelectorAll('#sudah-termasuk table tbody tr')].map((tr) => [
+      tr.querySelector('th span')?.textContent,
+      tr.querySelector('td:last-child')?.textContent,
+    ]);
+    expect(examples).toEqual([
+      ['namabisnis.com', 'Rp750.000'],
+      ['namabisnis.id', 'Rp750.000'],
+      ['namabisnis.my.id', 'Rp550.000'],
+    ]);
+    expect(el.querySelector('#sudah-termasuk a[href="#perpanjangan"]')).not.toBeNull();
+
+    // Cara memperpanjang: pengingat 30 hari, Akun Saya > Perpanjang masa aktif, 1–3 tahun, Midtrans, nota, dihitung dari
+    // tanggal berakhir, akibat bila tidak diperpanjang, harga saat pembayaran
+    const steps = [...el.querySelectorAll('#perpanjangan ol li h3')].map((h) => h.textContent?.replace(/^\d+/, ''));
+    expect(steps).toEqual(['Pantau masa aktif', 'Pilih 1, 2, atau 3 tahun', 'Bayar lewat Midtrans', 'Simpan notanya']);
+    const howTo = textOf('#perpanjangan');
+    for (const phrase of [
+      'Mulai 30 hari sebelum berakhir',
+      'Perpanjang masa aktif',
+      'Nota perpanjangan resmi',
+      'Dari tanggal berakhir yang sedang berjalan',
+      'dihitung dari tanggal pembayaran',
+      'paling lama 10 tahun ke depan',
+      'situs dapat dinonaktifkan sementara',
+      'masa tenggang registri bisa didaftarkan orang lain',
+      'mengikuti harga di halaman ini saat Anda membayar: hosting & jasa Rp500.000/tahun',
+    ]) {
+      expect(howTo, phrase).toContain(phrase);
+    }
+    expect(el.querySelector('#perpanjangan a[href="/akun"]')).not.toBeNull();
+    expect(el.querySelector('#perpanjangan a[href^="https://wa.me/6285188009152"]')).not.toBeNull();
+
+    // Perbandingan versi lengkap: baris tahun berikutnya memakai angka hosting yang sama
+    expect(textOf('#perbandingan')).toContain('Hosting & jasa Rp500.000/tahun + domain sesuai ekstensi');
+
+    // Meta description: domain terpisah & biaya perpanjangan, tanpa "termasuk domain"
+    const description = getHead('/harga', DATA).description;
+    expect(description).toContain('termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(description).not.toMatch(/termasuk domain/);
+  });
+
+  it('/harga: biaya hosting & jasa dari Pengaturan website > Harga (template_hosting_renewal_price)', async () => {
+    const { problems, el } = await hydrate('/harga', { template_hosting_renewal_price: '750000' });
+    expect(problems).toEqual([]);
+    const renewal = (el.querySelector('#sudah-termasuk')?.textContent ?? '').replace(/\s+/g, ' ');
+    expect(renewal).toContain('Hosting & jasaRp750.000/tahun');
+    expect([...el.querySelectorAll('#sudah-termasuk table tbody tr td:last-child')].map((td) => td.textContent)).toEqual([
+      'Rp1.000.000',
+      'Rp1.000.000',
+      'Rp800.000',
+    ]);
+    expect(el.querySelector('#perpanjangan')?.textContent).toContain('hosting & jasa Rp750.000/tahun');
   });
 
   it('/tentang: fakta yang diketahui saja + direksi, kontak & peta (tanpa alamat tertulis, NIB, produk sendiri)', async () => {

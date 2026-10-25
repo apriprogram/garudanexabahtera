@@ -15,7 +15,10 @@ export function joinList(items: readonly string[]): string {
 /** Huruf pertama kecil, kecuali singkatan (SSL, CMS, ...). */
 const lowerFirst = (text: string) => (/^[A-Z]{2,}/.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1));
 
-/** "Harga template sudah termasuk template website + setup awal, domain tahun pertama, …." (kosong bila daftar kosong). */
+/**
+ * "Harga template sudah termasuk template website + setup awal, hosting tahun pertama, …." (kosong bila daftar kosong).
+ * Domain tidak termasuk sejak 2026-10-25; kalimat domainnya: TEMPLATE_PRICE_SUMMARY / domainPriceFrom (content/pricing.ts).
+ */
 export function includesSentence(includes: readonly string[], subject = 'Harga template'): string {
   const list = joinList(includes.map(lowerFirst));
   return list ? `${subject} sudah termasuk ${list}.` : '';

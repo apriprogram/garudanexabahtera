@@ -7,7 +7,7 @@ import type { TemplatePageCopy } from './page.types';
 
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website Toko Drone – {harga_singkat}',
-  description: 'Template website toko drone: katalog, paket bundling & sewa harian, pesan via WhatsApp. {harga} sudah termasuk domain, hosting & SSL tahun pertama.',
+  description: 'Template website toko drone: katalog, bundling & sewa via WhatsApp. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Toko & Sewa Drone',
   // Isi halaman (skynusa.ts, skynusa.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-25',

@@ -57,5 +57,8 @@ public/assets/dokumen-client/
 # Gambar & video proyek #projects (upload_project_image/video dari Pengaturan website > Proyek): hanya di server/disk lokal
 public/assets/projects/
 
+# Foto profil pembeli (customer_update_profile, /akun/profil): data pengguna, hanya di server/disk lokal
+public/assets/avatars/
+
 # Penyimpanan privat dokumen proyek (tanda tangan elektronik, bukti bayar): di luar web root, jangan di-commit
 storage/

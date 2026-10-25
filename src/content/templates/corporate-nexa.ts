@@ -5,7 +5,7 @@ import type { TemplatePageCopy } from './page.types';
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Company Profile – {harga_singkat}',
   description:
-    'Template company profile untuk perusahaan jasa, konsultan & kontraktor. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Lihat demo.',
+    'Template company profile perusahaan jasa, konsultan & kontraktor. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Company Profile Perusahaan',
   // Isi halaman (corporate-nexa.ts, corporate-nexa.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-23',

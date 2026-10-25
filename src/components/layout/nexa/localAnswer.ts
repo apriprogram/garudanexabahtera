@@ -1,4 +1,5 @@
 import { FAQ_ENTRIES, faqItem, type FaqId } from '../../../content/faq';
+import { DOMAIN_PRICE_FROM, DOMAIN_TLDS, HOSTING_RENEWAL_DEFAULT, RENEWAL_YEAR_OPTIONS, rupiahCompact } from '../../../lib/domainPricing';
 import { FIRST_ORDER_DISCOUNT_PERCENT } from '../../../lib/firstOrderDiscount';
 import { HUB_PATHS, LEGAL_PATHS } from '../../../seo/paths';
 import { PROJECT_QUESTION, type NexaCards } from './replyModel';
@@ -9,7 +10,34 @@ import { PROJECT_QUESTION, type NexaCards } from './replyModel';
  * dari yang paling khusus: "harga aplikasi custom" sebelum "harga template"), lalu dengan kata penting di tanya jawab
  * situs (FAQ_ENTRIES). Jawaban hanya berisi fakta yang juga tertulis di situs, dan selalu menautkan halaman yang tepat
  * atau WhatsApp.
+ *
+ * Domain TIDAK termasuk harga template (pemilik 2026-10-25, docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md): "apakah sudah
+ * termasuk domain?", harga domain, dan biaya perpanjangan dijawab dari src/lib/domainPricing.ts (angka tidak ditulis
+ * tangan). Biaya hosting & jasa per tahun = setting admin (useHostingRenewalPrice), bawaan HOSTING_RENEWAL_DEFAULT.
  */
+
+/** Harga per tahun satu ekstensi dari tabel bawaan ("Rp250.000"). */
+const tldPrice = (tld: string): string => rupiahCompact(DOMAIN_TLDS.find((t) => t.tld === tld)?.price ?? DOMAIN_PRICE_FROM);
+
+/** ".com dan .id Rp250.000" (harga sama) atau ".com Rp250.000, .id Rp…". */
+const POPULAR_DOMAINS = tldPrice('com') === tldPrice('id') ? `.com dan .id ${tldPrice('com')}` : `.com ${tldPrice('com')}, .id ${tldPrice('id')}`;
+
+/** Isi harga template (= TEMPLATE_PRICE_INCLUDES_DEFAULT, tanpa domain). */
+export const TEMPLATE_INCLUDES_TEXT = 'setup awal, hosting, dan SSL tahun pertama';
+
+/** "Domain dipilih saat memesan, mulai Rp50.000/tahun (.com dan .id Rp250.000)." */
+export const DOMAIN_PRICE_TEXT = `Domain dipilih saat memesan, mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun (${POPULAR_DOMAINS}).`;
+
+/** Biaya per tahun mulai tahun ke-2: hosting & jasa (setting admin) + domain sesuai ekstensi. */
+export const renewalText = (hostingRenewal: number = HOSTING_RENEWAL_DEFAULT): string =>
+  `Mulai tahun ke-2, biaya per tahun adalah hosting & jasa ${rupiahCompact(hostingRenewal)} ditambah domain sesuai ekstensinya.`;
+
+/** Jawaban "template apa saja?" (juga topik cepat "Pilih template" di NexaChat). */
+export const TEMPLATES_INTRO =
+  `Kami punya template siap pakai untuk company profile, klinik & salon, klub olahraga, studio yoga, sampai fintech. Harganya sudah termasuk ${TEMPLATE_INCLUDES_TEXT}, plus diskon ${FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama. ${DOMAIN_PRICE_TEXT}`;
+
+/** "1, 2, atau 3 tahun" (= RENEWAL_YEAR_OPTIONS). */
+const YEARS_TEXT = `${RENEWAL_YEAR_OPTIONS.slice(0, -1).join(', ')}, atau ${RENEWAL_YEAR_OPTIONS[RENEWAL_YEAR_OPTIONS.length - 1]} tahun`;
 
 /** Ekspresi maskot Nexa (public/assets/nexa/nexa-{mood}-*.webp; netral = nexa-*.webp), semua tanpa mulut. */
 export type NexaMood = 'netral' | 'kedip' | 'ceria' | 'kilau' | 'pikir' | 'maaf';
@@ -73,15 +101,31 @@ const FAQ_ACTION: Record<FaqId, NexaAction> = {
 
 const faqAnswer = (id: FaqId): NexaAnswer => ({ text: faqItem(id).answer, action: FAQ_ACTION[id] });
 
+/** "Sudah termasuk domain?" / "berapa harga domain?": belum, domain dipilih & dibayar saat memesan. */
+const domainAnswer = (hostingRenewal: number): NexaAnswer => ({
+  text: `Domain belum termasuk harga template. Anda memilih nama domain saat memesan, ketersediaannya dicek langsung, dan harganya ditambahkan ke total pesanan: mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun (${POPULAR_DOMAINS}/tahun). Harga template sudah termasuk ${TEMPLATE_INCLUDES_TEXT}. ${renewalText(hostingRenewal)}`,
+  action: PRICING,
+});
+
+/** Perpanjangan tahun ke-2 dan seterusnya: rincian biaya + cara memperpanjang dari akun. */
+const renewalAnswer = (hostingRenewal: number): NexaAnswer => ({
+  text: `Mulai tahun ke-2, biaya per tahun adalah hosting & jasa ${rupiahCompact(hostingRenewal)} ditambah perpanjangan domain sesuai ekstensinya (mis. .com ${tldPrice('com')}, .web.id ${tldPrice('web.id')}). Perpanjangan bisa ${YEARS_TEXT} sekaligus dari halaman pesanan di Akun Saya dan dibayar lewat Midtrans. Pengingat tampil di akun mulai 30 hari sebelum masa aktif berakhir.`,
+  action: PRICING,
+});
+
 // Kata kunci sebagai potongan kata (tanpa \b di akhir), jadi "harganya", "diedit", "dibatalkan" ikut cocok
 const CUSTOM_WORDS = /\b(custom|khusus|dari nol|aplikasi|apk|mobile|android|ios)/;
 const PRICE_WORDS = /(harga|biaya|tarif|\bprice|\bcost|how much|mahal|murah|budget|bujet)/;
 const DURATION_WORDS = /\b(lama|berapa hari|berapa minggu|durasi|kapan selesai|kapan jadi|kapan aktif|estimasi waktu|how long)/;
+// Tahun ke-2 dan seterusnya (teks sudah dinormalisasi: "tahun ke-2" → "tahun ke 2")
+const RENEWAL_WORDS = /(perpanjang|tahun ke ?2\b|tahun ke ?dua|tahun kedua|tahun depan|tahun berikut|\brenew|masa aktif|kedaluwarsa|kadaluarsa|kadaluwarsa|\bexpired?\b|biaya tahunan)/;
+// "Sudah termasuk domain?", "dapat domain gratis?", "berapa harga domain?"
+const DOMAIN_INCLUDED_WORDS = /(termasuk|include|gratis|\bfree\b|harga|biaya|tarif|\bprice|\bcost|how much|mahal|murah|berapa)/;
 
 interface Intent {
   /** Semua pola harus cocok dengan teks yang sudah dinormalisasi */
   when: RegExp[];
-  answer: (whatsappHref: string) => NexaAnswer;
+  answer: (whatsappHref: string, hostingRenewal: number) => NexaAnswer;
 }
 
 const faqIntent = (id: FaqId, ...when: RegExp[]): Intent => ({ when, answer: () => faqAnswer(id) });
@@ -90,6 +134,9 @@ const faqIntent = (id: FaqId, ...when: RegExp[]): Intent => ({ when, answer: () 
 const INTENTS: Intent[] = [
   faqIntent('biaya-custom', CUSTOM_WORDS, PRICE_WORDS),
   faqIntent('lama-custom', CUSTOM_WORDS, DURATION_WORDS),
+  // Perpanjangan & domain sebelum "waktu aktif" dan "harga template": "berapa biaya perpanjangan domain?" bukan harga template
+  { when: [RENEWAL_WORDS], answer: (_, hostingRenewal) => renewalAnswer(hostingRenewal) },
+  { when: [/\bdomain/, DOMAIN_INCLUDED_WORDS], answer: (_, hostingRenewal) => domainAnswer(hostingRenewal) },
   faqIntent('waktu-aktif', DURATION_WORDS),
   faqIntent('revisi-custom', /revisi/),
   faqIntent('kode-sumber', /(kode sumber|source code|\bsource\b)/),
@@ -145,7 +192,7 @@ const INTENTS: Intent[] = [
   {
     when: [/(template|tema|katalog|desain|contoh|demo|company profile|klinik|salon|sekolah|olahraga|fintech|yoga|pilates)/],
     answer: () => ({
-      text: `Kami punya template siap pakai untuk company profile, klinik & salon, klub olahraga, studio yoga, sampai fintech. Harganya sudah termasuk setup, domain, hosting, dan SSL tahun pertama, plus diskon ${FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama.`,
+      text: TEMPLATES_INTRO,
       action: CATALOG,
       cards: 'templates',
     }),
@@ -184,8 +231,11 @@ function bestFaq(question: string): FaqId | null {
   return best;
 }
 
-/** Jawaban bawaan untuk satu pertanyaan bebas. */
-export function answerLocally(question: string, whatsappHref: string): NexaAnswer {
+/**
+ * Jawaban bawaan untuk satu pertanyaan bebas. `hostingRenewal` = biaya hosting & jasa per tahun mulai tahun ke-2
+ * (setting admin lewat useHostingRenewalPrice; bawaan HOSTING_RENEWAL_DEFAULT).
+ */
+export function answerLocally(question: string, whatsappHref: string, hostingRenewal: number = HOSTING_RENEWAL_DEFAULT): NexaAnswer {
   const text = normalizeText(question);
   if (GREETING_ONLY.test(text)) {
     return {
@@ -194,7 +244,7 @@ export function answerLocally(question: string, whatsappHref: string): NexaAnswe
     };
   }
   const intent = INTENTS.find((candidate) => candidate.when.every((pattern) => pattern.test(text)));
-  if (intent) return intent.answer(whatsappHref);
+  if (intent) return intent.answer(whatsappHref, hostingRenewal);
   const faqId = bestFaq(question);
   if (faqId) return faqAnswer(faqId);
   return {

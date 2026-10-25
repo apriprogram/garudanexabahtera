@@ -95,7 +95,7 @@ export const WEB_SERVICE: ServiceContent = {
       title: 'Website custom atau template siap pakai?',
       paragraphs: [
         'Pilih website custom bila Anda membutuhkan alur, fitur, atau tampilan yang tidak tersedia di template: misalnya pendaftaran dengan beberapa tahap, data yang dikelola banyak orang, atau desain yang harus mengikuti panduan merek tertentu. Biayanya disusun dari cakupan pekerjaan, jadi Anda hanya membayar fitur yang memang dibutuhkan.',
-        'Bila yang Anda perlukan adalah website profil yang cepat online dengan harga pasti, template siap pakai biasanya lebih tepat. Harga template sudah termasuk setup, domain, hosting, dan SSL tahun pertama, dan isinya Anda kelola sendiri lewat CMS. Ragu memilih? Ceritakan kebutuhan Anda saat konsultasi; kami akan menyarankan jalur yang paling masuk akal, termasuk bila jawabannya template.',
+        'Bila yang Anda perlukan adalah website profil yang cepat online dengan harga pasti, template siap pakai biasanya lebih tepat. Harga template sudah termasuk setup, hosting, dan SSL tahun pertama (domain dipilih dan dibayar saat memesan), dan isinya Anda kelola sendiri lewat CMS. Ragu memilih? Ceritakan kebutuhan Anda saat konsultasi; kami akan menyarankan jalur yang paling masuk akal, termasuk bila jawabannya template.',
       ],
     },
   ],

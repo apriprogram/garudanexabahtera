@@ -5,14 +5,19 @@
 // Aturan isi:
 // - Kalimat pertama langsung menjawab; 40–60 kata; angka dan syarat yang konkret.
 // - Fakta dari COMPANY_FACTS (src/lib/companyFacts.ts). Field null tidak disebut (tanpa placeholder): selama waktu aktif
-//   dan biaya tahun ke-2 belum diisi pemilik, jawabannya memakai kalimat cadangan yang tetap benar.
+//   (atau biaya tahun ke-2) belum diisi, jawabannya memakai kalimat cadangan yang tetap benar.
 // - Harga template hanya dari data (rentang dihitung dari get_templates), tidak ditulis di sini.
+// - Domain TIDAK termasuk harga template (pemilik 2026-10-25): dipilih & dibayar saat memesan; harganya dari
+//   src/lib/domainPricing.ts, biaya tahun ke-2 dari COMPANY_FACTS.templatePackage.renewalCost.
 // - Jasa custom tanpa angka harga (design.md).
 // - Jawaban yang juga tersimpan di DB (hero_settings.faq_data) diselaraskan migration
-//   database/migrations/2026-10-23_009_seo_faq_contact.sql; tes faq.test.ts memastikan teksnya sama persis.
+//   database/migrations/2026-10-23_009_seo_faq_contact.sql; tes faq.test.ts memastikan teksnya sama persis. Jawaban
+//   "sudah-termasuk" berubah sejak 2026-10-25; versi lamanya di faq_data tidak tampil karena adminFaqs membuang
+//   pertanyaan yang sudah dijawab di sini.
 // Modul murni (tanpa React), aman diimpor dari *.seo.ts, prerender dan skrip Node.
 import { COMPANY_FACTS, type CompanyFacts } from '../lib/companyFacts';
-import { formatPriceRange, isPrice } from '../seo/format';
+import { DOMAIN_PRICE_FROM, DOMAIN_TLDS, rupiahCompact } from '../lib/domainPricing';
+import { formatPriceRange, isPrice, sentence } from '../seo/format';
 import type { Template } from '../types/platform';
 
 export interface FaqItem {
@@ -40,10 +45,17 @@ const activation = (facts: CompanyFacts): string =>
     ? `Website dari template aktif dalam ${facts.templatePackage.activationTime} setelah pembayaran dikonfirmasi dan domain selesai diproses; setiap tahapnya bisa Anda pantau di Akun Saya.`
     : 'Website dari template aktif setelah pembayaran dikonfirmasi, pesanan kami setujui, dan domain selesai diproses; setiap tahapnya bisa Anda pantau di Akun Saya.';
 
+/** "Hosting & jasa …" → "hosting & jasa …"; singkatan dan angka ("SSL", "Rp…") tetap. */
+const lowerWord = (text: string): string => (/^[A-Z][a-z]/.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text);
+
+/** Biaya per tahun mulai tahun ke-2 (hosting & jasa + domain, kalimat COMPANY_FACTS); null → kalimat cadangan tanpa angka. */
 const renewal = (facts: CompanyFacts): string =>
   facts.templatePackage.renewalCost
-    ? `Mulai tahun ke-2, perpanjangan domain dan hosting ${facts.templatePackage.renewalCost} per tahun.`
-    : 'Mulai tahun ke-2, perpanjangan domain dan hosting ditagih per tahun, dan nominalnya kami informasikan sebelum jatuh tempo.';
+    ? `Biaya mulai tahun ke-2: ${lowerWord(sentence(facts.templatePackage.renewalCost))}`
+    : 'Mulai tahun ke-2, hosting dan domain diperpanjang per tahun, dan nominalnya kami informasikan sebelum jatuh tempo.';
+
+/** Harga domain .com per tahun (ekstensi paling umum) untuk contoh di jawaban domain. */
+const COM_PRICE = DOMAIN_TLDS.find((t) => t.tld === 'com')?.price ?? DOMAIN_PRICE_FROM;
 
 export const FAQ_ENTRIES = {
   'harga-template': {
@@ -53,13 +65,13 @@ export const FAQ_ENTRIES = {
         priceRange
           ? `Harga template website Garuda Nexa saat ini ${priceRange}, tergantung template yang Anda pilih.`
           : 'Harga setiap template tertera di halaman template dan di halaman Harga.'
-      } Harga itu dibayar sekali di awal dan sudah termasuk setup, domain, hosting, dan SSL tahun pertama. ${renewal(facts)} Pembayaran online lewat ${facts.templatePackage.paymentProvider}.`,
+      } Harga itu dibayar di awal dan sudah termasuk setup, hosting, dan SSL tahun pertama, sedangkan domain dipilih saat memesan dengan harga sesuai ekstensinya. ${renewal(facts)} Pembayaran online lewat ${facts.templatePackage.paymentProvider}.`,
   },
   'sudah-termasuk': {
     question: 'Apa saja yang sudah termasuk dalam harga template?',
     aliases: ['Apakah sudah termasuk hosting dan domain?'],
     answer: ({ facts }) =>
-      `Untuk template, harga sudah termasuk template dan setup awal, domain, hosting, serta sertifikat SSL (HTTPS) untuk tahun pertama. Isi website Anda kelola sendiri lewat CMS di Akun Saya. ${renewal(facts)} Untuk website atau aplikasi custom, domain dan hosting dibahas saat konsultasi.`,
+      `Untuk template, harga sudah termasuk template dan setup awal, hosting, serta sertifikat SSL (HTTPS) untuk tahun pertama. Domain tidak termasuk: Anda memilihnya saat memesan dan harganya ditambahkan ke total pesanan. ${renewal(facts)} Untuk website atau aplikasi custom, domain dan hosting dibahas saat konsultasi.`,
   },
   'waktu-aktif': {
     question: 'Berapa lama proses pembuatan satu website?',
@@ -69,7 +81,7 @@ export const FAQ_ENTRIES = {
   'cara-pesan': {
     question: 'Bagaimana cara memesan template website?',
     answer: () =>
-      'Pilih template, klik Pesan, lalu masuk atau daftar akun. Isi data pemesan serta nama domain yang Anda inginkan, kemudian lanjutkan ke pembayaran. Status pesanan bisa Anda pantau kapan saja di halaman Akun Saya, mulai dari menunggu pembayaran sampai website aktif.',
+      'Pilih template, klik Pesan, lalu masuk atau daftar akun. Isi data pemesan, pilih nama domain dan cek ketersediaannya, kemudian lanjutkan ke pembayaran. Status pesanan bisa Anda pantau kapan saja di halaman Akun Saya, mulai dari menunggu pembayaran sampai website aktif.',
   },
   pembayaran: {
     question: 'Metode pembayaran apa saja yang bisa dipakai?',
@@ -79,7 +91,7 @@ export const FAQ_ENTRIES = {
   domain: {
     question: 'Bagaimana dengan domain website saya?',
     answer: () =>
-      'Saat memesan, Anda mengisi nama domain utama dan satu domain alternatif. Setelah pembayaran dikonfirmasi dan pesanan disetujui, tim kami memproses domain tersebut. Bila domain utama tidak tersedia, kami memakai domain alternatif; bila keduanya tidak tersedia dan tidak ada kesepakatan domain lain, pesanan ditolak dan dana dikembalikan penuh.',
+      `Domain dipilih saat memesan: ketik nama yang Anda inginkan, pilih ekstensinya, lalu cek ketersediaannya langsung di formulir. Harganya sesuai ekstensi, mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun (.com ${rupiahCompact(COM_PRICE)}/tahun), dan ditambahkan ke total pesanan. Setelah pembayaran dikonfirmasi, kami mendaftarkan domain itu; bila ternyata tidak bisa didaftarkan, pesanan ditolak dan dana dikembalikan penuh.`,
   },
   'edit-sendiri': {
     question: 'Apakah website yang dibuat bisa saya edit sendiri?',

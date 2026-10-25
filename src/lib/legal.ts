@@ -23,5 +23,6 @@ export const LEGAL_LINKS: { key: LegalPageKey; to: string; label: string }[] = (
 /**
  * Tanggal "Terakhir diperbarui" ketiga dokumen (ISO, untuk <time dateTime>). Ubah setiap kali isinya diubah.
  * Draf 2026-10-21: teks disusun dari cara kerja platform dan keputusan pemilik; perlu ditinjau pemilik sebelum terbit.
+ * 2026-10-25: domain tidak lagi termasuk harga template, perpanjangan dari akun, data profil pembeli.
  */
-export const LEGAL_UPDATED_AT = '2026-10-21';
+export const LEGAL_UPDATED_AT = '2026-10-25';

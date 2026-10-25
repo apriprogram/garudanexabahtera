@@ -14,10 +14,16 @@ const NEXT_LINKS = [
   {
     to: HUB_PATHS.catalog,
     title: 'Template website siap pakai',
-    text: 'Lihat demo dan harga setiap template, sudah termasuk domain, hosting, dan SSL tahun pertama.',
+    // Domain tidak termasuk harga template (pemilik 2026-10-25)
+    text: 'Lihat demo dan harga setiap template, sudah termasuk setup, hosting, dan SSL tahun pertama.',
     icon: LayoutTemplate,
   },
-  { to: HUB_PATHS.pricing, title: 'Harga', text: 'Harga semua template, biaya per tahun, dan cara biaya custom ditentukan.', icon: ReceiptText },
+  {
+    to: HUB_PATHS.pricing,
+    title: 'Harga',
+    text: 'Harga semua template, harga domain per ekstensi, biaya perpanjangan per tahun, dan cara biaya custom ditentukan.',
+    icon: ReceiptText,
+  },
   {
     to: HUB_PATHS.webService,
     title: 'Jasa pembuatan website',

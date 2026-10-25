@@ -23,12 +23,14 @@ Kami memakai Google Identity Services (GIS) dengan **ID token** dalam mode popup
 | Keadaan | Hasil |
 |---|---|
 | `users.google_sub` = `sub` token | **masuk** (`account: "login"`) |
-| Email sama, akun pembeli, belum tertaut, email **Gmail** atau **Google Workspace** (klaim `hd` = domain email) | **ditautkan** (`google_sub` diisi) lalu masuk (`account: "linked"`) |
+| Email sama, akun pembeli, belum tertaut, email **Gmail** atau **Google Workspace** (klaim `hd` = domain email) | **ditautkan**: `google_sub` diisi dan **kata sandi diganti acak** dalam UPDATE yang sama, lalu masuk (`account: "linked"`). Browser menampilkan "Akun tertaut ke Google" (kata sandi lama tidak berlaku lagi) sebelum lanjut |
 | Email sama tetapi bukan Gmail/Workspace | 409 `GOOGLE_NEEDS_PASSWORD`: masuk dengan kata sandi. Google tidak berwenang atas email itu, jadi akun lama tidak ditautkan tanpa bukti lain |
 | Email sama, sudah tertaut ke akun Google lain | 409 `GOOGLE_OTHER_ACCOUNT` |
 | Email/akun milik staf (`admin`/`user`) | 403 `GOOGLE_STAFF_ACCOUNT`: staf tetap masuk lewat `/login` dengan kata sandi |
 | Akun nonaktif | 403 `ACCOUNT_INACTIVE` |
 | Email belum terdaftar | `{ signup_required: true, profile: { name, email } }`. Belum ada akun yang dibuat |
+
+Mengapa kata sandi diganti saat menautkan: `customer_register` tidak memverifikasi email. Seseorang bisa mendaftarkan Gmail orang lain dengan kata sandinya sendiri. Bila akun itu cukup ditautkan, pemilik email asli akan memakai akun yang kata sandi dan token 8 jamnya dipegang pendaftar palsu (pra-pembajakan akun). Kata sandi baru mengubah `password_version`, jadi kata sandi dan semua token lama mati. Pemilik akun sah yang masih ingin masuk dengan kata sandi memakai "Lupa kata sandi?".
 
 5. **Langkah kedua** (email baru): Google tidak memberi nomor HP, padahal tim memakai nomor WhatsApp untuk konfirmasi pesanan. Kartu yang sama menampilkan "Satu langkah lagi": akun Google, nama (terisi dari Google, boleh diubah), Nomor WhatsApp (wajib), dan persetujuan Syarat & Ketentuan + Kebijakan Privasi (`GoogleSignupForm.tsx`). Browser mengirim ulang `credential` yang sama bersama `name` dan `phone`. Server memverifikasi ulang, membuat akun `customer` aktif dengan `google_sub` dan kata sandi acak yang tidak diketahui siapa pun, lalu langsung masuk (`account: "created"`). Token Google berlaku sekitar 1 jam; bila kedaluwarsa, pembeli diminta mengulang dari tombol Google.
 
@@ -95,12 +97,14 @@ Client ID dibuat sendiri oleh pemilik di Google Cloud Console. Client ID bukan r
    - **Lokal / Node:** baris `GOOGLE_CLIENT_ID=TEMPEL-CLIENT-ID-DI-SINI` di `.env`. Bisa juga dipakai di produksi, di `.env` satu folder di atas `public_html`.
 
    Mematikan: kosongkan nilainya (`UPDATE hero_settings SET setting_value = '' WHERE setting_key = 'google_client_id';`) atau hapus baris `.env`.
+
+   Client ID sengaja **tidak bisa diubah dari panel admin**. Nilainya menentukan token Google mana yang dipercaya (`aud`), jadi `update_settings` menolak kunci `google_client_id` (403), dan `get_settings` tidak mengirimkannya. Browser membacanya lewat `google_auth_config`. Di Docker, `GOOGLE_CLIENT_ID` diteruskan dari `.env` lewat `docker-compose.yml`.
 5. Cek: buka `https://garudanexa.com/daftar`. Tombol "Daftar dengan Google" muncul di bawah "Daftar Akun". Di `/masuk`, "Login dengan Google" muncul di bawah "Masuk".
 
 Pengujian lokal butuh origin `http://localhost:5173` di langkah 3. Tanpa itu, popup Google menolak dengan pesan *origin_mismatch*.
 
 ## 4. Catatan
 
-- Akun yang dibuat lewat Google punya kata sandi acak. Bila pembeli ingin masuk dengan email + kata sandi, ia memakai "Lupa kata sandi?" (bantuan tim lewat WhatsApp). Halaman profil belum punya fitur "atur kata sandi".
+- Akun yang dibuat atau ditautkan lewat Google punya kata sandi acak. Bila pembeli ingin masuk dengan email + kata sandi, ia memakai "Lupa kata sandi?" (bantuan tim lewat WhatsApp). Halaman profil belum punya fitur "atur kata sandi".
 - Belum ada tombol "putuskan tautan Google" di profil. Admin bisa mengosongkan `users.google_sub` lewat database bila perlu.
 - Tidak memakai One Tap (popup otomatis) atau FedCM prompt: hanya tombol, sesuai permintaan.

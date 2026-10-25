@@ -2,6 +2,7 @@
 // dan ubin kategori. Niche dan harga hanya dari template terbit (get_templates), tidak ditulis di kode.
 // Modul murni: dipakai section beranda, *.seo.ts dan tes.
 import { COMPANY_FACTS, type CompanyFacts } from '../lib/companyFacts';
+import { DOMAIN_PRICE_FROM, rupiahCompact } from '../lib/domainPricing';
 import { categoryPath, type CategorySlug } from '../seo/paths';
 import { categorySlugOf } from '../seo/templateSeo';
 import type { Template } from '../types/platform';
@@ -41,14 +42,16 @@ export function nichePhrases(templates: readonly Template[]): string[] {
 
 /**
  * Intro beranda (2 kalimat): "Garuda Nexa (PT Garuda Nexa Bahtera) menyediakan template website untuk company profile,
- * klinik kecantikan, …, mulai Rp990 ribu sudah termasuk domain, hosting, dan SSL tahun pertama. Butuh fitur khusus? …"
+ * klinik kecantikan, …, mulai Rp990 ribu sudah termasuk setup, hosting, dan SSL tahun pertama, ditambah domain pilihan
+ * Anda mulai Rp50.000/tahun. Butuh fitur khusus? …" Domain tidak termasuk harga template (pemilik 2026-10-25).
  */
 export function homeIntro(templates: readonly Template[], facts: CompanyFacts = COMPANY_FACTS): string {
   const niches = nichePhrases(templates);
   const min = minTemplatePrice(published(templates));
   const target = niches.length ? ` untuk ${joinId(niches)}` : ' siap pakai';
   const price = min ? `, mulai ${priceInWords(min)} sudah termasuk` : ' yang harganya sudah termasuk';
-  return `${facts.name} (${facts.legalName}) menyediakan template website${target}${price} domain, hosting, dan SSL tahun pertama. Butuh fitur khusus? Kami juga membuat website dan aplikasi Android/iOS custom.`;
+  const domain = `ditambah domain pilihan Anda mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun`;
+  return `${facts.name} (${facts.legalName}) menyediakan template website${target}${price} setup, hosting, dan SSL tahun pertama, ${domain}. Butuh fitur khusus? Kami juga membuat website dan aplikasi Android/iOS custom.`;
 }
 
 export interface CategoryTile {

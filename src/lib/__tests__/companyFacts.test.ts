@@ -1,9 +1,11 @@
 // Jalankan: npx vitest run src/lib/__tests__/companyFacts.test.ts
 // COMPANY_FACTS (docs/platform/SEO-PLAN.md Lampiran B, keputusan default di kepala rencana): kontak sama dengan bawaan
-// useSiteSettings, isi paket sama dengan bawaan Pengaturan > Harga, fakta yang belum ada = null, tanpa angka harga.
+// useSiteSettings, isi paket sama dengan bawaan Pengaturan > Harga (tanpa domain sejak 2026-10-25), biaya tahun ke-2 dari
+// domainPricing.ts, fakta yang belum ada = null, tanpa angka harga template.
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONTACT_EMAIL, TEMPLATE_PRICE_INCLUDES_DEFAULT, getWhatsappNumber } from '../../hooks/useSiteSettings';
 import { COMPANY_FACTS } from '../companyFacts';
+import { DOMAIN_TLDS } from '../domainPricing';
 
 describe('COMPANY_FACTS', () => {
   it('nama, badan hukum, situs, dan kontak yang sudah pasti', () => {
@@ -21,8 +23,23 @@ describe('COMPANY_FACTS', () => {
     expect(COMPANY_FACTS.whatsappDisplay.replace(/\D/g, '')).toBe(COMPANY_FACTS.whatsapp);
   });
 
-  it('isi paket template sama dengan bawaan Pengaturan website > Harga', () => {
+  it('isi paket template sama dengan bawaan Pengaturan website > Harga, tanpa domain (pemilik 2026-10-25)', () => {
     expect([...COMPANY_FACTS.templatePackage.includes]).toEqual([...TEMPLATE_PRICE_INCLUDES_DEFAULT]);
+    expect(COMPANY_FACTS.templatePackage.includes).toEqual([
+      'Template website + setup awal',
+      'Hosting tahun pertama',
+      'Sertifikat SSL (HTTPS) tahun pertama',
+    ]);
+    expect(JSON.stringify(COMPANY_FACTS.templatePackage.includes)).not.toMatch(/domain/i);
+  });
+
+  it('biaya tahun ke-2: hosting & jasa bawaan + domain sesuai ekstensi; daftar harga domain dari domainPricing', () => {
+    expect(COMPANY_FACTS.templatePackage.renewalCost).toBe(
+      'Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).',
+    );
+    expect(COMPANY_FACTS.templatePackage.domainPrices).toBe(DOMAIN_TLDS);
+    const price = (tld: string) => COMPANY_FACTS.templatePackage.domainPrices.find((t) => t.tld === tld)?.price;
+    expect([price('com'), price('id'), price('web.id'), price('my.id')]).toEqual([250_000, 250_000, 50_000, 50_000]);
   });
 
   it('fakta yang belum diberikan pemilik bernilai null (tidak dirender), sameAs kosong', () => {
@@ -30,7 +47,6 @@ describe('COMPANY_FACTS', () => {
     expect(COMPANY_FACTS.nib).toBeNull();
     expect(COMPANY_FACTS.pse).toBeNull();
     expect(COMPANY_FACTS.serviceHours).toBeNull();
-    expect(COMPANY_FACTS.templatePackage.renewalCost).toBeNull();
     expect(COMPANY_FACTS.templatePackage.activationTime).toBeNull();
     expect(COMPANY_FACTS.ownProducts).toBeNull();
     expect(COMPANY_FACTS.sameAs).toEqual([]);
@@ -43,9 +59,11 @@ describe('COMPANY_FACTS', () => {
     expect(COMPANY_FACTS.address).toBeNull();
   });
 
-  it('tanpa angka harga dan tanpa garudanexa.id', () => {
+  it('tanpa angka harga template (jutaan) dan tanpa garudanexa.id; angka rupiah hanya di biaya tahun ke-2', () => {
     const text = JSON.stringify(COMPANY_FACTS);
-    expect(text).not.toMatch(/Rp\s?\d|\d\.\d{3}\.\d{3}/);
+    expect(text).not.toMatch(/\d\.\d{3}\.\d{3}/);
+    const withoutRenewal = { ...COMPANY_FACTS, templatePackage: { ...COMPANY_FACTS.templatePackage, renewalCost: null } };
+    expect(JSON.stringify(withoutRenewal)).not.toMatch(/Rp\s?\d/);
     expect(text).not.toContain('garudanexa.id');
   });
 });

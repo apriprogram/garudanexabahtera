@@ -23,12 +23,13 @@ export const translations = {
   "home-hero-mode-custom-short": "Jasa custom",
 
   // Hero mode Template. Judul bawaan = H1 beranda (wajib memuat "template website", heroHeadline.ts); admin bisa
-  // menggantinya lewat setting hero_title.
+  // menggantinya lewat setting hero_title. Domain TIDAK termasuk harga template (pemilik 2026-10-25): dipilih & dibayar
+  // saat memesan, jadi judul hanya menyebut hosting & SSL (tahun pertama).
   "home-hero-template-lead": "Template website siap pakai,",
-  "home-hero-template-accent": "termasuk domain & hosting.",
+  "home-hero-template-accent": "termasuk hosting & SSL.",
   "home-hero-template-point-1": "Pilih desain siap pakai, lihat demonya dulu",
   "home-hero-template-point-2": "Harga jelas, bayar aman lewat Midtrans",
-  "home-hero-template-point-3": "Domain kami urus, isi Anda kelola lewat CMS",
+  "home-hero-template-point-3": "Pilih domain saat memesan, isi Anda kelola lewat CMS",
   "home-hero-btn-templates": "Pilih Template",
   "home-hero-demo": "Lihat Demo",
 

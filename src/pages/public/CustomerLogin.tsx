@@ -14,7 +14,7 @@ import { AuthTabs } from '../../components/auth/AuthTabs';
 import { AuthField, AuthTextButton } from '../../components/auth/AuthField';
 import { AuthAlert, AuthSubmit } from '../../components/auth/AuthFeedback';
 import { GoogleAuthButton } from '../../components/auth/GoogleAuthButton';
-import { GoogleSignupStep } from '../../components/auth/GoogleSignupForm';
+import { GoogleLinkedStep, GoogleSignupStep } from '../../components/auth/GoogleSignupForm';
 import { useGoogleAuth } from '../../components/auth/useGoogleAuth';
 import {
   pathAfterLogin,
@@ -44,8 +44,12 @@ export default function CustomerLogin() {
   const [submitting, setSubmitting] = useState(false);
   const [expired, setExpired] = useState(params.get('expired') === '1');
   const [forgotOpen, setForgotOpen] = useState(false);
-  // Email Google yang sudah terdaftar tapi harus masuk dengan kata sandi: isi kolom email
-  const google = useGoogleAuth({ next, onPasswordRequired: setEmail });
+  // Email Google yang sudah terdaftar tapi harus masuk dengan kata sandi: isi kolom email (pesan error lamanya hilang)
+  const fillEmail = (value: string) => {
+    setEmail(value);
+    setErrors((prev) => ({ ...prev, email: undefined }));
+  };
+  const google = useGoogleAuth({ next, onPasswordRequired: fillEmail });
 
   // Muat halaman daftar lebih dulu agar pindah tab tidak menampilkan layar memuat
   useEffect(() => {
@@ -54,7 +58,7 @@ export default function CustomerLogin() {
 
   // Sudah masuk: langsung ke tujuan
   const role = getRole();
-  if (role && !submitting && !google.busy) return <Navigate to={pathAfterLogin(role, next)} replace />;
+  if (role && !submitting && !google.busy && !google.linked) return <Navigate to={pathAfterLogin(role, next)} replace />;
 
   const validate = (): FieldErrors<LoginField> => ({
     email: checkEmail(email),
@@ -89,6 +93,7 @@ export default function CustomerLogin() {
 
   const withNext = (path: string) => (next ? `${path}?next=${encodeURIComponent(nextPath)}` : path);
 
+  if (google.linked) return <GoogleLinkedStep linked={google.linked} onContinue={google.continueAfterLink} />;
   if (google.signup) return <GoogleSignupStep google={google} signup={google.signup} />;
 
   return (

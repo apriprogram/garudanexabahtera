@@ -124,8 +124,16 @@ export async function customerGoogleAuth(pool, input, req, certs = googleCerts) 
   const plan = accountPlan(bySub, byEmail, identity);
   if (plan === 'login') return session(bySub, 'login');
   if (plan === 'link') {
-    await pool.query('UPDATE users SET google_sub = ? WHERE id = ? AND google_sub IS NULL', [identity.sub, Number(byEmail.id)]);
-    return session(byEmail, 'linked');
+    // Google membuktikan pemilik email, tetapi kata sandi akun lama bisa dibuat orang lain (customer_register tidak
+    // memverifikasi email). Kata sandi diganti acak dalam UPDATE yang sama: password_version berubah, jadi kata sandi
+    // dan token lama tidak berlaku lagi dan pendaftar palsu kehilangan akses (pra-pembajakan akun)
+    await pool.query('UPDATE users SET google_sub = ?, password = ? WHERE id = ? AND google_sub IS NULL',
+      [identity.sub, await unusablePassword(), Number(byEmail.id)]);
+    const row = await userWhere(pool, 'id', Number(byEmail.id));
+    if (!row || row.google_sub !== identity.sub) {
+      throw new GoogleAuthError('Akun ini baru saja diubah. Silakan coba masuk lagi.', 409, 'GOOGLE_RETRY');
+    }
+    return session(row, 'linked');
   }
 
   if (!signupSubmitted(input)) {
@@ -138,11 +146,10 @@ export async function customerGoogleAuth(pool, input, req, certs = googleCerts) 
   signupsByIp.hit(signupKey);
   let result;
   try {
-    // Kata sandi acak yang tidak diketahui siapa pun: akun ini masuk lewat Google (atau minta atur ulang ke tim)
     [result] = await pool.query(
       `INSERT INTO users (name, email, password, phone, role, status, avatar, google_sub)
        VALUES (?, ?, ?, ?, 'customer', 'active', '', ?)`,
-      [fields.name, identity.email, await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10), fields.phone, identity.sub],
+      [fields.name, identity.email, await unusablePassword(), fields.phone, identity.sub],
     );
   } catch (err) {
     // Email/google_sub baru saja dipakai permintaan lain (klik ganda): coba masuk lagi akan menemukannya
@@ -151,6 +158,9 @@ export async function customerGoogleAuth(pool, input, req, certs = googleCerts) 
   }
   return session(await userWhere(pool, 'id', result.insertId), 'created');
 }
+
+// Kata sandi acak yang tidak diketahui siapa pun: akun masuk lewat Google (atau minta atur ulang ke tim)
+const unusablePassword = () => bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
 
 // dateStrings: created_at sebagai 'YYYY-MM-DD HH:MM:SS', seperti api.php
 async function userWhere(pool, column, value) {

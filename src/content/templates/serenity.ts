@@ -6,7 +6,7 @@ import type { TemplatePageCopy } from './page.types';
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website Studio Yoga – {harga_singkat}',
   description:
-    'Website studio yoga & pilates: kelas, paket & daftar via WhatsApp. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Lihat demo.',
+    'Website studio yoga & pilates: kelas, paket & daftar via WhatsApp. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Studio Yoga & Pilates',
   // Isi halaman (serenity.ts, serenity.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-25',

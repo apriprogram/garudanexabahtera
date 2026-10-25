@@ -8,7 +8,9 @@ const FALLBACK = { lead: translations['home-hero-template-lead'], accent: transl
 
 describe('heroHeadline', () => {
   it('judul bawaan memuat kata kunci dan menjadi H1', () => {
-    expect(`${FALLBACK.lead} ${FALLBACK.accent}`).toBe('Template website siap pakai, termasuk domain & hosting.');
+    // Domain tidak termasuk harga template (pemilik 2026-10-25): judul tidak pernah menyebut "termasuk domain"
+    expect(`${FALLBACK.lead} ${FALLBACK.accent}`).toBe('Template website siap pakai, termasuk hosting & SSL.');
+    expect(Object.values(translations).join(' ')).not.toMatch(/termasuk domain/i);
     expect(HERO_H1_KEYWORD.test(FALLBACK.lead)).toBe(true);
     expect(heroHeadline({}, FALLBACK)).toEqual({ ...FALLBACK, isH1: true, keywordH1: null });
     expect(heroHeadline({ hero_title: '   ' }, FALLBACK).isH1).toBe(true);
@@ -32,7 +34,7 @@ describe('heroHeadline', () => {
       lead: 'Website profesional,',
       accent: 'siap online tanpa ribet.',
       isH1: false,
-      keywordH1: 'Template website siap pakai, termasuk domain & hosting',
+      keywordH1: 'Template website siap pakai, termasuk hosting & SSL',
     });
   });
 

@@ -1,14 +1,51 @@
 // Isi harga & perbandingan (docs/platform/SEO-PLAN.md §5.6 langkah 4 & 6, Lampiran D): tabel template vs custom
 // (versi pendek di beranda, lengkap di /harga), tabel cara membuat website (tanpa nama pesaing), dan faktor biaya
-// custom (tanpa angka, design.md). Harga template hanya dari data; field COMPANY_FACTS yang null tidak disebut.
+// custom (tanpa angka, design.md). Harga template hanya dari data; field COMPANY_FACTS yang null tidak disebut. Domain
+// TIDAK termasuk harga template (pemilik 2026-10-25): harga per ekstensi dan biaya tahun ke-2 dari src/lib/domainPricing.ts.
 // Modul murni (tanpa React), dipakai halaman, *.seo.ts dan tes.
 import { COMPANY_FACTS, type CompanyFacts } from '../lib/companyFacts';
+import { DOMAIN_PRICE_FROM, DOMAIN_TLDS, rupiahCompact, type DomainTld } from '../lib/domainPricing';
 import { formatPriceShort, isPrice } from '../seo/format';
 import { HUB_PATHS } from '../seo/paths';
 import type { Template } from '../types/platform';
 
 /** Butir tambahan di daftar "Sudah termasuk" (beranda, /harga): isi website dikelola pembeli sendiri lewat CMS. */
 export const CMS_INCLUDE = 'Kelola isi lewat CMS';
+
+/** Kalimat ringkas isi harga template (SEO, ringkasan): domain terpisah, mulai harga domain termurah. */
+export const TEMPLATE_PRICE_SUMMARY = `Harga template sudah termasuk setup awal, hosting, dan SSL tahun pertama; domain dipilih saat memesan, mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun.`;
+
+/** Harga domain termurah dari daftar (mis. hasil get_domain_prices); daftar kosong → bawaan. */
+export const domainPriceFrom = (domains: readonly Pick<DomainTld, 'price'>[] = DOMAIN_TLDS): number =>
+  domains.length ? Math.min(...domains.map((d) => d.price)) : DOMAIN_PRICE_FROM;
+
+/** "Hosting & jasa Rp500.000/tahun + domain sesuai ekstensi" (biaya per tahun mulai tahun ke-2). */
+export const renewalPerYearText = (hostingPerYear: number): string =>
+  `Hosting & jasa ${rupiahCompact(hostingPerYear)}/tahun + domain sesuai ekstensi`;
+
+export interface RenewalExample {
+  /** Ekstensi tanpa titik awal, mis. "my.id". */
+  tld: string;
+  hosting: number;
+  domain: number;
+  /** Hosting & jasa + domain, per tahun. */
+  total: number;
+}
+
+/** Ekstensi untuk contoh biaya tahun ke-2 di /harga: dua yang populer dan yang termurah. */
+export const RENEWAL_EXAMPLE_TLDS = ['com', 'id', 'my.id'] as const;
+
+/** Contoh biaya per tahun mulai tahun ke-2 (hosting & jasa + domain) untuk ekstensi yang ada di `domains`. */
+export function renewalExamples(
+  hostingPerYear: number,
+  domains: readonly DomainTld[] = DOMAIN_TLDS,
+  tlds: readonly string[] = RENEWAL_EXAMPLE_TLDS,
+): RenewalExample[] {
+  return tlds.flatMap((tld) => {
+    const row = domains.find((d) => d.tld === tld);
+    return row ? [{ tld, hosting: hostingPerYear, domain: row.price, total: hostingPerYear + row.price }] : [];
+  });
+}
 
 /** Tanggal (YYYY-MM-DD) di WIB (UTC+7) dari waktu ISO; tidak valid → null. */
 export function wibDate(iso: string | null | undefined): string | null {
@@ -62,6 +99,8 @@ export interface ComparisonContext {
   /** Tanggal harga (YYYY-MM-DD, ditampilkan sebagai "per {tanggal}"); null = tanpa tanggal. */
   priceDate: string | null;
   facts?: CompanyFacts;
+  /** Hosting & jasa per tahun dari setting (hostingRenewalPrice); kosong = kalimat bawaan COMPANY_FACTS. */
+  hostingRenewal?: number;
 }
 
 const cells = (...texts: string[]): ComparisonCell[] => texts.map((text) => ({ text }));
@@ -71,14 +110,21 @@ const cells = (...texts: string[]): ComparisonCell[] => texts.map((text) => ({ t
  * dan biaya tahun berikutnya (versi /harga). `formatDate` mengubah YYYY-MM-DD menjadi teks tanggal.
  */
 export function templateVsCustomTable(
-  { priceRange, priceDate, facts = COMPANY_FACTS }: ComparisonContext,
+  { priceRange, priceDate, facts = COMPANY_FACTS, hostingRenewal }: ComparisonContext,
   { full = false, formatDate = (d: string) => d }: { full?: boolean; formatDate?: (date: string) => string } = {},
 ): ComparisonTable {
   const pkg = facts.templatePackage;
   const price = priceRange ? `Tertera, ${priceRange}${priceDate ? ` (per ${formatDate(priceDate)})` : ''}` : 'Tertera di setiap template';
   const rows: ComparisonRow[] = [
     { label: 'Harga', cells: cells(price, 'Lewat penawaran setelah konsultasi gratis', 'Lewat penawaran setelah konsultasi gratis') },
-    { label: 'Sudah termasuk', cells: cells('Setup, domain, hosting, dan SSL tahun pertama', 'Dibahas saat konsultasi', 'Dibahas saat konsultasi') },
+    {
+      label: 'Sudah termasuk',
+      cells: cells(
+        `Setup, hosting, dan SSL tahun pertama; domain mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun`,
+        'Dibahas saat konsultasi',
+        'Dibahas saat konsultasi',
+      ),
+    },
     {
       label: 'Waktu online',
       cells: cells(
@@ -107,7 +153,11 @@ export function templateVsCustomTable(
       {
         label: 'Tahun berikutnya',
         cells: cells(
-          pkg.renewalCost ? `Perpanjangan domain & hosting ${pkg.renewalCost} per tahun` : 'Perpanjangan domain & hosting per tahun',
+          hostingRenewal
+            ? renewalPerYearText(hostingRenewal)
+            : pkg.renewalCost
+              ? pkg.renewalCost.replace(/\.$/, '')
+              : 'Perpanjangan hosting & jasa serta domain per tahun',
           'Dibahas di penawaran',
           'Dibahas di penawaran',
         ),
@@ -140,12 +190,17 @@ export function buildOptionsTable(facts: CompanyFacts = COMPANY_FACTS): Comparis
           'Umumnya langganan bulanan atau tahunan',
           'Biaya proyek sesuai kesepakatan',
           'Biaya proyek sesuai penawaran',
-          'Harga tertera, dibayar sekali untuk tahun pertama',
+          'Harga tertera untuk tahun pertama, lalu perpanjangan per tahun',
         ),
       },
       {
         label: 'Domain, hosting & SSL',
-        cells: cells('Tergantung paket yang dipilih', 'Sering diurus terpisah', 'Tergantung penawaran', 'Sudah termasuk untuk tahun pertama'),
+        cells: cells(
+          'Tergantung paket yang dipilih',
+          'Sering diurus terpisah',
+          'Tergantung penawaran',
+          'Hosting & SSL tahun pertama termasuk; domain dipilih saat memesan',
+        ),
       },
       {
         label: 'Waktu sampai online',

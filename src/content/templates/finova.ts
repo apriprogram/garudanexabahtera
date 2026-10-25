@@ -6,7 +6,7 @@ import type { TemplatePageCopy } from './page.types';
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website Fintech & Startup – {harga_singkat}',
   description:
-    'Landing page untuk fintech, koperasi, aplikasi pembayaran & SaaS. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Lihat demo.',
+    'Landing page untuk fintech, koperasi, aplikasi pembayaran & SaaS. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Fintech & Startup',
   // Isi halaman (finova.ts, finova.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-23',

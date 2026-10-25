@@ -1,10 +1,27 @@
 // Komponen tampilan bersama halaman admin pesanan template & Dashboard (gaya "Calm Workspace", token adm-*).
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Ban, CheckCircle2, Clock, CreditCard, Globe, Hourglass, Info, X, XCircle } from 'lucide-react';
-import { Badge, IconBox, IconButton, cn } from '../../../../components/admin/ui';
-import type { OrderStatus } from '../../../../types/platform';
-import { isOrderStatus, orderLabel, orderTone, paymentLabel, paymentTone } from './orderUtils';
+import { AlertTriangle, Ban, CheckCircle2, CircleHelp, Clock, CreditCard, Globe, Hourglass, Info, RefreshCw, X, XCircle } from 'lucide-react';
+import { Badge, IconBox, IconButton, Notice, cn, type Tone } from '../../../../components/admin/ui';
+import { formatRupiah, formatTanggal, type OrderStatus, type Renewal } from '../../../../types/platform';
+import {
+  EXPIRY_TONE,
+  domainCheckInfo,
+  expiryLabel,
+  expiryOf,
+  isOrderStatus,
+  orderLabel,
+  orderTone,
+  paymentLabel,
+  paymentTone,
+  paymentTypeLabel,
+  renewalLabel,
+  renewalTone,
+  tanggalPanjang,
+  type ActivePeriod,
+  type Expiry,
+  type PriceLine,
+} from './orderUtils';
 import type { ToastState } from './hooks';
 
 const ORDER_ICON: Record<OrderStatus, ReactNode> = {
@@ -71,6 +88,151 @@ export function DrawerSection({ title, action, children, className }: { title: R
       </div>
       {children}
     </section>
+  );
+}
+
+/** Sisa masa aktif ("362 hari lagi"): hijau, kuning ≤ 30 hari, merah ≤ 7 hari / lewat. */
+export function ExpiryBadge({ expiry, size, className }: { expiry: Expiry; size?: 'sm' | 'md'; className?: string }) {
+  return (
+    <Badge tone={EXPIRY_TONE[expiry.state]} icon={expiry.state === 'ok' ? undefined : <AlertTriangle />} size={size} className={cn('tabular-nums', className)}>
+      {expiryLabel(expiry)}
+    </Badge>
+  );
+}
+
+const CHECK_TEXT: Record<Tone, string> = {
+  mint: 'text-adm-mint-fg',
+  warning: 'text-adm-warning-fg',
+  danger: 'text-adm-danger-fg',
+  cobalt: 'text-adm-cobalt-fg',
+  mist: 'text-adm-muted',
+};
+
+/** Hasil cek ketersediaan domain saat dipesan (domain_check); tidak tampil untuk pesanan lama. */
+export function DomainCheckNote({ check, className }: { check: string | null | undefined; className?: string }) {
+  const info = domainCheckInfo(check);
+  if (!info) return null;
+  const Icon = info.tone === 'mint' ? CheckCircle2 : info.tone === 'warning' ? CircleHelp : info.tone === 'danger' ? AlertTriangle : Info;
+  return (
+    <span className={cn('inline-flex items-start gap-1.5 text-[13px] font-medium leading-snug', CHECK_TEXT[info.tone], className)}>
+      <Icon className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
+      <span>{info.label}</span>
+    </span>
+  );
+}
+
+/** Pill status tagihan perpanjangan. */
+export function RenewalStatusBadge({ status, label, size }: { status: string; label?: string | null; size?: 'sm' | 'md' }) {
+  return (
+    <Badge tone={renewalTone(status)} size={size}>
+      {renewalLabel(status, label)}
+    </Badge>
+  );
+}
+
+/** Rincian tagihan gaya nota: label kiri, nominal kanan, baris total tebal. */
+export function PriceBreakdown({ lines, className }: { lines: PriceLine[]; className?: string }) {
+  return (
+    <dl className={cn('divide-y divide-adm-line rounded-xl bg-adm-ghost px-4', className)}>
+      {lines.map((line) => (
+        <div key={line.label} className="flex items-baseline justify-between gap-3 py-2.5">
+          <dt className={cn('min-w-0 break-words text-sm', line.total ? 'font-semibold text-adm-fg' : 'text-adm-muted')}>{line.label}</dt>
+          <dd className={cn('shrink-0 text-sm tabular-nums text-adm-fg', line.total ? 'font-semibold' : 'font-medium')}>
+            {line.amount < 0 ? `-${formatRupiah(-line.amount)}` : formatRupiah(line.amount)}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** Masa aktif hosting & jasa dan domain: mulai–berakhir + sisa hari. */
+export function ActivePeriodRows({ rows, now }: { rows: { label: ReactNode; period: ActivePeriod }[]; now?: Date }) {
+  return (
+    <ul className="divide-y divide-adm-line rounded-xl ring-1 ring-inset ring-adm-line">
+      {rows.map((row, i) => {
+        const expiry = expiryOf(row.period.end, now);
+        return (
+          <li key={i} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="min-w-0">
+              <p className="break-words text-xs text-adm-muted">{row.label}</p>
+              <p className="mt-0.5 text-sm font-medium tabular-nums text-adm-fg">
+                {tanggalPanjang(row.period.start)} – {tanggalPanjang(row.period.end)}
+                {row.period.estimated && (
+                  <span className="font-normal text-adm-muted" title="Tanggal berakhir belum tercatat: tanggal aktif + 1 tahun">
+                    {' '}
+                    (perkiraan)
+                  </span>
+                )}
+              </p>
+            </div>
+            {expiry && <ExpiryBadge expiry={expiry} className="self-start sm:self-center" />}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** "23 Okt 2027 → 23 Okt 2029" (tanggal berakhir sebelum & sesudah perpanjangan). */
+function ExpiryChange({ before, after }: { before: string | null; after: string | null }) {
+  return (
+    <span className="tabular-nums">
+      {before && <span className="font-normal text-adm-muted">{formatTanggal(before)} → </span>}
+      {formatTanggal(after)}
+    </span>
+  );
+}
+
+/**
+ * Riwayat tagihan perpanjangan (terbaru dulu, dari admin_get_template_order). Setelah lunas, staf masih perlu
+ * memperpanjang domain di registrar dan hosting di server secara manual.
+ */
+export function RenewalHistory({ renewals }: { renewals: Renewal[] }) {
+  if (renewals.length === 0) {
+    return <p className="text-sm text-adm-muted">Belum ada perpanjangan. Pembeli bisa memperpanjang dari halaman akunnya.</p>;
+  }
+  const latestPaid = renewals.find((r) => r.status === 'lunas');
+  return (
+    <div className="space-y-3">
+      {latestPaid && (
+        <Notice tone="warning" icon={<RefreshCw />} title="Perpanjangan lunas: perpanjang juga domain & hosting di registrar/server.">
+          {latestPaid.renewal_number} ({latestPaid.years} tahun): domain <span className="break-all font-mono font-semibold">{latestPaid.domain}</span> sampai{' '}
+          {formatTanggal(latestPaid.domain_expires_after)}, hosting & jasa sampai {formatTanggal(latestPaid.service_expires_after)}.
+        </Notice>
+      )}
+      <ul className="space-y-3">
+        {renewals.map((r) => (
+          <li key={r.id} className="rounded-xl px-4 py-3 ring-1 ring-inset ring-adm-line">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-mono text-[13px] font-semibold tabular-nums text-adm-fg">{r.renewal_number}</p>
+              <RenewalStatusBadge status={r.status} label={r.status_label} size="sm" />
+            </div>
+            <p className="mt-1.5 text-sm text-adm-fg">
+              <span className="font-semibold tabular-nums">{formatRupiah(r.price)}</span> · {r.years} tahun
+            </p>
+            <p className="mt-0.5 text-xs tabular-nums text-adm-muted">
+              Per tahun: hosting & jasa {formatRupiah(r.hosting_price_per_year)} + domain {formatRupiah(r.domain_price_per_year)}
+            </p>
+            <DetailList
+              className="mt-3"
+              items={[
+                { label: 'Dibuat', value: formatTanggal(r.created_at, true) },
+                ...(r.status === 'lunas'
+                  ? [
+                      { label: 'Dibayar', value: `${formatTanggal(r.paid_at, true)} · ${paymentTypeLabel(r.payment_type)}` },
+                      { label: 'Hosting & jasa sampai', value: <ExpiryChange before={r.service_expires_before} after={r.service_expires_after} /> },
+                      { label: 'Domain sampai', value: <ExpiryChange before={r.domain_expires_before} after={r.domain_expires_after} /> },
+                    ]
+                  : r.status === 'dibatalkan'
+                    ? [{ label: 'Dibatalkan', value: formatTanggal(r.cancelled_at, true) }]
+                    : [{ label: 'Pembayaran', value: <PaymentStatusBadge status={r.payment_status} size="sm" /> }]),
+              ]}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

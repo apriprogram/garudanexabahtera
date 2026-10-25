@@ -8,7 +8,7 @@ import type { TemplatePageCopy } from './page.types';
 
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website Toko Skincare – {harga_singkat}',
-  description: 'Template website toko skincare & kosmetik online: kuis kulit, pesan via WhatsApp. {harga} sudah termasuk domain, hosting & SSL tahun pertama.',
+  description: 'Template website toko skincare & kosmetik online dengan kuis kulit. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Toko Skincare & Kosmetik',
   // Isi halaman (glowstory.ts, glowstory.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-25',
