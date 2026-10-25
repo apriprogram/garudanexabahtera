@@ -2,15 +2,17 @@
 // menu, slide hero, tanggal, daftar per baris, peta, dan pesan WhatsApp formulir PPDB. Semua tahan konten mentah
 // (null, angka, list rusak).
 import type { CSSProperties } from 'react';
-import type { SectionContent, SiteContent } from '../types';
+import type { ListItem, SectionContent, SiteContent } from '../types';
 import { SOCIAL_FIELDS } from '../shared/social';
 import {
   contrast,
   field,
   getSection,
+  hasImage,
   isEnabled,
   list,
   mapsInfo,
+  paragraphs,
   parseHex,
   resolveAction,
   safeImage,
@@ -71,8 +73,12 @@ export function autoHighlight(primary: Rgb): Rgb {
  * --md-ink: teks warna tema di latar putih/krem (≥ 4,5:1 terhadap krem);
  * --md-tint / --md-tint-2: bidang sangat lembut warna tema (chip, ikon, kartu);
  * --md-hl: warna sorotan (tombol utama, kata sorotan, kartu sorotan) dari brand.highlight_color atau otomatis;
- * --md-on-hl: teks di atas sorotan (tinta gelap, ≥ 4,5:1);
+ * --md-on-hl: teks di atas sorotan: pita gelap bila ≥ 4,6:1, selain itu hitam atau putih (yang lebih kontras; salah
+ *   satunya selalu ≥ 4,58:1 terhadap warna apa pun);
+ * --md-hl-soft: sorotan saat disorot kursor, digeser MENJAUHI warna teksnya (lebih terang untuk teks gelap, lebih
+ *   gelap untuk teks putih) sehingga kontras tidak turun;
  * --md-hl-ink: sorotan sebagai TEKS di atas pita gelap (≥ 4,5:1 terhadap --md-deep).
+ * Tombol warna tema (BTN.primary) memakai --md-ink + teks putih: --md-ink ≥ 4,6:1 terhadap krem, jadi juga terhadap putih.
  */
 export function madaniVars(accentRaw: string, highlightRaw = ''): CSSProperties {
   const primary = parseHex(accentRaw) ?? (parseHex(MADANI_ACCENT) as Rgb);
@@ -82,7 +88,9 @@ export function madaniVars(accentRaw: string, highlightRaw = ''): CSSProperties 
   for (let i = 0; i < 20 && contrast(ink, CREAM) < 4.6; i += 1) ink = mix(ink, BLACK, 0.86);
   const hl = parseHex(highlightRaw) ?? autoHighlight(primary);
   let onHl = deep;
-  if (contrast(hl, onHl) < 4.6) onHl = contrast(hl, BLACK) >= contrast(hl, WHITE) ? [17, 17, 17] : WHITE;
+  if (contrast(hl, onHl) < 4.6) onHl = contrast(hl, BLACK) >= contrast(hl, WHITE) ? BLACK : WHITE;
+  const lightText = contrast(onHl, BLACK) > contrast(hl, BLACK);
+  const hlSoft = lightText ? mix(hl, BLACK, 0.85) : mix(hl, WHITE, 0.35);
   let hlInk = hl;
   for (let i = 0; i < 20 && contrast(hlInk, deep) < 4.6; i += 1) hlInk = mix(hlInk, WHITE, 0.8);
   return {
@@ -94,7 +102,7 @@ export function madaniVars(accentRaw: string, highlightRaw = ''): CSSProperties 
     '--md-hl': toHex(hl),
     '--md-on-hl': toHex(onHl),
     '--md-hl-ink': toHex(hlInk),
-    '--md-hl-soft': toHex(mix(hl, WHITE, 0.35)),
+    '--md-hl-soft': toHex(hlSoft),
   } as CSSProperties;
 }
 
@@ -105,24 +113,60 @@ export interface MadaniNavItem {
   label: string;
 }
 
+type NavKey = 'about' | 'programs' | 'achievements' | 'ppdb' | 'news' | 'gallery' | 'contact';
+
 /** Urutan menu = urutan halaman. Kontak selalu di akhir. */
-const NAV: { key: string; label: string; listKey?: string }[] = [
+const NAV: { key: NavKey; label: string }[] = [
   { key: 'about', label: 'Profil' },
-  { key: 'programs', label: 'Program', listKey: 'items' },
-  { key: 'achievements', label: 'Prestasi', listKey: 'items' },
+  { key: 'programs', label: 'Program' },
+  { key: 'achievements', label: 'Prestasi' },
   { key: 'ppdb', label: 'PPDB' },
-  { key: 'news', label: 'Berita', listKey: 'items' },
-  { key: 'gallery', label: 'Galeri', listKey: 'items' },
+  { key: 'news', label: 'Berita' },
+  { key: 'gallery', label: 'Galeri' },
   { key: 'contact', label: 'Kontak' },
 ];
 
-/** Menu atas: section yang tampil (dan berisi). Label tetap singkat agar muat di pil menu. */
+const anyItem = (section: SectionContent, key: string, max: number, has: (item: ListItem) => boolean) => list(section, key, max).some(has);
+
+/**
+ * Section tujuan menu/tombol benar-benar berisi: syarat yang SAMA dengan syarat tampil di komponennya (About, Ppdb, dan
+ * Contact memakai fungsi ini langsung; Programs, Achievements, News, Gallery memakai filter item yang sama), agar menu
+ * dan tombol tidak menunjuk section yang tidak dirender. Kesamaannya diuji di __tests__/madani.test.tsx.
+ */
+export const SECTION_FILLED: Record<NavKey, (section: SectionContent) => boolean> = {
+  about: (s) =>
+    !!text(s, 'title') ||
+    paragraphs(text(s, 'body')).length > 0 ||
+    anyItem(s, 'facts', 6, (f) => !!(field(f, 'label') && field(f, 'value'))) ||
+    !!text(s, 'vision') ||
+    anyItem(s, 'missions', 8, (item) => !!field(item, 'text')) ||
+    anyItem(s, 'values', 4, (item) => !!field(item, 'title')),
+  programs: (s) => anyItem(s, 'items', 6, (item) => !!field(item, 'title')),
+  achievements: (s) => !!text(s, 'title') || anyItem(s, 'items', 10, (item) => !!field(item, 'title')),
+  ppdb: (s) =>
+    !!(text(s, 'title') || text(s, 'form_title') || text(s, 'form_button')) ||
+    anyItem(s, 'tracks', 5, (item) => !!field(item, 'name')) ||
+    anyItem(s, 'schedule', 8, (item) => !!field(item, 'title')),
+  news: (s) => anyItem(s, 'items', 6, (item) => !!field(item, 'title')),
+  gallery: (s) => anyItem(s, 'items', 6, (item) => hasImage(field(item, 'image'))),
+  contact: (s) =>
+    !!(text(s, 'title') || text(s, 'address') || text(s, 'phone') || text(s, 'email') || text(s, 'hours')) ||
+    !!(text(s, 'whatsapp') && whatsappHref(text(s, 'whatsapp'), text(s, 'whatsapp_message'))) ||
+    !!mapFor(s).embed,
+};
+
+/** Section tampil di halaman: dinyalakan di CMS dan berisi. */
+const shown = (content: SiteContent, key: NavKey) => {
+  const section = getSection(content, key);
+  return isEnabled(section) && SECTION_FILLED[key](section);
+};
+
+/**
+ * Menu atas & footer: section yang tampil (dan berisi). Label sengaja tetap dan singkat agar muat di pil menu (label
+ * kecil section di CMS tidak mengubah menu).
+ */
 export function navItems(content: SiteContent): MadaniNavItem[] {
-  return NAV.filter(({ key, listKey }) => {
-    const section = getSection(content, key);
-    if (!isEnabled(section)) return false;
-    return listKey ? list(section, listKey).length > 0 : true;
-  }).map(({ key, label }) => ({ key, label }));
+  return NAV.filter(({ key }) => shown(content, key)).map(({ key, label }) => ({ key, label }));
 }
 
 // ─── Slide hero ───────────────────────────────────────────────────────────────
@@ -252,7 +296,7 @@ export function validatePpdb(form: PpdbForm, opts: { tracks: string[]; programs:
   const errors: PpdbErrors = {};
   if (form.student.trim().length < 3) errors.student = 'Tulis nama lengkap calon siswa (minimal 3 huruf).';
   if (!form.gender) errors.gender = 'Pilih putra atau putri.';
-  if (form.school.trim().length < 3) errors.school = 'Tulis asal sekolah (SMP/MTs).';
+  if (form.school.trim().length < 3) errors.school = 'Tulis asal sekolah.';
   if (opts.tracks.length > 0 && !opts.tracks.includes(form.track)) errors.track = 'Pilih jalur pendaftaran.';
   if (opts.programs.length > 0 && !opts.programs.includes(form.program)) errors.program = 'Pilih program.';
   if (form.parent.trim().length < 3) errors.parent = 'Tulis nama orang tua atau wali.';
@@ -329,14 +373,15 @@ export function readMadani(content: SiteContent) {
   const whatsapp = text(contact, 'whatsapp');
   const waLink = whatsappHref(whatsapp, text(contact, 'whatsapp_message'));
   const waAction: LinkAction | null = waLink ? { kind: 'external', href: waLink } : null;
-  const contactAction: LinkAction | null = isEnabled(contact) ? { kind: 'section', target: 'contact' } : null;
+  // Tujuan section hanya bila section itu tampil DAN berisi (lihat SECTION_FILLED), agar tombol tidak mati
+  const contactAction: LinkAction | null = shown(content, 'contact') ? { kind: 'section', target: 'contact' } : null;
   /** Nomor panitia PPDB (bagian PPDB) atau nomor sekolah */
   const ppdbWhatsapp = text(ppdb, 'whatsapp') || whatsapp;
   const ppdbWa = whatsappHref(ppdbWhatsapp, `Assalamu’alaikum, Panitia PPDB ${companyName}. Saya ingin bertanya tentang pendaftaran.`);
   const ppdbAskAction: LinkAction | null = ppdbWa ? { kind: 'external', href: ppdbWa } : waAction ?? contactAction;
   /** Tujuan "Daftar PPDB": bagian PPDB bila tampil, lalu WhatsApp panitia, lalu Kontak */
-  const ppdbAction: LinkAction | null = isEnabled(ppdb) ? { kind: 'section', target: 'ppdb' } : ppdbAskAction;
-  const aboutAction: LinkAction | null = isEnabled(s.about) ? { kind: 'section', target: 'about' } : null;
+  const ppdbAction: LinkAction | null = shown(content, 'ppdb') ? { kind: 'section', target: 'ppdb' } : ppdbAskAction;
+  const aboutAction: LinkAction | null = shown(content, 'about') ? { kind: 'section', target: 'about' } : null;
   const primaryAction = resolveAction(text(hero, 'primary_url'), ppdbAction);
   const nav = navItems(content);
 

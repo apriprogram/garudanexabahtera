@@ -3,7 +3,8 @@
 // tambahan (`hero.slides`): foto berganti dengan pudar, label/judul/deskripsi ikut berganti; tombol dan kartu info tetap.
 // Kontrol: tombol sebelumnya/berikutnya, penghitung "01 / 04", titik per slide dengan bilah progres, dan tombol jeda.
 // Berganti otomatis hanya bila gerak menyala (bukan pratinjau CMS / prefers-reduced-motion), berhenti saat kursor di
-// atas hero atau fokus di dalamnya, bisa digeser di HP, dan panah kiri/kanan saat fokus di kontrol slide.
+// atas hero atau fokus di dalamnya, bisa digeser di HP, dan panah kiri/kanan saat fokus di kontrol slide. Slide aktif
+// = role group "slide" berlabel "n dari m"; pergantian oleh pengunjung diumumkan lewat wilayah aria-live yang tetap.
 // Lapisan gelap warna tema tua (CSS .md-hero-scrim) menjaga teks putih ≥ 4,5:1.
 import { ArrowLeft, ArrowRight, CalendarDays, Pause, Play } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
@@ -180,9 +181,15 @@ export function Hero({ m }: { m: MadaniModel }) {
     return () => window.clearTimeout(timer);
   }, [count]);
 
-  const go = (i: number) => {
+  // Pengumuman pembaca layar untuk pergantian slide oleh pengunjung (tombol, titik, panah, geser) di wilayah aria-live
+  // yang TETAP terpasang. Pergantian otomatis tidak diumumkan (pola carousel WAI-ARIA).
+  const [announcement, setAnnouncement] = useState('');
+
+  const go = (i: number, byUser = false) => {
+    const next = ((i % count) + count) % count;
     setWarm(true);
-    setActive(((i % count) + count) % count);
+    setActive(next);
+    if (byUser) setAnnouncement(`Slide ${next + 1} dari ${count}: ${slides[next].title}`);
   };
 
   return (
@@ -213,7 +220,7 @@ export function Hero({ m }: { m: MadaniModel }) {
           const dx = t.clientX - start.x;
           const dy = t.clientY - start.y;
           // Geser mendatar yang jelas (bukan gulir halaman) → slide berikut/sebelumnya
-          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(index + (dx < 0 ? 1 : -1));
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(index + (dx < 0 ? 1 : -1), true);
         }}
         className="md-hero-fallback relative isolate overflow-hidden rounded-[24px] text-white @3xl:rounded-[32px]"
       >
@@ -246,7 +253,13 @@ export function Hero({ m }: { m: MadaniModel }) {
               <div className="grid">
                 {slides.map((s, i) =>
                   i === index ? (
-                    <div key={`aktif-${i}`} className="col-start-1 row-start-1 self-end" aria-live={count > 1 && !autoplay ? 'polite' : undefined}>
+                    <div
+                      key={`aktif-${i}`}
+                      role={count > 1 ? 'group' : undefined}
+                      aria-roledescription={count > 1 ? 'slide' : undefined}
+                      aria-label={count > 1 ? `${i + 1} dari ${count}` : undefined}
+                      className="col-start-1 row-start-1 self-end"
+                    >
                       {s.eyebrow && (
                         <Reveal variant="fade">
                           <p className="inline-flex max-w-full items-center gap-2 rounded-full bg-white/[0.12] py-1.5 pl-2.5 pr-3.5 text-[13px] font-medium leading-snug ring-1 ring-inset ring-white/25 backdrop-blur-md">
@@ -273,6 +286,11 @@ export function Hero({ m }: { m: MadaniModel }) {
                   ),
                 )}
               </div>
+              {count > 1 && (
+                <p data-slide-status="" className="sr-only" aria-live="polite" aria-atomic="true">
+                  {announcement}
+                </p>
+              )}
               {((m.primaryAction && primaryLabel) || (m.secondaryAction && secondaryLabel)) && (
                 <Reveal delay={240} className="mt-8 flex flex-col items-stretch gap-3 @md:flex-row @md:items-center">
                   <ArrowLink action={m.primaryAction} label={primaryLabel} variant="hl" className="justify-between @md:justify-center" />
@@ -290,7 +308,7 @@ export function Hero({ m }: { m: MadaniModel }) {
                   holding={holding}
                   canAutoplay={canAutoplay}
                   paused={paused}
-                  onSelect={go}
+                  onSelect={(i) => go(i, true)}
                   onNext={() => go(index + 1)}
                   onTogglePause={() => setPaused((p) => !p)}
                 />

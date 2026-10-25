@@ -4,13 +4,14 @@
 // rincian biaya opsional. Kanan (lengket di layar lebar): kartu formulir minat yang menyusun pesan WhatsApp
 // (./PpdbForm). Jujur: tanpa penyimpanan data dan tanpa pembayaran online.
 import { ArrowDown, ArrowRight, Check } from 'lucide-react';
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
 import { field, list, text } from '../shared/utils';
-import { lines, type MadaniModel } from './model';
+import { useElementHeight } from './hooks';
+import { lines, SECTION_FILLED, type MadaniModel } from './model';
 import { PpdbForm, type PpdbFormHandle } from './PpdbForm';
 import { BTN, C, DISPLAY, INSET, PANEL_RADIUS, TYPE_M } from './styles';
 import { Chip, Eyebrow } from './ui';
@@ -21,6 +22,7 @@ export function Ppdb({ m }: { m: MadaniModel }) {
   const { ppdb } = m;
   const baseId = useId();
   const formRef = useRef<PpdbFormHandle>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [chosen, setChosen] = useState(0);
   const tracks = list(ppdb, 'tracks', 5).filter((t) => field(t, 'name'));
@@ -31,13 +33,15 @@ export function Ppdb({ m }: { m: MadaniModel }) {
   const formTitle = text(ppdb, 'form_title');
   const formButton = text(ppdb, 'form_button');
   const showForm = !!(formTitle || formButton);
+  const cardHeight = useElementHeight(cardRef, showForm);
   const eyebrow = text(ppdb, 'eyebrow');
   const title = text(ppdb, 'title');
   const subtitle = text(ppdb, 'subtitle');
   const status = text(ppdb, 'status');
   const quota = text(ppdb, 'quota');
   const current = Math.min(chosen, Math.max(0, tracks.length - 1));
-  if (!title && tracks.length === 0 && schedule.length === 0 && !showForm) return null;
+  // Judul, jalur, jadwal, dan formulir kosong semua → tidak dirender (syarat dibagi dengan menu, lihat SECTION_FILLED)
+  if (!SECTION_FILLED.ppdb(ppdb)) return null;
 
   const selectTab = (i: number) => {
     const next = (i + tracks.length) % tracks.length;
@@ -54,10 +58,13 @@ export function Ppdb({ m }: { m: MadaniModel }) {
   };
   const track = tracks[current];
   const trackReqs = track ? lines(field(track, 'requirements')) : [];
+  // "Jalur Prestasi" di CMS → "Jalur Prestasi" (bukan "Jalur Jalur Prestasi") di judul kartu & tombol
+  const trackName = track ? field(track, 'name').replace(/^jalur\s+/i, '') || field(track, 'name') : '';
 
   return (
     <TemplateSection sectionKey="ppdb" className="py-2">
-      <div className={`${INSET} ${PANEL_RADIUS} relative isolate overflow-hidden bg-[#F6F4EC]`}>
+      {/* Tanpa overflow-hidden: panel tidak boleh menjadi wadah gulir, agar kartu formulir bisa lengket di layar lebar */}
+      <div className={`${INSET} ${PANEL_RADIUS} relative isolate bg-[#F6F4EC]`}>
         <div className={`${CONTAINER} py-14 @3xl:py-20 @5xl:py-24`}>
           {/* Kepala */}
           <div className="grid gap-6 @5xl:grid-cols-12 @5xl:items-end @5xl:gap-10">
@@ -139,7 +146,7 @@ export function Ppdb({ m }: { m: MadaniModel }) {
                       className="mt-4 rounded-[24px] bg-white p-5 ring-1 ring-inset ring-black/[0.06] @3xl:p-7"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className={`${DISPLAY} text-[19px] text-(--md-deep)`}>Jalur {field(track, 'name')}</p>
+                        <p className={`${DISPLAY} text-[19px] text-(--md-deep)`}>Jalur {trackName}</p>
                         {field(track, 'quota') && <Chip tone="tint">{field(track, 'quota')}</Chip>}
                       </div>
                       {field(track, 'description') && <p className={`mt-3 ${TYPE_M.body} ${C.body}`}>{field(track, 'description')}</p>}
@@ -161,7 +168,7 @@ export function Ppdb({ m }: { m: MadaniModel }) {
                           onClick={() => formRef.current?.focusForm(field(track, 'name'))}
                           className="group mt-6 inline-flex min-h-10 items-center gap-2 text-[14.5px] font-semibold text-(--md-ink)"
                         >
-                          Daftar lewat jalur {field(track, 'name')}
+                          Daftar lewat jalur {trackName}
                           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
                         </button>
                       )}
@@ -255,7 +262,14 @@ export function Ppdb({ m }: { m: MadaniModel }) {
 
             {showForm && (
               <div className="min-w-0 @5xl:col-span-5">
-                <div className="rounded-[28px] bg-white p-5 ring-1 ring-inset ring-black/[0.06] @3xl:p-7 @5xl:sticky @5xl:top-[calc(var(--tpl-sticky-top,0px)+92px)]">
+                {/* Lengket di layar lebar. Kartu yang lebih tinggi dari layar lengket di TEPI BAWAHNYA (top negatif =
+                    100svh − tinggi kartu − 16px) agar tombol kirim tetap terlihat; kartu yang muat lengket di bawah menu. */}
+                <div
+                  ref={cardRef}
+                  data-ppdb-card=""
+                  style={cardHeight ? ({ '--md-form-h': `${cardHeight}px` } as CSSProperties) : undefined}
+                  className="rounded-[28px] bg-white p-5 ring-1 ring-inset ring-black/[0.06] @3xl:p-7 @5xl:sticky @5xl:top-[min(calc(var(--tpl-sticky-top,0px)_+_92px),calc(100svh_-_var(--md-form-h,0px)_-_16px))]"
+                >
                   <PpdbForm
                     ref={formRef}
                     title={formTitle || 'Formulir minat pendaftaran'}
@@ -265,7 +279,8 @@ export function Ppdb({ m }: { m: MadaniModel }) {
                     programs={lines(text(ppdb, 'program_options'), 6)}
                     whatsapp={m.ppdbWhatsapp}
                     school={m.companyName}
-                    period={eyebrow}
+                    schoolLabel={text(ppdb, 'form_school_label') || 'Asal sekolah'}
+                    period={text(ppdb, 'form_period')}
                   />
                 </div>
               </div>

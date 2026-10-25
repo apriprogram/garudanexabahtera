@@ -56,7 +56,7 @@ export function Header({ m, overlay }: { m: MadaniModel; overlay: boolean }) {
   return (
     <>
       {/* Penanda gulir: 24px di bawah tepi atas halaman */}
-      <div ref={sentinel} aria-hidden className="pointer-events-none absolute left-0 top-6 h-px w-px" />
+      <div ref={sentinel} data-md-scroll-sentinel="" aria-hidden className="pointer-events-none absolute left-0 top-6 h-px w-px" />
       <header data-tpl-tone={solid ? undefined : 'inverse'} className={`sticky top-[var(--tpl-sticky-top,0px)] z-30 ${overlay ? 'h-0' : ''}`}>
         <div
           className={`border-b transition-[background-color,border-color] duration-300 ${

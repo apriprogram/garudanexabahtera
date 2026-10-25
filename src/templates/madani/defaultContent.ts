@@ -10,7 +10,7 @@ export const MADANI_ACCENT = '#1B6B47';
 export const madaniContent: SiteContent = {
   brand: {
     company_name: 'SMA IT Nurul Azka',
-    tagline: 'Sekolah Islam Terpadu & Boarding di Bogor',
+    tagline: 'Sekolah Islam Terpadu & Asrama di Bogor',
     logo: '',
     accent_color: MADANI_ACCENT,
     highlight_color: '',
@@ -269,6 +269,8 @@ export const madaniContent: SiteContent = {
     form_title: 'Formulir minat pendaftaran',
     form_text: 'Isi data singkat calon siswa. Formulir ini tidak menyimpan data: isinya disusun menjadi pesan WhatsApp untuk panitia PPDB.',
     form_button: 'Kirim lewat WhatsApp',
+    form_school_label: 'Asal sekolah (SMP/MTs)',
+    form_period: 'PPDB 2027/2028',
     program_options: 'Reguler (pulang-pergi)\nAsrama (boarding)',
   },
   news: {
@@ -286,16 +288,7 @@ export const madaniContent: SiteContent = {
         image: madaniPhoto('berita-olimpiade'),
         url: '',
       },
-      {
-        category: 'Kegiatan',
-        date: '2026-09-28',
-        title: 'Wisuda tahfidz angkatan ke-12: 46 siswa menuntaskan target hafalan',
-        excerpt: 'Wisuda digelar di masjid sekolah, dihadiri orang tua dan para pengampu halaqah.',
-        body:
-          'Setiap wisudawan membacakan sebagian hafalannya di hadapan penguji. Lima siswa menuntaskan hafalan 10 juz, sementara siswa lain menyelesaikan target 6 juz sesuai program masing-masing.\n\nKepala sekolah berpesan agar hafalan dijaga dengan murajaah rutin dan diamalkan dalam keseharian.',
-        image: madaniPhoto('berita-wisuda'),
-        url: '',
-      },
+      // Terbaru di depan (tidak diurutkan otomatis: urutan CMS = urutan tampil)
       {
         category: 'Kajian',
         date: '2026-10-03',
@@ -304,6 +297,16 @@ export const madaniContent: SiteContent = {
         body:
           'Halaqah subuh berlangsung setiap Senin dan Kamis di masjid sekolah, sedangkan kajian pekanan diadakan setiap Jumat siang. Materi semester ini membahas adab penuntut ilmu, adab kepada orang tua, dan adab bermedia sosial.\n\nOrang tua dapat mengikuti kajian bulanan yang jadwalnya diumumkan di bagian Agenda.',
         image: madaniPhoto('berita-ramadan'),
+        url: '',
+      },
+      {
+        category: 'Kegiatan',
+        date: '2026-09-28',
+        title: 'Wisuda tahfidz angkatan ke-12: 46 siswa menuntaskan target hafalan',
+        excerpt: 'Wisuda digelar di masjid sekolah, dihadiri orang tua dan para pengampu halaqah.',
+        body:
+          'Setiap wisudawan membacakan sebagian hafalannya di hadapan penguji. Lima siswa menuntaskan hafalan 10 juz, sementara siswa lain menyelesaikan target 6 juz sesuai program masing-masing.\n\nKepala sekolah berpesan agar hafalan dijaga dengan murajaah rutin dan diamalkan dalam keseharian.',
+        image: madaniPhoto('berita-wisuda'),
         url: '',
       },
     ],

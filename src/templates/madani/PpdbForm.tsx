@@ -23,6 +23,9 @@ interface Props {
   programs: string[];
   whatsapp: string;
   school: string;
+  /** Label field asal sekolah dari CMS (mis. "Asal sekolah (SMP/MTs)" untuk SMA, "Asal sekolah (SD/MI)" untuk SMP) */
+  schoolLabel: string;
+  /** Periode di pesan WhatsApp (ppdb.form_period, mis. "PPDB 2027/2028"); kosong → "Saya ingin mendaftar." */
   period: string;
 }
 
@@ -32,7 +35,7 @@ const LABEL = 'mb-1.5 block text-[13.5px] font-semibold text-(--md-deep)';
 
 type Result = { kind: 'sent'; href: string; message: string } | { kind: 'preview'; message: string } | { kind: 'unavailable'; message: string } | null;
 
-export const PpdbForm = forwardRef<PpdbFormHandle, Props>(function PpdbForm({ title, intro, button, tracks, programs, whatsapp, school, period }, ref) {
+export const PpdbForm = forwardRef<PpdbFormHandle, Props>(function PpdbForm({ title, intro, button, tracks, programs, whatsapp, school, schoolLabel, period }, ref) {
   const { preview } = useTemplateRuntime();
   const uid = useId();
   const formRef = useRef<HTMLFormElement>(null);
@@ -171,7 +174,7 @@ export const PpdbForm = forwardRef<PpdbFormHandle, Props>(function PpdbForm({ ti
           {error('gender')}
         </fieldset>
 
-        {field('school', 'Asal sekolah (SMP/MTs)', { autoComplete: 'off', maxLength: 80, placeholder: 'mis. SMP IT Al-Ihsan' })}
+        {field('school', schoolLabel, { autoComplete: 'off', maxLength: 80, placeholder: 'Nama sekolah asal' })}
         <div className="grid gap-4 @2xl:grid-cols-2 @5xl:grid-cols-1 @7xl:grid-cols-2">
           {select('track', 'Jalur pendaftaran', tracks, 'Pilih jalur')}
           {select('program', 'Program', programs, 'Pilih program')}

@@ -35,11 +35,15 @@ function NewsCard({ item, index }: { item: ListItem; index: number }) {
   const title = field(item, 'title');
   const body = paragraphs(field(item, 'body'));
   const image = field(item, 'image');
+  const photo = hasImage(image);
   const link = resolveAction(field(item, 'url'), null);
+  const rawDate = field(item, 'date');
+  // Kategori ikut baris tanggal bila tidak ada foto (dengan foto: chip di atas foto)
+  const rowChip = !photo ? field(item, 'category') : '';
   return (
     <Reveal as="li" delay={stagger(index, 70)} className="flex min-w-0 flex-col">
       <article className="flex flex-1 flex-col">
-        {hasImage(image) && (
+        {photo && (
           <KitPhoto
             src={image}
             alt={MADANI_PHOTOS.alt(image, title)}
@@ -54,12 +58,19 @@ function NewsCard({ item, index }: { item: ListItem; index: number }) {
             )}
           </KitPhoto>
         )}
-        <p className={`mt-5 flex items-center gap-2 text-[13px] font-medium ${C.muted}`}>
-          <CalendarDays className="h-4 w-4 shrink-0 text-(--md-ink)" aria-hidden />
-          <DateText raw={field(item, 'date')} />
-          {!hasImage(image) && field(item, 'category') && <Chip tone="tint" className="ml-1">{field(item, 'category')}</Chip>}
-        </p>
-        <h3 className={`mt-2 text-balance text-(--md-deep) ${TYPE_M.h3}`}>{title}</h3>
+        {/* Baris tanggal hanya bila ada tanggal atau chip kategori (tanpa ikon kalender yatim bila tanggal kosong) */}
+        {(rawDate || rowChip) && (
+          <p className={`${photo ? 'mt-5' : ''} flex items-center gap-2 text-[13px] font-medium ${C.muted}`}>
+            {rawDate && (
+              <>
+                <CalendarDays className="h-4 w-4 shrink-0 text-(--md-ink)" aria-hidden />
+                <DateText raw={rawDate} />
+              </>
+            )}
+            {rowChip && <Chip tone="tint" className={rawDate ? 'ml-1' : ''}>{rowChip}</Chip>}
+          </p>
+        )}
+        <h3 className={`${rawDate || rowChip ? 'mt-2' : photo ? 'mt-5' : ''} text-balance text-(--md-deep) ${TYPE_M.h3}`}>{title}</h3>
         {field(item, 'excerpt') && <p className={`mt-2 text-[14.5px] leading-relaxed ${C.muted}`}>{field(item, 'excerpt')}</p>}
         {body.length > 0 && (
           <div id={panelId} data-open={open} inert={!open} className="md-collapse">

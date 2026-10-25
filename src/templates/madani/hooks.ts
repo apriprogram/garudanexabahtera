@@ -1,5 +1,5 @@
-// Hook kecil header Madani: section yang sedang dibaca (pil menu aktif) dan "sudah digulir" (bilah putih lengket).
-// Tanpa IntersectionObserver (perayap, jsdom lama) → nilai awal, tanpa error.
+// Hook kecil Madani: section yang sedang dibaca (pil menu aktif), "sudah digulir" (bilah putih lengket), dan tinggi
+// elemen (kartu formulir PPDB yang lengket). Tanpa IntersectionObserver / ResizeObserver (perayap, jsdom) → nilai awal.
 import { useEffect, useState, type RefObject } from 'react';
 
 /** Kunci section yang sedang di tengah layar (dari daftar `keys`), atau null. */
@@ -27,13 +27,36 @@ export function useActiveSection(anchor: RefObject<HTMLElement | null>, keys: st
   return active;
 }
 
-/** true setelah penanda `sentinel` keluar dari layar (halaman sudah digulir melewatinya). */
+/** Tinggi elemen (px, dibulatkan) yang diperbarui saat ukurannya berubah. Tanpa ResizeObserver → 0. */
+export function useElementHeight(target: RefObject<HTMLElement | null>, active = true): number {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const el = target.current;
+    if (!el || !active || typeof ResizeObserver !== 'function') return;
+    const measure = () => setHeight(Math.round(el.getBoundingClientRect().height));
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    measure();
+    return () => observer.disconnect();
+  }, [target, active]);
+  return height;
+}
+
+/**
+ * true setelah penanda `sentinel` (di dekat awal situs) tidak terlihat lagi dan tepi bawahnya di separuh atas layar —
+ * halaman sudah digulir melewatinya. Juga berlaku di bingkai HP demo / panel pratinjau CMS yang punya gulir sendiri:
+ * penanda terpotong tepi atas bingkai (± 100 px dari atas layar, jadi `top` masih positif) = sudah dilewati. Sama
+ * dengan usePastFirstScreen di shared/Shell.
+ */
 export function useScrolledPast(sentinel: RefObject<HTMLElement | null>): boolean {
   const [past, setPast] = useState(false);
   useEffect(() => {
     const el = sentinel.current;
     if (!el || typeof IntersectionObserver !== 'function') return;
-    const observer = new IntersectionObserver(([entry]) => setPast(!entry.isIntersecting && entry.boundingClientRect.top < 0));
+    const observer = new IntersectionObserver(([entry]) => {
+      const viewport = entry.rootBounds?.height ?? window.innerHeight;
+      setPast(!entry.isIntersecting && entry.boundingClientRect.bottom < viewport / 2);
+    });
     observer.observe(el);
     return () => observer.disconnect();
   }, [sentinel]);

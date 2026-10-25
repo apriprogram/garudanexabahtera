@@ -28,12 +28,14 @@ const eyebrow = (placeholder: string) =>
   t('eyebrow', 'Label kecil di atas judul', {
     placeholder,
     maxLength: 40,
-    help: 'Tampil dengan titik warna tema. Label yang singkat juga dipakai di menu atas. Kosongkan untuk menyembunyikan.',
+    // Menu atas memakai label tetap yang singkat (Profil, Program, PPDB, ...), bukan label ini
+    help: 'Tampil dengan titik warna tema. Kosongkan untuk menyembunyikan.',
   });
 const title = (placeholder: string, maxLength = 120) => t('title', 'Judul', { placeholder, maxLength });
 const subtitle = (placeholder = 'Kalimat pengantar singkat.') => ta('subtitle', 'Deskripsi singkat', { placeholder, maxLength: 280 });
-const DATE_HELP = 'Tulis tahun-bulan-tanggal, mis. 2026-11-14, agar tampil sebagai “14 Nov 2026”. Teks lain tampil apa adanya.';
-const WA_HELP = 'Kosongkan untuk membuka WhatsApp (nomor di bagian Lokasi & Kontak).';
+const DATE_HELP =
+  'Tulis tahun-bulan-tanggal, mis. 2026-11-14, agar tanggal tampil rapi dalam bahasa Indonesia (mis. 14 November 2026). Teks lain tampil apa adanya.';
+const WA_HELP = 'Kosongkan untuk membuka WhatsApp panitia PPDB (atau nomor di Lokasi & Kontak bila nomor panitia kosong).';
 
 export const madaniSections: TemplateSection[] = [
   {
@@ -44,7 +46,7 @@ export const madaniSections: TemplateSection[] = [
     fields: [
       t('company_name', 'Nama sekolah', { placeholder: 'mis. SMA IT Nurul Azka', maxLength: 80 }),
       t('tagline', 'Tagline', {
-        placeholder: 'mis. Sekolah Islam Terpadu & Boarding di Bogor',
+        placeholder: 'mis. Sekolah Islam Terpadu & Asrama di Bogor',
         maxLength: 100,
         help: 'Tampil di footer dan judul tab browser (“Nama sekolah — Tagline”). Sebut jenis sekolah dan kota agar mudah ditemukan di Google.',
       }),
@@ -334,6 +336,16 @@ export const madaniSections: TemplateSection[] = [
       t('form_title', 'Formulir: judul', { placeholder: 'mis. Formulir minat pendaftaran', maxLength: 50, help: 'Kosongkan judul & teks tombol untuk menyembunyikan formulir.' }),
       ta('form_text', 'Formulir: penjelasan', { placeholder: 'Jelaskan bahwa formulir menyusun pesan WhatsApp.', maxLength: 220 }),
       t('form_button', 'Formulir: teks tombol', { placeholder: 'mis. Kirim lewat WhatsApp', maxLength: 30 }),
+      t('form_school_label', 'Formulir: label asal sekolah', {
+        placeholder: 'mis. Asal sekolah (SMP/MTs)',
+        maxLength: 40,
+        help: 'Sesuaikan dengan jenjang, mis. “Asal sekolah (SD/MI)” untuk SMP. Kosongkan untuk “Asal sekolah”.',
+      }),
+      t('form_period', 'Formulir: periode di pesan WhatsApp', {
+        placeholder: 'mis. PPDB 2027/2028',
+        maxLength: 40,
+        help: 'Ditulis di pesan untuk panitia: “Saya ingin mendaftar PPDB 2027/2028.” Kosongkan untuk “Saya ingin mendaftar.”',
+      }),
       ta('program_options', 'Formulir: pilihan program', { placeholder: 'Satu baris satu pilihan, mis.\nReguler (pulang-pergi)\nAsrama (boarding)', maxLength: 200 }),
     ],
   },

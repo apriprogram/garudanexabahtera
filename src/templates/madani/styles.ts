@@ -42,10 +42,14 @@ export const PANEL_RADIUS = 'rounded-[28px] @3xl:rounded-[36px]';
 /** Tombol pil. Isi: label (+ lingkaran panah, lihat <ArrowLink> di ./ui). */
 const PILL = 'group inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition-colors';
 export const BTN = {
-  /** Warna sorotan + tinta tema tua (≥ 4,5:1 dijamin madaniVars) */
+  /** Warna sorotan + teks --md-on-hl (≥ 4,58:1 dijamin madaniVars, juga saat disorot: --md-hl-soft) */
   hl: `${PILL} bg-(--md-hl) text-(--md-on-hl) hover:bg-(--md-hl-soft)`,
-  /** Warna tema + teks kontras otomatis (Shell --tpl-on-accent) */
-  primary: `${PILL} bg-(--tpl-accent) text-(--tpl-on-accent) hover:bg-(--tpl-accent-hover)`,
+  /**
+   * Warna tema + teks putih. Latarnya --md-ink (warna tema yang digelapkan sampai ≥ 4,6:1 terhadap krem, jadi juga
+   * terhadap putih), bukan --tpl-accent mentah: warna tema menengah (mis. #2E8B57) tidak mencapai 4,5:1 dengan putih
+   * maupun tinta gelap. Warna tema bawaan tidak berubah (sudah ≥ 4,6:1).
+   */
+  primary: `${PILL} bg-(--md-ink) text-white hover:bg-(--md-deep)`,
   /** Garis tipis di latar terang */
   ghost: `${PILL} text-(--md-deep) ring-1 ring-inset ring-black/[0.14] hover:bg-black/[0.04]`,
   /** Kaca di atas foto / pita gelap */
@@ -57,7 +61,7 @@ export const BTN = {
 /** Lingkaran panah di ujung tombol pil, per warna tombol */
 export const ARROW = {
   hl: 'bg-(--md-deep) text-(--md-hl-ink)',
-  primary: 'bg-white/[0.16] text-(--tpl-on-accent)',
+  primary: 'bg-white/[0.16] text-white',
   ghost: 'bg-(--md-deep) text-white',
   glass: 'bg-white text-(--md-deep)',
 } as const;

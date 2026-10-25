@@ -20,7 +20,7 @@ import { MADANI_PHOTOS } from '../madani/photos';
 import { applySiteHead, siteTitle } from '../siteHead';
 import { SiteRenderer } from '../SiteRenderer';
 import { contrast, parseHex } from '../shared/utils';
-import { isListField, type SiteContent } from '../types';
+import { isListField, type SiteContent, type TemplateField } from '../types';
 
 const ROOT = process.cwd();
 const def = TEMPLATES.madani;
@@ -448,6 +448,8 @@ describe('Madani: demo', () => {
     const news = section(container, 'news');
     const cards = news.querySelectorAll('article');
     expect(cards).toHaveLength(3);
+    // "Kabar terbaru": terbaru di depan
+    expect(Array.from(cards).map((c) => c.querySelector('time')?.getAttribute('dateTime'))).toEqual(['2026-10-12', '2026-10-03', '2026-09-28']);
     expect(cards[0].querySelector('time')).toHaveAttribute('dateTime', '2026-10-12');
     expect(cards[0].textContent).toContain('12 Oktober 2026');
     const more = within(cards[0] as HTMLElement).getByRole('button', { name: /Baca selengkapnya/ });
@@ -538,9 +540,10 @@ describe('Madani: warna tema bisa diganti', () => {
 
 describe('Madani: SEO situs pembeli', () => {
   it('judul tab & meta description bawaan terbaca sebagai website sekolah Islam (siteHead dari tagline & deskripsi hero)', () => {
-    expect(siteTitle('madani', null)).toBe('SMA IT Nurul Azka — Sekolah Islam Terpadu & Boarding di Bogor');
+    expect(siteTitle('madani', null)).toBe('SMA IT Nurul Azka — Sekolah Islam Terpadu & Asrama di Bogor');
+    expect(siteTitle('madani', null).length).toBeLessThanOrEqual(60);
     const restore = applySiteHead('madani', null);
-    expect(document.title).toBe('SMA IT Nurul Azka — Sekolah Islam Terpadu & Boarding di Bogor');
+    expect(document.title).toBe('SMA IT Nurul Azka — Sekolah Islam Terpadu & Asrama di Bogor');
     const description = document.head.querySelector('meta[name="description"]')?.getAttribute('content') ?? '';
     expect(description).toMatch(/^SMA Islam Terpadu di Bogor dengan program tahfidz/);
     expect(description).toMatch(/2027\/2028/);
@@ -780,5 +783,287 @@ describe('Madani: konten aneh', () => {
     const { container } = render(<def.Component content={resolveContent(def, weird)} />);
     expect(container.querySelector('a[href^="javascript:"]')).toBeNull();
     expect(container.querySelectorAll('h1')).toHaveLength(1);
+  });
+});
+
+// Perbaikan hasil review 2026-10-25 (13 temuan): kontras tombol, header di bingkai bergulir, formulir lengket, kolom
+// statistik, pengumuman slide, teks formulir PPDB, periode pesan WhatsApp, judul tab, tanggal berita, menu ke section
+// kosong, teks bantuan CMS, urutan berita.
+describe('Madani: perbaikan review', () => {
+  /** Semua field biasa, termasuk field di dalam list */
+  const allFields = (): TemplateField[] => def.sections.flatMap((s) => s.fields.flatMap((f) => (isListField(f) ? f.fields : [f])));
+
+  it('kontras: teks di atas sorotan (juga saat disorot) ≥ 4,5:1 untuk warna tema & sorotan menengah dari CMS; tombol warna tema = putih di --md-ink', () => {
+    for (const accent of ['#1B6B47', '#2E8B57', '#1D4ED8', '#FFE600', '#767676', '#E0F2FE']) {
+      for (const highlight of ['', '#2E8B57', '#E04040', '#767676', '#8B0000', '#FFFFFF', '#000000', '#FACC15', '#3B82F6']) {
+        const v = madaniVars(accent, highlight) as Record<string, string>;
+        const label = `${accent} / ${highlight || 'otomatis'}`;
+        expect(contrast(rgb(v['--md-hl']), rgb(v['--md-on-hl'])), label).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(rgb(v['--md-hl-soft']), rgb(v['--md-on-hl'])), `${label} hover`).toBeGreaterThanOrEqual(4.5);
+        // BTN.primary: teks putih di --md-ink, hover --md-deep
+        expect(contrast(rgb(v['--md-ink']), WHITE), label).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(rgb(v['--md-deep']), WHITE), label).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+    // Contoh temuan: sorotan #767676 → teks hitam murni (4,6:1), bukan #111 (4,2:1)
+    expect((madaniVars('#1B6B47', '#767676') as Record<string, string>)['--md-on-hl']).toBe('#000000');
+    // Tema bawaan tidak berubah: --md-ink = warna tema itu sendiri
+    expect((madaniVars('#1B6B47') as Record<string, string>)['--md-ink']).toBe('#1b6b47');
+
+    const container = demo({ brand: { accent_color: '#2E8B57' } });
+    const submit = within(section(container, 'ppdb')).getByRole('button', { name: /Kirim lewat WhatsApp/ });
+    expect(submit.className).toContain('bg-(--md-ink)');
+    expect(submit.className).toContain('text-white');
+    expect(within(section(container, 'faq')).getByRole('link', { name: /Chat panitia PPDB/ }).className).toContain('bg-(--md-ink)');
+    expect(container.querySelector('main')!.innerHTML).not.toContain('tpl-on-accent');
+  });
+
+  describe('header di bingkai bergulir (HP demo, pratinjau CMS)', () => {
+    type Observed = { callback: IntersectionObserverCallback; targets: Element[] };
+    let observers: Observed[] = [];
+    const original = window.IntersectionObserver;
+    beforeEach(() => {
+      observers = [];
+      window.IntersectionObserver = class {
+        targets: Element[] = [];
+        callback: IntersectionObserverCallback;
+        constructor(callback: IntersectionObserverCallback) {
+          this.callback = callback;
+          observers.push(this);
+        }
+        observe(el: Element) {
+          this.targets.push(el);
+        }
+        unobserve() {}
+        disconnect() {}
+        takeRecords() {
+          return [];
+        }
+      } as unknown as typeof window.IntersectionObserver;
+    });
+    afterEach(() => {
+      window.IntersectionObserver = original;
+    });
+
+    it('penanda terpotong tepi atas bingkai (top masih positif) → header jadi bilah putih; terlihat lagi → transparan', () => {
+      const container = demo();
+      const header = container.querySelector('header')!;
+      const sentinel = container.querySelector('[data-md-scroll-sentinel]')!;
+      const observer = observers.find((o) => o.targets.includes(sentinel))!;
+      const report = (isIntersecting: boolean, bottom: number) =>
+        act(() => {
+          observer.callback(
+            [{ target: sentinel, isIntersecting, boundingClientRect: { top: bottom - 1, bottom }, rootBounds: { height: 800 } } as unknown as IntersectionObserverEntry],
+            observer as unknown as IntersectionObserver,
+          );
+        });
+      expect(header).toHaveAttribute('data-tpl-tone', 'inverse');
+      // Bingkai HP ± 100 px di bawah tepi atas layar: penanda terpotong, tepinya masih di +101 px
+      report(false, 101);
+      expect(header).not.toHaveAttribute('data-tpl-tone');
+      report(true, 125);
+      expect(header).toHaveAttribute('data-tpl-tone', 'inverse');
+      // Halaman biasa: penanda lewat ke atas layar
+      report(false, -10);
+      expect(header).not.toHaveAttribute('data-tpl-tone');
+    });
+  });
+
+  it('PPDB: tidak ada wadah overflow di antara kartu formulir lengket dan section (lengket di layar lebar)', () => {
+    const ppdb = section(demo(), 'ppdb');
+    const card = within(ppdb).getByRole('form').closest<HTMLElement>('[class*="@5xl:sticky"]')!;
+    expect(card).not.toBeNull();
+    for (let el = card.parentElement; el && el !== ppdb.parentElement; el = el.parentElement) {
+      expect(el.className, el.tagName).not.toMatch(/(^|\s)overflow-(hidden|auto|scroll)(\s|$)/);
+    }
+    // Kartu lebih tinggi dari layar → lengket di tepi bawahnya (tombol kirim tetap terlihat)
+    expect(card).toHaveAttribute('data-ppdb-card');
+    expect(card.className).toContain('@5xl:top-[min(calc(var(--tpl-sticky-top,0px)_+_92px),calc(100svh_-_var(--md-form-h,0px)_-_16px))]');
+  });
+
+  it('statistik: 5 kartu sebaris baru mulai @7xl; di @5xl 3 + 2 dengan kartu sorotan selebar 2 kolom', () => {
+    let dl = section(demo(), 'stats').querySelector('dl')!;
+    expect(dl.className).toContain('@5xl:grid-cols-3');
+    expect(dl.className).toContain('@7xl:grid-cols-5');
+    const last = dl.lastElementChild as HTMLElement;
+    expect(last.className).toContain('col-span-2');
+    expect(last.className).toContain('@7xl:col-span-1');
+    expect(last.className).not.toContain('@5xl:col-span-1');
+    expect(dl.querySelector('dd')!.className).toContain('[overflow-wrap:anywhere]');
+    cleanup();
+    const three = (def.defaultContent.stats as { items: unknown[] }).items.slice(0, 3);
+    dl = section(demo({ stats: { items: three } }), 'stats').querySelector('dl')!;
+    expect(dl.className).toContain('@5xl:grid-cols-3');
+    expect(dl.className).not.toContain('@7xl:grid-cols-5');
+    expect((dl.lastElementChild as HTMLElement).className).toContain('@5xl:col-span-1');
+  });
+
+  it('slider: slide aktif = group "slide" berlabel; hanya pergantian oleh pengunjung diumumkan di wilayah aria-live yang tetap', () => {
+    const hero = section(demo(), 'hero');
+    const status = hero.querySelector('[data-slide-status]')!;
+    expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(status).toHaveAttribute('aria-atomic', 'true');
+    expect(status.textContent).toBe('');
+    expect(hero.querySelectorAll('[aria-live]')).toHaveLength(1);
+    const first = within(hero).getByRole('group', { name: '1 dari 4' });
+    expect(first).toHaveAttribute('aria-roledescription', 'slide');
+    expect(first.querySelector('h1')).not.toBeNull();
+
+    const controls = within(hero).getByRole('group', { name: 'Kontrol slide' });
+    fireEvent.click(within(controls).getByRole('button', { name: 'Slide berikutnya' }));
+    expect(hero.querySelector('[data-slide-status]')).toBe(status);
+    expect(status.textContent).toBe('Slide 2 dari 4: Belajar Nyaman di Lingkungan yang Asri');
+    expect(within(hero).getByRole('group', { name: '2 dari 4' })).toHaveAttribute('aria-roledescription', 'slide');
+    fireEvent.click(within(controls).getByRole('button', { name: 'Slide 4 dari 4' }));
+    expect(status.textContent).toBe('Slide 4 dari 4: Mandiri dan Disiplin Bersama Musyrif');
+    // Berganti otomatis (bilah progres selesai) → tidak diumumkan
+    const progress = controls.querySelector('.md-progress')!;
+    const firstDot = within(controls).getByRole('button', { name: 'Slide 1 dari 4' });
+    fireEvent.animationEnd(progress);
+    // jsdom tanpa AnimationEvent: React mendengarkan nama berawalan vendor
+    if (!firstDot.hasAttribute('aria-current')) fireEvent(progress, new Event('webkitAnimationEnd', { bubbles: true }));
+    expect(firstDot).toHaveAttribute('aria-current', 'true');
+    expect(status.textContent).toBe('Slide 4 dari 4: Mandiri dan Disiplin Bersama Musyrif');
+    expect(hero.querySelectorAll('[aria-live]')).toHaveLength(1);
+  });
+
+  it('PPDB: label asal sekolah dari CMS (netral bila kosong), error netral, nama jalur berawalan "Jalur" tidak dobel', () => {
+    let ppdb = section(demo({ ppdb: { form_school_label: 'Asal sekolah (SD/MI)' } }), 'ppdb');
+    expect(within(within(ppdb).getByRole('form')).getByLabelText('Asal sekolah (SD/MI)')).toBeInTheDocument();
+    cleanup();
+    ppdb = section(demo({ ppdb: { form_school_label: '' } }), 'ppdb');
+    const form = within(ppdb).getByRole('form');
+    const school = within(form).getByLabelText('Asal sekolah');
+    expect(school).toHaveAttribute('placeholder', 'Nama sekolah asal');
+    fireEvent.click(within(form).getByRole('button', { name: /Kirim lewat WhatsApp/ }));
+    expect(document.getElementById(school.getAttribute('aria-describedby')!)?.textContent).toBe('Tulis asal sekolah.');
+    expect(validatePpdb(EMPTY_PPDB, { tracks: [], programs: [] }).school).not.toMatch(/SMP|MTs/);
+    cleanup();
+
+    const tracks = [
+      { name: 'Jalur Prestasi', quota: '', description: 'Untuk siswa berprestasi.', requirements: '' },
+      { name: 'Reguler', quota: '', description: 'Tes dan wawancara.', requirements: '' },
+    ];
+    ppdb = section(demo({ ppdb: { tracks } }), 'ppdb');
+    const panel = within(ppdb).getByRole('tabpanel');
+    expect(panel.textContent).toContain('Jalur Prestasi');
+    expect(panel.textContent).not.toMatch(/Jalur Jalur/i);
+    fireEvent.click(within(panel).getByRole('button', { name: 'Daftar lewat jalur Prestasi' }));
+    // Nilai pilihan formulir tetap nama jalur lengkap dari CMS
+    expect(within(within(ppdb).getByRole('form')).getByLabelText('Jalur pendaftaran')).toHaveValue('Jalur Prestasi');
+    fireEvent.click(within(ppdb).getByRole('tab', { name: 'Reguler' }));
+    expect(within(ppdb).getByRole('tabpanel').textContent).toContain('Jalur Reguler');
+  });
+
+  it('PPDB: periode di pesan WhatsApp dari field sendiri (bukan label kecil section); kosong → kalimat tanpa periode', () => {
+    vi.spyOn(window, 'open').mockImplementation(() => null);
+    const ppdb = section(demo({ ppdb: { eyebrow: 'Info Pendaftaran', form_period: 'PPDB 2028/2029' } }, true), 'ppdb');
+    const form = within(ppdb).getByRole('form');
+    const fill = (label: string, value: string) => fireEvent.change(within(form).getByLabelText(label), { target: { value } });
+    fill('Nama lengkap calon siswa', 'Fatimah Azzahra');
+    fireEvent.click(within(form).getByLabelText('Putri'));
+    fill('Asal sekolah (SMP/MTs)', 'SMP IT Al-Ihsan');
+    fill('Jalur pendaftaran', 'Reguler');
+    fill('Program', 'Asrama (boarding)');
+    fill('Nama orang tua / wali', 'Ahmad Fauzi');
+    fill('Nomor WhatsApp orang tua', '081234567890');
+    fireEvent.submit(form);
+    const message = form.querySelector('[data-ppdb-message]')!.textContent!;
+    expect(message).toContain('Saya ingin mendaftar PPDB 2028/2029.');
+    expect(message).not.toContain('Info Pendaftaran');
+    const ok = { ...EMPTY_PPDB, student: 'Fatimah', gender: 'Putri', school: 'SMP A', parent: 'Ahmad', phone: '081234567890' };
+    expect(ppdbMessage(ok, { school: 'SMA X', period: '' })).toContain('Saya ingin mendaftar. Berikut data calon siswa:');
+  });
+
+  it('berita tanpa tanggal: tanpa ikon kalender yatim; tanpa tanggal & kategori → tanpa baris tanggal', () => {
+    const photo = (def.defaultContent.news as { items: { image: string }[] }).items[0].image;
+    const base = { excerpt: '', body: '', url: '' };
+    const news = section(
+      demo({
+        news: {
+          items: [
+            { ...base, category: 'Kegiatan', date: '', title: 'Berfoto tanpa tanggal', image: photo },
+            { ...base, category: 'Info', date: '', title: 'Tanpa foto dan tanggal', image: '' },
+            { ...base, category: '', date: '', title: 'Polos', image: '' },
+            { ...base, category: '', date: '2026-10-01', title: 'Bertanggal', image: '' },
+          ],
+        },
+      }),
+      'news',
+    );
+    const cards = Array.from(news.querySelectorAll('article'));
+    expect(cards).toHaveLength(4);
+    for (const card of cards.slice(0, 3)) expect(card.querySelector('.lucide-calendar-days'), card.textContent ?? '').toBeNull();
+    expect(cards[0].querySelector('h3')!.previousElementSibling?.tagName).not.toBe('P');
+    expect(cards[1].querySelector('p')!.textContent).toBe('Info');
+    expect(cards[2].firstElementChild?.tagName).toBe('H3');
+    expect(cards[3].querySelector('.lucide-calendar-days')).not.toBeNull();
+    expect(cards[3].querySelector('time')).toHaveAttribute('dateTime', '2026-10-01');
+  });
+
+  describe('menu & tombol tidak menunjuk section yang tidak dirender', () => {
+    const EMPTY: Record<string, Record<string, unknown>> = {
+      about: { title: '', body: '', facts: [], vision: '', missions: [], values: [] },
+      programs: { items: [] },
+      achievements: { title: '', items: [] },
+      ppdb: { title: '', tracks: [], schedule: [], form_title: '', form_button: '' },
+      news: { items: [] },
+      gallery: { items: [] },
+      contact: { title: '', address: '', phone: '', email: '', whatsapp: '', hours: '', maps_query: '', maps_url: '' },
+    };
+    // Satu isi saja → section tampil dan ada di menu
+    const ONE: [string, Record<string, unknown>][] = [
+      ['about', { vision: 'Visi sekolah' }],
+      ['about', { missions: [{ text: 'Misi' }] }],
+      ['about', { facts: [{ label: 'Berdiri', value: '2009' }] }],
+      ['programs', { items: [{ title: 'Tahfidz' }] }],
+      ['achievements', { title: 'Prestasi' }],
+      ['ppdb', { schedule: [{ title: 'Pendaftaran' }] }],
+      ['ppdb', { form_button: 'Kirim' }],
+      ['news', { items: [{ title: 'Berita' }] }],
+      ['gallery', { items: [{ image: '/assets/templates/photos/madani-hero-1920.webp' }] }],
+      ['contact', { hours: 'Senin–Jumat' }],
+      ['contact', { whatsapp: '081234567890' }],
+      ['contact', { maps_query: 'SMA IT Nurul Azka Bogor' }],
+    ];
+    const check = (content: Record<string, unknown>, key: string, expected: boolean) => {
+      const container = demo(content);
+      const rendered = sectionKeys(container).includes(key);
+      const inNav = navItems(resolveContent(def, content as SiteContent)).some((i) => i.key === key);
+      expect(rendered, `${key} dirender`).toBe(expected);
+      expect(inNav, `${key} di menu`).toBe(expected);
+      cleanup();
+    };
+
+    it('section kosong (tetapi dinyalakan) → tidak dirender dan tidak ada di menu; satu isi → tampil dan ada di menu', () => {
+      for (const [key, empty] of Object.entries(EMPTY)) check({ [key]: empty }, key, false);
+      for (const [key, filled] of ONE) check({ [key]: { ...EMPTY[key], ...filled } }, key, true);
+    }, 30_000);
+
+    it('Profil/PPDB/Kontak kosong → tombol hero & tanya program tidak menuju anchor mati', () => {
+      const container = demo({ about: EMPTY.about, ppdb: EMPTY.ppdb, contact: EMPTY.contact });
+      const hero = section(container, 'hero');
+      expect(within(hero).queryByRole('link', { name: 'Profil Sekolah' })).toBeNull();
+      expect(within(hero).getByRole('link', { name: 'Daftar PPDB' })).toHaveAttribute('href', expect.stringMatching(/^https:\/\/wa\.me\/6281298760421/));
+      // Tautan bawaan template (bukan tautan yang ditulis di CMS, mis. "#ppdb" di pengumuman)
+      const scopes = [hero, section(container, 'programs'), section(container, 'faq'), section(container, 'cta'), container.querySelector('header')!, container.querySelector('footer')!];
+      for (const scope of scopes) {
+        for (const href of ['#tentang', '#ppdb', '#kontak']) expect(scope.querySelector(`a[href="${href}"]`), `${scope.tagName} ${href}`).toBeNull();
+      }
+      expect(navItems(resolveContent(def, { about: EMPTY.about, ppdb: EMPTY.ppdb, contact: EMPTY.contact })).map((i) => i.key)).toEqual(['programs', 'achievements', 'news', 'gallery']);
+    });
+  });
+
+  it('teks bantuan CMS sesuai perilaku: label kecil tidak mengubah menu, tombol kedua ajakan → WhatsApp panitia, contoh tanggal', () => {
+    const fields = allFields();
+    for (const f of fields.filter((x) => x.key === 'eyebrow')) expect(f.help ?? '').not.toMatch(/menu/i);
+    expect(navItems(resolveContent(def, { ppdb: { eyebrow: 'Pendaftaran' }, about: { eyebrow: 'Tentang' } })).map((i) => i.label)).toEqual(['Profil', 'Program', 'Prestasi', 'PPDB', 'Berita', 'Galeri', 'Kontak']);
+    const ctaSecondary = def.sections.find((s) => s.key === 'cta')!.fields.find((f) => f.key === 'secondary_url') as TemplateField;
+    expect(ctaSecondary.help).toMatch(/panitia PPDB/);
+    const dateHelps = fields.filter((f) => f.key === 'date' && /tahun-bulan-tanggal/.test(f.help ?? ''));
+    expect(dateHelps).toHaveLength(3);
+    for (const f of dateHelps) expect(f.help).toContain('14 November 2026');
+    const ppdbFields = def.sections.find((s) => s.key === 'ppdb')!.fields.map((f) => f.key);
+    expect(ppdbFields).toEqual(expect.arrayContaining(['form_school_label', 'form_period']));
   });
 });

@@ -9,7 +9,7 @@ import { stagger } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
 import { field, hasImage, list, paragraphs, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
-import type { MadaniModel } from './model';
+import { SECTION_FILLED, type MadaniModel } from './model';
 import { MADANI_PHOTOS } from './photos';
 import { C, DISPLAY, INSET, PANEL_RADIUS, TYPE_M } from './styles';
 import { SectionHead } from './ui';
@@ -38,7 +38,8 @@ export function About({ m }: { m: MadaniModel }) {
   const current = tabs.find((tab) => tab.key === chosen)?.key ?? tabs[0]?.key;
   const eyebrow = text(about, 'eyebrow');
   const title = text(about, 'title');
-  if (!title && tabs.length === 0) return null;
+  // Sama dengan: judul kosong dan tidak ada tab berisi (syarat dibagi dengan menu, lihat SECTION_FILLED)
+  if (!SECTION_FILLED.about(about)) return null;
 
   const select = (i: number) => {
     const tab = tabs[(i + tabs.length) % tabs.length];

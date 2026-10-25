@@ -12,7 +12,7 @@ import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { SOCIAL_FIELDS } from '../shared/social';
 import { mailHref, resolveAction, telHref, text, type LinkAction } from '../shared/utils';
-import { mapFor, type MadaniModel } from './model';
+import { mapFor, SECTION_FILLED, type MadaniModel } from './model';
 import { BTN, C, INSET, PANEL_RADIUS, SECTION_PAD, TYPE_M } from './styles';
 import { ArrowLink, Eyebrow } from './ui';
 
@@ -90,7 +90,8 @@ export function Contact({ m }: { m: MadaniModel }) {
     const link = m.socials.find((item) => item.key === s.key);
     return link ? [{ ...s, href: link.href }] : [];
   });
-  if (!title && rows.length === 0 && !map.embed) return null;
+  // Judul, baris info, dan peta kosong semua → tidak dirender (syarat dibagi dengan menu, lihat SECTION_FILLED)
+  if (!SECTION_FILLED.contact(contact)) return null;
 
   return (
     <TemplateSection sectionKey="contact" className={SECTION_PAD}>
