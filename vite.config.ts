@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
+import { assetVersionsPlugin } from './scripts/asset-versions.mjs'
 
 const publicDir = fileURLToPath(new URL('./public', import.meta.url))
 
@@ -110,6 +111,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     esToolkitCompatEsm,
+    // ?v=<hash> kartu OG & pratinjau template (src/seo/assetVersion.ts); path eksplisit karena deploy memakai publicDir: false
+    assetVersionsPlugin({ publicDir }),
     entryBudget(),
   ],
   // Dependency pre-bundling in dev does not run the plugins above

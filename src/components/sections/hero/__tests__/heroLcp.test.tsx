@@ -3,7 +3,8 @@
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
-import { primePreload, resetPreload, PRELOAD_URLS } from '../../../../lib/preload';
+import { primePreload, resetPreload, seoDataFromApi, PRELOAD_URLS } from '../../../../lib/preload';
+import { versionedAsset } from '../../../../seo/assetVersion';
 import { getHead } from '../../../../seo/routes';
 import type { SeoData } from '../../../../seo/types';
 import type { Template } from '../../../../types/platform';
@@ -55,9 +56,10 @@ describe('data tayangan hero', () => {
   it('latar bawaan: head beranda mem-preload slide pertama tayangan (firstShowcaseImage)', () => {
     expect(firstShowcaseImage(TEMPLATES)).toBe('/assets/templates/corporate-nexa-preview.webp');
     expect(getHead('/', seoData(TEMPLATES)).preloadImage).toBe('/assets/templates/corporate-nexa-preview.webp');
-    // tanpa preview_image → SVG bawaan template_code
+    // tanpa preview_image → SVG bawaan template_code (berversi ?v=<hash>, src/seo/assetVersion.ts)
     const noPreview = [template(3, 'finova', 'Finova', { preview_image: '' })];
-    expect(getHead('/', seoData(noPreview)).preloadImage).toBe('/assets/templates/finova-preview.svg');
+    expect(getHead('/', seoData(noPreview)).preloadImage).toBe(versionedAsset('/assets/templates/finova-preview.svg'));
+    expect(getHead('/', seoData(noPreview)).preloadImage).toMatch(/^\/assets\/templates\/finova-preview\.svg\?v=[0-9a-f]{8}$/);
   });
 
   it('latar Gambar → gambar pertama slider latar; Video → poster (tanpa poster: slide tayangan)', () => {
@@ -147,7 +149,24 @@ describe('HTML server tayangan hero', () => {
     );
     expect(html).toMatch(/<h1 [^>]*class="split [^"]*"/);
     expect(html).not.toMatch(/<h1 [^>]*is-hidden/);
-    expect(html).toContain('src="/assets/templates/corporate-nexa-preview.webp"');
+    // Data dari API/preload → pratinjau berversi (?v=<hash isi>), supaya gambar yang diganti tidak tertahan cache
+    const src = versionedAsset('/assets/templates/corporate-nexa-preview.webp');
+    expect(src).toMatch(/\?v=[0-9a-f]{8}$/);
+    expect(html).toContain(`src="${src}"`);
     expect(html).not.toContain('Memuat pratinjau template');
+  });
+
+  it('jalur prerender: preload head beranda = src <img> slide pertama, keduanya berversi (gambar LCP tidak diunduh dua kali)', () => {
+    const api = { [PRELOAD_URLS.templates]: { success: true, templates: TEMPLATES } };
+    primePreload({ path: '/', builtAt: '2026-10-23T03:00:00.000Z', api });
+    const html = renderToString(
+      <MemoryRouter>
+        <Hero />
+      </MemoryRouter>,
+    );
+    const preload = getHead('/', seoDataFromApi(api, '2026-10-23T03:00:00.000Z')).preloadImage;
+    expect(preload).toBe(versionedAsset('/assets/templates/corporate-nexa-preview.webp'));
+    expect(preload).toMatch(/\?v=[0-9a-f]{8}$/);
+    expect(html).toContain(`src="${preload}"`);
   });
 });

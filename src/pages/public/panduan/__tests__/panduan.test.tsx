@@ -166,7 +166,7 @@ describe('head panduan', () => {
     expect(head.title.length).toBeLessThanOrEqual(60);
     expect(head.description).toBe(a.description);
     expect(head.ogType).toBe('article');
-    expect(head.ogImage).toMatch(/^https:\/\/garudanexa\.com\/og\/panduan(-[a-z0-9-]+)?\.jpg$/);
+    expect(head.ogImage).toMatch(/^https:\/\/garudanexa\.com\/og\/panduan(-[a-z0-9-]+)?\.jpg\?v=[0-9a-f]{8}$/);
     const article = nodeOfType(path, 'Article')!;
     expect(article).toEqual({
       '@type': 'Article',

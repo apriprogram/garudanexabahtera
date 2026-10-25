@@ -472,6 +472,8 @@ export function seoFallbackContext(ssr, data, sampleSlug, builtAt) {
     pricingIncludes: ssr.getTemplatePricing(data.settings).includes,
     // Artikel panduan yang terbit setelah deploy (seo.php?guide=…): akhiran judul, kartu OG, penulis JSON-LD
     guide: ssr.guideFallbackContext?.() ?? null,
+    // ?v=<hash> pratinjau & galeri template (src/seo/assetVersion.ts), dari peta yang sama dengan bundel ini
+    assetVersions: { ...(ssr.ASSET_VERSIONS ?? {}) },
   };
 }
 

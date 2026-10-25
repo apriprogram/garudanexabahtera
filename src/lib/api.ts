@@ -1,5 +1,6 @@
 // Pemanggil API bersama untuk halaman baru (marketplace template, akun, custom order).
 // Token login dilampirkan otomatis oleh pembungkus fetch di src/lib/auth.ts.
+import { versionTemplateResponse } from '../seo/assetVersion';
 
 export class ApiError extends Error {
   status: number;
@@ -65,9 +66,14 @@ export const primeApiGet = (url: string, data: unknown) => {
   primedGets.set(url, data);
 };
 
-/** Respons preload untuk aksi ini, atau undefined. Hanya-baca. */
-export const peekApiGet = <T,>(action: string, params: Record<string, string | number | undefined> = {}): T | undefined =>
-  primedGets.get(apiUrl(action, params)) as T | undefined;
+/**
+ * Respons preload untuk aksi ini, atau undefined. Hanya-baca. Gambar template (get_templates/get_template) diberi
+ * ?v=<hash> seperti apiGet, jadi HTML prerender, hidrasi, dan data terbaru dari server memakai URL gambar yang sama.
+ */
+export const peekApiGet = <T,>(action: string, params: Record<string, string | number | undefined> = {}): T | undefined => {
+  const body = primedGets.get(apiUrl(action, params)) as T | undefined;
+  return body === undefined ? undefined : versionTemplateResponse(action, body);
+};
 
 async function requestGet<T>(url: string): Promise<T> {
   let res: Response;
@@ -79,14 +85,19 @@ async function requestGet<T>(url: string): Promise<T> {
   return parse<T>(res);
 }
 
-/** GET untuk aksi baca publik: apiGet('get_templates', { category: 'Company Profile' }) */
+/**
+ * GET untuk aksi baca publik: apiGet('get_templates', { category: 'Company Profile' }). Pratinjau & galeri di
+ * get_templates/get_template diberi ?v=<hash> (src/seo/assetVersion.ts); aksi admin (admin_get_templates) apa adanya,
+ * karena nilainya dikirim balik saat menyimpan.
+ */
 export async function apiGet<T>(action: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
   const url = apiUrl(action, params);
-  if (!SHARED_GET_ACTIONS.has(action)) return requestGet<T>(url);
+  const request = () => requestGet<T>(url).then((body) => versionTemplateResponse(action, body));
+  if (!SHARED_GET_ACTIONS.has(action)) return request();
 
   let shared = sharedGets.get(url) as Promise<T> | undefined;
   if (!shared) {
-    shared = requestGet<T>(url);
+    shared = request();
     sharedGets.set(url, shared);
     // Gagal → hapus dari cache, jadi "Coba lagi" benar-benar meminta ulang ke server
     shared.catch(() => {

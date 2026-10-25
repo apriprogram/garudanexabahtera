@@ -1,8 +1,10 @@
 // Gambar Open Graph host utama (docs/platform/SEO-PLAN.md §5.3, keputusan default 7).
 // Kartu 1200×630 JPG dibuat sekali oleh `node scripts/seo/og-images.mjs`, di-commit di public/og/, dan daftarnya ditulis
 // skrip itu ke ogCards.generated.ts. Kartu yang belum dibuat (mis. template yang baru terbit) → default.jpg.
-// Modul murni, aman diimpor dari *.seo.ts, prerender dan skrip Node.
+// URL kartu memakai ?v=<hash isi> (./assetVersion) supaya kartu yang dibuat ulang langsung dipakai, tidak tertahan cache.
+// Modul murni (tanpa React), aman diimpor dari *.seo.ts dan prerender (lewat Vite, karena peta versinya modul virtual).
 import { COMPANY_FACTS } from '../lib/companyFacts';
+import { versionedAsset } from './assetVersion';
 import { OG_CARDS } from './ogCards.generated';
 import { SITE_ORIGIN, absoluteUrl } from './paths';
 
@@ -22,8 +24,9 @@ const GENERATED: ReadonlySet<string> = new Set(OG_CARDS);
 /** true bila public/og/{name}.jpg sudah dibuat skrip (tercatat di ogCards.generated.ts). */
 export const hasOgCard = (name: string): boolean => GENERATED.has(name);
 
-/** URL absolut kartu OG; kartu yang belum ada → kartu default. */
-export const ogCardUrl = (name: string): string => absoluteUrl(`${OG_DIR}${hasOgCard(name) ? name : 'default'}.jpg`);
+/** URL absolut kartu OG berversi (…/og/harga.jpg?v=1a2b3c4d); kartu yang belum ada → kartu default. */
+export const ogCardUrl = (name: string): string =>
+  versionedAsset(absoluteUrl(`${OG_DIR}${hasOgCard(name) ? name : 'default'}.jpg`));
 
 /**
  * Nilai `ogImage` untuk head: nama kartu ("harga", "template-aura-studio"), path situs ("/assets/x.jpg") atau URL
@@ -37,7 +40,13 @@ export function resolveOgImage(value: string | null | undefined): string {
   return ogCardUrl(v);
 }
 
-/** true bila URL gambar adalah kartu 1200×630 buatan skrip (dimensinya pasti, jadi boleh ditulis di og:image:width). */
-export const isOgCardUrl = (url: string): boolean => url.startsWith(`${SITE_ORIGIN}${OG_DIR}`) && url.endsWith('.jpg');
+/**
+ * true bila URL gambar adalah kartu 1200×630 buatan skrip (dimensinya pasti, jadi boleh ditulis di og:image:width).
+ * Query versi (?v=…) diabaikan. Aturan yang sama di backend/seo.php (seo_render_head_tags).
+ */
+export function isOgCardUrl(url: string): boolean {
+  const path = url.split(/[?#]/, 1)[0];
+  return path.startsWith(`${SITE_ORIGIN}${OG_DIR}`) && path.endsWith('.jpg');
+}
 
 export const DEFAULT_OG_ALT = `${COMPANY_FACTS.name}: template website siap pakai serta jasa pembuatan website dan aplikasi mobile`;

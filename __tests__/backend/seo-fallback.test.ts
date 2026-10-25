@@ -141,6 +141,22 @@ describe.skipIf(!PHP_AVAILABLE)('backend/seo.php matches the prerendered templat
     });
   });
 
+  it('versioned images (?v=<hash>): OG card keeps og:image:width/height, real preview files get the build version', () => {
+    // Bila TS dan PHP sama-sama lupa, tes kesamaan di atas tetap lulus; jadi periksa hasilnya langsung.
+    const php = results[0];
+    expect(php.head.ogImage).toMatch(/^https:\/\/garudanexa\.com\/og\/default\.jpg\?v=[0-9a-f]{8}$/);
+    expect(php.tags).toContain('<meta property="og:image:width" content="1200"');
+    expect(php.tags).toContain('<meta property="og:image:height" content="630"');
+    const version = ctx.assetVersions[NEW_TEMPLATES[0].preview_image as string];
+    expect(version).toMatch(/^[0-9a-f]{8}$/);
+    expect(php.head.preloadImage).toBe(`${NEW_TEMPLATES[0].preview_image}?v=${version}`);
+    // Berkas yang tidak ada di peta (uji-1.webp) tetap tanpa versi, sekali saja (duplikat galeri dibuang)
+    const nodes = php.head.jsonLd as { '@type'?: string; image?: string[] }[];
+    const images = nodes.find((node) => node['@type'] === 'Product')?.image ?? [];
+    expect(images).toContain('https://garudanexa.com/assets/templates/uji-1.webp');
+    expect(images.filter((src) => src.includes('uji-1.webp'))).toHaveLength(1);
+  });
+
   it('renders the page: one head, readable <main> in #root with H1, price, features and order/demo links', () => {
     const page = results[0].page;
     expect(page.match(/<title>/g)).toHaveLength(1);

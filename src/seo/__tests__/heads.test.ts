@@ -97,7 +97,8 @@ describe('beranda, /pesan-custom, legal (Lampiran A)', () => {
     expect(head.title).toBe('Template Website Siap Pakai & Jasa Website | Garuda Nexa');
     expect(head.title).toBe(HOME_TITLE);
     expect(head.description).toBe(HOME_DESCRIPTION);
-    expect(head.ogImage).toBe(`${SITE_ORIGIN}/og/default.jpg`);
+    expect(head.ogImage).toBe(ogCardUrl('default'));
+    expect(head.ogImage).toMatch(/^https:\/\/garudanexa\.com\/og\/default\.jpg\?v=[0-9a-f]{8}$/);
     expect(types(head)).toEqual(['Organization', 'WebSite', 'WebPage', 'ItemList', 'FAQPage']);
     // section katalog disembunyikan admin → tanpa ItemList; FAQ disembunyikan → tanpa FAQPage
     const hidden = seoData(TEMPLATES, { disabled_sections: '["templates"]' });
@@ -243,8 +244,11 @@ describe('penolong', () => {
     expect(pageHead(DATA, { ...base, robots: 'noindex,follow', jsonLd: [{ '@type': 'Thing' }] })).toMatchObject({ canonical: null, jsonLd: [] });
     const head = pageHead(DATA, { ...base, ogImage: 'harga' });
     expect(head.canonical).toBe(`${SITE_ORIGIN}/harga`);
-    expect(head.ogImage).toBe(`${SITE_ORIGIN}/og/harga.jpg`);
+    expect(head.ogImage).toBe(ogCardUrl('harga'));
+    expect(head.ogImage).toMatch(/^https:\/\/garudanexa\.com\/og\/harga\.jpg\?v=[0-9a-f]{8}$/);
+    // Kartu yang tidak ada → kartu default, dengan versi kartu default (bukan versi nama yang diminta)
     expect(resolveOgImage('tidak-ada-kartunya')).toBe(DEFAULT_OG_IMAGE);
+    expect(DEFAULT_OG_IMAGE).toBe(ogCardUrl('default'));
     expect(resolveOgImage('/assets/x.jpg')).toBe(`${SITE_ORIGIN}/assets/x.jpg`);
     expect(resolveOgImage('https://cdn.example/x.jpg')).toBe('https://cdn.example/x.jpg');
     expect((head.jsonLd[0] as { '@id': string })['@id']).toBe(ORGANIZATION_ID);

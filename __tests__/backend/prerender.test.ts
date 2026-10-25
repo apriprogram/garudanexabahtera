@@ -494,5 +494,9 @@ describe('server render (src/entry-server.tsx)', () => {
     expect(ctx.globalJsonLd.map((node: { '@type': string }) => node['@type'])).not.toContain('Product');
     expect(ctx.categorySlugs).toContain('kecantikan-klinik');
     expect(ctx.pricingIncludes.length).toBeGreaterThan(0);
+    // Peta ?v=<hash> untuk pratinjau template di seo.php = peta yang sama dengan bundel prerender
+    expect(ctx.assetVersions).toEqual(ssr.ASSET_VERSIONS);
+    expect(ctx.assetVersions['/og/default.jpg']).toMatch(/^[0-9a-f]{8}$/);
+    expect(ctx.defaultOgImage).toBe(`https://garudanexa.com/og/default.jpg?v=${ctx.assetVersions['/og/default.jpg']}`);
   });
 });

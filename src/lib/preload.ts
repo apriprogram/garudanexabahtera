@@ -10,6 +10,7 @@ import { useSyncExternalStore } from 'react';
 import { apiUrl, clearApiCache, primeApiGet } from './api';
 import { guidesFromApi } from '../content/panduan/core';
 import { clearCachedJson, primeCachedJson } from '../hooks/useCachedJson';
+import { versionTemplateImages } from '../seo/assetVersion';
 import type { SeoData } from '../seo/types';
 import type { Template } from '../types/platform';
 
@@ -111,15 +112,16 @@ export function seoDataFromApi(api: Record<string, unknown>, builtAt: string): S
     return body && typeof body === 'object' ? ((body as Record<string, unknown>)[key] as T | undefined) : undefined;
   };
   const settings = api[PRELOAD_URLS.settings];
-  const templates = (field<unknown[]>(PRELOAD_URLS.templates, 'templates') ?? []).filter(
-    (tpl): tpl is Template => Boolean(tpl) && typeof (tpl as Template).slug === 'string',
-  );
+  // Pratinjau & galeri ber-?v=<hash> (sama dengan apiGet/peekApiGet), untuk head, JSON-LD, sitemap, dan kartu OG
+  const templates = (field<unknown[]>(PRELOAD_URLS.templates, 'templates') ?? [])
+    .filter((tpl): tpl is Template => Boolean(tpl) && typeof (tpl as Template).slug === 'string')
+    .map(versionTemplateImages);
   const templateBySlug: Record<string, Template> = {};
   for (const tpl of templates) templateBySlug[tpl.slug] = tpl;
   for (const [url, body] of Object.entries(api)) {
     if (!url.startsWith(`${apiUrl('get_template')}&`)) continue;
     const tpl = body && typeof body === 'object' ? (body as { template?: Template }).template : undefined;
-    if (tpl && typeof tpl.slug === 'string') templateBySlug[tpl.slug] = tpl;
+    if (tpl && typeof tpl.slug === 'string') templateBySlug[tpl.slug] = versionTemplateImages(tpl);
   }
   const projects = field<unknown[]>(PRELOAD_URLS.projects, 'projects');
   return {

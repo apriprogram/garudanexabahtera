@@ -493,7 +493,9 @@ async function renderJpegUnderLimit(renderer, html) {
 
 /** Path file pratinjau template di public/ (preview_image raster), atau null. */
 function previewFile(template, publicDir) {
-  const candidates = [template.preview_image, `/assets/templates/${template.slug}-preview.webp`]
+  // Query versi (?v=…, src/seo/assetVersion.ts) dibuang: yang dicari berkasnya di public/
+  const preview = String(template.preview_image ?? '').replace(/[?#].*$/, '');
+  const candidates = [preview, `/assets/templates/${template.slug}-preview.webp`]
     .filter((p) => typeof p === 'string' && /^\/[^?#]+\.(webp|png|jpe?g)$/i.test(p.trim()))
     .map((p) => join(publicDir, ...p.trim().slice(1).split('/')));
   const file = candidates.find((path) => existsSync(path));

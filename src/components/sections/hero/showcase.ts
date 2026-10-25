@@ -1,5 +1,6 @@
 // Data tayangan hero: template asli dari API (get_templates), dengan cadangan pratinjau statis bila gagal/kosong.
 import { apiGet, peekApiGet } from '../../../lib/api';
+import { versionedAsset } from '../../../seo/assetVersion';
 import type { Template } from '../../../types/platform';
 
 export interface ShowcaseItem {
@@ -63,7 +64,8 @@ export const STEP_MS = 3200;
 const MAX_ITEMS = 6;
 const TIMEOUT_MS = 7000;
 
-const previewFor = (code: string) => `/assets/templates/${code}-preview.svg`;
+// Berversi seperti preview_image dari apiGet, jadi perbandingan di toItem tetap sama-sama ber-?v=
+const previewFor = (code: string) => versionedAsset(`/assets/templates/${code}-preview.svg`);
 
 const SAMPLE: ShowcaseItem[] = [
   {

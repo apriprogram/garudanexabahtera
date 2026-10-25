@@ -140,12 +140,26 @@ function seo_template_description(array $t): string {
     ], SEO_DESCRIPTION_MAX);
 }
 
-/** Gambar raster (pratinjau lalu galeri), tanpa duplikat; SVG dilewati. */
-function seo_raster_images(array $t): array {
+/**
+ * "/assets/templates/x.webp" → "/assets/templates/x.webp?v=1a2b3c4d" bila berkasnya ada di peta versi build
+ * (ctx assetVersions dari seo-fallback.json); sama dengan versionedAsset di src/seo/assetVersion.ts.
+ */
+function seo_versioned_asset(string $src, array $ctx): string {
+    $value = trim($src);
+    if ($value === '' || preg_match('/[?#]/', $value)) return $value;
+    $origin = $ctx['origin'] . '/';
+    $path = strpos($value, $origin) === 0 ? substr($value, strlen($ctx['origin'])) : $value;
+    if ($path === '' || $path[0] !== '/' || strpos($path, '//') === 0) return $value;
+    $version = $ctx['assetVersions'][$path] ?? null;
+    return is_string($version) && $version !== '' ? $value . '?v=' . $version : $value;
+}
+
+/** Gambar raster (pratinjau lalu galeri) berversi, tanpa duplikat; SVG dilewati. */
+function seo_raster_images(array $t, array $ctx): array {
     $list = [];
     foreach (array_merge([$t['preview_image'] ?? null], $t['gallery'] ?? []) as $src) {
         if (!is_string($src)) continue;
-        $src = trim($src);
+        $src = seo_versioned_asset($src, $ctx);
         if ($src === '' || !preg_match(SEO_RASTER, $src) || in_array($src, $list, true)) continue;
         $list[] = $src;
     }
@@ -174,7 +188,7 @@ function seo_template_head(array $t, array $ctx): array {
     $origin = $ctx['origin'];
     $path = '/template/' . $t['slug'];
     $url = seo_page_url($origin, $path);
-    $raster = seo_raster_images($t);
+    $raster = seo_raster_images($t, $ctx);
     $images = $raster ? array_map(function ($src) use ($origin) { return seo_absolute($origin, $src); }, $raster) : [$ctx['defaultOgImage']];
     $description = seo_template_description($t);
     $productDescription = '';
@@ -300,8 +314,10 @@ function seo_render_head_tags(array $head, array $ctx): string {
     $tags[] = $meta('og:title', 'property', $head['title']);
     $tags[] = $meta('og:description', 'property', $head['description']);
     $tags[] = $meta('og:image', 'property', $head['ogImage']);
+    // Kartu 1200×630 buatan skrip (query versi ?v=… diabaikan); sama dengan isOgCardUrl di src/seo/og.ts
     $ogDir = $ctx['origin'] . '/og/';
-    if (strpos($head['ogImage'], $ogDir) === 0 && substr($head['ogImage'], -4) === '.jpg') {
+    $ogPath = preg_replace('/[?#].*$/s', '', $head['ogImage']);
+    if (strpos($ogPath, $ogDir) === 0 && substr($ogPath, -4) === '.jpg') {
         $tags[] = $meta('og:image:type', 'property', 'image/jpeg');
         $tags[] = $meta('og:image:width', 'property', '1200');
         $tags[] = $meta('og:image:height', 'property', '630');

@@ -1,9 +1,13 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import { fileURLToPath } from 'node:url'
+import { assetVersionsPlugin } from './scripts/asset-versions.mjs'
 
 export default defineConfig({
   plugins: [
     react(),
+    // virtual:gn-asset-versions (src/seo/assetVersion.ts); Vitest tidak memuat vite.config.ts
+    assetVersionsPlugin({ publicDir: fileURLToPath(new URL('./public', import.meta.url)) }),
   ],
   test: {
     environment: 'jsdom',

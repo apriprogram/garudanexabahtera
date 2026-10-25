@@ -23,6 +23,7 @@ import type { PageSeo } from './seo/types';
 export { getHead, getIndexableRoutes, normalizePathname } from './seo/routes';
 export { renderHeadTags } from './seo/head';
 export { notFoundHead } from './seo/defaults';
+export { ASSET_VERSIONS } from './seo/assetVersion';
 export { CATEGORY_SLUGS, HUB_PATHS, LEGAL_PATHS, SITE_ORIGIN } from './seo/paths';
 export { CATEGORY_LIST } from './content/categories';
 export { getTemplatePricing } from './hooks/useSiteSettings';

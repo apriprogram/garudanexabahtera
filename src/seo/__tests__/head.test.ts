@@ -5,6 +5,7 @@
 // tempat saat navigasi, menghapus tag data-gn yang tidak dipakai, dan mengambil alih tag lama tanpa menggandakannya.
 import { afterEach, describe, expect, it } from 'vitest';
 import { applyHead, headTags, renderHeadTags } from '../head';
+import { ogCardUrl } from '../og';
 import { getHead } from '../routes';
 import { DATA } from './fixtures';
 
@@ -43,7 +44,9 @@ describe('applyHead', () => {
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://garudanexa.com/template/aura-studio');
     expect(meta('meta[property="og:url"]')).toBe('https://garudanexa.com/template/aura-studio');
     expect(meta('meta[property="og:type"]')).toBe('product');
-    expect(meta('meta[property="og:image"]')).toBe('https://garudanexa.com/og/template-aura-studio.jpg');
+    // Kartu berversi (?v=<hash isi>, src/seo/assetVersion.ts); dimensinya tetap ditulis meski URL ber-query
+    expect(meta('meta[property="og:image"]')).toBe(ogCardUrl('template-aura-studio'));
+    expect(meta('meta[property="og:image"]')).toMatch(/^https:\/\/garudanexa\.com\/og\/template-aura-studio\.jpg\?v=[0-9a-f]{8}$/);
     expect(meta('meta[property="og:image:width"]')).toBe('1200');
     expect(meta('meta[property="og:locale"]')).toBe('id_ID');
     expect(meta('meta[property="product:price:amount"]')).toBe('1390000');

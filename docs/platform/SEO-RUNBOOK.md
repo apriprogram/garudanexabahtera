@@ -68,6 +68,16 @@ node scripts/seo/og-images.mjs --only icons
 - **Daftar kartu:** skrip menulis ulang `src/seo/ogCards.generated.ts`. `getHead` hanya merujuk kartu yang tercatat di sana, dan kartu yang belum ada otomatis diganti `og/default.jpg`.
 - **Commit:** `public/og/`, `src/seo/ogCards.generated.ts`, dan file ikon bila ikut dibuat. Tes `__tests__/seo/assets.test.ts` memeriksa ukuran, dimensi, dan bahwa daftar sama dengan isi folder.
 - **Saat deploy,** `buildOgImages()` hanya memeriksa kartu yang belum ada dan menulis peringatan. Kartu tidak dibuat di server.
+- **Versi URL (`?v=<hash>`):** URL kartu OG (`/og/x.jpg?v=1a2b3c4d`) dan pratinjau/galeri template (`/assets/templates/x.webp?v=…`)
+  memakai 8 hex awal sha256 isi berkasnya. Alasannya: Cloudflare dan `.htaccess` menyimpan gambar 30 hari per URL, jadi
+  gambar yang diganti dengan nama sama tidak akan tampil tanpa purge.
+  - Peta versinya dihitung ulang dari `public/` setiap build, dev dan tes (`scripts/asset-versions.mjs` → modul virtual
+    `virtual:gn-asset-versions` → `src/seo/assetVersion.ts`). Cukup ganti berkasnya lalu deploy; tidak ada langkah manual.
+  - Versi hanya untuk tampilan. Nilai `preview_image`/`gallery` di database tetap tanpa versi, dan data admin
+    (`admin_get_templates`) tidak pernah diberi versi, karena form admin mengirimnya balik saat menyimpan.
+  - `seo.php` (template terbit setelah deploy) mendapat peta yang sama lewat `assetVersions` di `_pre/seo-fallback.json`.
+  - Syarat di Cloudflare: Caching Level **Standard** (query termasuk kunci cache); jangan pakai "Ignore query string" untuk
+    `/og/*` atau `/assets/*`.
 
 Logo sumber ikon adalah path sayap `WINGS_PATH` di `src/components/ui/LogoMark.tsx` (warna `#211FFE`). Jika logo berubah, jalankan `--only icons`. `public/favicon.svg?v=2` tetap dipakai browser modern; `favicon.ico` hanya cadangan.
 
