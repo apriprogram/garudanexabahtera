@@ -84,6 +84,10 @@ export const PANEL = {
   deep: `ck-deep rounded-[24px] text-white @3xl:rounded-[32px] ${INSET_PAD}`,
 } as const;
 
+/** Pita gelap selebar layar dari tepi ke tepi (teaching factory, footer; pemilik 2026-10-25): tanpa sudut membulat dan
+ *  tanpa jarak tepi. Isinya dibungkus CONTAINER agar sejajar section lain. */
+export const BAND_DEEP = 'ck-deep text-white';
+
 /** Isian formulir: 16px di HP (iOS tidak memperbesar), garis tipis, fokus cincin tema versi kontras (--tpl-accent-ink ≥ 3:1
  *  di putih, juga untuk warna tema terang dari CMS). */
 export const INPUT =

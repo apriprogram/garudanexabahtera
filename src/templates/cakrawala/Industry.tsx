@@ -1,6 +1,6 @@
 // Teaching factory & industri (kunci `industry`) + prestasi (kunci `achievements`).
-// Industri: panel biru tinta membulat (inset, referensi CBRLP) — label, H2, deskripsi, unit produksi berikon di kiri,
-// foto berketerangan di kanan; di bawahnya tiga kartu sertifikasi gelap, lalu deret logo mitra (logo unggahan, atau
+// Industri: pita biru tinta selebar layar (pemilik 2026-10-25; dulu panel inset) — label, H2, deskripsi, unit produksi
+// berikon di kiri, foto berketerangan di kanan; di bawahnya tiga kartu sertifikasi gelap, lalu deret logo mitra (logo unggahan, atau
 // simbol geometris + nama) di atas garis tipis. Prestasi: kartu putih bergaris tipis — ikon piala, chip tingkat, tahun,
 // peringkat (H3), nama lomba, dan nama siswa.
 import { UserRound } from 'lucide-react';
@@ -13,7 +13,7 @@ import { KitPhoto } from '../kit/Photo';
 import { PartnerMark } from './marks';
 import type { CakrawalaModel } from './model';
 import { CAKRAWALA_PHOTOS } from './photos';
-import { C, CARD, DISPLAY, PANEL, PANEL_OUTER, SECTION_PAD, TYPE_C } from './styles';
+import { BAND_DEEP, C, CARD, DISPLAY, SECTION_PAD, TYPE_C } from './styles';
 import { IconBox, SectionHead } from './ui';
 
 const SUB_TITLE = 'text-[12.5px] font-semibold uppercase tracking-[0.14em]';
@@ -46,76 +46,74 @@ export function Industry({ m }: { m: CakrawalaModel }) {
   const partnersTitle = text(industry, 'partners_title');
 
   return (
-    <TemplateSection sectionKey="industry" className="py-2">
-      <div className={PANEL_OUTER}>
-        <div data-tpl-tone="inverse" className={`${PANEL.deep} ${SECTION_PAD}`}>
-          <div className="grid gap-10 @4xl:grid-cols-12 @5xl:gap-14">
-            <div className={`min-w-0 ${hasImage(image) ? '@4xl:col-span-6' : '@4xl:col-span-12'}`}>
-              <SectionHead layout="stack" tone="dark" eyebrow={text(industry, 'eyebrow')} title={title} subtitle={text(industry, 'subtitle')} />
-              {units.length > 0 && (
-                <div className="mt-9">
-                  {unitsTitle && <h3 className={`${SUB_TITLE} text-(--ck-bright)`}>{unitsTitle}</h3>}
-                  <ul className={`${unitsTitle ? 'mt-4' : ''} divide-y divide-white/10 border-y border-white/10`}>
-                    {units.map((item, i) => (
-                      <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 70)} className="flex gap-4 py-4">
-                        <IconBox title={field(item, 'title')} index={i} tone="dark" className="h-10 w-10 rounded-[12px]" />
-                        <div className="min-w-0">
-                          <p className={`${DISPLAY} text-[16px] font-semibold leading-snug text-white`}>{field(item, 'title')}</p>
-                          {field(item, 'text') && <p className="mt-1 text-[14px] leading-relaxed text-white/70">{field(item, 'text')}</p>}
-                        </div>
-                      </Reveal>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-            {hasImage(image) && (
-              <Reveal variant="fade" className="@4xl:col-span-6">
-                <figure className="relative">
-                  <KitPhoto
-                    src={image}
-                    alt={CAKRAWALA_PHOTOS.alt(image, caption || `Praktik di ${m.companyName}`)}
-                    sizes="(min-width: 1280px) 720px, (min-width: 896px) 48vw, 92vw"
-                    className="aspect-[4/3] rounded-[22px] @4xl:aspect-auto @4xl:h-full @4xl:min-h-[440px]"
-                  />
-                  {caption && (
-                    <figcaption className="absolute bottom-3 left-3 right-3 rounded-[14px] bg-[#0D1830]/70 px-4 py-2.5 text-[13px] leading-snug text-white backdrop-blur-md @xl:right-auto">
-                      {caption}
-                    </figcaption>
-                  )}
-                </figure>
-              </Reveal>
+    <TemplateSection sectionKey="industry" data-tpl-tone="inverse" className={`${BAND_DEEP} ${SECTION_PAD}`}>
+      <div className={CONTAINER}>
+        <div className="grid gap-10 @4xl:grid-cols-12 @5xl:gap-14">
+          <div className={`min-w-0 ${hasImage(image) ? '@4xl:col-span-6' : '@4xl:col-span-12'}`}>
+            <SectionHead layout="stack" tone="dark" eyebrow={text(industry, 'eyebrow')} title={title} subtitle={text(industry, 'subtitle')} />
+            {units.length > 0 && (
+              <div className="mt-9">
+                {unitsTitle && <h3 className={`${SUB_TITLE} text-(--ck-bright)`}>{unitsTitle}</h3>}
+                <ul className={`${unitsTitle ? 'mt-4' : ''} divide-y divide-white/10 border-y border-white/10`}>
+                  {units.map((item, i) => (
+                    <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 70)} className="flex gap-4 py-4">
+                      <IconBox title={field(item, 'title')} index={i} tone="dark" className="h-10 w-10 rounded-[12px]" />
+                      <div className="min-w-0">
+                        <p className={`${DISPLAY} text-[16px] font-semibold leading-snug text-white`}>{field(item, 'title')}</p>
+                        {field(item, 'text') && <p className="mt-1 text-[14px] leading-relaxed text-white/70">{field(item, 'text')}</p>}
+                      </div>
+                    </Reveal>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
-
-          {certs.length > 0 && (
-            <div className="mt-14">
-              {certsTitle && <h3 className={`${SUB_TITLE} text-(--ck-bright)`}>{certsTitle}</h3>}
-              <ul className={`${certsTitle ? 'mt-4' : ''} grid gap-3 @3xl:grid-cols-3`}>
-                {certs.map((item, i) => (
-                  <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 70)} className={`p-5 @3xl:p-6 ${CARD.dark}`}>
-                    <IconBox title={field(item, 'title')} index={i} tone="dark" className="h-10 w-10 rounded-[12px]" />
-                    <p className={`mt-5 ${DISPLAY} text-[17px] font-semibold leading-snug text-white`}>{field(item, 'title')}</p>
-                    {field(item, 'text') && <p className="mt-1.5 text-[14px] leading-relaxed text-white/70">{field(item, 'text')}</p>}
-                  </Reveal>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {partners.length > 0 && (
-            <div className="mt-14 border-t border-white/10 pt-8">
-              {partnersTitle && <h3 className={`${SUB_TITLE} text-white/70`}>{partnersTitle}</h3>}
-              <ul className={`${partnersTitle ? 'mt-6' : ''} flex flex-wrap items-center gap-x-10 gap-y-6`}>
-                {partners.map((item, i) => (
-                  <li key={`${field(item, 'name')}-${i}`} className="min-w-0 max-w-full">
-                    <Partner name={field(item, 'name')} logo={field(item, 'logo')} index={i} />
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {hasImage(image) && (
+            <Reveal variant="fade" className="@4xl:col-span-6">
+              <figure className="relative">
+                <KitPhoto
+                  src={image}
+                  alt={CAKRAWALA_PHOTOS.alt(image, caption || `Praktik di ${m.companyName}`)}
+                  sizes="(min-width: 1280px) 720px, (min-width: 896px) 48vw, 92vw"
+                  className="aspect-[4/3] rounded-[22px] @4xl:aspect-auto @4xl:h-full @4xl:min-h-[440px]"
+                />
+                {caption && (
+                  <figcaption className="absolute bottom-3 left-3 right-3 rounded-[14px] bg-[#0D1830]/70 px-4 py-2.5 text-[13px] leading-snug text-white backdrop-blur-md @xl:right-auto">
+                    {caption}
+                  </figcaption>
+                )}
+              </figure>
+            </Reveal>
           )}
         </div>
+
+        {certs.length > 0 && (
+          <div className="mt-14">
+            {certsTitle && <h3 className={`${SUB_TITLE} text-(--ck-bright)`}>{certsTitle}</h3>}
+            <ul className={`${certsTitle ? 'mt-4' : ''} grid gap-3 @3xl:grid-cols-3`}>
+              {certs.map((item, i) => (
+                <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 70)} className={`p-5 @3xl:p-6 ${CARD.dark}`}>
+                  <IconBox title={field(item, 'title')} index={i} tone="dark" className="h-10 w-10 rounded-[12px]" />
+                  <p className={`mt-5 ${DISPLAY} text-[17px] font-semibold leading-snug text-white`}>{field(item, 'title')}</p>
+                  {field(item, 'text') && <p className="mt-1.5 text-[14px] leading-relaxed text-white/70">{field(item, 'text')}</p>}
+                </Reveal>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {partners.length > 0 && (
+          <div className="mt-14 border-t border-white/10 pt-8">
+            {partnersTitle && <h3 className={`${SUB_TITLE} text-white/70`}>{partnersTitle}</h3>}
+            <ul className={`${partnersTitle ? 'mt-6' : ''} flex flex-wrap items-center gap-x-10 gap-y-6`}>
+              {partners.map((item, i) => (
+                <li key={`${field(item, 'name')}-${i}`} className="min-w-0 max-w-full">
+                  <Partner name={field(item, 'name')} logo={field(item, 'logo')} index={i} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </TemplateSection>
   );

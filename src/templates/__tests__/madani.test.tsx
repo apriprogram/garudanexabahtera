@@ -97,10 +97,11 @@ describe('Madani: skema & konten bawaan', () => {
     }
   });
 
-  it('konten demo lolos validasi CMS, logo kosong, semua foto terdaftar, ada di public/, dan tercatat di CREDITS.md', () => {
+  it('konten demo lolos validasi CMS, logo Tut Wuri Handayani (SVG), semua foto terdaftar, ada di public/, dan tercatat di CREDITS.md', () => {
     const c = def.defaultContent;
     expect(validateContent(def, resolveContent(def, null))).toEqual({});
-    expect(c.brand.logo).toBe('');
+    expect(c.brand.logo).toBe('/assets/templates/logos/tut-wuri-handayani.svg');
+    expect(existsSync(publicFile(c.brand.logo as string))).toBe(true);
     expect(c.brand.accent_color).toBe('#1B6B47');
     expect(c.hero.image).toBe('/assets/templates/photos/madani-hero-1920.webp');
     const photos = JSON.stringify(c).match(/\/assets\/templates\/photos\/[a-z0-9-]+\.webp/g) ?? [];
@@ -254,7 +255,8 @@ describe('Madani: demo', () => {
     expect(img.getAttribute('height')).toBe('1200');
     expect(img.getAttribute('alt')).toMatch(/siswi berjilbab/i);
     expect(container.querySelectorAll('img[fetchpriority="high"]')).toHaveLength(1);
-    expect(Array.from(container.querySelectorAll('img')).filter((i) => i.getAttribute('loading') !== 'lazy')).toHaveLength(1);
+    // Selain foto hero, hanya logo menu (SVG) yang dimuat di awal
+    expect(Array.from(container.querySelectorAll('img')).filter((i) => i.getAttribute('loading') !== 'lazy' && !i.getAttribute('src')?.endsWith('.svg'))).toHaveLength(1);
 
     const header = container.querySelector('header')!;
     expect(header.className).toContain('h-0');
@@ -262,7 +264,9 @@ describe('Madani: demo', () => {
     const nav = within(header).getAllByRole('navigation', { name: 'Menu utama' })[0];
     expect(Array.from(nav.querySelectorAll('a')).map((a) => a.textContent)).toEqual(['Profil', 'Program', 'Prestasi', 'PPDB', 'Berita', 'Galeri', 'Kontak']);
     expect(within(header).getByRole('link', { name: 'PPDB 2027' })).toHaveAttribute('href', '#ppdb');
-    expect(header.querySelector('svg[viewBox="0 0 32 32"]'), 'MadaniMark').not.toBeNull();
+    // Logo demo (Tut Wuri Handayani) di menu; logo dikosongkan → simbol Madani bawaan
+    expect(header.querySelector('img[src="/assets/templates/logos/tut-wuri-handayani.svg"]'), 'logo demo').not.toBeNull();
+    expect(demo({ brand: { logo: '' } }).querySelector('header svg[viewBox="0 0 32 32"]'), 'MadaniMark').not.toBeNull();
   });
 
   it('hero: tombol Daftar PPDB ke bagian PPDB, Profil Sekolah ke Profil, kartu info PPDB', () => {
@@ -572,6 +576,12 @@ describe('Madani: SEO situs pembeli', () => {
     for (const img of imgs) {
       const src = img.getAttribute('src') ?? '';
       expect(img.hasAttribute('alt'), src).toBe(true);
+      // Logo sekolah = SVG vektor di menu/footer bertinggi tetap: tanpa srcset/sizes, dan tidak memuat duluan
+      if (src.endsWith('.svg')) {
+        expect(src, 'hanya logo demo').toBe('/assets/templates/logos/tut-wuri-handayani.svg');
+        expect(img.closest('header, footer'), src).not.toBeNull();
+        continue;
+      }
       expect(Number(img.getAttribute('width')), src).toBeGreaterThan(0);
       expect(Number(img.getAttribute('height')), src).toBeGreaterThan(0);
       expect(img.getAttribute('srcset'), src).toMatch(/ (800|240)w, /);
@@ -579,7 +589,8 @@ describe('Madani: SEO situs pembeli', () => {
       // Alt kosong hanya untuk avatar di samping nama (dekoratif)
       if (!img.className.includes('rounded-full')) expect(img.getAttribute('alt')!.split(' ').length, src).toBeGreaterThanOrEqual(5);
     }
-    const eager = imgs.filter((img) => img.getAttribute('loading') !== 'lazy');
+    // Logo menu ikut dimuat di awal (di atas lipatan; berkas yang sama dipakai ulang di footer)
+    const eager = imgs.filter((img) => img.getAttribute('loading') !== 'lazy' && !img.getAttribute('src')?.endsWith('.svg'));
     expect(eager.map((img) => img.getAttribute('src'))).toEqual(['/assets/templates/photos/madani-hero-1920.webp']);
   });
 

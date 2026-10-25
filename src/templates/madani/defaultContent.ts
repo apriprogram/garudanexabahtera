@@ -11,7 +11,8 @@ export const madaniContent: SiteContent = {
   brand: {
     company_name: 'SMA IT Nurul Azka',
     tagline: 'Sekolah Islam Terpadu & Asrama di Bogor',
-    logo: '',
+    // Logo demo: lambang Tut Wuri Handayani (SVG dari berkas pemilik 2026-10-25); pembeli menggantinya di CMS
+    logo: '/assets/templates/logos/tut-wuri-handayani.svg',
     accent_color: MADANI_ACCENT,
     highlight_color: '',
   },

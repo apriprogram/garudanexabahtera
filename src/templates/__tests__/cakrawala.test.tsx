@@ -118,7 +118,7 @@ describe('Cakrawala: skema & konten bawaan', () => {
   it('konten demo lolos validasi CMS, logo Tut Wuri Handayani (SVG), semua foto terdaftar, ada di public/, dan tercatat di CREDITS.md', () => {
     const c = def.defaultContent;
     expect(validateContent(def, resolveContent(def, null))).toEqual({});
-    expect(c.brand.logo).toBe('/assets/templates/logos/cakrawala-logo-tut-wuri.svg');
+    expect(c.brand.logo).toBe('/assets/templates/logos/tut-wuri-handayani.svg');
     expect(existsSync(publicFile(c.brand.logo as string))).toBe(true);
     expect(c.brand.accent_color).toBe('#1D4ED8');
     expect(c.hero.image).toBe('/assets/templates/photos/cakrawala-hero-1-1920.webp');
@@ -364,7 +364,7 @@ describe('Cakrawala: demo', () => {
       'Kontak|#kontak',
     ]);
     // Logo demo (Tut Wuri Handayani) di menu; logo dikosongkan → simbol cakrawala bawaan
-    expect(header.querySelector('img[src="/assets/templates/logos/cakrawala-logo-tut-wuri.svg"]'), 'logo demo').not.toBeNull();
+    expect(header.querySelector('img[src="/assets/templates/logos/tut-wuri-handayani.svg"]'), 'logo demo').not.toBeNull();
     expect(demo({ brand: { logo: '' } }).querySelector('header svg[viewBox="0 0 32 32"]'), 'CakrawalaMark').not.toBeNull();
     fireEvent.click(within(nav).getByRole('link', { name: 'BKK' }));
     expect(scrolled).toEqual(['careers']);
@@ -710,7 +710,7 @@ describe('Cakrawala: SEO situs pembeli', () => {
       expect(img.hasAttribute('alt'), src).toBe(true);
       // Logo sekolah = SVG vektor di menu/footer bertinggi tetap: tanpa srcset/sizes, dan tidak memuat duluan
       if (src.endsWith('.svg')) {
-        expect(src, 'hanya logo demo').toBe('/assets/templates/logos/cakrawala-logo-tut-wuri.svg');
+        expect(src, 'hanya logo demo').toBe('/assets/templates/logos/tut-wuri-handayani.svg');
         expect(img.closest('header, footer'), src).not.toBeNull();
         continue;
       }
