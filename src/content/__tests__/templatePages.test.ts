@@ -151,6 +151,10 @@ describe('src/content/templates', () => {
     expect(gadgetku).toMatch(/tidak punya keranjang/);
     expect(gadgetku).toMatch(/tidak dikirim ke server/);
     expect(gadgetku).not.toMatch(/sinkron otomatis|stok real-?time|pembayaran otomatis/i);
+    const glowstory = visibleText(templateContent('glowstory') as TemplatePageContent);
+    expect(glowstory).not.toMatch(/menyembuhkan|mengobati|memutihkan|terbukti secara klinis|hasil permanen/i);
+    expect(glowstory).toMatch(/bukan diagnosis/);
+    expect(glowstory).toMatch(/tidak memproses pembayaran online/);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -182,6 +186,7 @@ describe('src/content/templates', () => {
     const c = templateContent('puncakgear') as TemplatePageContent;
     expect(fillName(c.lead, t)).toMatch(/^PuncakGear adalah template website toko outdoor /);
     const text = visibleText(c).toLowerCase();
+    for (const keyword of ['website toko perlengkapan pendakian', 'website toko alat gunung', 'website sewa alat pendakian']) expect(text, keyword).toContain(keyword);
     expect(TEMPLATE_COPY.puncakgear.niche).toBe('Toko Outdoor & Sewa Alat Pendakian');
     expect(TEMPLATE_PAGES.puncakgear.niche).toBe('toko outdoor & perlengkapan pendakian');
     expect(TEMPLATE_COPY.puncakgear.updated).toBe('2026-10-25');
@@ -203,16 +208,12 @@ describe('src/content/templates', () => {
     expect(TEMPLATE_COPY.gadgetku?.niche).toBe('Toko Aksesoris HP');
     // Kata kunci pendamping muncul alami di isi halaman
     const text = visibleText(c).toLowerCase();
+    for (const keyword of ['website toko aksesoris handphone', 'website toko online aksesoris hp', 'website toko casing hp']) expect(text, keyword).toContain(keyword);
     // Fitur demo dijelaskan sesuai cara kerjanya: pencarian & pratinjau casing di browser, pesanan lewat WhatsApp
     expect(text).toMatch(/pilih merek[^.]*tipe/);
     expect(text).toContain('hanya tampil di browser');
     expect(text).toContain('tidak punya keranjang dan pembayaran online');
     expect(text).not.toMatch(/checkout otomatis|pembayaran online tersedia|stok otomatis/);
-    for (const keyword of ['website toko perlengkapan pendakian', 'website toko alat gunung', 'website sewa alat pendakian', 'website toko aksesoris handphone', 'website toko online aksesoris hp', 'website toko casing hp']) expect(text, keyword).toContain(keyword);
-    const glowstory = visibleText(templateContent('glowstory') as TemplatePageContent);
-    expect(glowstory).not.toMatch(/menyembuhkan|mengobati|memutihkan|terbukti secara klinis|hasil permanen/i);
-    expect(glowstory).toMatch(/bukan diagnosis/);
-    expect(glowstory).toMatch(/tidak memproses pembayaran online/);
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {
