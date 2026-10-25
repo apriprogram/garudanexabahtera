@@ -36,6 +36,7 @@ import {
 } from '../puncakgear/model';
 import { PUNCAK_PHOTOS } from '../puncakgear/photos';
 import { SiteRenderer } from '../SiteRenderer';
+import { applySiteHead, siteTitle } from '../siteHead';
 import { contrast, parseHex } from '../shared/utils';
 import { isListField, type ListItem, type SiteContent } from '../types';
 
@@ -329,14 +330,17 @@ describe('PuncakGear: demo', () => {
     expect(within(products).getByRole('list', { name: 'Daftar produk' }).children).toHaveLength(8);
   }, SLOW);
 
-  it('panduan gunung: kartu terpilih membuka panel jalur + daftar centang; WhatsApp berisi barang yang belum dicentang', () => {
+  it('panduan gunung: tab terpilih membuka panelnya (jalur + daftar centang); WhatsApp berisi barang yang belum dicentang', () => {
     const guides = section(demo(), 'guides');
-    const cards = within(within(guides).getByRole('list', { name: 'Pilih gunung' })).getAllByRole('button');
-    expect(cards).toHaveLength(5);
-    expect(cards[0]).toHaveAttribute('aria-pressed', 'true');
-    const panel = within(guides).getByRole('region', { name: 'Panduan Gunung Rinjani' });
-    expect(cards[0]).toHaveAttribute('aria-controls', panel.id);
-    expect(within(panel).getByRole('heading', { level: 3 })).toHaveTextContent('Gunung Rinjani');
+    const tabs = within(within(guides).getByRole('tablist', { name: 'Pilih gunung' })).getAllByRole('tab');
+    expect(tabs).toHaveLength(5);
+    expect(tabs.map((t) => t.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false', 'false', 'false']);
+    expect(tabs.map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1']);
+    // Hanya panel terpilih yang tampil (panel lain `hidden`, tetap di DOM)
+    const panel = within(guides).getByRole('tabpanel');
+    expect(panel).toHaveAccessibleName('Gunung Rinjani, Lombok Timur, NTB');
+    expect(tabs[0]).toHaveAttribute('aria-controls', panel.id);
+    expect(within(panel).getByRole('heading', { level: 3 })).toHaveTextContent('Panduan mendaki Gunung Rinjani');
     expect(panel.textContent).toContain('3.726 mdpl');
     expect(panel.textContent).toContain('Sembalun – Senaru');
     expect(panel.textContent).toContain('eRinjani');
@@ -355,14 +359,26 @@ describe('PuncakGear: demo', () => {
     fireEvent.click(within(panel).getByRole('button', { name: /Hapus centang/ }));
     expect(progress).toHaveAttribute('aria-valuenow', '0');
 
-    fireEvent.click(cards[1]);
-    expect(cards[1]).toHaveAttribute('aria-pressed', 'true');
-    expect(cards[0]).toHaveAttribute('aria-pressed', 'false');
-    const semeru = within(guides).getByRole('region', { name: 'Panduan Gunung Semeru' });
+    fireEvent.click(tabs[1]);
+    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'false');
+    expect(panel).not.toBeVisible();
+    const semeru = within(guides).getByRole('tabpanel');
+    expect(semeru).toHaveAccessibleName('Gunung Semeru, Lumajang & Malang, Jawa Timur');
     expect(semeru.textContent).toContain('Ranu Kumbolo');
     expect(within(semeru).getAllByRole('checkbox')).toHaveLength(11);
     expect(within(semeru).getAllByRole('checkbox').every((box) => !(box as HTMLInputElement).checked)).toBe(true);
     expect(guides.textContent).toContain('Selalu cek pengumuman resmi pengelola gunung');
+
+    // Keyboard: panah memindah fokus & pilihan, Home/End ke ujung
+    tabs[1].focus();
+    fireEvent.keyDown(tabs[1], { key: 'ArrowRight' });
+    expect(tabs[2]).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[2]).toHaveFocus();
+    fireEvent.keyDown(tabs[2], { key: 'End' });
+    expect(tabs[4]).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
   }, SLOW);
 
   it('sewa: 3 alat & 2 hari terpilih saat dibuka, + / − mengubah hari, diskon ≥ 4 hari, pesan WhatsApp berisi rincian', () => {
@@ -450,7 +466,7 @@ describe('PuncakGear: pencarian di menu', () => {
     fireEvent.click(within(results).getByRole('link'));
     expect(scrolled).toEqual(['guides']);
     expect(within(header).queryByRole('searchbox')).toBeNull();
-    expect(within(section(container, 'guides')).getByRole('region', { name: 'Panduan Gunung Semeru' })).toBeInTheDocument();
+    expect(within(section(container, 'guides')).getByRole('tabpanel')).toHaveAccessibleName('Gunung Semeru, Lumajang & Malang, Jawa Timur');
 
     fireEvent.click(toggle);
     fireEvent.change(within(header).getByRole('searchbox'), { target: { value: 'carrier kategori' } });
@@ -466,6 +482,82 @@ describe('PuncakGear: pencarian di menu', () => {
     });
     expect(within(header).queryByRole('searchbox')).toBeNull();
     expect(toggle).toHaveFocus();
+  }, SLOW);
+});
+
+describe('PuncakGear: SEO situs demo', () => {
+  it('judul tab & meta description bawaan terbaca seperti toko outdoor (siteHead: "Nama — Tagline", kalimat hero)', () => {
+    expect(siteTitle('puncakgear', null)).toBe('Tapak Rimba Outdoor — Toko Outdoor & Sewa Alat Pendakian di Malang');
+    const restore = applySiteHead('puncakgear', null);
+    expect(document.title).toBe('Tapak Rimba Outdoor — Toko Outdoor & Sewa Alat Pendakian di Malang');
+    const description = document.head.querySelector('meta[name="description"]')?.getAttribute('content') ?? '';
+    expect(description).toMatch(/^Tenda, carrier, sleeping bag, dan sepatu gunung/);
+    expect(description).toMatch(/basecamp kami di Malang/);
+    expect(description.length).toBeLessThanOrEqual(155);
+    restore();
+  });
+
+  it('heading: satu H1, H2 di setiap section, H3/H4 berurutan tanpa lompatan; semua panduan gunung ber-H3 dan termuat di DOM', () => {
+    const container = demo();
+    const levels = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6')).map((h) => Number(h.tagName[1]));
+    expect(levels[0]).toBe(1);
+    expect(levels.filter((level) => level === 1)).toHaveLength(1);
+    for (let i = 1; i < levels.length; i += 1) expect(levels[i] - levels[i - 1], `heading ke-${i + 1}`).toBeLessThanOrEqual(1);
+    for (const key of ORDER.slice(1)) expect(section(container, key).querySelector('h2'), key).not.toBeNull();
+    expect(Array.from(section(container, 'categories').querySelectorAll('h3')).map((h) => h.textContent)).toEqual([
+      'Tenda',
+      'Carrier',
+      'Sleeping Bag',
+      'Sepatu Gunung',
+      'Perlengkapan Darurat',
+    ]);
+    const guides = section(container, 'guides');
+    const panels = Array.from(guides.querySelectorAll<HTMLElement>('[role="tabpanel"]'));
+    expect(panels.map((panel) => panel.hidden)).toEqual([false, true, true, true, true]);
+    expect(panels.map((panel) => panel.querySelector('h3')?.textContent)).toEqual([
+      'Panduan mendaki Gunung Rinjani',
+      'Panduan mendaki Gunung Semeru',
+      'Panduan mendaki Gunung Prau',
+      'Panduan mendaki Gunung Merbabu',
+      'Panduan mendaki Gunung Sindoro',
+    ]);
+    for (const panel of panels) {
+      expect(Array.from(panel.querySelectorAll('h4')).map((h) => h.textContent?.replace(/ untuk .*/, ''))).toEqual(['Gambaran jalur', 'Catatan keselamatan', 'Perlengkapan']);
+    }
+    // Teks panduan yang tidak dipilih tetap ada di HTML (bisa dibaca mesin pencari)
+    for (const route of ['Patak Banteng', 'Suwanting', 'Kledung', 'Ranu Kumbolo']) expect(guides.textContent).toContain(route);
+  }, SLOW);
+
+  it('gambar: alt deskriptif bahasa Indonesia, width/height, srcset + sizes; hanya foto hero yang eager + fetchpriority', () => {
+    const container = demo();
+    const imgs = Array.from(container.querySelectorAll('img'));
+    expect(imgs.length).toBeGreaterThanOrEqual(30);
+    for (const img of imgs) {
+      const src = img.getAttribute('src') ?? '';
+      // Avatar testimoni (KitAvatar bersama) dekoratif: nama orangnya tertulis tepat di sampingnya
+      const avatar = !!img.closest('[data-tpl-section="testimonials"]');
+      expect(img.getAttribute('alt')?.trim().length ?? 0, src).toBeGreaterThanOrEqual(avatar ? 0 : 12);
+      expect(Number(img.getAttribute('width')), src).toBeGreaterThan(0);
+      expect(Number(img.getAttribute('height')), src).toBeGreaterThan(0);
+      expect(img.getAttribute('srcset'), src).toMatch(/ (800|240)w/);
+      expect(img.getAttribute('sizes'), src).toBeTruthy();
+    }
+    const eager = imgs.filter((img) => img.getAttribute('loading') !== 'lazy');
+    expect(eager).toHaveLength(1);
+    expect(eager[0].closest('[data-tpl-section="hero"]')).not.toBeNull();
+    expect(eager[0]).toHaveAttribute('fetchpriority', 'high');
+    // Garis kontur & simbol bawaan: SVG dekoratif tersembunyi dari pembaca layar
+    for (const svg of container.querySelectorAll('svg[viewBox="0 0 800 600"], svg[viewBox="0 0 32 32"]')) {
+      expect(svg.getAttribute('aria-hidden') === 'true' || !!svg.closest('[aria-hidden="true"]')).toBe(true);
+    }
+  }, SLOW);
+
+  it('tautan = <a href> sungguhan, tombol hanya untuk aksi di halaman (filter, tab, centang, hari, FAQ, menu, cari)', () => {
+    const container = demo();
+    expect(container.querySelectorAll('a:not([href])')).toHaveLength(0);
+    for (const button of container.querySelectorAll('button')) expect(button).toHaveAttribute('type', 'button');
+    const sectionLinks = Array.from(container.querySelectorAll('a[href^="#"]')).map((a) => a.getAttribute('href'));
+    expect(sectionLinks).toEqual(expect.arrayContaining(['#products', '#guides', '#rental', '#kontak']));
   }, SLOW);
 });
 

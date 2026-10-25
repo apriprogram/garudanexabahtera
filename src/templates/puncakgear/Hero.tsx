@@ -29,7 +29,7 @@ function ProductCard({ m }: { m: PuncakModel }) {
       </span>
       {hasImage(image) && (
         <div className="relative mt-3 aspect-square overflow-hidden rounded-[14px] bg-[#E9ECE6] @max-5xl:hidden">
-          <KitPhoto src={image} alt="" fallback="none" sizes="200px" className="absolute inset-0" />
+          <KitPhoto src={image} alt={PUNCAK_PHOTOS.alt(image, title)} fallback="none" sizes="200px" className="absolute inset-0" />
         </div>
       )}
       {price && <span className="mt-3 block text-[15px] font-semibold tabular-nums text-[#0E1512]">{price}</span>}
@@ -103,7 +103,7 @@ export function Hero({ m }: { m: PuncakModel }) {
               {title}
             </Reveal>
             {subtitle && (
-              <Reveal as="p" delay={160} className="mt-5 max-w-[30ch] text-pretty text-[16px] leading-snug text-white/90 @3xl:mt-6 @3xl:text-[18px]">
+              <Reveal as="p" delay={160} className="mt-5 max-w-[40ch] text-pretty text-[16px] leading-snug text-white/90 @3xl:mt-6 @3xl:text-[18px]">
                 {subtitle}
               </Reveal>
             )}

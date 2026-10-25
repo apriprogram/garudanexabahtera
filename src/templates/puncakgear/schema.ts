@@ -42,7 +42,11 @@ export const puncakSections: TemplateSection[] = [
     description: 'Nama toko, logo, dan warna aksen (tombol di atas foto, chip aktif, centang, dan garis kontur).',
     fields: [
       t('company_name', 'Nama toko', { placeholder: 'mis. Tapak Rimba Outdoor', maxLength: 80 }),
-      t('tagline', 'Tagline', { placeholder: 'mis. Perlengkapan mendaki, siap dipakai atau disewa', maxLength: 100, help: 'Tampil di footer dan judul tab browser.' }),
+      t('tagline', 'Tagline', {
+        placeholder: 'mis. Toko Outdoor & Sewa Alat Pendakian di Malang',
+        maxLength: 100,
+        help: 'Tampil di footer dan judul tab browser/Google ("Nama — Tagline"). Sebutkan jenis usaha dan kota Anda.',
+      }),
       img('logo', 'Logo', 'PNG/SVG berlatar transparan, maks. 2 MB. Kosongkan untuk memakai simbol puncak & bendera bawaan template dan nama toko.'),
       {
         type: 'color',
@@ -61,7 +65,11 @@ export const puncakSections: TemplateSection[] = [
     fields: [
       t('eyebrow', 'Label kecil di atas judul', { placeholder: 'mis. Dibuat untuk mendaki', maxLength: 40, help: 'Kosongkan untuk menyembunyikan.' }),
       t('title', 'Judul besar', { placeholder: 'mis. Naik Lebih Tinggi', maxLength: 40, help: 'Ditulis huruf kapital otomatis. Paling bagus 2–4 kata pendek.' }),
-      ta('subtitle', 'Kalimat di bawah judul', { placeholder: 'mis. Perlengkapan mendaki yang teruji di jalur gunung Indonesia.', maxLength: 140 }),
+      ta('subtitle', 'Kalimat di bawah judul', {
+        placeholder: 'mis. Tenda, carrier, dan sepatu gunung yang teruji di jalur Indonesia.',
+        maxLength: 140,
+        help: 'Juga dipakai sebagai deskripsi situs di hasil pencarian Google.',
+      }),
       t('primary_label', 'Teks tombol utama', { placeholder: 'mis. Belanja Perlengkapan', maxLength: 30 }),
       url('primary_url', 'Tautan tombol utama', { help: 'Kosongkan untuk menuju bagian Produk.' }),
       t('secondary_label', 'Teks tautan kedua', { placeholder: 'mis. Sewa alat untuk pemula', maxLength: 36 }),

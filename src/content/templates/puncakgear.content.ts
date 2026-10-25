@@ -1,4 +1,4 @@
-// Isi halaman /template/puncakgear. Sumber fakta: src/templates/puncakgear (schema.ts, PuncakGear.tsx, Header.tsx,
+// Isi halaman /template/puncakgear (kata kunci: lihat puncakgear.ts). Sumber fakta: src/templates/puncakgear (schema.ts, PuncakGear.tsx, Header.tsx,
 // Hero.tsx, Categories.tsx, Products.tsx, Guides.tsx, Rental.tsx, Safety.tsx, Faq.tsx). Klaim wajib jujur: pesanan dan
 // sewa lewat WhatsApp, TANPA keranjang belanja, pembayaran online, stok, atau booking; info jalur di demo bukan sumber
 // resmi. Demo: Tapak Rimba Outdoor, Malang (fiktif).
@@ -6,15 +6,15 @@ import type { TemplatePageContent } from './page.types';
 
 export const content: TemplatePageContent = {
   lead:
-    '{nama} adalah template website untuk toko perlengkapan mendaki dan penyewaan alat camping yang ingin tampil gagah sekaligus membantu calon pembeli bersiap. Selain kategori dan produk terlaris, ada panduan per gunung dengan daftar perlengkapan yang bisa dicentang dan kalkulator sewa untuk pendaki pemula, jadi pengunjung tahu apa yang harus dibeli atau disewa sebelum menghubungi Anda.',
+    '{nama} adalah template website toko outdoor untuk Anda yang menjual atau menyewakan perlengkapan pendakian: tenda, carrier, sleeping bag, sepatu gunung, dan perlengkapan darurat. Selain kategori dan produk terlaris, ada panduan per gunung dengan daftar perlengkapan yang bisa dicentang dan kalkulator sewa untuk pendaki pemula, jadi pengunjung tahu apa yang perlu dibeli atau disewa sebelum menghubungi Anda lewat WhatsApp.',
   suitableFor: {
     intro:
       'Pilih {nama} bila pelanggan Anda sering bertanya "untuk ke Rinjani perlu bawa apa?" atau "sewa tenda tiga hari berapa?". Jawaban itu sudah tersedia di halaman, lalu pengunjung tinggal mengirim daftar yang rapi lewat WhatsApp. Template ini tidak punya keranjang belanja maupun pembayaran online; transaksi tetap Anda konfirmasi sendiri.',
     items: [
-      'Toko outdoor yang menjual tenda, carrier, sleeping bag, sepatu gunung, dan perlengkapan darurat.',
-      'Penyewaan alat camping dan mendaki yang ingin menampilkan harga sewa per hari.',
-      'Basecamp di kaki gunung yang juga menjual atau menyewakan perlengkapan.',
-      'Komunitas atau operator open trip yang ingin membagikan daftar perlengkapan per gunung.',
+      'Toko outdoor yang ingin punya website toko perlengkapan pendakian sendiri, bukan hanya etalase di marketplace.',
+      'Toko kecil di kota dekat jalur pendakian yang butuh website toko alat gunung agar mudah ditemukan pendaki dari luar kota.',
+      'Usaha penyewaan alat camping yang butuh website sewa alat pendakian lengkap dengan harga per hari.',
+      'Basecamp atau operator open trip yang ingin membagikan daftar perlengkapan per gunung kepada pesertanya.',
     ],
   },
   parts: [
@@ -37,7 +37,7 @@ export const content: TemplatePageContent = {
     },
     {
       name: 'Panduan per gunung',
-      text: 'Hingga 6 kartu gunung. Gunung terpilih membuka panel berisi ketinggian, lama pendakian, tingkat kesulitan, jalur populer, catatan keselamatan, dan daftar perlengkapan yang bisa dicentang.',
+      text: 'Hingga 6 gunung berupa tab, masing-masing dengan judul panduan sendiri: ketinggian, lama pendakian, tingkat kesulitan, jalur populer, catatan keselamatan, dan daftar perlengkapan yang bisa dicentang. Teks semua panduan termuat di halaman sehingga terbaca mesin pencari.',
     },
     {
       name: 'Sewa alat',
@@ -88,9 +88,9 @@ export const content: TemplatePageContent = {
         'Foto demo berasal dari Unsplash dan hanya contoh suasana. Sebaiknya ganti dengan foto produk dan basecamp Anda sendiri lewat CMS, supaya pembeli melihat barang yang benar-benar Anda jual.',
     },
     {
-      question: 'Toko saya hanya menyewakan alat. Apakah tetap cocok?',
+      question: 'Apakah {nama} bisa dipakai sebagai website sewa alat pendakian saja?',
       answer:
-        'Cocok. Sembunyikan bagian Produk dan Kategori dari CMS, lalu tonjolkan Sewa Alat dan Panduan per gunung. Teks tombol di menu dan hero bisa diganti, misalnya menjadi "Cek Harga Sewa".',
+        'Bisa. Sembunyikan bagian Produk dan Kategori dari CMS, lalu tonjolkan Sewa Alat dan Panduan per gunung. Teks tombol di menu dan hero bisa diganti, misalnya menjadi "Cek Harga Sewa".',
     },
   ],
   imageAlts: {

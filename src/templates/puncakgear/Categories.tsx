@@ -9,6 +9,7 @@ import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, list, resolveAction, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
 import { categoryFilterFor, productList, type PuncakModel } from './model';
+import { PUNCAK_PHOTOS } from './photos';
 import { C, TYPE_P } from './styles';
 import { SectionLabel, TitleIcon, Topo } from './ui';
 
@@ -67,7 +68,7 @@ export function Categories({ m, onFilter }: { m: PuncakModel; onFilter: (categor
                     {hasImage(image) ? (
                       <KitPhoto
                         src={image}
-                        alt=""
+                        alt={PUNCAK_PHOTOS.alt(image, `Kategori ${name}`)}
                         fallback="none"
                         zoom
                         sizes="(min-width: 1152px) 20vw, (min-width: 672px) 31vw, 72vw"
@@ -78,17 +79,17 @@ export function Categories({ m, onFilter }: { m: PuncakModel; onFilter: (categor
                       <Topo className="absolute inset-0 -z-20 h-full w-full text-(--pg-glow) opacity-30" />
                     )}
                     <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(8_14_11/0.35)_0%,rgb(8_14_11/0)_32%,rgb(8_14_11/0)_48%,rgb(8_14_11/0.82)_100%)]" />
-                    <span className="flex items-start justify-between">
-                      <span className="text-[12px] font-semibold tabular-nums tracking-[0.14em] text-white/85">{String(i + 1).padStart(2, '0')}</span>
+                    <div className="flex items-start justify-between">
+                      <span aria-hidden className="text-[12px] font-semibold tabular-nums tracking-[0.14em] text-white/85">{String(i + 1).padStart(2, '0')}</span>
                       <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.14] ring-1 ring-inset ring-white/30 backdrop-blur-md">
                         <TitleIcon title={name} index={i} className="h-[18px] w-[18px]" />
                       </span>
-                    </span>
-                    <span className="flex items-end justify-between gap-3">
-                      <span className="min-w-0">
-                        <span className={`block text-white ${TYPE_P.h3}`}>{name}</span>
-                        {field(item, 'text') && <span className="mt-1 block text-[13px] leading-snug text-white/80">{field(item, 'text')}</span>}
-                      </span>
+                    </div>
+                    <div className="flex items-end justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className={`text-white ${TYPE_P.h3}`}>{name}</h3>
+                        {field(item, 'text') && <p className="mt-1 text-[13px] leading-snug text-white/80">{field(item, 'text')}</p>}
+                      </div>
                       {action && (
                         <span
                           aria-hidden
@@ -97,7 +98,7 @@ export function Categories({ m, onFilter }: { m: PuncakModel; onFilter: (categor
                           <ArrowUpRight className="h-[18px] w-[18px]" />
                         </span>
                       )}
-                    </span>
+                    </div>
                 </>
               );
               return (

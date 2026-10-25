@@ -56,7 +56,7 @@ describe('src/content/templates', () => {
       'aura-studio': 'Aura Studio: Template Website Klinik Kecantikan & Salon',
       finova: 'Finova: Template Website Fintech & Startup',
       serenity: 'Serenity: Template Website Studio Yoga & Pilates',
-      puncakgear: 'PuncakGear: Template Website Toko Perlengkapan Mendaki',
+      puncakgear: 'PuncakGear: Template Website Toko Outdoor & Perlengkapan Pendakian',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -131,6 +131,27 @@ describe('src/content/templates', () => {
     const puncakgear = visibleText(templateContent('puncakgear') as TemplatePageContent);
     expect(puncakgear).toMatch(/tidak punya keranjang belanja maupun pembayaran online/);
     expect(puncakgear).toMatch(/bukan sumber resmi/);
+  });
+
+  it('PuncakGear: kata kunci utama di title, meta, H1 & pembuka; kata kunci turunan di isi; niche spesifik', () => {
+    const t = bySlug('puncakgear');
+    const primary = /template website toko outdoor/i;
+    expect(templateTitle(t)).toMatch(primary);
+    expect(templateDescription(t)).toMatch(primary);
+    expect(templateDescription(t)).toBe(
+      'Template website toko outdoor & sewa alat pendakian, lengkap panduan per gunung. Rp1.590.000 sudah termasuk domain, hosting & SSL tahun pertama.',
+    );
+    expect(templateH1(t)).toMatch(primary);
+    const c = templateContent('puncakgear') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^PuncakGear adalah template website toko outdoor /);
+    const text = visibleText(c).toLowerCase();
+    for (const keyword of ['website toko perlengkapan pendakian', 'website toko alat gunung', 'website sewa alat pendakian']) expect(text, keyword).toContain(keyword);
+    expect(TEMPLATE_COPY.puncakgear.niche).toBe('Toko Outdoor & Sewa Alat Pendakian');
+    expect(TEMPLATE_PAGES.puncakgear.niche).toBe('toko outdoor & perlengkapan pendakian');
+    expect(TEMPLATE_COPY.puncakgear.updated).toBe('2026-10-25');
+    // Jujur: panduan & sewa sesuai demo, tanpa keranjang/pembayaran/stok/booking sungguhan
+    expect(text).not.toMatch(/checkout otomatis|bayar online di website|stok otomatis|booking online/);
+    expect(text).toMatch(/kalkulator sewa/);
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

@@ -10,7 +10,8 @@ export const PUNCAK_ACCENT = '#C6F135';
 export const puncakContent: SiteContent = {
   brand: {
     company_name: 'Tapak Rimba Outdoor',
-    tagline: 'Perlengkapan mendaki, siap dipakai atau disewa',
+    // Judul tab situs = "Nama — Tagline", deskripsi meta = kalimat di bawah judul hero (src/templates/siteHead.ts)
+    tagline: 'Toko Outdoor & Sewa Alat Pendakian di Malang',
     logo: '',
     accent_color: PUNCAK_ACCENT,
   },
@@ -18,7 +19,7 @@ export const puncakContent: SiteContent = {
     enabled: true,
     eyebrow: 'Dibuat untuk mendaki',
     title: 'Naik Lebih Tinggi',
-    subtitle: 'Perlengkapan mendaki yang teruji di jalur gunung Indonesia.',
+    subtitle: 'Tenda, carrier, sleeping bag, dan sepatu gunung yang teruji di jalur Indonesia. Beli atau sewa di basecamp kami di Malang.',
     primary_label: 'Belanja Perlengkapan',
     primary_url: '',
     secondary_label: 'Sewa alat untuk pemula',
