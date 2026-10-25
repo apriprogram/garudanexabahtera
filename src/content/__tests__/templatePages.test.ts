@@ -56,7 +56,7 @@ describe('src/content/templates', () => {
       'aura-studio': 'Aura Studio: Template Website Klinik Kecantikan & Salon',
       finova: 'Finova: Template Website Fintech & Startup',
       serenity: 'Serenity: Template Website Studio Yoga & Pilates',
-      gadgetku: 'GadgetKu.id: Template Website Toko Aksesori HP',
+      gadgetku: 'GadgetKu.id: Template Website Toko Aksesoris HP',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -66,7 +66,7 @@ describe('src/content/templates', () => {
       'aura-studio': 'Aura Studio: Template Website Klinik & Salon – Rp1,39 jt',
       finova: 'Finova: Template Website Fintech & Startup – Rp1,79 jt',
       serenity: 'Serenity: Template Website Studio Yoga – Rp1,29 jt',
-      gadgetku: 'GadgetKu.id: Template Website Toko Aksesori HP – Rp1,59 jt',
+      gadgetku: 'GadgetKu.id: Template Website Toko Aksesoris HP – Rp1,59 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -132,6 +132,27 @@ describe('src/content/templates', () => {
     expect(gadgetku).toMatch(/tidak punya keranjang/);
     expect(gadgetku).toMatch(/tidak dikirim ke server/);
     expect(gadgetku).not.toMatch(/sinkron otomatis|stok real-?time|pembayaran otomatis/i);
+  });
+
+  it('GadgetKu.id: kata kunci toko aksesoris HP di title, meta, H1, pembuka, dan isi halaman', () => {
+    const t = bySlug('gadgetku');
+    const c = templateContent('gadgetku') as TemplatePageContent;
+    // Kata kunci utama di title, meta description, H1, dan paragraf pembuka
+    expect(templateTitle(t)).toContain('Template Website Toko Aksesoris HP');
+    expect(templateDescription(t)).toMatch(/^Template website toko aksesoris HP/);
+    expect(templateDescription(t)).toContain('Rp1.590.000');
+    expect(templateH1(t)).toContain('Template Website Toko Aksesoris HP');
+    expect(c.lead).toContain('template website toko aksesoris HP');
+    expect(TEMPLATE_PAGES.gadgetku?.niche).toBe('toko aksesoris HP');
+    expect(TEMPLATE_COPY.gadgetku?.niche).toBe('Toko Aksesoris HP');
+    // Kata kunci pendamping muncul alami di isi halaman
+    const text = visibleText(c).toLowerCase();
+    for (const keyword of ['website toko aksesoris handphone', 'website toko online aksesoris hp', 'website toko casing hp']) expect(text, keyword).toContain(keyword);
+    // Fitur demo dijelaskan sesuai cara kerjanya: pencarian & pratinjau casing di browser, pesanan lewat WhatsApp
+    expect(text).toMatch(/pilih merek[^.]*tipe/);
+    expect(text).toContain('hanya tampil di browser');
+    expect(text).toContain('tidak punya keranjang dan pembayaran online');
+    expect(text).not.toMatch(/checkout otomatis|pembayaran online tersedia|stok otomatis/);
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

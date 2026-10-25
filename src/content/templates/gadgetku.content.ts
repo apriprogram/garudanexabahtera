@@ -6,15 +6,15 @@ import type { TemplatePageContent } from './page.types';
 
 export const content: TemplatePageContent = {
   lead:
-    '{nama} adalah template website untuk toko aksesori HP: casing, tempered glass, charger, kabel data, earphone, dan power bank. Pembeli memilih merek dan tipe HP-nya lalu langsung melihat aksesori yang cocok, tanpa bertanya satu per satu ke admin. Ada juga paket bundling hemat dan pratinjau casing custom dengan foto pembeli sendiri.',
+    '{nama} adalah template website toko aksesoris HP untuk penjual casing, tempered glass, charger, kabel data, earphone, dan power bank. Pembeli memilih merek dan tipe HP-nya lalu langsung melihat aksesoris yang cocok, tanpa bertanya satu per satu ke admin. Ada juga paket bundling hemat dan pratinjau casing custom dengan foto pembeli sendiri.',
   suitableFor: {
     intro:
-      'Pilih {nama} bila pertanyaan yang paling sering masuk ke chat toko Anda adalah "ada untuk HP saya?". Website menjawabnya lebih dulu, lalu pembeli memesan lewat WhatsApp dengan nama produk, harga, dan tipe HP di pesannya. Template ini tidak punya keranjang belanja maupun pembayaran online.',
+      'Pilih {nama} bila Anda butuh website toko online aksesoris HP yang menjawab pertanyaan paling sering di chat: "ada untuk HP saya?". Pembeli lalu memesan lewat WhatsApp dengan nama produk, harga, dan tipe HP di pesannya. Template ini tidak punya keranjang belanja maupun pembayaran online.',
     items: [
-      'Toko aksesori HP di ruko, mal, atau pusat elektronik yang ingin punya katalog online.',
-      'Penjual di Shopee atau Tokopedia yang ingin website dengan nama tokonya sendiri.',
-      'Usaha casing custom dan cetak foto yang ingin pembeli mencoba desainnya sebelum memesan.',
-      'Grosir aksesori yang menawarkan paket bundling untuk konter HP dan reseller.',
+      'Toko aksesoris HP di ruko, mal, atau pusat elektronik yang ingin punya katalog online.',
+      'Penjual di Shopee atau Tokopedia yang ingin website toko aksesoris handphone dengan nama tokonya sendiri.',
+      'Usaha casing custom yang butuh website toko casing HP, lengkap dengan pratinjau desain sebelum memesan.',
+      'Grosir aksesoris yang menawarkan paket bundling untuk konter HP dan reseller.',
     ],
   },
   parts: [
@@ -34,7 +34,7 @@ export const content: TemplatePageContent = {
       name: 'Cari per tipe HP',
       text: 'Pilih merek, lalu tipe (hingga 40 tipe di CMS, lengkap dengan port pengisian). Produk yang cocok tampil dengan tombol pesan berisi nama produk dan tipe HP; kategori yang belum tersedia untuk tipe itu disebutkan.',
     },
-    { name: 'Kategori', text: 'Hingga 6 kartu foto besar berlabel. Klik kartu, daftar produk di bawahnya langsung tersaring ke kategori tersebut.' },
+    { name: 'Kategori', text: 'Hingga 6 kartu foto besar; klik kartu untuk menyaring daftar produk ke kategori itu.' },
     {
       name: 'Produk terbaru',
       text: 'Hingga 16 produk dalam baris yang bisa digeser, dengan penyaring kategori, harga coret, label diskon otomatis, rating, jumlah terjual, dan tombol pesan WhatsApp.',
@@ -66,10 +66,10 @@ export const content: TemplatePageContent = {
     'Kolom "Cocok untuk" diisi tipe HP (misalnya Galaxy A55), merek (Samsung), port (USB-C atau Lightning), atau "Semua HP"; dari kolom inilah pencarian per tipe memilih produk.',
   demo: [
     'Demo {nama} memakai toko fiktif GadgetKu.id di Depok dengan 19 tipe HP dari enam merek dan 11 produk, dari casing hingga power bank. Coba pilih Samsung lalu Galaxy A55 untuk melihat hasilnya tersaring.',
-    'Nama pembeli, rating, jumlah terjual, dan harga di demo hanyalah contoh. Foto yang dipilih pengunjung di bagian custom casing hanya tampil di browser mereka, tidak dikirim ke server Anda; pembeli mengirim fotonya lewat chat WhatsApp saat memesan, lalu Anda yang memeriksa hasil cetaknya.',
+    'Nama pembeli, rating, jumlah terjual, dan harga di demo hanyalah contoh. Foto yang dipilih pengunjung di bagian custom casing hanya tampil di browser mereka, tidak dikirim ke server Anda; pembeli mengirim fotonya lewat WhatsApp saat memesan.',
   ],
   custom:
-    '{nama} menampilkan katalog dan mengarahkan pesanan ke WhatsApp. Bila toko Anda butuh keranjang belanja dengan pembayaran online, ongkos kirim otomatis, stok yang tersambung ke marketplace, atau aplikasi untuk reseller, fitur itu termasuk website atau aplikasi custom. Ceritakan alur penjualan toko Anda, lalu kami kirim penawaran setelah konsultasi gratis.',
+    '{nama} menampilkan katalog dan mengarahkan pesanan ke WhatsApp. Bila toko Anda butuh keranjang belanja dengan pembayaran online, ongkos kirim otomatis, stok yang tersambung ke marketplace, atau aplikasi untuk reseller, fitur itu termasuk website atau aplikasi custom. Ceritakan alur toko Anda, kami kirim penawaran setelah konsultasi gratis.',
   mobileLink: true,
   faq: [
     {
@@ -93,14 +93,14 @@ export const content: TemplatePageContent = {
         'Tidak otomatis. Bagian kontak menampilkan tautan toko Anda di Shopee dan Tokopedia, dan tiap produk boleh diberi tautan ke halaman marketplace-nya. Stok tetap dikonfirmasi admin saat chat; sinkronisasi stok bisa dibuat lewat jasa custom.',
     },
     {
-      question: 'Bisakah dipakai untuk toko selain aksesori HP?',
+      question: 'Bisakah dipakai untuk toko selain aksesoris HP?',
       answer:
-        'Bisa, selama barangnya dipilih per tipe perangkat, misalnya aksesori laptop atau tali smartwatch. Daftar tipe, kategori, judul bagian, dan warna bisa Anda ganti dari CMS.',
+        'Bisa, selama barangnya dipilih per tipe perangkat, misalnya aksesoris laptop atau tali smartwatch. Daftar tipe, kategori, judul bagian, dan warna bisa Anda ganti dari CMS.',
     },
   ],
   imageAlts: {
-    'gadgetku-preview.webp': 'Tampilan beranda template website toko aksesori HP {nama} di desktop dan HP dengan hero kartu gelap',
-    'gadgetku-1.webp': 'Bagian cari aksesori per tipe HP template {nama} dengan hasil untuk Samsung Galaxy A55',
+    'gadgetku-preview.webp': 'Tampilan beranda template website toko aksesoris HP {nama} di desktop dan HP dengan hero kartu gelap',
+    'gadgetku-1.webp': 'Bagian cari aksesoris per tipe HP template {nama} dengan hasil untuk Samsung Galaxy A55',
     'gadgetku-2.webp': 'Bagian custom casing template {nama} dengan mockup casing berisi foto dan pilihan warna',
   },
   guides: ['template-vs-jasa-website-custom', 'biaya-website-company-profile'],

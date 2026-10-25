@@ -11,6 +11,7 @@ import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, list, resolveAction, text, type LinkAction } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
 import type { GadgetkuModel, Shop } from './model';
+import { GADGETKU_PHOTOS } from './photos';
 import { TYPE_G } from './styles';
 import { ItemIcon, SectionLabel } from './ui';
 
@@ -89,7 +90,7 @@ export function Categories({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
                   {hasImage(image) ? (
                     <KitPhoto
                       src={image}
-                      alt=""
+                      alt={GADGETKU_PHOTOS.alt(image, `Produk kategori ${name}`)}
                       fallback="none"
                       zoom
                       sizes={wide ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1024px) 25vw, 50vw'}

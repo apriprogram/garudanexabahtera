@@ -42,7 +42,11 @@ export const gadgetkuSections: TemplateSection[] = [
     description: 'Nama toko, logo, warna aksen, dan pengumuman di bilah hitam paling atas.',
     fields: [
       t('company_name', 'Nama toko', { placeholder: 'mis. GadgetKu.id', maxLength: 60 }),
-      t('tagline', 'Tagline', { placeholder: 'mis. Aksesori HP yang pas, harga bersahabat', maxLength: 100, help: 'Tampil di footer dan judul tab browser.' }),
+      t('tagline', 'Tagline', {
+        placeholder: 'mis. Toko aksesoris HP: casing, tempered glass & charger',
+        maxLength: 100,
+        help: 'Tampil di footer dan menjadi bagian judul situs di tab browser dan hasil Google. Sebutkan jenis toko, mis. "Toko aksesoris HP".',
+      }),
       img('logo', 'Logo', 'PNG/SVG berlatar transparan, maks. 2 MB. Kosongkan untuk memakai simbol HP & kilat bawaan template dan nama toko.'),
       {
         type: 'color',
@@ -64,14 +68,22 @@ export const gadgetkuSections: TemplateSection[] = [
     toggleable: true,
     fields: [
       t('eyebrow', 'Label kecil di atas judul', { placeholder: 'mis. Casing, tempered glass, charger & lainnya', maxLength: 60, help: 'Kosongkan untuk menyembunyikan.' }),
-      t('title', 'Judul utama', { placeholder: 'mis. Aksesori yang pas untuk HP-mu', maxLength: 70, help: 'Paling bagus 2–3 baris (± 25–40 karakter).' }),
+      t('title', 'Judul utama', {
+        placeholder: 'mis. Aksesoris HP yang pas untuk tipe HP-mu',
+        maxLength: 70,
+        help: 'Judul utama (H1) halaman: sebutkan apa yang dijual. Paling bagus 2–3 baris (± 25–40 karakter).',
+      }),
       t('highlight', 'Kata yang disorot', {
-        placeholder: 'mis. pas untuk HP-mu',
+        placeholder: 'mis. pas untuk tipe HP-mu',
         maxLength: 40,
         help: 'Bagian judul yang diberi warna aksen. Tulis persis seperti di judul, atau kosongkan.',
       }),
-      ta('subtitle', 'Deskripsi', { placeholder: 'Jelaskan singkat apa yang dijual dan kenapa beda.', maxLength: 240 }),
-      t('primary_label', 'Teks tombol utama', { placeholder: 'mis. Cari Aksesori HP-mu', maxLength: 30 }),
+      ta('subtitle', 'Deskripsi', {
+        placeholder: 'Jelaskan singkat apa yang dijual dan kenapa beda.',
+        maxLength: 240,
+        help: 'Juga dipakai sebagai deskripsi situs di hasil Google: sebutkan jenis toko dan kotanya, ± 150 karakter.',
+      }),
+      t('primary_label', 'Teks tombol utama', { placeholder: 'mis. Cari Aksesoris HP-mu', maxLength: 30 }),
       url('primary_url', 'Tautan tombol utama', { help: 'Kosongkan untuk menuju pencarian per tipe HP.' }),
       t('secondary_label', 'Teks tombol kedua', { placeholder: 'mis. Lihat Produk Terbaru', maxLength: 30 }),
       url('secondary_url', 'Tautan tombol kedua', { help: 'Kosongkan untuk menuju produk terbaru.' }),
@@ -98,7 +110,7 @@ export const gadgetkuSections: TemplateSection[] = [
     toggleable: true,
     fields: [
       sectionLabel('mis. Cari per Tipe HP'),
-      sectionTitle('mis. Cari aksesori untuk HP-mu'),
+      sectionTitle('mis. Cari aksesoris untuk HP-mu'),
       sectionSubtitle('Kalimat pengantar singkat.'),
       ta('empty_text', 'Teks bantuan di bawah hasil', { placeholder: 'mis. HP-mu belum ada di daftar? Tanya admin.', maxLength: 160 }),
       listField(
@@ -316,7 +328,7 @@ export const gadgetkuSections: TemplateSection[] = [
       { type: 'phone', key: 'phone', label: 'Telepon', placeholder: 'mis. (021) 555-0123', maxLength: 30 },
       { type: 'email', key: 'email', label: 'Email', placeholder: 'halo@toko.id', maxLength: 120 },
       { type: 'phone', key: 'whatsapp', label: 'WhatsApp', placeholder: 'mis. 081234567890', maxLength: 20, help: 'Dipakai untuk semua tombol pesan dan chat di halaman.' },
-      t('whatsapp_message', 'Pesan awal WhatsApp', { placeholder: 'mis. Halo, saya mau tanya aksesori untuk HP saya.', maxLength: 160 }),
+      t('whatsapp_message', 'Pesan awal WhatsApp', { placeholder: 'mis. Halo, saya mau tanya aksesoris untuk HP saya.', maxLength: 160 }),
       url('maps_url', 'Link Google Maps', { placeholder: 'https://maps.app.goo.gl/...', help: 'Tombol "Buka peta". Kosongkan untuk membuat tautan dari alamat.' }),
       url('shopee_url', 'Toko di Shopee', { placeholder: 'https://shopee.co.id/...' }),
       url('tokopedia_url', 'Toko di Tokopedia', { placeholder: 'https://www.tokopedia.com/...' }),

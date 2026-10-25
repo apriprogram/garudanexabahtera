@@ -224,7 +224,9 @@ export function CustomCase({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
                         src={src}
                         srcSet={asset?.srcSet}
                         sizes={asset ? '480px' : undefined}
-                        alt=""
+                        width={asset?.width}
+                        height={asset?.height}
+                        alt={upload ? 'Foto pilihanmu di pratinjau casing' : GADGETKU_PHOTOS.alt(sample, 'Foto contoh di pratinjau casing custom')}
                         draggable={false}
                         decoding="async"
                         loading={upload ? 'eager' : 'lazy'}

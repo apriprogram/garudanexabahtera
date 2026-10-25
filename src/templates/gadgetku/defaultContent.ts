@@ -1,6 +1,7 @@
-// Konten bawaan GadgetKu.id: toko aksesori HP FIKTIF di Depok. Harga, rating, jumlah ulasan, dan nama pembeli adalah
+// Konten bawaan GadgetKu.id: toko aksesoris HP FIKTIF di Depok. Harga, rating, jumlah ulasan, dan nama pembeli adalah
 // contoh; nama di ulasan tidak berhubungan dengan orang di foto. Daftar tipe HP sengaja kecil (contoh cara kerja
-// pencarian), pembeli template menambah sendiri lewat CMS.
+// pencarian), pembeli template menambah sendiri lewat CMS. SEO situs: nama + tagline = <title>, deskripsi hero = meta
+// description (src/templates/siteHead.ts), jadi keduanya menyebut "toko aksesoris HP"; H1 = judul hero.
 import type { SiteContent } from '../types';
 import { gadgetkuPhoto } from './photos';
 
@@ -10,7 +11,7 @@ export const GADGETKU_ACCENT = '#6EE7B7';
 export const gadgetkuContent: SiteContent = {
   brand: {
     company_name: 'GadgetKu.id',
-    tagline: 'Aksesori HP yang pas, harga bersahabat',
+    tagline: 'Toko aksesoris HP: casing, tempered glass & charger',
     logo: '',
     accent_color: GADGETKU_ACCENT,
     announcement: 'Gratis ongkir se-Jabodetabek min. belanja Rp150.000 · Bisa bayar di tempat (COD)',
@@ -18,11 +19,11 @@ export const gadgetkuContent: SiteContent = {
   hero: {
     enabled: true,
     eyebrow: 'Casing, tempered glass, charger & lainnya',
-    title: 'Aksesori yang pas untuk HP-mu',
-    highlight: 'pas untuk HP-mu',
+    title: 'Aksesoris HP yang pas untuk tipe HP-mu',
+    highlight: 'pas untuk tipe HP-mu',
     subtitle:
-      'Pilih tipe HP-mu, lalu lihat casing, tempered glass, charger, kabel, earphone, dan power bank yang benar-benar cocok. Tanpa salah beli, tanpa ribet.',
-    primary_label: 'Cari Aksesori HP-mu',
+      'Toko aksesoris HP di Depok: pilih tipe HP-mu, lalu lihat casing, tempered glass, charger, kabel, earphone, dan power bank yang cocok. Tanpa salah beli.',
+    primary_label: 'Cari Aksesoris HP-mu',
     primary_url: '',
     secondary_label: 'Lihat Produk Terbaru',
     secondary_url: '',
@@ -39,9 +40,9 @@ export const gadgetkuContent: SiteContent = {
   finder: {
     enabled: true,
     eyebrow: 'Cari per Tipe HP',
-    title: 'Cari aksesori untuk HP-mu',
+    title: 'Cari aksesoris untuk HP-mu',
     subtitle:
-      'Pilih merek dan tipe HP, kami tampilkan aksesori yang cocok: casing dan tempered glass sesuai ukuran, kabel sesuai port, plus charger, earphone, dan power bank untuk semua HP.',
+      'Pilih merek dan tipe HP, kami tampilkan aksesoris yang cocok: casing dan tempered glass sesuai ukuran, kabel sesuai port, plus charger, earphone, dan power bank untuk semua HP.',
     empty_text: 'HP-mu belum ada di daftar? Tanya admin, stok kami lebih banyak dari yang tampil di sini.',
     models: [
       { brand: 'Apple', model: 'iPhone 11', port: 'Lightning' },
@@ -223,7 +224,7 @@ export const gadgetkuContent: SiteContent = {
     enabled: true,
     eyebrow: 'Bundling Hemat',
     title: 'Beli sepaket, lebih hemat',
-    subtitle: 'Paket aksesori yang paling sering dibeli bersamaan. Harga sudah dipotong, tinggal sebutkan tipe HP-mu saat pesan.',
+    subtitle: 'Paket aksesoris yang paling sering dibeli bersamaan. Harga sudah dipotong, tinggal sebutkan tipe HP-mu saat pesan.',
     note: 'Stok untuk tipe HP tertentu bisa berbeda. Admin mengonfirmasi ketersediaan sebelum kamu membayar.',
     items: [
       {
@@ -301,7 +302,7 @@ export const gadgetkuContent: SiteContent = {
         role: 'Mahasiswa, Depok',
         product: 'Paket Ngecas Kilat',
         rating: '5',
-        quote: 'Tinggal pilih Redmi Note 13 di website, langsung keluar aksesori yang cocok. Charger-nya beneran cepat dan kabelnya kokoh.',
+        quote: 'Tinggal pilih Redmi Note 13 di website, langsung keluar aksesoris yang cocok. Charger-nya beneran cepat dan kabelnya kokoh.',
         photo: gadgetkuPhoto('portrait-1'),
       },
       {
@@ -328,7 +329,7 @@ export const gadgetkuContent: SiteContent = {
     title: 'Pertanyaan yang sering ditanyakan',
     subtitle: 'Belum menemukan jawabannya? Admin kami membalas chat setiap hari.',
     help_title: 'Masih bingung pilih yang cocok?',
-    help_text: 'Kirim tipe HP-mu ke admin, kami bantu pilihkan aksesori yang pas.',
+    help_text: 'Kirim tipe HP-mu ke admin, kami bantu pilihkan aksesoris yang pas.',
     button_label: 'Tanya Admin',
     button_url: '',
     items: [
@@ -365,7 +366,7 @@ export const gadgetkuContent: SiteContent = {
     phone: '(021) 7788-0123',
     email: 'halo@gadgetku.id',
     whatsapp: '081234567890',
-    whatsapp_message: 'Halo GadgetKu.id, saya mau tanya aksesori untuk HP saya.',
+    whatsapp_message: 'Halo GadgetKu.id, saya mau tanya aksesoris untuk HP saya.',
     hours: 'Setiap hari, 10.00–21.00 WIB',
     maps_url: '',
     shopee_url: 'https://shopee.co.id/gadgetkuid',
@@ -373,7 +374,7 @@ export const gadgetkuContent: SiteContent = {
   },
   footer: {
     enabled: true,
-    description: 'Toko aksesori HP di Depok: casing, tempered glass, charger, kabel, earphone, dan power bank yang pas untuk tipe HP-mu.',
+    description: 'Toko aksesoris HP di Depok: casing, tempered glass, charger, kabel, earphone, dan power bank yang pas untuk tipe HP-mu.',
     payments: 'COD · Transfer bank · QRIS · E-wallet',
     copyright: '',
     instagram: 'https://instagram.com/gadgetku.id',

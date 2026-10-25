@@ -119,7 +119,7 @@ tidak dicatat sebagai baseline di `schema.sql`).
 dengan 008: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan
 `template_code` `serenity` ter-deploy. DB baru cukup `seed.templates.sql`.
 
-`2026-10-25_022` (data saja) membuat/menyamakan baris katalog `gadgetku` (GadgetKu.id, toko aksesori HP, kategori Toko
+`2026-10-25_022` (data saja) membuat/menyamakan baris katalog `gadgetku` (GadgetKu.id, toko aksesoris HP, kategori Toko
 Online) berdasarkan slug, pola sama dengan 018. Jalankan setelah kode yang mendaftarkan `template_code` `gadgetku`
 ter-deploy. DB baru cukup `seed.templates.sql`.
 

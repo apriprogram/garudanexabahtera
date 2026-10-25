@@ -53,7 +53,9 @@ export function Footer({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
                         aria-label={label}
                         className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white transition-colors hover:bg-white/15"
                       >
-                        <Icon className="h-[18px] w-[18px]" />
+                        <span aria-hidden className="flex">
+                          <Icon className="h-[18px] w-[18px]" />
+                        </span>
                       </ActionLink>
                     </li>
                   ))}

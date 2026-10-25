@@ -58,7 +58,7 @@ export function Finder({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
   const matches = picked ? m.productItems.filter((item) => isCompatible(item, picked)) : [];
   const missing = picked ? productCategories(m.productItems).filter((c) => !matches.some((item) => sameCategory(field(item, 'category'), c))) : [];
   const quick = samplePhones(models, 3);
-  const ask = picked ? m.askAction(`apakah ada aksesori lain untuk ${picked.label}?`) : m.askAction('tipe HP saya belum ada di daftar. Bisa dibantu?');
+  const ask = picked ? m.askAction(`apakah ada aksesoris lain untuk ${picked.label}?`) : m.askAction('tipe HP saya belum ada di daftar. Bisa dibantu?');
 
   const chooseBrand = (next: string) => {
     setBrandChoice(next);
@@ -130,13 +130,13 @@ export function Finder({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
           <div className="mt-9 border-t border-black/[0.08] pt-7 @3xl:mt-10 @3xl:pt-8">
             {/* role="status" sudah polite; tanpa aria-live eksplisit agar tidak tertukar dengan region keterangan pratinjau milik Shell */}
             <p className="sr-only" role="status">
-              {picked ? `${matches.length} aksesori cocok untuk ${picked.label}` : ''}
+              {picked ? `${matches.length} aksesoris cocok untuk ${picked.label}` : ''}
             </p>
             {picked ? (
               <div key={picked.id} className="gk-fade-in">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p aria-hidden className="text-[16px] text-[#0B0C0E] @3xl:text-[17px]">
-                    <span className="font-semibold">{matches.length} aksesori</span> cocok untuk <span className="font-semibold">{picked.label}</span>
+                    <span className="font-semibold">{matches.length} aksesoris</span> cocok untuk <span className="font-semibold">{picked.label}</span>
                     {picked.port && <span className={`ml-2 inline-flex rounded-full bg-white px-2.5 py-0.5 align-middle text-[12.5px] font-medium ${C.muted}`}>Port {picked.port}</span>}
                   </p>
                   <button
@@ -149,7 +149,7 @@ export function Finder({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
                   </button>
                 </div>
                 {matches.length > 0 && (
-                  <ul aria-label={`Aksesori untuk ${picked.label}`} className="mt-5 grid gap-3 @2xl:grid-cols-2 @5xl:grid-cols-3 @7xl:grid-cols-4">
+                  <ul aria-label={`Aksesoris untuk ${picked.label}`} className="mt-5 grid gap-3 @2xl:grid-cols-2 @5xl:grid-cols-3 @7xl:grid-cols-4">
                     {matches.map((item, i) => (
                       <li key={`${field(item, 'name')}-${i}`}>
                         <ProductRow m={m} item={item} phoneLabel={picked.label} />
@@ -176,7 +176,7 @@ export function Finder({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
               <div className="flex flex-col gap-5 @3xl:flex-row @3xl:items-center">
                 <PhoneSearchArt />
                 <div className="min-w-0">
-                  <p className="text-[16px] font-medium text-[#0B0C0E]">Pilih merek dan tipe HP-mu untuk melihat aksesori yang cocok.</p>
+                  <p className="text-[16px] font-medium text-[#0B0C0E]">Pilih merek dan tipe HP-mu untuk melihat aksesoris yang cocok.</p>
                   {quick.length > 0 && (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <span className={`text-[13px] ${C.muted}`}>Coba:</span>

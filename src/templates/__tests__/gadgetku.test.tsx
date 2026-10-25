@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run src/templates/__tests__/gadgetku.test.tsx
-// GadgetKu.id (template toko aksesori HP 2026-10-25): skema CMS & konten demo, helper model (warna, tipe HP &
+// GadgetKu.id (template toko aksesoris HP 2026-10-25): skema CMS & konten demo, helper model (warna, tipe HP &
 // kecocokan, harga/diskon/hemat, menu, pencarian), demo (urutan section, hero kartu gelap, cari per tipe HP, kategori →
 // penyaring produk, produk, bundling, custom casing dengan foto sendiri, layanan, ulasan, FAQ, kontak, footer),
 // pencarian di header, konten opsional kosong, pratinjau CMS diam, editor CMS, data katalog (migrasi 022 + seed +
@@ -39,6 +39,7 @@ import {
 } from '../gadgetku/model';
 import { GADGETKU_PHOTOS } from '../gadgetku/photos';
 import { SiteRenderer } from '../SiteRenderer';
+import { applySiteHead, siteTitle } from '../siteHead';
 import { contrast, parseHex } from '../shared/utils';
 import { isListField, type ListItem, type SiteContent } from '../types';
 
@@ -282,8 +283,8 @@ describe('GadgetKu: demo', () => {
     const hero = section(container, 'hero');
     expect(hero.getAttribute('data-hero-layout')).toBe('inset-card');
     const h1 = hero.querySelector('h1')!;
-    expect(h1.textContent).toBe('Aksesori yang pas untuk HP-mu');
-    expect(h1.querySelector('span')?.textContent).toBe('pas untuk HP-mu');
+    expect(h1.textContent).toBe('Aksesoris HP yang pas untuk tipe HP-mu');
+    expect(h1.querySelector('span')?.textContent).toBe('pas untuk tipe HP-mu');
     const img = hero.querySelector<HTMLImageElement>('img[fetchpriority="high"]')!;
     expect(img.getAttribute('src')).toBe('/assets/templates/photos/gadgetku-hero-1920.webp');
     expect(img.getAttribute('srcset')).toBe('/assets/templates/photos/gadgetku-hero-800.webp 800w, /assets/templates/photos/gadgetku-hero-1920.webp 1920w');
@@ -302,7 +303,7 @@ describe('GadgetKu: demo', () => {
 
   it('hero: tombol ke pencarian per tipe & produk, kartu custom casing, kartu rating, daftar merek otomatis', () => {
     const hero = section(demo(), 'hero');
-    expect(within(hero).getByRole('link', { name: 'Cari Aksesori HP-mu' })).toHaveAttribute('href', '#finder');
+    expect(within(hero).getByRole('link', { name: 'Cari Aksesoris HP-mu' })).toHaveAttribute('href', '#finder');
     expect(within(hero).getByRole('link', { name: 'Lihat Produk Terbaru' })).toHaveAttribute('href', '#products');
     expect(within(hero).getByRole('link', { name: /Casing custom fotomu/ })).toHaveAttribute('href', '#custom');
     expect(hero.textContent).toContain('4,9/5');
@@ -312,13 +313,13 @@ describe('GadgetKu: demo', () => {
 
   it('cari per tipe HP: merek → tipe → produk cocok + tombol pesan berisi tipe HP; kategori kosong disebutkan', () => {
     const finder = section(demo(), 'finder');
-    expect(finder.textContent).toContain('Pilih merek dan tipe HP-mu untuk melihat aksesori yang cocok.');
+    expect(finder.textContent).toContain('Pilih merek dan tipe HP-mu untuk melihat aksesoris yang cocok.');
     expect(within(finder).getByText('Pilih merek dulu untuk melihat tipe HP-nya.')).toBeInTheDocument();
     fireEvent.click(within(finder).getByRole('button', { name: 'Samsung' }));
     expect(within(finder).getByRole('button', { name: 'Samsung' })).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(within(finder).getByRole('button', { name: 'Galaxy A55' }));
-    expect(status(finder)).toBe('9 aksesori cocok untuk Samsung Galaxy A55');
-    const results = within(finder).getByRole('list', { name: 'Aksesori untuk Samsung Galaxy A55' });
+    expect(status(finder)).toBe('9 aksesoris cocok untuk Samsung Galaxy A55');
+    const results = within(finder).getByRole('list', { name: 'Aksesoris untuk Samsung Galaxy A55' });
     expect(Array.from(results.querySelectorAll('h3')).map((h) => h.textContent)).toEqual([
       'Casing Silikon Soft-Touch',
       'Tempered Glass Full Cover 9H',
@@ -341,9 +342,9 @@ describe('GadgetKu: demo', () => {
 
     fireEvent.click(within(finder).getByRole('button', { name: 'realme' }));
     fireEvent.click(within(finder).getByRole('button', { name: 'realme 12' }));
-    expect(status(finder)).toBe('6 aksesori cocok untuk realme 12');
+    expect(status(finder)).toBe('6 aksesoris cocok untuk realme 12');
     expect(finder.textContent).toContain('Casing, Tempered Glass untuk realme 12 belum tampil di sini.');
-    expect(href(within(finder).getByRole('link', { name: /Tanya stok ke admin/ }))).toContain('apakah ada aksesori lain untuk realme 12?');
+    expect(href(within(finder).getByRole('link', { name: /Tanya stok ke admin/ }))).toContain('apakah ada aksesoris lain untuk realme 12?');
 
     // Kabel menurut port: iPhone 14 (Lightning) mendapat kabel Lightning, bukan USB-C
     fireEvent.click(within(finder).getByRole('button', { name: 'Apple' }));
@@ -486,6 +487,80 @@ describe('GadgetKu: demo', () => {
   });
 });
 
+describe('GadgetKu: SEO halaman demo (calon situs pembeli)', () => {
+  it('satu H1 di awal, urutan heading tidak melompat, H1 menyebut aksesoris HP', () => {
+    const container = demo();
+    const levels = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6')).map((h) => Number(h.tagName[1]));
+    expect(levels.filter((level) => level === 1)).toHaveLength(1);
+    expect(levels[0]).toBe(1);
+    levels.forEach((level, i) => {
+      if (i > 0) expect(level, `heading ke-${i + 1}`).toBeLessThanOrEqual(levels[i - 1] + 1);
+    });
+    expect(container.querySelector('h1')!.textContent).toContain('Aksesoris HP');
+    expect(Array.from(container.querySelectorAll('h2')).map((h) => h.textContent)).toEqual([
+      'Cari aksesoris untuk HP-mu',
+      'Semua yang HP-mu butuhkan, di satu toko',
+      'Baru masuk minggu ini',
+      'Beli sepaket, lebih hemat',
+      'Casing custom dari fotomu sendiri',
+      'Belanja tenang di GadgetKu.id',
+      'Kata mereka yang sudah belanja',
+      'Pertanyaan yang sering ditanyakan',
+      'Mampir ke toko atau chat admin',
+    ]);
+  });
+
+  it('judul tab & meta description situs (siteHead) terbaca sebagai toko aksesoris HP', () => {
+    expect(siteTitle('gadgetku', null)).toBe('GadgetKu.id — Toko aksesoris HP: casing, tempered glass & charger');
+    const restore = applySiteHead('gadgetku', null);
+    try {
+      expect(document.title).toContain('Toko aksesoris HP');
+      const description = document.head.querySelector('meta[name="description"]')?.getAttribute('content') ?? '';
+      expect(description).toMatch(/^Toko aksesoris HP di Depok/);
+      expect(description.length).toBeLessThanOrEqual(160);
+    } finally {
+      restore();
+    }
+  });
+
+  it('gambar konten ber-alt deskriptif; gambar dekoratif & ikon SVG disembunyikan dari pembaca layar', () => {
+    const container = demo();
+    for (const img of container.querySelectorAll('img')) {
+      const src = img.getAttribute('src') ?? '';
+      expect(img.hasAttribute('alt'), src).toBe(true);
+      const decorative = !!img.closest('[aria-hidden="true"]') || img.classList.contains('rounded-full');
+      if (!decorative) expect((img.getAttribute('alt') ?? '').length, src).toBeGreaterThan(10);
+    }
+    for (const svg of container.querySelectorAll('svg')) {
+      const hidden = svg.getAttribute('aria-hidden') === 'true' || !!svg.closest('[aria-hidden="true"], [role="img"]');
+      expect(hidden, svg.outerHTML.slice(0, 120)).toBe(true);
+    }
+  });
+
+  it('navigasi memakai <a href> asli, <button type="button"> hanya untuk aksi', () => {
+    const container = demo();
+    for (const a of container.querySelectorAll('a')) expect(a.getAttribute('href'), a.textContent ?? '').toBeTruthy();
+    for (const button of container.querySelectorAll('button')) expect(button.getAttribute('type'), button.textContent ?? '').toBe('button');
+  });
+
+  it('kecepatan: hanya foto hero yang eager + fetchpriority high; semua gambar lain lazy; semua ber-srcset WebP, sizes, width/height', () => {
+    const container = demo();
+    const imgs = Array.from(container.querySelectorAll('img'));
+    const eager = imgs.filter((img) => img.getAttribute('loading') !== 'lazy');
+    expect(eager.map((img) => img.getAttribute('src'))).toEqual(['/assets/templates/photos/gadgetku-hero-1920.webp']);
+    expect(eager[0]).toHaveAttribute('fetchpriority', 'high');
+    expect(eager[0]).toHaveAttribute('width', '1920');
+    expect(eager[0]).toHaveAttribute('height', '1200');
+    for (const img of imgs) {
+      const src = img.getAttribute('src') ?? '';
+      expect(img.getAttribute('srcset'), src).toMatch(/\.webp \d+w, \S+\.webp \d+w$/);
+      expect(img.getAttribute('sizes'), src).toBeTruthy();
+      expect(Number(img.getAttribute('width')), src).toBeGreaterThan(0);
+      expect(Number(img.getAttribute('height')), src).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('GadgetKu: pencarian di menu', () => {
   it('pintasan tipe HP; hasil tipe HP memilih tipe di pencarian per tipe; kategori menyaring produk; tanpa hasil → tanya admin; Esc menutup', () => {
     const container = demo();
@@ -501,7 +576,7 @@ describe('GadgetKu: pencarian di menu', () => {
     fireEvent.change(input, { target: { value: 'a55' } });
     const results = within(header).getByRole('list', { name: 'Hasil pencarian' });
     expect(Array.from(results.querySelectorAll('a')).map((a) => a.textContent)).toEqual([
-      'Samsung Galaxy A55Cari aksesori yang cocok',
+      'Samsung Galaxy A55Cari aksesoris yang cocok',
       'Casing Silikon Soft-TouchCasing',
       'Tempered Glass Full Cover 9HTempered Glass',
       'Tempered Glass Anti-SpyTempered Glass',
@@ -511,7 +586,7 @@ describe('GadgetKu: pencarian di menu', () => {
     expect(scrolled).toEqual(['finder']);
     expect(within(header).queryByRole('searchbox')).toBeNull();
     const finder = section(container, 'finder');
-    expect(status(finder)).toBe('9 aksesori cocok untuk Samsung Galaxy A55');
+    expect(status(finder)).toBe('9 aksesoris cocok untuk Samsung Galaxy A55');
     expect(within(finder).getByRole('button', { name: 'Samsung' })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(toggle);
@@ -524,7 +599,7 @@ describe('GadgetKu: pencarian di menu', () => {
     fireEvent.click(toggle);
     fireEvent.change(within(header).getByRole('searchbox'), { target: { value: 'nokia' } });
     expect(header.textContent).toContain('Tidak ada hasil untuk “nokia”.');
-    expect(href(within(header).getByRole('link', { name: /Tanyakan stoknya ke admin/ }))).toContain('apakah ada aksesori untuk nokia?');
+    expect(href(within(header).getByRole('link', { name: /Tanyakan stoknya ke admin/ }))).toContain('apakah ada aksesoris untuk nokia?');
     act(() => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });
@@ -540,20 +615,20 @@ describe('GadgetKu: konten opsional kosong', () => {
     expect(hero.querySelector('.gk-hero-fallback')).not.toBeNull();
     expect(within(hero).queryByRole('link', { name: /Casing custom fotomu/ })).toBeNull();
     expect(within(hero).queryByRole('list', { name: 'Tersedia untuk' })).toBeNull();
-    expect(within(hero).getByRole('link', { name: 'Cari Aksesori HP-mu' })).toBeInTheDocument();
+    expect(within(hero).getByRole('link', { name: 'Cari Aksesoris HP-mu' })).toBeInTheDocument();
   });
 
   it('tanpa daftar tipe HP → pencarian per tipe hilang dari halaman & menu, tombol utama ke Produk', () => {
     const container = demo({ finder: { models: [] } });
     expect(sectionKeys(container)).toEqual(ORDER.filter((k) => k !== 'finder'));
     expect(within(container.querySelector('header')!).getAllByRole('navigation', { name: 'Menu utama' })[0].textContent).not.toContain('Cari HP');
-    expect(within(section(container, 'hero')).getByRole('link', { name: 'Cari Aksesori HP-mu' })).toHaveAttribute('href', '#products');
+    expect(within(section(container, 'hero')).getByRole('link', { name: 'Cari Aksesoris HP-mu' })).toHaveAttribute('href', '#products');
     expect(within(section(container, 'custom')).queryByRole('combobox')).toBeNull();
   });
 
   it('produk tanpa foto → ikon kategori; tanpa WhatsApp → tombol pesan & chat ke Kontak', () => {
     const container = demo({
-      products: { items: [{ name: 'Stiker Anti Gores', category: 'Aksesori', price: 'Rp10.000' }] },
+      products: { items: [{ name: 'Stiker Anti Gores', category: 'Aksesoris', price: 'Rp10.000' }] },
       contact: { whatsapp: '' },
     });
     const products = section(container, 'products');

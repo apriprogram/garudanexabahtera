@@ -54,7 +54,8 @@ function CustomCard({ m }: { m: GadgetkuModel }) {
     <>
       <span aria-hidden className="relative block h-[92px] w-[46px] shrink-0 rounded-[13px] bg-(--gk-on-dark) p-[3px]">
         <span className="relative block h-full w-full overflow-hidden rounded-[10px] bg-[#E9EAEE]">
-          {sample && <img src={sample} srcSet={asset?.srcSet} sizes="46px" alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />}
+          {/* Gambar mini dekoratif (kartu sudah berjudul; foto yang sama tampil berukuran penuh di bagian Custom Casing) */}
+          {sample && <img src={sample} srcSet={asset?.srcSet} sizes="46px" width={asset?.width} height={asset?.height} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />}
           <span className="absolute left-[4px] top-[4px] h-[18px] w-[18px] rounded-[6px] bg-[#0B0C0E]/85" />
         </span>
       </span>

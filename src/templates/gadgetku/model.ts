@@ -250,7 +250,7 @@ export function navItems(content: SiteContent): NavItem[] {
 export interface SearchEntry {
   /** Teks yang tampil (nama produk, paket, tipe HP, pertanyaan) */
   label: string;
-  /** Keterangan kecil, mis. kategori atau "Cari aksesori" */
+  /** Keterangan kecil, mis. kategori atau "Cari aksesoris" */
   group: string;
   /** Kunci section tujuan */
   target: string;
@@ -270,7 +270,7 @@ export function searchEntries(content: SiteContent, models: PhoneModel[]): Searc
   const entries: SearchEntry[] = [];
   const shown = (key: string) => isEnabled(getSection(content, key));
   if (shown('finder')) {
-    for (const phone of models) entries.push({ label: phone.label, group: 'Cari aksesori yang cocok', target: 'finder', phone: phone.id, keywords: phone.port });
+    for (const phone of models) entries.push({ label: phone.label, group: 'Cari aksesoris yang cocok', target: 'finder', phone: phone.id, keywords: phone.port });
   }
   if (shown('products')) {
     const products = getSection(content, 'products');

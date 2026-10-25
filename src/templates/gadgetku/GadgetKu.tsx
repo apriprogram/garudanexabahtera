@@ -1,6 +1,6 @@
-// Template "GadgetKu.id" — "Clean store": toko online aksesori HP (casing, tempered glass, charger, kabel, earphone,
+// Template "GadgetKu.id" — "Clean store": toko online aksesoris HP (casing, tempered glass, charger, kabel, earphone,
 // power bank). Bilah pengumuman + menu putih lengket, hero kartu gelap dengan foto produk dan kartu putih melayang,
-// lalu pembeda toko: cari aksesori per tipe HP, kategori foto besar, baris produk terbaru dengan penyaring, bundling
+// lalu pembeda toko: cari aksesoris per tipe HP, kategori foto besar, baris produk terbaru dengan penyaring, bundling
 // hemat, custom casing dengan foto sendiri (pratinjau di browser), strip layanan gelap, ulasan, tanya jawab, kontak &
 // marketplace, footer gelap. Judul Inter Tight, ubin abu datar tanpa bayangan, gerak tenang (mati di pratinjau CMS &
 // prefers-reduced-motion), container query agar akurat di bingkai HP 390px dan panel CMS.

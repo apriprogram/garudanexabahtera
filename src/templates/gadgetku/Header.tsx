@@ -109,7 +109,7 @@ function SearchPanel({ m, shop, id, onClose }: { m: GadgetkuModel; shop: Shop; i
             <p>Tidak ada hasil untuk “{query.trim()}”.</p>
             {m.startAction && (
               <ActionLink
-                action={m.askAction(`apakah ada aksesori untuk ${query.trim()}?`)}
+                action={m.askAction(`apakah ada aksesoris untuk ${query.trim()}?`)}
                 onNavigate={onClose}
                 className="mt-1 inline-flex min-h-10 items-center gap-1.5 font-medium text-(--tpl-accent-ink)"
               >

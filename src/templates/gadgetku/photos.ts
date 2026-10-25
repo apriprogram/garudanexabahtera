@@ -1,4 +1,4 @@
-// Registry foto demo GadgetKu.id (toko aksesori HP, fiktif). Semua foto asli dari Unsplash (Unsplash License), WebP,
+// Registry foto demo GadgetKu.id (toko aksesoris HP, fiktif). Semua foto asli dari Unsplash (Unsplash License), WebP,
 // kredit di public/assets/templates/photos/CREDITS.md (section "GadgetKu.id"). Logo, ikon, mockup casing, dan garis
 // HP digambar sebagai SVG di kode (lebih ringan dari foto).
 //
