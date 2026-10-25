@@ -216,3 +216,36 @@ dicek lisensinya (Unsplash License, bukan Unsplash+) 2026-10-25. Logo merek yang
 | `puncakgear-portrait-1-*` | Perempuan berhijab berkacamata tersenyum, latar gunung | https://unsplash.com/photos/vl2UKsXDmsY | Aditya Enggar Perdana |
 | `puncakgear-portrait-2-*` | Pria berkupluk oranye membawa carrier di jalur hutan | https://unsplash.com/photos/xgiHQVcX2WY | Andri Hermawan |
 | `puncakgear-portrait-3-*` | Pria berjaket merah, latar gunung di atas awan (Bromo) | https://unsplash.com/photos/QRSH2gMCCC0 | visualsofdana |
+
+## GadgetKu.id (toko aksesori HP, fiktif)
+
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero 1920×1200, kategori 4:3 1200×900, produk 1:1 1200×1200, contoh foto
+casing custom 3:4 1200×1600); potret ulasan 1:1 `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash
+License, bukan Unsplash+) 2026-10-25; hanya dipotong, diperkecil, dan dikompres (latar semen/kayu pada `gadgetku-powerbank-*`,
+`gadgetku-charger-20w-*`, dan `gadgetku-kabel-usbc-*` sedikit dihaluskan agar file lebih ringan). Logo, ikon, mockup casing,
+dan garis HP adalah SVG buatan sendiri di kode template.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `gadgetku-hero-*` | Bagian belakang HP hitam dengan tiga kamera | https://unsplash.com/photos/zJ4XmQsZzMI | ubeyonroad |
+| `gadgetku-kat-casing-*` | Empat casing HP warna pastel dan bunga matahari | https://unsplash.com/photos/FQXbLmlmvWY | Grysell Alvarez |
+| `gadgetku-kat-tg-*` | Layar kaca HP di atas meja abu-abu | https://unsplash.com/photos/J7xrBW_oYJc | Lorenzo Rui |
+| `gadgetku-kat-charger-*` | Kepala charger putih di depan dinding kuning | https://unsplash.com/photos/9QTFMkh-ezM | Markus Winkler |
+| `gadgetku-kat-kabel-*` | Tiga kabel data jalin oranye di latar biru | https://unsplash.com/photos/yh0UtueiZ-I | Lucian Alexe |
+| `gadgetku-kat-earphone-*` | Earphone nirkabel hitam dan kotak pengisinya | https://unsplash.com/photos/HuTUDQqr88c | Roger Cai |
+| `gadgetku-kat-powerbank-*` | Tangan memegang power bank hijau dan HP | https://unsplash.com/photos/APdfyW0Aq-E | I'M ZION |
+| `gadgetku-casing-silikon-*` | HP bercasing silikon biru di samping sukulen | https://unsplash.com/photos/qEoKzD2zJjE | Daniel Korpai |
+| `gadgetku-casing-bening-*` | Casing bening dengan lingkaran magnet | https://unsplash.com/photos/v38zp8oXaEg | Lee Peterson |
+| `gadgetku-tg-fullcover-*` | HP dengan layar bergambar daun hijau | https://unsplash.com/photos/dKXVCyFuIAQ | Mohammad Rahman |
+| `gadgetku-tg-antispy-*` | Layar HP mengilap di atas alas kuning berlubang | https://unsplash.com/photos/GGibLLnU59c | Sam Grozyan |
+| `gadgetku-charger-20w-*` | Kepala charger putih dan kabel USB di meja kayu | https://unsplash.com/photos/jBm1x5hB4cQ | Arturo Añez |
+| `gadgetku-charger-45w-*` | Charger putih kecil di permukaan hijau gelap | https://unsplash.com/photos/ZUabNmumOcA | Steve A Johnson |
+| `gadgetku-kabel-usbc-*` | Kabel USB-C jalin hitam tergulung | https://unsplash.com/photos/RWxeE7wu1T8 | Mika Baumeister |
+| `gadgetku-kabel-lightning-*` | Kabel data putih dengan ujung USB-A | https://unsplash.com/photos/6cXZnFCd2KQ | Adam Birkett |
+| `gadgetku-tws-*` | Sepasang earbuds nirkabel hitam di latar putih | https://unsplash.com/photos/XGIulH5L8lU | Behnam Norouzi |
+| `gadgetku-tws-gaming-*` | Earbuds bluetooth hitam dengan cahaya merah ungu | https://unsplash.com/photos/YwJGDLKOE48 | TheRegisti |
+| `gadgetku-powerbank-*` | Power bank putih dengan kabel tiga cabang | https://unsplash.com/photos/7JbgHNq4h4k | Andrey Matveev |
+| `gadgetku-custom-sample-*` | Kucing oranye putih di keranjang anyaman | https://unsplash.com/photos/_867Jy8LCkI | Daria Averina |
+| `gadgetku-portrait-1-*` | Pria muda berkaus putih | https://unsplash.com/photos/kw9kHqYuc3g | Adismara Putri Pradiri |
+| `gadgetku-portrait-2-*` | Perempuan muda berhijab biru tersenyum | https://unsplash.com/photos/O1z8oNDidaM | irwan wahyudi |
+| `gadgetku-portrait-3-*` | Perempuan muda tersenyum, dagu bertumpu di tangan | https://unsplash.com/photos/jBqMJdzTcgA | Phước Sang |

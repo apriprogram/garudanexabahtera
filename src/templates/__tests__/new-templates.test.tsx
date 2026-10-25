@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ARENA_PHOTOS } from '../arena-club/photos';
 import { AURA_PHOTOS } from '../aura-studio/photos';
 import { FINOVA_PHOTOS } from '../finova/photos';
+import { GADGETKU_PHOTOS } from '../gadgetku/photos';
 import { SERENITY_PHOTOS } from '../serenity/photos';
 import { TANI_PHOTOS } from '../tanimakmur/photos';
 import { PUNCAK_PHOTOS } from '../puncakgear/photos';
@@ -30,7 +31,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card';
   photos: PhotoSet;
 }
 
@@ -42,6 +43,7 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'serenity', component: 'Serenity.tsx', heroLayout: 'fullbleed', photos: SERENITY_PHOTOS },
   { code: 'tanimakmur', component: 'TaniMakmur.tsx', heroLayout: 'field', photos: TANI_PHOTOS },
   { code: 'puncakgear', component: 'PuncakGear.tsx', heroLayout: 'summit', photos: PUNCAK_PHOTOS },
+  { code: 'gadgetku', component: 'GadgetKu.tsx', heroLayout: 'inset-card', photos: GADGETKU_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */

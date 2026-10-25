@@ -5,6 +5,7 @@ import { auraStudio } from './aura-studio';
 import { corporateNexa } from './corporate-nexa';
 import { finova } from './finova';
 import { puncakgear } from './puncakgear';
+import { gadgetku } from './gadgetku';
 import { serenity } from './serenity';
 import { startupClean } from './startup-clean';
 import { tanimakmur } from './tanimakmur';
@@ -17,6 +18,7 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // Serenity (2026-10-25): studio wellness, hero foto layar penuh (src/templates/serenity/Serenity.tsx).
 // TaniMakmur (2026-10-25): toko tani, paket per tanaman (src/templates/tanimakmur/TaniMakmur.tsx).
 // PuncakGear (2026-10-25): toko perlengkapan mendaki, panduan per gunung + sewa alat (src/templates/puncakgear/PuncakGear.tsx).
+// GadgetKu.id (2026-10-25): toko aksesori HP, cari per tipe HP + custom casing (src/templates/gadgetku/GadgetKu.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -26,6 +28,7 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [serenity.code]: serenity,
   [tanimakmur.code]: tanimakmur,
   [puncakgear.code]: puncakgear,
+  [gadgetku.code]: gadgetku,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */
