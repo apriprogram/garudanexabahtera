@@ -184,16 +184,17 @@ export function Hero({ m }: { m: TaniModel }) {
           {(statsLabel || stats.length > 0) && (
             <div className="mt-auto grid gap-5 pt-12 @3xl:grid-cols-12 @3xl:items-end @3xl:gap-6 @5xl:pt-10">
               {statsLabel && (
-                <p className="max-w-[18ch] text-[20px] font-medium leading-tight tracking-[-0.01em] text-white @3xl:col-span-3 @5xl:text-[22px]">{statsLabel}</p>
+                <p className="max-w-[18ch] text-[20px] font-medium leading-tight tracking-[-0.01em] text-white @3xl:col-span-12 @5xl:text-[22px] @6xl:col-span-3">{statsLabel}</p>
               )}
               {stats.length > 0 && (
-                <ul className={`grid gap-3 @xl:grid-cols-3 @3xl:gap-4 ${statsLabel ? '@3xl:col-span-9' : '@3xl:col-span-12'}`}>
+                // HP: kartu bertumpuk (angka di samping keterangan); @3xl: 3 kartu selebar baris; @6xl: di samping keterangan
+                <ul className={`grid gap-3 @3xl:col-span-12 @3xl:grid-cols-3 @3xl:gap-4 ${statsLabel ? '@6xl:col-span-9' : ''}`}>
                   {stats.map((item, i) => (
                     // Selalu di tepi bawah layar saat dimuat: animasi masuk saat halaman dibuka (CSS .tm-rise)
                     <li
                       key={`${field(item, 'value')}-${i}`}
                       style={{ '--tm-delay': `${420 + stagger(i, 90)}ms` } as CSSProperties}
-                      className={`tm-rise flex items-center gap-4 rounded-[18px] p-5 @xl:min-h-[132px] @xl:flex-col @xl:items-start @xl:justify-between @3xl:min-h-[140px] @3xl:p-6 ${
+                      className={`tm-rise flex items-center gap-4 rounded-[18px] p-5 @3xl:min-h-[140px] @3xl:flex-col @3xl:items-start @3xl:justify-between @3xl:p-6 ${
                         i === 0 ? 'bg-[#F6F2E3] text-[#18230F]' : 'border-t border-white/35 bg-[#13260E]/35 backdrop-blur-sm'
                       }`}
                     >
