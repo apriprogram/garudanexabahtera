@@ -63,7 +63,9 @@ function QuoteCard({ m }: { m: TaniModel }) {
     <figure className="relative w-full max-w-[300px] overflow-hidden rounded-[20px] bg-[#13260E]/60 ring-1 ring-inset ring-white/20 backdrop-blur-md">
       {/* Garis aksen tegak di tepi kiri kartu (referensi: garis kuning di samping kartu foto) */}
       <span aria-hidden className="absolute inset-y-0 left-0 z-10 w-[3px] bg-(--tpl-accent)" />
-      {hasImage(image) && <KitPhoto src={image} alt="" fallback="none" sizes="300px" className="aspect-[4/3]" />}
+      {hasImage(image) && (
+        <KitPhoto src={image} alt={TANI_PHOTOS.alt(image, name || `Pelanggan ${m.companyName}`)} fallback="none" sizes="300px" className="aspect-[4/3]" />
+      )}
       <figcaption className="p-4 pl-5">
         {quote && <blockquote className="text-[15px] font-medium leading-snug text-white">“{quote}”</blockquote>}
         {name && <p className="mt-2 text-[12.5px] leading-snug text-white/80">{name}</p>}

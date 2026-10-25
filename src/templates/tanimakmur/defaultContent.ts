@@ -11,7 +11,8 @@ export const TANI_ACCENT = '#F4C534';
 export const taniContent: SiteContent = {
   brand: {
     company_name: 'TaniMakmur',
-    tagline: 'Benih, pupuk & alat tani untuk panen yang lebih tenang',
+    // Judul tab situs = "Nama — Tagline" (siteHead.ts), jadi tagline ditulis seperti toko tani dan ≤ 60 karakter total
+    tagline: 'Toko tani online: benih, pupuk & alat tani',
     logo: '',
     accent_color: TANI_ACCENT,
   },
@@ -20,8 +21,9 @@ export const taniContent: SiteContent = {
     eyebrow: 'Toko tani untuk petani muda & urban farmer',
     title: 'Benih tepat, panen lebih tenang',
     highlight: 'panen',
+    // Juga meta description situs (siteHead.ts): ≤ 160 karakter
     subtitle:
-      'Benih, pupuk, pestisida organik, dan alat tani skala kecil, tersedia juga dalam paket per jenis tanaman. Bingung mulai dari mana? Tanya penyuluh kami lewat WhatsApp, gratis.',
+      'Benih, pupuk, pestisida organik, dan alat tani skala kecil, juga dalam paket per jenis tanaman. Bingung mulai? Tanya penyuluh kami lewat WhatsApp, gratis.',
     primary_label: 'Mulai Belanja',
     primary_url: '',
     secondary_label: 'Konsultasi gratis via WhatsApp',

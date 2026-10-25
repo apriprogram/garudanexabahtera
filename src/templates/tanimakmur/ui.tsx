@@ -4,9 +4,11 @@
 import { ArrowRight, Sprout, Star } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ActionLink } from '../shared/Shell';
-import { splitHighlight, type LinkAction } from '../shared/utils';
+import { hasImage, initials, splitHighlight, type LinkAction } from '../shared/utils';
+import { KitPhoto } from '../kit/Photo';
 import { CROP_ICONS, ICONS, cropKey, iconKey } from './icons';
 import { formatRating } from './model';
+import { TANI_PHOTOS } from './photos';
 
 /** Label section: pil kecil dengan tunas (latar krem/putih) atau pil kaca (di atas foto & panel hijau tua). */
 export function SectionLabel({ children, tone = 'light', className = '' }: { children: ReactNode; tone?: 'light' | 'white' | 'dark'; className?: string }) {
@@ -72,7 +74,26 @@ export function TitleIcon({ title, index = 0, className = 'h-5 w-5' }: { title: 
 /** Ikon tanaman (cabai, tomat, hidroponik, sayur daun, tunas). Dekoratif. */
 export function CropIcon({ name, className = 'h-5 w-5' }: { name: string; className?: string }) {
   const Icon = CROP_ICONS[cropKey(name)];
-  return <Icon className={className} />;
+  return (
+    <span aria-hidden className="contents">
+      <Icon className={className} />
+    </span>
+  );
+}
+
+/**
+ * Foto bulat orang (testimoni, penyuluh) dengan alt deskriptif: alt foto demo, selain itu "Foto {nama}". Tanpa foto →
+ * inisial (dekoratif, nama sudah tertulis di sampingnya).
+ */
+export function PersonPhoto({ name, photo, sizes = '44px', className = 'h-11 w-11' }: { name: string; photo: string; sizes?: string; className?: string }) {
+  if (!hasImage(photo)) {
+    return (
+      <span aria-hidden className={`flex shrink-0 items-center justify-center rounded-full bg-[#ECE6CF] text-[13px] font-semibold text-[#1E3A16] ${className}`}>
+        {initials(name, '?')}
+      </span>
+    );
+  }
+  return <KitPhoto src={photo} alt={TANI_PHOTOS.alt(photo, name ? `Foto ${name}` : 'Foto pelanggan')} sizes={sizes} className={`shrink-0 rounded-full ${className}`} />;
 }
 
 /** Lima bintang terisi sesuai rating (dibulatkan ke 0,5), dengan label untuk pembaca layar. */

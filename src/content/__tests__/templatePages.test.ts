@@ -134,6 +134,23 @@ describe('src/content/templates', () => {
     expect(tani).toMatch(/bergantung pada cuaca/);
   });
 
+  it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
+    const t = bySlug('tanimakmur');
+    const c = templateContent('tanimakmur') as TemplatePageContent;
+    const keyword = 'template website toko pertanian';
+    expect(templateTitle(t).toLowerCase()).toContain(keyword);
+    expect(templateDescription(t).toLowerCase()).toContain(keyword);
+    expect(templateDescription(t)).toContain('Rp1.590.000');
+    expect(templateH1(t).toLowerCase()).toContain(keyword);
+    expect(fillName(c.lead, t).toLowerCase()).toContain(keyword);
+    const text = visibleText(c).toLowerCase();
+    for (const secondary of ['website toko pertanian online', 'website toko benih dan pupuk', 'website toko alat tani']) expect(text).toContain(secondary);
+    // Fitur sesuai demo: pesan & konsultasi lewat WhatsApp, tanpa keranjang/checkout/pembayaran online yang sungguhan
+    expect(text).toMatch(/tidak ada keranjang belanja otomatis/);
+    expect(text).not.toMatch(/\bcheckout otomatis|\bpayment gateway|\bbayar online di website/);
+    expect(TEMPLATE_COPY.tanimakmur.updated).toBe('2026-10-25');
+  });
+
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {
     for (const slug of SLUGS) {
       const c = templateContent(slug) as TemplatePageContent;

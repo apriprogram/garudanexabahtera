@@ -56,7 +56,9 @@ export function Footer({ m }: { m: TaniModel }) {
                       aria-label={label}
                       className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white ring-1 ring-inset ring-white/15 transition-colors hover:bg-(--tpl-accent) hover:text-(--tpl-on-accent)"
                     >
-                      <Icon className="h-[18px] w-[18px]" />
+                      <span aria-hidden>
+                        <Icon className="h-[18px] w-[18px]" />
+                      </span>
                     </ActionLink>
                   </li>
                 ))}

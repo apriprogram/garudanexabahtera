@@ -1,15 +1,15 @@
-// Isi halaman /template/tanimakmur. Sumber fakta: src/templates/tanimakmur (schema.ts, TaniMakmur.tsx, Header.tsx, Hero.tsx,
-// Categories.tsx, Bundles.tsx, Products.tsx, Consult.tsx, Tips.tsx, Faq.tsx, Contact.tsx). Klaim wajib jujur: pemesanan
-// lewat WhatsApp, TANPA keranjang/ongkir otomatis/pembayaran online, tanpa janji hasil panen. Demo: TaniMakmur, Kota Batu
-// (fiktif).
+// Isi halaman /template/tanimakmur (kata kunci: lihat tanimakmur.ts). Sumber fakta: src/templates/tanimakmur (schema.ts,
+// TaniMakmur.tsx, Header.tsx, Hero.tsx, Categories.tsx, Bundles.tsx, Products.tsx, Consult.tsx, Tips.tsx, Faq.tsx,
+// Contact.tsx). Klaim wajib jujur: pemesanan lewat WhatsApp, TANPA keranjang/ongkir otomatis/pembayaran online, tanpa janji
+// hasil panen. Demo: TaniMakmur, Kota Batu (fiktif).
 import type { TemplatePageContent } from './page.types';
 
 export const content: TemplatePageContent = {
   lead:
-    '{nama} adalah template website untuk toko pertanian yang menjual benih, pupuk, pestisida organik, dan alat tani skala kecil, dengan pembeli utama petani muda dan penghobi urban farming. Pembuka foto ladang selebar layar, kategori produk, paket per jenis tanaman, daftar produk terlaris, dan konsultasi lewat WhatsApp sudah tersusun, jadi Anda tinggal mengganti foto, produk, dan harga dengan milik toko sendiri.',
+    '{nama} adalah template website toko pertanian untuk penjual benih, pupuk, pestisida organik, dan alat tani skala kecil, dengan pembeli utama petani muda dan penghobi urban farming. Pembuka foto ladang selebar layar, kategori produk, paket per jenis tanaman, produk terlaris, dan konsultasi lewat WhatsApp sudah tersusun, jadi Anda tinggal mengganti foto, produk, dan harga dengan milik toko sendiri.',
   suitableFor: {
     intro:
-      'Pilih {nama} bila pembeli Anda sering bertanya dulu sebelum membeli: benih apa yang cocok untuk balkon, pupuk mana untuk cabai, atau berapa lama sampai panen. Halaman ini menjawab pertanyaan itu lewat paket per tanaman dan jadwal tanam, lalu mengarahkan pembeli ke WhatsApp. Stok, ongkos kirim, dan pembayaran tetap Anda konfirmasi sendiri di chat; tidak ada keranjang belanja otomatis.',
+      'Pilih {nama} bila Anda ingin membuka website toko pertanian online dan pembeli sering bertanya dulu sebelum membeli: benih apa yang cocok untuk balkon, pupuk mana untuk cabai, atau berapa lama sampai panen. Halaman ini menjawabnya lewat paket per tanaman dan jadwal tanam, lalu mengarahkan pembeli ke WhatsApp. Stok, ongkos kirim, dan pembayaran tetap Anda konfirmasi sendiri di chat; tidak ada keranjang belanja otomatis.',
     items: [
       'Toko benih, pupuk, dan alat tani yang mulai berjualan online di luar marketplace.',
       'Kios saprotan di daerah sentra sayur yang ingin melayani pesanan dari kota lain.',
@@ -20,11 +20,11 @@ export const content: TemplatePageContent = {
   parts: [
     {
       name: 'Menu atas',
-      text: 'Logo atau simbol tunas bawaan, tautan bagian dengan garis bawah warna aksen, tombol konsultasi, dan tombol cari berbentuk kotak; di HP menu dilipat.',
+      text: 'Logo atau simbol tunas bawaan, tautan bagian, tombol konsultasi, dan tombol cari; di HP menu dilipat.',
     },
     {
       name: 'Pencarian di menu',
-      text: 'Pengunjung mengetik kata seperti "kompos" atau "hidroponik" lalu langsung diarahkan ke produk, paket, panduan, atau pertanyaan yang cocok di halaman.',
+      text: 'Pengunjung mengetik kata seperti "kompos" lalu diarahkan ke produk, paket, panduan, atau pertanyaan yang cocok.',
     },
     {
       name: 'Hero (bagian pembuka)',
@@ -32,7 +32,7 @@ export const content: TemplatePageContent = {
     },
     {
       name: 'Kategori',
-      text: 'Hingga 6 kartu kategori bernomor dengan foto dan jumlah produk. Klik kartu menggulir ke produk terlaris dan langsung memfilter kategori yang sama.',
+      text: 'Hingga 6 kartu kategori bernomor dengan foto. Klik kartu menuju produk terlaris yang sudah difilter sesuai kategorinya.',
     },
     {
       name: 'Pilih tanamanmu',
@@ -63,11 +63,11 @@ export const content: TemplatePageContent = {
   cmsNote:
     'Grafik jadwal tanam dibuat otomatis dari teks seperti "Semai | 4", dan selisih hemat dihitung dari harga paket dan harga normal.',
   demo: [
-    'Demo {nama} memakai toko tani fiktif di Kota Batu dengan empat kategori: benih, pupuk, pestisida organik, dan alat tani. Empat paket contoh menunjukkan cara menyusun paket cabai rawit dalam pot, starter kit hidroponik sayur daun, tomat ceri rambat, dan sayur daun cepat panen, masing-masing dengan isi dan jadwal tanamnya.',
-    'Nama pembeli, penyuluh, angka, dan harga di demo hanyalah contoh. Tulis perkiraan panen apa adanya dengan tanda kira-kira, karena hasil tetap bergantung pada cuaca, sinar matahari, dan perawatan. Untuk pestisida, cantumkan dosis dan cara pakai sesuai label kemasan.',
+    'Demo {nama} memakai toko tani fiktif di Kota Batu dengan empat kategori: benih, pupuk, pestisida organik, dan alat tani. Empat paket contoh (cabai rawit dalam pot, kit hidroponik sayur daun, tomat ceri, dan sayur daun) lengkap dengan isi dan jadwal tanamnya.',
+    'Nama pembeli, penyuluh, angka, dan harga di demo hanyalah contoh, dan fotonya dari Unsplash; ganti dengan foto produk dan kios Anda sendiri. Tulis perkiraan panen apa adanya dengan tanda kira-kira, karena hasil tetap bergantung pada cuaca, sinar matahari, dan perawatan. Untuk pestisida, cantumkan dosis dan cara pakai sesuai label kemasan.',
   ],
   custom:
-    '{nama} menampilkan produk dan mengarahkan pembeli ke WhatsApp. Bila toko Anda butuh keranjang belanja, ongkos kirim otomatis, pembayaran online, stok yang terhubung ke gudang, atau aplikasi pencatatan kebun untuk pelanggan, fitur itu termasuk website atau aplikasi custom. Ceritakan alur pesanan di toko Anda, lalu kami kirim penawaran setelah konsultasi gratis.',
+    '{nama} menampilkan produk dan mengarahkan pembeli ke WhatsApp. Bila toko Anda butuh keranjang belanja, ongkos kirim otomatis, pembayaran online, atau stok yang terhubung ke gudang, fitur itu termasuk website atau aplikasi custom. Ceritakan alur pesanan di toko Anda, lalu kami kirim penawaran setelah konsultasi gratis.',
   mobileLink: true,
   faq: [
     {
@@ -91,9 +91,9 @@ export const content: TemplatePageContent = {
         'Ganti judulnya menjadi konsultasi dengan admin atau pemilik toko, atau sembunyikan bagian itu dari CMS. Daftar penyuluh, contoh percakapan, dan langkah konsultasi semuanya opsional.',
     },
     {
-      question: 'Apakah foto di demo boleh saya pakai?',
+      question: 'Bisakah dipakai untuk website toko alat tani atau website toko benih dan pupuk saja?',
       answer:
-        'Foto demo berasal dari Unsplash dan hanya contoh suasana. Sebaiknya ganti dengan foto produk, kebun, dan kios Anda sendiri lewat CMS supaya pembeli melihat barang yang sebenarnya.',
+        'Bisa. Kategori, produk, dan paket mengikuti barang yang Anda jual, misalnya hanya alat tani dan perlengkapan hidroponik, atau hanya benih dan pupuk. Bagian Pilih tanamanmu bisa disembunyikan dari CMS bila toko Anda tidak menjual paket per tanaman.',
     },
   ],
   imageAlts: {

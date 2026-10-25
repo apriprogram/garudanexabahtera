@@ -48,7 +48,11 @@ export const taniSections: TemplateSection[] = [
     description: 'Nama toko, logo, dan warna aksen (lingkaran ajakan di hero, tombol pesan, bintang ulasan, label).',
     fields: [
       t('company_name', 'Nama toko', { placeholder: 'mis. TaniMakmur', maxLength: 80 }),
-      t('tagline', 'Tagline', { placeholder: 'mis. Benih, pupuk & alat tani untuk panen yang lebih tenang', maxLength: 100, help: 'Tampil di footer dan judul tab browser.' }),
+      t('tagline', 'Tagline', {
+        placeholder: 'mis. Toko tani online: benih, pupuk & alat tani',
+        maxLength: 100,
+        help: 'Tampil di footer dan judul tab browser (juga judul di hasil Google). Sebut jenis toko dan kota, total dengan nama toko ± 60 karakter.',
+      }),
       img('logo', 'Logo', 'PNG/SVG berlatar transparan, maks. 2 MB. Kosongkan untuk memakai simbol tunas bawaan template dan nama toko.'),
       {
         type: 'color',
@@ -68,7 +72,11 @@ export const taniSections: TemplateSection[] = [
       t('eyebrow', 'Label kecil di atas judul', { placeholder: 'mis. Toko tani untuk petani muda & urban farmer', maxLength: 60, help: 'Kosongkan untuk menyembunyikan.' }),
       t('title', 'Judul utama', { placeholder: 'mis. Benih tepat, panen lebih tenang', maxLength: 60, help: 'Paling bagus 3–5 kata pendek (± 20–40 karakter).' }),
       t('highlight', 'Kata yang disorot', { placeholder: 'mis. panen', maxLength: 30, help: 'Bagian judul yang diberi warna aksen. Tulis persis seperti di judul, atau kosongkan.' }),
-      ta('subtitle', 'Deskripsi', { placeholder: 'Jelaskan singkat apa yang toko Anda jual.', maxLength: 220 }),
+      ta('subtitle', 'Deskripsi', {
+        placeholder: 'Jelaskan singkat apa yang toko Anda jual.',
+        maxLength: 220,
+        help: 'Juga dipakai sebagai deskripsi situs di hasil Google; paling bagus ≤ 160 karakter.',
+      }),
       t('primary_label', 'Teks lingkaran ajakan', { placeholder: 'mis. Mulai Belanja', maxLength: 22, help: 'Tampil di lingkaran warna aksen di samping foto bulat. Paling bagus 1–2 kata.' }),
       url('primary_url', 'Tautan lingkaran ajakan', { help: 'Kosongkan untuk menuju bagian Produk terlaris.' }),
       t('secondary_label', 'Teks tautan konsultasi', { placeholder: 'mis. Konsultasi gratis via WhatsApp', maxLength: 40, help: 'Tautan berikon WhatsApp di bawah deskripsi. Kosongkan untuk menyembunyikan.' }),

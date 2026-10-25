@@ -7,10 +7,9 @@ import { CONTAINER, SECTION_Y } from '../shared/layout';
 import { stagger } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
 import { field, list, text } from '../shared/utils';
-import { KitAvatar } from '../kit/Photo';
 import { parseRating, type TaniModel } from './model';
 import { C, TYPE_T } from './styles';
-import { SectionLabel, Stars } from './ui';
+import { PersonPhoto, SectionLabel, Stars } from './ui';
 
 export function Testimonials({ m }: { m: TaniModel }) {
   const { testimonials } = m;
@@ -65,7 +64,7 @@ export function Testimonials({ m }: { m: TaniModel }) {
                 )}
                 {(field(item, 'name') || field(item, 'role')) && (
                   <div className={`mt-6 flex items-center gap-3 border-t pt-6 ${dark ? 'border-white/15' : 'border-[#18230F]/[0.08]'}`}>
-                    <KitAvatar name={field(item, 'name')} photo={field(item, 'photo')} sizes="44px" className="h-11 w-11" />
+                    <PersonPhoto name={field(item, 'name')} photo={field(item, 'photo')} />
                     <div className="min-w-0">
                       {field(item, 'name') && <p className={`truncate text-[15px] font-semibold ${dark ? 'text-white' : 'text-[#18230F]'}`}>{field(item, 'name')}</p>}
                       {field(item, 'role') && <p className={`truncate text-[13px] ${dark ? 'text-white/75' : C.muted}`}>{field(item, 'role')}</p>}

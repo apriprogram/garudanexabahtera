@@ -9,12 +9,12 @@ import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, list, resolveAction, text } from '../shared/utils';
-import { KitAvatar, KitPhoto } from '../kit/Photo';
+import { KitPhoto } from '../kit/Photo';
 import { FieldLines, LeafArt } from './marks';
 import type { TaniModel } from './model';
 import { TANI_PHOTOS } from './photos';
 import { BTN, CARD, TYPE_T } from './styles';
-import { Highlighted, SectionLabel } from './ui';
+import { Highlighted, PersonPhoto, SectionLabel } from './ui';
 
 /** Gelembung chat contoh. `overlay`: menumpang di bagian bawah foto (layar lebar); selain itu di bawah foto (HP). */
 function ChatBubbles({ m, overlay }: { m: TaniModel; overlay: boolean }) {
@@ -36,7 +36,7 @@ function ChatBubbles({ m, overlay }: { m: TaniModel; overlay: boolean }) {
       )}
       {answer && (
         <div className="flex max-w-[92%] items-end gap-2">
-          {expert && <KitAvatar name={field(expert, 'name')} photo={field(expert, 'photo')} sizes="36px" className="h-9 w-9 ring-2 ring-white" />}
+          {expert && <PersonPhoto name={field(expert, 'name')} photo={field(expert, 'photo')} sizes="36px" className="h-9 w-9 ring-2 ring-white" />}
           <p className="rounded-[18px] rounded-bl-[6px] bg-white px-4 py-2.5 text-[14px] leading-snug text-[#111B21]">
             <span className="block text-[12px] font-semibold text-[#1E3A16]">{expert ? field(expert, 'name') : 'Penyuluh'}</span>
             {answer}
@@ -104,7 +104,7 @@ export function Consult({ m }: { m: TaniModel }) {
                   {experts.map((item, i) => (
                     <Reveal as="li" key={`${field(item, 'name')}-${i}`} delay={stagger(i, 80)} className="flex min-w-0 items-center gap-3 rounded-full bg-white/[0.08] py-2 pl-2 pr-5 ring-1 ring-inset ring-white/15">
                       <span className="relative shrink-0">
-                        <KitAvatar name={field(item, 'name')} photo={field(item, 'photo')} sizes="44px" className="h-11 w-11" />
+                        <PersonPhoto name={field(item, 'name')} photo={field(item, 'photo')} />
                         <span aria-hidden className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#4ADE80] ring-2 ring-[#1E3A16]" />
                       </span>
                       <span className="min-w-0">

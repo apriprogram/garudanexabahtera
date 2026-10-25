@@ -5,7 +5,8 @@
 // hero ladang dengan menu transparan, foto bulat + lingkaran ajakan, kartu angka, strip keunggulan, kategori → filter
 // produk, pilih tanamanmu, produk terlaris, konsultasi, panduan, testimoni, FAQ, kontak, footer), pencarian di menu,
 // konten opsional kosong, pratinjau CMS diam, editor CMS, data katalog (migrasi 020 + seed + gambar pratinjau), dan
-// konten aneh.
+// konten aneh. SEO situs demo (situs calon pembeli): judul & meta default, satu H1 dan urutan heading, alt semua gambar,
+// SVG dekoratif tersembunyi, tautan asli, hero eager + fetchpriority, sisanya lazy dengan srcset/sizes/width/height.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
@@ -15,6 +16,7 @@ import { SectionEditor } from '../../pages/account/cms/SectionEditor';
 import { validateContent } from '../../pages/account/cms/validation';
 import { TEMPLATES, resolveContent } from '../index';
 import { SiteRenderer } from '../SiteRenderer';
+import { applySiteHead, siteTitle } from '../siteHead';
 import { contrast, parseHex } from '../shared/utils';
 import { cropKey, iconKey } from '../tanimakmur/icons';
 import {
@@ -420,6 +422,71 @@ describe('TaniMakmur: demo', RENDER, () => {
     const container = demo();
     const shadows = Array.from(container.querySelectorAll('[class*="shadow"]')).filter((el) => !/Chat WhatsApp/.test(el.getAttribute('aria-label') ?? ''));
     expect(shadows.map((el) => el.className)).toEqual([]);
+  });
+});
+
+describe('TaniMakmur: SEO situs demo', RENDER, () => {
+  it('judul tab & meta description bawaan terbaca seperti toko tani (≤ 60 / ≤ 160 karakter), lalu dipulihkan', () => {
+    expect(siteTitle('tanimakmur', null)).toBe('TaniMakmur — Toko tani online: benih, pupuk & alat tani');
+    expect(siteTitle('tanimakmur', null).length).toBeLessThanOrEqual(60);
+    document.title = 'Sebelum';
+    const restore = applySiteHead('tanimakmur', null);
+    expect(document.title).toBe(siteTitle('tanimakmur', null));
+    const description = document.head.querySelector('meta[name="description"]')?.getAttribute('content') ?? '';
+    expect(description).toBe(def.defaultContent.hero.subtitle);
+    expect(description.length).toBeLessThanOrEqual(160);
+    expect(description).toMatch(/^Benih, pupuk, pestisida organik, dan alat tani/);
+    restore();
+    expect(document.title).toBe('Sebelum');
+  });
+
+  it('satu H1, heading berurutan tanpa loncat level, setiap section isi punya H2', () => {
+    const container = demo();
+    const levels = Array.from(container.querySelectorAll('h1, h2, h3, h4, h5, h6')).map((h) => Number(h.tagName[1]));
+    expect(levels.filter((l) => l === 1)).toHaveLength(1);
+    expect(levels[0]).toBe(1);
+    levels.forEach((level, i) => {
+      if (i > 0) expect(level, `heading ke-${i + 1}`).toBeLessThanOrEqual(levels[i - 1] + 1);
+    });
+    for (const key of ORDER.filter((k) => k !== 'hero')) expect(section(container, key).querySelector('h2'), key).not.toBeNull();
+  });
+
+  it('gambar: alt deskriptif di semua foto, hero eager + fetchpriority, sisanya lazy dengan srcset, sizes, width & height', () => {
+    const container = demo();
+    const images = Array.from(container.querySelectorAll('img'));
+    expect(images.length).toBeGreaterThanOrEqual(20);
+    for (const img of images) {
+      const src = img.getAttribute('src');
+      expect(img.getAttribute('alt')?.trim().length, `alt ${src}`).toBeGreaterThan(8);
+      expect(Number(img.getAttribute('width')), `width ${src}`).toBeGreaterThan(0);
+      expect(Number(img.getAttribute('height')), `height ${src}`).toBeGreaterThan(0);
+      expect(img.getAttribute('srcset'), `srcset ${src}`).toMatch(/ \d+w, .+ \d+w$/);
+      expect(img.getAttribute('sizes'), `sizes ${src}`).toBeTruthy();
+    }
+    const eager = images.filter((img) => img.getAttribute('loading') === 'eager');
+    expect(eager.map((img) => img.getAttribute('src'))).toEqual(['/assets/templates/photos/tanimakmur-hero-1920.webp']);
+    expect(eager[0]).toHaveAttribute('fetchpriority', 'high');
+    expect(images.filter((img) => img !== eager[0]).every((img) => img.getAttribute('loading') === 'lazy')).toBe(true);
+    // Avatar testimoni & penyuluh memakai alt foto (bukan alt kosong)
+    expect(section(container, 'testimonials').querySelector('img')?.getAttribute('alt')).toMatch(/^Potret /);
+  });
+
+  it('SVG dekoratif tersembunyi dari pembaca layar; tautan asli dengan href, anchor section ada; tombol hanya untuk aksi', () => {
+    const container = demo();
+    for (const svg of container.querySelectorAll('svg')) {
+      expect(svg.closest('[aria-hidden="true"]'), svg.outerHTML.slice(0, 80)).not.toBeNull();
+    }
+    const links = Array.from(container.querySelectorAll('a'));
+    for (const a of links) {
+      const href = a.getAttribute('href') ?? '';
+      expect(href, a.textContent ?? '').not.toBe('');
+      expect(href).not.toBe('#');
+      if (href.startsWith('#')) expect(document.getElementById(href.slice(1)), href).not.toBeNull();
+    }
+    for (const button of container.querySelectorAll('button')) {
+      expect(button.getAttribute('type')).toBe('button');
+      expect((button.getAttribute('aria-label') ?? button.textContent ?? '').trim(), button.outerHTML.slice(0, 80)).not.toBe('');
+    }
   });
 });
 
