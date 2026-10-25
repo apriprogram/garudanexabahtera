@@ -251,7 +251,8 @@ export function searchEntries(content: SiteContent, nav: PuncakNavItem[]): Searc
     }
   }
   for (const item of productItems) {
-    if (field(item, 'name')) entries.push({ label: field(item, 'name'), group: groupOf('products', 'Produk'), target: 'products' });
+    // Kategori ikut dibawa: memilih produk menyaring ke kategorinya ('' = Semua), jadi produk itu pasti tampil
+    if (field(item, 'name')) entries.push({ label: field(item, 'name'), group: groupOf('products', 'Produk'), target: 'products', category: field(item, 'category') });
   }
   if (shown('guides')) {
     guideList(getSection(content, 'guides')).forEach((item, i) => {

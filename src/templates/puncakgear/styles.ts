@@ -26,8 +26,8 @@ export const C = {
 export const DISPLAY = `${FONT_DISPLAY} font-semibold`;
 
 export const TYPE_P = {
-  /** Judul poster hero: 52 → 76 → 104 → 124 → 136px, huruf kapital */
-  mega: `${FONT_DISPLAY} font-semibold uppercase leading-[0.88] tracking-[-0.035em] text-[52px] @2xl:text-[76px] @5xl:text-[104px] @7xl:text-[124px] @min-[96rem]:text-[136px]`,
+  /** Judul poster hero: 52 (mengecil mengikuti lebar wadah di HP) → 76 → 104 → 124 → 136px, huruf kapital */
+  mega: `${FONT_DISPLAY} font-semibold uppercase leading-[0.88] tracking-[-0.035em] text-[length:min(52px,12cqi)] @2xl:text-[76px] @5xl:text-[104px] @7xl:text-[124px] @min-[96rem]:text-[136px]`,
   /** H2 section: 32 → 42 → 50 → 56px */
   h2: `${DISPLAY} text-[32px] leading-[1.04] tracking-[-0.03em] @3xl:text-[42px] @5xl:text-[50px] @min-[96rem]:text-[56px]`,
   /** Judul kartu: 18 → 20px */
@@ -42,7 +42,7 @@ export const TYPE_P = {
 const PILL = 'inline-flex items-center justify-center gap-2.5 rounded-full font-semibold whitespace-nowrap transition-colors';
 export const BTN = {
   /** Aksen (hijau limau) di atas foto/latar gelap; garis luar tipis seperti tombol referensi */
-  accent: `${PILL} bg-(--tpl-accent) text-(--tpl-on-accent) outline outline-1 outline-offset-[3px] outline-white/55 hover:bg-(--tpl-accent-hover)`,
+  accent: `${PILL} bg-(--tpl-accent) text-(--tpl-on-accent) outline outline-1 outline-offset-[3px] outline-white/55 hover:bg-(--tpl-accent-hover) focus-visible:outline-[3px] focus-visible:outline-white`,
   /** Aksen tanpa garis luar (di dalam kartu gelap) */
   accentFlat: `${PILL} bg-(--tpl-accent) text-(--tpl-on-accent) hover:bg-(--tpl-accent-hover)`,
   /** Tinta + putih di latar terang (17:1) */

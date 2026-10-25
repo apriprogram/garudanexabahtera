@@ -43,9 +43,9 @@ export const puncakSections: TemplateSection[] = [
     fields: [
       t('company_name', 'Nama toko', { placeholder: 'mis. Tapak Rimba Outdoor', maxLength: 80 }),
       t('tagline', 'Tagline', {
-        placeholder: 'mis. Toko Outdoor & Sewa Alat Pendakian di Malang',
+        placeholder: 'mis. Toko & Sewa Alat Pendakian di Malang',
         maxLength: 100,
-        help: 'Tampil di footer dan judul tab browser/Google ("Nama — Tagline"). Sebutkan jenis usaha dan kota Anda.',
+        help: 'Tampil di footer dan judul tab browser/Google ("Nama — Tagline"). Sebutkan jenis usaha dan kota; nama + tagline sebaiknya ≤ 60 huruf agar tidak terpotong di Google.',
       }),
       img('logo', 'Logo', 'PNG/SVG berlatar transparan, maks. 2 MB. Kosongkan untuk memakai simbol puncak & bendera bawaan template dan nama toko.'),
       {
