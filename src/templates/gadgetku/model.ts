@@ -47,14 +47,17 @@ export function gadgetkuVars(accentRaw: string): CSSProperties {
 
 // ─── Teks ─────────────────────────────────────────────────────────────────────
 
-/** Huruf kecil tanpa diakritik, tanda baca jadi spasi, spasi dirapatkan ("USB-C" → "usb c", "Type-C" → "usb c"). */
+/**
+ * Huruf kecil tanpa diakritik, tanda baca jadi spasi, spasi dirapatkan. Semua penulisan port USB-C disamakan:
+ * "USB-C", "Type-C", "USB Type-C", "USB Type C", "Tipe C" → "usb c".
+ */
 export const normalize = (value: string) =>
   (value || '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .replace(/\btype c\b/g, 'usb c')
+    .replace(/\b(?:usb )?(?:type|tipe) c\b/g, 'usb c')
     .trim();
 
 // ─── Tipe HP & kecocokan ──────────────────────────────────────────────────────
@@ -143,9 +146,18 @@ export function compatSummary(raw: string, max = 2): string {
 
 // ─── Harga ────────────────────────────────────────────────────────────────────
 
-/** "Rp1.290.000" / "Rp 59.000" / "59000" → angka rupiah; tanpa angka → null. Desimal ",50" diabaikan. */
+/**
+ * Harga teks → angka rupiah; tanpa angka → null. "Rp1.290.000" / "Rp 59.000" / "59000" (desimal ",50" diabaikan), juga
+ * singkatan yang umum di toko: "Rp149rb" / "149 ribu" / "149K" → 149000, "Rp1,5 jt" / "2 juta" → 1500000 / 2000000.
+ */
 export function parseRupiah(raw: string): number | null {
-  const digits = (raw || '').replace(/,\d{1,2}\s*$/, '').replace(/\D/g, '');
+  const value = (raw || '').toLowerCase();
+  const unit = /\d\s*(?:jt|juta)\b/.test(value) ? 1e6 : /\d\s*(?:rb|ribu|k)\b/.test(value) ? 1e3 : 1;
+  if (unit > 1) {
+    const number = value.match(/\d+(?:[.,]\d+)?/);
+    return number ? Math.round(Number(number[0].replace(',', '.')) * unit) : null;
+  }
+  const digits = value.replace(/,\d{1,2}\s*$/, '').replace(/\D/g, '');
   return digits ? Number(digits) : null;
 }
 
@@ -174,11 +186,14 @@ export const productBadge = (item: ListItem): string => {
   return pct ? `-${pct}%` : '';
 };
 
-/** Bintang ulasan 1–5 (kosong/tidak terbaca → 5). */
-export function stars(raw: string): number {
+/** Bintang 1–5 dari angka rating ("4,9", "4,9/5", "3.8"), dibulatkan; kosong/tidak terbaca → null. */
+export function ratingStars(raw: string): number | null {
   const value = Math.round(Number.parseFloat((raw || '').replace(',', '.')));
-  return Number.isFinite(value) ? Math.min(5, Math.max(1, value)) : 5;
+  return Number.isFinite(value) ? Math.min(5, Math.max(1, value)) : null;
 }
+
+/** Bintang satu ulasan 1–5 (kosong/tidak terbaca → 5, sesuai bawaan field "Bintang"). */
+export const stars = (raw: string): number => ratingStars(raw) ?? 5;
 
 /** Isi paket: satu baris = satu barang (penanda daftar "-", "•" dibuang). */
 export const bundleLines = (raw: string): string[] =>
@@ -276,7 +291,8 @@ export function searchEntries(content: SiteContent, models: PhoneModel[]): Searc
     const products = getSection(content, 'products');
     for (const item of list(products, 'items', 16)) {
       const name = field(item, 'name');
-      if (name) entries.push({ label: name, group: field(item, 'category') || 'Produk', target: 'products', keywords: field(item, 'compatible') });
+      // Kategori ikut dibawa: Produk tersaring ke kategori produk itu, jadi kartunya terlihat tanpa menggeser baris
+      if (name) entries.push({ label: name, group: field(item, 'category') || 'Produk', target: 'products', keywords: field(item, 'compatible'), category: field(item, 'category') || undefined });
     }
     if (shown('categories')) {
       for (const item of list(getSection(content, 'categories'), 'items', 6)) {
@@ -333,6 +349,59 @@ export const paymentMethods = (raw: string): string[] =>
     .map((s) => s.trim())
     .filter(Boolean)
     .slice(0, 8);
+
+// ─── Warna casing custom ──────────────────────────────────────────────────────
+
+export interface CaseColor {
+  /** Kunci unik (nama ternormalisasi) */
+  key: string;
+  /** Nama dari CMS, mis. "Hitam doff" (ikut dikirim di pesan WhatsApp) */
+  label: string;
+  /** Warna bingkai mockup casing (CSS) */
+  frame: string;
+  /** Latar contoh warna di tombol (CSS) */
+  swatch: string;
+}
+
+const CLEAR = { frame: 'rgb(208 214 222 / 0.7)', swatch: 'linear-gradient(135deg, #ffffff 0%, #d5dbe3 100%)' };
+/** Warna yang dikenali dari kata di nama (kata pertama yang cocok menang); nama lain → abu netral. */
+const CASE_SWATCHES: [RegExp, string | typeof CLEAR][] = [
+  [/\b(bening|transparan|clear)\b/, CLEAR],
+  [/\b(hitam|black)\b/, '#16181B'],
+  [/\b(putih|white)\b/, '#F4F4F1'],
+  [/\bnavy\b/, '#1B2A4A'],
+  [/\b(biru|blue)\b/, '#2F5BD3'],
+  [/\b(merah muda|pink)\b/, '#F2A7BF'],
+  [/\b(merah|red|maroon)\b/, '#B4232C'],
+  [/\bmint\b/, '#9FE3C7'],
+  [/\b(hijau|green|sage)\b/, '#4E8A5E'],
+  [/\b(kuning|yellow)\b/, '#F2C230'],
+  [/\b(oranye|orange|jingga)\b/, '#EE8A2B'],
+  [/\b(ungu|purple|lilac|lavender)\b/, '#8A6FD1'],
+  [/\b(abu abu|abu|grey|gray|silver|perak)\b/, '#A7ACB3'],
+  [/\b(cokelat|coklat|brown)\b/, '#7B5A3C'],
+  [/\b(krem|cream|beige|nude)\b/, '#E8DAC3'],
+  [/\b(emas|gold)\b/, '#C9A227'],
+];
+const NEUTRAL = '#D9DCE1';
+
+/** Pilihan warna casing dari CMS ("Bening, Hitam doff, Navy"): dipisah koma/baris, duplikat sekali, maks. 6. */
+export function caseColors(raw: string): CaseColor[] {
+  const out: CaseColor[] = [];
+  for (const part of (raw || '').split(/[,;\n]+/)) {
+    const label = part.trim();
+    const key = normalize(label);
+    if (!key || out.some((c) => c.key === key)) continue;
+    const found = CASE_SWATCHES.find(([pattern]) => pattern.test(key))?.[1] ?? NEUTRAL;
+    const { frame, swatch } = typeof found === 'string' ? { frame: found, swatch: found } : found;
+    out.push({ key, label, frame, swatch });
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+
+/** Bingkai mockup bila pilihan warna dikosongkan (casing bening). */
+export const DEFAULT_CASE_FRAME = CLEAR.frame;
 
 // ─── Model ────────────────────────────────────────────────────────────────────
 

@@ -43,7 +43,7 @@ export const gadgetkuSections: TemplateSection[] = [
     fields: [
       t('company_name', 'Nama toko', { placeholder: 'mis. GadgetKu.id', maxLength: 60 }),
       t('tagline', 'Tagline', {
-        placeholder: 'mis. Toko aksesoris HP: casing, tempered glass & charger',
+        placeholder: 'mis. Toko aksesoris HP: casing & tempered glass',
         maxLength: 100,
         help: 'Tampil di footer dan menjadi bagian judul situs di tab browser dan hasil Google. Sebutkan jenis toko, mis. "Toko aksesoris HP".',
       }),
@@ -227,6 +227,11 @@ export const gadgetkuSections: TemplateSection[] = [
       img('image', 'Foto contoh di casing', 'Foto tegak 3:4 yang tampil sebelum pengunjung memilih fotonya sendiri, disarankan 1200×1600 px.'),
       t('price_label', 'Harga', { placeholder: 'mis. Mulai Rp89.000', maxLength: 30 }),
       t('price_note', 'Keterangan harga', { placeholder: 'mis. Jadi dalam 2 hari kerja', maxLength: 60 }),
+      t('case_colors', 'Pilihan warna casing', {
+        placeholder: 'mis. Bening, Hitam, Putih',
+        maxLength: 120,
+        help: 'Pisahkan dengan koma, maks. 6 warna. Warna yang dikenali dari namanya (bening, hitam, putih, navy, merah, pink, hijau, mint, biru, ungu, abu, cokelat, krem, dll.) tampil sesuai warnanya. Warna terpilih ikut dikirim di pesan WhatsApp. Kosongkan untuk menyembunyikan pilihan warna.',
+      }),
       t('button_label', 'Teks tombol pesan', { placeholder: 'mis. Pesan Casing Custom', maxLength: 30 }),
       url('button_url', 'Tautan tombol pesan', { help: 'Kosongkan untuk membuka WhatsApp dengan tipe HP dan warna casing yang dipilih.' }),
       listField(

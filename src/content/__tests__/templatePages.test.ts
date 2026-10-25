@@ -152,6 +152,9 @@ describe('src/content/templates', () => {
     expect(text).toMatch(/pilih merek[^.]*tipe/);
     expect(text).toContain('hanya tampil di browser');
     expect(text).toContain('tidak punya keranjang dan pembayaran online');
+    // Jujur soal batas: teks "tipe HP" & mockup casing HP tertanam di template (toko non-HP = jasa custom)
+    expect(text).toContain('tertanam di template');
+    expect(text).not.toMatch(/bisa, selama barangnya/);
     expect(text).not.toMatch(/checkout otomatis|pembayaran online tersedia|stok otomatis/);
   });
 

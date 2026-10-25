@@ -11,7 +11,7 @@ export const GADGETKU_ACCENT = '#6EE7B7';
 export const gadgetkuContent: SiteContent = {
   brand: {
     company_name: 'GadgetKu.id',
-    tagline: 'Toko aksesoris HP: casing, tempered glass & charger',
+    tagline: 'Toko aksesoris HP: casing & tempered glass',
     logo: '',
     accent_color: GADGETKU_ACCENT,
     announcement: 'Gratis ongkir se-Jabodetabek min. belanja Rp150.000 · Bisa bayar di tempat (COD)',
@@ -269,6 +269,7 @@ export const gadgetkuContent: SiteContent = {
     image: gadgetkuPhoto('custom-sample'),
     price_label: 'Mulai Rp89.000',
     price_note: 'Jadi dalam 2 hari kerja · cetak tahan gores',
+    case_colors: 'Bening, Hitam, Putih',
     button_label: 'Pesan Casing Custom',
     button_url: '',
     steps: [
