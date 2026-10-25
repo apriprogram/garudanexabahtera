@@ -14,8 +14,10 @@ export interface Shop {
   /** Label kebutuhan yang dipilih di daftar produk (null = semua) */
   filter: string | null;
   setFilter: (tag: string | null) => void;
-  /** Barang terakhir yang dimasukkan (pengumuman pembaca layar + label tombol sesaat) */
+  /** Barang terakhir yang benar-benar masuk keranjang (label tombol "Masuk keranjang" sesaat) */
   lastAdded: { id: string; name: string; at: number } | null;
+  /** Kalimat untuk pembaca layar tentang perubahan keranjang terakhir (tambah, ubah jumlah, hapus, kosongkan) */
+  notice: string;
 }
 
 const noop = () => undefined;
@@ -30,6 +32,7 @@ export const ShopContext = createContext<Shop>({
   filter: null,
   setFilter: noop,
   lastAdded: null,
+  notice: '',
 });
 
 export const useShop = (): Shop => useContext(ShopContext);

@@ -2,7 +2,8 @@
 // dan kartu kalkulator di kanan: pilih unit (radio bergaris), tanggal mulai (input tanggal), lama sewa 1–30 hari
 // (tombol −/+), ringkasan tanggal ambil → kembali, tarif × hari, potongan bila lama sewa ≥ minimal hari, total, catatan
 // jaminan, dan tombol "Ajukan sewa" yang membuka WhatsApp berisi unit, tanggal, lama, dan estimasi biaya (tanpa nomor →
-// tombol ke Kontak). Hitungan hanya di peramban (./model rentalQuote). HP: foto 4:3 di atas kalkulator.
+// tombol ke Kontak). Tanggal lampau tidak dipakai (petunjuk + aria-invalid); unit tanpa tarif terbaca tanpa rincian
+// biaya. Hitungan hanya di peramban (./model rentalQuote). HP: foto 4:3 di atas kalkulator.
 import { CalendarDays, Check, Minus, Plus } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { WhatsAppIcon } from '../shared/icons';
@@ -23,6 +24,7 @@ import {
   rentalMessage,
   rentalQuote,
   toInt,
+  validStartDate,
   type SkyNusaModel,
 } from './model';
 import { SKYNUSA_PHOTOS } from './photos';
@@ -51,16 +53,21 @@ export function Rental({ m }: { m: SkyNusaModel }) {
   const minDays = toInt(text(rental, 'discount_days'));
   const percent = toInt(text(rental, 'discount_percent'));
   const quote = rentalQuote(parsePrice(field(unit, 'price')) ?? 0, days, minDays, percent);
+  // Unit tanpa tarif yang terbaca (kosong / "Hubungi kami"): tanpa rincian biaya, bukan "Rp0"
+  const priced = quote.rate > 0;
   const rates = units.map((item) => parsePrice(field(item, 'price'))).filter((n): n is number => n !== null);
   const cheapest = rates.length > 0 ? Math.min(...rates) : null;
-  const end = start ? addDaysIso(start, quote.days) : '';
-  const wa = m.waWith(rentalMessage(m.companyName, unitName, start, quote));
+  // Tanggal lampau yang diketik tetap sampai ke onChange: hanya tanggal hari ini/sesudahnya yang dipakai & dikirim
+  const validStart = validStartDate(start, today);
+  const pastStart = !!start && !validStart;
+  const end = validStart ? addDaysIso(validStart, quote.days) : '';
+  const wa = m.waWith(rentalMessage(m.companyName, unitName, validStart, quote));
   const action = wa ?? m.contactAction;
   const image = text(rental, 'image');
   const points = list(rental, 'points', 4).filter((item) => field(item, 'text'));
   const depositNote = text(rental, 'deposit_note');
   const buttonLabel = text(rental, 'button_label') || 'Ajukan Sewa';
-  const discountHint = minDays > 1 && percent > 0 && quote.percent === 0 ? `Sewa ${minDays} hari atau lebih hemat ${percent}%.` : '';
+  const discountHint = priced && minDays > 1 && percent > 0 && quote.percent === 0 ? `Sewa ${minDays} hari atau lebih hemat ${percent}%.` : '';
 
   return (
     <TemplateSection sectionKey="rental" className={`${SECTION_Y} bg-white`}>
@@ -115,7 +122,7 @@ export function Rental({ m }: { m: SkyNusaModel }) {
                         {field(item, 'price') && (
                           <span className="mt-2 block text-[14px] font-medium tabular-nums text-[#0E1A1C]">
                             {field(item, 'price')}
-                            <span className={`font-normal ${C.muted}`}> /hari</span>
+                            {parsePrice(field(item, 'price')) !== null && <span className={`font-normal ${C.muted}`}> /hari</span>}
                           </span>
                         )}
                       </span>
@@ -138,9 +145,18 @@ export function Rental({ m }: { m: SkyNusaModel }) {
                     value={start}
                     min={today || undefined}
                     onChange={(e) => setStart(e.target.value)}
-                    className="h-12 w-full rounded-[12px] bg-white pl-11 pr-3 text-[15px] text-[#0E1A1C] ring-1 ring-inset ring-black/[0.1] focus:outline-none focus:ring-2 focus:ring-(--tpl-accent-ink)"
+                    aria-invalid={pastStart || undefined}
+                    aria-describedby={pastStart ? `${baseId}-start-hint` : undefined}
+                    className={`h-12 w-full rounded-[12px] bg-white pl-11 pr-3 text-[15px] text-[#0E1A1C] ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-(--tpl-accent-ink) ${
+                      pastStart ? 'ring-[#B42318]' : 'ring-black/[0.1]'
+                    }`}
                   />
                 </div>
+                {pastStart && (
+                  <p id={`${baseId}-start-hint`} className="mt-2 text-[13px] text-[#B42318]">
+                    Pilih tanggal mulai hari ini atau sesudahnya.
+                  </p>
+                )}
               </div>
               <div>
                 <p id={`${baseId}-days-label`} className={`${MONO} ${C.muted}`}>
@@ -162,32 +178,36 @@ export function Rental({ m }: { m: SkyNusaModel }) {
 
             <div className="mt-6 rounded-[12px] bg-white p-4 ring-1 ring-inset ring-black/[0.06] @3xl:p-5" aria-label="Ringkasan biaya sewa" role="group">
               <p className="text-[14px] leading-snug text-[#0E1A1C]">
-                {start ? (
+                {validStart ? (
                   <>
-                    Ambil <strong className="font-medium">{formatDateId(start)}</strong> · kembali <strong className="font-medium">{formatDateId(end)}</strong>
+                    Ambil <strong className="font-medium">{formatDateId(validStart)}</strong> · kembali <strong className="font-medium">{formatDateId(end)}</strong>
                   </>
                 ) : (
                   <span className={C.muted}>Pilih tanggal mulai untuk melihat tanggal kembali.</span>
                 )}
               </p>
-              <dl className="mt-4 space-y-2 border-t border-black/[0.07] pt-4 text-[14px]">
-                <div className="flex justify-between gap-4">
-                  <dt className={C.muted}>
-                    {formatRupiah(quote.rate)} × {quote.days} hari
-                  </dt>
-                  <dd className="tabular-nums text-[#0E1A1C]">{formatRupiah(quote.subtotal)}</dd>
-                </div>
-                {quote.discount > 0 && (
+              {!priced ? (
+                <p className={`mt-4 border-t border-black/[0.07] pt-4 text-[14px] ${C.muted}`}>Tarif unit ini dikonfirmasi lewat WhatsApp.</p>
+              ) : (
+                <dl className="mt-4 space-y-2 border-t border-black/[0.07] pt-4 text-[14px]">
                   <div className="flex justify-between gap-4">
-                    <dt className="text-(--tpl-accent-ink)">Potongan {quote.percent}%</dt>
-                    <dd className="tabular-nums text-(--tpl-accent-ink)">−{formatRupiah(quote.discount)}</dd>
+                    <dt className={C.muted}>
+                      {formatRupiah(quote.rate)} × {quote.days} hari
+                    </dt>
+                    <dd className="tabular-nums text-[#0E1A1C]">{formatRupiah(quote.subtotal)}</dd>
                   </div>
-                )}
-                <div className="flex items-baseline justify-between gap-4 border-t border-black/[0.07] pt-3">
-                  <dt className="font-medium text-[#0E1A1C]">Estimasi total</dt>
-                  <dd className="font-[family-name:var(--tpl-font-display)] text-[26px] font-medium leading-none tracking-[-0.03em] tabular-nums text-[#0E1A1C]">{formatRupiah(quote.total)}</dd>
-                </div>
-              </dl>
+                  {quote.discount > 0 && (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-(--tpl-accent-ink)">Potongan {quote.percent}%</dt>
+                      <dd className="tabular-nums text-(--tpl-accent-ink)">−{formatRupiah(quote.discount)}</dd>
+                    </div>
+                  )}
+                  <div className="flex items-baseline justify-between gap-4 border-t border-black/[0.07] pt-3">
+                    <dt className="font-medium text-[#0E1A1C]">Estimasi total</dt>
+                    <dd className="font-[family-name:var(--tpl-font-display)] text-[26px] font-medium leading-none tracking-[-0.03em] tabular-nums text-[#0E1A1C]">{formatRupiah(quote.total)}</dd>
+                  </div>
+                </dl>
+              )}
               {discountHint && <p className="mt-3 text-[13px] text-(--tpl-accent-ink)">{discountHint}</p>}
             </div>
 

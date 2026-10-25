@@ -81,18 +81,20 @@ export function navItems(content: SiteContent): SkyNusaNavItem[] {
 // ─── Harga ────────────────────────────────────────────────────────────────────
 
 /**
- * Harga dari teks CMS → angka rupiah. "Rp12.900.000", "12900000", "Rp 350.000,00", "7,5 jt", "250 rb".
- * Kosong / tanpa angka / 0 → null (tidak dihitung di keranjang & kalkulator).
+ * Harga dari teks CMS → angka rupiah. "Rp12.900.000", "12900000", "Rp 350.000,00", "7,5 jt", "250 rb/hari".
+ * Hanya angka PERTAMA yang dibaca, jadi keterangan berangka di belakangnya tidak ikut ("Rp450.000/24 jam" → 450000,
+ * "Rp6.490.000 (2 unit)" → 6490000). Kosong / tanpa angka / 0 → null (tidak dihitung di keranjang & kalkulator).
  */
 export function parsePrice(raw: string | null | undefined): number | null {
   const value = (raw || '').trim().toLowerCase();
-  if (!value) return null;
-  const short = value.match(/(\d+(?:[.,]\d+)?)\s*(jt|juta|rb|ribu)\b/);
-  if (short) {
-    const n = parseFloat(short[1].replace(',', '.')) * (/^j/.test(short[2]) ? 1_000_000 : 1_000);
+  const first = value.match(/(\d[\d.,]*)(\s*(?:jt|juta|rb|ribu)\b)?/);
+  if (!first) return null;
+  const token = first[1].replace(/[.,]$/, '');
+  if (first[2]) {
+    const n = parseFloat(token.replace(',', '.')) * (/j/.test(first[2]) ? 1_000_000 : 1_000);
     return n > 0 ? Math.round(n) : null;
   }
-  const digits = value.replace(/,\d{1,2}$/, '').replace(/\D/g, '');
+  const digits = token.replace(/,\d{1,2}$/, '').replace(/\D/g, '');
   if (!digits) return null;
   const n = Number(digits);
   return Number.isSafeInteger(n) && n > 0 ? n : null;
@@ -165,10 +167,10 @@ export const filterProducts = (products: ListItem[], tag: string | null): ListIt
 
 export const MAX_RENT_DAYS = 30;
 
-/** Angka bulat dari teks CMS ("3", "10%", "3 hari"); tanpa angka → 0. */
+/** Angka bulat pertama dari teks CMS ("3", "10%", "3 hari"; "7,5" → 7, bukan 75); tanpa angka → 0. */
 export const toInt = (raw: string): number => {
-  const n = parseInt((raw || '').replace(/[^\d]/g, ''), 10);
-  return Number.isFinite(n) ? n : 0;
+  const match = (raw || '').match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
 };
 
 /** Lama sewa 1–30 hari (angka aneh → 1). */
@@ -209,6 +211,14 @@ export function parseIsoDate(iso: string): Date | null {
   const date = new Date(Date.UTC(y, m - 1, d));
   return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d ? date : null;
 }
+
+/**
+ * Tanggal mulai sewa yang boleh dipakai: ISO valid dan tidak sebelum `today` (string ISO dibandingkan sebagai teks).
+ * `today` kosong (belum dihitung di peramban) → tidak dibatasi. Tanggal lampau / tidak valid → "".
+ * Input tanggal hanya membatasi pemilih lewat `min`; tanggal yang diketik tetap sampai ke onChange, jadi dijaga di sini.
+ */
+export const validStartDate = (start: string, today: string): string =>
+  parseIsoDate(start) && (!today || start >= today) ? start : '';
 
 /** Tambah `days` hari ke tanggal ISO; tidak valid → "". */
 export function addDaysIso(iso: string, days: number): string {
@@ -380,6 +390,8 @@ export function readSkyNusa(content: SiteContent) {
     contactAction,
     startAction,
     shown,
+    /** Ada bagian yang bisa mengisi keranjang (Drone / Paket); tanpa itu tombol & panel keranjang tidak tampil */
+    canShop: shown('products') || shown('bundles'),
     askAbout,
     waWith,
     productItems,

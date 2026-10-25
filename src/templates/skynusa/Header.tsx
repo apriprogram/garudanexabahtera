@@ -1,7 +1,9 @@
 // Header SkyNusa: bilah lengket di kanvas abu — kiri simbol drone + nama, tengah tautan section (item aktif bergaris
 // bawah aksen), kanan tombol Keranjang (jumlah barang) + tombol gelap "Konsultasi". Setelah digulir bilah menjadi tembus +
 // blur dengan garis bawah tipis. Panel keranjang & menu HP menumpang di bawah bilah (tidak menggeser halaman), tertutup
-// dengan Esc, tombol tutup, atau klik di luar header. Keranjang hanya demo: pesanan dikirim lewat WhatsApp.
+// dengan Esc, tombol tutup, atau klik di luar header; fokus kembali ke tombol pembukanya. Keranjang hanya demo: pesanan
+// dikirim lewat WhatsApp, dan tombol Keranjang tidak tampil bila bagian Drone & Paket disembunyikan. Menu desktop dari
+// @7xl (di bawahnya tombol menu).
 import { ArrowRight, Menu, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { WhatsAppIcon } from '../shared/icons';
@@ -29,13 +31,23 @@ export function Logo({ m, tone }: { m: SkyNusaModel; tone: 'light' | 'dark' }) {
 
 const STEP = 'flex h-9 w-9 items-center justify-center rounded-[8px] text-[#0E1A1C] transition-colors hover:bg-black/[0.05] disabled:opacity-35 disabled:hover:bg-transparent';
 
-function CartPanel({ m, id, onClose }: { m: SkyNusaModel; id: string; onClose: () => void }) {
+/**
+ * Panel keranjang. `onClose` menutup tanpa memindah fokus (dipakai tautan "Lihat drone" yang menggulir), `onDismiss`
+ * menutup lalu mengembalikan fokus ke tombol Keranjang. Tombol yang hilang setelah diklik (hapus baris, kurangi sampai 0,
+ * Kosongkan) memindah fokus ke tombol tutup yang tetap ada, jadi fokus tidak jatuh ke <body>.
+ */
+function CartPanel({ m, id, onClose, onDismiss }: { m: SkyNusaModel; id: string; onClose: () => void; onDismiss: () => void }) {
   const { cart, setQty, clear } = useShop();
+  const closeButton = useRef<HTMLButtonElement>(null);
   const count = cartCount(cart);
   const { total, complete } = cartTotal(cart);
   const wa = cart.length > 0 ? m.waWith(cartMessage(m.companyName, cart)) : null;
   const order = wa ?? (cart.length > 0 ? m.contactAction : null);
   const productsAction = m.shown('products') ? ({ kind: 'section', target: 'products' } as const) : null;
+  const changeQty = (lineId: string, qty: number) => {
+    if (qty <= 0) closeButton.current?.focus();
+    setQty(lineId, qty);
+  };
 
   return (
     <section id={id} aria-label="Keranjang belanja" className="w-full rounded-[16px] bg-white p-5 ring-1 ring-inset ring-black/[0.08] @2xl:w-[420px] @2xl:p-6">
@@ -43,7 +55,13 @@ function CartPanel({ m, id, onClose }: { m: SkyNusaModel; id: string; onClose: (
         <p className="text-[17px] font-medium tracking-[-0.01em] text-[#0E1A1C]">
           Keranjang <span className={`${C.muted} tabular-nums`}>({count})</span>
         </p>
-        <button type="button" onClick={onClose} aria-label="Tutup keranjang" className="flex h-9 w-9 items-center justify-center rounded-[8px] text-[#0E1A1C] hover:bg-black/[0.05]">
+        <button
+          ref={closeButton}
+          type="button"
+          onClick={onDismiss}
+          aria-label="Tutup keranjang"
+          className="flex h-9 w-9 items-center justify-center rounded-[8px] text-[#0E1A1C] hover:bg-black/[0.05]"
+        >
           <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
@@ -71,17 +89,18 @@ function CartPanel({ m, id, onClose }: { m: SkyNusaModel; id: string; onClose: (
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center rounded-[10px] ring-1 ring-inset ring-black/[0.1]">
-                  <button type="button" className={STEP} onClick={() => setQty(line.id, line.qty - 1)} aria-label={`Kurangi ${line.name}`}>
+                  <button type="button" className={STEP} onClick={() => changeQty(line.id, line.qty - 1)} aria-label={`Kurangi ${line.name}`}>
                     <Minus className="h-3.5 w-3.5" aria-hidden />
                   </button>
-                  <span className="w-6 text-center text-[14px] font-medium tabular-nums text-[#0E1A1C]" aria-label={`Jumlah ${line.name}`}>
+                  <span className="w-6 text-center text-[14px] font-medium tabular-nums text-[#0E1A1C]">
+                    <span className="sr-only">Jumlah {line.name}: </span>
                     {line.qty}
                   </span>
                   <button type="button" className={STEP} onClick={() => setQty(line.id, line.qty + 1)} disabled={line.qty >= MAX_QTY} aria-label={`Tambah ${line.name}`}>
                     <Plus className="h-3.5 w-3.5" aria-hidden />
                   </button>
                 </div>
-                <button type="button" onClick={() => setQty(line.id, 0)} aria-label={`Hapus ${line.name}`} className={`${STEP} ${C.muted}`}>
+                <button type="button" onClick={() => changeQty(line.id, 0)} aria-label={`Hapus ${line.name}`} className={`${STEP} ${C.muted}`}>
                   <Trash2 className="h-4 w-4" aria-hidden />
                 </button>
               </li>
@@ -105,7 +124,14 @@ function CartPanel({ m, id, onClose }: { m: SkyNusaModel; id: string; onClose: (
               icon={wa ? <WhatsAppIcon className="h-4 w-4 shrink-0" /> : undefined}
               className={`${BTN.ink} ${BTN.md} max-w-full flex-1`}
             />
-            <button type="button" onClick={clear} className={`min-h-10 px-2 text-[14px] font-medium underline-offset-4 hover:underline ${C.muted}`}>
+            <button
+              type="button"
+              onClick={() => {
+                closeButton.current?.focus();
+                clear();
+              }}
+              className={`min-h-10 px-2 text-[14px] font-medium underline-offset-4 hover:underline ${C.muted}`}
+            >
               Kosongkan
             </button>
           </div>
@@ -123,12 +149,15 @@ export function Header({ m }: { m: SkyNusaModel }) {
   const header = useRef<HTMLElement>(null);
   const sentinel = useRef<HTMLDivElement>(null);
   const cartButton = useRef<HTMLButtonElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const scrolled = useScrolledPast(sentinel);
   const active = useActiveSection(
     sentinel,
     m.nav.map((item) => item.key),
   );
-  const { cartOpen, setCartOpen } = shop;
+  const { setCartOpen } = shop;
+  // Tanpa bagian Drone & Paket (mis. toko khusus sewa) tidak ada yang bisa masuk keranjang: tombol & panel disembunyikan
+  const cartOpen = shop.cartOpen && m.canShop;
   const count = cartCount(shop.cart);
   const solid = scrolled || menuOpen || cartOpen;
   const close = () => {
@@ -140,7 +169,9 @@ export function Header({ m }: { m: SkyNusaModel }) {
     if (!menuOpen && !cartOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      // Panel yang ditutup hilang dari DOM: kembalikan fokus ke tombol yang membukanya
       if (cartOpen) cartButton.current?.focus();
+      else if (menuOpen) menuButton.current?.focus();
       setMenuOpen(false);
       setCartOpen(false);
     };
@@ -166,13 +197,14 @@ export function Header({ m }: { m: SkyNusaModel }) {
       <header ref={header} className="sticky top-[var(--tpl-sticky-top,0px)] z-30">
         <div className={`border-b transition-[background-color,border-color] duration-300 ${solid ? 'border-black/[0.07] bg-[#E9EEEF]/90 backdrop-blur-md' : 'border-transparent bg-[#E9EEEF]'}`}>
           <div className={CONTAINER}>
-            <div className="flex h-[68px] items-center justify-between gap-3 @3xl:h-[76px] @6xl:grid @6xl:grid-cols-[1fr_auto_1fr]">
+            {/* Menu desktop mulai @7xl; kolom logo minimal selebar isinya, jadi menu di tengah tidak pernah menutupi logo */}
+            <div className="flex h-[68px] items-center justify-between gap-3 @3xl:h-[76px] @7xl:grid @7xl:grid-cols-[minmax(max-content,1fr)_auto_1fr]">
               <ActionLink action={{ kind: 'section', target: 'hero' }} className="min-w-0 justify-self-start rounded-[10px]" onNavigate={close}>
                 <Logo m={m} tone="light" />
               </ActionLink>
 
               {m.nav.length > 0 && (
-                <nav aria-label="Menu utama" className="hidden @6xl:block">
+                <nav aria-label="Menu utama" className="hidden @7xl:block">
                   <ul className="flex items-center gap-1 rounded-[12px] bg-white/70 p-1 ring-1 ring-inset ring-black/[0.05]">
                     {m.nav.map((item) => {
                       const isCurrent = active === item.key;
@@ -181,7 +213,7 @@ export function Header({ m }: { m: SkyNusaModel }) {
                           <ActionLink
                             action={{ kind: 'section', target: item.key }}
                             aria-current={isCurrent ? 'true' : undefined}
-                            className={`flex h-9 items-center rounded-[9px] px-3.5 text-[14px] transition-colors @7xl:px-4 ${
+                            className={`flex h-9 items-center rounded-[9px] px-3.5 text-[14px] transition-colors @min-[96rem]:px-4 ${
                               isCurrent ? 'bg-[#0E1A1C] font-medium text-white' : 'text-[#0E1A1C]/75 hover:bg-white hover:text-[#0E1A1C]'
                             }`}
                           >
@@ -195,35 +227,38 @@ export function Header({ m }: { m: SkyNusaModel }) {
               )}
 
               <div className="flex shrink-0 items-center justify-self-end gap-2">
-                <button
-                  ref={cartButton}
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setCartOpen(!cartOpen);
-                  }}
-                  aria-expanded={cartOpen}
-                  aria-controls={cartId}
-                  aria-label={`Keranjang, ${count} barang`}
-                  className="flex h-10 items-center gap-2 rounded-[10px] bg-white px-3 text-[14px] font-medium text-[#0E1A1C] ring-1 ring-inset ring-black/[0.08] transition-colors hover:bg-[#F2F5F5]"
-                >
-                  <ShoppingBag className="h-[18px] w-[18px]" aria-hidden />
-                  <span className="hidden @3xl:inline" aria-hidden>
-                    Keranjang
-                  </span>
-                  <span
-                    key={count}
-                    aria-hidden
-                    className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums ${count > 0 ? 'sn-pop bg-[#0E1A1C] text-white' : 'bg-black/[0.06] text-[#0E1A1C]'}`}
+                {m.canShop && (
+                  <button
+                    ref={cartButton}
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setCartOpen(!cartOpen);
+                    }}
+                    aria-expanded={cartOpen}
+                    aria-controls={cartId}
+                    aria-label={`Keranjang, ${count} barang`}
+                    className="flex h-10 items-center gap-2 rounded-[10px] bg-white px-3 text-[14px] font-medium text-[#0E1A1C] ring-1 ring-inset ring-black/[0.08] transition-colors hover:bg-[#F2F5F5]"
                   >
-                    {count}
-                  </span>
-                </button>
+                    <ShoppingBag className="h-[18px] w-[18px]" aria-hidden />
+                    <span className="hidden @3xl:inline" aria-hidden>
+                      Keranjang
+                    </span>
+                    <span
+                      key={count}
+                      aria-hidden
+                      className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums ${count > 0 ? 'sn-pop bg-[#0E1A1C] text-white' : 'bg-black/[0.06] text-[#0E1A1C]'}`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                )}
                 <span className="hidden @xl:inline-flex">
                   <ButtonLink action={m.headerAction} label={m.headerLabel} variant="ink" className={`${BTN.ink} h-10 pl-4 pr-1 text-[14px]`} />
                 </span>
                 {m.nav.length > 0 && (
                   <button
+                    ref={menuButton}
                     type="button"
                     onClick={() => {
                       setCartOpen(false);
@@ -232,7 +267,7 @@ export function Header({ m }: { m: SkyNusaModel }) {
                     aria-expanded={menuOpen}
                     aria-controls={menuId}
                     aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'}
-                    className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#0E1A1C] text-white transition-colors hover:bg-[#1F3034] @6xl:hidden"
+                    className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#0E1A1C] text-white transition-colors hover:bg-[#1F3034] @7xl:hidden"
                   >
                     {menuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
                   </button>
@@ -245,13 +280,21 @@ export function Header({ m }: { m: SkyNusaModel }) {
         {cartOpen && (
           <div className="absolute inset-x-0 top-full pt-2">
             <div className={`${CONTAINER} flex justify-end`}>
-              <CartPanel m={m} id={cartId} onClose={() => setCartOpen(false)} />
+              <CartPanel
+                m={m}
+                id={cartId}
+                onClose={() => setCartOpen(false)}
+                onDismiss={() => {
+                  cartButton.current?.focus();
+                  setCartOpen(false);
+                }}
+              />
             </div>
           </div>
         )}
 
         {menuOpen && (
-          <nav id={menuId} aria-label="Menu utama" className="absolute inset-x-0 top-full pt-2 @6xl:hidden">
+          <nav id={menuId} aria-label="Menu utama" className="absolute inset-x-0 top-full pt-2 @7xl:hidden">
             <div className={CONTAINER}>
               <div className="rounded-[16px] bg-white p-2 ring-1 ring-inset ring-black/[0.08]">
                 <ul>
@@ -277,10 +320,12 @@ export function Header({ m }: { m: SkyNusaModel }) {
           </nav>
         )}
       </header>
-      {/* Pengumuman pembaca layar saat barang masuk keranjang (tanpa role="status": region status pratinjau milik Shell) */}
-      <p className="sr-only" aria-live="polite" aria-atomic="true" data-sn-announce="">
-        {shop.lastAdded ? `${shop.lastAdded.name} ditambahkan ke keranjang. Isi keranjang: ${count} barang.` : ''}
-      </p>
+      {/* Pengumuman pembaca layar saat isi keranjang berubah (tanpa role="status": region status pratinjau milik Shell) */}
+      {m.canShop && (
+        <p className="sr-only" aria-live="polite" aria-atomic="true" data-sn-announce="">
+          {shop.notice ? `${shop.notice} Isi keranjang: ${count} barang.` : ''}
+        </p>
+      )}
     </>
   );
 }

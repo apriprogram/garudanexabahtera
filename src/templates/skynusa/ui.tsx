@@ -8,7 +8,7 @@ import { Reveal } from '../shared/Animated';
 import { ActionLink } from '../shared/Shell';
 import { splitHighlight, type LinkAction } from '../shared/utils';
 import { ICONS, iconKey } from './icons';
-import { formatRupiah, parsePrice, savings } from './model';
+import { MAX_QTY, formatRupiah, parsePrice, savings } from './model';
 import { useShop } from './shop';
 import { BTN, C, MONO, TYPE_S } from './styles';
 
@@ -182,13 +182,17 @@ export function Crosshair({ className = '' }: { className?: string }) {
   );
 }
 
-/** Tombol "Tambah" yang sesaat berubah jadi "Masuk keranjang" setelah diklik. */
+/**
+ * Tombol "Tambah" yang sesaat berubah jadi "Masuk keranjang" setelah diklik. Barang yang sudah 9 unit di keranjang:
+ * tombol nonaktif berlabel "Maks. 9" (tidak ada konfirmasi palsu).
+ */
 export function AddButton({ id, name, onAdd, tone = 'light', className = '' }: { id: string; name: string; onAdd: () => void; tone?: 'light' | 'dark'; className?: string }) {
-  const { lastAdded } = useShop();
+  const { lastAdded, cart } = useShop();
+  const full = (cart.find((line) => line.id === id)?.qty ?? 0) >= MAX_QTY;
   // Waktu tambah terakhir untuk barang ini; label kembali ke "Tambah" 1,6 dtk kemudian
   const fresh = lastAdded?.id === id ? lastAdded.at : 0;
   const [expired, setExpired] = useState(0);
-  const justAdded = fresh > 0 && expired !== fresh;
+  const justAdded = fresh > 0 && expired !== fresh && !full;
   useEffect(() => {
     if (!fresh) return;
     const timer = window.setTimeout(() => setExpired(fresh), 1600);
@@ -198,11 +202,12 @@ export function AddButton({ id, name, onAdd, tone = 'light', className = '' }: {
     <button
       type="button"
       onClick={onAdd}
-      aria-label={`Tambah ${name} ke keranjang`}
-      className={`${tone === 'dark' ? BTN.mint : BTN.ink} h-10 gap-2 pl-3 pr-3.5 text-[14px] ${className}`}
+      disabled={full}
+      aria-label={full ? `${name}: sudah ${MAX_QTY} unit di keranjang (maksimal)` : `Tambah ${name} ke keranjang`}
+      className={`${tone === 'dark' ? BTN.mint : BTN.ink} h-10 gap-2 pl-3 pr-3.5 text-[14px] disabled:cursor-not-allowed disabled:opacity-55 ${className}`}
     >
-      {justAdded ? <Check className="h-4 w-4" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
-      <span aria-hidden>{justAdded ? 'Masuk keranjang' : 'Tambah'}</span>
+      {justAdded || full ? <Check className="h-4 w-4" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
+      <span aria-hidden>{full ? `Maks. ${MAX_QTY}` : justAdded ? 'Masuk keranjang' : 'Tambah'}</span>
     </button>
   );
 }
