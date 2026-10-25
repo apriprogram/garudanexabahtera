@@ -16,6 +16,7 @@ import { GLOWSTORY_PHOTOS } from '../glowstory/photos';
 import { SERENITY_PHOTOS } from '../serenity/photos';
 import { TANI_PHOTOS } from '../tanimakmur/photos';
 import { PUNCAK_PHOTOS } from '../puncakgear/photos';
+import { SKYNUSA_PHOTOS } from '../skynusa/photos';
 import { TEMPLATES, resolveContent } from '../index';
 import type { PhotoSet } from '../kit/photos';
 
@@ -32,7 +33,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet';
   photos: PhotoSet;
 }
 
@@ -46,6 +47,7 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'puncakgear', component: 'PuncakGear.tsx', heroLayout: 'summit', photos: PUNCAK_PHOTOS },
   { code: 'gadgetku', component: 'GadgetKu.tsx', heroLayout: 'inset-card', photos: GADGETKU_PHOTOS },
   { code: 'glowstory', component: 'GlowStory.tsx', heroLayout: 'collage', photos: GLOWSTORY_PHOTOS },
+  { code: 'skynusa', component: 'SkyNusa.tsx', heroLayout: 'specsheet', photos: SKYNUSA_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */

@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -41,7 +41,9 @@ const PUNCAKGEAR: Template = { ...FIXTURE_TEMPLATES[4], id: 31, slug: 'puncakgea
 const GADGETKU: Template = { ...FIXTURE_TEMPLATES[4], id: 30, slug: 'gadgetku', name: 'GadgetKu.id', category: 'Toko Online', price: 1590000, template_code: 'gadgetku', sort_order: 10 };
 // GlowStory (2026-10-25, migrasi 023) juga belum ada di fixture prerender bersama
 const GLOWSTORY: Template = { ...FIXTURE_TEMPLATES[4], id: 32, slug: 'glowstory', name: 'GlowStory', category: 'Toko Online', price: 1590000, template_code: 'glowstory', sort_order: 11 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY].find((t) => t.slug === slug) as Template;
+// SkyNusa (2026-10-25, migrasi 019) juga belum ada di fixture prerender bersama
+const SKYNUSA: Template = { ...FIXTURE_TEMPLATES[4], id: 41, slug: 'skynusa', name: 'SkyNusa', category: 'Toko Online', price: 1590000, template_code: 'skynusa', sort_order: 7 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -66,6 +68,7 @@ describe('src/content/templates', () => {
       puncakgear: 'PuncakGear: Template Website Toko Outdoor & Perlengkapan Pendakian',
       gadgetku: 'GadgetKu.id: Template Website Toko Aksesoris HP',
       glowstory: 'GlowStory: Template Website Toko Skincare & Kosmetik Online',
+      skynusa: 'SkyNusa: Template Website Toko Drone & Sewa Drone',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -79,6 +82,7 @@ describe('src/content/templates', () => {
       puncakgear: 'PuncakGear: Template Website Toko Outdoor – Rp1,59 jt',
       gadgetku: 'GadgetKu.id: Template Website Toko Aksesoris HP – Rp1,59 jt',
       glowstory: 'GlowStory: Template Website Toko Skincare – Rp1,59 jt',
+      skynusa: 'SkyNusa: Template Website Toko Drone – Rp1,59 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -155,6 +159,11 @@ describe('src/content/templates', () => {
     expect(glowstory).not.toMatch(/menyembuhkan|mengobati|memutihkan|terbukti secara klinis|hasil permanen/i);
     expect(glowstory).toMatch(/bukan diagnosis/);
     expect(glowstory).toMatch(/tidak memproses pembayaran online/);
+    const skynusa = visibleText(templateContent('skynusa') as TemplatePageContent);
+    expect(skynusa).not.toMatch(/pembayaran online otomatis|bebas izin|tanpa izin|\bDJI\b/i);
+    expect(skynusa).toMatch(/tidak punya kalender ketersediaan unit/);
+    expect(skynusa).toMatch(/WhatsApp/);
+    expect(skynusa).toMatch(/bukan pembayaran online/);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -214,6 +223,21 @@ describe('src/content/templates', () => {
     expect(text).toContain('hanya tampil di browser');
     expect(text).toContain('tidak punya keranjang dan pembayaran online');
     expect(text).not.toMatch(/checkout otomatis|pembayaran online tersedia|stok otomatis/);
+  });
+
+  it('SkyNusa: kata kunci "template website toko drone" di judul, meta, H1, dan paragraf pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('skynusa');
+    const keyword = /template website toko drone/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website toko drone: /);
+    expect(templateDescription(t)).toContain('Rp1.590.000 sudah termasuk domain, hosting & SSL tahun pertama');
+    expect(templateH1(t)).toMatch(keyword);
+    const c = templateContent('skynusa') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^SkyNusa adalah template website toko drone /);
+    const text = visibleText(c);
+    for (const phrase of ['website toko drone', 'website toko online drone', 'website sewa drone']) expect(text, phrase).toContain(phrase);
+    expect(TEMPLATE_COPY.skynusa?.niche).toBe('Toko & Sewa Drone');
+    expect(TEMPLATE_COPY.skynusa?.updated).toBe('2026-10-25');
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

@@ -8,6 +8,7 @@ import { gadgetku } from './gadgetku';
 import { glowstory } from './glowstory';
 import { puncakgear } from './puncakgear';
 import { serenity } from './serenity';
+import { skynusa } from './skynusa';
 import { startupClean } from './startup-clean';
 import { tanimakmur } from './tanimakmur';
 import { applyIntroduced } from './shared/compat';
@@ -17,6 +18,7 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // Urutan = urutan pilihan "Kode template" di admin (sama dengan sort_order katalog).
 // Template 2026-10-22 (arena-club, aura-studio, finova): brief di docs/platform/TEMPLATE-BRIEFS-2026-10.md.
 // Serenity (2026-10-25): studio wellness, hero foto layar penuh (src/templates/serenity/Serenity.tsx).
+// SkyNusa (2026-10-25): toko drone, hero lembar spesifikasi + keranjang demo (src/templates/skynusa/SkyNusa.tsx).
 // TaniMakmur (2026-10-25): toko tani, paket per tanaman (src/templates/tanimakmur/TaniMakmur.tsx).
 // PuncakGear (2026-10-25): toko perlengkapan mendaki, panduan per gunung + sewa alat (src/templates/puncakgear/PuncakGear.tsx).
 // GadgetKu.id (2026-10-25): toko aksesori HP, cari per tipe HP + custom casing (src/templates/gadgetku/GadgetKu.tsx).
@@ -28,6 +30,7 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [auraStudio.code]: auraStudio,
   [finova.code]: finova,
   [serenity.code]: serenity,
+  [skynusa.code]: skynusa,
   [tanimakmur.code]: tanimakmur,
   [puncakgear.code]: puncakgear,
   [gadgetku.code]: gadgetku,

@@ -1,0 +1,154 @@
+/*
+ * CSS lokal SkyNusa (diimpor ./SkyNusa.tsx): kisi garis tipis bergaya gambar teknik (terang & gelap), nama toko raksasa
+ * bergaris di belakang hero, panggung abu terang untuk foto produk, pita gelap teal-arang dengan cahaya mint lembut,
+ * garis rencana terbang di kartu kategori, buka-tutup FAQ, dan gerak tenang (kartu spesifikasi melayang, lencana
+ * keranjang). Gerak hanya bila root template ber-data-tpl-motion="on" (demo & situs live); pratinjau CMS,
+ * prefers-reduced-motion, dan cetak → statis. Semua dekorasi memakai CSS/SVG (tanpa gambar tambahan).
+ */
+
+@layer components {
+  /* Kisi 72px: garis 1px tinta 7% (terang) / putih 6% (gelap), memudar ke tepi */
+  .sn-grid {
+    background-image:
+      linear-gradient(to right, rgb(14 26 28 / 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(14 26 28 / 0.07) 1px, transparent 1px);
+    background-size: 72px 72px;
+    background-position: -1px -1px;
+    mask-image: radial-gradient(ellipse 85% 75% at 55% 35%, #000 35%, transparent 100%);
+  }
+
+  .sn-grid-dark {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+    background-size: 72px 72px;
+    background-position: -1px -1px;
+    mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, #000 30%, transparent 100%);
+  }
+
+  /* Nama toko raksasa bergaris tipis di belakang hero (seperti "AEROVA" di referensi) */
+  .sn-wordmark {
+    color: transparent;
+    -webkit-text-stroke: 1px rgb(14 26 28 / 0.1);
+    letter-spacing: -0.05em;
+    white-space: nowrap;
+  }
+
+  /* Panggung foto produk: putih di tengah → abu dingin di tepi; foto berlatar putih dibaurkan (mix-blend-multiply) */
+  .sn-stage {
+    background: radial-gradient(120% 90% at 50% 38%, #ffffff 0%, #f1f4f4 55%, #e3e9ea 100%);
+  }
+
+  /* Pita gelap: teal-arang + cahaya mint sangat lembut di sudut (pengganti bayangan) */
+  .sn-dark-band {
+    background:
+      radial-gradient(60% 50% at 85% 0%, color-mix(in srgb, var(--sn-mint) 12%, transparent), transparent 70%),
+      radial-gradient(50% 40% at 0% 100%, color-mix(in srgb, var(--tpl-accent) 18%, transparent), transparent 70%),
+      #0f191b;
+  }
+
+  /* Kartu paket unggulan: cahaya mint di sudut atas */
+  .sn-featured {
+    background:
+      radial-gradient(80% 60% at 100% 0%, color-mix(in srgb, var(--sn-mint) 14%, transparent), transparent 70%),
+      rgb(255 255 255 / 0.05);
+  }
+
+  /* Latar ajakan bila foto kosong */
+  .sn-cta-fallback {
+    background: linear-gradient(135deg, #0f191b 0%, color-mix(in srgb, var(--tpl-accent) 55%, #0f191b) 60%, #1d3a3a 100%);
+  }
+
+  /* Hero tanpa foto: panggung abu dengan ikon drone */
+  .sn-hero-fallback {
+    background: radial-gradient(90% 70% at 50% 40%, #f7f9f9 0%, #dfe6e7 100%);
+  }
+
+  /* Garis rencana terbang di kartu kategori: garis putus-putus bergerak pelan (gerak menyala) */
+  .sn-route {
+    stroke-dasharray: 6 6;
+  }
+
+  [data-tpl-motion='on'] .sn-route {
+    animation: sn-route 2.4s linear infinite;
+  }
+
+  /* FAQ: tinggi panel jawaban 0fr → 1fr (transisi hanya bila gerak menyala) */
+  .sn-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .sn-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .sn-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Kartu spesifikasi hero melayang pelan (berselang dengan --sn-delay) */
+  [data-tpl-motion='on'] .sn-float {
+    animation: sn-float 6s ease-in-out infinite;
+    animation-delay: var(--sn-delay, 0s);
+  }
+
+  /* Lencana jumlah keranjang memantul sekali saat barang ditambahkan (key berganti) */
+  [data-tpl-motion='on'] .sn-pop {
+    animation: sn-pop 0.45s var(--tpl-ease, ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .sn-route,
+    [data-tpl-motion='on'] .sn-float,
+    [data-tpl-motion='on'] .sn-pop {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .sn-collapse {
+      transition: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .sn-wordmark {
+      display: none;
+    }
+  }
+
+  @media print {
+    .sn-grid,
+    .sn-grid-dark,
+    .sn-wordmark {
+      display: none;
+    }
+  }
+}
+
+@keyframes sn-route {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes sn-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@keyframes sn-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

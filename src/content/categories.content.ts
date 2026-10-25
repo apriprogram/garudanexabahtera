@@ -262,7 +262,7 @@ export const CATEGORY_CONTENT: Readonly<Record<CategorySlug, CategoryPageContent
   },
   'toko-online': {
     intro:
-      'Template di kategori ini dibuat untuk toko yang menjual barang fisik, dari drone, kebutuhan tani, dan perlengkapan mendaki sampai aksesoris HP dan skincare. Katalog berfoto, harga, paket hemat, dan fitur pembeda tiap jenis toko sudah tersusun; pembeli lalu memesan lewat WhatsApp dengan nama produk di pesannya. Template ini tidak punya keranjang belanja maupun pembayaran online.',
+      'Template di kategori ini dibuat untuk toko yang menjual barang fisik, dari drone, kebutuhan tani, dan perlengkapan mendaki sampai aksesoris HP dan skincare. Katalog berfoto, harga, paket hemat, dan fitur pembeda tiap jenis toko sudah tersusun; pembeli lalu memesan lewat WhatsApp dengan nama produk di pesannya. Template ini tidak punya pembayaran online atau checkout otomatis.',
     guideIntro:
       'Pembeli online membandingkan beberapa toko sebelum memesan. Mereka mencari tahu apakah barangnya cocok, berapa total harganya, dan apakah tokonya bisa dipercaya. Siapkan informasi berikut agar website toko Anda menjawab pertanyaan itu sebelum pembeli menutup halaman, sekaligus memberi Google alasan untuk menampilkan toko Anda.',
     checklist: [
@@ -309,9 +309,9 @@ export const CATEGORY_CONTENT: Readonly<Record<CategorySlug, CategoryPageContent
     ],
     faq: [
       {
-        question: 'Apakah template toko online punya keranjang belanja dan pembayaran online?',
+        question: 'Apakah template toko online punya pembayaran online?',
         answer:
-          'Tidak. Tombol pesan membuka WhatsApp dengan nama produk di pesannya, lalu pembayaran Anda konfirmasi sendiri, misalnya lewat transfer, QRIS, atau bayar di tempat. Keranjang belanja, payment gateway, dan ongkos kirim otomatis bisa dibuat lewat jasa website custom.',
+          'Tidak. Pesanan dikirim lewat WhatsApp: tombol pesan berisi nama produk, dan di sebagian template pembeli bisa mengumpulkan produk di keranjang (daftar belanja di halaman) lalu mengirim daftarnya sekaligus. Pembayaran Anda konfirmasi sendiri, misalnya lewat transfer, QRIS, atau bayar di tempat. Payment gateway, stok, dan ongkos kirim otomatis bisa dibuat lewat jasa website custom.',
       },
       {
         question: 'Apakah produk, harga, dan foto bisa saya ubah sendiri?',
