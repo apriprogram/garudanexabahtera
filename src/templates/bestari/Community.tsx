@@ -8,16 +8,16 @@ import { CountUp, Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
-import { field, hasImage, list, safeUrl, text } from '../shared/utils';
+import { field, safeUrl, text } from '../shared/utils';
 import { KitAvatar, KitPhoto } from '../kit/Photo';
-import type { BestariModel } from './model';
+import { bentoCells, type BestariModel } from './model';
 import { BESTARI_PHOTOS } from './photos';
 import { C, DISPLAY, SECTION_PAD, TYPE_B } from './styles';
 import { PillLink, SectionHead, SectionLabel } from './ui';
 
 export function Testimonials({ m }: { m: BestariModel }) {
   const { testimonials } = m;
-  const items = list(testimonials, 'items', 6).filter((item) => field(item, 'quote'));
+  const items = m.items('testimonials');
   if (items.length === 0) return null;
   const title = text(testimonials, 'title');
   const subtitle = text(testimonials, 'subtitle');
@@ -84,14 +84,15 @@ export function Testimonials({ m }: { m: BestariModel }) {
   );
 }
 
-/** Kisi bento (4 kolom di layar lebar): foto pertama 2×2, sisanya 1×1. */
+/** Kisi bento (4 kolom di layar lebar), ukuran sel dari bentoCells. */
 export function Gallery({ m }: { m: BestariModel }) {
   const { gallery } = m;
-  const items = list(gallery, 'items', 8).filter((item) => hasImage(field(item, 'image')));
+  const items = m.items('gallery');
   if (items.length === 0) return null;
   const buttonLabel = text(gallery, 'button_label');
   const buttonUrl = safeUrl(text(gallery, 'button_url'));
   const button = buttonLabel && buttonUrl && <PillLink action={{ kind: 'external', href: buttonUrl }} label={buttonLabel} variant="outline" />;
+  const cells = bentoCells(items.length);
 
   return (
     <TemplateSection sectionKey="gallery" className={SECTION_PAD}>
@@ -100,15 +101,15 @@ export function Gallery({ m }: { m: BestariModel }) {
         <ul className="mt-10 grid grid-cols-2 gap-3 @3xl:mt-12 @3xl:auto-rows-[210px] @3xl:grid-cols-4 @3xl:gap-4 @6xl:auto-rows-[250px]">
           {items.map((item, i) => {
             const caption = field(item, 'caption');
-            const big = i === 0;
+            const [cell, wide, sizes] = cells[i];
             return (
-              <Reveal as="li" key={`${field(item, 'image')}-${i}`} delay={stagger(i, 60)} className={big ? 'col-span-2 @3xl:row-span-2' : ''}>
+              <Reveal as="li" key={`${field(item, 'image')}-${i}`} delay={stagger(i, 60)} className={cell}>
                 <figure className="group/foto relative h-full">
                   <KitPhoto
                     src={field(item, 'image')}
                     alt={BESTARI_PHOTOS.alt(field(item, 'image'), caption || `Kegiatan di ${m.companyName}`)}
-                    sizes={big ? '(min-width: 768px) 48vw, 92vw' : '(min-width: 768px) 24vw, 46vw'}
-                    className={`h-full rounded-[22px] ${big ? 'aspect-[3/2] @3xl:aspect-auto' : 'aspect-square @3xl:aspect-auto'}`}
+                    sizes={sizes}
+                    className={`h-full rounded-[22px] ${wide ? 'aspect-[3/2] @3xl:aspect-auto' : 'aspect-square @3xl:aspect-auto'}`}
                     imgClassName="transition-[scale] duration-700 ease-out group-hover/foto:scale-[1.04]"
                   />
                   {caption && (

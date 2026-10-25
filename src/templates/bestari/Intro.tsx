@@ -9,13 +9,13 @@ import { CountUp, Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
-import { field, list, text } from '../shared/utils';
+import { field, text } from '../shared/utils';
 import { titleTarget, type BestariModel } from './model';
 import { C, CARD, EYEBROW, SECTION_PAD, TYPE_B } from './styles';
 import { SectionHead, TextLink, TitleIcon } from './ui';
 
 export function Highlights({ m, overlap }: { m: BestariModel; overlap: boolean }) {
-  const items = list(m.highlights, 'items', 3).filter((item) => field(item, 'title') || field(item, 'text'));
+  const items = m.items('highlights');
   if (items.length === 0) return null;
   const title = text(m.highlights, 'title');
   const cols = items.length === 1 ? '' : items.length === 2 ? '@3xl:grid-cols-2' : '@3xl:grid-cols-3';
@@ -36,7 +36,7 @@ export function Highlights({ m, overlap }: { m: BestariModel; overlap: boolean }
                 as="li"
                 key={`${itemTitle}-${i}`}
                 delay={stagger(i, 90)}
-                data-tpl-tone={accent ? 'inverse' : undefined}
+                data-tpl-tone={accent ? m.accentTone : undefined}
                 className={`flex flex-col rounded-[24px] p-6 @3xl:p-7 ${accent ? 'bg-(--tpl-accent) text-(--tpl-on-accent)' : `${CARD.white} ${C.ink}`}`}
               >
                 <div className="flex items-center gap-3">
@@ -48,11 +48,11 @@ export function Highlights({ m, overlap }: { m: BestariModel; overlap: boolean }
                   </span>
                   {label && (
                     <span
-                      className={`inline-flex h-7 min-w-0 items-center truncate rounded-full px-3 ${EYEBROW} text-[11px] ring-1 ring-inset ${
+                      className={`inline-flex h-7 min-w-0 items-center rounded-full px-3 ${EYEBROW} text-[11px] ring-1 ring-inset ${
                         accent ? 'ring-current/30' : 'text-(--bs-ink) ring-[#1C1917]/[0.1]'
                       }`}
                     >
-                      {label}
+                      <span className="truncate">{label}</span>
                     </span>
                   )}
                 </div>
@@ -70,7 +70,7 @@ export function Highlights({ m, overlap }: { m: BestariModel; overlap: boolean }
 }
 
 export function Badges({ m }: { m: BestariModel }) {
-  const items = list(m.badges, 'items', 6).filter((item) => field(item, 'text'));
+  const items = m.items('badges');
   if (items.length === 0) return null;
   const title = text(m.badges, 'title');
   return (
@@ -93,7 +93,7 @@ export function Badges({ m }: { m: BestariModel }) {
 }
 
 export function Stats({ m }: { m: BestariModel }) {
-  const items = list(m.stats, 'items', 4).filter((item) => field(item, 'value') || field(item, 'label'));
+  const items = m.items('stats');
   if (items.length === 0) return null;
   const cols = { 1: '', 2: '@3xl:grid-cols-2', 3: '@5xl:grid-cols-3', 4: '@5xl:grid-cols-4' }[items.length];
 
@@ -109,7 +109,7 @@ export function Stats({ m }: { m: BestariModel }) {
               <Reveal
                 key={`${label}-${i}`}
                 delay={stagger(i, 80)}
-                data-tpl-tone={accent ? 'inverse' : undefined}
+                data-tpl-tone={accent ? m.accentTone : undefined}
                 className={`flex min-h-[210px] min-w-0 flex-col rounded-[24px] p-5 @3xl:min-h-[260px] @3xl:p-7 @6xl:min-h-[300px] ${
                   accent ? 'bg-(--tpl-accent) text-(--tpl-on-accent)' : `${C.panel} ${C.ink}`
                 } ${items.length === 3 && i === 2 ? 'col-span-2 @5xl:col-span-1' : ''} ${items.length === 1 ? 'col-span-2' : ''}`}

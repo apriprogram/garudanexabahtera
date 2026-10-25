@@ -11,7 +11,7 @@ import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
-import { field, hasImage, list, safeUrl, text } from '../shared/utils';
+import { field, hasImage, safeUrl, text } from '../shared/utils';
 import type { ListItem } from '../types';
 import { KitPhoto } from '../kit/Photo';
 import { displayDate, filterNews, isUrgent, newsCategories, newsItems, paragraphsOf, parseSchoolDate, type BestariModel } from './model';
@@ -117,7 +117,6 @@ export function News({ m }: { m: BestariModel }) {
   const allLabel = text(news, 'all_label') || 'Semua';
   const buttonLabel = text(news, 'button_label');
   const buttonUrl = safeUrl(text(news, 'button_url'));
-  const cols = shown.length === 1 ? '' : shown.length === 2 || shown.length === 4 ? '@3xl:grid-cols-2' : '@3xl:grid-cols-2 @5xl:grid-cols-3';
 
   const filters =
     categories.length > 1 ? (
@@ -148,7 +147,8 @@ export function News({ m }: { m: BestariModel }) {
         <p className="sr-only" role="status">
           {category ? `${shown.length} berita kategori ${category}` : ''}
         </p>
-        <ul className={`mt-10 grid gap-3 @3xl:mt-12 @3xl:gap-4 ${cols}`}>
+        {/* Kolom tetap (tidak bergantung jumlah hasil filter): satu hasil = satu kartu biasa, bukan foto selebar layar */}
+        <ul className="mt-10 grid gap-3 @3xl:mt-12 @3xl:grid-cols-2 @3xl:gap-4 @5xl:grid-cols-3">
           {shown.map((item, i) => (
             <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 80)}>
               <NewsCard item={item} />
@@ -169,7 +169,7 @@ const SMALL_H2 = `${DISPLAY} text-balance text-[25px] font-medium leading-tight 
 
 function Announcements({ m }: { m: BestariModel }) {
   const { announcements } = m;
-  const items = list(announcements, 'items', 8).filter((item) => field(item, 'title'));
+  const items = m.items('announcements');
   const title = text(announcements, 'title');
   return (
     <TemplateSection sectionKey="announcements" className={`min-w-0 p-5 @3xl:p-8 ${CARD.white}`}>
@@ -206,7 +206,7 @@ function Announcements({ m }: { m: BestariModel }) {
 
 function Agenda({ m }: { m: BestariModel }) {
   const { agenda } = m;
-  const items = list(agenda, 'items', 8).filter((item) => field(item, 'title'));
+  const items = m.items('agenda');
   const title = text(agenda, 'title');
   return (
     <TemplateSection sectionKey="agenda" className={`min-w-0 p-5 @3xl:p-8 ${CARD.panel}`}>

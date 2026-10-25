@@ -13,14 +13,14 @@ import { MapEmbed } from '../shared/media';
 import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { SOCIAL_FIELDS } from '../shared/social';
-import { field, list, mailHref, telHref, text, type LinkAction } from '../shared/utils';
+import { field, mailHref, telHref, text, type LinkAction } from '../shared/utils';
 import type { BestariModel } from './model';
 import { C, CARD, PANEL, PANEL_OUTER, SECTION_PAD, TYPE_B } from './styles';
 import { PillLink, SectionHead } from './ui';
 
 export function Faq({ m }: { m: BestariModel }) {
   const { faq } = m;
-  const items = list(faq, 'items', 10).filter((item) => field(item, 'question'));
+  const items = m.items('faq');
   const [open, setOpen] = useState<number | null>(0);
   const baseId = useId();
   if (items.length === 0) return null;

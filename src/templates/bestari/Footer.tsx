@@ -5,8 +5,9 @@
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { ActionLink } from '../shared/Shell';
+import { useTemplateRuntime } from '../shared/runtime';
 import { SOCIAL_FIELDS } from '../shared/social';
-import { field, list, mailHref, telHref, text } from '../shared/utils';
+import { field, mailHref, SECTION_ANCHOR, telHref, text } from '../shared/utils';
 import { Logo } from './Header';
 import type { BestariModel } from './model';
 import { DISPLAY, EYEBROW } from './styles';
@@ -22,15 +23,22 @@ export function Footer({ m }: { m: BestariModel }) {
   const ctaTitle = text(footer, 'cta_title');
   const ctaText = text(footer, 'cta_text');
   const ctaAction = m.linkOr(text(footer, 'cta_url'), m.ppdbAction);
-  const programs = m.shown('programs') ? list(m.programs, 'items', 6).filter((item) => field(item, 'name')) : [];
+  const programs = m.items('programs');
   const phone = text(contact, 'phone');
   const email = text(contact, 'email');
   const address = text(contact, 'address');
   const tel = telHref(phone);
   const mail = mailHref(email);
+  const { preview } = useTemplateRuntime();
 
   return (
-    <footer data-tpl-tone="inverse" className="bs-deep pb-8 pt-14 text-white @3xl:pt-20">
+    // Tujuan tautan "#footer" (data-tpl-section + id di situs live), tetap landmark <footer>
+    <footer
+      data-tpl-section="footer"
+      id={preview ? undefined : SECTION_ANCHOR.footer}
+      data-tpl-tone="inverse"
+      className="bs-deep scroll-mt-[calc(var(--tpl-sticky-top,0px)+72px)] pb-8 pt-14 text-white @3xl:pt-20"
+    >
       <div className={CONTAINER}>
         {ctaTitle && (
           <Reveal className="flex flex-col gap-7 border-b border-white/[0.12] pb-12 @4xl:flex-row @4xl:items-end @4xl:justify-between @4xl:gap-10 @3xl:pb-16">

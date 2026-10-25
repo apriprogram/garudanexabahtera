@@ -26,12 +26,17 @@ const listField = (key: string, label: string, itemLabel: string, fields: Templa
   max,
 });
 
-const eyebrow = (placeholder: string) =>
-  t('eyebrow', 'Label kecil di atas judul', {
-    placeholder,
-    maxLength: 40,
-    help: 'Tampil dengan nomor urut bagian, mis. "Profil sekolah (01)". Label singkat (≤ 12 huruf) juga dipakai di menu atas.',
-  });
+/**
+ * Label kecil di atas judul. `menu` = bagian yang punya item menu (label singkat menggantikan nama menu); `number` =
+ * tampil dengan nomor urut "(01)"; `plain` = tanpa nomor (pengumuman & agenda).
+ */
+const EYEBROW_HELP = {
+  menu: 'Tampil dengan nomor urut bagian, mis. "Profil sekolah (01)". Label singkat (≤ 12 huruf, ≤ 2 kata) juga dipakai sebagai nama di menu atas.',
+  number: 'Tampil dengan nomor urut bagian, mis. "Prestasi (06)". Kosongkan untuk menyembunyikan.',
+  plain: 'Tampil di atas judul kartu. Kosongkan untuk menyembunyikan.',
+} as const;
+const eyebrow = (placeholder: string, kind: keyof typeof EYEBROW_HELP = 'number') =>
+  t('eyebrow', 'Label kecil di atas judul', { placeholder, maxLength: 40, help: EYEBROW_HELP[kind] });
 const title = (placeholder: string, maxLength = 110) => t('title', 'Judul', { placeholder, maxLength });
 const highlight = (placeholder: string) =>
   t('highlight', 'Bagian judul yang dicetak miring berwarna', { placeholder, maxLength: 50, help: 'Tulis persis seperti di judul, atau kosongkan.' });
@@ -152,7 +157,7 @@ export const bestariSections: TemplateSection[] = [
       'Judul paragraf besar dua warna, kolase dua foto dengan kartu angka, profil singkat dengan poin centang, dan daftar buka-tutup "+" (mis. visi, misi, kurikulum).',
     toggleable: true,
     fields: [
-      eyebrow('mis. Profil sekolah'),
+      eyebrow('mis. Profil sekolah', 'menu'),
       ta('title', 'Judul (bagian gelap)', { placeholder: 'Kalimat utama tentang sekolah Anda.', maxLength: 140 }),
       ta('title_muted', 'Judul lanjutan (bagian abu-abu)', { placeholder: 'Kalimat penjelas yang tampil lebih pudar.', maxLength: 200 }),
       ta('body', 'Profil singkat', { placeholder: 'Sejarah singkat, yayasan, dan keunggulan sekolah.', maxLength: 600 }),
@@ -246,7 +251,7 @@ export const bestariSections: TemplateSection[] = [
     description: 'Kartu foto dengan ikon bulat otomatis, label pil, nama program, dan deskripsi. Tombol panah membuka WhatsApp dengan nama program.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Program'),
+      eyebrow('mis. Program', 'menu'),
       title('mis. Belajar lewat buku, percobaan, dan panggung'),
       highlight('mis. panggung'),
       subtitle(),
@@ -293,7 +298,7 @@ export const bestariSections: TemplateSection[] = [
     description: 'Panel dengan judul di kiri dan kartu foto guru (nama + jabatan) di kanan; di HP kartu bisa digeser.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Guru kami'),
+      eyebrow('mis. Guru kami', 'menu'),
       title('mis. Guru yang mengenal setiap anak'),
       highlight('mis. setiap anak'),
       subtitle(),
@@ -399,7 +404,7 @@ export const bestariSections: TemplateSection[] = [
     description: 'Kartu berita berfoto dengan tanggal dan kategori; tombol kategori menyaring berita. "Baca selengkapnya" membuka isi berita di kartu.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Berita sekolah'),
+      eyebrow('mis. Berita sekolah', 'menu'),
       title('mis. Kabar terbaru dari sekolah'),
       subtitle(),
       t('all_label', 'Teks tombol semua kategori', { placeholder: 'mis. Semua', maxLength: 16 }),
@@ -428,7 +433,7 @@ export const bestariSections: TemplateSection[] = [
     description: 'Daftar pengumuman bertanggal; label seperti "Penting" atau "Wajib" ditonjolkan.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Pengumuman'),
+      eyebrow('mis. Pengumuman', 'plain'),
       title('mis. Pengumuman untuk orang tua', 80),
       listField(
         'items',
@@ -450,7 +455,7 @@ export const bestariSections: TemplateSection[] = [
     label: 'Agenda kegiatan',
     toggleable: true,
     fields: [
-      eyebrow('mis. Agenda'),
+      eyebrow('mis. Agenda', 'plain'),
       title('mis. Kegiatan dalam waktu dekat', 80),
       listField(
         'items',
@@ -519,7 +524,9 @@ export const bestariSections: TemplateSection[] = [
       t('help_title', 'Kartu bantuan: judul', { placeholder: 'mis. Masih ada pertanyaan?', maxLength: 50 }),
       ta('help_text', 'Kartu bantuan: teks', { maxLength: 160 }),
       t('button_label', 'Kartu bantuan: teks tombol', { placeholder: 'mis. Tanya panitia PPDB', maxLength: 30 }),
-      url('button_url', 'Kartu bantuan: tautan tombol', { help: WA_HELP }),
+      url('button_url', 'Kartu bantuan: tautan tombol', {
+        help: 'Kosongkan untuk membuka WhatsApp panitia PPDB (atau WhatsApp sekolah bila nomor panitia kosong).',
+      }),
       listField(
         'items',
         'Pertanyaan',
@@ -536,7 +543,7 @@ export const bestariSections: TemplateSection[] = [
       'Peta Google Maps (dimuat saat digulir), alamat, telepon, email, WhatsApp, jam layanan, dan media sosial (dari bagian Footer). Email & telepon juga tampil di bilah paling atas.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Lokasi & kontak'),
+      eyebrow('mis. Lokasi & kontak', 'menu'),
       title('mis. Mampir ke sekolah kami'),
       subtitle(),
       ta('address', 'Alamat', { placeholder: 'Jl. Contoh No. 1, Kota, Provinsi', maxLength: 200 }),

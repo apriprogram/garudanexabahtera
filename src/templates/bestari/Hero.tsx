@@ -38,7 +38,7 @@ function HeroStats({ m }: { m: BestariModel }) {
       {items.map((item, i) => (
         <div key={`${field(item, 'label')}-${i}`} className="flex min-w-0 flex-col @5xl:px-6 @5xl:last:pr-0 @7xl:px-8">
           {/* dt lebih dulu di DOM (urutan dl yang benar), tampil di bawah angka */}
-          <dt className="order-last mt-1.5 text-[12.5px] leading-snug text-white/80 @3xl:text-[13.5px]">{field(item, 'label')}</dt>
+          <dt className="order-last mt-1.5 text-[12.5px] font-medium leading-snug text-white @3xl:text-[13.5px]">{field(item, 'label')}</dt>
           <dd className={`${DISPLAY} text-[26px] font-medium leading-none tracking-[-0.03em] tabular-nums text-white @3xl:text-[34px] @6xl:text-[40px]`}>
             {field(item, 'value')}
           </dd>
@@ -91,18 +91,20 @@ function SlideControls({
         {slides.map((s, i) => {
           const current = i === index;
           return (
-            <li key={i} className="min-w-0">
+            // HP (< @3xl): hanya tombol slide aktif + "/ 04" yang tampil agar muat bersama 3 tombol bulat; bilah progres
+            // (pemicu ganti slide) selalu ada di tombol aktif
+            <li key={i} className={`min-w-0 ${current ? '' : 'hidden @3xl:block'}`}>
               <button
                 type="button"
                 onClick={() => onSelect(i)}
-                aria-label={`Slide ${i + 1} dari ${count}`}
+                aria-label={s.eyebrow ? `Slide ${i + 1} dari ${count}: ${s.eyebrow}` : `Slide ${i + 1} dari ${count}`}
                 aria-current={current ? 'true' : undefined}
                 className={`group flex h-11 min-w-11 max-w-full items-center gap-2.5 px-1 text-[13px] font-medium tabular-nums transition-colors duration-300 ${
                   current ? 'text-white' : 'text-white/60 hover:text-white'
                 }`}
               >
                 <span aria-hidden>{pad(i + 1)}</span>
-                <span aria-hidden className={`relative block h-px overflow-hidden bg-white/30 transition-[width] duration-500 ${current ? 'w-8 @3xl:w-14' : 'w-4 @3xl:w-8'}`}>
+                <span aria-hidden className={`relative block h-px shrink-0 overflow-hidden bg-white/30 transition-[width] duration-500 ${current ? 'w-10 @3xl:w-14' : 'w-8'}`}>
                   {current && (
                     // Bilah progres: saat animasinya selesai, slide berikutnya tampil (berhenti bila dijeda, disorot,
                     // difokus, gerak mati, atau tab di latar karena animasi CSS ikut berhenti)
@@ -115,6 +117,7 @@ function SlideControls({
                     />
                   )}
                 </span>
+                <span aria-hidden className="text-white/70 @3xl:hidden">/ {pad(count)}</span>
                 {s.eyebrow && (
                   <span aria-hidden className="hidden max-w-[150px] truncate text-left text-[12.5px] font-normal @6xl:block">
                     {s.eyebrow}
@@ -259,7 +262,7 @@ export function Hero({ m, overlap }: { m: BestariModel; overlap: boolean }) {
         <div aria-hidden className="bs-hero-scrim absolute inset-0 -z-10" />
 
         <div
-          className={`${CONTAINER} relative flex min-h-[680px] flex-col justify-end pb-5 pt-[156px] @3xl:min-h-[740px] @3xl:pt-[172px] @5xl:min-h-[max(720px,min(100svh,960px))] ${
+          className={`${CONTAINER} relative flex min-h-[680px] flex-col justify-end pb-5 pt-[176px] @3xl:min-h-[740px] @3xl:pt-[172px] @5xl:min-h-[max(720px,min(100svh,960px))] ${
             overlap ? '@5xl:pb-[124px]' : '@5xl:pb-8'
           }`}
         >

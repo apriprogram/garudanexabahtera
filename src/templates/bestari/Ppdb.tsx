@@ -237,7 +237,8 @@ function RegistrationForm({ m }: { m: BestariModel }) {
   const paths = list(ppdb, 'paths', 6)
     .map((item) => field(item, 'name'))
     .filter(Boolean);
-  const reference = parseSchoolDate(text(ppdb, 'age_reference'));
+  // Tanggal acuan usia dari CMS; kosong / tidak valid → hari ini (sesuai bantuan di CMS)
+  const reference = parseSchoolDate(text(ppdb, 'age_reference')) ?? parseSchoolDate(todayIso());
   const title = text(ppdb, 'form_title');
   const intro = text(ppdb, 'form_text');
   const button = text(ppdb, 'form_button') || 'Kirim lewat WhatsApp';

@@ -250,7 +250,7 @@ export function Welcome({ m }: { m: BestariModel }) {
 /** `padTop` = jarak atas sendiri; tanpa itu (Sambutan tepat di atas, yang sudah punya jarak bawah) jarak atas 0. */
 export function Why({ m, padTop }: { m: BestariModel; padTop: boolean }) {
   const { why } = m;
-  const items = list(why, 'items', 5).filter((item) => field(item, 'title'));
+  const items = m.items('why');
   const [open, setOpen] = useState<number | null>(0);
   const baseId = useId();
   if (items.length === 0) return null;
@@ -315,7 +315,7 @@ export function Why({ m, padTop }: { m: BestariModel; padTop: boolean }) {
                         onClick={() => setOpen(isOpen ? null : i)}
                         className="group flex w-full items-baseline gap-5 py-5 text-left disabled:cursor-default @3xl:gap-8"
                       >
-                        <span aria-hidden className={`w-9 shrink-0 text-[13px] font-medium tabular-nums ${isOpen ? 'text-(--bs-ink)' : C.faint}`}>
+                        <span aria-hidden className={`w-9 shrink-0 text-[13px] font-medium tabular-nums ${isOpen ? 'text-(--bs-ink)' : C.muted}`}>
                           ({String(i + 1).padStart(2, '0')})
                         </span>
                         <span

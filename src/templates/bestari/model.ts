@@ -14,6 +14,7 @@ import {
   isEnabled,
   list,
   mapsInfo,
+  paragraphs,
   parseHex,
   resolveAction,
   safeUrl,
@@ -29,6 +30,8 @@ import { BESTARI_ACCENT } from './defaultContent';
 type Rgb = [number, number, number];
 const WHITE: Rgb = [255, 255, 255];
 const BLACK: Rgb = [0, 0, 0];
+/** Tinta gelap --tpl-on-accent untuk warna tema terang (= INK di shared/utils accentVars) */
+const ON_LIGHT: Rgb = [18, 22, 32];
 /** Cokelat malam: dasar pita gelap & footer (dicampur sedikit warna tema) */
 const NIGHT: Rgb = [24, 16, 12];
 const toHex = (rgb: Rgb) => `#${rgb.map((c) => Math.round(Math.min(255, Math.max(0, c))).toString(16).padStart(2, '0')).join('')}`;
@@ -61,6 +64,16 @@ export function bestariVars(accentRaw: string): CSSProperties {
   } as CSSProperties;
 }
 
+/**
+ * true bila teks di atas bidang warna tema berwarna putih (aturan sama dengan --tpl-on-accent di accentVars). Kartu
+ * berwarna tema baru boleh data-tpl-tone="inverse" (cincin fokus putih) bila ini true; warna tema terang (kuning,
+ * hijau muda) memakai teks & cincin fokus gelap.
+ */
+export function accentIsDark(accentRaw: string): boolean {
+  const accent = parseHex(accentRaw) ?? (parseHex(BESTARI_ACCENT) as Rgb);
+  return contrast(accent, WHITE) >= contrast(accent, ON_LIGHT);
+}
+
 // ─── Menu ─────────────────────────────────────────────────────────────────────
 
 export interface BestariNavItem {
@@ -69,12 +82,12 @@ export interface BestariNavItem {
 }
 
 /** Urutan menu atas: bagian yang paling dicari orang tua calon murid. */
-const NAV: { key: string; label: string; listKey?: string; fixed?: boolean }[] = [
+const NAV: { key: string; label: string; fixed?: boolean }[] = [
   { key: 'about', label: 'Profil' },
-  { key: 'programs', label: 'Program', listKey: 'items' },
-  { key: 'teachers', label: 'Guru', listKey: 'items' },
+  { key: 'programs', label: 'Program' },
+  { key: 'teachers', label: 'Guru' },
   { key: 'ppdb', label: 'PPDB', fixed: true },
-  { key: 'news', label: 'Berita', listKey: 'items' },
+  { key: 'news', label: 'Berita' },
   { key: 'contact', label: 'Kontak' },
 ];
 
@@ -84,12 +97,12 @@ const shortLabel = (section: SectionContent, fallback: string) => {
   return eyebrow && eyebrow.length <= 12 && eyebrow.split(/\s+/).length <= 2 ? eyebrow : fallback;
 };
 
+/** Menu hanya untuk section yang benar-benar tampil (aturan sama dengan sectionShown: tanpa tautan mati). */
 export function navItems(content: SiteContent): BestariNavItem[] {
-  return NAV.filter(({ key, listKey }) => {
-    const section = getSection(content, key);
-    if (!isEnabled(section)) return false;
-    return listKey ? list(section, listKey).length > 0 : true;
-  }).map(({ key, label, fixed }) => ({ key, label: fixed ? label : shortLabel(getSection(content, key), label) }));
+  return NAV.filter(({ key }) => sectionShown(content, key)).map(({ key, label, fixed }) => ({
+    key,
+    label: fixed ? label : shortLabel(getSection(content, key), label),
+  }));
 }
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
@@ -137,8 +150,8 @@ export const wrapIndex = (i: number, count: number): number => (count > 0 ? ((Ma
 const TARGETS: [RegExp, string][] = [
   [/ppdb|spmb|pendaftaran|daftar|penerimaan|murid baru/i, 'ppdb'],
   [/open house|kunjungan|agenda|jadwal|kegiatan/i, 'agenda'],
-  [/program|bilingual|literasi|ekstrakurikuler|ekskul|kelas/i, 'programs'],
   [/guru|pengajar|wali kelas/i, 'teachers'],
+  [/program|bilingual|literasi|ekstrakurikuler|ekskul|kelas/i, 'programs'],
   [/prestasi|lomba|juara/i, 'achievements'],
   [/berita|kabar/i, 'news'],
   [/pengumuman|info/i, 'announcements'],
@@ -183,7 +196,7 @@ export const displayDate = (raw: string | null | undefined): string => parseScho
 // ─── Berita & pengumuman ──────────────────────────────────────────────────────
 
 /** Berita yang tampil (berjudul, maks. 9); kosong → section Berita tidak dirender. */
-export const newsItems = (news: SectionContent): ListItem[] => list(news, 'items', 9).filter((item) => field(item, 'title'));
+export const newsItems = (news: SectionContent): ListItem[] => sectionItems('news', news);
 
 const normalize = (value: string) =>
   value
@@ -322,6 +335,39 @@ export function ppdbMessage(school: string, form: PpdbForm, reference = ''): str
   return `Halo Panitia PPDB ${school}, saya ingin mendaftarkan anak saya.\n${rows.join('\n')}\nMohon info langkah selanjutnya. Terima kasih.`;
 }
 
+// ─── Galeri ───────────────────────────────────────────────────────────────────
+
+/**
+ * Ukuran sel bento per jumlah foto agar tidak ada sel kosong. Layar lebar (4 kolom): 1 foto → selebar penuh; 2 → dua
+ * 2×2; 3 → 2×2 + dua mendatar; 4 → empat tegak; ≥ 5 → 2×2 + empat 1×1, sisanya mengisi baris terakhir (1 → selebar
+ * penuh, 2 → setengah-setengah, 3 → 2 + 1 + 1). HP (2 kolom): foto pertama selebar penuh, foto terakhir ikut selebar
+ * penuh bila sisanya ganjil. Mengembalikan [kelas sel, foto lebar di HP?, atribut sizes].
+ */
+export function bentoCells(n: number): [string, boolean, string][] {
+  const wide = (i: number) => i === 0 || (i === n - 1 && (n - 1) % 2 === 1);
+  const desk = (i: number): string => {
+    if (n === 1) return '@3xl:col-span-4 @3xl:row-span-2';
+    if (n === 2) return '@3xl:col-span-2 @3xl:row-span-2';
+    if (n === 3) return i === 0 ? '@3xl:col-span-2 @3xl:row-span-2' : '@3xl:col-span-2';
+    if (n === 4) return '@3xl:col-span-1 @3xl:row-span-2';
+    if (i === 0) return '@3xl:col-span-2 @3xl:row-span-2';
+    if (i < 5) return '@3xl:col-span-1';
+    const rest = n - 5;
+    if (rest === 1) return '@3xl:col-span-4';
+    if (rest === 2) return '@3xl:col-span-2';
+    return i === 5 ? '@3xl:col-span-2' : '@3xl:col-span-1';
+  };
+  // Lebar tampil di layar lebar dari jumlah kolom (4 → penuh, 2 → separuh, 1 → seperempat), di HP dari `wide`
+  const vw = (cls: string) => {
+    const span = Number(/@3xl:col-span-(\d)/.exec(cls)?.[1] ?? 1);
+    return span >= 4 ? '92vw' : span >= 2 ? '48vw' : '24vw';
+  };
+  return Array.from({ length: n }, (_, i) => {
+    const cls = desk(i);
+    return [`${wide(i) ? 'col-span-2' : ''} ${cls}`, wide(i), `(min-width: 768px) ${vw(cls)}, ${wide(i) ? '92vw' : '46vw'}`];
+  });
+}
+
 // ─── Lain-lain ────────────────────────────────────────────────────────────────
 
 export interface SocialLink {
@@ -396,6 +442,46 @@ export function sectionTarget(target: string): string | null {
   return KNOWN_SECTIONS.has(key) ? key : null;
 }
 
+// ─── Section yang tampil ──────────────────────────────────────────────────────
+
+/**
+ * Item `items` yang benar-benar dirender per section (maks. sama dengan schema, syarat sama dengan komponen). Satu
+ * sumber untuk komponen, menu, nomor "(01)", dan tujuan tautan, agar section kosong tidak meninggalkan nomor bolong
+ * atau tautan mati.
+ */
+const ITEMS: Record<string, [max: number, keep: (item: ListItem) => boolean]> = {
+  highlights: [3, (i) => !!(field(i, 'title') || field(i, 'text'))],
+  badges: [6, (i) => !!field(i, 'text')],
+  stats: [4, (i) => !!(field(i, 'value') || field(i, 'label'))],
+  why: [5, (i) => !!field(i, 'title')],
+  programs: [6, (i) => !!field(i, 'name')],
+  achievements: [8, (i) => !!(field(i, 'title') || field(i, 'event'))],
+  teachers: [6, (i) => !!field(i, 'name')],
+  news: [9, (i) => !!field(i, 'title')],
+  announcements: [8, (i) => !!field(i, 'title')],
+  agenda: [8, (i) => !!field(i, 'title')],
+  testimonials: [6, (i) => !!field(i, 'quote')],
+  gallery: [8, (i) => hasImage(field(i, 'image'))],
+  faq: [10, (i) => !!field(i, 'question')],
+};
+
+/** Item yang dirender untuk section `key` (lihat ITEMS); section tanpa daftar item → []. */
+export function sectionItems(key: string, section: SectionContent): ListItem[] {
+  const rule = ITEMS[key];
+  return rule ? list(section, 'items', rule[0]).filter(rule[1]) : [];
+}
+
+/** Section tampil dan berisi? Kunci yang tidak dikenal (mis. salah ketik di field URL) → false. */
+export function sectionShown(content: SiteContent, key: string): boolean {
+  if (!KNOWN_SECTIONS.has(key)) return false;
+  const s = getSection(content, key);
+  if (!isEnabled(s)) return false;
+  if (key in ITEMS) return sectionItems(key, s).length > 0;
+  if (key === 'welcome') return !!(text(s, 'title') || text(s, 'quote') || paragraphs(text(s, 'body')).length);
+  if (key === 'about') return !!(text(s, 'title') || text(s, 'title_muted') || text(s, 'body') || list(s, 'pillars', 5).some((i) => field(i, 'title')));
+  return true;
+}
+
 // ─── Model ────────────────────────────────────────────────────────────────────
 
 export function readBestari(content: SiteContent) {
@@ -414,31 +500,10 @@ export function readBestari(content: SiteContent) {
   /** Tujuan "hubungi": WhatsApp bila ada nomor, kalau tidak section Kontak, kalau tidak null (tombol disembunyikan). */
   const startAction: LinkAction | null = waAction ?? contactAction;
 
-  /** Section tampil di halaman? Kunci yang tidak dikenal (mis. salah ketik di field URL) → false. */
-  const shown = (key: string): boolean => {
-    if (!KNOWN_SECTIONS.has(key)) return false;
-    const s = section(key);
-    if (!isEnabled(s)) return false;
-    switch (key) {
-      case 'highlights':
-      case 'badges':
-      case 'stats':
-      case 'why':
-      case 'programs':
-      case 'achievements':
-      case 'teachers':
-      case 'announcements':
-      case 'agenda':
-      case 'testimonials':
-      case 'gallery':
-      case 'faq':
-        return list(s, 'items').length > 0;
-      case 'news':
-        return newsItems(s).length > 0;
-      default:
-        return true;
-    }
-  };
+  /** Section tampil & berisi di halaman (sectionShown). */
+  const shown = (key: string): boolean => sectionShown(content, key);
+  /** Item yang dirender untuk section `key` (sectionItems). */
+  const items = (key: string): ListItem[] => sectionItems(key, section(key));
   const sectionAction = (key: string): LinkAction | null => (shown(key) ? { kind: 'section', target: key } : null);
   /**
    * Isi field URL: "#ppdb", "#berita", "#kontak" dsb. hanya bila section itu tampil (anchor Indonesia diterjemahkan ke
@@ -493,12 +558,15 @@ export function readBestari(content: SiteContent) {
     tagline: text(brand, 'tagline'),
     logo: text(brand, 'logo'),
     colors: bestariVars(text(brand, 'accent_color')),
+    /** data-tpl-tone untuk kartu berwarna tema: "inverse" (cincin fokus putih) hanya bila teksnya putih */
+    accentTone: accentIsDark(text(brand, 'accent_color')) ? ('inverse' as const) : undefined,
     whatsapp,
     ppdbWhatsapp,
     waAction,
     contactAction,
     startAction,
     shown,
+    items,
     number,
     sectionAction,
     linkOr,

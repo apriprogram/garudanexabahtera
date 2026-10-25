@@ -44,10 +44,10 @@ export default function Bestari({ content, preview = false, motion }: TemplateRe
             {heroOn && <Hero m={m} overlap={highlightsOn} />}
             {highlightsOn && <Highlights m={m} overlap={heroOn} />}
             {m.shown('badges') && <Badges m={m} />}
-            {isEnabled(m.about) && <About m={m} />}
+            {m.shown('about') && <About m={m} />}
             {m.shown('stats') && <Stats m={m} />}
-            {isEnabled(m.welcome) && <Welcome m={m} />}
-            {m.shown('why') && <Why m={m} padTop={!isEnabled(m.welcome)} />}
+            {m.shown('welcome') && <Welcome m={m} />}
+            {m.shown('why') && <Why m={m} padTop={!m.shown('welcome')} />}
             {m.shown('programs') && <Programs m={m} />}
             {m.shown('achievements') && <Achievements m={m} />}
             {m.shown('teachers') && <Teachers m={m} />}

@@ -29,7 +29,7 @@ export function SectionLabel({ label, number = '', tone = 'light', className = '
         <span />
       )}
       {number && (
-        <span aria-hidden className={`shrink-0 text-[13px] font-medium tabular-nums tracking-[0.04em] ${dark ? 'text-white/60' : C.faint}`}>
+        <span aria-hidden className={`shrink-0 text-[13px] font-medium tabular-nums tracking-[0.04em] ${dark ? 'text-white/70' : C.muted}`}>
           ({number})
         </span>
       )}
@@ -48,7 +48,7 @@ export function PillLabel({ children, number = '', tone = 'light' }: { children:
       <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
       <span className="truncate">{children}</span>
       {number && (
-        <span aria-hidden className={`tabular-nums ${tone === 'dark' ? 'text-white/60' : C.faint}`}>
+        <span aria-hidden className={`tabular-nums ${tone === 'dark' ? 'text-white/70' : C.muted}`}>
           ({number})
         </span>
       )}

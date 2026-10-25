@@ -21,7 +21,7 @@ export const C = {
   ink: 'text-[#1C1917]',
   /** 7,6:1 di putih, 6,8:1 di panel pasir */
   muted: 'text-[#57534E]',
-  /** Abu hangat bagian kedua judul dua warna (4:1 di putih, 3,6:1 di pasir; hanya untuk teks ≥ 24px) */
+  /** Abu hangat bagian kedua judul dua warna (4:1 di putih, 3,6:1 di pasir; HANYA untuk teks ≥ 24px, teks kecil → muted) */
   faint: 'text-[#857D75]',
   /** Panel pasir hangat */
   panel: 'bg-[#F5F2ED]',

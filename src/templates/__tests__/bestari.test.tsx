@@ -16,7 +16,9 @@ import { validateContent } from '../../pages/account/cms/validation';
 import { TEMPLATES, resolveContent } from '../index';
 import { iconKey } from '../bestari/icons';
 import {
+  accentIsDark,
   ageAt,
+  bentoCells,
   bestariVars,
   displayDate,
   EMPTY_PPDB,
@@ -31,6 +33,7 @@ import {
   readBestari,
   sectionTarget,
   titleTarget,
+  todayIso,
   validatePpdb,
   validPhone,
   wrapIndex,
@@ -246,6 +249,14 @@ describe('Bestari: helper model', () => {
     expect([m.number('hero'), m.number('announcements'), m.number('xyz')]).toEqual(['', '', '']);
     const hidden = readBestari(resolveContent(def, { stats: { enabled: false }, why: { items: [] } }));
     expect([hidden.number('about'), hidden.number('welcome'), hidden.number('programs'), hidden.number('stats')]).toEqual(['01', '02', '03', '']);
+    // Section yang aktif tetapi kosong (item tanpa isi wajib) tidak memakai nomor & tidak masuk menu
+    const empty = resolveContent(def, { testimonials: { items: [{ name: 'Tanpa kutipan' }] }, welcome: { title: '', quote: '', body: '' }, news: { items: [{ date: '2026-10-01' }] } });
+    const e = readBestari(empty);
+    expect([e.shown('testimonials'), e.shown('welcome'), e.shown('news')]).toEqual([false, false, false]);
+    expect([e.number('stats'), e.number('why'), e.number('gallery')]).toEqual(['02', '03', '08']);
+    expect(navItems(empty).map((i) => i.key)).not.toContain('news');
+    // "#footer" menuju footer (bukan tautan mati)
+    expect(e.linkOr('#footer', null)).toEqual({ kind: 'section', target: 'footer' });
   });
 
   it('slide hero: slide 1 = isi hero, tambahan hanya yang berfoto (maks. 3), teks kosong ikut slide 1; indeks berputar', () => {
@@ -311,6 +322,35 @@ describe('Bestari: helper model', () => {
     expect(ppdbMessage('SD X', filled)).toContain('Tanggal lahir: 14 Mar 2021\n');
   });
 
+  it('galeri bento tanpa sel kosong untuk 1–8 foto (4 kolom layar lebar, 2 kolom HP)', () => {
+    const span = (cls: string, re: RegExp, fallback: number) => Number(re.exec(cls)?.[1] ?? fallback);
+    for (let n = 1; n <= 8; n += 1) {
+      const cells = bentoCells(n);
+      expect(cells).toHaveLength(n);
+      // Layar lebar: jumlah sel (kolom × baris) habis dibagi 4 → tidak ada lubang di baris terakhir
+      const area = cells.reduce((sum, [cls]) => sum + span(cls, /@3xl:col-span-(\d)/, 1) * span(cls, /@3xl:row-span-(\d)/, 1), 0);
+      expect(area % 4, `n=${n}`).toBe(0);
+      // HP: foto lebar memakai 2 kolom, sisanya berpasangan
+      const narrow = cells.filter(([, wide]) => !wide).length;
+      expect(narrow % 2, `n=${n}`).toBe(0);
+      expect(cells[0][1]).toBe(true);
+      // sizes mengikuti lebar sel di layar lebar (4 kolom → 92vw, 2 → 48vw, 1 → 24vw) dan di HP (lebar → 92vw)
+      for (const [cls, wide, sizes] of cells) {
+        const cols = span(cls, /@3xl:col-span-(\d)/, 1);
+        expect(sizes, `n=${n} ${cls}`).toBe(`(min-width: 768px) ${cols === 4 ? '92vw' : cols === 2 ? '48vw' : '24vw'}, ${wide ? '92vw' : '46vw'}`);
+      }
+    }
+  });
+
+  it('kartu berwarna tema hanya bertema "inverse" (cincin fokus putih) bila teksnya putih', () => {
+    expect(['#C2410C', '#047857', '#1D4ED8', '#1F2937'].map(accentIsDark)).toEqual([true, true, true, true]);
+    expect(['#FACC15', '#7DD3FC', '#F59E0B'].map(accentIsDark)).toEqual([false, false, false]);
+    const yellow = demo({ brand: { accent_color: '#FACC15' } });
+    expect(section(yellow, 'highlights').querySelectorAll('li')[1].hasAttribute('data-tpl-tone')).toBe(false);
+    cleanup();
+    expect(section(demo(), 'highlights').querySelectorAll('li')[1]).toHaveAttribute('data-tpl-tone', 'inverse');
+  });
+
   it('tujuan kartu sorotan & ikon otomatis dari teks', () => {
     const all = () => true;
     expect(['Pendaftaran murid baru', 'Kelas bilingual & literasi', 'Open house 7 November', 'Guru kami', 'Prestasi lomba'].map((t) => titleTarget(t, all))).toEqual([
@@ -321,6 +361,8 @@ describe('Bestari: helper model', () => {
       'achievements',
     ]);
     expect(titleTarget('Open house 7 November', (k) => k !== 'agenda')).toBeNull();
+    // "wali kelas" / "Guru kelas" → Guru, bukan Program (aturan guru di atas aturan "kelas")
+    expect([titleTarget('Kenali wali kelas', all), titleTarget('Guru kelas berpengalaman', all), titleTarget('Kelas bilingual', all)]).toEqual(['teachers', 'teachers', 'programs']);
     expect(
       ['Terakreditasi A', 'Sekolah Adiwiyata', 'Sekolah ramah anak', 'Kurikulum Merdeka', 'Kelas bilingual', 'Sains & robotika', 'Seni & budaya', 'Pramuka & olahraga'].map((t) =>
         iconKey(t),
@@ -361,7 +403,8 @@ describe('Bestari: helper model', () => {
 describe('Bestari: demo', () => {
   it('urutan section, satu h1, hero slider full-bleed (data-hero-layout canvas), bilah info, menu pil', () => {
     const container = demo();
-    expect(sectionKeys(container)).toEqual(ORDER);
+    // Footer juga tujuan tautan "#footer" (landmark <footer> ber-data-tpl-section)
+    expect(sectionKeys(container)).toEqual([...ORDER, 'footer']);
     expect(container.querySelectorAll('h1')).toHaveLength(1);
     const hero = section(container, 'hero');
     expect(hero.getAttribute('data-hero-layout')).toBe('canvas');
@@ -395,14 +438,24 @@ describe('Bestari: demo', () => {
     expect(within(header).getByRole('link', { name: 'Daftar' })).toHaveAttribute('href', '#ppdb');
     expect(within(header).getByRole('link', { name: /info@bestaricendekia\.sch\.id/ })).toHaveAttribute('href', 'mailto:info@bestaricendekia.sch.id');
     expect(within(header).getByRole('link', { name: /\(0274\) 555-0182/ })).toHaveAttribute('href', 'tel:+622745550182');
-    // Pengumuman satu baris (dipotong) agar menu pil tidak turun menutupi judul
-    expect(within(header).getByText(/PPDB 2027\/2028 gelombang/).className).toContain('truncate');
+    // Pengumuman utuh (boleh turun baris, tidak dipotong "…"); hero memberi ruang di atas judul untuk 2–3 baris
+    expect(within(header).getByText(/PPDB 2027\/2028 gelombang/).className).not.toContain('truncate');
+    expect(hero.innerHTML).toContain('pt-[176px]');
     const nav = within(header).getAllByRole('navigation', { name: 'Menu utama' })[0];
     expect(linkList(nav)).toEqual(['Profil|#tentang', 'Program|#programs', 'Guru kami|#teachers', 'PPDB|#ppdb', 'Berita|#news', 'Kontak|#kontak']);
     expect(header.querySelector('img[src="/assets/templates/logos/tut-wuri-handayani.svg"]'), 'logo demo').not.toBeNull();
     expect(demo({ brand: { logo: '' } }).querySelector('header svg[viewBox="0 0 32 32"]'), 'BestariMark').not.toBeNull();
     fireEvent.click(within(nav).getByRole('link', { name: 'Guru kami' }));
     expect(scrolled).toEqual(['teachers']);
+  });
+
+  it('bilah info tanpa pengumuman: di HP disembunyikan (email & telepon hanya tampil di layar lebar)', () => {
+    const header = demo({ hero: { topbar_text: '' } }).querySelector('header')!;
+    const bar = header.querySelector('[data-tpl-tone="inverse"]')!;
+    expect(bar.className).toContain('hidden @3xl:block');
+    expect(within(header).getByRole('link', { name: /info@bestaricendekia/ })).toBeInTheDocument();
+    cleanup();
+    expect(demo().querySelector('header [data-tpl-tone="inverse"]')!.className).not.toContain('hidden @3xl:block');
   });
 
   it('menu HP: tombol buka/tutup (aria-expanded), Esc menutup dan fokus kembali ke tombol', () => {
@@ -422,8 +475,17 @@ describe('Bestari: demo', () => {
     const hero = section(demo(), 'hero');
     expect(hero.getAttribute('aria-roledescription')).toBe('carousel');
     const controls = within(hero).getByRole('group', { name: 'Kontrol slide' });
-    const dots = within(controls).getAllByRole('button', { name: /^Slide \d dari 4$/ });
+    const dots = within(controls).getAllByRole('button', { name: /^Slide \d dari 4/ });
     expect(dots).toHaveLength(4);
+    // Nama aksesibel memuat label yang tampil di layar lebar (Label in Name)
+    expect(dots.map((d) => d.getAttribute('aria-label'))).toEqual([
+      'Slide 1 dari 4: Sekolah dasar swasta · Yogyakarta',
+      'Slide 2 dari 4: Kurikulum Merdeka · Kelas 1–6',
+      'Slide 3 dari 4: Seni & pramuka',
+      'Slide 4 dari 4: Karakter & persahabatan',
+    ]);
+    // HP: hanya slide aktif yang tampil (+ "/ 04"), slide lain disembunyikan lewat kelas container query
+    expect(dots.map((d) => d.parentElement!.className.includes('hidden @3xl:block'))).toEqual([false, true, true, true]);
     expect(dots[0]).toHaveAttribute('aria-current', 'true');
     const progress = () => controls.querySelector('.bs-progress')!;
     expect(progress()).toHaveAttribute('data-run', 'true');
@@ -563,6 +625,10 @@ describe('Bestari: demo', () => {
       'Halo SD Bestari Cendekia, saya ingin bertanya tentang program Sains & robotika.',
     );
     expect(within(section(container, 'achievements')).getAllByRole('heading', { level: 3 })).toHaveLength(5);
+    // Peringkat kosong → nama lomba jadi judul, tidak ada <h3> kosong dan tidak dobel
+    const noRank = section(demo({ achievements: { items: [{ title: '', event: 'Olimpiade Sains Kota', year: '2026' }] } }), 'achievements');
+    expect(within(noRank).getByRole('heading', { level: 3 })).toHaveTextContent('Olimpiade Sains Kota');
+    expect(noRank.textContent?.split('Olimpiade Sains Kota')).toHaveLength(2);
     const teachers = section(container, 'teachers');
     expect(Array.from(teachers.querySelectorAll('figcaption')).map((f) => f.firstChild?.textContent)).toEqual(['Dewi Lestari, S.Pd.', 'Rizky Pratama, S.Pd.', 'Ratna Sari, M.Pd.']);
     expect(wa(within(teachers).getByRole('link', { name: 'Tanya wali kelas' }))).toContain('saya ingin bertanya kepada wali kelas');
@@ -678,6 +744,10 @@ describe('Bestari: demo', () => {
     const gallery = section(container, 'gallery');
     expect(gallery.querySelectorAll('figcaption')).toHaveLength(5);
     expect(gallery.querySelector('li')!.className).toContain('col-span-2');
+    // Rel guru di HP: wilayah berlabel yang bisa difokus & digulir dengan keyboard
+    const rail = within(section(container, 'teachers')).getByRole('region', { name: /Daftar guru/ });
+    expect(rail).toHaveAttribute('tabindex', '0');
+    expect(rail.className).toContain('scroll-px-5');
 
     const faq = section(container, 'faq');
     const questions = within(faq).getAllByRole('button');
@@ -848,6 +918,17 @@ describe('Bestari: konten opsional kosong', () => {
     expect(container.querySelector('a[href^="https://wa.me"]')).toBeNull();
   });
 
+  it('tanggal acuan usia kosong → usia dihitung per hari ini (petunjuk & pesan WhatsApp)', () => {
+    const ppdb = section(demo({ ppdb: { age_reference: '' } }), 'ppdb');
+    const form = within(ppdb).getByRole('form');
+    const birth = within(form).getByLabelText('Tanggal lahir calon murid');
+    fireEvent.change(birth, { target: { value: '2020-01-15' } });
+    const hint = document.getElementById(birth.getAttribute('aria-describedby')!)!;
+    const today = parseSchoolDate(todayIso())!;
+    expect(hint.textContent?.startsWith(`Usia per ${today.label}: `), hint.textContent ?? '').toBe(true);
+    expect(hint.textContent).toMatch(/\d+ tahun/);
+  });
+
   it('nomor WhatsApp panitia PPDB terpisah; tanpa pilihan kelas/jalur → isian itu tidak tampil', () => {
     const ppdb = section(demo({ ppdb: { whatsapp: '085700001111', paths: [], grades: [] } }), 'ppdb');
     const form = within(ppdb).getByRole('form');
@@ -872,7 +953,7 @@ describe('Bestari: pratinjau CMS', () => {
     expect(container.querySelector('[aria-label="Jeda slide otomatis"]')).toBeNull();
     expect(container.querySelector('a[href^="https://wa.me"]')).toBeNull();
     expect(container.querySelector('a[href^="https://www.google.com/maps"]')).toBeNull();
-    fireEvent.click(within(container).getByRole('button', { name: 'Slide 3 dari 4' }));
+    fireEvent.click(within(container).getByRole('button', { name: /^Slide 3 dari 4/ }));
     expect(container.querySelector('h1')!.textContent).toBe('Panggung kecil untuk keberanian yang besar');
   });
 });

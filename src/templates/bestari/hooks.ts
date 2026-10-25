@@ -27,13 +27,20 @@ export function useActiveSection(anchor: RefObject<HTMLElement | null>, keys: st
   return active;
 }
 
-/** true setelah penanda `sentinel` keluar dari layar (halaman sudah digulir melewatinya). */
+/**
+ * true setelah penanda `sentinel` tidak terlihat lagi dan tepi bawahnya di separuh atas layar (halaman sudah digulir
+ * melewatinya). Juga di bingkai HP demo / panel pratinjau CMS yang punya gulir sendiri: penanda terpotong tepi atas
+ * bingkai (± 100 px dari atas layar, jadi `top` masih positif) = sudah dilewati. Sama dengan madani/hooks.ts.
+ */
 export function useScrolledPast(sentinel: RefObject<HTMLElement | null>): boolean {
   const [past, setPast] = useState(false);
   useEffect(() => {
     const el = sentinel.current;
     if (!el || typeof IntersectionObserver !== 'function') return;
-    const observer = new IntersectionObserver(([entry]) => setPast(!entry.isIntersecting && entry.boundingClientRect.top < 0));
+    const observer = new IntersectionObserver(([entry]) => {
+      const viewport = entry.rootBounds?.height ?? window.innerHeight;
+      setPast(!entry.isIntersecting && entry.boundingClientRect.bottom < viewport / 2);
+    });
     observer.observe(el);
     return () => observer.disconnect();
   }, [sentinel]);

@@ -44,13 +44,13 @@ function InfoBar({ m, hidden }: { m: BestariModel; hidden: boolean }) {
   const mail = mailHref(email);
   const tel = telHref(phone);
   if (!message && !mail && !tel) return null;
-  const link = 'inline-flex min-h-9 items-center gap-2 text-white/85 transition-colors hover:text-white';
+  const link = 'inline-flex min-h-9 items-center gap-2 text-white transition-colors hover:text-white/80';
   return (
     <div
       data-tpl-tone="inverse"
       aria-hidden={hidden || undefined}
       inert={hidden}
-      className={`overflow-hidden transition-[max-height,opacity] duration-300 ${hidden ? 'max-h-0 opacity-0' : 'max-h-20 opacity-100'}`}
+      className={`overflow-hidden transition-[max-height,opacity] duration-300 ${hidden ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'} ${message ? '' : 'hidden @3xl:block'}`}
     >
       <div className={`${CONTAINER} flex min-h-11 items-center justify-between gap-6 border-b border-white/15 py-1 text-[13px]`}>
         <div className="hidden min-w-0 items-center gap-5 @3xl:flex">
@@ -67,12 +67,12 @@ function InfoBar({ m, hidden }: { m: BestariModel; hidden: boolean }) {
             </ActionLink>
           )}
         </div>
-        {/* Satu baris (teks panjang dipotong "…"): tinggi bilah tetap, jadi menu pil tidak turun menutupi judul hero */}
+        {/* Teks utuh boleh turun baris (maks. 80 huruf → 2–3 baris di HP); jarak atas hero memberi ruang untuk itu */}
         {message && (
-          <p className="flex min-w-0 flex-1 items-center justify-center gap-3 leading-snug text-white/90 @3xl:justify-end">
+          <p className="flex min-w-0 flex-1 items-center justify-center gap-3 leading-snug text-white @3xl:justify-end">
             <span className="inline-flex min-w-0 items-center gap-2">
               <Megaphone aria-hidden className="hidden h-4 w-4 shrink-0 text-(--bs-bright) @xl:block" strokeWidth={1.8} />
-              <span className="truncate">{message}</span>
+              <span className="min-w-0">{message}</span>
             </span>
             {label && m.topbarAction && (
               <ActionLink action={m.topbarAction} className="group inline-flex min-h-8 shrink-0 items-center gap-1 font-semibold text-white">
