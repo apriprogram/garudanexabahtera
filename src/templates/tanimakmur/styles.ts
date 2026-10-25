@@ -66,8 +66,8 @@ export const BTN = {
   white: `${PILL} bg-white text-[#18230F] hover:bg-white/90`,
   /** Garis tipis di latar terang */
   ghost: `${PILL} text-[#18230F] ring-1 ring-inset ring-[#18230F]/15 hover:bg-[#18230F]/[0.04]`,
-  /** Garis tipis di panel gelap */
-  ghostDark: `${PILL} text-white ring-1 ring-inset ring-white/30 hover:bg-white/10`,
+  /** Bidang putih tembus di panel gelap / di atas foto (tanpa garis tepi) */
+  ghostDark: `${PILL} bg-white/[0.12] text-white hover:bg-white/20`,
   sm: 'h-10 px-4 text-[14px]',
   md: 'h-11 px-5 text-[14px]',
   lg: 'h-12 px-6 text-[15px] @3xl:h-[52px]',
@@ -80,5 +80,3 @@ export const CARD = {
   forest: 'rounded-[32px] bg-[#1E3A16] @3xl:rounded-[40px]',
 } as const;
 
-/** Kaca gelap tipis di atas foto (teks putih ≥ 4,5:1 di atas daun terang) */
-export const GLASS = 'bg-[#13260E]/55 ring-1 ring-inset ring-white/20 backdrop-blur-xl';

@@ -1,5 +1,5 @@
-// Konsultasi penyuluh (kunci `consult`): panel hijau tua membulat ala hero referensi Holganix (garis diagonal tipis &
-// daun bergaris samar). Kiri: label kaca, H2 putih dengan kata sorotan aksen, deskripsi, langkah bernomor, kartu
+// Konsultasi penyuluh (kunci `consult`): panel hijau tua membulat ala hero referensi Holganix, polos tanpa garis
+// dekoratif. Kiri: label kaca, H2 putih dengan kata sorotan aksen, deskripsi, langkah bernomor, kartu
 // penyuluh (foto/inisial, nama, keahlian), jam layanan, tombol WhatsApp warna aksen. Kanan: foto tegak dengan dua
 // gelembung chat contoh (pertanyaan pembeli & jawaban penyuluh). HP: foto di bawah teks, gelembung di dalam foto.
 import { Clock } from 'lucide-react';
@@ -10,7 +10,6 @@ import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, list, resolveAction, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
-import { FieldLines, LeafArt } from './marks';
 import type { TaniModel } from './model';
 import { TANI_PHOTOS } from './photos';
 import { BTN, CARD, TYPE_T } from './styles';
@@ -66,8 +65,6 @@ export function Consult({ m }: { m: TaniModel }) {
     <TemplateSection sectionKey="consult" className="py-4 @3xl:py-8">
       <div className={CONTAINER}>
         <div data-tpl-tone="inverse" className={`relative isolate overflow-hidden px-5 py-12 text-white @3xl:px-10 @3xl:py-14 @6xl:px-14 @6xl:py-16 ${CARD.forest}`}>
-          <FieldLines className="pointer-events-none absolute inset-0 -z-10 h-full w-full text-white/[0.08]" />
-          <LeafArt className="pointer-events-none absolute -left-20 -top-16 -z-10 h-[360px] text-white/[0.05]" />
 
           <div className={`grid gap-10 ${withImage ? '@5xl:grid-cols-12 @5xl:items-center @5xl:gap-12' : ''}`}>
             <div className={`min-w-0 ${withImage ? '@5xl:col-span-7' : 'max-w-[760px]'}`}>
@@ -90,7 +87,7 @@ export function Consult({ m }: { m: TaniModel }) {
               {steps.length > 0 && (
                 <ol className="mt-9 grid gap-5 @3xl:grid-cols-3 @3xl:gap-6">
                   {steps.map((item, i) => (
-                    <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 80)} className="min-w-0 border-t border-white/20 pt-4">
+                    <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 80)} className="min-w-0">
                       <span className="text-[13px] font-semibold tabular-nums text-(--tm-glow)">{String(i + 1).padStart(2, '0')}</span>
                       {field(item, 'title') && <h3 className="mt-1.5 text-[16px] font-semibold leading-snug">{field(item, 'title')}</h3>}
                       {field(item, 'text') && <p className="mt-1.5 text-[14px] leading-relaxed text-white/75">{field(item, 'text')}</p>}
@@ -102,7 +99,7 @@ export function Consult({ m }: { m: TaniModel }) {
               {experts.length > 0 && (
                 <ul aria-label="Penyuluh kami" className="mt-9 flex flex-wrap gap-3">
                   {experts.map((item, i) => (
-                    <Reveal as="li" key={`${field(item, 'name')}-${i}`} delay={stagger(i, 80)} className="flex min-w-0 items-center gap-3 rounded-full bg-white/[0.08] py-2 pl-2 pr-5 ring-1 ring-inset ring-white/15">
+                    <Reveal as="li" key={`${field(item, 'name')}-${i}`} delay={stagger(i, 80)} className="flex min-w-0 items-center gap-3 rounded-full bg-white/[0.08] py-2 pl-2 pr-5">
                       <span className="relative shrink-0">
                         <PersonPhoto name={field(item, 'name')} photo={field(item, 'photo')} />
                         <span aria-hidden className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#4ADE80] ring-2 ring-[#1E3A16]" />

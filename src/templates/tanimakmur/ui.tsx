@@ -15,7 +15,7 @@ export function SectionLabel({ children, tone = 'light', className = '' }: { chi
   const tones = {
     light: 'bg-[#ECE6CF] text-[#18230F]',
     white: 'bg-white text-[#18230F]',
-    dark: 'bg-white/[0.1] text-white ring-1 ring-inset ring-white/20 backdrop-blur-md',
+    dark: 'bg-white/[0.12] text-white backdrop-blur-md',
   } as const;
   return (
     <p className={`inline-flex max-w-full items-center gap-2 rounded-full py-1.5 pl-2.5 pr-3.5 text-[13px] font-medium leading-snug ${tones[tone]} ${className}`}>

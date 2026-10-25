@@ -54,7 +54,7 @@ export function Footer({ m }: { m: TaniModel }) {
                     <ActionLink
                       action={{ kind: 'external', href }}
                       aria-label={label}
-                      className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white ring-1 ring-inset ring-white/15 transition-colors hover:bg-(--tpl-accent) hover:text-(--tpl-on-accent)"
+                      className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white transition-colors hover:bg-(--tpl-accent) hover:text-(--tpl-on-accent)"
                     >
                       <span aria-hidden>
                         <Icon className="h-[18px] w-[18px]" />
@@ -123,7 +123,7 @@ export function Footer({ m }: { m: TaniModel }) {
           )}
         </div>
 
-        <div className="mt-14 flex flex-col gap-2 border-t border-white/15 pt-6 text-[13px] text-white/70 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:gap-8">
+        <div className="mt-14 flex flex-col gap-2 text-[13px] text-white/70 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:gap-8">
           {/* Ruang kanan untuk tombol WhatsApp melayang (pojok kanan bawah) agar tidak menutupi teks di ujung halaman */}
           <p className="pr-16 @3xl:pr-0">{copyright}</p>
           {m.tagline && <p className="pr-16 @3xl:pr-24 @3xl:text-right">{m.tagline}</p>}

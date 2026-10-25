@@ -1,7 +1,8 @@
 // Kerangka bersama template: variabel warna aksen, container query (tata letak mengikuti lebar wadah, bukan
-// viewport, sehingga pratinjau CMS versi HP tetap akurat), navigasi antar section, dan tombol WhatsApp melayang.
+// viewport, sehingga pratinjau CMS versi HP tetap akurat), navigasi antar section, tombol WhatsApp melayang, dan tombol
+// "kembali ke atas" yang muncul setelah layar pertama.
 // Mode pratinjau (demo & CMS): tautan keluar tidak dibuka, tetapi memunculkan keterangan singkat di dekat tautan.
-import { Info } from 'lucide-react';
+import { ArrowUp, Info } from 'lucide-react';
 import {
   createContext,
   useCallback,
@@ -139,10 +140,34 @@ function NoticeBubble({ notice, layerRef }: { notice: PreviewNotice; layerRef: R
 
 const WA_FLOAT =
   'flex items-center justify-center rounded-full bg-whatsapp text-white shadow-float transition-colors hover:bg-whatsapp-hover';
+const TOP_BUTTON =
+  'flex h-11 w-11 items-center justify-center rounded-full bg-white text-fg shadow-float ring-1 ring-line transition-colors hover:bg-alt motion-safe:animate-fade-in';
+
+/**
+ * true setelah penanda setinggi layar pertama (0–720 px dari awal situs) seluruhnya lewat ke atas. Penanda dibuat tinggi
+ * agar gulir cepat tidak bisa melompatinya. Juga di bingkai HP demo yang punya gulir sendiri: penanda tidak terlihat dan
+ * tepi bawahnya di separuh atas layar = sudah dilewati. Tanpa IntersectionObserver → false.
+ */
+function usePastFirstScreen(sentinel: RefObject<HTMLElement | null>): boolean {
+  const [past, setPast] = useState(false);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || typeof IntersectionObserver !== 'function') return;
+    const observer = new IntersectionObserver(([entry]) => {
+      const viewport = entry.rootBounds?.height ?? window.innerHeight;
+      setPast(!entry.isIntersecting && entry.boundingClientRect.bottom < viewport / 2);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [sentinel]);
+  return past;
+}
 
 export function TemplateShell({ content, preview = false, motion, displayFont = 'inter', defaultAccent, className = '', children }: ShellProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
+  const topSentinel = useRef<HTMLDivElement>(null);
+  const showTop = usePastFirstScreen(topSentinel);
   const [notice, setNotice] = useState<PreviewNotice | null>(null);
   const brand = getSection(content, 'brand');
   const contact = getSection(content, 'contact');
@@ -187,6 +212,26 @@ export function TemplateShell({ content, preview = false, motion, displayFont = 
 
   const runtime = useMemo(() => ({ preview, motion: motionAllowed, goTo }), [preview, motionAllowed, goTo]);
   const waIcon = <WhatsAppIcon className={preview ? 'h-6 w-6' : 'h-6 w-6 sm:h-7 sm:w-7'} />;
+  // Kembali ke atas: di atas tombol WhatsApp (sejajar tengah), atau di pojok bila tanpa WhatsApp
+  const topButton = showTop && (
+    <button
+      type="button"
+      onClick={() => goTo('top')}
+      aria-label="Kembali ke atas"
+      title="Kembali ke atas"
+      className={`${TOP_BUTTON} ${
+        preview
+          ? `pointer-events-auto absolute ${waHref ? 'bottom-[76px] right-[18px]' : 'bottom-4 right-4'}`
+          : `fixed z-40 ${
+              waHref
+                ? 'bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+60px)] right-[max(18px,calc(env(safe-area-inset-right)+2px))] sm:bottom-[104px] sm:right-[38px]'
+                : 'bottom-[max(16px,calc(env(safe-area-inset-bottom)+8px))] right-[max(16px,env(safe-area-inset-right))] sm:bottom-8 sm:right-8'
+            }`
+      }`}
+    >
+      <ArrowUp className="h-5 w-5" aria-hidden />
+    </button>
+  );
 
   return (
     <TemplateRuntimeContext.Provider value={runtime}>
@@ -198,6 +243,8 @@ export function TemplateShell({ content, preview = false, motion, displayFont = 
           data-tpl-motion={motionAllowed ? 'on' : 'off'}
           className={`relative isolate w-full scroll-mt-(--tpl-sticky-top) bg-white font-sans text-fg antialiased ${className}`}
         >
+          {/* Penanda "sudah lewat layar pertama" untuk tombol kembali ke atas */}
+          <div ref={topSentinel} data-tpl-top-sentinel="" aria-hidden className="pointer-events-none absolute left-0 top-0 h-[720px] w-px" />
           <div className="@container">{children}</div>
           {preview ? (
             // Lapisan melayang pratinjau: menempel di tepi bawah area yang terlihat (jendela demo, bingkai HP, atau
@@ -212,23 +259,27 @@ export function TemplateShell({ content, preview = false, motion, displayFont = 
                   {waIcon}
                 </ActionLink>
               )}
+              {topButton}
               <p className="sr-only" role="status" aria-live="polite">
                 {notice?.message ?? ''}
               </p>
               {notice && <NoticeBubble key={notice.id} notice={notice} layerRef={layerRef} />}
             </div>
           ) : (
-            waHref && (
-              <a
-                href={waHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Chat WhatsApp"
-                className={`fixed bottom-[max(16px,calc(env(safe-area-inset-bottom)+8px))] right-[max(16px,env(safe-area-inset-right))] z-40 h-12 w-12 sm:bottom-8 sm:right-8 sm:h-14 sm:w-14 ${WA_FLOAT}`}
-              >
-                {waIcon}
-              </a>
-            )
+            <>
+              {waHref && (
+                <a
+                  href={waHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Chat WhatsApp"
+                  className={`fixed bottom-[max(16px,calc(env(safe-area-inset-bottom)+8px))] right-[max(16px,env(safe-area-inset-right))] z-40 h-12 w-12 sm:bottom-8 sm:right-8 sm:h-14 sm:w-14 ${WA_FLOAT}`}
+                >
+                  {waIcon}
+                </a>
+              )}
+              {topButton}
+            </>
           )}
         </div>
       </PreviewNoticeContext.Provider>

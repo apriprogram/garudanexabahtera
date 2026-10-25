@@ -158,7 +158,7 @@ export function Header({ m, overlay }: { m: TaniModel; overlay: boolean }) {
       <header data-tpl-tone={solid ? undefined : 'inverse'} className={`sticky top-[var(--tpl-sticky-top,0px)] z-30 ${overlay ? 'h-0' : ''}`}>
         <div
           className={`border-b transition-[background-color,border-color] duration-300 ${
-            solid ? 'border-[#18230F]/[0.08] bg-[#F6F2E3]/92 backdrop-blur-md' : 'border-white/15'
+            solid ? 'border-[#18230F]/[0.08] bg-[#F6F2E3]/92 backdrop-blur-md' : 'border-transparent'
           }`}
         >
           <div className={CONTAINER}>
@@ -228,7 +228,7 @@ export function Header({ m, overlay }: { m: TaniModel; overlay: boolean }) {
                       aria-controls={menuId}
                       aria-label={open ? 'Tutup menu' : 'Buka menu'}
                       className={`flex h-11 w-11 items-center justify-center rounded-[14px] transition-colors @6xl:hidden ${
-                        solid ? 'bg-[#ECE6CF] text-[#18230F] hover:bg-[#E2DBC0]' : 'bg-white/[0.12] text-white ring-1 ring-inset ring-white/25 hover:bg-white/20'
+                        solid ? 'bg-[#ECE6CF] text-[#18230F] hover:bg-[#E2DBC0]' : 'bg-white/[0.12] text-white hover:bg-white/20'
                       }`}
                     >
                       {open ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}

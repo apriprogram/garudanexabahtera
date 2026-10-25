@@ -114,7 +114,7 @@ function BundlePanel({ m, item }: { m: TaniModel; item: ListItem }) {
           </ul>
         )}
         {harvest && (
-          <p className="absolute bottom-3 left-3 right-3 flex items-center gap-2.5 rounded-[16px] bg-[#13260E]/70 px-4 py-3 text-[14px] font-medium leading-snug text-white ring-1 ring-inset ring-white/15 backdrop-blur-md">
+          <p className="absolute bottom-3 left-3 right-3 flex items-center gap-2.5 rounded-[16px] bg-[#13260E]/70 px-4 py-3 text-[14px] font-medium leading-snug text-white backdrop-blur-md">
             <CalendarDays aria-hidden className="h-[18px] w-[18px] shrink-0 text-(--tm-glow)" />
             {harvest}
           </p>
@@ -131,7 +131,7 @@ function BundlePanel({ m, item }: { m: TaniModel; item: ListItem }) {
             <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-white/70">Isi paket</p>
             <ul className="mt-3 grid gap-x-8 gap-y-2.5 @3xl:grid-cols-2">
               {contents.map((line, i) => (
-                <li key={`${line.name}-${i}`} className="flex items-start gap-3 border-b border-white/10 pb-2.5 text-[14.5px] leading-snug">
+                <li key={`${line.name}-${i}`} className="flex items-start gap-3 py-1 text-[14.5px] leading-snug">
                   <span aria-hidden className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/[0.12] text-(--tm-glow)">
                     <Check className="h-3 w-3" strokeWidth={2.75} />
                   </span>
@@ -272,7 +272,6 @@ export function Bundles({ m }: { m: TaniModel }) {
           data-tpl-tone="inverse"
           className={`relative isolate mt-6 overflow-hidden p-3 text-white @3xl:p-4 @5xl:p-5 ${CARD.forest}`}
         >
-          <LeafArt className="pointer-events-none absolute -bottom-24 -right-16 -z-10 hidden h-[420px] text-white/[0.06] @5xl:block" />
           {/* Dipasang ulang per tanaman: foto & isi berganti bersih (dan Reveal tidak dipakai di dalam panel) */}
           <BundlePanel key={index} m={m} item={items[index]} />
         </div>

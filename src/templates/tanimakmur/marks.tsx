@@ -1,7 +1,7 @@
 // SVG bawaan TaniMakmur (satu warna lewat currentColor, tanpa huruf), dipakai bila pembeli belum mengunggah gambar:
 // - TaniMark: tunas dua daun di atas tanah. Path sama persis dengan public/assets/templates/logos/tanimakmur-mark.svg.
 // - Ikon tanaman untuk pemilih paket (cabai, tomat, hidroponik, sayur daun), dipilih dari nama tanaman di ./icons.
-// - FieldLines & LeafArt: garis tipis dan daun dekoratif (aria-hidden), pengganti foto yang ringan.
+// - LeafArt: daun bergaris (aria-hidden), pengganti foto yang kosong.
 import type { SVGProps } from 'react';
 
 export const TaniMark = ({ className = 'h-8 w-8' }: { className?: string }) => (
@@ -59,15 +59,7 @@ export const LeafyIcon = ({ className = 'h-5 w-5' }: IconProps) => (
   </svg>
 );
 
-/** Dua garis diagonal tipis yang menyilang di belakang isi hero (bingkai "ladang" referensi). */
-export const FieldLines = ({ className = '' }: { className?: string }) => (
-  <svg viewBox="0 0 100 100" preserveAspectRatio="none" className={className} aria-hidden focusable="false">
-    <line x1="0" y1="8" x2="100" y2="92" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-    <line x1="100" y1="4" x2="34" y2="100" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-  </svg>
-);
-
-/** Daun besar bergaris (dekorasi panel gelap & pengganti foto kosong). */
+/** Daun besar bergaris (pengganti foto kosong). */
 export const LeafArt = ({ className = '' }: { className?: string }) => (
   <svg viewBox="0 0 200 200" fill="none" className={className} aria-hidden focusable="false">
     <path d="M100 188C46 170 20 128 26 76 30 44 52 20 80 10c18 34 26 86 20 178Z" stroke="currentColor" strokeWidth="1.5" />

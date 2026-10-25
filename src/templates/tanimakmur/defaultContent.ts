@@ -18,7 +18,7 @@ export const taniContent: SiteContent = {
   },
   hero: {
     enabled: true,
-    eyebrow: 'Toko tani untuk petani muda & urban farmer',
+    eyebrow: '',
     title: 'Benih tepat, panen lebih tenang',
     highlight: 'panen',
     // Juga meta description situs (siteHead.ts): ≤ 160 karakter

@@ -1,6 +1,6 @@
 // Template "TaniMakmur" — "Ladang subur": toko online pertanian (benih, pupuk, pestisida organik, alat tani skala kecil)
 // untuk petani muda dan penghobi urban farming. Hero = foto ladang hijau tua LAYAR PENUH dengan menu transparan, judul
-// putih sangat besar, foto bulat berbingkai garis + lingkaran ajakan kuning, kartu kutipan, dan kartu angka (referensi
+// putih sangat besar, foto bulat + lingkaran ajakan kuning, kartu kutipan, dan kartu angka (referensi
 // Holganix), lalu strip keunggulan berjalan; halaman krem hangat ala Agroton: kategori bernomor, "pilih tanamanmu"
 // (paket per tanaman di panel data hijau tua dengan jadwal tanam), produk terlaris berbintang ala Lifestyle dengan
 // filter kategori, konsultasi penyuluh lewat WhatsApp, panduan, testimoni, tanya jawab, kontak, footer hijau tua.

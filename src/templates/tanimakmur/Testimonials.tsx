@@ -63,7 +63,7 @@ export function Testimonials({ m }: { m: TaniModel }) {
                   </p>
                 )}
                 {(field(item, 'name') || field(item, 'role')) && (
-                  <div className={`mt-6 flex items-center gap-3 border-t pt-6 ${dark ? 'border-white/15' : 'border-[#18230F]/[0.08]'}`}>
+                  <div className={`mt-6 flex items-center gap-3 border-t pt-6 ${dark ? 'border-transparent' : 'border-[#18230F]/[0.08]'}`}>
                     <PersonPhoto name={field(item, 'name')} photo={field(item, 'photo')} />
                     <div className="min-w-0">
                       {field(item, 'name') && <p className={`truncate text-[15px] font-semibold ${dark ? 'text-white' : 'text-[#18230F]'}`}>{field(item, 'name')}</p>}

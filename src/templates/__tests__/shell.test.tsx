@@ -108,3 +108,76 @@ describe('pratinjau: tautan keluar (D-04)', () => {
     expect(status()).toHaveTextContent('');
   });
 });
+
+describe('tombol kembali ke atas (semua template)', () => {
+  type Observed = { callback: IntersectionObserverCallback; targets: Element[] };
+  let observers: Observed[] = [];
+  // __tests__/setup.ts memasang IntersectionObserver tiruan (writable, tidak configurable): ganti lalu kembalikan
+  const original = window.IntersectionObserver;
+
+  beforeEach(() => {
+    observers = [];
+    window.IntersectionObserver = class {
+      targets: Element[] = [];
+      callback: IntersectionObserverCallback;
+      constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback;
+        observers.push(this);
+      }
+      observe(el: Element) {
+        this.targets.push(el);
+      }
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof window.IntersectionObserver;
+  });
+  afterEach(() => {
+    window.IntersectionObserver = original;
+  });
+
+  /** Pura-pura tepi bawah penanda layar pertama di `bottom` px (negatif = sudah lewat ke atas layar setinggi 800 px). */
+  const scrollSentinel = (bottom: number) => {
+    const observer = observers.find((o) => o.targets.some((t) => t.hasAttribute('data-tpl-top-sentinel')))!;
+    const target = observer.targets[0];
+    act(() => {
+      observer.callback(
+        [{ target, isIntersecting: bottom > 0 && bottom - 720 < 800, boundingClientRect: { bottom }, rootBounds: { height: 800 } } as unknown as IntersectionObserverEntry],
+        observer as unknown as IntersectionObserver,
+      );
+    });
+  };
+
+  for (const preview of [false, true]) {
+    it(`${preview ? 'pratinjau' : 'situs live'}: muncul setelah layar pertama, menggulir ke awal situs, hilang lagi di atas`, () => {
+      const { container } = render(
+        <TemplateShell content={{ contact: { whatsapp: '081234567890' } } as SiteContent} preview={preview} defaultAccent="#2563eb">
+          <p>Isi situs</p>
+        </TemplateShell>,
+      );
+      expect(screen.queryByRole('button', { name: 'Kembali ke atas' })).toBeNull();
+      scrollSentinel(1200);
+      expect(screen.queryByRole('button', { name: 'Kembali ke atas' })).toBeNull();
+      scrollSentinel(-300);
+      const button = screen.getByRole('button', { name: 'Kembali ke atas' });
+      expect(button).toHaveAttribute('type', 'button');
+      // Di atas tombol WhatsApp, tidak menutupinya
+      expect(button.className).toContain(preview ? 'bottom-[76px]' : 'sm:bottom-[104px]');
+      fireEvent.click(button);
+      expect(scrolls).toHaveLength(1);
+      expect((Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>).mock.contexts[0]).toBe(container.querySelector('[data-tpl-root]'));
+      scrollSentinel(200);
+      expect(screen.queryByRole('button', { name: 'Kembali ke atas' })).toBeNull();
+    });
+  }
+
+  it('setiap template memakai kerangka yang sama, jadi semuanya punya penanda tombol kembali ke atas', () => {
+    for (const def of defs) {
+      const { container, unmount } = render(<def.Component content={resolveContent(def, null)} preview />);
+      expect(container.querySelectorAll('[data-tpl-top-sentinel]'), def.code).toHaveLength(1);
+      unmount();
+    }
+  }, 120_000);
+});

@@ -1,6 +1,6 @@
 // Hero TaniMakmur — "ladang" (data-hero-layout="field"), mengikuti referensi pemilik: foto ladang hijau tua selebar
-// layar dengan lapisan hijau (CSS .tm-hero-scrim) dan dua garis diagonal tipis; kiri judul putih sangat besar; tengah
-// foto BULAT dalam bingkai garis + cincin, dengan lingkaran ajakan warna aksen menumpang di sudutnya; kanan kartu
+// layar dengan lapisan hijau (CSS .tm-hero-scrim), tanpa garis dekoratif; kiri judul putih sangat besar; tengah
+// foto BULAT polos, dengan lingkaran ajakan warna aksen menumpang di sudutnya; kanan kartu
 // kutipan kecil bergaris aksen; bawah keterangan + kartu angka (angka pertama di kartu krem). Di bawah hero: strip
 // keunggulan berjalan pada bidang hijau paling gelap (berhenti saat disorot; gerak mati → daftar statis).
 // HP: foto tetap latar, foto bulat & kartu kutipan disembunyikan, ajakan jadi tombol pil; angka bertumpuk.
@@ -13,7 +13,6 @@ import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, list, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
-import { FieldLines } from './marks';
 import type { TaniModel } from './model';
 import { TANI_PHOTOS } from './photos';
 import { BTN, TYPE_T } from './styles';
@@ -34,20 +33,16 @@ function CtaCircle({ m, className = '' }: { m: TaniModel; className?: string }) 
   );
 }
 
-/** Foto bulat dalam bingkai garis tipis + cincin, lingkaran ajakan di kiri bawah. */
+/** Foto bulat (tanpa bingkai garis), lingkaran ajakan di kiri bawah. */
 function Spot({ m, image }: { m: TaniModel; image: string }) {
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[340px] @7xl:max-w-[380px]">
-      <div aria-hidden className="absolute -inset-5 border border-white/25 @7xl:-inset-7" />
-      <div aria-hidden className="absolute left-1/2 top-[-12%] h-[124%] w-px bg-white/20" />
-      <div aria-hidden className="absolute left-[-12%] top-1/2 h-px w-[124%] bg-white/20" />
-      <div aria-hidden className="absolute inset-[4%] rounded-full border border-white/30" />
       <KitPhoto
         src={image}
         alt={TANI_PHOTOS.alt(image, `Tanaman dari ${m.companyName}`)}
         fallback="none"
         sizes="(min-width: 1152px) 380px, 340px"
-        className="absolute inset-[11%] rounded-full"
+        className="absolute inset-[6%] rounded-full"
       />
       <CtaCircle m={m} className="absolute -bottom-6 -left-6 @7xl:-left-9" />
     </div>
@@ -60,7 +55,7 @@ function QuoteCard({ m }: { m: TaniModel }) {
   const name = text(m.hero, 'card_name');
   if (!quote && !name) return null;
   return (
-    <figure className="relative w-full max-w-[300px] overflow-hidden rounded-[20px] bg-[#13260E]/60 ring-1 ring-inset ring-white/20 backdrop-blur-md">
+    <figure className="relative w-full max-w-[300px] overflow-hidden rounded-[20px] bg-[#13260E]/60 backdrop-blur-md">
       {/* Garis aksen tegak di tepi kiri kartu (referensi: garis kuning di samping kartu foto) */}
       <span aria-hidden className="absolute inset-y-0 left-0 z-10 w-[3px] bg-(--tpl-accent)" />
       {hasImage(image) && (
@@ -130,7 +125,6 @@ export function Hero({ m }: { m: TaniModel }) {
           />
         )}
         <div aria-hidden className="tm-hero-scrim absolute inset-0 -z-10" />
-        <FieldLines className="pointer-events-none absolute inset-0 -z-10 hidden h-full w-full text-white/[0.16] @5xl:block" />
 
         <div
           className={`${CONTAINER} relative flex flex-col pb-8 pt-[108px] @3xl:pb-10 @3xl:pt-[136px] @5xl:min-h-[max(680px,min(calc(100svh-var(--tpl-sticky-top,0px)-64px),900px))] @5xl:pt-[132px]`}
@@ -159,10 +153,10 @@ export function Hero({ m }: { m: TaniModel }) {
                 />
                 {m.secondaryAction && secondaryLabel && (
                   <ActionLink action={m.secondaryAction} className="group inline-flex min-h-11 items-center gap-2.5 text-[15px] font-semibold text-white">
-                    <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.12] ring-1 ring-inset ring-white/25 transition-colors group-hover:bg-white/20">
+                    <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.12] transition-colors group-hover:bg-white/20">
                       {isWa ? <WhatsAppIcon className="h-[18px] w-[18px]" /> : <ArrowUpRight className="h-[18px] w-[18px]" />}
                     </span>
-                    <span className="underline decoration-white/40 underline-offset-4 transition-colors group-hover:decoration-(--tpl-accent)">{secondaryLabel}</span>
+                    <span className="transition-colors group-hover:text-(--tm-glow)">{secondaryLabel}</span>
                   </ActionLink>
                 )}
               </Reveal>
@@ -195,7 +189,7 @@ export function Hero({ m }: { m: TaniModel }) {
                       key={`${field(item, 'value')}-${i}`}
                       style={{ '--tm-delay': `${420 + stagger(i, 90)}ms` } as CSSProperties}
                       className={`tm-rise flex items-center gap-4 rounded-[18px] p-5 @3xl:min-h-[140px] @3xl:flex-col @3xl:items-start @3xl:justify-between @3xl:p-6 ${
-                        i === 0 ? 'bg-[#F6F2E3] text-[#18230F]' : 'border-t border-white/35 bg-[#13260E]/35 backdrop-blur-sm'
+                        i === 0 ? 'bg-[#F6F2E3] text-[#18230F]' : 'bg-[#13260E]/45 backdrop-blur-sm'
                       }`}
                     >
                       <span className={`shrink-0 ${TYPE_T.stat} ${i === 0 ? 'text-[#1E3A16]' : 'text-white'}`}>{field(item, 'value')}</span>
