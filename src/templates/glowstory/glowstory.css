@@ -1,0 +1,60 @@
+/*
+ * CSS lokal GlowStory (diimpor ./GlowStory.tsx): kata miring di judul, buka-tutup FAQ, dan animasi kecil lapisan
+ * melayang (latar gelap memudar, notifikasi keranjang muncul). Gerak hanya bila root template ber-data-tpl-motion="on"
+ * (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak → statis.
+ */
+
+@layer components {
+  /* Kata sorotan miring: Instrument Serif miring sedikit dirapatkan agar sejajar huruf tegak di sekitarnya */
+  .gs-italic {
+    font-style: italic;
+    letter-spacing: -0.01em;
+    padding-right: 0.04em;
+  }
+
+  /* FAQ: tinggi panel jawaban 0fr → 1fr (transisi hanya bila gerak menyala) */
+  .gs-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .gs-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .gs-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  [data-tpl-motion='on'] .gs-fade {
+    animation: gs-fade 0.25s ease-out both;
+  }
+
+  [data-tpl-motion='on'] .gs-pop {
+    animation: gs-pop 0.35s var(--tpl-ease, ease) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .gs-collapse {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .gs-fade,
+    [data-tpl-motion='on'] .gs-pop {
+      animation: none;
+    }
+  }
+}
+
+@keyframes gs-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes gs-pop {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0) scale(0.98);
+  }
+}

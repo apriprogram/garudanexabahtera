@@ -91,6 +91,19 @@ Cocok untuk studio yoga dan pilates, kelas olahraga ringan, instruktur yoga priv
    1290000.00,
    '/assets/templates/serenity-preview.webp',
    '["/assets/templates/serenity-1.webp","/assets/templates/serenity-2.webp"]',
-   'serenity', NULL, 'published', 6);
+   'serenity', NULL, 'published', 6),
+
+  ('glowstory',
+   'GlowStory',
+   'Toko Online',
+   'Website toko kecantikan untuk skincare, makeup, dan perawatan tubuh, lengkap dengan kuis jenis kulit dan langganan isi ulang.',
+   'GlowStory menampilkan toko kecantikan Anda dengan suasana hangat seperti katalog butik: kolase foto produk dengan kartu produk unggulan dan lencana rating, strip keunggulan toko, kategori, serta produk terlaris lengkap dengan harga coret, rating, dan saringan per kategori. Pengunjung bisa memasukkan produk ke keranjang lalu memesan lewat WhatsApp dengan daftar belanja dan subtotal yang sudah tersusun.
+
+Tiga fitur mendorong pembelian berulang: kuis jenis kulit yang menyusun rutinitas pagi dan malam beserta produknya, kalkulator langganan isi ulang yang langsung menunjukkan hemat per kiriman dan per tahun, serta ulasan pelanggan berfoto. Ada juga strip brand lokal, tanya jawab, dan pita ajakan. Semua teks, foto, harga, pertanyaan kuis, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Kuis jenis kulit dengan hasil rutinitas pagi & malam beserta produknya","Keranjang belanja yang dikirim sebagai pesanan WhatsApp lengkap dengan subtotal","Kalkulator langganan isi ulang: harga per kiriman dan hemat setahun","Produk terlaris dengan harga coret, rating, label, dan saringan kategori","Ulasan pelanggan berfoto yang bisa diperbesar","Kelola teks, foto, harga, kuis, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/glowstory-preview.webp',
+   '["/assets/templates/glowstory-1.webp","/assets/templates/glowstory-2.webp"]',
+   'glowstory', NULL, 'published', 11);
 
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;
