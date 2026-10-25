@@ -1,0 +1,151 @@
+/*
+ * CSS lokal Cakrawala (diimpor ./Cakrawala.tsx): lapisan gelap foto hero (biru tinta dari warna tema), latar cadangan
+ * tanpa foto, bilah progres slide, pergantian foto slide (pudar + zoom pelan), pita gelap teaching factory, buka-tutup
+ * FAQ & isi berita, linimasa PPDB, dan rel geser horizontal tanpa scrollbar. Gerak hanya bila root template
+ * ber-data-tpl-motion="on" (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak → statis. Tanpa bayangan.
+ */
+
+@layer components {
+  /*
+   * Lapisan gelap foto hero: atas (di belakang menu pil), kiri-bawah (di belakang judul & tombol), bawah (kontrol).
+   * Teks putih tetap ≥ 4,5:1 di atas foto terang. Wadah sempit: lapisan dibuat rata atas-bawah.
+   */
+  .ck-hero-scrim {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--ck-deep) 55%, transparent) 0%, transparent 22%),
+      linear-gradient(90deg, color-mix(in srgb, var(--ck-deep) 78%, transparent) 0%, color-mix(in srgb, var(--ck-deep) 50%, transparent) 42%, transparent 75%),
+      linear-gradient(0deg, color-mix(in srgb, var(--ck-deep) 72%, transparent) 0%, transparent 46%);
+  }
+
+  @container (max-width: 1023px) {
+    .ck-hero-scrim {
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--ck-deep) 62%, transparent) 0%,
+        color-mix(in srgb, var(--ck-deep) 38%, transparent) 38%,
+        color-mix(in srgb, var(--ck-deep) 86%, transparent) 100%
+      );
+    }
+  }
+
+  /* Hero tanpa foto: gradasi biru tinta → warna tema */
+  .ck-hero-fallback {
+    background:
+      radial-gradient(70% 60% at 85% 20%, color-mix(in srgb, var(--tpl-accent) 55%, transparent), transparent 70%),
+      linear-gradient(160deg, var(--ck-deep) 0%, color-mix(in srgb, var(--tpl-accent) 45%, var(--ck-deep)) 100%);
+  }
+
+  /* Pita gelap (teaching factory, footer): biru tinta + cahaya lembut warna tema di sudut (pengganti bayangan) */
+  .ck-deep {
+    background:
+      radial-gradient(55% 45% at 100% 0%, color-mix(in srgb, var(--tpl-accent) 26%, transparent), transparent 70%),
+      var(--ck-deep);
+  }
+
+  /* Garis cakrawala tipis (dekorasi panel PPDB & pita gelap) */
+  .ck-horizon {
+    background-image: repeating-linear-gradient(0deg, color-mix(in srgb, currentColor 9%, transparent) 0 1px, transparent 1px 28px);
+    mask-image: linear-gradient(180deg, transparent, #000 40%, #000 60%, transparent);
+  }
+
+  /* Foto slide: pudar antar-slide; foto aktif zoom pelan 1.06 → 1 (gerak menyala saja) */
+  .ck-slide {
+    transition: opacity 0.9s var(--tpl-ease, ease);
+  }
+
+  [data-tpl-motion='on'] .ck-slide[data-active='true'] img {
+    animation: ck-zoom 7s ease-out both;
+  }
+
+  /* Bilah progres slide: penuh bila tidak berganti otomatis; saat berjalan mengisi 0 → 100% lalu memicu slide
+     berikutnya (onAnimationEnd). Berhenti saat hero disorot / difokus. */
+  .ck-progress {
+    width: 100%;
+  }
+
+  [data-tpl-motion='on'] .ck-progress[data-run='true'] {
+    animation: ck-progress var(--ck-autoplay, 6500ms) linear both;
+  }
+
+  [data-tpl-motion='on'] .ck-progress[data-run='true'][data-hold='true'] {
+    animation-play-state: paused;
+  }
+
+  /* Teks slide aktif masuk pelan */
+  [data-tpl-motion='on'] .ck-rise {
+    animation: ck-rise 0.7s var(--tpl-ease, ease) both;
+    animation-delay: var(--ck-delay, 0ms);
+  }
+
+  /* Buka-tutup (FAQ, isi berita): 0fr → 1fr, transisi hanya bila gerak menyala */
+  .ck-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .ck-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .ck-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Rel geser horizontal (tab PPDB, filter berita di HP) tanpa scrollbar */
+  .ck-rail {
+    scrollbar-width: none;
+  }
+
+  .ck-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .ck-progress[data-run='true'],
+    [data-tpl-motion='on'] .ck-slide[data-active='true'] img,
+    [data-tpl-motion='on'] .ck-rise {
+      animation: none;
+    }
+
+    .ck-slide,
+    [data-tpl-motion='on'] .ck-collapse {
+      transition: none;
+    }
+  }
+
+  @media print {
+    .ck-hero-scrim,
+    .ck-horizon {
+      display: none;
+    }
+  }
+}
+
+@keyframes ck-progress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes ck-zoom {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes ck-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

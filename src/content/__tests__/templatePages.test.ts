@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -45,7 +45,9 @@ const GLOWSTORY: Template = { ...FIXTURE_TEMPLATES[4], id: 32, slug: 'glowstory'
 const SKYNUSA: Template = { ...FIXTURE_TEMPLATES[4], id: 41, slug: 'skynusa', name: 'SkyNusa', category: 'Toko Online', price: 1590000, template_code: 'skynusa', sort_order: 7 };
 // Madani (2026-10-25, migrasi 024, kategori baru Sekolah & Pendidikan) juga belum ada di fixture prerender bersama
 const MADANI: Template = { ...FIXTURE_TEMPLATES[4], id: 66, slug: 'madani', name: 'Madani', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'madani', sort_order: 12 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI].find((t) => t.slug === slug) as Template;
+// Cakrawala (2026-10-25, migrasi 025) juga belum ada di fixture prerender bersama
+const CAKRAWALA: Template = { ...FIXTURE_TEMPLATES[4], id: 67, slug: 'cakrawala', name: 'Cakrawala', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'cakrawala', sort_order: 13 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -72,6 +74,7 @@ describe('src/content/templates', () => {
       glowstory: 'GlowStory: Template Website Toko Skincare & Kosmetik Online',
       skynusa: 'SkyNusa: Template Website Toko Drone & Sewa Drone',
       madani: 'Madani: Template Website Sekolah Islam & PPDB Online',
+      cakrawala: 'Cakrawala: Template Website SMK & SMA dengan Halaman PPDB',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -87,6 +90,7 @@ describe('src/content/templates', () => {
       glowstory: 'GlowStory: Template Website Toko Skincare – Rp1,59 jt',
       skynusa: 'SkyNusa: Template Website Toko Drone – Rp1,59 jt',
       madani: 'Madani: Template Website Sekolah Islam – Rp1,69 jt',
+      cakrawala: 'Cakrawala: Template Website SMK & SMA – Rp1,69 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -172,6 +176,11 @@ describe('src/content/templates', () => {
     expect(madani).toMatch(/tidak disimpan di website/);
     expect(madani).toMatch(/bukan sistem informasi sekolah/);
     expect(madani).not.toMatch(/terakreditasi resmi|lulus 100%|pasti diterima|e-rapor tersedia/i);
+    const cakrawala = visibleText(templateContent('cakrawala') as TemplatePageContent);
+    expect(cakrawala).toMatch(/tidak menyimpan data/);
+    expect(cakrawala).toMatch(/tidak ada pembayaran online/);
+    expect(cakrawala).toMatch(/fiktif/);
+    expect(cakrawala).not.toMatch(/e-rapor tersedia|sistem informasi akademik lengkap|data pendaftar tersimpan|pembayaran online tersedia/i);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -267,6 +276,22 @@ describe('src/content/templates', () => {
     expect(TEMPLATE_COPY.madani?.niche).toBe('Sekolah Islam');
     expect(TEMPLATE_PAGES.madani?.niche).toBe('sekolah Islam');
     expect(TEMPLATE_COPY.madani?.updated).toBe('2026-10-25');
+  });
+
+  it('Cakrawala: kata kunci "template website SMK" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('cakrawala');
+    const keyword = /template website SMK/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website SMK /);
+    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk domain, hosting & SSL tahun pertama');
+    expect(templateH1(t)).toMatch(keyword);
+    const c = templateContent('cakrawala') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Cakrawala adalah template website SMK /);
+    const text = visibleText(c);
+    for (const phrase of ['website sekolah', 'website SMK negeri dan swasta', 'website PPDB online', 'website sekolah vokasi']) expect(text, phrase).toContain(phrase);
+    expect(TEMPLATE_COPY.cakrawala?.niche).toBe('Sekolah SMK & SMA');
+    expect(TEMPLATE_PAGES.cakrawala?.niche).toBe('sekolah SMK & SMA');
+    expect(TEMPLATE_COPY.cakrawala?.updated).toBe('2026-10-25');
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

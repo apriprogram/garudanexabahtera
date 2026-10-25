@@ -346,3 +346,37 @@ ikut. Nama sekolah, guru, siswa, dan alumni di demo fiktif dan tidak berhubungan
 | `madani-portrait-1-*` | Perempuan muda berjilbab putih tersenyum | https://unsplash.com/photos/J6kMThsc41M | Mufid Majnun |
 | `madani-portrait-2-*` | Pemuda berkemeja batik membawa ransel | https://unsplash.com/photos/guhDE26cHbc | Saung Digital |
 | `madani-portrait-3-*` | Perempuan muda berjilbab cokelat tertawa | https://unsplash.com/photos/N-lCdqdAdes | Muhammad Rizqi |
+
+## Cakrawala (SMK Cakrawala Karya, fiktif)
+
+Slide hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; foto suasana 4:3 `-1200.webp` + `-800.webp` (berita & galeri
+mendatar 3:2, galeri tegak 4:5 1200×1500, kepala sekolah 4:5 `-960.webp` + `-800.webp`); potret alumni 1:1 `-480.webp` +
+`-240.webp`. Diunduh lewat tautan unduh resmi dan dicek lisensinya (Unsplash License, bukan Unsplash+) 2026-10-25. Logo
+atau tulisan yang terbaca dipotong keluar. Nama sekolah, kepala sekolah, siswa, dan alumni di demo fiktif dan tidak
+berhubungan dengan orang atau sekolah di foto (sebagian foto dari akun publikasi sebuah SMK negeri; nama sekolahnya tidak
+tampil di potongan foto).
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `cakrawala-hero-1-*` | Siswa berseragam putih abu-abu belajar bersama di gazebo sekolah | https://unsplash.com/photos/_y4FqRhxkR8 | Ed Us |
+| `cakrawala-hero-2-*` | Siswa berseragam batik mengerjakan ujian di kelas | https://unsplash.com/photos/TmdrCRVDOnQ | Fajar Herlambang STUDIO |
+| `cakrawala-hero-3-*` | Siswa menggerinda besi di bengkel las bersama instruktur (dipotong, papan nama di atas dibuang) | https://unsplash.com/photos/k9Dc5zT1Gq0 | PTTI EDU |
+| `cakrawala-hero-4-*` | Siswi bercelemek memasak di dapur praktik (papan nama ruangan di latar dikaburkan) | https://unsplash.com/photos/yjG68tEvtu8 | Fajar Herlambang STUDIO |
+| `cakrawala-kepsek-*` | Pria berkemeja batik tersenyum (dipotong dari foto dua orang) | https://unsplash.com/photos/XNiAXk5KQ5s | Marsha Dhita |
+| `cakrawala-profil-*` | Gedung sekolah dua lantai dan siswa di halaman | https://unsplash.com/photos/VPMsWJakm9E | Publikasi SMKN 1 Cibadak |
+| `cakrawala-ppdb-*` | Guru memeriksa berkas bersama dua siswa di lapangan | https://unsplash.com/photos/meovJ4hqaao | Fajar Herlambang STUDIO |
+| `cakrawala-tefa-*` | Tangan siswa menghias adonan roti di loyang (dipotong, celemek bertulisan tidak tampil) | https://unsplash.com/photos/1Pd9OE1ypBw | Publikasi SMKN 1 Cibadak |
+| `cakrawala-lab-*` | Laboratorium komputer dengan siswi berhijab | https://unsplash.com/photos/LKySOH0mr38 | Haseeb Modi |
+| `cakrawala-bengkel-*` | Dinding bengkel dengan deretan kunci pas dan kunci sok | https://unsplash.com/photos/p6w82CYxq0c | Cecep Rahmat |
+| `cakrawala-resto-*` | Ruang makan dengan meja dan kursi kayu | https://unsplash.com/photos/btuIQ0cgatc | Edwin Petrus |
+| `cakrawala-aula-*` | Aula dengan deretan kursi hijau tosca | https://unsplash.com/photos/XpmdZfDE3pI | Edwin Petrus |
+| `cakrawala-berita-1-*` | Siswi berseragam Paskibra putih berpeci hitam | https://unsplash.com/photos/b_9Rwyr7o4s | Mufid Majnun |
+| `cakrawala-berita-2-*` | Tangan mekanik memperbaiki karburator | https://unsplash.com/photos/8YXbd4CNSbE | herdika danarko |
+| `cakrawala-berita-3-*` | Lulusan berhijab bertoga di antara tanaman | https://unsplash.com/photos/UD7XVqQ6hAU | Agus Subagio |
+| `cakrawala-galeri-1-*` | Siswa melambaikan bendera merah putih di tribun upacara | https://unsplash.com/photos/7tXqXcVcLDM | Hobi industri |
+| `cakrawala-galeri-2-*` | Siswi berseragam olahraga duduk bersama guru di halaman sekolah | https://unsplash.com/photos/Yp-_3DJ1Rd0 | Fajar Herlambang STUDIO |
+| `cakrawala-galeri-3-*` | Lulusan bertoga memegang tabung ijazah | https://unsplash.com/photos/Z0vRw5opflI | Fiqih Alfarish |
+| `cakrawala-galeri-4-*` | Guru berkebaya hijau tersenyum di depan kelas | https://unsplash.com/photos/_ID7QKu5c9w | Fajar Herlambang STUDIO |
+| `cakrawala-alumni-1-*` | Pria berjas tersenyum di depan dinding batu | https://unsplash.com/photos/hwc7eIQiTCE | Zahir Namane |
+| `cakrawala-alumni-2-*` | Perempuan berhijab abu-abu menoleh ke samping | https://unsplash.com/photos/qNPU-BkUrOY | Nada |
+| `cakrawala-alumni-3-*` | Pria muda berkacamata merapikan rambut | https://unsplash.com/photos/3sZo3h7SDiI | Rajudin Hax |

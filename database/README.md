@@ -145,6 +145,10 @@ mendaftarkan `template_code` `skynusa` ter-deploy. DB baru cukup `seed.templates
 perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code` `madani` ter-deploy. DB baru cukup
 `seed.templates.sql`.
 
+`2026-10-25_025` (data saja) membuat/menyamakan baris katalog `cakrawala` (website SMK/SMA, kategori "Sekolah &
+Pendidikan", sort_order 13) berdasarkan slug, pola sama dengan 018: menjalankan ulang MENIMPA perubahan admin pada baris
+itu. Jalankan setelah kode yang mendaftarkan `template_code` `cakrawala` ter-deploy. DB baru cukup `seed.templates.sql`.
+
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
 Koneksi DB lokal di `.env` (root XAMPP tanpa password), dibaca `api.php` di setiap request dan oleh
