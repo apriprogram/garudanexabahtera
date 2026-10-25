@@ -247,9 +247,9 @@ Diperbarui 21 Oktober 2026.
 - Kepemilikan isi: Isi yang dimasukkan pembeli (teks, gambar, logo, dan data) tetap milik pembeli.
 
 ## Panduan
-Diperbarui 23 Oktober 2026.
+Diperbarui 25 Oktober 2026.
 
+- Template vs Jasa Website Custom: Mana yang Tepat?: https://garudanexa.com/panduan/template-vs-jasa-website-custom. Bandingkan template website siap pakai dan jasa website custom dari sisi biaya, waktu, fitur, dan perawatan, plus checklist untuk memilih.
 - Biaya Pembuatan Aplikasi Android & iOS: Faktor Penentunya: https://garudanexa.com/panduan/biaya-aplikasi-android-ios. Kisaran biaya pembuatan aplikasi Android & iOS di Indonesia, faktor yang menentukan harga, dan biaya rutin setelah rilis seperti akun Google Play & Apple.
 - Berapa Biaya Membuat Website Company Profile di 2026?: https://garudanexa.com/panduan/biaya-website-company-profile. Kisaran biaya website company profile 2026, dari website builder, template, sampai jasa custom, plus biaya domain, hosting, SSL dan perawatan per tahun.
-- Template vs Jasa Website Custom: Mana yang Tepat?: https://garudanexa.com/panduan/template-vs-jasa-website-custom. Bandingkan template website siap pakai dan jasa website custom dari sisi biaya, waktu, fitur, dan perawatan, plus checklist untuk memilih.
 - Website Klinik Kecantikan: Halaman Wajib & Contohnya: https://garudanexa.com/panduan/website-klinik-kecantikan. Halaman wajib di website klinik kecantikan & salon, cara menulis isinya tanpa janji berlebihan, reservasi WhatsApp, Google Maps, dan contoh strukturnya.
