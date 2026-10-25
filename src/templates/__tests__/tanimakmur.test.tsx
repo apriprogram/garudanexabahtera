@@ -36,7 +36,7 @@ import {
   taniVars,
 } from '../tanimakmur/model';
 import { TANI_PHOTOS } from '../tanimakmur/photos';
-import { COLOR } from '../tanimakmur/styles';
+import { COLOR, TYPE_T } from '../tanimakmur/styles';
 import { isListField, type SiteContent } from '../types';
 
 const ROOT = process.cwd();
@@ -50,8 +50,9 @@ const publicFile = (url: string) => resolve(ROOT, 'public', url.replace(/^\//, '
 const href = (el: Element) => decodeURIComponent(el.getAttribute('href') ?? '');
 const productNames = (root: HTMLElement) => Array.from(section(root, 'products').querySelectorAll('h3')).map((h) => h.textContent);
 
-// Render demo penuh (9 section, 29 foto) bisa > 5 dtk saat seluruh suite berjalan paralel
-const RENDER = { timeout: 20_000 };
+// Render demo penuh (9 section, 29 foto) bisa > 5 dtk saat seluruh suite berjalan paralel; di mesin 4 core yang sedang
+// swap sempat 25–40 dtk per tes
+const RENDER = { timeout: 60_000 };
 
 let scrolled: (string | null)[] = [];
 beforeEach(() => {
@@ -73,7 +74,7 @@ describe('TaniMakmur: skema & konten bawaan', () => {
       expect.arrayContaining(['image', 'spot_image', 'card_image', 'card_quote', 'card_name', 'stats_label', 'stats', 'ticker', 'header_label', 'header_url']),
     );
     expect(fields('categories')).toEqual(['eyebrow', 'title', 'subtitle', 'items']);
-    expect(fields('bundles')).toEqual(['eyebrow', 'title', 'highlight', 'subtitle', 'note', 'items']);
+    expect(fields('bundles')).toEqual(['eyebrow', 'title', 'highlight', 'subtitle', 'note', 'ask_label', 'items']);
     const bundleItem = def.sections.find((s) => s.key === 'bundles')!.fields.find(isListField)!;
     expect(bundleItem.fields.map((f) => f.key)).toEqual(
       expect.arrayContaining(['crop', 'title', 'image', 'level', 'harvest', 'place', 'contents', 'stages', 'price', 'compare_price', 'button_label', 'button_url']),
@@ -171,7 +172,7 @@ describe('TaniMakmur: helper model', () => {
   it('pencarian halaman: kategori, paket, produk, panduan, FAQ; semua kata harus cocok; tanpa diakritik', () => {
     const content = resolveContent(def, null);
     const entries = searchEntries(content, navItems(content));
-    expect(entries.find((e) => e.label === 'Pupuk NPK 16-16-16')).toEqual({ label: 'Pupuk NPK 16-16-16', group: 'Terlaris', target: 'products' });
+    expect(entries.find((e) => e.label === 'Pupuk NPK 16-16-16')).toEqual({ label: 'Pupuk NPK 16-16-16', group: 'Terlaris', target: 'products', category: 'Pupuk' });
     expect(entries.find((e) => e.label === 'Starter Kit Hidroponik Sayur Daun')?.target).toBe('bundles');
     expect(entries.find((e) => e.label === 'Pestisida Organik')?.target).toBe('categories');
     expect(entries.some((e) => e.target === 'faq' && /balkon/.test(e.label))).toBe(true);
@@ -180,6 +181,27 @@ describe('TaniMakmur: helper model', () => {
     expect(searchFilter(entries, 'HÍDROPONIK').map((e) => e.label)).toContain('Tower Hidroponik 24 Lubang');
     expect(searchFilter(entries, '   ')).toEqual([]);
     expect(searchFilter(entries, 'traktor')).toEqual([]);
+  });
+
+  it('pencarian: paket & FAQ membawa urutan item yang tampil, produk membawa kategorinya', () => {
+    const content = resolveContent(def, null);
+    const entries = searchEntries(content, navItems(content));
+    expect(entries.filter((e) => e.target === 'bundles' && e.index !== undefined).map((e) => `${e.index}:${e.label}`)).toEqual([
+      '0:Paket Cabai Rawit dalam Pot',
+      '1:Starter Kit Hidroponik Sayur Daun',
+      '2:Paket Tomat Ceri Rambat',
+      '3:Paket Sayur Daun Cepat Panen',
+    ]);
+    expect(entries.find((e) => /balkon/.test(e.label) && e.target === 'faq')?.index).toBe(3);
+    expect(entries.find((e) => e.label === 'Sekop Tanam Stainless')?.category).toBe('Alat Tani');
+    // Item kosong dilewati sama seperti di section, jadi urutannya tetap cocok dengan tab/pertanyaan yang tampil
+    const edited = resolveContent(def, {
+      bundles: { items: [{ crop: '', title: '' }, { crop: 'Jagung', title: '' }] },
+      faq: { items: [{ question: '' }, { question: 'Ada COD?' }] },
+    });
+    const editedEntries = searchEntries(edited, navItems(edited));
+    expect(editedEntries.find((e) => e.label === 'Jagung')).toMatchObject({ target: 'bundles', index: 0 });
+    expect(editedEntries.find((e) => e.label === 'Ada COD?')).toMatchObject({ target: 'faq', index: 0 });
   });
 
   it('harga rupiah, hemat, dan rating', () => {
@@ -303,7 +325,7 @@ describe('TaniMakmur: demo', RENDER, () => {
     expect(categories.querySelectorAll('ul > li')).toHaveLength(4);
     expect(categories.textContent).toContain('(03)');
     expect(productNames(container)).toHaveLength(8);
-    fireEvent.click(within(categories).getByRole('link', { name: 'Lihat Pestisida Organik' }));
+    fireEvent.click(within(categories).getByRole('link', { name: 'Lihat produk Pestisida Organik' }));
     expect(scrolled).toEqual(['products']);
     expect(productNames(container)).toEqual(['Pestisida Nabati Mimba']);
     expect(within(section(container, 'products')).getByRole('button', { name: 'Pestisida Organik' })).toHaveAttribute('aria-pressed', 'true');
@@ -522,6 +544,70 @@ describe('TaniMakmur: pencarian di menu', RENDER, () => {
   });
 });
 
+describe('TaniMakmur: temuan review 2026-10-25', RENDER, () => {
+  const searchAndPick = (header: HTMLElement, query: string, result: string) => {
+    fireEvent.click(within(header).getByRole('button', { name: 'Cari di halaman' }));
+    fireEvent.change(within(header).getByRole('searchbox'), { target: { value: query } });
+    const results = within(header).getByRole('list', { name: 'Hasil pencarian' });
+    fireEvent.click(within(results).getByRole('link', { name: new RegExp(`^${result}`) }));
+  };
+
+  it('hasil cari paket memilih tab paket itu; hasil cari FAQ membuka pertanyaan itu', () => {
+    const container = demo();
+    const header = container.querySelector('header')!;
+    searchAndPick(header, 'tomat', 'Paket Tomat Ceri Rambat');
+    expect(scrolled).toEqual(['bundles']);
+    const bundles = section(container, 'bundles');
+    expect(within(bundles).getByRole('tab', { name: 'Tomat' })).toHaveAttribute('aria-selected', 'true');
+    expect(within(bundles).getByRole('tabpanel')).toHaveTextContent('Paket Tomat Ceri Rambat');
+
+    searchAndPick(header, 'balkon', 'Saya hanya punya balkon');
+    expect(scrolled).toEqual(['bundles', 'faq']);
+    const questions = within(section(container, 'faq')).getAllByRole('button');
+    expect(questions.map((b) => b.getAttribute('aria-expanded'))).toEqual(['false', 'false', 'false', 'true', 'false', 'false']);
+    expect(questions[3]).toHaveTextContent('Saya hanya punya balkon');
+  });
+
+  it('hasil cari produk menyamakan filter kategori, jadi produk yang dicari terlihat walau filter lain aktif', () => {
+    const container = demo();
+    fireEvent.click(within(section(container, 'categories')).getByRole('link', { name: 'Lihat produk Pupuk' }));
+    expect(productNames(container)).toEqual(['Pupuk Kompos Organik', 'Pupuk NPK 16-16-16']);
+    searchAndPick(container.querySelector('header')!, 'sekop', 'Sekop Tanam Stainless');
+    expect(productNames(container)).toContain('Sekop Tanam Stainless');
+    expect(within(section(container, 'products')).getByRole('button', { name: 'Alat Tani' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('tombol tanya di panel paket memakai teks CMS; kosong → tidak tampil', () => {
+    const askLink = (content: unknown, name: string) => within(section(demo(content), 'bundles')).queryByRole('link', { name });
+    expect(href(askLink(null, 'Tanya penyuluh')!)).toContain('bertanya tentang Paket Cabai Rawit dalam Pot');
+    cleanup();
+    expect(askLink({ bundles: { ask_label: '' } }, 'Tanya penyuluh')).toBeNull();
+    cleanup();
+    expect(href(askLink({ bundles: { ask_label: 'Tanya admin' } }, 'Tanya admin')!)).toContain('bertanya tentang Paket Cabai Rawit dalam Pot');
+  });
+
+  it('nama aksesibel tautan kartu kategori diawali teks yang terlihat (WCAG 2.5.3)', () => {
+    const container = demo({ categories: { items: [{ title: 'Pupuk' }, { title: 'Bibit Buah' }, { title: 'Katalog', url: 'https://contoh.id/katalog' }] } });
+    const links = Array.from(section(container, 'categories').querySelectorAll('a'));
+    expect(links.map((a) => a.getAttribute('aria-label'))).toEqual(['Lihat produk Pupuk', 'Tanya produk Bibit Buah', 'Lihat selengkapnya Katalog']);
+    for (const a of links) expect(a.getAttribute('aria-label')!.startsWith(a.querySelector('span')!.textContent!)).toBe(true);
+  });
+
+  it('angka hero tidak terpotong: tidak membungkus, kartu selebar baris sampai @6xl, huruf 56 px baru dari @6xl, nilai CMS ≤ 8 karakter', () => {
+    expect(TYPE_T.stat).toContain('whitespace-nowrap');
+    expect(TYPE_T.stat).not.toContain('@3xl:text-[56px]');
+    expect(TYPE_T.stat).toContain('@6xl:text-[56px]');
+    const hero = section(demo(), 'hero');
+    const list = hero.querySelector('li.tm-rise')!.parentElement!;
+    expect(list.className).toContain('@3xl:col-span-12');
+    expect(list.className).toContain('@6xl:col-span-9');
+    expect(list.className).not.toMatch(/(^|\s)@(xl|3xl):col-span-9/);
+    const stats = def.sections.find((s) => s.key === 'hero')!.fields.find((f) => f.key === 'stats');
+    expect(stats && isListField(stats) ? stats.fields.find((f) => f.key === 'value')?.maxLength : 0).toBe(8);
+    for (const item of def.defaultContent.hero.stats as { value: string }[]) expect(item.value.length).toBeLessThanOrEqual(8);
+  });
+});
+
 describe('TaniMakmur: konten opsional kosong', RENDER, () => {
   it('hero tanpa foto, foto bulat, kutipan, angka, dan strip → latar gradasi, ajakan jadi tombol pil', () => {
     const hero = section(
@@ -546,7 +632,7 @@ describe('TaniMakmur: konten opsional kosong', RENDER, () => {
     const categories = section(container, 'categories');
     expect(categories.querySelector('img')).toBeNull();
     expect(categories.querySelector('svg[viewBox="0 0 200 200"]')).not.toBeNull();
-    expect(within(categories).getByRole('link', { name: 'Lihat Bibit Buah' })).toHaveAttribute('href', '#kontak');
+    expect(within(categories).getByRole('link', { name: 'Tanya produk Bibit Buah' })).toHaveAttribute('href', '#kontak');
     const bundles = section(container, 'bundles');
     expect(within(bundles).getByRole('tab', { name: 'Jagung' })).toHaveAttribute('aria-selected', 'true');
     expect(within(bundles).queryByRole('list', { name: 'Jadwal tanam per tahap' })).toBeNull();

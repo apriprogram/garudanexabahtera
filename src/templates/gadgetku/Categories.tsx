@@ -102,7 +102,7 @@ export function Categories({ m, shop }: { m: GadgetkuModel; shop: Shop }) {
                       <ItemIcon name={name} className="h-1/4 w-1/4" strokeWidth={1.25} />
                     </span>
                   )}
-                  <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                  <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                   <span className="mt-auto flex w-full items-end justify-between gap-3 p-4 @3xl:p-6">
                     <span className="min-w-0">
                       <span className={`block text-white ${wide ? 'text-[22px] @3xl:text-[28px]' : 'text-[17px] @3xl:text-[22px]'} font-medium leading-tight tracking-[-0.025em]`}>

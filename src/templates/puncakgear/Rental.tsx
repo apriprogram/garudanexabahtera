@@ -16,7 +16,9 @@ import { PUNCAK_PHOTOS } from './photos';
 import { BTN, C, DISPLAY, TYPE_P } from './styles';
 import { SectionLabel, TitleIcon, Topo } from './ui';
 
-const STEP = 'flex h-11 w-11 items-center justify-center rounded-full bg-[#F1F2EE] text-[#0E1512] transition-colors hover:bg-[#E6E8E2] disabled:cursor-not-allowed disabled:opacity-40';
+// Batas hari: aria-disabled (bukan disabled) agar fokus keyboard tidak lepas ke <body> saat batas tercapai; clampDays menjaga nilainya
+const STEP =
+  'flex h-11 w-11 items-center justify-center rounded-full bg-[#F1F2EE] text-[#0E1512] transition-colors hover:bg-[#E6E8E2] aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-[#F1F2EE]';
 
 export function Rental({ m }: { m: PuncakModel }) {
   const { rental } = m;
@@ -37,7 +39,8 @@ export function Rental({ m }: { m: PuncakModel }) {
   const toggle = (i: number) => setSelected((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i].sort((a, b) => a - b)));
 
   return (
-    <TemplateSection sectionKey="rental" data-tpl-tone="inverse" className={`relative isolate overflow-hidden text-white ${SECTION_Y} ${C.night}`}>
+    // Tanpa data-tpl-tone="inverse": elemen yang bisa difokus hanya ada di kartu putih, jadi cincin fokus dasar (gelap) tetap terlihat
+    <TemplateSection sectionKey="rental" className={`relative isolate overflow-hidden text-white ${SECTION_Y} ${C.night}`}>
       <Topo className="absolute -left-48 top-0 -z-10 h-[760px] w-[1100px] text-(--pg-glow) opacity-[0.12]" />
       <div className={`${CONTAINER} grid gap-12 @5xl:grid-cols-12 @5xl:gap-12`}>
         <div className="min-w-0 @5xl:col-span-5">
@@ -127,13 +130,13 @@ export function Rental({ m }: { m: PuncakModel }) {
                 2. Lama sewa
               </p>
               <div role="group" aria-labelledby={daysId} className="flex items-center gap-3">
-                <button type="button" aria-label="Kurangi satu hari" disabled={days <= MIN_DAYS} onClick={() => setDays((d) => clampDays(d - 1))} className={STEP}>
+                <button type="button" aria-label="Kurangi satu hari" aria-disabled={days <= MIN_DAYS} onClick={() => setDays((d) => clampDays(d - 1))} className={STEP}>
                   <Minus aria-hidden className="h-4 w-4" />
                 </button>
                 <output aria-live="polite" className={`min-w-[84px] text-center text-[20px] tabular-nums ${DISPLAY}`}>
                   {quote.days} hari
                 </output>
-                <button type="button" aria-label="Tambah satu hari" disabled={days >= MAX_DAYS} onClick={() => setDays((d) => clampDays(d + 1))} className={STEP}>
+                <button type="button" aria-label="Tambah satu hari" aria-disabled={days >= MAX_DAYS} onClick={() => setDays((d) => clampDays(d + 1))} className={STEP}>
                   <Plus aria-hidden className="h-4 w-4" />
                 </button>
               </div>

@@ -213,7 +213,8 @@ describe('PuncakGear: helper model', () => {
     const entries = searchEntries(content, navItems(content));
     expect(entries.find((e) => e.label === 'Gunung Semeru')).toEqual({ label: 'Gunung Semeru', group: 'Panduan Gunung', target: 'guides', guide: 1 });
     expect(entries.find((e) => e.label === 'Tenda' && e.group === 'Kategori')).toEqual({ label: 'Tenda', group: 'Kategori', target: 'products', category: 'Tenda' });
-    expect(entries.find((e) => e.label === 'Carrier 60L + Rain Cover')?.target).toBe('products');
+    // Produk membawa kategorinya: memilihnya dari pencarian memindah filter ke kategori itu
+    expect(entries.find((e) => e.label === 'Carrier 60L + Rain Cover')).toEqual({ label: 'Carrier 60L + Rain Cover', group: 'Produk', target: 'products', category: 'Carrier' });
     expect(entries.find((e) => e.label === 'Sewa Headlamp')?.target).toBe('rental');
     expect(entries.some((e) => e.target === 'safety' && /hipotermia/.test(e.label))).toBe(true);
     expect(entries.some((e) => e.target === 'faq' && /syarat menyewa/.test(e.label))).toBe(true);
@@ -383,7 +384,9 @@ describe('PuncakGear: demo', () => {
 
   it('sewa: 3 alat & 2 hari terpilih saat dibuka, + / − mengubah hari, diskon ≥ 4 hari, pesan WhatsApp berisi rincian', () => {
     const rental = section(demo(), 'rental');
-    expect(rental.getAttribute('data-tpl-tone')).toBe('inverse');
+    // Tanpa nada "inverse": kontrol di kartu putih memakai cincin fokus dasar yang gelap (bukan putih di atas putih)
+    expect(rental.hasAttribute('data-tpl-tone')).toBe(false);
+    expect(rental.querySelector('[data-tpl-tone="inverse"]')).toBeNull();
     expect(within(rental).getByRole('list', { name: 'Syarat sewa' }).children).toHaveLength(4);
     const boxes = within(rental).getAllByRole('checkbox') as HTMLInputElement[];
     expect(boxes).toHaveLength(8);
@@ -407,6 +410,42 @@ describe('PuncakGear: demo', () => {
     for (const i of [0, 1, 2, 7]) fireEvent.click(boxes[i]);
     expect(within(rental).getByRole('button', { name: 'Pilih minimal satu alat' })).toBeDisabled();
     expect(within(rental).queryByRole('link', { name: /Pesan Sewa/ })).toBeNull();
+  }, SLOW);
+
+  it('sewa: tombol − / + di batas hari memakai aria-disabled (bukan disabled), jadi fokus keyboard tetap di tombolnya', () => {
+    const rental = section(demo(), 'rental');
+    const minus = within(rental).getByRole('button', { name: 'Kurangi satu hari' });
+    const plus = within(rental).getByRole('button', { name: 'Tambah satu hari' });
+    const days = () => rental.querySelector('output')!.textContent;
+    expect(minus).toHaveAttribute('aria-disabled', 'false');
+    minus.focus();
+    fireEvent.click(minus);
+    expect(days()).toBe('1 hari');
+    expect(minus).toHaveAttribute('aria-disabled', 'true');
+    expect(minus).not.toBeDisabled();
+    expect(minus).toHaveFocus();
+    fireEvent.click(minus);
+    expect(days()).toBe('1 hari');
+    plus.focus();
+    for (let i = 0; i < 20; i += 1) fireEvent.click(plus);
+    expect(days()).toBe('14 hari');
+    expect(plus).toHaveAttribute('aria-disabled', 'true');
+    expect(plus).not.toBeDisabled();
+    expect(plus).toHaveFocus();
+    expect(minus).toHaveAttribute('aria-disabled', 'false');
+  }, SLOW);
+
+  it('fokus terlihat & judul utuh: CTA aksen punya cincin fokus putih tebal, judul hero mengecil & patah kata di HP', () => {
+    const hero = section(demo(), 'hero');
+    const cta = within(hero).getByRole('link', { name: 'Belanja Perlengkapan' });
+    expect(cta.className).toContain('focus-visible:outline-[3px]');
+    expect(cta.className).toContain('focus-visible:outline-white');
+    const h1 = hero.querySelector('h1')!;
+    expect(h1.className).toContain('[overflow-wrap:anywhere]');
+    expect(h1.className).toContain('text-[length:min(52px,12cqi)]');
+    // Batas 11ch hanya di layar lebar: di HP kata panjang ("PERLENGKAPAN") boleh memakai seluruh lebar wadah
+    expect(h1.className).toMatch(/(^|\s)@2xl:max-w-\[11ch\]/);
+    expect(h1.className).not.toMatch(/(^|\s)max-w-\[11ch\]/);
   }, SLOW);
 
   it('tips keselamatan bernomor + kartu darurat, cerita pendaki, FAQ accordion, basecamp, footer gelap', () => {
@@ -485,11 +524,45 @@ describe('PuncakGear: pencarian di menu', () => {
   }, SLOW);
 });
 
+describe('PuncakGear: navigasi keyboard & filter', () => {
+  it('cari produk saat filter kategori lain aktif → filter pindah ke kategori produk itu sehingga produknya tampil', () => {
+    const container = demo();
+    fireEvent.click(within(section(container, 'categories')).getByRole('link', { name: 'Tenda: lihat produk' }));
+    const products = section(container, 'products');
+    const list = () => within(products).getByRole('list', { name: 'Daftar produk' });
+    expect(list().textContent).not.toContain('Kompor');
+    const header = container.querySelector('header')!;
+    fireEvent.click(within(header).getByRole('button', { name: 'Cari di halaman' }));
+    fireEvent.change(within(header).getByRole('searchbox'), { target: { value: 'kompor' } });
+    fireEvent.click(within(within(header).getByRole('list', { name: 'Hasil pencarian' })).getByRole('link', { name: /Kompor Portabel \+ Nesting/ }));
+    expect(scrolled.at(-1)).toBe('products');
+    expect(within(products).getByRole('button', { name: 'Aksesori' })).toHaveAttribute('aria-pressed', 'true');
+    expect(list().textContent).toContain('Kompor Portabel + Nesting');
+  }, SLOW);
+
+  it('menu HP: Esc menutup menu dan mengembalikan fokus ke tombol menu (bukan ke <body>)', () => {
+    const container = demo();
+    const header = container.querySelector('header')!;
+    const button = within(header).getByRole('button', { name: 'Buka menu' });
+    fireEvent.click(button);
+    const menuId = button.getAttribute('aria-controls')!;
+    within(document.getElementById(menuId)!).getAllByRole('link')[1].focus();
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
+    expect(document.getElementById(menuId)).toBeNull();
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveFocus();
+  }, SLOW);
+});
+
 describe('PuncakGear: SEO situs demo', () => {
   it('judul tab & meta description bawaan terbaca seperti toko outdoor (siteHead: "Nama — Tagline", kalimat hero)', () => {
-    expect(siteTitle('puncakgear', null)).toBe('Tapak Rimba Outdoor — Toko Outdoor & Sewa Alat Pendakian di Malang');
+    expect(siteTitle('puncakgear', null)).toBe('Tapak Rimba Outdoor — Toko & Sewa Alat Pendakian di Malang');
+    // Judul situs ≤ 60 karakter agar tidak terpotong di hasil Google
+    expect(siteTitle('puncakgear', null).length).toBeLessThanOrEqual(60);
     const restore = applySiteHead('puncakgear', null);
-    expect(document.title).toBe('Tapak Rimba Outdoor — Toko Outdoor & Sewa Alat Pendakian di Malang');
+    expect(document.title).toBe('Tapak Rimba Outdoor — Toko & Sewa Alat Pendakian di Malang');
     const description = document.head.querySelector('meta[name="description"]')?.getAttribute('content') ?? '';
     expect(description).toMatch(/^Tenda, carrier, sleeping bag, dan sepatu gunung/);
     expect(description).toMatch(/basecamp kami di Malang/);

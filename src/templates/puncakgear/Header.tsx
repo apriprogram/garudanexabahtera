@@ -123,6 +123,7 @@ export function Header({ m, overlay, onPick }: { m: PuncakModel; overlay: boolea
   const searchId = useId();
   const sentinel = useRef<HTMLDivElement>(null);
   const searchButton = useRef<HTMLButtonElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const scrolled = useScrolledPast(sentinel);
   const active = useActiveSection(
     sentinel,
@@ -141,7 +142,9 @@ export function Header({ m, overlay, onPick }: { m: PuncakModel; overlay: boolea
     if (!open && !searching) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      // Elemen yang sedang fokus ikut hilang saat panel ditutup: kembalikan fokus ke tombol pembukanya
       if (searching) searchButton.current?.focus();
+      else if (open) menuButton.current?.focus();
       setOpen(false);
       setSearching(false);
     };
@@ -220,6 +223,7 @@ export function Header({ m, overlay, onPick }: { m: PuncakModel; overlay: boolea
                 </span>
                 {links.length > 0 && (
                   <button
+                    ref={menuButton}
                     type="button"
                     onClick={() => {
                       setSearching(false);

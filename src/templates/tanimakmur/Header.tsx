@@ -9,9 +9,9 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { CONTAINER } from '../shared/layout';
 import { BrandMark } from '../shared/media';
 import { ActionLink } from '../shared/Shell';
-import { useActiveSection, useScrolledPast } from './hooks';
+import { useActiveSection, usePageSelection, useScrolledPast, useShopFilter } from './hooks';
 import { TaniMark } from './marks';
-import { searchFilter, type TaniModel } from './model';
+import { searchFilter, type SearchEntry, type TaniModel } from './model';
 import { BTN, C, DISPLAY } from './styles';
 import { PillLink } from './ui';
 
@@ -29,6 +29,15 @@ export function Logo({ m, tone }: { m: TaniModel; tone: 'light' | 'dark' }) {
 
 function SearchPanel({ m, id, onClose }: { m: TaniModel; id: string; onClose: () => void }) {
   const [query, setQuery] = useState('');
+  const { setCategory } = useShopFilter();
+  const { setBundle, setFaq } = usePageSelection();
+  // Hasil yang diklik ikut terlihat di tujuannya: tab paket dipilih, pertanyaan FAQ dibuka, filter produk disamakan
+  const pick = (entry: SearchEntry) => {
+    if (entry.target === 'bundles' && entry.index !== undefined) setBundle(entry.index);
+    if (entry.target === 'faq' && entry.index !== undefined) setFaq(entry.index);
+    if (entry.target === 'products' && entry.category !== undefined) setCategory(entry.category);
+    onClose();
+  };
   const input = useRef<HTMLInputElement>(null);
   const results = searchFilter(m.search, query);
   const typed = query.trim() !== '';
@@ -79,7 +88,7 @@ function SearchPanel({ m, id, onClose }: { m: TaniModel; id: string; onClose: ()
               <li key={`${entry.target}-${entry.label}-${i}`}>
                 <ActionLink
                   action={{ kind: 'section', target: entry.target }}
-                  onNavigate={onClose}
+                  onNavigate={() => pick(entry)}
                   className="group flex min-h-12 items-center justify-between gap-4 rounded-2xl px-4 py-2.5 transition-colors hover:bg-white"
                 >
                   <span className="min-w-0">

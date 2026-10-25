@@ -71,6 +71,7 @@ export function Categories({ m }: { m: TaniModel }) {
               const toProducts: LinkAction | null = match ? { kind: 'section', target: 'products' } : null;
               const action = resolveAction(field(item, 'url'), toProducts ?? m.askAbout(name ? `produk ${name}` : ''));
               const custom = !!field(item, 'url');
+              const cta = custom ? 'Lihat selengkapnya' : match ? 'Lihat produk' : 'Tanya produk';
               return (
                 <Reveal as="li" key={`${name}-${i}`} delay={stagger(i, 70)} className={`group relative flex flex-col p-2 ${CARD.white}`}>
                   <div className="relative aspect-[4/3] overflow-hidden rounded-[22px] bg-[#1E3A16]">
@@ -104,10 +105,10 @@ export function Categories({ m }: { m: TaniModel }) {
                       <ActionLink
                         action={action}
                         onNavigate={match && !custom ? () => setCategory(match) : undefined}
-                        aria-label={name ? `Lihat ${name}` : 'Lihat kategori'}
+                        aria-label={name ? `${cta} ${name}` : cta}
                         className="mt-auto flex items-center justify-between gap-3 pt-5 text-[14px] font-semibold text-[#18230F] after:absolute after:inset-0 after:rounded-[28px]"
                       >
-                        <span>{custom ? 'Lihat selengkapnya' : match ? 'Lihat produk' : 'Tanya produk'}</span>
+                        <span>{cta}</span>
                         <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ECE6CF] transition-colors group-hover:bg-(--tpl-accent) group-hover:text-(--tpl-on-accent)">
                           <ArrowUpRight className="h-4 w-4" />
                         </span>

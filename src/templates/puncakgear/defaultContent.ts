@@ -11,7 +11,7 @@ export const puncakContent: SiteContent = {
   brand: {
     company_name: 'Tapak Rimba Outdoor',
     // Judul tab situs = "Nama — Tagline", deskripsi meta = kalimat di bawah judul hero (src/templates/siteHead.ts)
-    tagline: 'Toko Outdoor & Sewa Alat Pendakian di Malang',
+    tagline: 'Toko & Sewa Alat Pendakian di Malang',
     logo: '',
     accent_color: PUNCAK_ACCENT,
   },

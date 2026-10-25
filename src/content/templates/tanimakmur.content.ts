@@ -88,7 +88,7 @@ export const content: TemplatePageContent = {
     {
       question: 'Bagaimana kalau toko saya tidak punya penyuluh?',
       answer:
-        'Ganti judulnya menjadi konsultasi dengan admin atau pemilik toko, atau sembunyikan bagian itu dari CMS. Daftar penyuluh, contoh percakapan, dan langkah konsultasi semuanya opsional.',
+        'Ganti judulnya menjadi konsultasi dengan admin atau pemilik toko, atau sembunyikan bagian itu dari CMS. Daftar penyuluh, contoh percakapan, langkah konsultasi, dan tombol tanya di setiap paket tanam semuanya opsional.',
     },
     {
       question: 'Bisakah dipakai untuk website toko alat tani atau website toko benih dan pupuk saja?',

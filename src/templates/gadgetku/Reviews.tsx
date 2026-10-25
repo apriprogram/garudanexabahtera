@@ -7,7 +7,7 @@ import { stagger } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
 import { field, list, text } from '../shared/utils';
 import { KitAvatar } from '../kit/Photo';
-import { stars, type GadgetkuModel } from './model';
+import { ratingStars, stars, type GadgetkuModel } from './model';
 import { C, TYPE_G } from './styles';
 import { SectionLabel, Stars } from './ui';
 
@@ -17,6 +17,7 @@ export function Reviews({ m }: { m: GadgetkuModel }) {
   const title = text(testimonials, 'title');
   const ratingValue = text(testimonials, 'rating_value');
   const ratingLabel = text(testimonials, 'rating_label');
+  const storeStars = ratingStars(ratingValue);
   const items = list(testimonials, 'items', 6).filter((item) => field(item, 'quote'));
   if (items.length === 0) return null;
 
@@ -40,7 +41,8 @@ export function Reviews({ m }: { m: GadgetkuModel }) {
             <Reveal delay={160} className="flex items-center gap-4 @5xl:pb-1">
               {ratingValue && <span className={`${TYPE_G.price} text-[44px] leading-none text-[#0B0C0E] @3xl:text-[52px]`}>{ratingValue}</span>}
               <span className="min-w-0">
-                <Stars value={5} className="h-[18px] w-[18px]" />
+                {/* Bintang mengikuti rating toko ("4,2" → 4); tanpa angka rating → tanpa bintang */}
+                {storeStars !== null && <Stars value={storeStars} className="h-[18px] w-[18px]" />}
                 {ratingLabel && <span className={`mt-1 block max-w-[30ch] text-[13.5px] leading-snug ${C.muted}`}>{ratingLabel}</span>}
               </span>
             </Reveal>

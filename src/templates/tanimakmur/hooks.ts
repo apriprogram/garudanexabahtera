@@ -1,6 +1,7 @@
-// Hook kecil TaniMakmur: section yang sedang dibaca (garis bawah item menu), "sudah digulir" (bilah krem lengket), dan
-// filter kategori produk yang dibagi kartu Kategori ↔ Produk terlaris. Tanpa IntersectionObserver (perayap, jsdom
-// lama) → nilai awal, tanpa error.
+// Hook kecil TaniMakmur: section yang sedang dibaca (garis bawah item menu), "sudah digulir" (bilah krem lengket),
+// filter kategori produk yang dibagi kartu Kategori ↔ Produk terlaris, dan pilihan halaman (tab paket tanam, pertanyaan
+// FAQ yang terbuka) yang juga diisi hasil pencarian di menu. Tanpa IntersectionObserver (perayap, jsdom lama) → nilai
+// awal, tanpa error.
 import { createContext, useContext, useEffect, useState, type RefObject } from 'react';
 
 /** Kunci section yang sedang di tengah layar (dari daftar `keys`), atau null. */
@@ -48,3 +49,20 @@ export const ShopFilterContext = createContext<{ category: string; setCategory: 
 });
 
 export const useShopFilter = () => useContext(ShopFilterContext);
+
+/** Tab paket tanam yang dipilih dan pertanyaan FAQ yang terbuka (null = semua tertutup), dibagi Header ↔ section. */
+export interface PageSelection {
+  bundle: number;
+  setBundle: (index: number) => void;
+  faq: number | null;
+  setFaq: (index: number | null) => void;
+}
+
+export const PageSelectionContext = createContext<PageSelection>({
+  bundle: 0,
+  setBundle: () => undefined,
+  faq: 0,
+  setFaq: () => undefined,
+});
+
+export const usePageSelection = () => useContext(PageSelectionContext);

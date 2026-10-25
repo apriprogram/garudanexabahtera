@@ -187,8 +187,11 @@ function PhotoPanel() {
       aria-label={`Foto ulasan ${photo.title}`}
       className={`absolute inset-x-3 top-3 mx-auto flex max-h-[min(80svh,760px)] max-w-[880px] flex-col overflow-hidden rounded-[24px] ${C.ivory} ${C.ink} @3xl:flex-row`}
     >
-      <div className="relative min-h-0 flex-1 bg-[#EDE5D9] @3xl:flex-[1.15]">
-        <img src={photo.src} alt={photo.alt} className="h-full max-h-[52svh] w-full object-cover @3xl:max-h-none" />
+      {/* HP (kolom): spacer 4:5 (maks. 52svh) memberi tinggi alami; wadah boleh menyusut (min-h-0) agar info & tombol
+          tutup selalu terlihat, dan foto mengisi wadah (absolute + object-cover) tanpa meluber menutupi info. */}
+      <div data-photo-frame className="relative min-h-0 flex-1 overflow-hidden bg-[#EDE5D9] @3xl:flex-[1.15]">
+        <div aria-hidden className="aspect-[4/5] max-h-[52svh] w-full @3xl:max-h-none" />
+        <img src={photo.src} alt={photo.alt} className="absolute inset-0 h-full w-full object-cover" />
       </div>
       <div className="flex flex-col gap-4 p-5 @3xl:w-[300px] @3xl:p-7">
         <div className="flex items-center justify-between gap-2">

@@ -2,13 +2,14 @@
 // accordion bergaris, satu terbuka. Tombol <button aria-expanded aria-controls>, panel role="region"; panel tertutup
 // `inert`. Buka-tutup grid-rows 0fr → 1fr (CSS .tm-collapse) bila gerak menyala.
 import { Plus } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { WhatsAppIcon } from '../shared/icons';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER, SECTION_Y } from '../shared/layout';
 import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, list, resolveAction, text } from '../shared/utils';
+import { usePageSelection } from './hooks';
 import type { TaniModel } from './model';
 import { BTN, C, CARD, TYPE_T } from './styles';
 import { SectionLabel } from './ui';
@@ -16,7 +17,8 @@ import { SectionLabel } from './ui';
 export function Faq({ m }: { m: TaniModel }) {
   const { faq } = m;
   const items = list(faq, 'items', 8).filter((item) => field(item, 'question'));
-  const [open, setOpen] = useState<number | null>(0);
+  // Pertanyaan terbuka dibagi dengan pencarian di menu (TaniMakmur.tsx), jadi hasil FAQ yang diklik langsung terbuka
+  const { faq: open, setFaq: setOpen } = usePageSelection();
   const baseId = useId();
   if (items.length === 0) return null;
   const eyebrow = text(faq, 'eyebrow');

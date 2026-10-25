@@ -99,7 +99,7 @@ export function Hero({ m }: { m: PuncakModel }) {
 
         <div className="mt-6 grid gap-8 @3xl:mt-8 @5xl:grid-cols-12 @5xl:items-end">
           <div className="min-w-0 @5xl:col-span-9">
-            <Reveal as="h1" delay={80} className={`max-w-[11ch] text-balance text-white ${TYPE_P.mega}`}>
+            <Reveal as="h1" delay={80} className={`text-balance text-white hyphens-auto [overflow-wrap:anywhere] @2xl:max-w-[11ch] @2xl:[overflow-wrap:normal] ${TYPE_P.mega}`}>
               {title}
             </Reveal>
             {subtitle && (

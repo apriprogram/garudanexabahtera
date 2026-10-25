@@ -17,6 +17,7 @@ import { itemIconKey, perkIconKey } from '../gadgetku/icons';
 import {
   NIGHT,
   brandsOf,
+  caseColors,
   bundleLines,
   compatSummary,
   discountPercent,
@@ -32,6 +33,7 @@ import {
   productBadge,
   productCategories,
   sameCategory,
+  ratingStars,
   savings,
   searchEntries,
   searchFilter,
@@ -188,6 +190,11 @@ describe('GadgetKu: helper model', () => {
     expect(isCompatible(p('Samsung Galaxy A55'), a55)).toBe(true);
     expect(isCompatible(p('samsung'), a55)).toBe(true);
     expect(isCompatible(p('Type-C'), a55)).toBe(true);
+    // Penulisan port yang umum di toko Indonesia: semuanya = USB-C
+    for (const port of ['USB Type-C', 'USB Type C', 'usb type-c', 'Tipe C', 'USB Tipe-C']) expect(isCompatible(p(port), a55), port).toBe(true);
+    const [typeC] = phoneModels({ models: [{ brand: 'Samsung', model: 'Galaxy A06', port: 'USB Type-C' }] });
+    expect(isCompatible(p('USB-C'), typeC)).toBe(true);
+    expect(isCompatible(p('Lightning'), typeC)).toBe(false);
     expect(isCompatible(p('Galaxy A15'), a55)).toBe(false);
     expect(isCompatible(p('USB-C'), ip14)).toBe(false);
     expect(isCompatible(p('Lightning'), ip14)).toBe(true);
@@ -206,6 +213,13 @@ describe('GadgetKu: helper model', () => {
     expect(parseRupiah('Rp 59.000')).toBe(59000);
     expect(parseRupiah('Rp49.500,00')).toBe(49500);
     expect(parseRupiah('gratis')).toBeNull();
+    // Singkatan harga yang umum: rb / ribu / K / jt / juta
+    expect([parseRupiah('Rp149rb'), parseRupiah('149 ribu'), parseRupiah('149K'), parseRupiah('Rp1,5 jt'), parseRupiah('Rp 2 juta'), parseRupiah('Rp12,5rb')]).toEqual([
+      149000, 149000, 149000, 1500000, 2000000, 12500,
+    ]);
+    expect(savings('Rp149rb', 'Rp179rb')).toBe(30000);
+    expect(savings('Rp149rb', 'Rp179.000')).toBe(30000);
+    expect(discountPercent('Rp1,2 jt', 'Rp1,5 jt')).toBe(20);
     expect(formatRupiah(15000)).toBe('Rp15.000');
     expect(savings('Rp149.000', 'Rp179.000')).toBe(30000);
     expect(savings('Rp179.000', 'Rp149.000')).toBe(0);
@@ -216,6 +230,20 @@ describe('GadgetKu: helper model', () => {
     expect(productBadge({ price: 'Rp59.000', old_price: 'Rp79.000', badge: 'Baru' })).toBe('Baru');
     expect(productBadge({ price: 'Rp59.000' })).toBe('');
     expect([stars('5'), stars('3'), stars('4,6'), stars('0'), stars('9'), stars(''), stars('x')]).toEqual([5, 3, 5, 1, 5, 5, 5]);
+    // Rating toko: bintang mengikuti angka; tanpa angka -> null (tanpa bintang, bukan 5)
+    expect([ratingStars('4,9'), ratingStars('4,9/5'), ratingStars('4,2'), ratingStars('3.8/5'), ratingStars(''), ratingStars('bagus')]).toEqual([5, 5, 4, 4, null, null]);
+    // Warna casing dari CMS: dipisah koma, duplikat sekali, maks. 6, nama dikenali -> warnanya, lainnya -> netral
+    const colors = caseColors('Bening, Hitam doff,  navy , hitam doff, Abu-abu, Pelangi\nMerah Muda, Kuning, Ungu');
+    expect(colors.map((c) => c.label)).toEqual(['Bening', 'Hitam doff', 'navy', 'Abu-abu', 'Pelangi', 'Merah Muda']);
+    expect(colors.map((c) => c.swatch)).toEqual([
+      'linear-gradient(135deg, #ffffff 0%, #d5dbe3 100%)',
+      '#16181B',
+      '#1B2A4A',
+      '#A7ACB3',
+      '#D9DCE1',
+      '#F2A7BF',
+    ]);
+    expect(caseColors('')).toEqual([]);
   });
 
   it('paket, kategori, metode bayar, ikon otomatis', () => {
@@ -263,8 +291,8 @@ describe('GadgetKu: helper model', () => {
     ]);
     expect(searchFilter(entries, 'a55')[0]).toMatchObject({ target: 'finder', phone: 'samsung|galaxy a55' });
     expect(searchFilter(entries, 'kabel data').map((e) => `${e.label}|${e.target}|${e.category ?? ''}`)).toEqual([
-      'Kabel USB-C ke USB-C 1 m|products|',
-      'Kabel USB-A ke Lightning 1 m|products|',
+      'Kabel USB-C ke USB-C 1 m|products|Kabel Data',
+      'Kabel USB-A ke Lightning 1 m|products|Kabel Data',
       'Kabel Data|products|Kabel Data',
     ]);
     expect(searchFilter(entries, 'charger 45').map((e) => e.label)).toEqual(['Charger GaN 45W Super Fast', 'Paket Lengkap']);
@@ -511,7 +539,8 @@ describe('GadgetKu: SEO halaman demo (calon situs pembeli)', () => {
   });
 
   it('judul tab & meta description situs (siteHead) terbaca sebagai toko aksesoris HP', () => {
-    expect(siteTitle('gadgetku', null)).toBe('GadgetKu.id — Toko aksesoris HP: casing, tempered glass & charger');
+    expect(siteTitle('gadgetku', null)).toBe('GadgetKu.id — Toko aksesoris HP: casing & tempered glass');
+    expect(siteTitle('gadgetku', null).length).toBeLessThanOrEqual(60);
     const restore = applySiteHead('gadgetku', null);
     try {
       expect(document.title).toContain('Toko aksesoris HP');
@@ -605,6 +634,67 @@ describe('GadgetKu: pencarian di menu', () => {
     });
     expect(within(header).queryByRole('searchbox')).toBeNull();
     expect(toggle).toHaveFocus();
+  });
+});
+
+describe('GadgetKu: perbaikan review', () => {
+  it('hasil cari produk di header menyaring Produk ke kategorinya, jadi kartu yang dicari terlihat', () => {
+    const container = demo();
+    const header = container.querySelector('header')!;
+    fireEvent.click(within(header).getByRole('button', { name: 'Cari produk atau tipe HP' }));
+    fireEvent.change(within(header).getByRole('searchbox'), { target: { value: 'power bank' } });
+    const result = Array.from(within(header).getByRole('list', { name: 'Hasil pencarian' }).querySelectorAll('a')).find((a) =>
+      a.textContent?.startsWith('Power Bank 10.000 mAh 22,5W'),
+    )!;
+    fireEvent.click(result);
+    expect(scrolled).toEqual(['products']);
+    const products = section(container, 'products');
+    const row = within(products).getByRole('list', { name: 'Produk Power Bank' });
+    expect(Array.from(row.querySelectorAll('h3')).map((h) => h.textContent)).toEqual(['Power Bank 10.000 mAh 22,5W']);
+  });
+
+  it('bintang rating toko (ulasan & hero) mengikuti angka dari CMS; tanpa angka -> tanpa bintang', () => {
+    const container = demo({ testimonials: { rating_value: '4,2' }, hero: { stat_value: '3,8/5' } });
+    const reviews = section(container, 'testimonials');
+    expect(within(reviews).getAllByRole('img', { name: '4 dari 5 bintang' })).toHaveLength(1);
+    expect(within(section(container, 'hero')).getByRole('img', { name: '4 dari 5 bintang' })).toBeInTheDocument();
+    cleanup();
+    const bare = section(demo({ testimonials: { rating_value: '', rating_label: 'Ulasan dari pembeli kami' } }), 'testimonials');
+    // Hanya bintang per ulasan (3), tidak ada bintang ringkasan tanpa angka
+    expect(within(bare).getAllByRole('img', { name: /dari 5 bintang/ })).toHaveLength(3);
+  });
+
+  it('label kartu kategori di atas lapisan gelap yang cukup pekat (kontras AA di foto terang)', () => {
+    const cats = section(demo(), 'categories');
+    expect(cats.querySelectorAll('[class*="from-black/80"][class*="via-black/40"]')).toHaveLength(6);
+  });
+
+  it('hemat bundling benar untuk harga singkatan (Rp149rb / Rp179rb)', () => {
+    const bundles = section(
+      demo({ bundles: { items: [{ name: 'Paket Hemat', items: 'Casing\nTempered glass', price: 'Rp149rb', old_price: 'Rp179rb', badge: '' }] } }),
+      'bundles',
+    );
+    expect(bundles.textContent).toContain('Hemat Rp30.000');
+  });
+
+  it('pilihan warna casing dari CMS: tombol & pesan WhatsApp mengikuti daftar; kosong -> tanpa pilihan warna', () => {
+    const custom = section(demo({ custom: { case_colors: 'Hitam doff, Navy' } }), 'custom');
+    const buttons = within(within(custom).getByRole('group', { name: 'Warna casing' })).getAllByRole('button');
+    expect(buttons.map((b) => b.textContent)).toEqual(['Hitam doff', 'Navy']);
+    expect(buttons[0]).toHaveAttribute('aria-pressed', 'true');
+    expect(within(custom).queryByRole('button', { name: 'Bening' })).toBeNull();
+    expect(href(within(custom).getByRole('link', { name: 'Pesan Casing Custom' }))).toContain('warna hitam doff.');
+    fireEvent.click(buttons[1]);
+    expect(href(within(custom).getByRole('link', { name: 'Pesan Casing Custom' }))).toContain('warna navy.');
+    expect(within(custom).getByRole('group', { name: /Pratinjau casing navy/ })).toBeInTheDocument();
+    cleanup();
+
+    const none = section(demo({ custom: { case_colors: '' } }), 'custom');
+    expect(within(none).queryByRole('group', { name: 'Warna casing' })).toBeNull();
+    expect(within(none).getByRole('group', { name: 'Pratinjau casing dengan foto contoh' })).toBeInTheDocument();
+    const link = href(within(none).getByRole('link', { name: 'Pesan Casing Custom' }));
+    expect(link).toContain('saya mau pesan casing custom untuk HP saya. Fotonya saya kirim di chat ini.');
+    expect(link).not.toContain('warna');
   });
 });
 

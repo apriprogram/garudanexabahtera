@@ -11,7 +11,7 @@ import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, list, resolveAction, safeImage, text } from '../shared/utils';
 import { KitAvatar, KitPhoto } from '../kit/Photo';
-import { brandsOf, type GadgetkuModel } from './model';
+import { brandsOf, ratingStars, type GadgetkuModel } from './model';
 import { GADGETKU_PHOTOS } from './photos';
 import { BTN, C, TYPE_G } from './styles';
 import { Highlighted, PillLink, SectionLabel, Stars } from './ui';
@@ -85,6 +85,8 @@ function RatingCard({ m }: { m: GadgetkuModel }) {
   const value = text(m.hero, 'stat_value');
   const label = text(m.hero, 'stat_label');
   if (!value && !label) return null;
+  // Bintang mengikuti angka rating ("4,2/5" → 4); angka tak terbaca → tanpa bintang
+  const valueStars = ratingStars(value);
   const faces = list(m.testimonials, 'items', 3).filter((item) => field(item, 'name'));
   return (
     <div className="flex w-full items-center gap-4 rounded-[22px] bg-white p-4 pr-5">
@@ -99,7 +101,7 @@ function RatingCard({ m }: { m: GadgetkuModel }) {
         {value && (
           <span className="flex items-center gap-2">
             <span className={`${TYPE_G.price} text-[20px] text-[#0B0C0E]`}>{value}</span>
-            <Stars value={5} className="h-3.5 w-3.5" />
+            {valueStars !== null && <Stars value={valueStars} className="h-3.5 w-3.5" />}
           </span>
         )}
         {label && <span className={`block text-[13px] leading-snug ${C.muted}`}>{label}</span>}

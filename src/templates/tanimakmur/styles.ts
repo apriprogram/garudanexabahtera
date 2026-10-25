@@ -49,8 +49,8 @@ export const TYPE_T = {
   h3: `${FONT_DISPLAY} font-medium text-[19px] leading-snug tracking-[-0.015em] @3xl:text-[21px]`,
   lead: 'text-[16px] leading-relaxed @3xl:text-[17px] @7xl:text-[18px]',
   body: 'text-[15px] leading-relaxed',
-  /** Angka besar di kartu statistik hero: 40 → 48 → 56 → 68px */
-  stat: `${DISPLAY} text-[40px] leading-none tracking-[-0.04em] tabular-nums @xl:text-[48px] @3xl:text-[56px] @7xl:text-[68px]`,
+  /** Angka besar di kartu statistik hero: 40 → 48 (3 kartu, @3xl) → 56 (kartu di samping keterangan, @6xl) → 68px */
+  stat: `${DISPLAY} whitespace-nowrap text-[40px] leading-none tracking-[-0.04em] tabular-nums @3xl:text-[48px] @6xl:text-[56px] @7xl:text-[68px]`,
   /** Harga di kartu */
   price: `${FONT_DISPLAY} font-semibold tracking-[-0.02em] tabular-nums`,
 } as const;
