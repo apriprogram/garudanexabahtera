@@ -113,7 +113,7 @@ describe('membaca HTML', () => {
   it('entity, atribut dan jumlah kata', () => {
     expect(decodeEntities('Harga &amp; Paket &#8211; &#x2014; &quot;x&quot; &nbsp;&bogus;')).toBe('Harga & Paket – — "x"  &bogus;');
     expect(tagAttributes(`<meta NAME="robots" content='noindex,follow' data-gn=robots>`)).toEqual({ name: 'robots', content: 'noindex,follow', 'data-gn': 'robots' });
-    expect(countWords('Rp1.390.000 per tahun – termasuk domain & hosting')).toBe(6);
+    expect(countWords('Rp1.390.000 per tahun – termasuk hosting & SSL')).toBe(6);
   });
 
   it('fakta halaman: head, h1, JSON-LD, kata di <main> tanpa script', () => {

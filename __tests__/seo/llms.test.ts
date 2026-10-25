@@ -26,7 +26,11 @@ describe('llms.txt', () => {
   it('harga dari data dengan tanggal, sudah termasuk dari COMPANY_FACTS, kontak resmi', () => {
     expect(txt).toContain('- Harga template: Rp990.000–Rp1.790.000 (per 23 Oktober 2026)');
     expect(txt).toContain('Diperbarui 23 Oktober 2026.');
-    expect(txt).toContain('- Sudah termasuk: template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama');
+    // Domain tidak lagi termasuk harga template (pemilik 2026-10-25); biaya tahun ke-2 dari COMPANY_FACTS.renewalCost
+    expect(txt).toContain('- Sudah termasuk: template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama');
+    expect(txt).toContain(
+      '- Harga template: Rp990.000–Rp1.790.000 (per 23 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).',
+    );
     expect(txt).toContain(`WhatsApp ${COMPANY_FACTS.whatsappDisplay}, ${COMPANY_FACTS.email}`);
     expect(txt).toContain('Midtrans');
     // harga berubah di DB → llms.txt ikut berubah
@@ -34,10 +38,25 @@ describe('llms.txt', () => {
     expect(repriced).toContain('Rp1.090.000–Rp1.890.000');
   });
 
-  it('field null (alamat, tahun ke-2, waktu aktif) tidak ditulis, tanpa placeholder', () => {
+  it('domain tidak termasuk harga template (pemilik 2026-10-25): ringkasan, daftar harga domain dari COMPANY_FACTS', () => {
+    expect(txt).toContain(
+      '> Garuda Nexa (PT Garuda Nexa Bahtera, Indonesia) menjual template website siap pakai yang sudah termasuk setup awal, hosting, dan SSL tahun pertama (domain dipilih saat memesan, mulai Rp50.000/tahun), serta menerima',
+    );
+    expect(txt).toContain(
+      '- Domain (tidak termasuk harga template; dipilih dan dicek ketersediaannya saat memesan), harga per tahun, sama untuk perpanjangan: .com Rp250.000, .id Rp250.000, .co.id Rp350.000, .my.id Rp50.000, .web.id Rp50.000,',
+    );
+    expect(txt).not.toMatch(/termasuk domain|domain, hosting|domain tahun pertama/i);
+    // Tanpa daftar harga domain: kalimat tanpa angka domain, tetap tanpa klaim "termasuk domain"
+    const facts = { ...COMPANY_FACTS, templatePackage: { ...COMPANY_FACTS.templatePackage, domainPrices: [] } };
+    const bare = buildLlmsTxt({ ...input, facts });
+    expect(bare).toContain('yang sudah termasuk setup awal, hosting, dan SSL tahun pertama, serta menerima');
+    expect(bare).not.toContain('- Domain (');
+  });
+
+  it('field null (alamat, waktu aktif) tidak ditulis, tanpa placeholder', () => {
     expect(COMPANY_FACTS.address).toBeNull();
-    expect(COMPANY_FACTS.templatePackage.renewalCost).toBeNull();
-    expect(txt).not.toMatch(/tahun ke-2|Alamat|PEMILIK|\{|null|undefined/);
+    expect(COMPANY_FACTS.templatePackage.activationTime).toBeNull();
+    expect(txt).not.toMatch(/Alamat|Website template aktif|PEMILIK|\{|null|undefined/);
   });
 
   it('hanya menautkan halaman index: halaman stub belum disebut', () => {
@@ -69,7 +88,9 @@ describe('llms-full.txt', () => {
     const block = full.slice(full.indexOf('### Arena Club'), full.indexOf('### Aura Studio'));
     expect(block).toContain('- Halaman: https://garudanexa.com/template/arena-club');
     expect(block).toContain('- Kategori: Olahraga & Komunitas');
-    expect(block).toContain('- Harga: Rp1.290.000 (per 23 Oktober 2026), sudah termasuk');
+    expect(block).toContain(
+      '- Harga: Rp1.290.000 (per 23 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun',
+    );
     expect(block).toContain('- Fitur: Tombol pesan lapangan langsung ke WhatsApp');
     expect(block).toContain('- Demo: https://garudanexa.com/demo/arena-club (konten demo fiktif)');
     expect(block).toContain('Arena Club dirancang untuk klub dan tempat olahraga.');
@@ -83,6 +104,12 @@ describe('llms-full.txt', () => {
     expect(jasa).not.toMatch(/Rp\s?\d/);
     expect(jasa).toContain('penawaran setelah konsultasi gratis');
     for (const faq of factFaqs(COMPANY_FACTS, TEMPLATES)) expect(full).toContain(`### ${faq.question}\n${faq.answer}`);
+    const byQuestion = Object.fromEntries(factFaqs(COMPANY_FACTS, TEMPLATES).map((f) => [f.question, f.answer]));
+    expect(byQuestion['Apa saja yang sudah termasuk dalam harga template?']).toContain(
+      'Domain tidak termasuk: dipilih dan dibayar saat memesan, mulai Rp50.000/tahun.',
+    );
+    expect(byQuestion['Berapa harga domain?']).toMatch(/^Domain dipilih dan dibayar saat memesan template\. Harga per tahun, sama untuk perpanjangan: \.com Rp250\.000, /);
+    expect(byQuestion['Berapa biaya mulai tahun ke-2?']).toBe(COMPANY_FACTS.templatePackage.renewalCost);
     const custom = buildLlmsFullTxt({ ...input, faqs: [{ question: 'Apa saja yang sudah termasuk?', answer: 'Jawaban situs.' }] });
     expect(custom).toContain('### Apa saja yang sudah termasuk?\nJawaban situs.');
     expect(custom).not.toContain('### Bagaimana cara membayar?');

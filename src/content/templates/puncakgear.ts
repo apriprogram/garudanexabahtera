@@ -7,7 +7,7 @@ import type { TemplatePageCopy } from './page.types';
 
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website Toko Outdoor – {harga_singkat}',
-  description: 'Template website toko outdoor & sewa alat pendakian, lengkap panduan per gunung. {harga} sudah termasuk domain, hosting & SSL tahun pertama.',
+  description: 'Template website toko outdoor & sewa alat pendakian + panduan gunung. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Toko Outdoor & Sewa Alat Pendakian',
   // Isi halaman (puncakgear.ts, puncakgear.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-25',

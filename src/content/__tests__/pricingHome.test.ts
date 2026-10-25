@@ -1,17 +1,23 @@
 // Jalankan: npx vitest run src/content/__tests__/pricingHome.test.ts
 // Teks harga & beranda yang dihitung dari data (SEO-PLAN §5.6 langkah 4 & 6, Lampiran D): harga hanya dari template
-// terbit, jasa custom tanpa angka, fakta null tidak disebut, intro memuat nama badan hukum dan harga termurah.
+// terbit, jasa custom tanpa angka, fakta null tidak disebut, intro memuat nama badan hukum dan harga termurah. Domain tidak
+// termasuk harga template (pemilik 2026-10-25): harga domain & biaya tahun ke-2 dari src/lib/domainPricing.ts.
 import { describe, expect, it } from 'vitest';
 import { COMPANY_FACTS } from '../../lib/companyFacts';
+import { DOMAIN_TLDS, HOSTING_RENEWAL_DEFAULT } from '../../lib/domainPricing';
 import { FIXTURE_TEMPLATES } from '../../lib/__tests__/preloadFixture';
 import type { Template } from '../../types/platform';
 import { categoryTiles, homeIntro, joinId, nichePhrases } from '../home';
 import {
   buildOptionsTable,
   CUSTOM_COST_FACTORS,
+  domainPriceFrom,
   minTemplatePrice,
   priceInWords,
+  renewalExamples,
+  renewalPerYearText,
   shortPriceRange,
+  TEMPLATE_PRICE_SUMMARY,
   templateVsCustomTable,
   wibDate,
 } from '../pricing';
@@ -53,6 +59,22 @@ describe('tabel perbandingan', () => {
     expect(labels).toEqual(['Harga', 'Sudah termasuk', 'Waktu online', 'Desain', 'Cocok untuk', 'Pembayaran', 'Mengubah isi', 'Tahun berikutnya', 'Mulai']);
   });
 
+  it('domain tidak termasuk harga template; tahun berikutnya = hosting & jasa (setting) + domain', () => {
+    const cell = (table: ReturnType<typeof templateVsCustomTable>, label: string) => table.rows.find((r) => r.label === label)!.cells[0].text;
+    const short = templateVsCustomTable({ priceRange: null, priceDate: null });
+    expect(cell(short, 'Sudah termasuk')).toBe('Setup, hosting, dan SSL tahun pertama; domain mulai Rp50.000/tahun');
+    // Tanpa setting: kalimat COMPANY_FACTS (bawaan Rp500.000); dengan setting admin: angka itu
+    const full = templateVsCustomTable({ priceRange: null, priceDate: null }, { full: true });
+    expect(cell(full, 'Tahun berikutnya')).toBe('Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun)');
+    const custom = templateVsCustomTable({ priceRange: null, priceDate: null, hostingRenewal: 750_000 }, { full: true });
+    expect(cell(custom, 'Tahun berikutnya')).toBe('Hosting & jasa Rp750.000/tahun + domain sesuai ekstensi');
+    const options = buildOptionsTable().rows.find((r) => r.label === 'Domain, hosting & SSL')!.cells[3].text;
+    expect(options).toBe('Hosting & SSL tahun pertama termasuk; domain dipilih saat memesan');
+    for (const table of [short, full, buildOptionsTable()]) {
+      for (const text of table.rows.flatMap((r) => r.cells.map((c) => c.text))) expect(text).not.toMatch(/termasuk (setup, )?domain|domain, hosting/i);
+    }
+  });
+
   it('cara membuat website: 4 pilihan tanpa nama pesaing dan tanpa angka', () => {
     const table = buildOptionsTable();
     expect(table.columns).toHaveLength(4);
@@ -69,15 +91,41 @@ describe('tabel perbandingan', () => {
   });
 });
 
+describe('harga domain & biaya tahun ke-2', () => {
+  it('kalimat ringkas isi harga: domain dipilih saat memesan, mulai harga domain termurah', () => {
+    expect(TEMPLATE_PRICE_SUMMARY).toBe(
+      'Harga template sudah termasuk setup awal, hosting, dan SSL tahun pertama; domain dipilih saat memesan, mulai Rp50.000/tahun.',
+    );
+    expect(domainPriceFrom()).toBe(50_000);
+    expect(domainPriceFrom([{ price: 120_000 }, { price: 90_000 }])).toBe(90_000);
+    expect(domainPriceFrom([])).toBe(50_000);
+    expect(renewalPerYearText(HOSTING_RENEWAL_DEFAULT)).toBe('Hosting & jasa Rp500.000/tahun + domain sesuai ekstensi');
+  });
+
+  it('contoh biaya per tahun mulai tahun ke-2: .com, .id, .my.id = hosting & jasa + domain', () => {
+    expect(renewalExamples(HOSTING_RENEWAL_DEFAULT)).toEqual([
+      { tld: 'com', hosting: 500_000, domain: 250_000, total: 750_000 },
+      { tld: 'id', hosting: 500_000, domain: 250_000, total: 750_000 },
+      { tld: 'my.id', hosting: 500_000, domain: 50_000, total: 550_000 },
+    ]);
+    // Daftar dari server (DewaBiz) bisa berbeda: ekstensi yang tidak dijual dilewati, harga mengikuti daftar
+    const live = DOMAIN_TLDS.filter((t) => t.tld !== 'id').map((t) => (t.tld === 'com' ? { ...t, price: 260_000 } : t));
+    expect(renewalExamples(600_000, live).map((e) => [e.tld, e.total])).toEqual([
+      ['com', 860_000],
+      ['my.id', 650_000],
+    ]);
+  });
+});
+
 describe('beranda', () => {
   it('intro: nama badan hukum, niche dari kategori DB, harga termurah, jasa custom', () => {
     const intro = homeIntro(ALL);
     expect(intro).toBe(
-      'Garuda Nexa (PT Garuda Nexa Bahtera) menyediakan template website untuk company profile, klub olahraga, klinik kecantikan, fintech, dan studio yoga, mulai Rp990 ribu sudah termasuk domain, hosting, dan SSL tahun pertama. Butuh fitur khusus? Kami juga membuat website dan aplikasi Android/iOS custom.',
+      'Garuda Nexa (PT Garuda Nexa Bahtera) menyediakan template website untuk company profile, klub olahraga, klinik kecantikan, fintech, dan studio yoga, mulai Rp990 ribu sudah termasuk setup, hosting, dan SSL tahun pertama, ditambah domain pilihan Anda mulai Rp50.000/tahun. Butuh fitur khusus? Kami juga membuat website dan aplikasi Android/iOS custom.',
     );
     expect(intro).not.toContain('undangan');
     expect(homeIntro([])).toBe(
-      'Garuda Nexa (PT Garuda Nexa Bahtera) menyediakan template website siap pakai yang harganya sudah termasuk domain, hosting, dan SSL tahun pertama. Butuh fitur khusus? Kami juga membuat website dan aplikasi Android/iOS custom.',
+      'Garuda Nexa (PT Garuda Nexa Bahtera) menyediakan template website siap pakai yang harganya sudah termasuk setup, hosting, dan SSL tahun pertama, ditambah domain pilihan Anda mulai Rp50.000/tahun. Butuh fitur khusus? Kami juga membuat website dan aplikasi Android/iOS custom.',
     );
   });
 

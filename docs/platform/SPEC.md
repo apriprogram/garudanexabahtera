@@ -247,6 +247,7 @@ content: object|null, activated_at, updated_at, owner_name, owner_email }` (owne
 | `customer_get_site` | `site_id` | `{ site }` (milik sendiri) |
 | `customer_save_site_content` | `site_id, content` | `{ site }` — gambar data-URI di dalam content disimpan jadi file (`assets/sites/<site_id>/...`) lalu diganti path; JSON akhir maks 512 KB; hanya site `active` |
 | `dev_simulate_payment` | `order_number` | `{ order }` (lihat §5) |
+| `customer_check_domain`, `customer_*_renewal`, `dev_simulate_renewal_payment`, `customer_get_invoice`, `customer_get_profile`, `customer_update_profile` | lihat ACCOUNT-DOMAIN-RENEWAL-SPEC.md §4 | domain berbayar (harga ditambahkan ke `price`, domain terdaftar ditolak 409 `DOMAIN_UNAVAILABLE`), masa aktif & perpanjangan, nota, profil |
 
 ### Staf (role admin/user)
 | Action | Input | Output |

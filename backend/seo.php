@@ -124,8 +124,8 @@ function seo_template_description(array $t): string {
     $generic = "Template website $niche siap pakai.";
     $demo = seo_has_demo($t) ? ' Lihat demo.' : '';
     $includes = seo_is_price($t['price'])
-        ? seo_price_full($t['price']) . ' sudah termasuk domain, hosting & SSL tahun pertama.'
-        : 'Sudah termasuk domain, hosting & SSL tahun pertama.';
+        ? seo_price_full($t['price']) . ' sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun.'
+        : 'Sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun.';
     $full = " $includes Kelola isi lewat CMS.$demo";
     $short2 = " $includes$demo";
     $bare = " $includes";

@@ -43,9 +43,12 @@ CREATE TABLE IF NOT EXISTS users (
   email      VARCHAR(255) NOT NULL,
   password   VARCHAR(255) NOT NULL,
   phone      VARCHAR(20) DEFAULT NULL,
+  company_name VARCHAR(150) DEFAULT NULL,     -- customer profile (/akun/profil, migration 026)
+  address    VARCHAR(255) DEFAULT NULL,
+  city       VARCHAR(100) DEFAULT NULL,
   role       ENUM('admin','user','customer') DEFAULT 'user',
   status     ENUM('active','inactive') DEFAULT 'active',
-  avatar     LONGTEXT DEFAULT NULL,           -- currently base64 data URI
+  avatar     LONGTEXT DEFAULT NULL,           -- staff: base64 data URI; customer: file path /assets/avatars/... (migration 026)
   google_sub VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL, -- Google account id (ID token `sub`) of a
                                               -- customer who signs in with Google (migration 027, docs/platform/GOOGLE-LOGIN.md)
   created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -214,6 +217,8 @@ CREATE TABLE IF NOT EXISTS template_orders (
   list_price         DECIMAL(15,2) DEFAULT NULL,  -- catalogue price before the first-order discount (migration 012)
   discount_amount    DECIMAL(15,2) NOT NULL DEFAULT 0,
   discount_code      VARCHAR(40) DEFAULT NULL,     -- 'PERTAMA20' = automatic first-order discount
+  domain_price       DECIMAL(15,2) NOT NULL DEFAULT 0, -- first-year domain price included in `price` (migration 026; 0 = older order)
+  domain_check       VARCHAR(20) DEFAULT NULL,     -- RDAP result when ordered: available | unknown
   customer_name      VARCHAR(150) NOT NULL,
   customer_email     VARCHAR(150) NOT NULL,
   customer_phone     VARCHAR(30) NOT NULL,
@@ -235,6 +240,10 @@ CREATE TABLE IF NOT EXISTS template_orders (
   approved_by        INT DEFAULT NULL,
   rejected_reason    VARCHAR(500) DEFAULT NULL,
   activated_at       DATETIME DEFAULT NULL,
+  service_started_at DATETIME DEFAULT NULL,       -- hosting & template service period (migration 026): 1 year from activation,
+  service_expires_at DATETIME DEFAULT NULL,       -- extended by paid renewals (template_renewals)
+  domain_started_at  DATETIME DEFAULT NULL,
+  domain_expires_at  DATETIME DEFAULT NULL,
   cancelled_at       DATETIME DEFAULT NULL,
   created_at         TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at         TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -268,6 +277,7 @@ CREATE TABLE IF NOT EXISTS template_order_logs (
   id          INT NOT NULL AUTO_INCREMENT,
   order_id    INT NOT NULL,
   event       VARCHAR(40) NOT NULL,   -- created|payment_created|payment_update|approved|rejected|domain_set|activated|cancelled|note
+                                      -- |renewal_created|renewal_payment_created|renewal_payment_update|renewal_paid|renewal_cancelled
   from_status VARCHAR(30) DEFAULT NULL,
   to_status   VARCHAR(30) DEFAULT NULL,
   actor_type  ENUM('system','customer','staff','midtrans') NOT NULL,
@@ -277,6 +287,46 @@ CREATE TABLE IF NOT EXISTS template_order_logs (
   created_at  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_logs_order (order_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Renewals of an active order's period (hosting & template service + domain), 1-3 years, paid through Midtrans
+-- (order_id GNR-YYYYMMDD-XXXXXX-<attempt>). Status: menunggu_pembayaran -> lunas | dibatalkan. pending_order_id =
+-- order_id while unpaid (UNIQUE: one open renewal per order). Migration 026, docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md.
+CREATE TABLE IF NOT EXISTS template_renewals (
+  id                     INT NOT NULL AUTO_INCREMENT,
+  renewal_number         VARCHAR(40) NOT NULL,        -- 'GNR-YYYYMMDD-XXXXXX'
+  order_id               INT NOT NULL,
+  user_id                INT NOT NULL,
+  domain                 VARCHAR(253) NOT NULL,       -- domain of the order when the renewal was created
+  years                  TINYINT NOT NULL,            -- 1..3
+  hosting_price_per_year DECIMAL(15,2) NOT NULL,
+  domain_price_per_year  DECIMAL(15,2) NOT NULL,
+  price_per_year         DECIMAL(15,2) NOT NULL,
+  price                  DECIMAL(15,2) NOT NULL,      -- years × price_per_year (Midtrans gross_amount)
+  status                 ENUM('menunggu_pembayaran','lunas','dibatalkan') NOT NULL DEFAULT 'menunggu_pembayaran',
+  pending_order_id       INT DEFAULT NULL,
+  payment_status         VARCHAR(30) NOT NULL DEFAULT 'pending',
+  payment_type           VARCHAR(40) DEFAULT NULL,
+  midtrans_order_id      VARCHAR(60) DEFAULT NULL,    -- renewal_number + '-' + attempt
+  payment_attempt        INT NOT NULL DEFAULT 0,
+  snap_token             VARCHAR(255) DEFAULT NULL,
+  payment_url            VARCHAR(500) DEFAULT NULL,
+  payment_created_at     DATETIME DEFAULT NULL,       -- Snap page of the current attempt (reused for 23 hours)
+  paid_at                DATETIME DEFAULT NULL,
+  paid_midtrans_order_id VARCHAR(60) DEFAULT NULL,    -- Midtrans order_id of the attempt that paid (refund / double payment checks)
+  cancelled_at           DATETIME DEFAULT NULL,
+  service_expires_before DATETIME DEFAULT NULL,
+  service_expires_after  DATETIME DEFAULT NULL,
+  domain_expires_before  DATETIME DEFAULT NULL,
+  domain_expires_after   DATETIME DEFAULT NULL,
+  created_at             TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at             TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_renewals_number (renewal_number),
+  UNIQUE KEY uq_renewals_midtrans (midtrans_order_id),
+  UNIQUE KEY uq_renewals_pending (pending_order_id),
+  KEY idx_renewals_order (order_id, created_at),
+  KEY idx_renewals_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
@@ -966,6 +1016,7 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-24_014', 'baseline: navbar Tentang + Kontak (no navbar rows; the built-in menu has them)'),
   ('2026-10-24_015', 'baseline: navbar Kontak hidden (no navbar rows; the built-in menu has Tentang only)'),
   ('2026-10-24_016', 'baseline: showcase_stats (project card likes and views)'),
+  ('2026-10-25_026', 'baseline: domain_price/domain_check, service/domain periods, template_renewals, users company/address/city'),
   ('2026-10-25_027', 'baseline: users.google_sub (Google sign-in)');
 
 -- ----------------------------------------------------------------------------

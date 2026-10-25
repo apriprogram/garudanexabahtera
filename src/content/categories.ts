@@ -8,11 +8,12 @@
 // Aturan index (rencana §2): kategori diindeks bila punya ≥ 2 template terbit, ATAU punya panduan ≥ 300 kata unik +
 // FAQ (`hasGuide`, dicek tes categories.test.ts terhadap categories.content.ts) dan minimal 1 template. Kategori tanpa
 // template selalu noindex,follow.
-// Nama, harga dan jumlah template TIDAK ditulis di sini: semuanya dari data template (DB/API).
+// Nama, harga dan jumlah template TIDAK ditulis di sini: semuanya dari data template (DB/API). Domain tidak termasuk
+// harga template (pemilik 2026-10-25): meta tidak pernah menyebut "termasuk domain"; harga domain dari domainPricing.ts.
 import type { Template } from '../types/platform';
 import { formatPriceShort, isPrice } from '../seo/format';
 import { CATEGORY_SLUGS, type CategorySlug, type PlannedArticleSlug } from '../seo/paths';
-import { categorySlugOf } from '../seo/templateSeo';
+import { categorySlugOf, DOMAIN_FROM_TEXT } from '../seo/templateSeo';
 
 export interface CategoryMeta {
   slug: CategorySlug;
@@ -50,10 +51,9 @@ export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
     name: 'Company profile',
     h1: 'Template website company profile',
     title: 'Template Website Company Profile Siap Pakai | Garuda Nexa',
-    description:
-      'Template website company profile untuk perusahaan, UMKM & startup. Mulai {harga_min}, termasuk domain, hosting & SSL tahun pertama. Lihat demonya.',
+    description: `Template website company profile untuk perusahaan, UMKM & startup. Mulai {harga_min}, termasuk hosting & SSL tahun pertama; ${DOMAIN_FROM_TEXT}.`,
     descriptionNoPrice:
-      'Template website company profile untuk perusahaan, UMKM & startup, sudah termasuk domain, hosting & SSL tahun pertama. Lihat demonya.',
+      'Template website company profile untuk perusahaan, UMKM & startup, sudah termasuk hosting & SSL tahun pertama. Domain dipilih saat memesan. Lihat demonya.',
     niche: 'company profile',
     hasGuide: true,
     guides: ['biaya-website-company-profile', 'template-vs-jasa-website-custom'],
@@ -117,9 +117,9 @@ export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
     h1: 'Template website toko online',
     title: 'Template Website Toko Online Siap Pakai | Garuda Nexa',
     description:
-      'Template website toko online untuk drone, pertanian, outdoor, aksesoris HP & skincare. Mulai {harga_min}, termasuk domain, hosting & SSL. Lihat demonya.',
+      'Template website toko online untuk drone, pertanian, outdoor, aksesoris HP & skincare. Mulai {harga_min}, termasuk hosting & SSL tahun pertama.',
     descriptionNoPrice:
-      'Template website toko online untuk drone, pertanian, outdoor, aksesoris HP & skincare, sudah termasuk domain, hosting & SSL. Lihat demonya.',
+      'Template website toko online untuk drone, pertanian, outdoor, aksesoris HP & skincare, sudah termasuk hosting & SSL tahun pertama. Lihat demonya.',
     niche: 'toko online',
     hasGuide: true,
     guides: ['template-vs-jasa-website-custom'],
@@ -131,9 +131,9 @@ export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
     h1: 'Template website sekolah',
     title: 'Template Website Sekolah & PPDB Online | Garuda Nexa',
     description:
-      'Template website sekolah untuk SMA, SMK & sekolah islam: berita, pengumuman, PPDB online. Mulai {harga_min}, termasuk domain, hosting & SSL. Lihat demonya.',
+      'Template website sekolah untuk SMA, SMK & sekolah islam: berita, pengumuman, PPDB online. Mulai {harga_min}, termasuk hosting & SSL. Lihat demonya.',
     descriptionNoPrice:
-      'Template website sekolah untuk SMA, SMK & sekolah islam: berita, pengumuman, PPDB online, sudah termasuk domain, hosting & SSL. Lihat demonya.',
+      'Template website sekolah untuk SMA, SMK & sekolah islam: berita, pengumuman, PPDB online, sudah termasuk hosting & SSL. Lihat demonya.',
     niche: 'sekolah',
     hasGuide: true,
     guides: ['template-vs-jasa-website-custom'],

@@ -7,6 +7,7 @@ import React from 'react';
 import { ArrowUpRight, Code2, LayoutTemplate, Mail, MapPin, MessageCircle, Phone, Smartphone, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { COMPANY_FACTS } from '../../../lib/companyFacts';
+import { DOMAIN_PRICE_FROM, rupiahCompact } from '../../../lib/domainPricing';
 import { LogoMark } from '../../../components/ui/LogoMark';
 import {
   displayPhone,
@@ -98,7 +99,9 @@ export default function Tentang() {
           ) : (
             'Harga setiap template tertera di halamannya, '
           )}
-          sudah termasuk setup, domain, hosting, dan SSL tahun pertama. Lihat <TextLink to={HUB_PATHS.pricing}>daftar harga</TextLink>.
+          sudah termasuk setup, hosting, dan SSL tahun pertama. Domain dipilih saat memesan, mulai{' '}
+          {rupiahCompact(DOMAIN_PRICE_FROM)}/tahun, dan biaya tahun berikutnya juga tertulis di{' '}
+          <TextLink to={HUB_PATHS.pricing}>daftar harga</TextLink>.
         </>
       ),
     },
@@ -155,8 +158,9 @@ export default function Tentang() {
               </>,
               <>
                 Ada dua jalur. Pertama, <TextLink to={HUB_PATHS.catalog}>template website siap pakai</TextLink> dengan harga tertera yang
-                sudah termasuk domain, hosting, dan SSL tahun pertama. Kedua, website dan aplikasi custom yang dirancang dari nol setelah
-                konsultasi gratis. Semuanya berjalan online, jadi kami bisa melayani klien di kota mana pun.
+                sudah termasuk setup, hosting, dan SSL tahun pertama; domainnya Anda pilih saat memesan. Kedua, website dan aplikasi
+                custom yang dirancang dari nol setelah konsultasi gratis. Semuanya berjalan online, jadi kami bisa melayani klien di
+                kota mana pun.
               </>,
             ]}
           />

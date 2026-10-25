@@ -133,8 +133,10 @@ export interface HistoryEntry {
 
 /**
  * Log pesanan → kalimat untuk pembeli. Catatan (note) dari log TIDAK pernah ditampilkan mentah karena berisi catatan
- * internal admin, pesan teknis Midtrans, atau teks mode uji; satu-satunya yang dipakai adalah alasan penolakan.
- * Log yang hanya berguna untuk tim (catatan admin, pembaruan pembayaran tanpa perubahan status) disembunyikan.
+ * internal admin, pesan teknis Midtrans, atau teks mode uji; pengecualiannya alasan penolakan dan catatan perpanjangan
+ * (renewal_created/paid/cancelled), yang ditulis server khusus untuk pembeli (ACCOUNT-DOMAIN-RENEWAL-SPEC.md §5).
+ * Log yang hanya berguna untuk tim (catatan admin, pembaruan pembayaran tanpa perubahan status, renewal_payment_*)
+ * disembunyikan.
  */
 export const customerHistoryEntry = (log: OrderLog): HistoryEntry | null => {
   const base = { id: log.id, time: log.created_at };
@@ -163,6 +165,12 @@ export const customerHistoryEntry = (log: OrderLog): HistoryEntry | null => {
         title: 'Pesanan dibatalkan',
         text: log.actor_type === 'customer' ? 'Anda membatalkan pesanan ini.' : 'Pesanan dibatalkan oleh tim kami.',
       };
+    case 'renewal_created':
+      return { ...base, title: 'Perpanjangan dibuat', text: log.note?.trim() || undefined };
+    case 'renewal_paid':
+      return { ...base, title: 'Masa aktif diperpanjang', text: log.note?.trim() || undefined };
+    case 'renewal_cancelled':
+      return { ...base, title: 'Perpanjangan dibatalkan', text: log.note?.trim() || undefined };
     default:
       return null;
   }

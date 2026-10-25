@@ -23,7 +23,7 @@ const PF_STATUS_LABEL = [
     'ditolak' => 'Ditolak',
     'dibatalkan' => 'Dibatalkan',
 ];
-const PF_DOMAIN_PATTERN = '/^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/';
+const PF_DOMAIN_PATTERN = '/^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/D';
 const PF_SLUG_PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
 // Slugs no template may use because the public page /template/{slug} belongs to something else:
 // /template/kategori/{category} are the category pages (docs/platform/SEO-PLAN.md §2). Same list in templates.js.
@@ -43,14 +43,34 @@ const PF_VIEWS_PER_HOUR = 300;            // counted template views per IP
 const PF_SOLD_COUNT_SQL = "(SELECT COUNT(*) FROM template_orders o WHERE o.template_id = templates.id AND o.paid_at IS NOT NULL
     AND o.status IN ('menunggu_approval', 'proses_domain', 'aktif')) AS sold_count";
 const PF_SNAP_REUSE_HOURS = 23;           // a Snap token lives 24 hours
+// Masa aktif & perpanjangan (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md §5). Same values in templates.js and
+// src/lib/domainPricing.ts.
+const PF_RENEWAL_STATUS_LABEL = [
+    'menunggu_pembayaran' => 'Menunggu Pembayaran',
+    'lunas' => 'Lunas',
+    'dibatalkan' => 'Dibatalkan',
+];
+const PF_RENEWAL_YEARS = [1, 2, 3];
+// Log events whose note the customer sees (pf_logs); renewal notes are written by the server only
+const PF_CUSTOMER_NOTE_EVENTS = ['rejected', 'renewal_created', 'renewal_paid', 'renewal_cancelled'];
+const PF_RENEWAL_MAX_YEARS_AHEAD = 10;      // a period never ends more than 10 years from now (registry limit)
+const PF_HOSTING_RENEWAL_DEFAULT = 500000;  // hosting & jasa per year when setting template_hosting_renewal_price is unset
+const PF_DOMAIN_CHECKS = 40;                // customer_check_domain calls per account per window
+const PF_DOMAIN_ORDER_CHECKS = 20;          // availability checks inside customer_create_order per account per window
+const PF_DOMAIN_CHECK_WINDOW = 600;         // seconds
+const PF_AVATAR_MAX_BYTES = 2097152;        // profile photo (2 MB), raster only
+const PF_AVATAR_EXTS = ['png', 'jpg', 'webp'];
+const PF_MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 const PF_GENERATED_ASSET = '/_[0-9a-f]{12}\.[a-z0-9]+$/'; // names made by save_base64_asset (never seed files)
 
 // Reads may use GET (query string) as well as POST; every other platform action is POST only
 const PF_GET_ACTIONS = [
     'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'get_payment_config', 'get_showcase_stats',
+    'get_domain_prices',
     'customer_get_orders', 'customer_get_order', 'customer_get_site', 'customer_get_order_quote',
+    'customer_check_domain', 'customer_get_invoice', 'customer_get_invoices', 'customer_get_profile',
     'admin_get_template_orders', 'admin_get_template_order', 'admin_get_templates', 'admin_get_active_sites',
-    'admin_dashboard_summary',
+    'admin_dashboard_summary', 'admin_get_domain_pricing',
 ];
 
 function handle_platform_action(mysqli $conn, string $action, array $input, ?array $user): bool {
@@ -64,6 +84,7 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
         'customer_register' => 'pf_customer_register',
         'midtrans_notification' => 'pf_midtrans_notification',
         'get_payment_config' => 'pf_get_payment_config',
+        'get_domain_prices' => 'pf_get_domain_prices',
         'template_like' => 'pf_template_like',
         'template_view' => 'pf_template_view',
         'get_showcase_stats' => 'pf_get_showcase_stats',
@@ -83,6 +104,15 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
         'customer_get_site' => 'pf_customer_get_site',
         'customer_save_site_content' => 'pf_customer_save_site_content',
         'dev_simulate_payment' => 'pf_dev_simulate_payment',
+        'customer_check_domain' => 'pf_customer_check_domain',
+        'customer_create_renewal' => 'pf_customer_create_renewal',
+        'customer_pay_renewal' => 'pf_customer_pay_renewal',
+        'customer_cancel_renewal' => 'pf_customer_cancel_renewal',
+        'dev_simulate_renewal_payment' => 'pf_dev_simulate_renewal_payment',
+        'customer_get_invoice' => 'pf_customer_get_invoice',
+        'customer_get_invoices' => 'pf_customer_get_invoices',
+        'customer_get_profile' => 'pf_customer_get_profile',
+        'customer_update_profile' => 'pf_customer_update_profile',
         // staff (admin + user)
         'admin_get_template_orders' => 'pf_admin_get_template_orders',
         'admin_get_template_order' => 'pf_admin_get_template_order',
@@ -95,6 +125,7 @@ function handle_platform_action(mysqli $conn, string $action, array $input, ?arr
         'admin_get_active_sites' => 'pf_admin_get_active_sites',
         'admin_set_site_status' => 'pf_admin_set_site_status',
         'admin_dashboard_summary' => 'pf_admin_dashboard_summary',
+        'admin_get_domain_pricing' => 'pf_admin_get_domain_pricing',
     ];
     if (!isset($handlers[$action])) return false;
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST' && !in_array($action, PF_GET_ACTIONS, true)) {
@@ -371,6 +402,11 @@ function pf_midtrans_notification(mysqli $conn, array $input, ?array $user): arr
     if ($orderId === '' || $signature === '' || !hash_equals($expected, $signature)) {
         throw new ApiError('Signature tidak valid.', 403, 'INVALID_SIGNATURE');
     }
+    // Tagihan perpanjangan (GNR-…): signature sama, jalur pembayaran sendiri
+    if (strncmp($orderId, 'GNR-', 4) === 0) {
+        pf_renewal_notification($conn, $cfg, $input, $orderId, $gross);
+        return [];
+    }
 
     $order = pf_order_by_midtrans_id($conn, $orderId);
     if (!$order) throw new ApiError('Pesanan tidak ditemukan.', 404, 'ORDER_NOT_FOUND');
@@ -428,6 +464,11 @@ function pf_customer_create_order(mysqli $conn, array $input, ?array $user): arr
     if ($domainPrimary !== null && $domainAlternative === $domainPrimary) {
         $errors['domain_alternative'] = 'Domain alternatif harus berbeda dari domain utama.';
     }
+    // Domain dibeli bersama pesanan: hanya ekstensi yang dijual (domain_catalog, domains.php), satu label tanpa subdomain
+    $tlds = domain_catalog($conn)['tlds'];
+    foreach (['domain_primary' => $domainPrimary, 'domain_alternative' => $domainAlternative] as $key => $domain) {
+        if ($domain !== null && !isset($errors[$key]) && ($problem = domain_problem($domain, $tlds)) !== null) $errors[$key] = $problem;
+    }
     pf_validate($errors);
 
     $template = db_one($conn, "SELECT * FROM templates WHERE id = ? AND status = 'published' LIMIT 1", [$templateId]);
@@ -436,18 +477,31 @@ function pf_customer_create_order(mysqli $conn, array $input, ?array $user): arr
     if ($pending >= PF_MAX_PENDING_ORDERS) {
         throw new ApiError('Anda masih punya ' . $pending . ' pesanan yang belum dibayar. Selesaikan atau batalkan dulu sebelum memesan lagi.', 409, 'TOO_MANY_PENDING');
     }
+    // Domain yang sudah terdaftar tidak bisa dibeli; 'unknown' (RDAP tidak menjawab) tetap boleh, tim memastikan manual.
+    // Cek ini juga dibatasi per akun (pesanan dengan domain terpakai tidak menambah jumlah pesanan menunggu pembayaran)
+    $orderKey = 'domain-order|' . $user['id'];
+    $wait = rate_limit_wait($orderKey, PF_DOMAIN_ORDER_CHECKS);
+    if ($wait) too_many_attempts($wait);
+    rate_limit_hit($orderKey, PF_DOMAIN_CHECK_WINDOW);
+    $domainCheck = domain_availability($domainPrimary);
+    if ($domainCheck === 'taken') {
+        $message = 'Domain ' . $domainPrimary . ' sudah dipakai orang lain. Cek nama lain.';
+        throw new ApiError($message, 409, 'DOMAIN_UNAVAILABLE', ['domain_primary' => $message]);
+    }
 
-    // Harga yang dibayar = harga template dikurangi diskon pesanan pertama (bila berlaku); harga katalog tetap dicatat
+    // Harga yang dibayar = harga template dikurangi diskon pesanan pertama (bila berlaku) + domain tahun pertama;
+    // harga katalog tetap dicatat. Diskon hanya untuk template.
     $quote = pf_first_order_quote($conn, (int)$user['id'], (float)$template['price']);
+    $domainPrice = (float)domain_price($domainPrimary, $tlds);
     $orderId = 0;
     for ($try = 0; $try < 5 && !$orderId; $try++) {
         try {
             db_run($conn, "INSERT INTO template_orders (order_number, user_id, template_id, template_name, template_code, price, list_price,
-                               discount_amount, discount_code, customer_name, customer_email, customer_phone, company_name, notes,
-                               domain_primary, domain_alternative)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-                pf_new_order_number(), $user['id'], (int)$template['id'], $template['name'], $template['template_code'], $quote['price'],
-                $quote['list_price'], $quote['discount_amount'], $quote['discount_code'],
+                               discount_amount, discount_code, domain_price, domain_check, customer_name, customer_email, customer_phone,
+                               company_name, notes, domain_primary, domain_alternative)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+                pf_new_order_number(), $user['id'], (int)$template['id'], $template['name'], $template['template_code'],
+                $quote['price'] + $domainPrice, $quote['list_price'], $quote['discount_amount'], $quote['discount_code'], $domainPrice, $domainCheck,
                 $customerName, $customerEmail, $customerPhone, $companyName, $notes, $domainPrimary, $domainAlternative,
             ]);
             $orderId = (int)$conn->insert_id;
@@ -542,6 +596,8 @@ function pf_customer_get_order(mysqli $conn, array $input, ?array $user): array 
         'order' => pf_order_out($order, false),
         'logs' => pf_logs($conn, (int)$order['id'], false),
         'site' => $site ? pf_site_out($site, false) : null,
+        'renewals' => pf_order_renewals($conn, (int)$order['id'], false),
+        'renewal' => pf_renewal_offer($conn, $order),
     ];
 }
 
@@ -622,6 +678,620 @@ function pf_dev_simulate_payment(mysqli $conn, array $input, ?array $user): arra
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// Customer: domain check, profile, invoice, renewals (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md)
+// ════════════════════════════════════════════════════════════════════════════
+
+const PF_RENEWAL_NOT_ACTIVE_MESSAGE = 'Perpanjangan hanya untuk pesanan yang situsnya sudah aktif.';
+const PF_RENEWAL_NO_PRICE_MESSAGE = 'Perpanjangan online untuk domain ini belum tersedia. Hubungi kami via WhatsApp.';
+const PF_RENEWAL_TOO_LONG_MESSAGE = 'Masa aktif paling lama 10 tahun ke depan. Pilih masa perpanjangan yang lebih pendek.';
+// Current end of the hosting / domain period; an active order without one (activated between migration 026 and the
+// deploy of this code) ends 1 year after activation. Same expressions in templates.js.
+const PF_SERVICE_END_SQL = 'COALESCE(service_expires_at, DATE_ADD(activated_at, INTERVAL 1 YEAR), NOW())';
+const PF_DOMAIN_END_SQL = 'COALESCE(domain_expires_at, DATE_ADD(activated_at, INTERVAL 1 YEAR), NOW())';
+const PF_INVOICE_NOT_AVAILABLE_MESSAGE = 'Nota tersedia setelah pembayaran lunas.';
+
+// Ketersediaan & harga domain untuk halaman pesan (RDAP registri, backend/modules/domains.php)
+function pf_customer_check_domain(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    // Dihitung sebelum I/O apa pun (katalog, validasi), jadi permintaan bersamaan tidak lolos batas
+    $key = 'domain-check|' . $user['id'];
+    $wait = rate_limit_wait($key, PF_DOMAIN_CHECKS);
+    if ($wait) too_many_attempts($wait);
+    rate_limit_hit($key, PF_DOMAIN_CHECK_WINDOW);
+    $errors = [];
+    $domain = '';
+    $tlds = domain_catalog($conn)['tlds'];
+    $raw = pf_str($input, 'domain', 'Domain', 253, true, $errors);
+    if ($raw !== null) {
+        $domain = domain_normalize($raw);
+        if ($domain === '') $errors['domain'] = 'Domain wajib diisi.';
+        elseif (($problem = domain_problem($domain, $tlds)) !== null) $errors['domain'] = $problem;
+    }
+    pf_validate($errors);
+    // Nama yang sama di semua ekstensi (yang diminta lebih dulu), dicek paralel: pembeli melihat mana yang tersedia
+    $domains = domain_alternatives($domain, $tlds);
+    $statuses = domain_availability_many($domains);
+    $checks = array_map(function ($d) use ($statuses, $tlds) {
+        $tld = domain_tld($d, $tlds);
+        return ['domain' => $d, 'tld' => $tld['tld'], 'status' => $statuses[$d], 'price' => $tld['price']];
+    }, $domains);
+    return ['check' => $checks[0], 'checks' => $checks];
+}
+
+// Daftar ekstensi domain yang dijual + harga jual per tahun (halaman Harga, pilihan ekstensi di halaman pesan). Harga
+// beli DewaBiz tidak ikut.
+function pf_get_domain_prices(mysqli $conn, array $input, ?array $user): array {
+    $catalog = domain_catalog($conn);
+    return ['source' => $catalog['source'], 'domains' => array_map(function ($t) {
+        return ['tld' => $t['tld'], 'price' => (int)$t['price'], 'requirement' => $t['requirement']];
+    }, $catalog['tlds'])];
+}
+
+function pf_customer_get_profile(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    return ['profile' => pf_profile_out(pf_profile_row($conn, (int)$user['id']))];
+}
+
+// Biodata + foto profil. avatar: tidak dikirim / sama = tetap, null atau '' = hapus, data URI PNG/JPG/WEBP = unggah baru
+function pf_customer_update_profile(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    $errors = [];
+    $name = pf_str($input, 'name', 'Nama', 100, true, $errors, 2);
+    $phone = pf_phone($input, 'phone', 'Nomor HP', true, $errors);
+    $company = pf_str($input, 'company_name', 'Nama perusahaan', 150, false, $errors);
+    $address = pf_str($input, 'address', 'Alamat', 255, false, $errors);
+    $city = pf_str($input, 'city', 'Kota', 100, false, $errors);
+    $row = pf_profile_row($conn, (int)$user['id']);
+    $current = is_string($row['avatar']) ? $row['avatar'] : '';
+    $avatar = $current;
+    $upload = null;
+    if (array_key_exists('avatar', $input)) {
+        $value = $input['avatar'];
+        if ($value === null || $value === '') {
+            $avatar = '';
+        } elseif (is_string($value) && $value === $current) {
+            // tidak berubah
+        } elseif (is_string($value) && preg_match('/^\s*data:/i', $value)) {
+            if (!preg_match('/^\s*data:image\/(png|jpe?g|webp);base64,/i', $value, $m)) {
+                $errors['avatar'] = 'Foto profil harus JPG, PNG, atau WEBP.';
+            } elseif (strlen($value) - strlen($m[0]) > ceil(PF_AVATAR_MAX_BYTES * 4 / 3) + 4) {
+                $errors['avatar'] = 'Ukuran foto maksimal 2 MB.';
+            } else {
+                try {
+                    [$content, $ext] = parse_upload(trim($value), false); // type from the bytes, never from the header
+                    if (!in_array($ext, PF_AVATAR_EXTS, true)) $errors['avatar'] = 'Foto profil harus JPG, PNG, atau WEBP.';
+                    elseif (strlen($content) > PF_AVATAR_MAX_BYTES) $errors['avatar'] = 'Ukuran foto maksimal 2 MB.';
+                    else $upload = trim($value);
+                } catch (ApiError $e) {
+                    $errors['avatar'] = 'Foto profil tidak valid.';
+                }
+            }
+        } else {
+            $errors['avatar'] = 'Foto profil tidak valid.';
+        }
+    }
+    pf_validate($errors);
+    if ($upload !== null) {
+        // Foto baru hanya menggantikan foto yang tadi dibaca: dua simpan bersamaan tidak meninggalkan file yatim
+        $avatar = save_base64_asset($upload, 'avatars', 'avatar');
+        db_run($conn, "UPDATE users SET name = ?, phone = ?, company_name = ?, address = ?, city = ?, avatar = ? WHERE id = ? AND avatar <=> ?",
+            [$name, $phone, $company, $address, $city, $avatar, (int)$user['id'], $row['avatar']]);
+        if (db_affected_rows() === 0) {
+            pf_delete_generated($avatar, 'avatars');
+            throw new ApiError('Foto profil baru saja diubah di tempat lain. Muat ulang halaman lalu coba lagi.', 409, 'PROFILE_CHANGED');
+        }
+    } else {
+        db_run($conn, "UPDATE users SET name = ?, phone = ?, company_name = ?, address = ?, city = ?, avatar = ? WHERE id = ?",
+            [$name, $phone, $company, $address, $city, $avatar, (int)$user['id']]);
+    }
+    if ($avatar !== $current) pf_delete_generated($current, 'avatars');
+    return ['profile' => pf_profile_out(pf_profile_row($conn, (int)$user['id']))];
+}
+
+function pf_profile_row(mysqli $conn, int $userId): array {
+    $row = db_one($conn, "SELECT id, name, email, phone, company_name, address, city, avatar FROM users WHERE id = ? LIMIT 1", [$userId]);
+    if (!$row) throw new ApiError('Silakan masuk terlebih dahulu.', 401, 'UNAUTHORIZED');
+    return $row;
+}
+
+function pf_profile_out(array $r): array {
+    $avatar = is_string($r['avatar']) ? $r['avatar'] : '';
+    return [
+        'id' => (int)$r['id'],
+        'name' => $r['name'],
+        'email' => $r['email'],
+        'phone' => $r['phone'],
+        'company_name' => $r['company_name'],
+        'address' => $r['address'],
+        'city' => $r['city'],
+        // Path/URL gambar saja; kosong atau data URI (foto staf lama) = inisial nama
+        'avatar' => preg_match('#^(/assets/|https://)#', $avatar) ? $avatar : null,
+    ];
+}
+
+// Data nota pembelian (pesanan lunas) atau nota perpanjangan (tagihan lunas) + identitas perusahaan untuk kop
+function pf_customer_get_invoice(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    $order = pf_customer_order($conn, $input, $user);
+    $number = strtoupper(trim(in_str($input, 'renewal_number')));
+    $renewal = null;
+    if ($number !== '') {
+        $renewal = db_one($conn, pf_renewal_select() . " WHERE r.renewal_number = ? AND r.order_id = ? LIMIT 1", [$number, (int)$order['id']]);
+        if (!$renewal) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
+        if ($renewal['status'] !== 'lunas') throw new ApiError(PF_INVOICE_NOT_AVAILABLE_MESSAGE, 409, 'INVOICE_NOT_AVAILABLE');
+    } elseif ($order['paid_at'] === null) {
+        throw new ApiError(PF_INVOICE_NOT_AVAILABLE_MESSAGE, 409, 'INVOICE_NOT_AVAILABLE');
+    }
+    return [
+        'order' => pf_order_out($order, false),
+        'renewal' => $renewal ? pf_renewal_out($renewal, false) : null,
+        'company' => pd_settings($conn)['company'],
+    ];
+}
+
+// Daftar nota pembeli (menu Nota): pesanan yang sudah dibayar + perpanjangan lunas, terbaru dulu
+function pf_customer_get_invoices(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    $items = [];
+    foreach (db_all($conn, pf_order_select() . " WHERE o.user_id = ? AND o.paid_at IS NOT NULL", [$user['id']]) as $o) {
+        $items[] = [
+            'type' => 'pembelian',
+            'invoice_number' => 'INV-' . $o['order_number'],
+            'order_number' => $o['order_number'],
+            'renewal_number' => null,
+            'title' => $o['template_name'],
+            'domain' => $o['domain'] ?: $o['domain_primary'],
+            'years' => null,
+            'amount' => pf_num($o['price']),
+            'paid_at' => $o['paid_at'],
+            'payment_status' => $o['payment_status'],
+            'payment_type' => $o['payment_type'],
+            'order_status' => $o['status'],
+        ];
+    }
+    foreach (db_all($conn, pf_renewal_select() . " WHERE o.user_id = ? AND r.status = 'lunas'", [$user['id']]) as $r) {
+        $items[] = [
+            'type' => 'perpanjangan',
+            'invoice_number' => 'INV-' . $r['renewal_number'],
+            'order_number' => $r['order_number'],
+            'renewal_number' => $r['renewal_number'],
+            'title' => $r['template_name'],
+            'domain' => $r['domain'],
+            'years' => (int)$r['years'],
+            'amount' => pf_num($r['price']),
+            'paid_at' => $r['paid_at'],
+            'payment_status' => $r['payment_status'],
+            'payment_type' => $r['payment_type'],
+            'order_status' => null,
+        ];
+    }
+    usort($items, function ($a, $b) {
+        return strcmp((string)$b['paid_at'], (string)$a['paid_at']) ?: strcmp($b['invoice_number'], $a['invoice_number']);
+    });
+    return ['invoices' => $items];
+}
+
+function pf_customer_create_renewal(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    $years = in_int($input, 'years');
+    if (!in_array($years, PF_RENEWAL_YEARS, true)) pf_validate(['years' => 'Pilih masa perpanjangan 1, 2, atau 3 tahun.']);
+    $order = pf_customer_order($conn, $input, $user);
+    $orderId = (int)$order['id'];
+    $offer = pf_renewal_offer($conn, $order);
+    if ($order['status'] !== 'aktif' || $offer['price_per_year'] === null) throw new ApiError($offer['reason'], 409, 'RENEWAL_NOT_AVAILABLE');
+    pf_assert_no_pending_renewal($conn, $orderId);
+    $option = null;
+    foreach ($offer['options'] as $o) {
+        if ($o['years'] === $years) $option = $o;
+    }
+    if ($option === null) throw new ApiError(PF_RENEWAL_TOO_LONG_MESSAGE, 409, 'RENEWAL_TOO_LONG');
+
+    $renewalId = 0;
+    for ($try = 0; $try < 5 && !$renewalId; $try++) {
+        try {
+            db_run($conn, "INSERT INTO template_renewals (renewal_number, order_id, user_id, domain, years, hosting_price_per_year,
+                               domain_price_per_year, price_per_year, price, pending_order_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+                pf_new_order_number('GNR'), $orderId, (int)$user['id'], $order['domain'] ?: $order['domain_primary'], $years,
+                $offer['hosting_price_per_year'], $offer['domain_price_per_year'], $offer['price_per_year'], $option['price'], $orderId,
+            ]);
+            $renewalId = (int)$conn->insert_id;
+        } catch (ApiError $e) {
+            if ($e->status !== 409) throw $e;
+            pf_assert_no_pending_renewal($conn, $orderId); // a concurrent request opened one (uq_renewals_pending)
+            if ($try === 4) throw $e; // renewal number collision: draw a new one
+        }
+    }
+    $renewal = pf_renewal_by_id($conn, $renewalId);
+    pf_log($conn, $orderId, 'renewal_created', null, null, 'customer', (int)$user['id'],
+        'Perpanjangan ' . $years . ' tahun dibuat (' . $renewal['renewal_number'] . ').');
+    $result = pf_create_renewal_snap($conn, $renewal);
+    $out = ['renewal' => pf_renewal_out(pf_renewal_by_id($conn, $renewalId), false), 'payment_url' => $result['payment_url']];
+    if ($result['error'] !== null) $out['payment_error'] = $result['error'];
+    return $out;
+}
+
+function pf_customer_pay_renewal(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    $renewal = pf_customer_renewal($conn, $input, $user);
+    if ($renewal['status'] !== 'menunggu_pembayaran') throw pf_renewal_status_error($renewal['status']);
+    // Kartu yang ditahan untuk tinjauan fraud: membayar lagi membuat transaksi baru (risiko tertagih dua kali)
+    if ($renewal['payment_status'] === 'capture') {
+        throw new ApiError('Pembayaran kartu Anda sedang ditinjau bank. Tidak perlu membayar ulang.', 409, 'PAYMENT_UNDER_REVIEW');
+    }
+    $cfg = pf_midtrans_config();
+    if ($cfg['server_key'] === '') throw new ApiError('Pembayaran online belum dikonfigurasi.', 503, 'PAYMENT_NOT_CONFIGURED');
+    // Reuse the current Snap page while it is still valid and not finished/failed
+    if ($renewal['payment_url'] && $renewal['payment_status'] === 'pending' && $renewal['payment_age_minutes'] !== null
+        && (int)$renewal['payment_age_minutes'] < PF_SNAP_REUSE_HOURS * 60) {
+        return ['payment_url' => $renewal['payment_url']];
+    }
+    $result = pf_create_renewal_snap($conn, $renewal);
+    if ($result['payment_url'] === null) throw new ApiError($result['error'], 502, 'PAYMENT_GATEWAY_ERROR');
+    return ['payment_url' => $result['payment_url']];
+}
+
+function pf_customer_cancel_renewal(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    $renewal = pf_customer_renewal($conn, $input, $user);
+    if (!pf_renewal_transition($conn, (int)$renewal['id'], 'dibatalkan', 'cancelled_at = NOW()')) {
+        throw pf_renewal_status_error(pf_renewal_by_id($conn, (int)$renewal['id'])['status']);
+    }
+    pf_log($conn, (int)$renewal['order_id'], 'renewal_cancelled', null, null, 'customer', (int)$user['id'],
+        'Perpanjangan ' . $renewal['renewal_number'] . ' dibatalkan.');
+    pf_midtrans_expire($renewal);
+    return ['renewal' => pf_renewal_out(pf_renewal_by_id($conn, (int)$renewal['id']), false)];
+}
+
+// Same payment result as a Midtrans settlement (local testing without Midtrans)
+function pf_dev_simulate_renewal_payment(mysqli $conn, array $input, ?array $user): array {
+    $user = pf_require_customer($user);
+    $cfg = pf_midtrans_config();
+    if (!$cfg['simulator']) throw new ApiError('Simulasi pembayaran tidak aktif.', 403, 'SIMULATOR_DISABLED');
+    $renewal = pf_customer_renewal($conn, $input, $user);
+    if ($renewal['status'] !== 'menunggu_pembayaran') throw pf_renewal_status_error($renewal['status']);
+    pf_apply_renewal_payment($conn, $renewal, 'settlement', 'accept', 'simulator', 'customer', (int)$user['id'],
+        ['simulated' => true, 'transaction_status' => 'settlement'], true, null, 'simulated');
+    return [
+        'renewal' => pf_renewal_out(pf_renewal_by_id($conn, (int)$renewal['id']), false),
+        'order' => pf_order_out(pf_order_by_id($conn, (int)$renewal['order_id']), false),
+    ];
+}
+
+// Midtrans notification for GNR-… (signature already checked): amount, Status API confirmation, then the payment result
+function pf_renewal_notification(mysqli $conn, array $cfg, array $input, string $orderId, string $gross): void {
+    $renewal = db_one($conn, pf_renewal_select() . " WHERE r.midtrans_order_id = ? LIMIT 1", [$orderId]);
+    if (!$renewal && preg_match('/^(GNR-\d{8}-[A-Z0-9]{6})-(\d+)$/', $orderId, $m)) {
+        $renewal = db_one($conn, pf_renewal_select() . " WHERE r.renewal_number = ? AND r.payment_attempt >= ? LIMIT 1", [$m[1], (int)$m[2]]);
+    }
+    if (!$renewal) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
+    $payload = pf_payment_payload($input);
+    if (!pf_same_amount($gross, $renewal['price'])) {
+        pf_log($conn, (int)$renewal['order_id'], 'renewal_payment_update', null, null, 'midtrans', null,
+            'Notifikasi perpanjangan ' . $renewal['renewal_number'] . ' ditolak: jumlah pembayaran (' . $gross . ') tidak sama dengan tagihan.', $payload);
+        throw new ApiError('Jumlah pembayaran tidak sesuai.', 400, 'AMOUNT_MISMATCH');
+    }
+    $tx = pf_scalar($input, 'transaction_status');
+    $fraud = pf_scalar($input, 'fraud_status');
+    $paymentType = pf_scalar($input, 'payment_type');
+    // Confirm with the Status API; the notification itself is signed, so it is the fallback when the API is unreachable
+    $check = pf_midtrans_request('GET', $cfg['api_base'] . '/v2/' . rawurlencode($orderId) . '/status', $cfg['server_key'], null, 10);
+    $body = $check['body'];
+    if ($check['code'] === 200 && is_array($body) && isset($body['transaction_status']) && (string)($body['order_id'] ?? '') === $orderId) {
+        if (isset($body['gross_amount']) && !pf_same_amount((string)$body['gross_amount'], $renewal['price'])) {
+            pf_log($conn, (int)$renewal['order_id'], 'renewal_payment_update', null, null, 'midtrans', null,
+                'Status API: jumlah pembayaran perpanjangan ' . $renewal['renewal_number'] . ' tidak sama dengan tagihan.', pf_payment_payload($body));
+            throw new ApiError('Jumlah pembayaran tidak sesuai.', 400, 'AMOUNT_MISMATCH');
+        }
+        $tx = (string)$body['transaction_status'];
+        $fraud = (string)($body['fraud_status'] ?? '');
+        $paymentType = (string)($body['payment_type'] ?? $paymentType);
+        $payload['confirmed_by_status_api'] = true;
+    } else {
+        $payload['confirmed_by_status_api'] = false;
+        error_log('[midtrans] Status API check failed for ' . $orderId . ': HTTP ' . $check['code'] . ' ' . $check['error']);
+    }
+    $isCurrent = $renewal['midtrans_order_id'] === $orderId
+        || ($renewal['midtrans_order_id'] === null && $orderId === $renewal['renewal_number'] . '-' . $renewal['payment_attempt']);
+    pf_apply_renewal_payment($conn, $renewal, $tx, $fraud, $paymentType !== '' ? $paymentType : null, 'midtrans', null, $payload, $isCurrent,
+        $orderId);
+}
+
+// One place for every renewal payment result (Midtrans webhook and dev_simulate_renewal_payment):
+//   settlement / capture+accept -> lunas + masa aktif diperpanjang (pf_renewal_mark_paid)
+//   deny / cancel / expire / failure -> dibatalkan, only for the current attempt while still menunggu_pembayaran
+//   pending -> unchanged; refund* / chargeback -> logged only
+// $paymentOrderId = Midtrans order_id of the notification (null for the simulator). Payment fields change only while the
+// renewal waits for payment, or for a refund/chargeback of the attempt that paid it (paid_midtrans_order_id).
+function pf_apply_renewal_payment(mysqli $conn, array $renewal, string $tx, string $fraud, ?string $paymentType, string $actorType,
+                                  ?int $actorId, array $payload, bool $isCurrentAttempt, ?string $paymentOrderId,
+                                  ?string $storedStatus = null): void {
+    $id = (int)$renewal['id'];
+    $orderId = (int)$renewal['order_id'];
+    $number = $renewal['renewal_number'];
+    $tx = strtolower($tx);
+    $fraud = strtolower($fraud);
+    $paid = $tx === 'settlement' || ($tx === 'capture' && $fraud === 'accept');
+    $failed = in_array($tx, ['deny', 'cancel', 'expire', 'failure'], true);
+    $reversal = strpos($tx, 'refund') !== false || $tx === 'chargeback' || $tx === 'partial_chargeback';
+    $payingAttempt = $paymentOrderId !== null && $paymentOrderId === $renewal['paid_midtrans_order_id'];
+
+    // An old attempt's failure must not overwrite the payment fields of the current attempt, and nothing but a reversal
+    // of the paying attempt changes them once the renewal is lunas
+    $paymentChanged = false;
+    $touch = $renewal['status'] === 'menunggu_pembayaran'
+        ? ($isCurrentAttempt || $paid)
+        : ($renewal['status'] === 'lunas' && $payingAttempt && $reversal);
+    if ($touch) {
+        $newStatus = $storedStatus ?? ($tx !== '' ? $tx : 'pending');
+        $paymentChanged = $renewal['payment_status'] !== $newStatus || ($paymentType !== null && $renewal['payment_type'] !== $paymentType);
+        if ($paymentChanged) {
+            db_run($conn, "UPDATE template_renewals SET payment_status = ?, payment_type = COALESCE(?, payment_type) WHERE id = ?",
+                [mb_substr($newStatus, 0, 30), $paymentType === null ? null : mb_substr($paymentType, 0, 40), $id]);
+        }
+    }
+
+    $note = null;
+    if ($paid) {
+        $expires = pf_renewal_mark_paid($conn, $renewal, $paymentOrderId);
+        if ($expires !== null) {
+            pf_log($conn, $orderId, 'renewal_paid', null, null, $actorType, $actorId,
+                'Perpanjangan ' . (int)$renewal['years'] . ' tahun lunas (' . $number . '). Masa aktif sampai ' . pf_tanggal_id($expires) . '.', $payload);
+            return;
+        }
+        // Not marked by this notification: decide from the current row (a cancel or another payment may have just won)
+        $fresh = pf_renewal_by_id($conn, $id);
+        if ($fresh['status'] === 'dibatalkan' && $fresh['paid_at'] === null) {
+            $note = 'Pembayaran perpanjangan ' . $number . ' diterima, tetapi tagihannya sudah dibatalkan. Perlu ditindaklanjuti manual (refund).';
+        } elseif ($fresh['status'] === 'lunas' && $paymentOrderId !== null && $fresh['paid_midtrans_order_id'] !== null
+            && $paymentOrderId !== $fresh['paid_midtrans_order_id']) {
+            $note = 'Pembayaran ganda perpanjangan ' . $number . ' (' . $paymentOrderId . '); sudah lunas lewat ' . $fresh['paid_midtrans_order_id']
+                . '. Perlu ditindaklanjuti manual (refund).';
+        }
+    } elseif ($failed && $isCurrentAttempt) {
+        if (pf_renewal_transition($conn, $id, 'dibatalkan', 'cancelled_at = NOW()')) {
+            pf_log($conn, $orderId, 'renewal_cancelled', null, null, $actorType, $actorId,
+                'Perpanjangan ' . $number . ' dibatalkan otomatis karena pembayaran tidak berhasil.', $payload);
+            return;
+        }
+    } elseif ($reversal) {
+        $note = 'Refund/chargeback perpanjangan ' . $number . ' tercatat (' . $tx . '); masa aktif tidak diubah.';
+    } elseif ($tx === 'capture') {
+        $note = 'Pembayaran kartu perpanjangan ' . $number . ' menunggu tinjauan fraud (' . ($fraud !== '' ? $fraud : '-') . ').';
+    }
+    // Duplicate notifications change nothing and are not logged again
+    if ($paymentChanged || $note !== null) {
+        pf_log($conn, $orderId, 'renewal_payment_update', null, null, $actorType, $actorId,
+            $note ?? ('Status pembayaran perpanjangan ' . $number . ': ' . ($tx !== '' ? $tx : '-')), $payload);
+    }
+}
+
+// Lunas: conditional status change, then the order's periods are extended, in one transaction. Returns the new
+// hosting end date, or null when the renewal no longer waits for payment.
+function pf_renewal_mark_paid(mysqli $conn, array $renewal, ?string $paymentOrderId): ?string {
+    $orderId = (int)$renewal['order_id'];
+    $years = (int)$renewal['years'];
+    $conn->begin_transaction();
+    try {
+        if (!pf_renewal_transition($conn, (int)$renewal['id'], 'lunas', 'paid_at = NOW(), paid_midtrans_order_id = ?', [$paymentOrderId])) {
+            $conn->rollback();
+            return null;
+        }
+        $before = db_one($conn, "SELECT service_expires_at, domain_expires_at FROM template_orders WHERE id = ? FOR UPDATE", [$orderId]);
+        // Continues from the current end date (activation + 1 year when the order has no end date yet), or from today when
+        // the period already ended
+        db_run($conn, "UPDATE template_orders SET
+                           service_expires_at = DATE_ADD(GREATEST(" . PF_SERVICE_END_SQL . ", NOW()), INTERVAL ? YEAR),
+                           domain_expires_at = DATE_ADD(GREATEST(" . PF_DOMAIN_END_SQL . ", NOW()), INTERVAL ? YEAR),
+                           service_started_at = COALESCE(service_started_at, NOW()), domain_started_at = COALESCE(domain_started_at, NOW())
+                       WHERE id = ?", [$years, $years, $orderId]);
+        $after = db_one($conn, "SELECT service_expires_at, domain_expires_at FROM template_orders WHERE id = ?", [$orderId]);
+        db_run($conn, "UPDATE template_renewals SET service_expires_before = ?, service_expires_after = ?, domain_expires_before = ?,
+                           domain_expires_after = ? WHERE id = ?", [
+            $before['service_expires_at'], $after['service_expires_at'], $before['domain_expires_at'], $after['domain_expires_at'], (int)$renewal['id'],
+        ]);
+        $conn->commit();
+    } catch (Throwable $e) {
+        $conn->rollback();
+        throw $e;
+    }
+    return $after['service_expires_at'];
+}
+
+// Leaves menunggu_pembayaran (only from there) and frees the order's open-renewal slot
+function pf_renewal_transition(mysqli $conn, int $id, string $to, string $extraSet, array $extraParams = []): bool {
+    db_run($conn, "UPDATE template_renewals SET status = ?, pending_order_id = NULL, $extraSet WHERE id = ? AND status = 'menunggu_pembayaran'",
+        array_merge([$to], $extraParams, [$id]));
+    return db_affected_rows() > 0;
+}
+
+// New Snap transaction for a renewal (attempt + 1): hosting & jasa + domain for the chosen years
+function pf_create_renewal_snap(mysqli $conn, array $renewal): array {
+    $cfg = pf_midtrans_config();
+    if ($cfg['server_key'] === '') return ['payment_url' => null, 'error' => 'Pembayaran online belum dikonfigurasi.'];
+    $id = (int)$renewal['id'];
+    $attempt = (int)$renewal['payment_attempt'] + 1;
+    // Claim the attempt number first: Midtrans order_id must never be reused, even after a timeout
+    db_run($conn, "UPDATE template_renewals SET payment_attempt = ? WHERE id = ? AND payment_attempt = ? AND status = 'menunggu_pembayaran'",
+        [$attempt, $id, $attempt - 1]);
+    if (db_affected_rows() === 0) {
+        $fresh = pf_renewal_by_id($conn, $id);
+        if ($fresh['status'] === 'menunggu_pembayaran' && $fresh['payment_url']) return ['payment_url' => $fresh['payment_url'], 'error' => null];
+        return ['payment_url' => null, 'error' => 'Pembayaran sedang diproses. Muat ulang halaman lalu coba lagi.'];
+    }
+
+    $midtransOrderId = $renewal['renewal_number'] . '-' . $attempt;
+    $years = (int)$renewal['years'];
+    $hosting = (int)round((float)$renewal['hosting_price_per_year']) * $years;
+    $domain = (int)round((float)$renewal['domain_price_per_year']) * $years;
+    $tld = domain_tld($renewal['domain'], domain_catalog($conn)['tlds']);
+    $appUrl = rtrim(env_value('APP_URL', 'http://localhost:5173'), '/');
+    $response = pf_midtrans_request('POST', $cfg['snap_url'], $cfg['server_key'], [
+        'transaction_details' => ['order_id' => $midtransOrderId, 'gross_amount' => $hosting + $domain],
+        'item_details' => [
+            ['id' => 'HOST', 'price' => $hosting, 'quantity' => 1, 'name' => mb_substr('Perpanjangan hosting & jasa (' . $years . ' tahun)', 0, 50)],
+            [
+                'id' => 'DOM-' . ($tld ? $tld['tld'] : 'domain'),
+                'price' => $domain,
+                'quantity' => 1,
+                'name' => mb_substr('Perpanjangan domain ' . $renewal['domain'] . ' (' . $years . ' tahun)', 0, 50),
+            ],
+        ],
+        'customer_details' => [
+            'first_name' => mb_substr($renewal['customer_name'], 0, 50),
+            'email' => $renewal['customer_email'],
+            'phone' => $renewal['customer_phone'],
+        ],
+        'callbacks' => ['finish' => $appUrl . '/akun/pesanan/' . rawurlencode($renewal['order_number'])],
+    ], 20);
+    $body = $response['body'];
+    if (($response['code'] !== 200 && $response['code'] !== 201) || !is_array($body) || empty($body['token']) || empty($body['redirect_url'])) {
+        $detail = is_array($body) && isset($body['error_messages']) ? implode('; ', (array)$body['error_messages']) : $response['error'];
+        error_log('[midtrans] Snap transaction failed for ' . $midtransOrderId . ': HTTP ' . $response['code'] . ' ' . $detail);
+        pf_log($conn, (int)$renewal['order_id'], 'renewal_payment_update', null, null, 'system', null,
+            mb_substr('Gagal membuat transaksi Midtrans perpanjangan ' . $renewal['renewal_number'] . ' (percobaan ' . $attempt . '): HTTP '
+                . $response['code'] . ' ' . $detail, 0, 500));
+        return ['payment_url' => null, 'error' => 'Gagal membuat pembayaran online. Silakan coba lagi beberapa saat lagi.'];
+    }
+    // Only while this attempt is still the latest claimed one: a slower older attempt never replaces a newer one
+    db_run($conn, "UPDATE template_renewals SET midtrans_order_id = ?, snap_token = ?, payment_url = ?, payment_status = 'pending', payment_type = NULL,
+                       payment_created_at = NOW() WHERE id = ? AND status = 'menunggu_pembayaran' AND payment_attempt = ?",
+        [$midtransOrderId, (string)$body['token'], (string)$body['redirect_url'], $id, $attempt]);
+    if (db_affected_rows() === 0) {
+        $fresh = pf_renewal_by_id($conn, $id);
+        if ($fresh['status'] === 'menunggu_pembayaran' && $fresh['payment_url']) return ['payment_url' => $fresh['payment_url'], 'error' => null];
+        return ['payment_url' => null, 'error' => 'Pembayaran sedang diproses. Muat ulang halaman lalu coba lagi.'];
+    }
+    pf_log($conn, (int)$renewal['order_id'], 'renewal_payment_created', null, null, 'system', null,
+        'Tagihan perpanjangan ' . $renewal['renewal_number'] . ' dibuat (percobaan ' . $attempt . ').');
+    return ['payment_url' => (string)$body['redirect_url'], 'error' => null];
+}
+
+// Penawaran perpanjangan: harga per tahun (hosting & jasa + domain sesuai ekstensi) dan tanggal berakhir baru per opsi
+function pf_renewal_offer(mysqli $conn, array $order): array {
+    $hosting = pf_hosting_renewal_price($conn);
+    $domainPrice = domain_price($order['domain'] ?: $order['domain_primary'], domain_catalog($conn)['tlds']);
+    $reason = null;
+    if ($order['status'] !== 'aktif') $reason = PF_RENEWAL_NOT_ACTIVE_MESSAGE;
+    elseif ($domainPrice === null) $reason = PF_RENEWAL_NO_PRICE_MESSAGE;
+    $perYear = $domainPrice === null ? null : $hosting + $domainPrice;
+    $options = [];
+    if ($reason === null) {
+        $dates = pf_renewal_dates($conn, (int)$order['id']);
+        foreach (PF_RENEWAL_YEARS as $years) {
+            [$service, $domain] = $dates[$years];
+            if (max($service, $domain) > $dates['cap']) continue;
+            $options[] = ['years' => $years, 'price' => $perYear * $years, 'service_expires_after' => $service, 'domain_expires_after' => $domain];
+        }
+        if (!$options) $reason = PF_RENEWAL_TOO_LONG_MESSAGE;
+    }
+    return [
+        'available' => $reason === null,
+        'reason' => $reason,
+        'hosting_price_per_year' => $hosting,
+        'domain_price_per_year' => $domainPrice,
+        'price_per_year' => $perYear,
+        'max_years' => max(PF_RENEWAL_YEARS),
+        'options' => $options,
+    ];
+}
+
+// New end dates per number of years, computed by the database with the same expression as pf_renewal_mark_paid,
+// and the latest allowed end date (PF_RENEWAL_MAX_YEARS_AHEAD)
+function pf_renewal_dates(mysqli $conn, int $orderId): array {
+    $columns = [];
+    foreach (PF_RENEWAL_YEARS as $y) {
+        $columns[] = "DATE_ADD(GREATEST(" . PF_SERVICE_END_SQL . ", NOW()), INTERVAL $y YEAR) AS s$y";
+        $columns[] = "DATE_ADD(GREATEST(" . PF_DOMAIN_END_SQL . ", NOW()), INTERVAL $y YEAR) AS d$y";
+    }
+    $row = db_one($conn, "SELECT " . implode(', ', $columns) . ", DATE_ADD(NOW(), INTERVAL " . PF_RENEWAL_MAX_YEARS_AHEAD . " YEAR) AS cap
+                          FROM template_orders WHERE id = ?", [$orderId]);
+    $dates = ['cap' => (string)$row['cap']];
+    foreach (PF_RENEWAL_YEARS as $y) $dates[$y] = [(string)$row["s$y"], (string)$row["d$y"]];
+    return $dates;
+}
+
+// Hosting & jasa per tahun mulai tahun ke-2 (setting template_hosting_renewal_price, admin > Pengaturan website > Harga)
+function pf_hosting_renewal_price(mysqli $conn): int {
+    $row = db_one($conn, "SELECT setting_value FROM hero_settings WHERE setting_key = 'template_hosting_renewal_price' LIMIT 1");
+    $raw = trim((string)($row['setting_value'] ?? ''));
+    if (!preg_match('/^\d+(\.\d+)?$/D', $raw)) return PF_HOSTING_RENEWAL_DEFAULT;
+    $value = round((float)$raw);
+    return ($value > 0 && $value <= 1e12) ? (int)$value : PF_HOSTING_RENEWAL_DEFAULT;
+}
+
+function pf_assert_no_pending_renewal(mysqli $conn, int $orderId): void {
+    $pending = db_one($conn, "SELECT renewal_number FROM template_renewals WHERE order_id = ? AND status = 'menunggu_pembayaran' LIMIT 1", [$orderId]);
+    if ($pending) {
+        throw new ApiError('Masih ada tagihan perpanjangan ' . $pending['renewal_number'] . ' yang belum dibayar. Bayar atau batalkan dulu.', 409, 'RENEWAL_PENDING');
+    }
+}
+
+function pf_renewal_status_error(string $status): ApiError {
+    return new ApiError('Tagihan perpanjangan ini berstatus "' . (PF_RENEWAL_STATUS_LABEL[$status] ?? $status) . '".', 409, 'INVALID_STATUS');
+}
+
+function pf_renewal_select(): string {
+    return "SELECT r.*, TIMESTAMPDIFF(MINUTE, r.payment_created_at, NOW()) AS payment_age_minutes,
+                   o.order_number, o.template_name, o.customer_name, o.customer_email, o.customer_phone
+              FROM template_renewals r
+              JOIN template_orders o ON o.id = r.order_id";
+}
+
+function pf_renewal_by_id(mysqli $conn, int $id): array {
+    $row = db_one($conn, pf_renewal_select() . " WHERE r.id = ? LIMIT 1", [$id]);
+    if (!$row) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
+    return $row;
+}
+
+// Someone else's renewal answers exactly like a missing one
+function pf_customer_renewal(mysqli $conn, array $input, array $user): array {
+    $number = strtoupper(trim(in_str($input, 'renewal_number')));
+    $row = $number === '' ? null : db_one($conn, pf_renewal_select() . " WHERE r.renewal_number = ? AND o.user_id = ? LIMIT 1", [$number, $user['id']]);
+    if (!$row) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
+    return $row;
+}
+
+function pf_order_renewals(mysqli $conn, int $orderId, bool $staff): array {
+    $rows = db_all($conn, pf_renewal_select() . " WHERE r.order_id = ? ORDER BY r.created_at DESC, r.id DESC", [$orderId]);
+    return array_map(function ($r) use ($staff) { return pf_renewal_out($r, $staff); }, $rows);
+}
+
+function pf_renewal_out(array $r, bool $staff): array {
+    $status = $r['status'];
+    return [
+        'id' => (int)$r['id'],
+        'renewal_number' => $r['renewal_number'],
+        'order_number' => $r['order_number'],
+        'domain' => $r['domain'],
+        'years' => (int)$r['years'],
+        'hosting_price_per_year' => pf_num($r['hosting_price_per_year']),
+        'domain_price_per_year' => pf_num($r['domain_price_per_year']),
+        'price_per_year' => pf_num($r['price_per_year']),
+        'price' => pf_num($r['price']),
+        'status' => $status,
+        'status_label' => PF_RENEWAL_STATUS_LABEL[$status] ?? $status,
+        'payment_status' => $r['payment_status'],
+        'payment_type' => $r['payment_type'],
+        // Only the owner gets the payment link, and only while there is something to pay
+        'payment_url' => (!$staff && $status === 'menunggu_pembayaran') ? $r['payment_url'] : null,
+        'paid_at' => $r['paid_at'],
+        'cancelled_at' => $r['cancelled_at'],
+        'service_expires_before' => $r['service_expires_before'],
+        'service_expires_after' => $r['service_expires_after'],
+        'domain_expires_before' => $r['domain_expires_before'],
+        'domain_expires_after' => $r['domain_expires_after'],
+        'invoice_number' => $status === 'lunas' ? 'INV-' . $r['renewal_number'] : null,
+        'created_at' => $r['created_at'],
+    ];
+}
+
+// '2029-10-23 01:23:00' -> '23 Oktober 2029' (log notes for the customer)
+function pf_tanggal_id(?string $value): string {
+    if ($value === null || !preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $value, $m)) return '-';
+    return (int)$m[3] . ' ' . PF_MONTHS_ID[(int)$m[2] - 1] . ' ' . $m[1];
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // Staff (role admin or user)
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -664,6 +1334,7 @@ function pf_admin_get_template_order(mysqli $conn, array $input, ?array $user): 
         'order' => pf_order_out($order, true),
         'logs' => pf_logs($conn, (int)$order['id'], true),
         'site' => $site ? pf_site_out($site, true) : null,
+        'renewals' => pf_order_renewals($conn, (int)$order['id'], true),
     ];
 }
 
@@ -712,7 +1383,9 @@ function pf_admin_set_order_domain(mysqli $conn, array $input, ?array $user): ar
     $orderId = (int)$order['id'];
     $conn->begin_transaction();
     try {
-        if (!pf_transition($conn, $orderId, 'proses_domain', 'aktif', 'domain = ?, activated_at = NOW()', [$domain])) {
+        // Masa aktif hosting & jasa dan domain: 1 tahun sejak situs aktif (bertambah lewat perpanjangan)
+        if (!pf_transition($conn, $orderId, 'proses_domain', 'aktif', 'domain = ?, activated_at = NOW(), service_started_at = NOW(),
+                service_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR), domain_started_at = NOW(), domain_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR)', [$domain])) {
             throw pf_invalid_status(pf_order_by_id($conn, $orderId)['status'], 'aktif');
         }
         try {
@@ -864,6 +1537,19 @@ function pf_admin_set_site_status(mysqli $conn, array $input, ?array $user): arr
     return ['site' => pf_site_out($site, true)];
 }
 
+// Pengaturan harga domain untuk admin (Pengaturan website > Harga): markup DewaBiz (tidak ikut get_settings publik),
+// sumber daftar harga, dan biaya hosting & jasa per tahun yang berlaku
+function pf_admin_get_domain_pricing(mysqli $conn, array $input, ?array $user): array {
+    pf_require_staff($user);
+    $catalog = domain_catalog($conn);
+    return [
+        'source' => $catalog['source'],
+        'markup_percent' => domain_markup_percent($conn),
+        'markup_default' => DOMAIN_MARKUP_DEFAULT,
+        'hosting_renewal_price' => pf_hosting_renewal_price($conn),
+    ];
+}
+
 function pf_admin_dashboard_summary(mysqli $conn, array $input, ?array $user): array {
     pf_require_staff($user);
     $monthStart = "DATE_FORMAT(NOW(), '%Y-%m-01')";
@@ -972,14 +1658,29 @@ function pf_create_snap(mysqli $conn, array $order): array {
     $midtransOrderId = $order['order_number'] . '-' . $attempt;
     $amount = (int)round((float)$order['price']);
     $appUrl = rtrim(env_value('APP_URL', 'http://localhost:5173'), '/');
-    $response = pf_midtrans_request('POST', $cfg['snap_url'], $cfg['server_key'], [
-        'transaction_details' => ['order_id' => $midtransOrderId, 'gross_amount' => $amount],
-        'item_details' => [[
+    // Template (setelah diskon) + domain tahun pertama; jumlah item = gross_amount
+    $domainAmount = (int)round((float)($order['domain_price'] ?? 0));
+    $items = [];
+    if ($amount - $domainAmount > 0) {
+        $items[] = [
             'id' => 'TPL-' . ($order['template_id'] === null ? 0 : (int)$order['template_id']),
-            'price' => $amount,
+            'price' => $amount - $domainAmount,
             'quantity' => 1,
             'name' => mb_substr($order['template_name'], 0, 50),
-        ]],
+        ];
+    }
+    if ($domainAmount > 0) {
+        $tld = domain_tld($order['domain_primary'], domain_catalog($conn)['tlds']);
+        $items[] = [
+            'id' => 'DOM-' . ($tld ? $tld['tld'] : 'domain'),
+            'price' => $domainAmount,
+            'quantity' => 1,
+            'name' => mb_substr('Domain ' . $order['domain_primary'] . ' (1 tahun)', 0, 50),
+        ];
+    }
+    $response = pf_midtrans_request('POST', $cfg['snap_url'], $cfg['server_key'], [
+        'transaction_details' => ['order_id' => $midtransOrderId, 'gross_amount' => $amount],
+        'item_details' => $items,
         'customer_details' => [
             'first_name' => mb_substr($order['customer_name'], 0, 50),
             'email' => $order['customer_email'],
@@ -1072,11 +1773,12 @@ function pf_same_amount(string $gross, $price): bool {
     return is_numeric($gross) && (int)round((float)$gross) === (int)round((float)$price);
 }
 
-function pf_new_order_number(): string {
+// GN-YYYYMMDD-XXXXXX (pesanan) or GNR-YYYYMMDD-XXXXXX (perpanjangan), date in Asia/Jakarta
+function pf_new_order_number(string $prefix = 'GN'): string {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     $suffix = '';
     for ($i = 0; $i < 6; $i++) $suffix .= $chars[random_int(0, 35)];
-    return 'GN-' . (new DateTime('now', new DateTimeZone('Asia/Jakarta')))->format('Ymd') . '-' . $suffix;
+    return $prefix . '-' . (new DateTime('now', new DateTimeZone('Asia/Jakarta')))->format('Ymd') . '-' . $suffix;
 }
 
 function pf_log(mysqli $conn, int $orderId, string $event, ?string $from, ?string $to, string $actorType, ?int $actorId,
@@ -1157,6 +1859,14 @@ function pf_order_out(array $r, bool $staff): array {
         'created_at' => $r['created_at'],
         'updated_at' => $r['updated_at'],
         'site_id' => isset($r['site_id']) && $r['site_id'] !== null ? (int)$r['site_id'] : null,
+        // Domain berbayar & masa aktif (migrasi 026); pesanan lama: domain_price 0, tanggal NULL
+        'domain_price' => pf_num($r['domain_price'] ?? 0),
+        'domain_check' => $r['domain_check'] ?? null,
+        'invoice_number' => $r['paid_at'] !== null ? 'INV-' . $r['order_number'] : null,
+        'service_started_at' => $r['service_started_at'] ?? null,
+        'service_expires_at' => $r['service_expires_at'] ?? null,
+        'domain_started_at' => $r['domain_started_at'] ?? null,
+        'domain_expires_at' => $r['domain_expires_at'] ?? null,
     ];
     if ($staff) $out['user'] = ['id' => (int)$r['user_id'], 'name' => $r['user_name'] ?? null, 'email' => $r['user_email'] ?? null];
     return $out;
@@ -1170,8 +1880,9 @@ function pf_logs(mysqli $conn, int $orderId, bool $staff): array {
         $names = ['midtrans' => 'Midtrans', 'system' => 'Sistem'];
         $actorName = $names[$r['actor_type']] ?? $r['user_name'];
         if ($r['actor_type'] === 'staff' && !$staff) $actorName = 'Tim Garuda Nexa';
-        // Customers only get the rejection reason; other notes are internal (admin notes, Midtrans/test-mode details)
-        $note = ($staff || $r['event'] === 'rejected') ? $r['note'] : null;
+        // Customers only get the rejection reason and the server-written renewal notes; other notes are internal
+        // (admin notes, Midtrans/test-mode details)
+        $note = ($staff || in_array($r['event'], PF_CUSTOMER_NOTE_EVENTS, true)) ? $r['note'] : null;
         $log = [
             'id' => (int)$r['id'],
             'event' => $r['event'],
@@ -1190,7 +1901,7 @@ function pf_logs(mysqli $conn, int $orderId, bool $staff): array {
 function pf_site_select(bool $withContent = true): string {
     return "SELECT s.id, s.order_id, s.user_id, s.template_id, s.template_code, s.domain, s.status, s.activated_at, s.updated_at, "
         . ($withContent ? 's.content' : 'NULL AS content')
-        . ", o.order_number, o.template_name, u.name AS owner_name, u.email AS owner_email
+        . ", o.order_number, o.template_name, o.service_expires_at, o.domain_expires_at, u.name AS owner_name, u.email AS owner_email
               FROM template_sites s
               JOIN template_orders o ON o.id = s.order_id
               LEFT JOIN users u ON u.id = s.user_id";
@@ -1217,6 +1928,9 @@ function pf_site_out(array $r, bool $staff): array {
         'content' => pf_content_out($r['content']),
         'activated_at' => $r['activated_at'],
         'updated_at' => $r['updated_at'],
+        // Masa aktif pesanan induk (migrasi 026)
+        'service_expires_at' => $r['service_expires_at'] ?? null,
+        'domain_expires_at' => $r['domain_expires_at'] ?? null,
     ];
     if ($staff) {
         $out['owner_name'] = $r['owner_name'];

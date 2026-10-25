@@ -36,7 +36,7 @@ async function parse<T>(res: Response): Promise<T> {
  * Aksi baca publik yang hasilnya dibagi selama satu kali muat halaman: beberapa komponen (hero, katalog, template
  * lain) memanggil `get_templates` bersamaan, cukup satu request. Hasil dianggap hanya-baca oleh pemanggil.
  */
-const SHARED_GET_ACTIONS = new Set(['get_templates', 'get_guides']);
+const SHARED_GET_ACTIONS = new Set(['get_templates', 'get_guides', 'get_domain_prices']);
 const sharedGets = new Map<string, Promise<unknown>>();
 
 /**

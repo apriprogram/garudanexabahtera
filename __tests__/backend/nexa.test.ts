@@ -60,6 +60,7 @@ import {
   nexaGeminiPayload,
   nexaGeminiReply,
   nexaGeminiText,
+  nexaHostingRenewalPrice,
   nexaIpBucket,
   nexaLiveFacts,
   nexaMaskKey,
@@ -68,8 +69,11 @@ import {
   nexaResolveProvider,
   nexaProjectsHidden,
   nexaShowcaseFacts,
+  NEXA_DOMAIN_PRICES,
 } from '../../backend/modules/nexa.js';
 import { presentableProjects } from '../../src/components/sections/projects/presentable';
+import { DOMAIN_PRICE_FROM, DOMAIN_TLDS, HOSTING_RENEWAL_DEFAULT, hostingRenewalPrice } from '../../src/lib/domainPricing';
+import { TEMPLATE_PRICE_INCLUDES_DEFAULT, TEMPLATE_PRICE_NOTE_DEFAULT } from '../../src/hooks/useSiteSettings';
 import { handlePlatformAction } from '../../backend/modules/templates.js';
 
 const ROOT = resolve(__dirname, '..', '..');
@@ -106,7 +110,15 @@ const LIVE_CASES: { templates: Record<string, unknown>[]; settings: Record<strin
   { templates: [], settings: { footer_whatsapp: '+62 851 1111 2222', template_price_includes: '', template_price_note: '' } },
   // Teks tempelan dari Word/Docs: spasi tak-putus (NBSP) di depan/belakang tanda daftar
   { templates: [], settings: { template_price_includes: '\u00a0- Domain\n•\u00a0Hosting\n\u00a0Tanpa tanda\u00a0' } },
+  // Biaya hosting & jasa tahun ke-2 dari setting admin (= hostingRenewalPrice di domainPricing.ts); tidak valid → bawaan
+  { templates: [], settings: { template_hosting_renewal_price: '750000' } },
+  { templates: [], settings: { template_hosting_renewal_price: ' 650000.5 ' } },
+  { templates: [], settings: { template_hosting_renewal_price: 'Rp500.000' } },
+  { templates: [], settings: { template_hosting_renewal_price: '0' } },
+  { templates: [], settings: { template_hosting_renewal_price: '-5' } },
 ];
+/** Nilai setting template_hosting_renewal_price di LIVE_CASES (indeks 4–8). */
+const RENEWAL_SETTING_CASES = LIVE_CASES.slice(4).map((c) => c.settings.template_hosting_renewal_price);
 
 const msg = (role: string, content: unknown) => ({ role, content });
 const CLEAN_CASES: unknown[] = [
@@ -510,7 +522,10 @@ describe('Nexa AI: fungsi murni (Node)', () => {
     expect(defaults).toContain('- Gratisan: gratis. Halaman: /template/gratis');
     expect(defaults).toContain('- Ganjil (X): Rp1.000.000, pembelian pertama Rp800.000.');
     expect(defaults).not.toMatch(/Slug Rusak|tanpa-nama/);
-    expect(defaults).toContain('Harga template sudah termasuk: Template website + setup awal; Domain tahun pertama; Hosting tahun pertama; Sertifikat SSL (HTTPS) tahun pertama.');
+    // Isi paket bawaan = TEMPLATE_PRICE_INCLUDES_DEFAULT / NOTE (domain tidak termasuk sejak 2026-10-25)
+    expect(defaults).toContain('Harga template sudah termasuk: Template website + setup awal; Hosting tahun pertama; Sertifikat SSL (HTTPS) tahun pertama.');
+    expect(defaults).toContain(`Harga template sudah termasuk: ${TEMPLATE_PRICE_INCLUDES_DEFAULT.join('; ')}.`);
+    expect(defaults).toContain(`Catatan harga: ${TEMPLATE_PRICE_NOTE_DEFAULT}`);
     expect(defaults).toContain('Kontak: WhatsApp wa.me/6285188009152, email info@garudanexa.com.');
     expect(custom).toContain('Harga template sudah termasuk: Template + setup; Domain tahun pertama; SSL.');
     expect(custom).toContain('Catatan harga: Catatan khusus.');
@@ -520,6 +535,45 @@ describe('Nexa AI: fungsi murni (Node)', () => {
     expect(empty).toContain('wa.me/6285111112222');
     // NBSP + tanda daftar dibuang (= \s regex /u PHP); NBSP tanpa tanda tetap (trim() PHP tidak membuang NBSP)
     expect(nodeOutputs().live[3]).toContain('Harga template sudah termasuk: Domain; Hosting; \u00a0Tanpa tanda\u00a0.');
+  });
+
+  it('DATA TERKINI: domain tidak termasuk harga template, harga domain & biaya perpanjangan selalu ada (pemilik 2026-10-25)', () => {
+    const live = nodeOutputs().live;
+    const domainLine =
+      'Domain: TIDAK termasuk harga template. Pembeli memilih nama domain saat memesan (ketersediaannya dicek langsung di formulir) dan harganya ditambahkan ke total pesanan. Harga domain per tahun, sama untuk tahun pertama dan perpanjangan: .com Rp250.000, .id Rp250.000, .my.id Rp50.000, .web.id Rp50.000; ekstensi lain (mis. .co.id, .sch.id) tercantum di /harga.';
+    // Juga saat admin mengosongkan isi paket & catatan (kasus 2) atau menulis teks lamanya sendiri (kasus 1)
+    for (const text of live) expect(text).toContain(domainLine);
+    expect(live[0]).toContain(
+      'Perpanjangan mulai tahun ke-2: hosting & jasa Rp500.000 per tahun ditambah harga domain sesuai ekstensinya. Bisa 1, 2, atau 3 tahun sekaligus dari halaman pesanan di Akun Saya, dibayar lewat Midtrans; pengingat tampil di akun mulai 30 hari sebelum masa aktif berakhir.',
+    );
+    expect(live[0]).not.toMatch(/sudah termasuk[^.]*Domain/);
+    // Biaya hosting & jasa dari setting (sama dengan hostingRenewalPrice di frontend): 750.000, 650.001 (dibulatkan), lainnya bawaan
+    expect(live.slice(4).map((text) => /hosting & jasa (Rp[\d.]+) per tahun/.exec(text)?.[1])).toEqual([
+      'Rp750.000',
+      'Rp650.001',
+      'Rp500.000',
+      'Rp500.000',
+      'Rp500.000',
+    ]);
+    for (const raw of RENEWAL_SETTING_CASES) {
+      expect(nexaHostingRenewalPrice({ template_hosting_renewal_price: raw })).toBe(hostingRenewalPrice({ template_hosting_renewal_price: raw }));
+    }
+    expect(nexaHostingRenewalPrice({})).toBe(HOSTING_RENEWAL_DEFAULT);
+  });
+
+  it('harga domain Nexa = harga tetap pemilik di src/lib/domainPricing.ts; catatan bawaan memakai harga termurah', () => {
+    for (const [tld, price] of NEXA_DOMAIN_PRICES as [string, number][]) {
+      expect(DOMAIN_TLDS.find((t) => t.tld === tld)?.price, tld).toBe(price);
+    }
+    expect((NEXA_DOMAIN_PRICES as [string, number][]).map(([tld]) => tld)).toEqual(['com', 'id', 'my.id', 'web.id']);
+    expect(DOMAIN_PRICE_FROM).toBe(50000);
+  });
+
+  it('instruksi: domain tidak pernah disebut termasuk; biaya perpanjangan bukan lagi "belum tertulis"', () => {
+    expect(NEXA_INSTRUCTIONS).toContain(
+      '- Harga template TIDAK termasuk domain: domain dipilih dan dibayar saat memesan. Jangan pernah menulis bahwa domain sudah termasuk atau gratis; sebut harga domain dan biaya perpanjangan tahun ke-2 dari DATA TERKINI.',
+    );
+    expect(NEXA_INSTRUCTIONS).not.toContain('misalnya biaya perpanjangan tahun ke-2');
   });
 
   it('kunci batas per pengunjung: IPv4 apa adanya, IPv6 per /64, ::ffff:IPv4 sebagai IPv4', () => {

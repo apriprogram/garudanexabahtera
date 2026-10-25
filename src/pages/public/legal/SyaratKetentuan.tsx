@@ -1,9 +1,19 @@
 // /syarat-ketentuan. DRAF untuk ditinjau pemilik (2026-10-21): disusun dari cara kerja platform (pesanan template via
 // Midtrans, proses domain, CMS, jasa custom) dan keputusan pemilik tentang harga & refund. Bukan dokumen yang sudah
 // diperiksa konsultan hukum. Ubah LEGAL_UPDATED_AT di src/lib/legal.ts setiap kali isinya diubah.
+// 2026-10-25 (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md): domain tidak lagi termasuk harga template (dipesan dan dibayar
+// sesuai ekstensinya), perpanjangan hosting & jasa + domain 1–3 tahun dari akun. Angka harga tidak ditulis di sini:
+// dokumen menunjuk halaman Harga, jadi tidak perlu diubah setiap kali harga berubah.
 import { Link } from 'react-router-dom';
 import { LEGAL_PATHS } from '../../../lib/legal';
+import { HUB_PATHS } from '../../../seo/paths';
 import { LegalPage, type LegalSection } from './LegalPage';
+
+const PricingLink = () => (
+  <Link to={HUB_PATHS.pricing} className="link-site">
+    Harga
+  </Link>
+);
 
 const SECTIONS: LegalSection[] = [
   {
@@ -17,9 +27,9 @@ const SECTIONS: LegalSection[] = [
         </p>
         <ul>
           <li>
-            <strong>Template website siap pakai.</strong> Anda memilih template, membayar secara online, lalu kami menyiapkan
-            domain dan situs Anda. Setelah aktif, Anda mengelola isinya sendiri lewat CMS (sistem pengelola konten) di
-            halaman Akun Saya.
+            <strong>Template website siap pakai.</strong> Anda memilih template dan nama domain, membayar secara online, lalu
+            kami mendaftarkan domain dan menyiapkan situs Anda. Setelah aktif, Anda mengelola isinya sendiri lewat CMS (sistem
+            pengelola konten) di halaman Akun Saya.
           </li>
           <li>
             <strong>Jasa pembuatan website dan aplikasi mobile custom</strong> yang dikerjakan berdasarkan penawaran
@@ -64,10 +74,19 @@ const SECTIONS: LegalSection[] = [
       <>
         <p>Alur pemesanan template:</p>
         <ol>
-          <li>Anda memilih template, lalu mengisi data pemesan serta domain utama dan domain alternatif yang diinginkan.</li>
-          <li>Anda membayar lewat Midtrans. Pesanan baru diproses setelah pembayaran dikonfirmasi oleh Midtrans.</li>
+          <li>
+            Anda memilih template, mengisi data pemesan, lalu memilih nama domain. Ketersediaan domain dicek langsung di formulir
+            pemesanan.
+          </li>
+          <li>
+            Anda membayar harga template dan harga domain lewat Midtrans. Pesanan baru diproses setelah pembayaran dikonfirmasi
+            oleh Midtrans.
+          </li>
           <li>Tim kami memverifikasi pesanan, lalu menyetujui atau menolaknya.</li>
-          <li>Pesanan yang disetujui masuk ke proses domain. Setelah domain terpasang, situs aktif dan CMS terbuka di akun Anda.</li>
+          <li>
+            Pesanan yang disetujui masuk ke proses domain: kami mendaftarkan domain Anda. Setelah domain terpasang, situs aktif
+            dan CMS terbuka di akun Anda.
+          </li>
         </ol>
         <p>
           Status pesanan dapat Anda pantau di halaman{' '}
@@ -82,7 +101,7 @@ const SECTIONS: LegalSection[] = [
             batas waktu pembayaran berakhir dibatalkan otomatis.
           </li>
           <li>
-            Kami dapat menolak pesanan, misalnya bila domain yang diminta tidak tersedia, data pemesan tidak dapat
+            Kami dapat menolak pesanan, misalnya bila domain yang dipesan tidak dapat didaftarkan, data pemesan tidak dapat
             diverifikasi, atau isi atau tujuan situs melanggar ketentuan ini. Alasan penolakan ditampilkan di halaman detail
             pesanan.
           </li>
@@ -102,14 +121,21 @@ const SECTIONS: LegalSection[] = [
     title: 'Harga dan pembayaran',
     content: (
       <ul>
-        <li>Harga template tercantum dalam rupiah di halaman template dan di halaman pemesanan.</li>
         <li>
-          Harga template <strong>sudah termasuk</strong>: template website dan setup awal, serta domain, hosting, dan
-          sertifikat SSL (HTTPS) untuk <strong>tahun pertama</strong>.
+          Harga template dan harga domain per ekstensi tercantum dalam rupiah di halaman <PricingLink />, halaman template, dan
+          halaman pemesanan.
         </li>
         <li>
-          Mulai tahun ke-2, perpanjangan domain dan hosting ditagih per tahun. Nominal perpanjangan kami informasikan kepada
-          Anda sebelum jatuh tempo.
+          Harga template <strong>sudah termasuk</strong>: template website dan setup awal, hosting, dan sertifikat SSL (HTTPS)
+          untuk <strong>tahun pertama</strong>.
+        </li>
+        <li>
+          Domain <strong>tidak termasuk</strong> harga template. Domain dipesan bersama template dengan harga per tahun sesuai
+          ekstensinya (mis. .com atau .id), dan harganya ditambahkan ke total pesanan.
+        </li>
+        <li>
+          Mulai tahun ke-2, biaya perpanjangan per tahun terdiri dari biaya hosting &amp; jasa ditambah harga domain sesuai
+          ekstensinya, mengikuti harga di halaman <PricingLink /> pada saat Anda membayar perpanjangan.
         </li>
         <li>
           Pembayaran diproses oleh Midtrans dengan metode pembayaran yang tersedia di Midtrans. Kami tidak menerima atau
@@ -124,9 +150,10 @@ const SECTIONS: LegalSection[] = [
     content: (
       <ul>
         <li>
-          Ketersediaan domain baru dapat dipastikan saat kami mendaftarkannya. Bila domain utama tidak tersedia, kami
-          memakai domain alternatif yang Anda isi. Bila keduanya tidak tersedia, kami menghubungi Anda untuk menyepakati
-          domain lain. Bila tidak tercapai kesepakatan, pesanan ditolak dan dana dikembalikan penuh.
+          Ketersediaan domain dicek saat Anda memesan. Hasil cek itu belum menjamin pendaftaran: kepastian akhirnya ada pada
+          registri saat tim kami mendaftarkan domain setelah pembayaran. Bila domain ternyata tidak dapat didaftarkan, kami
+          menghubungi Anda untuk menyepakati domain lain. Bila tidak tercapai kesepakatan, pesanan ditolak dan dana
+          dikembalikan penuh, termasuk harga domain.
         </li>
         <li>
           Domain didaftarkan melalui registrar mitra kami dan tunduk pada aturan registrar serta pengelola domain (mis.
@@ -135,8 +162,19 @@ const SECTIONS: LegalSection[] = [
         </li>
         <li>Hosting dan sertifikat SSL kami sediakan dan kelola selama layanan Anda aktif.</li>
         <li>
-          Bila biaya perpanjangan tidak dibayar sampai jatuh tempo, situs dapat dinonaktifkan sementara. Domain yang tidak
-          diperpanjang dapat dilepas sesuai aturan registrar dan belum tentu bisa didaftarkan kembali.
+          Masa aktif hosting dan domain berlaku satu tahun sejak situs diaktifkan. Tanggal berakhirnya dapat Anda lihat di
+          halaman pesanan di Akun Saya.
+        </li>
+        <li>
+          Perpanjangan dapat Anda lakukan sendiri dari halaman pesanan di Akun Saya, untuk 1, 2, atau 3 tahun sekaligus, dan
+          dibayar lewat Midtrans. Masa aktif baru dihitung dari tanggal berakhir sebelumnya (atau dari tanggal pembayaran bila
+          masa aktif sudah lewat), paling lama 10 tahun ke depan.
+        </li>
+        <li>Pengingat perpanjangan tampil di Akun Saya mulai 30 hari sebelum masa aktif berakhir.</li>
+        <li>
+          Bila biaya perpanjangan tidak dibayar sampai masa aktif berakhir, situs dapat dinonaktifkan sementara. Domain yang
+          tidak diperpanjang dapat dilepas oleh registri setelah masa tenggang yang berlaku dan belum tentu bisa didaftarkan
+          kembali.
         </li>
         <li>Bila Anda ingin memindahkan domain ke penyedia lain, hubungi kami. Kami membantu prosesnya sesuai aturan registrar.</li>
       </ul>

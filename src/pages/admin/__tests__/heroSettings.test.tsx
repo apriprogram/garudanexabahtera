@@ -956,7 +956,7 @@ describe('HeroSettings: teks di atas latar', () => {
     expect(scrim.className).toContain('hero-scrim');
     expect(scrim.style.getPropertyValue('--scrim-a')).toBe('0.300');
     expect(preview.querySelector('.text-on-media')).toHaveTextContent('Template website siap pakai,');
-    expect(preview.querySelector('.text-on-media-accent')).toHaveTextContent('termasuk domain & hosting.');
+    expect(preview.querySelector('.text-on-media-accent')).toHaveTextContent('termasuk hosting & SSL.');
     // Datar seperti website: tanpa kelas bayangan / pendar di pratinjau
     for (const el of preview.querySelectorAll('*')) expect(el.getAttribute('class') ?? '').not.toMatch(/shadow|glow/);
     expect(screen.getByText(/Website memakai teks terang dengan lapisan 30%\./)).toBeInTheDocument();
@@ -1105,6 +1105,10 @@ function mockSiteApi({
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.includes('get_hero_media_limits')) return json({ success: true, video_max_mb: 30, max_images: 12 });
+    // Tab Harga: markup DewaBiz tidak ikut get_settings, dimuat terpisah
+    if (url.includes('admin_get_domain_pricing')) {
+      return json({ success: true, source: 'default', markup_percent: Number(stored.domain_markup_percent || 25), markup_default: 25 });
+    }
     if (init?.method === 'POST') {
       const body = JSON.parse(String(init.body)) as SavedBody;
       // Tab Panduan: daftar artikel dari database (bukan simpanan halaman ini, tidak dicatat di posts)
@@ -1505,5 +1509,90 @@ describe('SiteSettings: tab mengikuti website (pemilik 2026-10-24)', () => {
     fireEvent.click(await readySave());
     await waitFor(() => expect(posts).toHaveLength(3));
     expect(posts[2].settings.nexa_enabled).toBe('0');
+  });
+});
+
+describe('SiteSettings: tab Harga template (domain terpisah & perpanjangan, pemilik 2026-10-25)', () => {
+  const openPricing = async () => {
+    const nav = screen.getByRole('navigation', { name: 'Bagian pengaturan' });
+    fireEvent.click(within(nav).getByRole('button', { name: 'Harga template' }));
+    return screen.findByLabelText('Hosting & jasa per tahun (mulai tahun ke-2)');
+  };
+
+  it('hosting & jasa per tahun: bawaan Rp500.000, petunjuk ikut nilai, tersimpan sebagai angka bersama isi harga', async () => {
+    const { posts } = mockSiteApi({ stored: {} });
+    renderSite();
+    await readySave();
+    const field = (await openPricing()) as HTMLInputElement;
+    expect(field).toHaveAttribute('type', 'number');
+    expect(field).toHaveAttribute('min', '0');
+    expect(field).toHaveAttribute('step', '1000');
+    expect(field.value).toBe('500000');
+    expect(field).toHaveAccessibleDescription(/Pembeli membayar Rp500\.000\/tahun ditambah perpanjangan domain/);
+
+    // Isi harga bawaan tanpa domain; harga domain per ekstensi tampil (hanya dibaca)
+    expect((screen.getByLabelText('Sudah termasuk') as HTMLTextAreaElement).value).toBe(
+      'Template website + setup awal\nHosting tahun pertama\nSertifikat SSL (HTTPS) tahun pertama',
+    );
+    const list = screen.getByRole('list', { name: 'Harga domain per tahun (tahun pertama & perpanjangan)' });
+    const item = (tld: string) => within(list).getAllByRole('listitem').find((li) => li.textContent?.startsWith(tld))!;
+    expect(item('.com')).toHaveTextContent('Rp250.000');
+    expect(item('.my.id')).toHaveTextContent('Rp50.000');
+    expect(item('.co.id')).toHaveTextContent('Untuk badan usaha: butuh NIB atau akta perusahaan');
+
+    fireEvent.change(field, { target: { value: '750000' } });
+    expect(field).toHaveAccessibleDescription(/Pembeli membayar Rp750\.000\/tahun/);
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0].action).toBe('update_settings');
+    expect(posts[0].settings).toMatchObject({
+      template_hosting_renewal_price: '750000',
+      template_price_includes: 'Template website + setup awal\nHosting tahun pertama\nSertifikat SSL (HTTPS) tahun pertama',
+    });
+    expect(posts[0].settings.template_price_note).toMatch(/^Domain dipilih saat memesan, mulai Rp50\.000\/tahun\./);
+  });
+
+  it('nilai tersimpan dimuat; desimal dibulatkan, kosong = bawaan (dikirim kosong); tab lain tidak mengirimnya', async () => {
+    const { posts } = mockSiteApi({ stored: { template_hosting_renewal_price: '650000' } });
+    renderSite();
+    await readySave();
+    // Tab Harga belum dibuka: setting tersimpan diteruskan apa adanya
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0].settings.template_hosting_renewal_price).toBe('650000');
+
+    const field = (await openPricing()) as HTMLInputElement;
+    expect(field.value).toBe('650000');
+    fireEvent.change(field, { target: { value: '725000.6' } });
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(2));
+    expect(posts[1].settings.template_hosting_renewal_price).toBe('725001');
+
+    fireEvent.change(field, { target: { value: '' } });
+    expect(field).toHaveAccessibleDescription(/Pembeli membayar Rp500\.000\/tahun/);
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(3));
+    expect(posts[2].settings.template_hosting_renewal_price).toBe('');
+  });
+
+  it('markup DewaBiz: dimuat dari admin_get_domain_pricing, bilangan bulat 0–500, di luar itu dikirim kosong (bawaan)', async () => {
+    const { posts } = mockSiteApi({ stored: { domain_markup_percent: '30' } });
+    renderSite();
+    await readySave();
+    await openPricing();
+    const field = (await screen.findByLabelText('Markup harga domain dari DewaBiz (%)')) as HTMLInputElement;
+    expect(field.value).toBe('30');
+    expect(field).toHaveAttribute('max', '500');
+    expect(field).toHaveAccessibleDescription(/selain \.com, \.id, \.my\.id, \.web\.id .*Kosong = bawaan 25%\. Belum berlaku: DewaBiz belum terhubung/);
+
+    fireEvent.change(field, { target: { value: '40' } });
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0].settings.domain_markup_percent).toBe('40');
+
+    fireEvent.change(field, { target: { value: '600' } });
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(2));
+    expect(posts[1].settings.domain_markup_percent).toBe('');
   });
 });

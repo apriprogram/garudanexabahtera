@@ -7,6 +7,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DOMAIN_PRICE_FROM, rupiahCompact } from '../../../lib/domainPricing';
 import type { Template } from '../../../types/platform';
 import HomeFeatures from '../home/HomeFeatures';
 
@@ -65,6 +66,16 @@ describe('Keunggulan (#keunggulan)', () => {
     expect(within(section).getByRole('link', { name: 'Template & demo' })).toHaveAttribute('href', '/template');
   });
 
+  it('domain tidak termasuk harga template (pemilik 2026-10-25): hosting & SSL tahun pertama, domain mulai Rp50.000/tahun', () => {
+    const section = renderFeatures();
+    const domain = within(section).getByRole('link', { name: 'Domain & hosting' }).closest('li') as HTMLElement;
+    expect(domain.querySelector('h3 + p')).toHaveTextContent('Hosting & SSL tahun pertama sudah termasuk. Domain mulai Rp50.000/tahun.');
+    expect(section).toHaveTextContent(
+      'Harga template sudah termasuk setup awal, hosting, dan SSL tahun pertama; domain dipilih saat memesan, mulai Rp50.000/tahun.',
+    );
+    expect(section).not.toHaveTextContent(/termasuk (setup awal, )?domain|domain, hosting, dan SSL tahun pertama sudah termasuk/i);
+  });
+
   it('ilustrasi memakai data nyata: pratinjau template, diskon pembelian pertama, harga template; tanpa angka karangan', () => {
     const section = renderFeatures();
     const images = [...section.querySelectorAll('img')].map((img) => img.getAttribute('src'));
@@ -97,7 +108,8 @@ describe('Keunggulan (#keunggulan)', () => {
     expect(section.querySelectorAll('img')).toHaveLength(0);
     expect(section).toHaveTextContent('Template pilihan Anda');
     expect(section).toHaveTextContent('−20%');
-    expect(section).not.toHaveTextContent(/Rp\s?\d/);
+    // Harga domain "mulai Rp50.000/tahun" = konstanta domainPricing.ts (bukan data template); selain itu tanpa angka rupiah
+    expect((section.textContent ?? '').replaceAll(`${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun`, '')).not.toMatch(/Rp\s?\d/);
     expect(screen.getAllByText('Template').length).toBeGreaterThan(0);
   });
 

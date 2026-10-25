@@ -1,6 +1,7 @@
 // /kebijakan-privasi. DRAF untuk ditinjau pemilik (2026-10-21): disusun dari data yang benar-benar dikumpulkan platform
 // (akun, pesanan template, Midtrans, form custom, CMS, statistik kunjungan) dan UU No. 27 Tahun 2022 (UU PDP). Bukan
 // dokumen yang sudah diperiksa konsultan hukum. Ubah LEGAL_UPDATED_AT di src/lib/legal.ts setiap kali isinya diubah.
+// 2026-10-25: + data Profil pembeli (perusahaan, alamat, kota, foto), cek ketersediaan domain, masa aktif & perpanjangan.
 import { Link } from 'react-router-dom';
 import { LEGAL_PATHS } from '../../../lib/legal';
 import { LegalPage, type LegalSection } from './LegalPage';
@@ -25,11 +26,13 @@ const SECTIONS: LegalSection[] = [
       <ul>
         <li>
           <strong>Data akun:</strong> nama, email, nomor WhatsApp, dan kata sandi. Kata sandi disimpan dalam bentuk hash,
-          sehingga tidak bisa dibaca oleh siapa pun, termasuk kami.
+          sehingga tidak bisa dibaca oleh siapa pun, termasuk kami. Di menu Profil Anda juga dapat mengisi nama perusahaan,
+          alamat, kota, dan foto profil (semuanya opsional).
         </li>
         <li>
           <strong>Data pesanan template:</strong> nama pemesan, email, nomor WhatsApp, nama perusahaan atau instansi (opsional),
-          catatan, domain yang Anda minta, dan riwayat status pesanan.
+          catatan, domain yang Anda pilih beserta hasil cek ketersediaannya, masa aktif layanan, tagihan perpanjangan, dan
+          riwayat status pesanan.
         </li>
         <li>
           <strong>Data pembayaran:</strong> status, metode, nilai, dan waktu pembayaran yang dikirim Midtrans. Kami tidak
@@ -92,8 +95,8 @@ const SECTIONS: LegalSection[] = [
             <strong>Midtrans</strong>, untuk memproses pembayaran (nama, email, nomor telepon, dan nilai transaksi).
           </li>
           <li>
-            <strong>Registrar dan pengelola domain</strong> (mis. PANDI untuk domain .id), untuk data pendaftar domain sesuai
-            aturan mereka.
+            <strong>Registrar dan pengelola domain</strong> (mis. PANDI untuk domain .id), untuk mengecek ketersediaan nama
+            domain yang Anda cari dan untuk data pendaftar domain sesuai aturan mereka.
           </li>
           <li>
             <strong>Penyedia infrastruktur</strong>: server hosting, penyimpanan file, dan layanan email.

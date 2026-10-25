@@ -2,10 +2,19 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, ArrowUp, ArrowUpRight, Mic, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useHostingRenewalPrice } from '../../../hooks/useSiteSettings';
 import { apiPost } from '../../../lib/api';
-import { FIRST_ORDER_DISCOUNT_PERCENT } from '../../../lib/firstOrderDiscount';
 import { HUB_PATHS } from '../../../seo/paths';
-import { answerLocally, type NexaAction, type NexaAnswer, type NexaMood } from './localAnswer';
+import {
+  answerLocally,
+  DOMAIN_PRICE_TEXT,
+  renewalText,
+  TEMPLATE_INCLUDES_TEXT,
+  TEMPLATES_INTRO,
+  type NexaAction,
+  type NexaAnswer,
+  type NexaMood,
+} from './localAnswer';
 import { NexaReply } from './NexaReply';
 import { PROJECT_QUESTION, useNexaCatalog, type NexaCards } from './replyModel';
 
@@ -52,11 +61,14 @@ interface NexaTopic {
   cards?: NexaCards;
 }
 
-/** Topik cepat: jawaban tetap (fakta yang juga tertulis di situs) + tautan halaman, tanpa memanggil AI. */
-const TOPICS: NexaTopic[] = [
+/**
+ * Topik cepat: jawaban tetap (fakta yang juga tertulis di situs) + tautan halaman, tanpa memanggil AI. Domain tidak
+ * termasuk harga template (pemilik 2026-10-25); `hostingRenewal` = biaya hosting & jasa per tahun dari setting admin.
+ */
+const nexaTopics = (hostingRenewal: number): NexaTopic[] => [
   {
     label: 'Pilih template',
-    reply: `Kami punya template siap pakai untuk company profile, klinik & salon, klub olahraga, studio yoga, sampai fintech. Harganya sudah termasuk setup, domain, hosting, dan SSL tahun pertama, plus diskon ${FIRST_ORDER_DISCOUNT_PERCENT}% otomatis untuk pembelian template pertama.`,
+    reply: TEMPLATES_INTRO,
     action: { label: 'Lihat katalog template', to: HUB_PATHS.catalog },
     cards: 'templates',
   },
@@ -68,14 +80,13 @@ const TOPICS: NexaTopic[] = [
   },
   {
     label: 'Berapa harganya?',
-    reply:
-      'Harga template tertera di setiap kartu dan sudah termasuk domain, hosting, dan SSL tahun pertama. Jasa website dan aplikasi custom memakai penawaran setelah konsultasi gratis.',
+    reply: `Harga template tertera di setiap kartu dan sudah termasuk ${TEMPLATE_INCLUDES_TEXT}. ${DOMAIN_PRICE_TEXT} ${renewalText(hostingRenewal)} Jasa website dan aplikasi custom memakai penawaran setelah konsultasi gratis.`,
     action: { label: 'Lihat halaman harga', to: HUB_PATHS.pricing },
   },
   {
     label: 'Cara pembelian',
     reply:
-      'Pilih template, klik Pesan, isi data dan nama domain, lalu bayar lewat Midtrans. Setelah pembayaran dikonfirmasi, tim kami menyiapkan website Anda dan isinya bisa Anda kelola sendiri lewat CMS.',
+      'Pilih template, klik Pesan, isi data Anda, lalu pilih nama domain dan cek ketersediaannya. Bayar template dan domain lewat Midtrans. Setelah pembayaran dikonfirmasi, tim kami menyiapkan website Anda dan isinya bisa Anda kelola sendiri lewat CMS.',
     action: { label: 'Mulai pilih template', to: HUB_PATHS.catalog },
   },
 ];
@@ -252,6 +263,9 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
   const [micNote, setMicNote] = useState('');
   // Template & proyek untuk kartu bergambar di jawaban (dimuat saat panel pertama kali dibuka)
   const catalog = useNexaCatalog(open);
+  // Biaya hosting & jasa per tahun mulai tahun ke-2 (setting admin, bawaan Rp500.000) untuk jawaban tanpa AI
+  const { price: hostingRenewal } = useHostingRenewalPrice();
+  const topics = nexaTopics(hostingRenewal);
   // Maskot tombol menyapa saat disorot/difokus; selebihnya hidup sendiri (berkedip dkk. tiap beberapa detik)
   const [greetingLauncher, setGreetingLauncher] = useState(false);
   const idleMood = useIdleMood('netral', true, LAUNCHER_CYCLE);
@@ -370,7 +384,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
     } catch {
       // jawab dari data situs di bawah (status "mengetik" selalu selesai)
     }
-    return answerLocally(question, whatsappHref);
+    return answerLocally(question, whatsappHref, hostingRenewal);
   };
 
   const askTopic = (topic: NexaTopic) => {
@@ -539,7 +553,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
                 HP: satu baris yang bisa digeser; desktop: membungkus agar semua chip terlihat tanpa scroll */}
             <div className="shrink-0 px-4 pb-2.5 max-sm:overflow-x-auto max-sm:[scrollbar-width:none] sm:px-6 sm:pb-2.5 max-sm:[&::-webkit-scrollbar]:hidden">
               <div className="flex w-max gap-1.5 sm:w-auto sm:flex-wrap sm:gap-2" role="group" aria-label="Topik cepat">
-                {TOPICS.map((topic) => (
+                {topics.map((topic) => (
                   <button
                     key={topic.label}
                     type="button"

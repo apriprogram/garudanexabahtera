@@ -39,7 +39,7 @@ export const PUBLIC_ACTIONS = new Set([
   'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'submit_custom_order',
   'customer_register', 'midtrans_notification', 'get_payment_config', 'template_like', 'template_view',
   'get_showcase_stats', 'showcase_like', 'showcase_view', 'nexa_chat',
-  'get_guides', 'get_guide', 'guide_view',
+  'get_guides', 'get_guide', 'guide_view', 'get_domain_prices',
   'google_auth_config', 'customer_google_auth',
 ]);
 export const ANY_ROLE_ACTIONS = new Set([
@@ -48,6 +48,8 @@ export const ANY_ROLE_ACTIONS = new Set([
 export const CUSTOMER_ACTIONS = new Set([
   'customer_create_order', 'customer_pay_order', 'customer_get_orders', 'customer_get_order',
   'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment', 'customer_get_order_quote',
+  'customer_check_domain', 'customer_create_renewal', 'customer_pay_renewal', 'customer_cancel_renewal', 'dev_simulate_renewal_payment',
+  'customer_get_invoice', 'customer_get_invoices', 'customer_get_profile', 'customer_update_profile',
   'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
 ]);
 export const ADMIN_ACTIONS = new Set([

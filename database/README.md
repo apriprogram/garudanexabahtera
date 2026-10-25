@@ -22,7 +22,10 @@ database/
 │   ├── 2026-10-22_008_new_templates.sql            # data: katalog Arena Club, Aura Studio, Finova (DB lama)
 │   ├── 2026-10-23_009_seo_faq_contact.sql          # data: FAQ (hosting/SSL/waktu), placeholder WhatsApp, hero & CTA lama
 │   ├── 2026-10-23_010_visit_referrer.sql           # visitor_logs + referrer_host, landing_path, utm_source (sumber kunjungan)
-│   └── 2026-10-23_011_seo_navbar.sql               # data: navbar Template, Jasa ▾, Harga, Panduan (halaman nyata)
+│   ├── 2026-10-23_011_seo_navbar.sql               # data: navbar Template, Jasa ▾, Harga, Panduan (halaman nyata)
+│   ├── …                                           # 012–025: lihat catatan per migrasi di bawah
+│   ├── 2026-10-25_026_domain_renewal_profile.sql   # domain berbayar, masa aktif, template_renewals, profil pembeli
+│   └── 2026-10-25_027_google_sign_in.sql           # users.google_sub: masuk & daftar pembeli dengan Google
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -116,6 +119,13 @@ diubah admin tidak disentuh; aman diulang.
 menjalankan ulang MENIMPA perubahan admin pada tiga baris itu. Jalankan setelah kode yang mendaftarkan ketiga
 `template_code` ter-deploy. DB baru tidak membutuhkannya: barisnya sudah ada di `seed.templates.sql` (karena itu 008
 tidak dicatat sebagai baseline di `schema.sql`).
+
+`2026-10-25_026` (skema + sedikit data, docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md): domain tidak lagi termasuk harga
+template. Menambah `template_orders.domain_price`/`domain_check`, masa aktif `service_*`/`domain_*` (pesanan `aktif` diisi
+dari `activated_at` + 1 tahun), tabel `template_renewals` (perpanjangan 1–3 tahun lewat Midtrans), `users.company_name`/
+`address`/`city` (halaman Profil), dan menghapus baris "Domain tahun pertama" dari setting `template_price_includes` bila
+ada. Idempoten. Jalankan SEBELUM deploy kode yang memakainya; folder unggahan foto profil `public/assets/avatars/` tidak
+ikut git maupun deploy.
 
 `2026-10-25_027` (skema saja, docs/platform/GOOGLE-LOGIN.md): `users.google_sub` (id akun Google, `ascii_bin`, NULL)
 dengan `UNIQUE KEY uq_users_google_sub`, untuk tombol "Daftar/Login dengan Google" di `/daftar` dan `/masuk`. Idempoten.

@@ -52,7 +52,8 @@ const ORDER_STEPS = [
   {
     icon: CreditCard,
     title: 'Pesan & bayar',
-    body: 'Klik Pesan Template, masuk atau daftar akun pembeli, isi data pemesan serta domain utama dan alternatif, lalu bayar online lewat Midtrans.',
+    // Domain tidak termasuk harga template (pemilik 2026-10-25): dipilih & dicek di form, dibayar bersama template
+    body: 'Klik Pesan Template, masuk atau daftar akun pembeli, isi data pemesan, lalu pilih nama domain dan cek ketersediaannya. Bayar template dan domain online lewat Midtrans.',
   },
   {
     icon: UserRoundCheck,
@@ -249,7 +250,7 @@ function DetailContent({ template, category }: { template: Template; category: C
               <li className="flex gap-2">
                 <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
                 <span>
-                  Pesanan lunas yang ditolak (mis. domain tidak tersedia): dana kembali penuh.{' '}
+                  Pesanan lunas yang ditolak (mis. domain tidak bisa didaftarkan): dana kembali penuh, termasuk harga domain.{' '}
                   <Link to={LEGAL_PATHS.refund} className="link-site">
                     {LEGAL_LABELS.refund}
                   </Link>

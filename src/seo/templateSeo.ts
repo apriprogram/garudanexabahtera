@@ -6,6 +6,9 @@
 //    Isi panjang halaman taruh di file lain dengan titik di namanya (mis. {slug}.content.ts), yang tidak ikut glob ini.
 // 2. Pola cadangan Lampiran A.1/A.2 dari kolom DB (nama, kategori, short_description, harga).
 // Harga SELALU dari data (DB/API): teks salinan memakai token {harga} / {harga_singkat}, tidak menulis angka sendiri.
+// Domain TIDAK termasuk harga template (pemilik 2026-10-25): harga domain termurah dari src/lib/domainPricing.ts lewat
+// token {domain_mulai}; jangan menulis "termasuk domain".
+import { DOMAIN_PRICE_FROM, rupiahCompact } from '../lib/domainPricing';
 import type { Template } from '../types/platform';
 import { collapseSpace, firstThatFits, formatPriceFull, formatPriceShort, isPrice, latestDate, sentence } from './format';
 import { isCategorySlug, type CategorySlug } from './paths';
@@ -13,7 +16,10 @@ import type { SeoData } from './types';
 
 /** Teks SEO opsional per template (src/content/templates/{slug}.ts → `export const seo`). */
 export interface TemplateSeoCopy {
-  /** <title> ≤ 60 karakter. Token: {nama}, {harga} ("Rp1.390.000"), {harga_singkat} ("Rp1,39 jt"), {kategori}. */
+  /**
+   * <title> ≤ 60 karakter. Token: {nama}, {harga} ("Rp1.390.000"), {harga_singkat} ("Rp1,39 jt"), {kategori},
+   * {domain_mulai} (harga domain termurah per tahun, "Rp50.000").
+   */
   title?: string;
   /** Meta description ≤ 155 karakter, token sama dengan title. */
   description?: string;
@@ -30,10 +36,13 @@ export interface TemplateSeoCopy {
  * YYYY-MM-DD terakhir bagian bersama halaman /template/{slug} berubah: tata letak TemplateDetail.tsx, kalimat paket &
  * FAQ bersama (src/content/faq.ts), kalimat refund/Midtrans. Berlaku untuk semua template, juga template tanpa salinan.
  */
-export const TEMPLATE_PAGE_UPDATED = '2026-10-23';
+export const TEMPLATE_PAGE_UPDATED = '2026-10-25';
 
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 155;
+
+/** "domain mulai Rp50.000/tahun": domain dipilih & dibayar saat memesan, tidak termasuk harga template. */
+export const DOMAIN_FROM_TEXT = `domain mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun`;
 
 type CopyModule = { seo?: TemplateSeoCopy };
 
@@ -84,7 +93,8 @@ const fill = (text: string | undefined, template: Template): string | undefined 
       .replace(/\{nama\}/g, template.name)
       .replace(/\{kategori\}/g, template.category)
       .replace(/\{harga_singkat\}/g, price ? formatPriceShort(template.price) : '')
-      .replace(/\{harga\}/g, price ? formatPriceFull(template.price) : ''),
+      .replace(/\{harga\}/g, price ? formatPriceFull(template.price) : '')
+      .replace(/\{domain_mulai\}/g, rupiahCompact(DOMAIN_PRICE_FROM)),
   );
 };
 
@@ -120,8 +130,9 @@ export function templateTitle(template: Template): string {
 const hasDemo = (template: Template): boolean => Boolean(template.template_code || template.demo_url);
 
 /**
- * Meta description halaman template (Lampiran A.1): "{Manfaat/niche}. Rp{harga} sudah termasuk domain, hosting & SSL
- * tahun pertama. Kelola isi lewat CMS. Lihat demo." ≤ 155 karakter; bagian yang tidak muat dibuang bertahap.
+ * Meta description halaman template (Lampiran A.1): "{Manfaat/niche}. Rp{harga} sudah termasuk hosting & SSL tahun
+ * pertama; domain mulai Rp50.000/tahun. Kelola isi lewat CMS. Lihat demo." ≤ 155 karakter; bagian yang tidak muat
+ * dibuang bertahap. Sama dengan seo_template_description di backend/seo.php.
  */
 export function templateDescription(template: Template): string {
   const copy = fill(TEMPLATE_COPY[template.slug]?.description, template);
@@ -131,8 +142,8 @@ export function templateDescription(template: Template): string {
   const generic = `Template website ${niche} siap pakai.`;
   const demo = hasDemo(template) ? ' Lihat demo.' : '';
   const includes = isPrice(template.price)
-    ? `${formatPriceFull(template.price)} sudah termasuk domain, hosting & SSL tahun pertama.`
-    : 'Sudah termasuk domain, hosting & SSL tahun pertama.';
+    ? `${formatPriceFull(template.price)} sudah termasuk hosting & SSL tahun pertama; ${DOMAIN_FROM_TEXT}.`
+    : `Sudah termasuk hosting & SSL tahun pertama; ${DOMAIN_FROM_TEXT}.`;
   const full = ` ${includes} Kelola isi lewat CMS.${demo}`;
   const short = ` ${includes}${demo}`;
   const bare = ` ${includes}`;

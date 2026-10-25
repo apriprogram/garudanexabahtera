@@ -1,7 +1,8 @@
 // Input Domain (/admin/pesanan-template/input-domain): domain final untuk order `proses_domain` → order aktif,
-// situs dibuat dan CMS terbuka untuk pemesan (admin_set_order_domain). SPEC §4, §6, §9.
+// situs dibuat dan CMS terbuka untuk pemesan (admin_set_order_domain). SPEC §4, §6, §9. Aktivasi memulai masa aktif
+// 1 tahun untuk hosting & jasa dan domain (ACCOUNT-DOMAIN-RENEWAL-SPEC.md §5).
 import { useState, type FormEvent } from 'react';
-import { ArrowRight, Check, CheckCircle2, ExternalLink, Globe, Inbox, Mail, Phone, RotateCw, X } from 'lucide-react';
+import { ArrowRight, CalendarClock, Check, CheckCircle2, ExternalLink, Globe, Inbox, Mail, Phone, RotateCw, X } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -22,8 +23,8 @@ import {
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
 import { formatRupiah, formatTanggal, type Order, type Site } from '../../../types/platform';
 import { useApiQuery, useToast, type ToastTone } from './shared/hooks';
-import { OrderStatusBadge, Toast } from './shared/OrderUi';
-import { normalizeDomain, siteHref, validateDomain } from './shared/orderUtils';
+import { DomainCheckNote, OrderStatusBadge, Toast } from './shared/OrderUi';
+import { addYears, normalizeDomain, servicePeriod, siteHref, tanggalPanjang, validateDomain } from './shared/orderUtils';
 
 type OrdersResponse = { orders: Order[] };
 type SetDomainResponse = { order: Order; site: Site };
@@ -47,7 +48,7 @@ export default function InputDomain() {
     <div className="pb-10">
       <PageHeader
         title="Input Domain"
-        description="Isi domain final untuk pesanan yang sudah disetujui. Setelah disimpan, template aktif dan CMS terbuka untuk pemesan."
+        description="Isi domain final untuk pesanan yang sudah disetujui. Setelah disimpan, template aktif, CMS terbuka untuk pemesan, dan masa aktif 1 tahun untuk hosting & domain dimulai."
         meta={
           list.data ? (
             <Badge tone={pending.length ? 'warning' : 'mint'}>{pending.length ? `${pending.length} pesanan menunggu domain` : 'Semua domain sudah diisi'}</Badge>
@@ -128,12 +129,16 @@ function DomainCard({
   const [error, setError] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Perkiraan masa aktif bila diaktifkan sekarang (server memakai NOW() + 1 tahun saat menyimpan)
+  const [now] = useState(() => new Date());
+  const periodEnd = tanggalPanjang(addYears(now, 1));
   const inputId = `domain-${order.id}`;
   const value = normalizeDomain(domain);
+  const domainPaid = Math.max(0, Number(order.domain_price) || 0);
 
   const requested = [
-    { label: 'Utama', domain: order.domain_primary },
-    ...(order.domain_alternative ? [{ label: 'Alternatif', domain: order.domain_alternative }] : []),
+    { label: 'Utama', domain: order.domain_primary, primary: true },
+    ...(order.domain_alternative ? [{ label: 'Alternatif', domain: order.domain_alternative, primary: false }] : []),
   ];
 
   const handleSubmit = (e: FormEvent) => {
@@ -244,6 +249,14 @@ function DomainCard({
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-adm-subtle">{r.label}</p>
                   <p className="truncate font-mono text-[13px] text-adm-fg">{r.domain}</p>
+                  {r.primary && (
+                    <>
+                      <DomainCheckNote check={order.domain_check} className="mt-1 text-xs" />
+                      {domainPaid > 0 && (
+                        <p className="mt-0.5 text-xs tabular-nums text-adm-muted">Domain dibayar {formatRupiah(domainPaid)} (1 tahun)</p>
+                      )}
+                    </>
+                  )}
                 </div>
                 {active ? (
                   <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-adm-cobalt-fg">
@@ -301,6 +314,13 @@ function DomainCard({
             }}
           />
         </Field>
+        <p className="flex items-start gap-2 text-xs leading-relaxed text-adm-muted">
+          <CalendarClock className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
+          <span>
+            Aktivasi memulai masa aktif 1 tahun untuk hosting dan domain (sampai <span className="font-medium text-adm-fg">{periodEnd}</span>). Daftarkan
+            domain di registrar untuk 1 tahun juga.
+          </span>
+        </p>
         <Button type="submit" icon={<CheckCircle2 />} loading={saving} fullWidth className="sm:w-auto">
           Simpan & aktifkan
         </Button>
@@ -316,7 +336,8 @@ function DomainCard({
         description={
           <>
             Template <span className="font-semibold text-adm-fg">{order.template_name}</span> milik {order.customer_name} akan aktif di{' '}
-            <span className="font-mono font-semibold text-adm-fg">{value}</span> dan CMS terbuka untuk pemesan. Domain tidak bisa diubah dari panel setelah aktif.
+            <span className="font-mono font-semibold text-adm-fg">{value}</span> dan CMS terbuka untuk pemesan. Masa aktif hosting dan domain 1 tahun
+            dimulai sekarang, sampai {periodEnd}. Domain tidak bisa diubah dari panel setelah aktif.
           </>
         }
         confirmText="Ya, aktifkan"
@@ -328,6 +349,8 @@ function DomainCard({
 /** Kartu sukses setelah domain disimpan: "Template aktif & CMS terbuka". */
 function ActivatedCard({ item, onDismiss }: { item: Activated; onDismiss: () => void }) {
   const { order, site } = item;
+  const end = servicePeriod({ ...order, activated_at: order.activated_at || site.activated_at }).end;
+  const activeUntil = end ? tanggalPanjang(end) : null;
   return (
     <Panel tone="mint" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" role="status">
       <div className="flex min-w-0 items-start gap-3">
@@ -339,6 +362,7 @@ function ActivatedCard({ item, onDismiss }: { item: Activated; onDismiss: () => 
           </p>
           <p className="mt-0.5 text-xs text-adm-muted">
             <span className="font-mono tabular-nums">{order.order_number}</span> · aktif {formatTanggal(site.activated_at || order.activated_at, true)}
+            {activeUntil && <> · masa aktif hosting & domain sampai {activeUntil}</>}
           </p>
         </div>
       </div>

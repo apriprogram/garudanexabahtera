@@ -1,7 +1,8 @@
 // Jawaban bawaan Nexa (tanpa AI): pertanyaan umum harus mendapat jawaban & halaman yang tepat, termasuk yang diawali
 // salam, memakai imbuhan ("diedit", "harganya"), atau menanyakan aplikasi custom (bukan harga template).
 import { describe, expect, it } from 'vitest';
-import { answerLocally } from '../localAnswer';
+import { DOMAIN_PRICE_FROM, HOSTING_RENEWAL_DEFAULT, rupiahCompact } from '../../../../lib/domainPricing';
+import { answerLocally, DOMAIN_PRICE_TEXT, renewalText, TEMPLATE_INCLUDES_TEXT, TEMPLATES_INTRO } from '../localAnswer';
 
 const WA = 'https://wa.me/6285188009152';
 const linkOf = (question: string) => answerLocally(question, WA).action;
@@ -75,5 +76,52 @@ describe('answerLocally', () => {
   it('jawaban harga aplikasi custom = tanya jawab biaya custom, bukan harga template', () => {
     expect(answerLocally('berapa harga aplikasi?', WA).text).toMatch(/penawaran/i);
     expect(answerLocally('berapa harga aplikasi?', WA).text).not.toMatch(/sudah termasuk setup, domain/);
+  });
+
+  // Domain tidak termasuk harga template (pemilik 2026-10-25): dijawab jujur, angka dari domainPricing.ts
+  it.each(['Apakah sudah termasuk domain?', 'Apakah sudah termasuk hosting dan domain?', 'Dapat domain gratis?', 'Berapa harga domain .com?', 'is the domain included?'])(
+    'domain tidak termasuk: %s',
+    (question) => {
+      const answer = answerLocally(question, WA);
+      expect(answer.text).toMatch(/^Domain belum termasuk harga template\./);
+      expect(answer.text).toContain(`mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun`);
+      expect(answer.text).toContain('.com dan .id Rp250.000/tahun');
+      expect(answer.text).toContain('Harga template sudah termasuk setup awal, hosting, dan SSL tahun pertama.');
+      expect(answer.text).toContain(`hosting & jasa ${rupiahCompact(HOSTING_RENEWAL_DEFAULT)} ditambah domain sesuai ekstensinya`);
+      expect(answer.text).not.toMatch(/termasuk (setup, )?domain|domain, hosting/i);
+      expect(answer.action?.to).toBe('/harga');
+    },
+  );
+
+  it.each([
+    'Berapa biaya perpanjangan tahun ke-2?',
+    'biaya tahun kedua berapa?',
+    'Bagaimana cara perpanjang domain dan hosting?',
+    'Kalau masa aktif habis bagaimana?',
+    'how do I renew my website?',
+  ])('perpanjangan: %s', (question) => {
+    const answer = answerLocally(question, WA);
+    expect(answer.text).toMatch(/^Mulai tahun ke-2, biaya per tahun adalah hosting & jasa Rp500\.000 ditambah perpanjangan domain/);
+    expect(answer.text).toContain('.com Rp250.000, .web.id Rp50.000');
+    expect(answer.text).toContain('1, 2, atau 3 tahun sekaligus dari halaman pesanan di Akun Saya');
+    expect(answer.text).toContain('Midtrans');
+    expect(answer.action?.to).toBe('/harga');
+  });
+
+  it('biaya hosting & jasa mengikuti setting admin', () => {
+    expect(answerLocally('biaya perpanjangan berapa?', WA, 750_000).text).toContain('hosting & jasa Rp750.000');
+    expect(answerLocally('sudah termasuk domain?', WA, 750_000).text).toContain('hosting & jasa Rp750.000');
+    expect(renewalText()).toBe('Mulai tahun ke-2, biaya per tahun adalah hosting & jasa Rp500.000 ditambah domain sesuai ekstensinya.');
+  });
+
+  it('teks bersama topik cepat: tanpa "termasuk domain", domain mulai Rp50.000/tahun', () => {
+    expect(TEMPLATE_INCLUDES_TEXT).toBe('setup awal, hosting, dan SSL tahun pertama');
+    expect(DOMAIN_PRICE_TEXT).toBe('Domain dipilih saat memesan, mulai Rp50.000/tahun (.com dan .id Rp250.000).');
+    expect(TEMPLATES_INTRO).toContain('Harganya sudah termasuk setup awal, hosting, dan SSL tahun pertama, plus diskon 20%');
+    expect(TEMPLATES_INTRO).toContain(DOMAIN_PRICE_TEXT);
+    const catalog = answerLocally('ada template untuk klinik?', WA);
+    expect(catalog.text).toBe(TEMPLATES_INTRO);
+    expect(catalog.cards).toBe('templates');
+    for (const text of [TEMPLATES_INTRO, catalog.text]) expect(text).not.toMatch(/termasuk (setup, )?domain|domain, hosting/i);
   });
 });

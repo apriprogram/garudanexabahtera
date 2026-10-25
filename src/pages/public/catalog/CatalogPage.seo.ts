@@ -12,7 +12,8 @@ import { HUB_PATHS, templatePath } from '../../../seo/paths';
 import { publishedTemplates } from '../../../seo/templateSeo';
 import type { SeoData } from '../../../seo/types';
 
-export const CATALOG_TITLE = `Template Website Siap Pakai + Domain & Hosting${TITLE_SUFFIX}`;
+// Domain tidak termasuk harga template (pemilik 2026-10-25): judul hanya menyebut yang memang termasuk
+export const CATALOG_TITLE = `Template Website Siap Pakai + Hosting & SSL${TITLE_SUFFIX}`;
 export const CATALOG_DESCRIPTION =
   'Katalog template website siap pakai: company profile, toko online, klinik, klub olahraga, studio yoga & fintech. Harga jelas, lihat demo, bayar online.';
 

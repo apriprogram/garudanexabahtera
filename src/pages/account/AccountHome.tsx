@@ -1,10 +1,15 @@
-// Dashboard pembeli (/akun): sapaan, ringkasan yang sekaligus filter, situs aktif, daftar pesanan (customer_get_orders)
-// dengan aksi per status. Urutan daftar: yang perlu tindakan dulu; pesanan dibatalkan/ditolak dilipat di bawah.
+// Halaman daftar akun pembeli dari satu sumber data (customer_get_orders), tiga tampilan sesuai menu sidebar:
+// - dashboard (/akun, Beranda): sapaan, ringkasan yang sekaligus filter, situs aktif (+ masa aktif & tautan perpanjang),
+//   dan maksimal 3 pesanan yang masih berjalan dengan tautan "Lihat semua pesanan";
+// - orders (/akun/pesanan, Pesanan saya): ringkasan/filter + semua pesanan dengan aksi per status. Urutan: yang perlu
+//   tindakan dulu; pesanan dibatalkan/ditolak dilipat di bawah;
+// - sites (/akun/situs, Situs saya): semua situs aktif dengan masa aktifnya.
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   BadgeCheck,
+  CalendarClock,
   ChevronDown,
   CreditCard,
   ExternalLink,
@@ -20,9 +25,11 @@ import {
 import { ApiError, apiPost, errorMessage } from '../../lib/api';
 import { getCurrentUser } from '../../lib/auth';
 import { formatRupiah, formatTanggal, type Order, type OrderStatus } from '../../types/platform';
+import { countdownLabel, periodTone, remaining, type PeriodTone } from './components/activePeriod';
 import { Notice } from './components/Notice';
 import { REFUNDED_TEXT, STATUS_HINT, asSentence, displayDomain, refundHint } from './components/orderCopy';
 import { payOrder, useDocumentTitle } from './components/payment';
+import { activePeriodPath } from './components/renewal';
 import { EmptyState, ErrorState, Skeleton } from './components/States';
 import { invoiceStatus, isAwaitingRefund, isPaymentUnderReview, isRefunded } from './components/paymentStatus';
 import { StatusPill } from './components/StatusPill';
@@ -73,8 +80,13 @@ const loadErrorMessage = (err: unknown) =>
     ? err.message
     : errorMessage(err, 'Daftar pesanan belum bisa dimuat. Silakan coba lagi.');
 
-export default function AccountHome() {
-  useDocumentTitle('Akun saya');
+export type AccountHomeView = 'dashboard' | 'orders' | 'sites';
+
+/** Pesanan berjalan yang tampil di Beranda; sisanya lewat "Lihat semua pesanan". */
+const DASHBOARD_ORDER_LIMIT = 3;
+
+export default function AccountHome({ view = 'dashboard' }: { view?: AccountHomeView }) {
+  useDocumentTitle(view === 'orders' ? 'Pesanan saya' : view === 'sites' ? 'Situs saya' : 'Akun saya');
   const user = getCurrentUser();
   const firstName = (user?.name || '').trim().split(/\s+/)[0] || '';
 
@@ -121,9 +133,14 @@ export default function AccountHome() {
     [orders],
   );
   const visible = useMemo(() => orders.filter(FILTER_TEST[filter]), [orders, filter]);
-  const openOrders = visible.filter((o) => !isClosed(o));
-  const closedOrders = visible.filter(isClosed);
+  const allOpenOrders = visible.filter((o) => !isClosed(o));
+  // Beranda: hanya beberapa pesanan berjalan; pesanan ditutup cukup di "Pesanan saya"
+  const openOrders = view === 'dashboard' ? allOpenOrders.slice(0, DASHBOARD_ORDER_LIMIT) : allOpenOrders;
+  const closedOrders = view === 'dashboard' ? [] : visible.filter(isClosed);
+  const hiddenOrders = view === 'dashboard' ? visible.length - openOrders.length : 0;
   const sites = useMemo(() => orders.filter((o) => o.status === 'aktif' && o.site_id), [orders]);
+  // Acuan sisa masa aktif di kartu situs (cukup per muat halaman: hitungannya per hari)
+  const [now] = useState(() => new Date());
   const loading = state.status === 'loading';
 
   const tiles: { key: Filter; label: string; value: number; icon: ReactNode; tone?: 'warning' | 'success' }[] = [
@@ -134,13 +151,24 @@ export default function AccountHome() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-5 pb-14 pt-6 sm:px-8 sm:pb-20 sm:pt-10">
+    <div className="mx-auto w-full max-w-6xl px-5 pb-14 pt-6 sm:px-8 sm:pb-20 sm:pt-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm text-muted">Selamat datang kembali</p>
-          <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight text-fg sm:text-4xl">{firstName ? `Halo, ${firstName}` : 'Halo!'}</h1>
-          <p className="mt-1.5 text-[14px] text-muted sm:text-base">Pantau pesanan template dan kelola situs Anda di sini.</p>
-        </div>
+        {view === 'dashboard' ? (
+          <div className="min-w-0">
+            <p className="text-sm text-muted">Selamat datang kembali</p>
+            <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight text-fg sm:text-4xl">{firstName ? `Halo, ${firstName}` : 'Halo!'}</h1>
+            <p className="mt-1.5 text-[14px] text-muted sm:text-base">Pantau pesanan template dan kelola situs Anda di sini.</p>
+          </div>
+        ) : (
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight text-fg sm:text-[32px]">{view === 'orders' ? 'Pesanan saya' : 'Situs saya'}</h1>
+            <p className="mt-1.5 text-[14px] text-muted sm:text-base">
+              {view === 'orders'
+                ? 'Semua pesanan template Anda beserta status pembayarannya.'
+                : 'Situs yang sudah aktif: kelola kontennya dan pantau masa aktifnya.'}
+            </p>
+          </div>
+        )}
         <Link to="/#templates" className="btn btn-primary shrink-0 self-start sm:self-auto">
           <ShoppingBag className="h-4 w-4" aria-hidden />
           Pilih Template
@@ -148,6 +176,7 @@ export default function AccountHome() {
       </header>
 
       {/* Ringkasan = filter daftar pesanan (tidak ada baris chip terpisah yang mengulang angkanya) */}
+      {view !== 'sites' && (
       <section
         aria-label="Ringkasan dan filter pesanan"
         className="mt-6 grid grid-cols-2 gap-3 max-sm:grid-cols-4 max-sm:gap-2 sm:mt-8 sm:gap-4 lg:grid-cols-4"
@@ -165,8 +194,9 @@ export default function AccountHome() {
           />
         ))}
       </section>
+      )}
 
-      {counts.unpaid > 0 && (
+      {view !== 'sites' && counts.unpaid > 0 && (
         <Notice
           tone="warning"
           className="mt-5"
@@ -183,15 +213,23 @@ export default function AccountHome() {
         </Notice>
       )}
 
-      {sites.length > 0 && (
+      {view === 'sites' && <SitesView state={state} sites={sites} now={now} onRetry={refresh} retrying={refreshing} />}
+
+      {view === 'dashboard' && sites.length > 0 && (
         <section aria-labelledby="sites-title" className="mt-8 sm:mt-10">
-          <h2 id="sites-title" className="text-lg font-semibold text-fg sm:text-xl">
-            Situs Anda
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="sites-title" className="text-lg font-semibold text-fg sm:text-xl">
+              Situs Anda
+            </h2>
+            <Link to="/akun/situs" className="btn btn-ghost btn-sm">
+              Semua situs
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
           <ul className="mt-4 grid gap-3 sm:gap-4 md:grid-cols-2">
             {sites.map((order) => (
               <li key={order.order_number}>
-                <SiteCard order={order} />
+                <SiteCard order={order} now={now} />
               </li>
             ))}
           </ul>
@@ -199,13 +237,15 @@ export default function AccountHome() {
       )}
 
       {/* Daftar pesanan */}
+      {view !== 'sites' && (
       <section aria-labelledby="orders-title" className="mt-8 sm:mt-10">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="orders-title" className="text-lg font-semibold text-fg sm:text-xl">
-            Pesanan saya
+          <h2 id="orders-title" className={view === 'orders' ? 'sr-only' : 'text-lg font-semibold text-fg sm:text-xl'}>
+            {view === 'orders' ? 'Daftar pesanan' : 'Pesanan terbaru'}
           </h2>
           {state.status === 'ready' && (
-            <button type="button" onClick={refresh} disabled={refreshing} className="btn btn-ghost btn-sm">
+            // ml-auto: tetap di kanan saat judulnya sr-only (Pesanan saya)
+            <button type="button" onClick={refresh} disabled={refreshing} className="btn btn-ghost btn-sm ml-auto">
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden />
               <span className="max-sm:sr-only">Muat ulang</span>
             </button>
@@ -265,6 +305,15 @@ export default function AccountHome() {
 
           {openOrders.length > 0 && <OrderList orders={openOrders} />}
 
+          {state.status === 'ready' && view === 'dashboard' && hiddenOrders > 0 && (
+            <div className="mt-4 flex justify-center">
+              <Link to="/akun/pesanan" className="btn btn-outline btn-sm">
+                Lihat semua pesanan ({visible.length})
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </div>
+          )}
+
           {/* Pesanan yang sudah ditutup tidak perlu tindakan: dilipat (terbuka bila hanya itu yang ada) */}
           {closedOrders.length > 0 && (
             <details className={`group ${openOrders.length > 0 ? 'mt-6 sm:mt-8' : ''}`} open={openOrders.length === 0}>
@@ -278,7 +327,62 @@ export default function AccountHome() {
           )}
         </div>
       </section>
+      )}
     </div>
+  );
+}
+
+/** Situs saya: semua situs aktif (kartu dengan masa aktif), atau keadaan kosong / galat. */
+function SitesView({
+  state,
+  sites,
+  now,
+  onRetry,
+  retrying,
+}: {
+  state: LoadState;
+  sites: Order[];
+  now: Date;
+  onRetry: () => void;
+  retrying: boolean;
+}) {
+  return (
+    <section aria-label="Daftar situs" className="mt-6 sm:mt-8" aria-busy={state.status === 'loading'}>
+      {state.status === 'loading' && (
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+          {Array.from({ length: 2 }, (_, i) => (
+            <div key={i} className="card-site space-y-3 p-5">
+              <Skeleton className="h-5 w-1/2" />
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+          ))}
+        </div>
+      )}
+      {state.status === 'error' && <ErrorState title="Situs belum bisa dimuat" message={state.message} onRetry={onRetry} retrying={retrying} />}
+      {state.status === 'ready' && sites.length === 0 && (
+        <EmptyState
+          icon={<Globe className="h-7 w-7" aria-hidden />}
+          title="Belum ada situs aktif"
+          description="Situs muncul di sini setelah pesanan disetujui dan domainnya terhubung."
+          action={
+            <Link to="/akun/pesanan" className="btn btn-primary">
+              Lihat pesanan saya
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          }
+        />
+      )}
+      {state.status === 'ready' && sites.length > 0 && (
+        <ul className="grid gap-3 sm:gap-4 md:grid-cols-2">
+          {sites.map((order) => (
+            <li key={order.order_number}>
+              <SiteCard order={order} now={now} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -335,33 +439,65 @@ function StatTile({
   );
 }
 
-/** Kartu situs aktif di atas daftar: jalan pintas ke CMS tanpa perlu mencari pesanannya. */
-function SiteCard({ order }: { order: Order }) {
+/** Nada baris masa aktif di kartu situs: kuning ≤ 30 hari, merah ≤ 7 hari atau sudah lewat. */
+const PERIOD_LINE: Record<PeriodTone, string> = {
+  ok: 'bg-alt text-muted',
+  soon: 'bg-warning-50 text-warning-700',
+  urgent: 'bg-danger-50 text-danger-700',
+  expired: 'bg-danger-50 text-danger-700',
+};
+
+/**
+ * Kartu situs aktif di atas daftar: jalan pintas ke CMS tanpa perlu mencari pesanannya, plus masa aktif
+ * ("Aktif sampai … · 362 hari lagi") dan tautan "Perpanjang" ke kartu masa aktif di detail pesanan.
+ */
+function SiteCard({ order, now }: { order: Order; now: Date }) {
   const { domain } = displayDomain(order);
+  const rem = remaining(order.service_expires_at, now);
+  const tone = rem ? periodTone(rem) : 'ok';
   return (
-    <article className="card-site flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5" aria-labelledby={`site-${order.id}`}>
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success-50 text-success-700" aria-hidden>
-          <Globe className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <h3 id={`site-${order.id}`} className="truncate text-base font-semibold text-fg">
-            {domain}
-          </h3>
-          <p className="truncate text-xs text-subtle">{order.template_name}</p>
+    <article className="card-site flex flex-col gap-4 p-4 sm:p-5" aria-labelledby={`site-${order.id}`}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success-50 text-success-700" aria-hidden>
+            <Globe className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h3 id={`site-${order.id}`} className="truncate text-base font-semibold text-fg">
+              {domain}
+            </h3>
+            <p className="truncate text-xs text-subtle">{order.template_name}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Link to={`/akun/situs/${order.site_id}`} className="btn btn-primary btn-sm">
+            <SquarePen className="h-4 w-4" aria-hidden />
+            Kelola Situs
+          </Link>
+          <a href={`/situs/${order.site_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
+            <ExternalLink className="h-4 w-4" aria-hidden />
+            Lihat situs
+            <span className="sr-only">(tab baru)</span>
+          </a>
         </div>
       </div>
-      <div className="flex shrink-0 flex-wrap gap-2">
-        <Link to={`/akun/situs/${order.site_id}`} className="btn btn-primary btn-sm">
-          <SquarePen className="h-4 w-4" aria-hidden />
-          Kelola Situs
-        </Link>
-        <a href={`/situs/${order.site_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
-          <ExternalLink className="h-4 w-4" aria-hidden />
-          Lihat situs
-          <span className="sr-only">(tab baru)</span>
-        </a>
-      </div>
+      {rem && (
+        <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl px-3 py-2 text-[13px] ${PERIOD_LINE[tone]}`}>
+          <p className="flex min-w-0 items-center gap-1.5">
+            <CalendarClock className="h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              Aktif sampai {formatTanggal(order.service_expires_at)} · <span className="font-medium tabular-nums">{countdownLabel(rem)}</span>
+            </span>
+          </p>
+          <Link
+            to={activePeriodPath(order.order_number)}
+            aria-label={`Perpanjang masa aktif ${domain}`}
+            className="relative font-semibold underline-offset-2 after:absolute after:-inset-x-2 after:-inset-y-3 hover:underline"
+          >
+            Perpanjang
+          </Link>
+        </div>
+      )}
     </article>
   );
 }

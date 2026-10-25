@@ -1,4 +1,5 @@
 // Order Masuk (/admin/pesanan-template): daftar pesanan template + detail, Approve & Tolak. SPEC §4, §6, §9.
+// Detail juga memuat rincian domain berbayar, masa aktif, dan riwayat perpanjangan (ACCOUNT-DOMAIN-RENEWAL-SPEC.md §3–§5).
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check, ExternalLink, Eye, Inbox, Mail, Phone, RotateCw, ShoppingBag, X, XCircle } from 'lucide-react';
@@ -37,22 +38,38 @@ import {
   cn,
 } from '../../../components/admin/ui';
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
-import { formatRupiah, formatTanggal, type Order, type OrderStatus, type Site } from '../../../types/platform';
+import { formatRupiah, formatTanggal, type Order, type OrderStatus, type Renewal, type Site } from '../../../types/platform';
 import { useApiQuery, useDebounced, useToast, type ToastTone } from './shared/hooks';
-import { DetailList, DrawerSection, OrderStatusBadge, PaymentStatusBadge, Toast } from './shared/OrderUi';
+import {
+  ActivePeriodRows,
+  DetailList,
+  DomainCheckNote,
+  DrawerSection,
+  OrderStatusBadge,
+  PaymentStatusBadge,
+  PriceBreakdown,
+  RenewalHistory,
+  Toast,
+} from './shared/OrderUi';
 import {
   ORDER_STATUSES,
   ORDER_STATUS_SHORT,
+  domainPeriod,
+  hasActivePeriod,
   isOrderStatus,
   logEventLabel,
   logTone,
+  orderExpiryNotice,
   orderLabel,
+  orderPriceLines,
   paymentTypeLabel,
+  servicePeriod,
   type StaffOrderLog,
 } from './shared/orderUtils';
 
 type OrdersResponse = { orders: Order[]; counts: Partial<Record<OrderStatus | 'all', number>> };
-type OrderDetailResponse = { order: Order; logs: StaffOrderLog[]; site: Site | null };
+/** `renewals` (terbaru dulu) tidak ada di backend sebelum migrasi 026. */
+type OrderDetailResponse = { order: Order; logs: StaffOrderLog[]; site: Site | null; renewals?: Renewal[] };
 type StatusFilter = OrderStatus | 'all';
 
 const REJECTABLE: OrderStatus[] = ['menunggu_pembayaran', 'menunggu_approval'];
@@ -307,6 +324,9 @@ function OrderDetail({
   const order = loaded?.order ?? fallback ?? null;
   const logs = loaded?.logs ?? [];
   const site = loaded?.site ?? null;
+  const renewals = loaded?.renewals ?? [];
+  // Acuan sisa masa aktif (hitungannya per hari, cukup sekali per buka detail)
+  const [now] = useState(() => new Date());
 
   const [approveOpen, setApproveOpen] = useState(false);
   const [approveNote, setApproveNote] = useState('');
@@ -412,6 +432,8 @@ function OrderDetail({
 
   const canApprove = order.status === 'menunggu_approval';
   const canReject = REJECTABLE.includes(order.status);
+  const showPeriod = hasActivePeriod(order);
+  const expiryNotice = orderExpiryNotice(order, now);
 
   return (
     <>
@@ -473,6 +495,11 @@ function OrderDetail({
             {site && site.status === 'suspended' && ' (situs sedang dinonaktifkan)'}
           </Notice>
         )}
+        {expiryNotice && (
+          <Notice tone={expiryNotice.tone} title={expiryNotice.title}>
+            {expiryNotice.text}
+          </Notice>
+        )}
 
         <DrawerSection title="Data pemesan">
           <DetailList
@@ -511,6 +538,9 @@ function OrderDetail({
             items={[
               { label: 'Domain utama', value: <span className="font-mono text-[13px]">{order.domain_primary}</span> },
               { label: 'Domain alternatif', value: order.domain_alternative ? <span className="font-mono text-[13px]">{order.domain_alternative}</span> : '-' },
+              ...(order.domain_check
+                ? [{ label: 'Ketersediaan domain utama', value: <DomainCheckNote check={order.domain_check} />, full: true }]
+                : []),
               { label: 'Domain final', value: order.domain ? <span className="font-mono text-[13px]">{order.domain}</span> : 'Belum diisi', full: true },
             ]}
           />
@@ -525,20 +555,14 @@ function OrderDetail({
         </DrawerSection>
 
         <DrawerSection title="Pembayaran">
+          <PriceBreakdown lines={orderPriceLines(order)} className="mb-4" />
           <DetailList
             items={[
               { label: 'Status pembayaran', value: <PaymentStatusBadge status={order.payment_status} size="sm" /> },
               { label: 'Metode', value: paymentTypeLabel(order.payment_type) },
-              ...((order.discount_amount ?? 0) > 0
-                ? [
-                    { label: 'Harga template', value: <span className="tabular-nums">{formatRupiah(order.list_price ?? order.price)}</span> },
-                    {
-                      label: 'Diskon pembelian pertama',
-                      value: <span className="tabular-nums">-{formatRupiah(order.discount_amount ?? 0)}</span>,
-                    },
-                  ]
+              ...(order.invoice_number
+                ? [{ label: 'No. nota', value: <span className="font-mono text-[13px] tabular-nums">{order.invoice_number}</span> }]
                 : []),
-              { label: 'Total tagihan', value: <span className="tabular-nums">{formatRupiah(order.price)}</span> },
               { label: 'Dibayar pada', value: formatTanggal(order.paid_at, true) },
               { label: 'Disetujui pada', value: formatTanggal(order.approved_at, true) },
               { label: 'Aktif pada', value: formatTanggal(order.activated_at, true) },
@@ -546,6 +570,37 @@ function OrderDetail({
             ]}
           />
         </DrawerSection>
+
+        {showPeriod && (
+          <DrawerSection title="Masa aktif">
+            <ActivePeriodRows
+              now={now}
+              rows={[
+                { label: 'Hosting & jasa', period: servicePeriod(order) },
+                {
+                  label: (
+                    <>
+                      Domain <span className="break-all font-mono">{order.domain || order.domain_primary}</span>
+                    </>
+                  ),
+                  period: domainPeriod(order),
+                },
+              ]}
+            />
+          </DrawerSection>
+        )}
+
+        {(order.status === 'aktif' || renewals.length > 0) && (
+          <DrawerSection title="Perpanjangan">
+            {loaded ? (
+              <RenewalHistory renewals={renewals} />
+            ) : detail.error ? (
+              <p className="text-sm text-adm-muted">Gagal memuat perpanjangan.</p>
+            ) : (
+              <LoadingState label="Memuat perpanjangan..." className="py-8" />
+            )}
+          </DrawerSection>
+        )}
 
         <DrawerSection title="Riwayat">
           {!loaded ? (

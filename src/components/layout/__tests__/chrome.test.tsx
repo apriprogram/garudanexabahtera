@@ -444,6 +444,11 @@ describe('Nexa AI', () => {
     expect(toPricing).toHaveAttribute('href', '/harga');
     expect(chip).not.toHaveAttribute('aria-disabled');
     expect(posts).toHaveLength(0);
+    // Domain tidak termasuk harga template (pemilik 2026-10-25): harga domain + biaya tahun ke-2 (setting kosong → bawaan)
+    const log = within(panel).getByRole('log');
+    expect(log).toHaveTextContent(/sudah termasuk setup awal, hosting, dan SSL tahun pertama\. Domain dipilih saat memesan, mulai Rp50\.000\/tahun/);
+    expect(log).toHaveTextContent(/Mulai tahun ke-2, biaya per tahun adalah hosting & jasa Rp500\.000 ditambah domain sesuai ekstensinya/);
+    expect(log).not.toHaveTextContent(/termasuk domain|domain, hosting/);
 
     const input = within(panel).getByRole('textbox', { name: 'Tulis pesan untuk Nexa' });
     const send = within(panel).getByRole('button', { name: 'Kirim pesan' });
@@ -471,6 +476,30 @@ describe('Nexa AI', () => {
     expect(wa).toHaveAttribute('target', '_blank');
     expect(panel).toHaveTextContent(/belum punya jawabannya/);
     expect(wa.closest('[data-message-id]')?.querySelector('img')?.getAttribute('src')).toContain('nexa-maaf');
+  });
+
+  it('tanpa AI: "sudah termasuk domain?" dijawab jujur, biaya hosting & jasa dari setting admin', async () => {
+    clearApiCache();
+    clearCachedJson();
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const action = new URL(String(input), 'http://localhost').searchParams.get('action');
+      if (action === 'nexa_chat') return json(503, { error: 'Nexa AI belum aktif.', code: 'NEXA_OFFLINE' });
+      if (action === 'get_settings') return json(200, { template_hosting_renewal_price: '650000' });
+      if (action === 'get_templates') return json(200, { success: true, templates: [], categories: [] });
+      return json(200, []);
+    });
+    const panel = openPanel();
+    // Setting termuat dulu (biaya hosting & jasa dibaca saat pertanyaan dikirim)
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    ask(panel, 'Apakah sudah termasuk domain?');
+    await within(panel).findByRole('link', { name: 'Lihat halaman harga' }, { timeout: 2000 });
+    const log = within(panel).getByRole('log');
+    expect(log).toHaveTextContent(/Domain belum termasuk harga template\./);
+    expect(log).toHaveTextContent(/mulai Rp50\.000\/tahun \(\.com dan \.id Rp250\.000\/tahun\)/);
+    expect(log).toHaveTextContent(/hosting & jasa Rp650\.000 ditambah domain sesuai ekstensinya/);
+    clearCachedJson();
   });
 
   it('jawaban AI: path situs & wa.me jadi tautan, Markdown tebal dibuang; batas pertanyaan (429) -> jawaban dari data situs', async () => {
@@ -713,24 +742,48 @@ describe('halaman legal', () => {
     renderLegal(path);
     expect(screen.getByRole('heading', { level: 1, name: title })).toBeInTheDocument();
     const time = document.querySelector('time');
-    expect(time).toHaveAttribute('dateTime', '2026-10-21');
-    expect(time?.parentElement).toHaveTextContent('Terakhir diperbarui: 21 Oktober 2026');
+    expect(time).toHaveAttribute('dateTime', '2026-10-25');
+    expect(time?.parentElement).toHaveTextContent('Terakhir diperbarui: 25 Oktober 2026');
     expect(screen.getAllByRole('navigation', { name: 'Daftar isi' }).length).toBeGreaterThan(0);
     // Judul tab dari head (src/seo/pages/legal.seo.ts lewat SeoManager/prerender), bukan dari halamannya
     expect(getHead(path, { settings: {}, navbar: [], templates: [], projects: [], templateBySlug: {}, builtAt: '' }).title).toBe(`${title} | Garuda Nexa`);
   });
 
-  it('refund: dana penuh ke metode semula dalam 7 hari kerja', () => {
+  it('refund: dana penuh ke metode semula dalam 7 hari kerja, termasuk harga domain', () => {
     renderLegal(LEGAL_PATHS.refund);
     const main = screen.getByRole('main');
     expect(main).toHaveTextContent(/dikembalikan penuh ke metode pembayaran semula, paling lambat 7 hari kerja setelah pesanan ditolak/);
+    // Domain dibayar terpisah (pemilik 2026-10-25): pesanan lunas yang ditolak → template + domain kembali penuh
+    expect(main).toHaveTextContent(/Jumlahnya mencakup harga template dan harga domain/);
+    expect(main).toHaveTextContent(/harga template \(setelah diskon, bila ada\) ditambah harga domain/);
+    // Perpanjangan: tagihan belum dibayar bisa dibatalkan; yang sudah dibayar berlaku 1–3 tahun
+    expect(main).toHaveTextContent(/Tagihan perpanjangan \(mulai tahun ke-2\) yang belum dibayar dapat Anda batalkan sendiri/);
+    expect(main).toHaveTextContent(/\(1, 2, atau 3 tahun\)/);
+    expect(main).not.toHaveTextContent(/domain alternatif/);
   });
 
-  it('S&K: isi harga tahun pertama & metode pembayaran generik', () => {
+  it('S&K: harga template tanpa domain, domain per ekstensi, perpanjangan dari akun, metode pembayaran generik', () => {
     renderLegal(LEGAL_PATHS.terms);
     const main = screen.getByRole('main');
-    expect(main).toHaveTextContent(/domain, hosting, dan sertifikat SSL \(HTTPS\) untuk tahun pertama/);
+    expect(main).toHaveTextContent(/template website dan setup awal, hosting, dan sertifikat SSL \(HTTPS\) untuk tahun pertama/);
+    expect(main).toHaveTextContent(/Domain tidak termasuk harga template/);
+    expect(main).not.toHaveTextContent(/serta domain|termasuk domain|domain alternatif/i);
+    expect(main).toHaveTextContent(/biaya hosting & jasa ditambah harga domain sesuai ekstensinya/);
+    expect(main).toHaveTextContent(/untuk 1, 2, atau 3 tahun sekaligus, dan dibayar lewat Midtrans/);
+    expect(main).toHaveTextContent(/mulai 30 hari sebelum masa aktif berakhir/);
+    expect(main).toHaveTextContent(/dapat dilepas oleh registri setelah masa tenggang/);
+    expect(main).toHaveTextContent(/dana dikembalikan penuh, termasuk harga domain/);
+    // Angka harga tidak ditulis di dokumen legal: tautan ke halaman Harga
+    for (const link of within(main).getAllByRole('link', { name: 'Harga' })) expect(link).toHaveAttribute('href', '/harga');
     expect(main).toHaveTextContent(/metode pembayaran yang tersedia di Midtrans/);
     expect(main).not.toHaveTextContent(/QRIS|Virtual Account|GoPay/);
+  });
+
+  it('privasi: data profil, cek ketersediaan domain, dan perpanjangan', () => {
+    renderLegal(LEGAL_PATHS.privacy);
+    const main = screen.getByRole('main');
+    expect(main).toHaveTextContent(/nama perusahaan, alamat, kota, dan foto profil \(semuanya opsional\)/);
+    expect(main).toHaveTextContent(/domain yang Anda pilih beserta hasil cek ketersediaannya/);
+    expect(main).toHaveTextContent(/untuk mengecek ketersediaan nama domain yang Anda cari/);
   });
 });

@@ -30,6 +30,13 @@ import {
   nexaGeminiModels, nexaGeminiReply,
   nexaIpBucket, nexaKnowledge, nexaLiveFacts, nexaProjectsHidden, nexaRequestBody, nexaResolveProvider, nexaShowcaseFacts,
 } from './nexa.js';
+// Domain berbayar: harga per ekstensi, validasi & cek ketersediaan RDAP (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md)
+import {
+  DOMAIN_MARKUP_DEFAULT, domainAlternatives, domainAvailability, domainAvailabilityMany, domainCatalog, domainMarkupPercent, domainNormalize,
+  domainPrice, domainProblem, domainTld,
+} from './domains.js';
+// Identitas perusahaan (kop nota) = pd_settings.company dokumen proyek
+import { pdSettings } from './project_docs/core.js';
 
 const STATUS_LABEL = {
   menunggu_pembayaran: 'Menunggu Pembayaran',
@@ -53,6 +60,29 @@ const MAX_PENDING_ORDERS = 5; // unpaid orders one customer may have at the same
 const FIRST_ORDER_DISCOUNT_PERCENT = 20; // automatic discount on an account's first template order (owner 2026-10-23)
 const FIRST_ORDER_DISCOUNT_CODE = 'PERTAMA20';
 const SNAP_REUSE_HOURS = 23; // a Snap token lives 24 hours
+// Masa aktif & perpanjangan (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md §5). Same values in templates.php and
+// src/lib/domainPricing.ts.
+const RENEWAL_STATUS_LABEL = {
+  menunggu_pembayaran: 'Menunggu Pembayaran',
+  lunas: 'Lunas',
+  dibatalkan: 'Dibatalkan',
+};
+const RENEWAL_YEARS = [1, 2, 3];
+// Log events whose note the customer sees (orderLogs); renewal notes are written by the server only
+const CUSTOMER_NOTE_EVENTS = ['rejected', 'renewal_created', 'renewal_paid', 'renewal_cancelled'];
+const RENEWAL_MAX_YEARS_AHEAD = 10; // a period never ends more than 10 years from now (registry limit)
+const HOSTING_RENEWAL_DEFAULT = 500000; // hosting & jasa per year when setting template_hosting_renewal_price is unset
+const AVATAR_MAX_BYTES = 2097152; // profile photo (2 MB), raster only
+const AVATAR_EXTS = ['png', 'jpg', 'webp'];
+const MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const RENEWAL_NOT_ACTIVE_MESSAGE = 'Perpanjangan hanya untuk pesanan yang situsnya sudah aktif.';
+const RENEWAL_NO_PRICE_MESSAGE = 'Perpanjangan online untuk domain ini belum tersedia. Hubungi kami via WhatsApp.';
+const RENEWAL_TOO_LONG_MESSAGE = 'Masa aktif paling lama 10 tahun ke depan. Pilih masa perpanjangan yang lebih pendek.';
+const INVOICE_NOT_AVAILABLE_MESSAGE = 'Nota tersedia setelah pembayaran lunas.';
+// Current end of the hosting / domain period; an active order without one (activated between migration 026 and the
+// deploy of this code) ends 1 year after activation. Same expressions in templates.php.
+const SERVICE_END_SQL = 'COALESCE(service_expires_at, DATE_ADD(activated_at, INTERVAL 1 YEAR), NOW())';
+const DOMAIN_END_SQL = 'COALESCE(domain_expires_at, DATE_ADD(activated_at, INTERVAL 1 YEAR), NOW())';
 // Names made by uploadBase64ToS3 (`<stem>_<ms timestamp>_<random>.<ext>`), never seed files
 const GENERATED_ASSET = /_\d{13}_[a-z0-9]{1,6}\.[a-z0-9]+$/;
 const GENERIC_ERROR = 'Terjadi kesalahan pada server. Silakan coba lagi.';
@@ -60,14 +90,19 @@ const GENERIC_ERROR = 'Terjadi kesalahan pada server. Silakan coba lagi.';
 // Reads may use GET (query string) as well as POST; every other platform action is POST only
 const GET_ACTIONS = new Set([
   'get_templates', 'get_template', 'get_public_projects', 'get_site_public', 'get_payment_config', 'get_showcase_stats',
+  'get_domain_prices',
   'customer_get_orders', 'customer_get_order', 'customer_get_site', 'customer_get_order_quote',
+  'customer_check_domain', 'customer_get_invoice', 'customer_get_invoices', 'customer_get_profile',
   'admin_get_template_orders', 'admin_get_template_order', 'admin_get_templates', 'admin_get_active_sites',
-  'admin_dashboard_summary',
+  'admin_dashboard_summary', 'admin_get_domain_pricing',
 ]);
 
 // Same limits as api.php: 5 per IP per hour, counted only after the input is valid
 const customOrderLimiter = createLimiter(3600 * 1000, 5);
 const customerRegisterLimiter = createLimiter(3600 * 1000, 5);
+// Cek domain per akun (sama dengan PF_DOMAIN_CHECKS / PF_DOMAIN_ORDER_CHECKS / PF_DOMAIN_CHECK_WINDOW di templates.php)
+const domainCheckLimiter = createLimiter(600 * 1000, 40);
+const domainOrderLimiter = createLimiter(600 * 1000, 20);
 // Suka / dilihat di kartu template (sama dengan PF_LIKES_PER_HOUR / PF_VIEWS_PER_HOUR di templates.php)
 const templateLikeLimiter = createLimiter(3600 * 1000, 60);
 const templateViewLimiter = createLimiter(3600 * 1000, 300);
@@ -104,6 +139,7 @@ const HANDLERS = {
   customer_register: customerRegister,
   midtrans_notification: midtransNotification,
   get_payment_config: getPaymentConfig,
+  get_domain_prices: getDomainPrices,
   template_like: templateLike,
   template_view: templateView,
   get_showcase_stats: getShowcaseStats,
@@ -123,6 +159,15 @@ const HANDLERS = {
   customer_get_site: customerGetSite,
   customer_save_site_content: customerSaveSiteContent,
   dev_simulate_payment: devSimulatePayment,
+  customer_check_domain: customerCheckDomain,
+  customer_create_renewal: customerCreateRenewal,
+  customer_pay_renewal: customerPayRenewal,
+  customer_cancel_renewal: customerCancelRenewal,
+  dev_simulate_renewal_payment: devSimulateRenewalPayment,
+  customer_get_invoice: customerGetInvoice,
+  customer_get_invoices: customerGetInvoices,
+  customer_get_profile: customerGetProfile,
+  customer_update_profile: customerUpdateProfile,
   // staff (admin + user)
   admin_get_template_orders: adminGetTemplateOrders,
   admin_get_template_order: adminGetTemplateOrder,
@@ -135,6 +180,7 @@ const HANDLERS = {
   admin_get_active_sites: adminGetActiveSites,
   admin_set_site_status: adminSetSiteStatus,
   admin_dashboard_summary: adminDashboardSummary,
+  admin_get_domain_pricing: adminGetDomainPricing,
 };
 
 /**
@@ -541,6 +587,11 @@ async function midtransNotification({ pool, input }) {
   if (orderId === '' || signature === '' || !safeEqual(expected, signature)) {
     throw new ApiError('Signature tidak valid.', 403, 'INVALID_SIGNATURE');
   }
+  // Tagihan perpanjangan (GNR-…): signature sama, jalur pembayaran sendiri
+  if (orderId.startsWith('GNR-')) {
+    await renewalNotification(pool, cfg, input, orderId, gross);
+    return {};
+  }
 
   const order = await orderByMidtransId(pool, orderId);
   if (!order) throw new ApiError('Pesanan tidak ditemukan.', 404, 'ORDER_NOT_FOUND');
@@ -599,6 +650,13 @@ async function customerCreateOrder(ctx) {
   if (domainPrimary !== null && domainAlternative === domainPrimary) {
     errors.domain_alternative = 'Domain alternatif harus berbeda dari domain utama.';
   }
+  // Domain dibeli bersama pesanan: hanya ekstensi yang dijual (domainCatalog, domains.js), satu label tanpa subdomain
+  const { tlds } = await domainCatalog(pool);
+  for (const [key, domain] of [['domain_primary', domainPrimary], ['domain_alternative', domainAlternative]]) {
+    if (domain === null || Object.hasOwn(errors, key)) continue;
+    const problem = domainProblem(domain, tlds);
+    if (problem !== null) errors[key] = problem;
+  }
   validate(errors);
 
   const template = await dbOne(pool, "SELECT * FROM templates WHERE id = ? AND status = 'published' LIMIT 1", [templateId]);
@@ -607,18 +665,31 @@ async function customerCreateOrder(ctx) {
   if (pending >= MAX_PENDING_ORDERS) {
     throw new ApiError(`Anda masih punya ${pending} pesanan yang belum dibayar. Selesaikan atau batalkan dulu sebelum memesan lagi.`, 409, 'TOO_MANY_PENDING');
   }
+  // Domain yang sudah terdaftar tidak bisa dibeli; 'unknown' (RDAP tidak menjawab) tetap boleh, tim memastikan manual.
+  // Cek ini juga dibatasi per akun (pesanan dengan domain terpakai tidak menambah jumlah pesanan menunggu pembayaran)
+  const orderKey = `domain-order|${user.id}`;
+  const orderWait = domainOrderLimiter.retryAfter(orderKey);
+  if (orderWait) tooManyAttempts(orderWait);
+  domainOrderLimiter.hit(orderKey);
+  const domainCheck = await domainAvailability(domainPrimary);
+  if (domainCheck === 'taken') {
+    const message = `Domain ${domainPrimary} sudah dipakai orang lain. Cek nama lain.`;
+    throw new ApiError(message, 409, 'DOMAIN_UNAVAILABLE', { domain_primary: message });
+  }
 
-  // Harga yang dibayar = harga template dikurangi diskon pesanan pertama (bila berlaku); harga katalog tetap dicatat
+  // Harga yang dibayar = harga template dikurangi diskon pesanan pertama (bila berlaku) + domain tahun pertama;
+  // harga katalog tetap dicatat. Diskon hanya untuk template.
   const quote = await firstOrderQuote(pool, Number(user.id), Number(template.price));
+  const firstYearDomain = Number(domainPrice(domainPrimary, tlds));
   let orderId = 0;
   for (let attempt = 0; attempt < 5 && !orderId; attempt++) {
     try {
       const result = await dbRun(pool, `INSERT INTO template_orders (order_number, user_id, template_id, template_name, template_code, price, list_price,
-                                            discount_amount, discount_code, customer_name, customer_email, customer_phone, company_name, notes,
-                                            domain_primary, domain_alternative)
-                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
-        newOrderNumber(), user.id, Number(template.id), template.name, template.template_code, quote.price,
-        quote.list_price, quote.discount_amount, quote.discount_code,
+                                            discount_amount, discount_code, domain_price, domain_check, customer_name, customer_email, customer_phone,
+                                            company_name, notes, domain_primary, domain_alternative)
+                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+        newOrderNumber(), user.id, Number(template.id), template.name, template.template_code,
+        quote.price + firstYearDomain, quote.list_price, quote.discount_amount, quote.discount_code, firstYearDomain, domainCheck,
         customerName, customerEmail, customerPhone, companyName, notes, domainPrimary, domainAlternative,
       ]);
       orderId = Number(result.insertId);
@@ -720,6 +791,8 @@ async function customerGetOrder(ctx) {
     order: orderOut(order, false),
     logs: await orderLogs(pool, Number(order.id), false),
     site: site ? siteOut(site, false) : null,
+    renewals: await orderRenewals(pool, Number(order.id), false),
+    renewal: await renewalOffer(pool, order),
   };
 }
 
@@ -801,6 +874,624 @@ async function devSimulatePayment(ctx) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// Customer: domain check, profile, invoice, renewals (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Ketersediaan & harga domain untuk halaman pesan (RDAP registri, backend/modules/domains.js)
+async function customerCheckDomain(ctx) {
+  const user = requireCustomer(ctx.user);
+  // Dihitung sebelum I/O apa pun (katalog, validasi), jadi permintaan bersamaan tidak lolos batas
+  const key = `domain-check|${user.id}`;
+  const wait = domainCheckLimiter.retryAfter(key);
+  if (wait) tooManyAttempts(wait);
+  domainCheckLimiter.hit(key);
+  const errors = {};
+  let domain = '';
+  const { tlds } = await domainCatalog(ctx.pool);
+  const raw = vStr(ctx.input, 'domain', 'Domain', 253, true, errors);
+  if (raw !== null) {
+    domain = domainNormalize(raw);
+    if (domain === '') errors.domain = 'Domain wajib diisi.';
+    else {
+      const problem = domainProblem(domain, tlds);
+      if (problem !== null) errors.domain = problem;
+    }
+  }
+  validate(errors);
+  // Nama yang sama di ekstensi populer yang dijual (yang diminta lebih dulu), dicek paralel: pembeli melihat mana yang
+  // tersedia
+  const domains = domainAlternatives(domain, tlds);
+  const statuses = await domainAvailabilityMany(domains);
+  const checks = domains.map((d) => {
+    const tld = domainTld(d, tlds);
+    return { domain: d, tld: tld.tld, status: statuses[d], price: tld.price };
+  });
+  return { check: checks[0], checks };
+}
+
+// Daftar ekstensi domain yang dijual + harga jual per tahun (halaman Harga, pilihan ekstensi di halaman pesan). Harga
+// beli DewaBiz tidak ikut.
+async function getDomainPrices({ pool }) {
+  const catalog = await domainCatalog(pool);
+  return { source: catalog.source, domains: catalog.tlds.map(({ tld, price, requirement }) => ({ tld, price, requirement })) };
+}
+
+async function customerGetProfile(ctx) {
+  const user = requireCustomer(ctx.user);
+  return { profile: profileOut(await profileRow(ctx.pool, user.id)) };
+}
+
+// Biodata + foto profil. avatar: tidak dikirim / sama = tetap, null atau '' = hapus, data URI PNG/JPG/WEBP = unggah baru
+async function customerUpdateProfile(ctx) {
+  const { pool, input } = ctx;
+  const user = requireCustomer(ctx.user);
+  const errors = {};
+  const name = vStr(input, 'name', 'Nama', 100, true, errors, 2);
+  const phone = vPhone(input, 'phone', 'Nomor HP', true, errors);
+  const company = vStr(input, 'company_name', 'Nama perusahaan', 150, false, errors);
+  const address = vStr(input, 'address', 'Alamat', 255, false, errors);
+  const city = vStr(input, 'city', 'Kota', 100, false, errors);
+  const row = await profileRow(pool, user.id);
+  const current = typeof row.avatar === 'string' ? row.avatar : '';
+  let avatar = current;
+  let upload = null;
+  if (Object.hasOwn(input, 'avatar')) {
+    const value = input.avatar;
+    if (value === null || value === '') {
+      avatar = '';
+    } else if (typeof value === 'string' && value === current) {
+      // tidak berubah
+    } else if (typeof value === 'string' && /^[\t\n\v\f\r ]*data:/i.test(value)) {
+      const m = /^[\t\n\v\f\r ]*data:image\/(png|jpe?g|webp);base64,/i.exec(value);
+      if (!m) {
+        errors.avatar = 'Foto profil harus JPG, PNG, atau WEBP.';
+      } else if (Buffer.byteLength(value, 'utf8') - Buffer.byteLength(m[0], 'utf8') > Math.ceil((AVATAR_MAX_BYTES * 4) / 3) + 4) {
+        errors.avatar = 'Ukuran foto maksimal 2 MB.';
+      } else {
+        try {
+          // Type from the bytes, never from the header
+          const { content, ext } = parseUpload(phpTrim(value), { allowDocuments: false });
+          if (!AVATAR_EXTS.includes(ext)) errors.avatar = 'Foto profil harus JPG, PNG, atau WEBP.';
+          else if (content.length > AVATAR_MAX_BYTES) errors.avatar = 'Ukuran foto maksimal 2 MB.';
+          else upload = phpTrim(value);
+        } catch {
+          errors.avatar = 'Foto profil tidak valid.';
+        }
+      }
+    } else {
+      errors.avatar = 'Foto profil tidak valid.';
+    }
+  }
+  validate(errors);
+  if (upload !== null) {
+    // Foto baru hanya menggantikan foto yang tadi dibaca: dua simpan bersamaan tidak meninggalkan file yatim
+    avatar = await uploadBase64ToS3(upload, 'avatars', 'avatar');
+    const result = await dbRun(pool, 'UPDATE users SET name = ?, phone = ?, company_name = ?, address = ?, city = ?, avatar = ? WHERE id = ? AND avatar <=> ?',
+      [name, phone, company, address, city, avatar, user.id, row.avatar]);
+    if (result.affectedRows === 0) {
+      await deleteGenerated(avatar, 'avatars');
+      throw new ApiError('Foto profil baru saja diubah di tempat lain. Muat ulang halaman lalu coba lagi.', 409, 'PROFILE_CHANGED');
+    }
+  } else {
+    await dbRun(pool, 'UPDATE users SET name = ?, phone = ?, company_name = ?, address = ?, city = ?, avatar = ? WHERE id = ?',
+      [name, phone, company, address, city, avatar, user.id]);
+  }
+  if (avatar !== current) await deleteGenerated(current, 'avatars');
+  return { profile: profileOut(await profileRow(pool, user.id)) };
+}
+
+async function profileRow(pool, userId) {
+  const row = await dbOne(pool, 'SELECT id, name, email, phone, company_name, address, city, avatar FROM users WHERE id = ? LIMIT 1', [userId]);
+  if (!row) throw new ApiError('Silakan masuk terlebih dahulu.', 401, 'UNAUTHORIZED');
+  return row;
+}
+
+function profileOut(r) {
+  const avatar = typeof r.avatar === 'string' ? r.avatar : '';
+  return {
+    id: Number(r.id),
+    name: r.name,
+    email: r.email,
+    phone: r.phone,
+    company_name: r.company_name,
+    address: r.address,
+    city: r.city,
+    // Path/URL gambar saja; kosong atau data URI (foto staf lama) = inisial nama
+    avatar: /^(\/assets\/|https:\/\/)/.test(avatar) ? avatar : null,
+  };
+}
+
+// Data nota pembelian (pesanan lunas) atau nota perpanjangan (tagihan lunas) + identitas perusahaan untuk kop
+async function customerGetInvoice(ctx) {
+  const { pool } = ctx;
+  const user = requireCustomer(ctx.user);
+  const order = await customerOrder(ctx, user);
+  const number = phpTrim(inStr(ctx.input, 'renewal_number')).toUpperCase();
+  let renewal = null;
+  if (number !== '') {
+    renewal = await dbOne(pool, `${renewalSelect()} WHERE r.renewal_number = ? AND r.order_id = ? LIMIT 1`, [number, Number(order.id)]);
+    if (!renewal) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
+    if (renewal.status !== 'lunas') throw new ApiError(INVOICE_NOT_AVAILABLE_MESSAGE, 409, 'INVOICE_NOT_AVAILABLE');
+  } else if (order.paid_at === null) {
+    throw new ApiError(INVOICE_NOT_AVAILABLE_MESSAGE, 409, 'INVOICE_NOT_AVAILABLE');
+  }
+  return {
+    order: orderOut(order, false),
+    renewal: renewal ? renewalOut(renewal, false) : null,
+    company: (await pdSettings({ db: pool })).company,
+  };
+}
+
+// Daftar nota pembeli (menu Nota): pesanan yang sudah dibayar + perpanjangan lunas, terbaru dulu
+async function customerGetInvoices(ctx) {
+  const { pool } = ctx;
+  const user = requireCustomer(ctx.user);
+  const items = [];
+  for (const o of await dbAll(pool, `${orderSelect()} WHERE o.user_id = ? AND o.paid_at IS NOT NULL`, [user.id])) {
+    items.push({
+      type: 'pembelian',
+      invoice_number: `INV-${o.order_number}`,
+      order_number: o.order_number,
+      renewal_number: null,
+      title: o.template_name,
+      domain: o.domain || o.domain_primary,
+      years: null,
+      amount: num(o.price),
+      paid_at: o.paid_at,
+      payment_status: o.payment_status,
+      payment_type: o.payment_type,
+      order_status: o.status,
+    });
+  }
+  for (const r of await dbAll(pool, `${renewalSelect()} WHERE o.user_id = ? AND r.status = 'lunas'`, [user.id])) {
+    items.push({
+      type: 'perpanjangan',
+      invoice_number: `INV-${r.renewal_number}`,
+      order_number: r.order_number,
+      renewal_number: r.renewal_number,
+      title: r.template_name,
+      domain: r.domain,
+      years: Number(r.years),
+      amount: num(r.price),
+      paid_at: r.paid_at,
+      payment_status: r.payment_status,
+      payment_type: r.payment_type,
+      order_status: null,
+    });
+  }
+  // strcmp() like PHP: plain code-unit order of 'YYYY-MM-DD HH:MM:SS' and the invoice numbers
+  const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  items.sort((a, b) => cmp(String(b.paid_at), String(a.paid_at)) || cmp(b.invoice_number, a.invoice_number));
+  return { invoices: items };
+}
+
+async function customerCreateRenewal(ctx) {
+  const { pool } = ctx;
+  const user = requireCustomer(ctx.user);
+  const years = inInt(ctx, 'years');
+  if (!RENEWAL_YEARS.includes(years)) validate({ years: 'Pilih masa perpanjangan 1, 2, atau 3 tahun.' });
+  const order = await customerOrder(ctx, user);
+  const orderId = Number(order.id);
+  const offer = await renewalOffer(pool, order);
+  if (order.status !== 'aktif' || offer.price_per_year === null) throw new ApiError(offer.reason, 409, 'RENEWAL_NOT_AVAILABLE');
+  await assertNoPendingRenewal(pool, orderId);
+  const option = offer.options.find((o) => o.years === years) ?? null;
+  if (option === null) throw new ApiError(RENEWAL_TOO_LONG_MESSAGE, 409, 'RENEWAL_TOO_LONG');
+
+  let renewalId = 0;
+  for (let attempt = 0; attempt < 5 && !renewalId; attempt++) {
+    try {
+      const result = await dbRun(pool, `INSERT INTO template_renewals (renewal_number, order_id, user_id, domain, years, hosting_price_per_year,
+                                            domain_price_per_year, price_per_year, price, pending_order_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+        newOrderNumber('GNR'), orderId, user.id, order.domain || order.domain_primary, years,
+        offer.hosting_price_per_year, offer.domain_price_per_year, offer.price_per_year, option.price, orderId,
+      ]);
+      renewalId = Number(result.insertId);
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 409) throw err;
+      await assertNoPendingRenewal(pool, orderId); // a concurrent request opened one (uq_renewals_pending)
+      if (attempt === 4) throw err; // renewal number collision: draw a new one
+    }
+  }
+  const renewal = await renewalById(pool, renewalId);
+  await addLog(pool, orderId, 'renewal_created', null, null, 'customer', user.id, `Perpanjangan ${years} tahun dibuat (${renewal.renewal_number}).`);
+  const result = await createRenewalSnap(pool, renewal);
+  const out = { renewal: renewalOut(await renewalById(pool, renewalId), false), payment_url: result.paymentUrl };
+  if (result.error !== null) out.payment_error = result.error;
+  return out;
+}
+
+async function customerPayRenewal(ctx) {
+  const { pool } = ctx;
+  const user = requireCustomer(ctx.user);
+  const renewal = await customerRenewal(ctx, user);
+  if (renewal.status !== 'menunggu_pembayaran') throw renewalStatusError(renewal.status);
+  // Kartu yang ditahan untuk tinjauan fraud: membayar lagi membuat transaksi baru (risiko tertagih dua kali)
+  if (renewal.payment_status === 'capture') {
+    throw new ApiError('Pembayaran kartu Anda sedang ditinjau bank. Tidak perlu membayar ulang.', 409, 'PAYMENT_UNDER_REVIEW');
+  }
+  const cfg = midtransConfig();
+  if (cfg.serverKey === '') throw new ApiError('Pembayaran online belum dikonfigurasi.', 503, 'PAYMENT_NOT_CONFIGURED');
+  // Reuse the current Snap page while it is still valid and not finished/failed
+  if (renewal.payment_url && renewal.payment_status === 'pending' && renewal.payment_age_minutes !== null
+    && Number(renewal.payment_age_minutes) < SNAP_REUSE_HOURS * 60) {
+    return { payment_url: renewal.payment_url };
+  }
+  const result = await createRenewalSnap(pool, renewal);
+  if (result.paymentUrl === null) throw new ApiError(result.error, 502, 'PAYMENT_GATEWAY_ERROR');
+  return { payment_url: result.paymentUrl };
+}
+
+async function customerCancelRenewal(ctx) {
+  const { pool } = ctx;
+  const user = requireCustomer(ctx.user);
+  const renewal = await customerRenewal(ctx, user);
+  if (!(await renewalTransition(pool, Number(renewal.id), 'dibatalkan', 'cancelled_at = NOW()'))) {
+    throw renewalStatusError((await renewalById(pool, Number(renewal.id))).status);
+  }
+  await addLog(pool, Number(renewal.order_id), 'renewal_cancelled', null, null, 'customer', user.id, `Perpanjangan ${renewal.renewal_number} dibatalkan.`);
+  await midtransExpire(renewal);
+  return { renewal: renewalOut(await renewalById(pool, Number(renewal.id)), false) };
+}
+
+// Same payment result as a Midtrans settlement (local testing without Midtrans)
+async function devSimulateRenewalPayment(ctx) {
+  const { pool } = ctx;
+  const user = requireCustomer(ctx.user);
+  const cfg = midtransConfig();
+  if (!cfg.simulator) throw new ApiError('Simulasi pembayaran tidak aktif.', 403, 'SIMULATOR_DISABLED');
+  const renewal = await customerRenewal(ctx, user);
+  if (renewal.status !== 'menunggu_pembayaran') throw renewalStatusError(renewal.status);
+  await applyRenewalPayment(pool, renewal, 'settlement', 'accept', 'simulator', 'customer', user.id,
+    { simulated: true, transaction_status: 'settlement' }, true, null, 'simulated');
+  return {
+    renewal: renewalOut(await renewalById(pool, Number(renewal.id)), false),
+    order: orderOut(await orderById(pool, Number(renewal.order_id)), false),
+  };
+}
+
+// Midtrans notification for GNR-… (signature already checked): amount, Status API confirmation, then the payment result
+async function renewalNotification(pool, cfg, input, orderId, gross) {
+  let renewal = await dbOne(pool, `${renewalSelect()} WHERE r.midtrans_order_id = ? LIMIT 1`, [orderId]);
+  // \n? mirrors PHP preg_match, whose $ also matches before a final newline
+  const m = /^(GNR-\d{8}-[A-Z0-9]{6})-(\d+)\n?$/.exec(orderId);
+  if (!renewal && m) {
+    renewal = await dbOne(pool, `${renewalSelect()} WHERE r.renewal_number = ? AND r.payment_attempt >= ? LIMIT 1`, [m[1], Number(m[2])]);
+  }
+  if (!renewal) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
+  const payload = paymentPayload(input);
+  if (!sameAmount(gross, renewal.price)) {
+    await addLog(pool, Number(renewal.order_id), 'renewal_payment_update', null, null, 'midtrans', null,
+      `Notifikasi perpanjangan ${renewal.renewal_number} ditolak: jumlah pembayaran (${gross}) tidak sama dengan tagihan.`, payload);
+    throw new ApiError('Jumlah pembayaran tidak sesuai.', 400, 'AMOUNT_MISMATCH');
+  }
+  let tx = rawScalar(input, 'transaction_status');
+  let fraud = rawScalar(input, 'fraud_status');
+  let paymentType = rawScalar(input, 'payment_type');
+  // Confirm with the Status API; the notification itself is signed, so it is the fallback when the API is unreachable
+  const check = await midtransRequest('GET', `${cfg.apiBase}/v2/${encodeURIComponent(orderId)}/status`, cfg.serverKey, null, 10);
+  const body = check.body;
+  if (check.code === 200 && isObject(body) && body.transaction_status != null && String(body.order_id ?? '') === orderId) {
+    if (body.gross_amount != null && !sameAmount(String(body.gross_amount), renewal.price)) {
+      await addLog(pool, Number(renewal.order_id), 'renewal_payment_update', null, null, 'midtrans', null,
+        `Status API: jumlah pembayaran perpanjangan ${renewal.renewal_number} tidak sama dengan tagihan.`, paymentPayload(body));
+      throw new ApiError('Jumlah pembayaran tidak sesuai.', 400, 'AMOUNT_MISMATCH');
+    }
+    tx = String(body.transaction_status);
+    fraud = String(body.fraud_status ?? '');
+    paymentType = String(body.payment_type ?? paymentType);
+    payload.confirmed_by_status_api = true;
+  } else {
+    payload.confirmed_by_status_api = false;
+    console.error(`[midtrans] Status API check failed for ${orderId}: HTTP ${check.code} ${check.error}`);
+  }
+  const isCurrent = renewal.midtrans_order_id === orderId
+    || (renewal.midtrans_order_id === null && orderId === `${renewal.renewal_number}-${renewal.payment_attempt}`);
+  await applyRenewalPayment(pool, renewal, tx, fraud, paymentType !== '' ? paymentType : null, 'midtrans', null, payload, isCurrent,
+    orderId);
+}
+
+// One place for every renewal payment result (Midtrans webhook and dev_simulate_renewal_payment):
+//   settlement / capture+accept -> lunas + masa aktif diperpanjang (renewalMarkPaid)
+//   deny / cancel / expire / failure -> dibatalkan, only for the current attempt while still menunggu_pembayaran
+//   pending -> unchanged; refund* / chargeback -> logged only
+// paymentOrderId = Midtrans order_id of the notification (null for the simulator). Payment fields change only while the
+// renewal waits for payment, or for a refund/chargeback of the attempt that paid it (paid_midtrans_order_id).
+async function applyRenewalPayment(pool, renewal, tx, fraud, paymentType, actorType, actorId, payload, isCurrentAttempt, paymentOrderId,
+  storedStatus = null) {
+  const id = Number(renewal.id);
+  const orderId = Number(renewal.order_id);
+  const number = renewal.renewal_number;
+  tx = String(tx).toLowerCase();
+  fraud = String(fraud).toLowerCase();
+  const paid = tx === 'settlement' || (tx === 'capture' && fraud === 'accept');
+  const failed = ['deny', 'cancel', 'expire', 'failure'].includes(tx);
+  const reversal = tx.includes('refund') || tx === 'chargeback' || tx === 'partial_chargeback';
+  const payingAttempt = paymentOrderId !== null && paymentOrderId === renewal.paid_midtrans_order_id;
+
+  // An old attempt's failure must not overwrite the payment fields of the current attempt, and nothing but a reversal
+  // of the paying attempt changes them once the renewal is lunas
+  let paymentChanged = false;
+  const touch = renewal.status === 'menunggu_pembayaran'
+    ? isCurrentAttempt || paid
+    : renewal.status === 'lunas' && payingAttempt && reversal;
+  if (touch) {
+    const newStatus = storedStatus ?? (tx !== '' ? tx : 'pending');
+    paymentChanged = renewal.payment_status !== newStatus || (paymentType !== null && renewal.payment_type !== paymentType);
+    if (paymentChanged) {
+      await dbRun(pool, 'UPDATE template_renewals SET payment_status = ?, payment_type = COALESCE(?, payment_type) WHERE id = ?',
+        [mbSubstr(newStatus, 0, 30), paymentType === null ? null : mbSubstr(paymentType, 0, 40), id]);
+    }
+  }
+
+  let note = null;
+  if (paid) {
+    const expires = await renewalMarkPaid(pool, renewal, paymentOrderId);
+    if (expires !== null) {
+      await addLog(pool, orderId, 'renewal_paid', null, null, actorType, actorId,
+        `Perpanjangan ${Number(renewal.years)} tahun lunas (${number}). Masa aktif sampai ${tanggalId(expires)}.`, payload);
+      return;
+    }
+    // Not marked by this notification: decide from the current row (a cancel or another payment may have just won)
+    const fresh = await renewalById(pool, id);
+    if (fresh.status === 'dibatalkan' && fresh.paid_at === null) {
+      note = `Pembayaran perpanjangan ${number} diterima, tetapi tagihannya sudah dibatalkan. Perlu ditindaklanjuti manual (refund).`;
+    } else if (fresh.status === 'lunas' && paymentOrderId !== null && fresh.paid_midtrans_order_id !== null
+      && paymentOrderId !== fresh.paid_midtrans_order_id) {
+      note = `Pembayaran ganda perpanjangan ${number} (${paymentOrderId}); sudah lunas lewat ${fresh.paid_midtrans_order_id}. Perlu ditindaklanjuti manual (refund).`;
+    }
+  } else if (failed && isCurrentAttempt) {
+    if (await renewalTransition(pool, id, 'dibatalkan', 'cancelled_at = NOW()')) {
+      await addLog(pool, orderId, 'renewal_cancelled', null, null, actorType, actorId,
+        `Perpanjangan ${number} dibatalkan otomatis karena pembayaran tidak berhasil.`, payload);
+      return;
+    }
+  } else if (reversal) {
+    note = `Refund/chargeback perpanjangan ${number} tercatat (${tx}); masa aktif tidak diubah.`;
+  } else if (tx === 'capture') {
+    note = `Pembayaran kartu perpanjangan ${number} menunggu tinjauan fraud (${fraud !== '' ? fraud : '-'}).`;
+  }
+  // Duplicate notifications change nothing and are not logged again
+  if (paymentChanged || note !== null) {
+    await addLog(pool, orderId, 'renewal_payment_update', null, null, actorType, actorId,
+      note ?? `Status pembayaran perpanjangan ${number}: ${tx !== '' ? tx : '-'}`, payload);
+  }
+}
+
+// Lunas: conditional status change, then the order's periods are extended, in one transaction. Returns the new
+// hosting end date, or null when the renewal no longer waits for payment.
+async function renewalMarkPaid(pool, renewal, paymentOrderId) {
+  const orderId = Number(renewal.order_id);
+  const years = Number(renewal.years);
+  const conn = await pool.getConnection();
+  let after;
+  try {
+    await conn.beginTransaction();
+    try {
+      if (!(await renewalTransition(conn, Number(renewal.id), 'lunas', 'paid_at = NOW(), paid_midtrans_order_id = ?', [paymentOrderId]))) {
+        await conn.rollback();
+        return null;
+      }
+      const before = await dbOne(conn, 'SELECT service_expires_at, domain_expires_at FROM template_orders WHERE id = ? FOR UPDATE', [orderId]);
+      // Continues from the current end date (activation + 1 year when the order has no end date yet), or from today when
+      // the period already ended
+      await dbRun(conn, `UPDATE template_orders SET
+                           service_expires_at = DATE_ADD(GREATEST(${SERVICE_END_SQL}, NOW()), INTERVAL ? YEAR),
+                           domain_expires_at = DATE_ADD(GREATEST(${DOMAIN_END_SQL}, NOW()), INTERVAL ? YEAR),
+                           service_started_at = COALESCE(service_started_at, NOW()), domain_started_at = COALESCE(domain_started_at, NOW())
+                         WHERE id = ?`, [years, years, orderId]);
+      after = await dbOne(conn, 'SELECT service_expires_at, domain_expires_at FROM template_orders WHERE id = ?', [orderId]);
+      await dbRun(conn, `UPDATE template_renewals SET service_expires_before = ?, service_expires_after = ?, domain_expires_before = ?,
+                           domain_expires_after = ? WHERE id = ?`, [
+        before.service_expires_at, after.service_expires_at, before.domain_expires_at, after.domain_expires_at, Number(renewal.id),
+      ]);
+      await conn.commit();
+    } catch (err) {
+      await conn.rollback().catch(() => {});
+      throw err;
+    }
+  } finally {
+    conn.release();
+  }
+  return after.service_expires_at;
+}
+
+// Leaves menunggu_pembayaran (only from there) and frees the order's open-renewal slot
+async function renewalTransition(db, id, to, extraSet, extraParams = []) {
+  const result = await dbRun(db, `UPDATE template_renewals SET status = ?, pending_order_id = NULL, ${extraSet} WHERE id = ? AND status = 'menunggu_pembayaran'`,
+    [to, ...extraParams, id]);
+  return result.affectedRows > 0;
+}
+
+// New Snap transaction for a renewal (attempt + 1): hosting & jasa + domain for the chosen years
+async function createRenewalSnap(pool, renewal) {
+  const cfg = midtransConfig();
+  if (cfg.serverKey === '') return { paymentUrl: null, error: 'Pembayaran online belum dikonfigurasi.' };
+  const id = Number(renewal.id);
+  const attempt = Number(renewal.payment_attempt) + 1;
+  // Claim the attempt number first: Midtrans order_id must never be reused, even after a timeout
+  const claim = await dbRun(pool, "UPDATE template_renewals SET payment_attempt = ? WHERE id = ? AND payment_attempt = ? AND status = 'menunggu_pembayaran'",
+    [attempt, id, attempt - 1]);
+  if (claim.affectedRows === 0) {
+    const fresh = await renewalById(pool, id);
+    if (fresh.status === 'menunggu_pembayaran' && fresh.payment_url) return { paymentUrl: fresh.payment_url, error: null };
+    return { paymentUrl: null, error: 'Pembayaran sedang diproses. Muat ulang halaman lalu coba lagi.' };
+  }
+
+  const midtransOrderId = `${renewal.renewal_number}-${attempt}`;
+  const years = Number(renewal.years);
+  const hosting = Math.round(Number(renewal.hosting_price_per_year)) * years;
+  const domain = Math.round(Number(renewal.domain_price_per_year)) * years;
+  const tld = domainTld(renewal.domain, (await domainCatalog(pool)).tlds);
+  const appUrl = envValue('APP_URL', 'http://localhost:5173').replace(/\/+$/, '');
+  const response = await midtransRequest('POST', cfg.snapUrl, cfg.serverKey, {
+    transaction_details: { order_id: midtransOrderId, gross_amount: hosting + domain },
+    item_details: [
+      { id: 'HOST', price: hosting, quantity: 1, name: mbSubstr(`Perpanjangan hosting & jasa (${years} tahun)`, 0, 50) },
+      {
+        id: `DOM-${tld ? tld.tld : 'domain'}`,
+        price: domain,
+        quantity: 1,
+        name: mbSubstr(`Perpanjangan domain ${renewal.domain} (${years} tahun)`, 0, 50),
+      },
+    ],
+    customer_details: {
+      first_name: mbSubstr(renewal.customer_name, 0, 50),
+      email: renewal.customer_email,
+      phone: renewal.customer_phone,
+    },
+    callbacks: { finish: `${appUrl}/akun/pesanan/${encodeURIComponent(renewal.order_number)}` },
+  }, 20);
+  const body = response.body;
+  if ((response.code !== 200 && response.code !== 201) || !isObject(body) || !body.token || !body.redirect_url) {
+    const detail = isObject(body) && body.error_messages != null
+      ? [].concat(body.error_messages).join('; ')
+      : response.error;
+    console.error(`[midtrans] Snap transaction failed for ${midtransOrderId}: HTTP ${response.code} ${detail}`);
+    await addLog(pool, Number(renewal.order_id), 'renewal_payment_update', null, null, 'system', null,
+      mbSubstr(`Gagal membuat transaksi Midtrans perpanjangan ${renewal.renewal_number} (percobaan ${attempt}): HTTP ${response.code} ${detail}`, 0, 500));
+    return { paymentUrl: null, error: 'Gagal membuat pembayaran online. Silakan coba lagi beberapa saat lagi.' };
+  }
+  // Only while this attempt is still the latest claimed one: a slower older attempt never replaces a newer one
+  const saved = await dbRun(pool, `UPDATE template_renewals SET midtrans_order_id = ?, snap_token = ?, payment_url = ?, payment_status = 'pending', payment_type = NULL,
+                       payment_created_at = NOW() WHERE id = ? AND status = 'menunggu_pembayaran' AND payment_attempt = ?`,
+  [midtransOrderId, String(body.token), String(body.redirect_url), id, attempt]);
+  if (saved.affectedRows === 0) {
+    const fresh = await renewalById(pool, id);
+    if (fresh.status === 'menunggu_pembayaran' && fresh.payment_url) return { paymentUrl: fresh.payment_url, error: null };
+    return { paymentUrl: null, error: 'Pembayaran sedang diproses. Muat ulang halaman lalu coba lagi.' };
+  }
+  await addLog(pool, Number(renewal.order_id), 'renewal_payment_created', null, null, 'system', null,
+    `Tagihan perpanjangan ${renewal.renewal_number} dibuat (percobaan ${attempt}).`);
+  return { paymentUrl: String(body.redirect_url), error: null };
+}
+
+// Penawaran perpanjangan: harga per tahun (hosting & jasa + domain sesuai ekstensi) dan tanggal berakhir baru per opsi
+async function renewalOffer(pool, order) {
+  const hosting = await hostingRenewalPrice(pool);
+  const domainPerYear = domainPrice(order.domain || order.domain_primary, (await domainCatalog(pool)).tlds);
+  let reason = null;
+  if (order.status !== 'aktif') reason = RENEWAL_NOT_ACTIVE_MESSAGE;
+  else if (domainPerYear === null) reason = RENEWAL_NO_PRICE_MESSAGE;
+  const perYear = domainPerYear === null ? null : hosting + domainPerYear;
+  const options = [];
+  if (reason === null) {
+    const dates = await renewalDates(pool, Number(order.id));
+    for (const years of RENEWAL_YEARS) {
+      const [service, domain] = dates[years];
+      if ((service > domain ? service : domain) > dates.cap) continue;
+      options.push({ years, price: perYear * years, service_expires_after: service, domain_expires_after: domain });
+    }
+    if (!options.length) reason = RENEWAL_TOO_LONG_MESSAGE;
+  }
+  return {
+    available: reason === null,
+    reason,
+    hosting_price_per_year: hosting,
+    domain_price_per_year: domainPerYear,
+    price_per_year: perYear,
+    max_years: Math.max(...RENEWAL_YEARS),
+    options,
+  };
+}
+
+// New end dates per number of years, computed by the database with the same expression as renewalMarkPaid, and the
+// latest allowed end date (RENEWAL_MAX_YEARS_AHEAD)
+async function renewalDates(pool, orderId) {
+  const columns = RENEWAL_YEARS.flatMap((y) => [
+    `DATE_ADD(GREATEST(${SERVICE_END_SQL}, NOW()), INTERVAL ${y} YEAR) AS s${y}`,
+    `DATE_ADD(GREATEST(${DOMAIN_END_SQL}, NOW()), INTERVAL ${y} YEAR) AS d${y}`,
+  ]);
+  const row = await dbOne(pool, `SELECT ${columns.join(', ')}, DATE_ADD(NOW(), INTERVAL ${RENEWAL_MAX_YEARS_AHEAD} YEAR) AS cap
+                                 FROM template_orders WHERE id = ?`, [orderId]);
+  const dates = { cap: String(row.cap) };
+  for (const y of RENEWAL_YEARS) dates[y] = [String(row[`s${y}`]), String(row[`d${y}`])];
+  return dates;
+}
+
+// Hosting & jasa per tahun mulai tahun ke-2 (setting template_hosting_renewal_price, admin > Pengaturan website > Harga)
+async function hostingRenewalPrice(pool) {
+  const row = await dbOne(pool, "SELECT setting_value FROM hero_settings WHERE setting_key = 'template_hosting_renewal_price' LIMIT 1");
+  const raw = phpTrim(String(row?.setting_value ?? ''));
+  if (!/^\d+(\.\d+)?$/.test(raw)) return HOSTING_RENEWAL_DEFAULT;
+  const value = Math.round(Number(raw));
+  return value > 0 && value <= 1e12 ? value : HOSTING_RENEWAL_DEFAULT;
+}
+
+async function assertNoPendingRenewal(pool, orderId) {
+  const pending = await dbOne(pool, "SELECT renewal_number FROM template_renewals WHERE order_id = ? AND status = 'menunggu_pembayaran' LIMIT 1", [orderId]);
+  if (pending) {
+    throw new ApiError(`Masih ada tagihan perpanjangan ${pending.renewal_number} yang belum dibayar. Bayar atau batalkan dulu.`, 409, 'RENEWAL_PENDING');
+  }
+}
+
+function renewalStatusError(status) {
+  return new ApiError(`Tagihan perpanjangan ini berstatus "${RENEWAL_STATUS_LABEL[status] ?? status}".`, 409, 'INVALID_STATUS');
+}
+
+function renewalSelect() {
+  return `SELECT r.*, TIMESTAMPDIFF(MINUTE, r.payment_created_at, NOW()) AS payment_age_minutes,
+                 o.order_number, o.template_name, o.customer_name, o.customer_email, o.customer_phone
+            FROM template_renewals r
+            JOIN template_orders o ON o.id = r.order_id`;
+}
+
+async function renewalById(db, id) {
+  const row = await dbOne(db, `${renewalSelect()} WHERE r.id = ? LIMIT 1`, [id]);
+  if (!row) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
+  return row;
+}
+
+// Someone else's renewal answers exactly like a missing one
+async function customerRenewal(ctx, user) {
+  const number = phpTrim(inStr(ctx.input, 'renewal_number')).toUpperCase();
+  const row = number === '' ? null
+    : await dbOne(ctx.pool, `${renewalSelect()} WHERE r.renewal_number = ? AND o.user_id = ? LIMIT 1`, [number, user.id]);
+  if (!row) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
+  return row;
+}
+
+async function orderRenewals(pool, orderId, staff) {
+  const rows = await dbAll(pool, `${renewalSelect()} WHERE r.order_id = ? ORDER BY r.created_at DESC, r.id DESC`, [orderId]);
+  return rows.map((r) => renewalOut(r, staff));
+}
+
+function renewalOut(r, staff) {
+  const status = r.status;
+  return {
+    id: Number(r.id),
+    renewal_number: r.renewal_number,
+    order_number: r.order_number,
+    domain: r.domain,
+    years: Number(r.years),
+    hosting_price_per_year: num(r.hosting_price_per_year),
+    domain_price_per_year: num(r.domain_price_per_year),
+    price_per_year: num(r.price_per_year),
+    price: num(r.price),
+    status,
+    status_label: RENEWAL_STATUS_LABEL[status] ?? status,
+    payment_status: r.payment_status,
+    payment_type: r.payment_type,
+    // Only the owner gets the payment link, and only while there is something to pay
+    payment_url: !staff && status === 'menunggu_pembayaran' ? r.payment_url : null,
+    paid_at: r.paid_at,
+    cancelled_at: r.cancelled_at,
+    service_expires_before: r.service_expires_before,
+    service_expires_after: r.service_expires_after,
+    domain_expires_before: r.domain_expires_before,
+    domain_expires_after: r.domain_expires_after,
+    invoice_number: status === 'lunas' ? `INV-${r.renewal_number}` : null,
+    created_at: r.created_at,
+  };
+}
+
+// '2029-10-23 01:23:00' -> '23 Oktober 2029' (log notes for the customer)
+function tanggalId(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value ?? ''));
+  return m ? `${Number(m[3])} ${MONTHS_ID[Number(m[2]) - 1]} ${m[1]}` : '-';
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // Staff (role admin or user)
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -848,6 +1539,7 @@ async function adminGetTemplateOrder(ctx) {
     order: orderOut(order, true),
     logs: await orderLogs(pool, Number(order.id), true),
     site: site ? siteOut(site, true) : null,
+    renewals: await orderRenewals(pool, Number(order.id), true),
   };
 }
 
@@ -899,7 +1591,9 @@ async function adminSetOrderDomain(ctx) {
   try {
     await conn.beginTransaction();
     try {
-      if (!(await transition(conn, orderId, 'proses_domain', 'aktif', 'domain = ?, activated_at = NOW()', [domain]))) {
+      // Masa aktif hosting & jasa dan domain: 1 tahun sejak situs aktif (bertambah lewat perpanjangan)
+      if (!(await transition(conn, orderId, 'proses_domain', 'aktif', `domain = ?, activated_at = NOW(), service_started_at = NOW(),
+              service_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR), domain_started_at = NOW(), domain_expires_at = DATE_ADD(NOW(), INTERVAL 1 YEAR)`, [domain]))) {
         throw invalidStatus((await orderById(conn, orderId)).status, 'aktif');
       }
       try {
@@ -1059,6 +1753,20 @@ async function adminSetSiteStatus(ctx) {
   return { site: siteOut(site, true) };
 }
 
+// Pengaturan harga domain untuk admin (Pengaturan website > Harga): markup DewaBiz (tidak ikut get_settings publik),
+// sumber daftar harga, dan biaya hosting & jasa per tahun yang berlaku
+async function adminGetDomainPricing(ctx) {
+  const { pool } = ctx;
+  requireStaff(ctx.user);
+  const catalog = await domainCatalog(pool);
+  return {
+    source: catalog.source,
+    markup_percent: await domainMarkupPercent(pool),
+    markup_default: DOMAIN_MARKUP_DEFAULT,
+    hosting_renewal_price: await hostingRenewalPrice(pool),
+  };
+}
+
 async function adminDashboardSummary(ctx) {
   const { pool } = ctx;
   requireStaff(ctx.user);
@@ -1167,14 +1875,29 @@ async function createSnap(pool, order) {
   const midtransOrderId = `${order.order_number}-${attempt}`;
   const amount = Math.round(Number(order.price));
   const appUrl = envValue('APP_URL', 'http://localhost:5173').replace(/\/+$/, '');
-  const response = await midtransRequest('POST', cfg.snapUrl, cfg.serverKey, {
-    transaction_details: { order_id: midtransOrderId, gross_amount: amount },
-    item_details: [{
+  // Template (setelah diskon) + domain tahun pertama; jumlah item = gross_amount
+  const domainAmount = Math.round(Number(order.domain_price ?? 0));
+  const items = [];
+  if (amount - domainAmount > 0) {
+    items.push({
       id: `TPL-${order.template_id === null ? 0 : Number(order.template_id)}`,
-      price: amount,
+      price: amount - domainAmount,
       quantity: 1,
       name: mbSubstr(order.template_name, 0, 50),
-    }],
+    });
+  }
+  if (domainAmount > 0) {
+    const tld = domainTld(order.domain_primary, (await domainCatalog(pool)).tlds);
+    items.push({
+      id: `DOM-${tld ? tld.tld : 'domain'}`,
+      price: domainAmount,
+      quantity: 1,
+      name: mbSubstr(`Domain ${order.domain_primary} (1 tahun)`, 0, 50),
+    });
+  }
+  const response = await midtransRequest('POST', cfg.snapUrl, cfg.serverKey, {
+    transaction_details: { order_id: midtransOrderId, gross_amount: amount },
+    item_details: items,
     customer_details: {
       first_name: mbSubstr(order.customer_name, 0, 50),
       email: order.customer_email,
@@ -1282,13 +2005,14 @@ function sameAmount(gross, price) {
   return isNumeric(gross) && Math.round(Number(gross)) === Math.round(Number(price));
 }
 
-function newOrderNumber() {
+// GN-YYYYMMDD-XXXXXX (pesanan) or GNR-YYYYMMDD-XXXXXX (perpanjangan)
+function newOrderNumber(prefix = 'GN') {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let suffix = '';
   for (let i = 0; i < 6; i++) suffix += chars[crypto.randomInt(0, 36)];
   // Date in Asia/Jakarta (UTC+7, no daylight saving)
   const ymd = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10).replace(/-/g, '');
-  return `GN-${ymd}-${suffix}`;
+  return `${prefix}-${ymd}-${suffix}`;
 }
 
 async function addLog(db, orderId, event, from, to, actorType, actorId, note = null, payload = null) {
@@ -1369,6 +2093,14 @@ function orderOut(r, staff) {
     created_at: r.created_at,
     updated_at: r.updated_at,
     site_id: r.site_id !== undefined && r.site_id !== null ? Number(r.site_id) : null,
+    // Domain berbayar & masa aktif (migrasi 026); pesanan lama: domain_price 0, tanggal NULL
+    domain_price: num(r.domain_price ?? 0),
+    domain_check: r.domain_check ?? null,
+    invoice_number: r.paid_at !== null ? `INV-${r.order_number}` : null,
+    service_started_at: r.service_started_at ?? null,
+    service_expires_at: r.service_expires_at ?? null,
+    domain_started_at: r.domain_started_at ?? null,
+    domain_expires_at: r.domain_expires_at ?? null,
   };
   if (staff) out.user = { id: Number(r.user_id), name: r.user_name ?? null, email: r.user_email ?? null };
   return out;
@@ -1382,8 +2114,9 @@ async function orderLogs(pool, orderId, staff) {
   return rows.map((r) => {
     let actorName = names[r.actor_type] ?? r.user_name;
     if (r.actor_type === 'staff' && !staff) actorName = 'Tim Garuda Nexa';
-    // Customers only get the rejection reason; other notes are internal (admin notes, Midtrans/test-mode details)
-    const note = staff || r.event === 'rejected' ? r.note : null;
+    // Customers only get the rejection reason and the server-written renewal notes; other notes are internal
+    // (admin notes, Midtrans/test-mode details)
+    const note = staff || CUSTOMER_NOTE_EVENTS.includes(r.event) ? r.note : null;
     const log = {
       id: Number(r.id),
       event: r.event,
@@ -1402,7 +2135,7 @@ async function orderLogs(pool, orderId, staff) {
 function siteSelect(withContent = true) {
   return `SELECT s.id, s.order_id, s.user_id, s.template_id, s.template_code, s.domain, s.status, s.activated_at, s.updated_at, ${
     withContent ? 's.content' : 'NULL AS content'
-  }, o.order_number, o.template_name, u.name AS owner_name, u.email AS owner_email
+  }, o.order_number, o.template_name, o.service_expires_at, o.domain_expires_at, u.name AS owner_name, u.email AS owner_email
             FROM template_sites s
             JOIN template_orders o ON o.id = s.order_id
             LEFT JOIN users u ON u.id = s.user_id`;
@@ -1428,6 +2161,9 @@ function siteOut(r, staff) {
     content: contentOut(r.content),
     activated_at: r.activated_at,
     updated_at: r.updated_at,
+    // Masa aktif pesanan induk (migrasi 026)
+    service_expires_at: r.service_expires_at ?? null,
+    domain_expires_at: r.domain_expires_at ?? null,
   };
   if (staff) {
     out.owner_name = r.owner_name;
@@ -1661,7 +2397,8 @@ function vPhone(input, key, label, required, errors) {
 function vDomain(input, key, label, required, errors) {
   const value = vStr(input, key, label, 253, required, errors);
   if (value === null) return null;
-  const domain = value.toLowerCase();
+  // ASCII only, like strtolower() in PHP (no Unicode folding such as the Kelvin sign to "k")
+  const domain = value.replace(/[A-Z]+/g, (m) => m.toLowerCase());
   if (!DOMAIN_PATTERN.test(domain)) {
     errors[key] = 'Format domain tidak valid, contoh: namabisnis.com';
     return null;

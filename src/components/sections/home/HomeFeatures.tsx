@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePublishedTemplates } from '../../../hooks/usePublishedTemplates';
+import { DOMAIN_PRICE_FROM, rupiahCompact } from '../../../lib/domainPricing';
 import { FIRST_ORDER_DISCOUNT_PERCENT, firstOrderPrice } from '../../../lib/firstOrderDiscount';
 import { HUB_PATHS } from '../../../seo/paths';
 import { formatRupiah, type Template } from '../../../types/platform';
@@ -335,7 +336,8 @@ const WhatsAppIllo: React.FC = () => (
 /**
  * Section beranda #keunggulan "Bukan sekadar template, semua sudah siap" (menggantikan "Cara kerja kami", permintaan
  * pemilik 2026-10-24): bento 3 kolom gaya Framer versi terang, tiap kartu = ilustrasi mockup UI + judul berpanah + satu
- * kalimat. Isinya hanya fitur yang benar-benar ada: tampilan responsif, CMS, domain/hosting/SSL tahun pertama, status
+ * kalimat. Isinya hanya fitur yang benar-benar ada: tampilan responsif, CMS, hosting/SSL tahun pertama + domain yang
+ * dipilih saat memesan (domain TIDAK termasuk harga template sejak 2026-10-25; harga dari domainPricing.ts), status
  * pesanan di akun, diskon pembelian pertama, pembayaran Midtrans, katalog + demo, dan tombol WhatsApp di template.
  * Gambar pratinjau diambil dari template yang terbit (data prerender); tanpa data → gradasi cadangan.
  */
@@ -378,7 +380,7 @@ const HomeFeatures: React.FC<{ alt?: boolean; number?: string }> = ({ alt }) => 
             </Tile>
             <Tile
               title="Domain & hosting"
-              text="Domain, hosting, dan SSL tahun pertama sudah termasuk."
+              text={`Hosting & SSL tahun pertama sudah termasuk. Domain mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun.`}
               to={HUB_PATHS.pricing}
               className="min-h-[380px] lg:col-start-1 lg:row-span-2 lg:row-start-2"
             >
@@ -420,9 +422,13 @@ const HomeFeatures: React.FC<{ alt?: boolean; number?: string }> = ({ alt }) => 
           </ul>
         </Reveal>
 
-        <div className="mt-6 flex items-center gap-2 text-[13px] text-muted sm:mt-8 sm:text-sm">
-          <ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-          Setiap template sudah termasuk setup awal, domain, hosting, dan SSL tahun pertama.
+        {/* Kalimat lebih panjang sejak domain dibayar terpisah: di HP membungkus 2–3 baris, ikon sejajar baris pertama */}
+        <div className="mt-6 flex items-start gap-2 text-[13px] leading-relaxed text-muted sm:mt-8 sm:items-center sm:text-sm">
+          <ShieldCheck className="mt-[3px] h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden />
+          <span>
+            Harga template sudah termasuk setup awal, hosting, dan SSL tahun pertama; domain dipilih saat memesan, mulai{' '}
+            {rupiahCompact(DOMAIN_PRICE_FROM)}/tahun.
+          </span>
         </div>
       </div>
     </section>

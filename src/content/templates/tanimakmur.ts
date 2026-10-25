@@ -9,7 +9,7 @@ import type { TemplatePageCopy } from './page.types';
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website Toko Pertanian – {harga_singkat}',
   description:
-    'Template website toko pertanian: benih, pupuk, alat tani & paket per tanaman via WhatsApp. {harga} sudah termasuk domain, hosting & SSL tahun pertama.',
+    'Template website toko pertanian untuk benih, pupuk & alat tani. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Toko Pertanian Online',
   // Isi halaman (tanimakmur.ts, tanimakmur.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-25',

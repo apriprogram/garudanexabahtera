@@ -174,9 +174,10 @@ app.get('/api.php', async (req, res) => {
     try {
       // Public: pd_* keys (company identity, tax, payment terms of the project documents) are read through
       // pd_settings_get only; the comparison follows the column's case-insensitive collation
-      // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik
+      // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik.
+      // domain_markup_percent: markup harga beli DewaBiz, hanya lewat admin_get_domain_pricing (backend/modules/domains.js)
       const [rows] = await pool.query(
-        "SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_')",
+        "SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_') AND setting_key <> 'domain_markup_percent'",
       );
       const settings = {};
       for (const row of rows) {

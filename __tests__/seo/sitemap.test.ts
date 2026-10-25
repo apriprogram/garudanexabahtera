@@ -7,6 +7,7 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildSitemap, parseSitemap, toLastmod } from '../../scripts/seo/sitemap.mjs';
+import { LEGAL_UPDATED_AT } from '../../src/lib/legal';
 import { latestDate } from '../../src/seo/format';
 import { getIndexableRoutes } from '../../src/seo/routes';
 import { TEMPLATE_COPY, TEMPLATE_PAGE_UPDATED, templateLastmod } from '../../src/seo/templateSeo';
@@ -57,12 +58,14 @@ describe('buildSitemap dari getIndexableRoutes', () => {
     }
   });
 
-  it('lastmod template = updated_at (tanggal), satu image:image pratinjau per template', () => {
+  it('lastmod template = tanggal terakhir (updated_at atau isi halaman), satu image:image pratinjau per template', () => {
     const block = /<url>\s*<loc>https:\/\/garudanexa\.com\/template\/aura-studio<\/loc>[\s\S]*?<\/url>/.exec(xml)?.[0] ?? '';
-    expect(block).toContain('<lastmod>2026-10-23</lastmod>');
+    // updated_at fixture 2026-10-23; bagian bersama halaman template (TEMPLATE_PAGE_UPDATED) berubah 2026-10-25
+    expect(block).toContain(`<lastmod>${TEMPLATE_PAGE_UPDATED}</lastmod>`);
+    expect(TEMPLATE_PAGE_UPDATED).toBe('2026-10-25');
     expect(block.match(/<image:image>/g)).toHaveLength(1);
     expect(block).toContain('<image:loc>https://garudanexa.com/assets/templates/aura-studio-preview.webp</image:loc>');
-    expect(parseSitemap(xml).find((e) => e.loc === `${ORIGIN}/syarat-ketentuan`)?.lastmod).toBe('2026-10-21');
+    expect(parseSitemap(xml).find((e) => e.loc === `${ORIGIN}/syarat-ketentuan`)?.lastmod).toBe(LEGAL_UPDATED_AT);
   });
 
   it('lastmod template tidak lebih tua dari isi halamannya di kode (bersama dan per template)', () => {

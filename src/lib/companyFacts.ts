@@ -3,11 +3,13 @@
 //
 // Aturan:
 // - null = belum diketahui. Komponen TIDAK BOLEH merender field null, juga tidak dengan placeholder.
-// - Tanpa harga: rentang harga template dihitung dari data template (API/DB), bukan ditulis di sini.
+// - Tanpa harga template: rentangnya dihitung dari data template (API/DB), bukan ditulis di sini. Harga domain dan biaya
+//   hosting & jasa tahun ke-2 diambil dari src/lib/domainPricing.ts (bawaan; admin bisa mengubah biaya hosting).
 // - Jasa custom tanpa angka harga (design.md): biayanya lewat penawaran setelah konsultasi gratis.
 // - garudanexa.id / @garudanexa tidak disebut dan tidak masuk sameAs sampai pemilik memutuskan hubungannya.
 // Modul murni (tanpa React), aman diimpor dari skrip Node dan prerender.
 import { HUB_PATHS, SITE_ORIGIN } from '../seo/paths';
+import { DOMAIN_PRICE_FROM, DOMAIN_TLDS, HOSTING_RENEWAL_DEFAULT, rupiahCompact, type DomainTld } from './domainPricing';
 
 export interface CompanyAddress {
   streetAddress: string;
@@ -67,10 +69,15 @@ export interface CompanyFacts {
   languages: readonly string[];
   services: readonly CompanyService[];
   templatePackage: {
-    /** Yang sudah termasuk harga template (sama dengan bawaan TEMPLATE_PRICE_INCLUDES_DEFAULT). */
+    /** Yang sudah termasuk harga template (sama dengan bawaan TEMPLATE_PRICE_INCLUDES_DEFAULT). Domain tidak termasuk. */
     includes: readonly string[];
-    /** Biaya perpanjangan domain & hosting tahun ke-2 (angka atau rentang). */
+    /**
+     * Biaya per tahun mulai tahun ke-2, satu kalimat utuh (hosting & jasa bawaan + domain sesuai ekstensi). Halaman yang
+     * membaca setting memakai hostingRenewalPrice(settings) untuk angka hosting yang diatur admin.
+     */
     renewalCost: string | null;
+    /** Harga domain per tahun per ekstensi (tahun pertama = perpanjangan), dipilih dan dibayar saat memesan. */
+    domainPrices: readonly DomainTld[];
     /** Waktu sampai website aktif setelah pembayaran dikonfirmasi, mis. "3–5 hari kerja". */
     activationTime: string | null;
     paymentProvider: string;
@@ -127,13 +134,10 @@ export const COMPANY_FACTS: CompanyFacts = {
     },
   ],
   templatePackage: {
-    includes: [
-      'Template website + setup awal',
-      'Domain tahun pertama',
-      'Hosting tahun pertama',
-      'Sertifikat SSL (HTTPS) tahun pertama',
-    ],
-    renewalCost: null,
+    // Domain tidak lagi termasuk harga template (pemilik 2026-10-25): dipilih dan dibayar saat memesan
+    includes: ['Template website + setup awal', 'Hosting tahun pertama', 'Sertifikat SSL (HTTPS) tahun pertama'],
+    renewalCost: `Hosting & jasa ${rupiahCompact(HOSTING_RENEWAL_DEFAULT)}/tahun ditambah perpanjangan domain sesuai ekstensi (mulai ${rupiahCompact(DOMAIN_PRICE_FROM)}/tahun).`,
+    domainPrices: DOMAIN_TLDS,
     activationTime: null,
     paymentProvider: 'Midtrans',
     contentManagement: 'Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.',

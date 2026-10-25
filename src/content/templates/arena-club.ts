@@ -6,7 +6,7 @@ import type { TemplatePageCopy } from './page.types';
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website Klub Olahraga – {harga_singkat}',
   description:
-    'Website klub olahraga untuk padel, futsal & gym. Pesan lapangan via WhatsApp. {harga} sudah termasuk domain, hosting & SSL tahun pertama. Lihat demo.',
+    'Website klub olahraga untuk padel, futsal & gym, pesan via WhatsApp. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Klub Olahraga, Padel & Futsal',
   // Isi halaman (arena-club.ts, arena-club.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-23',
