@@ -260,6 +260,8 @@ switch ($action) {
         // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik
         foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings
                                 WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_')") as $row) {
+            // google_client_id: aud yang dipercaya customer_google_auth, hanya lewat database/env (publik lewat google_auth_config)
+            if (strcasecmp((string)$row['setting_key'], 'google_client_id') === 0) continue;
             $settings[$row['setting_key']] = $row['setting_value'];
         }
         // Always a JSON object like server.js: {} for an empty table (never []), numeric keys stay keys
@@ -275,6 +277,10 @@ switch ($action) {
             // Kunci API & saklar AI hanya lewat nexa_save_config (admin); nexa_enabled (saklar widget) boleh di sini
             if (stripos((string)$key, 'nexa_') === 0 && strtolower((string)$key) !== 'nexa_enabled') {
                 throw new ApiError('Pengaturan Nexa AI hanya bisa diubah lewat tab Tanya Nexa.', 403, 'FORBIDDEN');
+            }
+            // Client ID Google = aud yang dipercaya customer_google_auth: staf tidak boleh menggantinya (hanya database/env)
+            if (strtolower(trim((string)$key)) === 'google_client_id') {
+                throw new ApiError('Client ID Google hanya bisa diubah lewat database atau env server.', 403, 'FORBIDDEN');
             }
         }
         // hero_bg_mode, hero_text_tone, hero_overlay, hero_bg_video, hero_bg_video_poster, hero_images

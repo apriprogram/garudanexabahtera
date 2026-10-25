@@ -84,8 +84,16 @@ function ga_customer_google_auth($conn, array $input, ?callable $certs = null): 
     $plan = ga_account_plan($bySub, $byEmail, $identity);
     if ($plan === 'login') return ga_session($bySub, 'login');
     if ($plan === 'link') {
-        db_run($conn, "UPDATE users SET google_sub = ? WHERE id = ? AND google_sub IS NULL", [$identity['sub'], (int)$byEmail['id']]);
-        return ga_session($byEmail, 'linked');
+        // Google membuktikan pemilik email, tetapi kata sandi akun lama bisa dibuat orang lain (customer_register tidak
+        // memverifikasi email). Kata sandi diganti acak dalam UPDATE yang sama: password_version berubah, jadi kata sandi
+        // dan token lama tidak berlaku lagi dan pendaftar palsu kehilangan akses (pra-pembajakan akun)
+        db_run($conn, "UPDATE users SET google_sub = ?, password = ? WHERE id = ? AND google_sub IS NULL",
+            [$identity['sub'], ga_unusable_password(), (int)$byEmail['id']]);
+        $row = db_one($conn, "SELECT * FROM users WHERE id = ? LIMIT 1", [(int)$byEmail['id']]);
+        if (!$row || ($row['google_sub'] ?? null) !== $identity['sub']) {
+            throw new ApiError('Akun ini baru saja diubah. Silakan coba masuk lagi.', 409, 'GOOGLE_RETRY');
+        }
+        return ga_session($row, 'linked');
     }
 
     if (!ga_signup_submitted($input)) {
@@ -97,10 +105,9 @@ function ga_customer_google_auth($conn, array $input, ?callable $certs = null): 
     $fields = ga_signup_fields($input, $identity);
     rate_limit_hit($signupKey, 3600);
     try {
-        // Kata sandi acak yang tidak diketahui siapa pun: akun ini masuk lewat Google (atau minta atur ulang ke tim)
         db_run($conn, "INSERT INTO users (name, email, password, phone, role, status, avatar, google_sub)
                        VALUES (?, ?, ?, ?, 'customer', 'active', '', ?)",
-            [$fields['name'], $identity['email'], password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT), $fields['phone'], $identity['sub']]);
+            [$fields['name'], $identity['email'], ga_unusable_password(), $fields['phone'], $identity['sub']]);
     } catch (ApiError $e) {
         // db_run: duplikat (1062) = email/google_sub baru saja dipakai permintaan lain (klik ganda); coba masuk lagi
         // akan menemukannya
@@ -109,6 +116,11 @@ function ga_customer_google_auth($conn, array $input, ?callable $certs = null): 
     }
     $row = db_one($conn, "SELECT * FROM users WHERE id = ? LIMIT 1", [(int)$conn->insert_id]);
     return ga_session($row, 'created');
+}
+
+// Kata sandi acak yang tidak diketahui siapa pun: akun masuk lewat Google (atau minta atur ulang ke tim)
+function ga_unusable_password(): string {
+    return password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
 }
 
 function ga_session(array $row, string $account): array {

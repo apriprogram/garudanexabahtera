@@ -58,6 +58,8 @@ services:
       - MIDTRANS_CLIENT_KEY=${MIDTRANS_CLIENT_KEY:-}
       - MIDTRANS_IS_PRODUCTION=${MIDTRANS_IS_PRODUCTION:-0}
       - MIDTRANS_SIMULATOR=${MIDTRANS_SIMULATOR:-0}
+      # Masuk & daftar pembeli dengan Google (docs/platform/GOOGLE-LOGIN.md); setting google_client_id didahulukan
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - APP_URL=${APP_URL:-}
       # Private project-document files (e-signatures, payment proofs): outside the web root, kept in a volume
       - PD_STORAGE_DIR=/data/project-docs

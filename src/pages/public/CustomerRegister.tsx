@@ -16,7 +16,7 @@ import { AuthTabs } from '../../components/auth/AuthTabs';
 import { AuthField } from '../../components/auth/AuthField';
 import { AuthAlert, AuthSubmit } from '../../components/auth/AuthFeedback';
 import { GoogleAuthButton } from '../../components/auth/GoogleAuthButton';
-import { GoogleSignupStep } from '../../components/auth/GoogleSignupForm';
+import { GoogleLinkedStep, GoogleSignupStep } from '../../components/auth/GoogleSignupForm';
 import { useGoogleAuth } from '../../components/auth/useGoogleAuth';
 import {
   pathAfterLogin,
@@ -68,7 +68,7 @@ export default function CustomerRegister() {
   }, []);
 
   const role = getRole();
-  if (role && !submitting && !google.busy) return <Navigate to={pathAfterLogin(role, next)} replace />;
+  if (role && !submitting && !google.busy && !google.linked) return <Navigate to={pathAfterLogin(role, next)} replace />;
 
   const check = (key: RegisterField): string | undefined => {
     switch (key) {
@@ -144,6 +144,7 @@ export default function CustomerRegister() {
 
   const withNext = (path: string) => (next ? `${path}?next=${encodeURIComponent(nextPath)}` : path);
 
+  if (google.linked) return <GoogleLinkedStep linked={google.linked} onContinue={google.continueAfterLink} />;
   if (google.signup) return <GoogleSignupStep google={google} signup={google.signup} />;
 
   return (

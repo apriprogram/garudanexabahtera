@@ -1,7 +1,8 @@
 // Alur "Masuk/Daftar dengan Google" bersama untuk /masuk dan /daftar (docs/platform/GOOGLE-LOGIN.md): credential dari
-// tombol Google dikirim ke customer_google_auth. Akun yang sudah ada (atau email Gmail yang baru ditautkan) langsung
-// masuk; email yang belum terdaftar membuka langkah kedua (nomor WhatsApp, GoogleSignupForm) dengan credential yang
-// sama, lalu akun dibuat dan langsung masuk.
+// tombol Google dikirim ke customer_google_auth. Akun yang sudah tertaut langsung masuk; akun lama dengan email Gmail
+// yang baru ditautkan masuk sesudah pemberitahuan bahwa kata sandi lamanya tidak berlaku lagi (GoogleLinkedStep); email
+// yang belum terdaftar membuka langkah kedua (nomor WhatsApp, GoogleSignupStep) dengan credential yang sama, lalu akun
+// dibuat dan langsung masuk.
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError, apiPost, errorMessage } from '../../lib/api';
@@ -23,6 +24,13 @@ export interface GoogleSignup {
 
 export type GoogleSignupField = 'name' | 'phone';
 
+/** Akun lama yang baru ditautkan ke Google (sesi sudah tersimpan), menunggu pembeli menekan "Lanjut". */
+export interface GoogleLinked {
+  email: string;
+  /** Tujuan sesudah masuk (pathAfterLogin) */
+  path: string;
+}
+
 /** Email sudah terdaftar dan harus masuk dengan kata sandi (bukan Gmail/Workspace, atau tertaut akun Google lain). */
 const PASSWORD_CODES = new Set(['GOOGLE_NEEDS_PASSWORD', 'GOOGLE_OTHER_ACCOUNT']);
 
@@ -40,6 +48,7 @@ export function useGoogleAuth({ next, onPasswordRequired }: Options) {
   /** Email yang harus masuk dengan kata sandi (untuk tautan "Masuk dengan email ini" di /daftar) */
   const [passwordEmail, setPasswordEmail] = useState<string | null>(null);
   const [signup, setSignup] = useState<GoogleSignup | null>(null);
+  const [linked, setLinked] = useState<GoogleLinked | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<GoogleSignupField, string>>>({});
 
   const submit = useCallback(
@@ -56,7 +65,15 @@ export function useGoogleAuth({ next, onPasswordRequired }: Options) {
           return;
         }
         setSession(res.token, res.user);
-        navigate(pathAfterLogin(res.user.role, next), { replace: true });
+        const path = pathAfterLogin(res.user.role, next);
+        // Server mengganti kata sandi akun lama saat menautkan: beri tahu dulu sebelum pindah halaman
+        if (res.account === 'linked') {
+          setSignup(null);
+          setLinked({ email: res.user.email, path });
+          setBusy(false);
+          return;
+        }
+        navigate(path, { replace: true });
       } catch (err) {
         setBusy(false);
         if (err instanceof ApiError && err.code === 'VALIDATION' && err.fieldErrors) {
@@ -87,6 +104,10 @@ export function useGoogleAuth({ next, onPasswordRequired }: Options) {
     [signup, submit],
   );
 
+  const continueAfterLink = useCallback(() => {
+    if (linked) navigate(linked.path, { replace: true });
+  }, [linked, navigate]);
+
   const cancelSignup = useCallback(() => {
     setSignup(null);
     setFieldErrors({});
@@ -99,9 +120,11 @@ export function useGoogleAuth({ next, onPasswordRequired }: Options) {
     clearError: () => setError(null),
     passwordEmail,
     signup,
+    linked,
     fieldErrors,
     onCredential,
     completeSignup,
     cancelSignup,
+    continueAfterLink,
   };
 }

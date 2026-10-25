@@ -120,7 +120,7 @@ describe('tombol Google', () => {
   });
 
   it('/daftar: tombol "Daftar dengan Google" berbahasa Indonesia; akun yang ada langsung masuk ke ?next', async () => {
-    handler = () => json(200, session('linked'));
+    handler = () => json(200, session('login'));
     renderAt('/daftar?next=%2Fpesan%2Fcompany-pro');
     await clickGoogle(/Daftar dengan Google/);
     expect(gis.initialize).toHaveBeenCalledWith(expect.objectContaining({ client_id: CLIENT_ID, ux_mode: 'popup' }));
@@ -173,12 +173,30 @@ describe('tombol Google', () => {
     expect(screen.getByLabelText('Kata sandi')).toBeInTheDocument();
   });
 
-  it('/masuk: email terdaftar yang harus pakai kata sandi → pesan + kolom email terisi', async () => {
+  it('akun lama yang baru ditautkan: pemberitahuan kata sandi lama, lalu Lanjut ke ?next', async () => {
+    handler = () => json(200, session('linked'));
+    renderAt('/masuk?next=%2Fpesan%2Fcompany-pro');
+    await clickGoogle(/Login dengan Google/);
+    expect(await screen.findByRole('heading', { name: 'Akun tertaut ke Google' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('kata sandi lama tidak berlaku lagi');
+    expect(screen.getByText('budi@gmail.com')).toBeInTheDocument();
+    expect(localStorage.getItem('authToken')).toBe(session().token);
+    expect(where()).toBe('/masuk?next=%2Fpesan%2Fcompany-pro');
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /Lanjut/ })));
+    expect(where()).toBe('/pesan/company-pro');
+  });
+
+  it('/masuk: email terdaftar yang harus pakai kata sandi → pesan + kolom email terisi, error lama hilang', async () => {
     handler = () => json(409, { error: 'Email ini sudah terdaftar. Masuk dengan email dan kata sandi.', code: 'GOOGLE_NEEDS_PASSWORD' });
     renderAt('/masuk');
+    // Form sempat dikirim kosong: pesan "Email wajib diisi." harus hilang saat email terisi dari Google
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /^Masuk$/ })));
+    expect(screen.getByText('Email wajib diisi.')).toBeInTheDocument();
     await clickGoogle(/Login dengan Google/);
-    expect(await screen.findByRole('alert')).toHaveTextContent('Masuk dengan email dan kata sandi');
+    expect(await screen.findByText(/Masuk dengan email dan kata sandi/)).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toHaveValue('budi@gmail.com');
+    expect(screen.queryByText('Email wajib diisi.')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Email')).not.toHaveAttribute('aria-invalid', 'true');
     expect(localStorage.getItem('authToken')).toBeNull();
   });
 

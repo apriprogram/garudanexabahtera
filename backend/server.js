@@ -180,6 +180,8 @@ app.get('/api.php', async (req, res) => {
       );
       const settings = {};
       for (const row of rows) {
+        // google_client_id: aud yang dipercaya customer_google_auth, hanya lewat database/env (publik lewat google_auth_config)
+        if (String(row.setting_key).toLowerCase() === 'google_client_id') continue;
         settings[row.setting_key] = row.setting_value;
       }
       res.json(settings);
@@ -423,6 +425,11 @@ app.post('/api.php', async (req, res) => {
           }
           if (lower.startsWith('nexa_') && lower !== 'nexa_enabled') {
             res.status(403).json({ error: 'Pengaturan Nexa AI hanya bisa diubah lewat tab Tanya Nexa.', code: 'FORBIDDEN' });
+            return;
+          }
+          // Client ID Google = aud yang dipercaya customer_google_auth: staf tidak boleh menggantinya (hanya database/env)
+          if (lower.trim() === 'google_client_id') {
+            res.status(403).json({ error: 'Client ID Google hanya bisa diubah lewat database atau env server.', code: 'FORBIDDEN' });
             return;
           }
         }

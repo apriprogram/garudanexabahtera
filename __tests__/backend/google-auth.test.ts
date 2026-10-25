@@ -182,9 +182,9 @@ function fakePool(db: FakeDb) {
         const row = db.users.find((u) => (where[1] === 'email' ? String(u.email).toLowerCase() === String(value).toLowerCase() : u[where[1]] === value));
         return [row ? [{ ...row }] : []];
       }
-      if (sql.startsWith('UPDATE users SET google_sub')) {
-        const row = db.users.find((u) => u.id === values[1] && u.google_sub === null);
-        if (row) row.google_sub = values[0];
+      if (sql.startsWith('UPDATE users SET google_sub = ?, password = ?')) {
+        const row = db.users.find((u) => u.id === values[2] && u.google_sub === null);
+        if (row) Object.assign(row, { google_sub: values[0], password: values[1] ? 'rotated' : '' });
         return [{ affectedRows: row ? 1 : 0 }];
       }
       if (sql.includes('INSERT INTO users')) {
@@ -232,8 +232,14 @@ function db_one($conn, $sql, array $params = []) {
 }
 function db_run($conn, $sql, array $params = []) {
     global $DB;
-    if (strpos($sql, 'UPDATE users SET google_sub') === 0) {
-        foreach ($DB['users'] as &$u) if ($u['id'] === $params[1] && $u['google_sub'] === null) $u['google_sub'] = $params[0];
+    if (strpos($sql, 'UPDATE users SET google_sub = ?, password = ?') === 0) {
+        foreach ($DB['users'] as &$u) {
+            if ($u['id'] === $params[2] && $u['google_sub'] === null) {
+                $u['google_sub'] = $params[0];
+                $u['password'] = $params[1] ? 'rotated' : '';
+            }
+        }
+        unset($u);
         return true;
     }
     if (strpos($sql, 'INSERT INTO users') !== false) {
@@ -300,8 +306,10 @@ async function outcome(fn: () => unknown): Promise<Outcome> {
 const certs = async (refresh: boolean) => (refresh ? ROTATED_CERTS : CERTS);
 
 beforeAll(async () => {
-  // security.js membaca AUTH_SECRET sekali saat di-import
+  // security.js membaca AUTH_SECRET sekali saat di-import; GOOGLE_CLIENT_ID kosong supaya .env lokal (yang mungkin
+  // berisi client ID asli) tidak ikut terbaca: kasus "client ID belum diisi" harus 503 seperti di harness PHP
   process.env.AUTH_SECRET ||= crypto.randomBytes(32).toString('hex');
+  process.env.GOOGLE_CLIENT_ID = '';
   mod = await import('../../backend/modules/google_auth.js');
   for (const c of TOKEN_CASES) node.tokens.push(await outcome(() => mod.verifyIdToken(c.jwt, CLIENT_ID, certs, NOW)));
   node.picks = PICK_CASES.map(([setting, env]) => mod.pickClientId(setting, env));
@@ -387,9 +395,11 @@ describe('google_auth.js', () => {
     expect(login?.user).not.toHaveProperty('password');
     expect(login?.user).not.toHaveProperty('google_sub');
 
+    // Akun lama ditautkan: kata sandinya diganti (pendaftar palsu dengan email korban kehilangan akses)
     const linked = flow('email Gmail terdaftar: ditautkan');
     expect(okOf(linked.result)).toMatchObject({ account: 'linked', user: { id: 2 } });
-    expect(linked.users.find((u) => u.id === 2)?.google_sub).toBe('sub-rina');
+    expect(okOf(linked.result)?.user).not.toHaveProperty('password');
+    expect(linked.users.find((u) => u.id === 2)).toMatchObject({ google_sub: 'sub-rina', password: 'rotated' });
 
     expect(errorOf(flow('email Yahoo terdaftar: pakai kata sandi').result)).toMatchObject({ status: 409, code: 'GOOGLE_NEEDS_PASSWORD' });
     expect(errorOf(flow('email staf').result)).toMatchObject({ status: 403, code: 'GOOGLE_STAFF_ACCOUNT' });
