@@ -20,7 +20,8 @@
 -- (public/assets/templates/photos/CREDITS.md, section "Bestari"). Demo: SD Bestari Cendekia, sekolah FIKTIF di
 -- Yogyakarta.
 --
--- Harga contoh Rp1.690.000 (termasuk setup + domain + hosting + SSL tahun pertama), sama dengan Madani & Cakrawala.
+-- Harga contoh Rp1.690.000 (termasuk setup + hosting + SSL tahun pertama), sama dengan Madani & Cakrawala. Domain
+-- tidak termasuk harga template (pemilik 2026-10-25): dipilih & dibayar saat memesan.
 -- Bisa diubah admin (Pesanan Template > Kelola template).
 -- ============================================================================
 

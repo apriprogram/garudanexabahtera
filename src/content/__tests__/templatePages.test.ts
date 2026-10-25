@@ -310,7 +310,7 @@ describe('src/content/templates', () => {
     const keyword = /template website SD/i;
     expect(templateTitle(t)).toMatch(keyword);
     expect(templateDescription(t)).toMatch(/^Template website SD /);
-    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk domain, hosting & SSL tahun pertama');
+    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
     expect(templateH1(t)).toMatch(keyword);
     const c = templateContent('bestari') as TemplatePageContent;
     expect(fillName(c.lead, t)).toMatch(/^Bestari adalah template website SD /);

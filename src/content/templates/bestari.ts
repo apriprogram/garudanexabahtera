@@ -7,7 +7,7 @@ import type { TemplatePageCopy } from './page.types';
 
 export const seo: TemplateSeoCopy = {
   title: '{nama}: Template Website SD & Sekolah Dasar – {harga_singkat}',
-  description: 'Template website SD dengan hero slider, PPDB lewat WhatsApp, berita & profil guru. {harga} sudah termasuk domain, hosting & SSL tahun pertama.',
+  description: 'Template website SD dengan slider foto, PPDB via WhatsApp & berita. {harga} sudah termasuk hosting & SSL tahun pertama; domain mulai {domain_mulai}/tahun.',
   niche: 'Sekolah Dasar (SD)',
   // Isi halaman (bestari.ts, bestari.content.ts) terakhir diubah: lastmod sitemap
   updated: '2026-10-26',

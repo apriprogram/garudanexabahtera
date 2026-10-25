@@ -25,7 +25,8 @@ database/
 │   ├── 2026-10-23_011_seo_navbar.sql               # data: navbar Template, Jasa ▾, Harga, Panduan (halaman nyata)
 │   ├── …                                           # 012–025: lihat catatan per migrasi di bawah
 │   ├── 2026-10-25_026_domain_renewal_profile.sql   # domain berbayar, masa aktif, template_renewals, profil pembeli
-│   └── 2026-10-25_027_google_sign_in.sql           # users.google_sub: masuk & daftar pembeli dengan Google
+│   ├── 2026-10-25_027_google_sign_in.sql           # users.google_sub: masuk & daftar pembeli dengan Google
+│   └── 2026-10-26_028_bestari_template.sql         # data: katalog Bestari (SD), jalankan SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
