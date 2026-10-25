@@ -41,15 +41,16 @@ export function TopBar({ m }: { m: CakrawalaModel }) {
   const label = text(m.hero, 'topbar_label');
   if (!message) return null;
   return (
-    <div className="bg-white">
+    // Bilah gelap menyatu dengan hero selebar layar: bagian atas halaman tidak putih (pemilik 2026-10-25)
+    <div data-tpl-tone="inverse" className="bg-(--ck-deep) text-white">
       <div className={`${CONTAINER} flex min-h-10 items-center justify-center py-2 text-center`}>
-        <p className={`flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[12.5px] leading-snug ${C.ink} @3xl:text-[13px]`}>
+        <p className="flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[12.5px] leading-snug text-white/90 @3xl:text-[13px]">
           <span className="inline-flex min-w-0 items-center gap-2">
-            <Megaphone aria-hidden className="hidden h-4 w-4 shrink-0 text-(--ck-ink) @xl:block" strokeWidth={1.8} />
+            <Megaphone aria-hidden className="hidden h-4 w-4 shrink-0 text-white/80 @xl:block" strokeWidth={1.8} />
             <span>{message}</span>
           </span>
           {label && m.topbarAction && (
-            <ActionLink action={m.topbarAction} className="group inline-flex min-h-8 items-center gap-1 font-semibold text-(--ck-ink)">
+            <ActionLink action={m.topbarAction} className="group inline-flex min-h-8 items-center gap-1 font-semibold text-white">
               <span className="underline decoration-current/30 underline-offset-4 group-hover:decoration-current">{label}</span>
               <ArrowRight aria-hidden className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </ActionLink>

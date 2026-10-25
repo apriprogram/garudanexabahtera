@@ -236,9 +236,9 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
         // Geser mendatar yang jelas (bukan gulir halaman) → slide berikut/sebelumnya
         if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(index + (dx < 0 ? 1 : -1));
       }}
-      className={`mx-auto max-w-[1680px] pt-2 @2xl:pt-3 @min-[96rem]:pt-4 ${INSET}`}
     >
-      <div className={`relative isolate overflow-hidden rounded-[22px] text-white @3xl:rounded-[30px] ${hasImage(slides[0].image) ? 'bg-(--ck-deep)' : 'ck-hero-fallback'}`}>
+      {/* Selebar layar dari tepi ke tepi, tanpa bingkai & sudut membulat (pemilik 2026-10-25) */}
+      <div className={`relative isolate overflow-hidden text-white ${hasImage(slides[0].image) ? 'bg-(--ck-deep)' : 'ck-hero-fallback'}`}>
         {slides.map((s, i) =>
           hasImage(s.image) && (i === 0 || i === index || warm) ? (
             <div
@@ -252,7 +252,7 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
                 alt={i === index ? CAKRAWALA_PHOTOS.alt(s.image, `Suasana ${m.companyName}`) : ''}
                 priority={i === 0}
                 fallback="none"
-                sizes="(min-width: 1680px) 1650px, 100vw"
+                sizes="100vw"
                 position={POSITIONS[i] ?? '50% 40%'}
                 className="absolute inset-0"
               />
@@ -261,6 +261,8 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
         )}
         <div aria-hidden className="ck-hero-scrim absolute inset-0 -z-10" />
 
+        {/* Isi sejajar dengan isi header (max-w 1680 + INSET + INSET_PAD) */}
+        <div className={`mx-auto max-w-[1680px] ${INSET}`}>
         <div
           className={`relative flex min-h-[620px] flex-col justify-end gap-8 pb-7 pt-[104px] @3xl:min-h-[680px] @3xl:pt-[128px] @5xl:min-h-[max(640px,min(calc(100svh-96px),860px))] @6xl:pr-28 ${
             overlap ? '@5xl:pb-[136px]' : '@5xl:pb-14'
@@ -321,6 +323,7 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
               <InfoCard m={m} />
             </div>
           </div>
+        </div>
         </div>
       </div>
     </TemplateSection>

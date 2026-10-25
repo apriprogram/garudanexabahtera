@@ -199,7 +199,6 @@ export function Hero({ m }: { m: MadaniModel }) {
       data-tpl-tone="inverse"
       aria-roledescription={count > 1 ? 'carousel' : undefined}
       aria-label={count > 1 ? `Sorotan ${m.companyName}` : undefined}
-      className="px-2.5 pt-2.5 @3xl:px-4 @3xl:pt-4 @5xl:px-5 @5xl:pt-5"
     >
       <div
         onMouseEnter={() => setHovering(true)}
@@ -222,7 +221,8 @@ export function Hero({ m }: { m: MadaniModel }) {
           // Geser mendatar yang jelas (bukan gulir halaman) → slide berikut/sebelumnya
           if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(index + (dx < 0 ? 1 : -1), true);
         }}
-        className="md-hero-fallback relative isolate overflow-hidden rounded-[24px] text-white @3xl:rounded-[32px]"
+        // Selebar layar dari tepi ke tepi, tanpa sudut membulat (pemilik 2026-10-25)
+        className="md-hero-fallback relative isolate overflow-hidden text-white"
       >
         {slides.map((s, i) =>
           hasImage(s.image) && (i === 0 || i === index || warm) ? (
@@ -245,7 +245,7 @@ export function Hero({ m }: { m: MadaniModel }) {
         )}
         <div aria-hidden className="md-hero-scrim absolute inset-0 -z-10" />
 
-        <div className="relative flex min-h-[640px] flex-col px-5 pb-6 pt-[112px] @2xl:px-8 @3xl:min-h-[660px] @3xl:pb-8 @3xl:pt-[136px] @5xl:min-h-[max(640px,min(calc(100svh-var(--tpl-sticky-top,0px)-40px),860px))] @5xl:px-12 @5xl:pb-10 @min-[96rem]:px-16">
+        <div className="relative mx-auto flex min-h-[640px] w-full max-w-[1680px] flex-col px-5 pb-6 pt-[112px] @2xl:px-8 @3xl:min-h-[660px] @3xl:pb-8 @3xl:pt-[136px] @5xl:min-h-[max(640px,min(calc(100svh-var(--tpl-sticky-top,0px)-40px),860px))] @5xl:px-12 @5xl:pb-10 @min-[96rem]:px-16">
           <div className="mt-auto grid gap-8 @5xl:grid-cols-12 @5xl:items-end @5xl:gap-10">
             <div className="min-w-0 @5xl:col-span-8 @7xl:col-span-7">
               {/* Teks semua slide ditumpuk di satu sel grid: tinggi hero = teks terpanjang, jadi isi halaman di bawahnya
