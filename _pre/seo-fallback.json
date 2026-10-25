@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-10-25T08:36:23.033Z",
+  "builtAt": "2026-10-25T10:39:17.748Z",
   "origin": "https://garudanexa.com",
   "brandName": "Garuda Nexa",
   "organizationId": "https://garudanexa.com/#organization",
@@ -63,7 +63,8 @@
     "olahraga-komunitas",
     "fintech-startup",
     "yoga-wellness",
-    "toko-online"
+    "toko-online",
+    "sekolah-pendidikan"
   ],
   "categoryNames": {
     "company-profile": "Company profile",
@@ -71,7 +72,8 @@
     "olahraga-komunitas": "Klub olahraga",
     "fintech-startup": "Fintech & startup",
     "yoga-wellness": "Yoga & wellness",
-    "toko-online": "Toko online"
+    "toko-online": "Toko online",
+    "sekolah-pendidikan": "Sekolah & pendidikan"
   },
   "pricingIncludes": [
     "Template website + setup awal",
