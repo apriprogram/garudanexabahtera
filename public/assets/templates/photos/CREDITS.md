@@ -141,3 +141,43 @@ hangat dan pita sutra pelangi (lukisan digital orisinal Garuda Nexa) di langit.
 | `serenity-portrait-1-*` | Perempuan berhijab tersenyum, latar dedaunan | https://unsplash.com/photos/2lFt6pdPPoQ | muhammad iswandi |
 | `serenity-portrait-2-*` | Pria berkemeja putih tersenyum | https://unsplash.com/photos/OFSQ6bHjFjs | Hà Nguyễn |
 | `serenity-portrait-3-*` | Perempuan berhijab hitam tersenyum di jalan | https://unsplash.com/photos/V_kHZleK2Cg | Yeremia Krisnamurti |
+
+## TaniMakmur (toko tani, fiktif)
+
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero 1920×1200, kategori & panduan 4:3 1200×900, paket tanam 1:1 1200×1200,
+konsultasi 4:5 1200×1500, foto bulat hero 1:1 1000×1000); produk 1:1 `-640.webp` + `-240.webp`; potret 1:1 dan kartu
+kutipan hero 4:3 `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash License, bukan Unsplash+) 2026-10-25.
+Dipotong ulang; foto bertekstur rapat (daun, tanah, butiran) dihaluskan tipis agar ringan, `tanimakmur-hero-*`
+digelapkan sedikit.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `tanimakmur-hero-*` | Kebun sayur hijau berbaris dengan pepohonan | https://unsplash.com/photos/VYKhztyEh44 | Piyal Pakira |
+| `tanimakmur-cabai-*` | Cabai rawit merah dan hijau di tanaman | https://unsplash.com/photos/L2xhGmPmMNs | Steve A Johnson |
+| `tanimakmur-ladang-*` | Petani bertopi tersenyum di tepi sawah | https://unsplash.com/photos/hZCGpX7pb9U | Polina Kuzovkova |
+| `tanimakmur-benih-*` | Bibit muda di pot hitam, dilihat dari atas | https://unsplash.com/photos/4PG6wLlVag4 | Markus Spiske |
+| `tanimakmur-pupuk-*` | Tangan menggenggam kompos | https://unsplash.com/photos/bQ9y93kdk4c | Alicia Christin Gerald |
+| `tanimakmur-pestisida-*` | Perempuan menyemprot tanaman dengan sprayer kuning | https://unsplash.com/photos/suAnIFXSuuI | Trung Thanh |
+| `tanimakmur-alat-*` | Gunting dahan, sarung tangan, dan pot di meja | https://unsplash.com/photos/TsOeGUwWzWo | Eco Warrior Princess |
+| `tanimakmur-paket-cabai-*` | Tanaman cabai berbuah lebat di pot | https://unsplash.com/photos/F3wHYuroank | Bauble And Bin |
+| `tanimakmur-paket-hidroponik-*` | Selada hidroponik di rumah tanam | https://unsplash.com/photos/lq6RPxANYaQ | Ames May |
+| `tanimakmur-paket-tomat-*` | Tomat ceri ranum di batang | https://unsplash.com/photos/hQXXWiG68YQ | Chris Weiher |
+| `tanimakmur-paket-sayur-*` | Pakcoy dan selada keriting di kebun | https://unsplash.com/photos/X_0eZ5GXtMg | Doris Mangalu |
+| `tanimakmur-produk-benih-cabai-*` | Cabai merah di tanaman dengan butir air | https://unsplash.com/photos/ucgmNG_scbg | Georg Eiermann |
+| `tanimakmur-produk-benih-tomat-*` | Tandan tomat merah dan hijau | https://unsplash.com/photos/5Oi5sG6G0z8 | Shalev Cohen |
+| `tanimakmur-produk-kompos-*` | Dua tangan menampung kompos | https://unsplash.com/photos/qqRl8fd7Rxs | EqualStock |
+| `tanimakmur-produk-npk-*` | Butiran putih dilihat dari dekat | https://unsplash.com/photos/jvFgC2F4gf8 | Kenneth Berrios Alvarez |
+| `tanimakmur-produk-mimba-*` | Perempuan menyemprot tanaman dengan botol semprot | https://unsplash.com/photos/L1TR0TrcZfk | Vitaly Gariev |
+| `tanimakmur-produk-tower-*` | Tower hidroponik putih berisi selada | https://unsplash.com/photos/Q1Q0vEgiIbI | Nadine Primeau |
+| `tanimakmur-produk-sprayer-*` | Sprayer punggung hijau di rak kayu | https://unsplash.com/photos/yMwHXzpQrDk | jason hu |
+| `tanimakmur-produk-sekop-*` | Sekop tanam stainless bergagang kayu | https://unsplash.com/photos/JR7IPWMMXcc | gryffyn m |
+| `tanimakmur-konsultasi-*` | Petani muda bertopi memegang ponsel | https://unsplash.com/photos/rCsQF5qn1F8 | Junior REIS |
+| `tanimakmur-penyuluh-1-*` | Perempuan berkerudung tersenyum di antara daun | https://unsplash.com/photos/9oB_oMM9cn8 | muhammad iswandi |
+| `tanimakmur-penyuluh-2-*` | Bapak petani bertopi tersenyum | https://unsplash.com/photos/Jp-Gx8Rtpwc | Luiz Guimaraes |
+| `tanimakmur-portrait-1-*` | Perempuan muda tersenyum di dekat jendela | https://unsplash.com/photos/jBqMJdzTcgA | Phước Sang |
+| `tanimakmur-portrait-2-*` | Pria berambut panjang tersenyum | https://unsplash.com/photos/D4Of2Au_Kso | George Dagerotip |
+| `tanimakmur-portrait-3-*` | Ibu tersenyum lebar | https://unsplash.com/photos/PUCJOgc5PXU | Mauro-Fabio Cilurzo |
+| `tanimakmur-tips-pot-*` | Menyiram tanaman di pot besar di balkon | https://unsplash.com/photos/pzmIDZryioA | Waleed Baloch |
+| `tanimakmur-tips-semai-*` | Kecambah di baki semai | https://unsplash.com/photos/vrbZVyX2k4I | Markus Spiske |
+| `tanimakmur-tips-kompos-*` | Sekop kecil berisi tanah kompos | https://unsplash.com/photos/BduDcrySLKM | Neslihan Gunaydin |
+| `tanimakmur-tips-hidroponik-*` | Daun selada keriting dari dekat | https://unsplash.com/photos/6djmntSYfoE | engin akyurt |

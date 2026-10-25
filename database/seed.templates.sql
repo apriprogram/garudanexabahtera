@@ -1,5 +1,5 @@
 -- ============================================================================
--- Garuda Nexa — CONTOH katalog template (2 Company Profile + 3 template 2026-10-22 + Serenity 2026-10-25)
+-- Garuda Nexa — CONTOH katalog template (2 Company Profile + 3 template 2026-10-22 + Serenity + TaniMakmur 2026-10-25)
 -- ============================================================================
 -- Jalankan setelah migrasi 2026-10-19_004 (atau schema.sql untuk DB baru):
 --   mysql -u root db_garudanexabahtera < database/seed.templates.sql
@@ -91,6 +91,19 @@ Cocok untuk studio yoga dan pilates, kelas olahraga ringan, instruktur yoga priv
    1290000.00,
    '/assets/templates/serenity-preview.webp',
    '["/assets/templates/serenity-1.webp","/assets/templates/serenity-2.webp"]',
-   'serenity', NULL, 'published', 6);
+   'serenity', NULL, 'published', 6),
+
+  ('tanimakmur',
+   'TaniMakmur',
+   'Toko Online',
+   'Toko online pertanian untuk benih, pupuk, dan alat tani, lengkap dengan paket per tanaman dan konsultasi lewat WhatsApp.',
+   'TaniMakmur dirancang untuk toko pertanian yang ingin berjualan online dengan tampilan segar dan meyakinkan. Halaman dibuka dengan foto ladang selebar layar, judul besar, kartu angka, dan strip keunggulan toko. Di bawahnya tersusun kategori produk, pemilih Pilih Tanamanmu yang menampilkan paket lengkap per jenis tanaman (isi paket, jadwal tanam, dan harga hemat), produk terlaris dengan rating dan filter kategori, konsultasi gratis dengan penyuluh lewat WhatsApp, panduan urban farming, testimoni, tanya jawab, serta kontak dengan peta lokasi.
+
+Cocok untuk toko benih, pupuk, dan alat tani, kios saprotan, penjual perlengkapan hidroponik, hingga usaha urban farming. Pembeli memesan produk atau paket lewat WhatsApp dengan pesan yang sudah berisi nama produknya. Semua teks, gambar, harga, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero foto ladang selebar layar dengan kartu angka dan strip keunggulan","Pilih Tanamanmu: paket per jenis tanaman dengan isi, jadwal tanam, dan harga hemat","Produk terlaris dengan rating, harga coret, dan filter kategori","Pesan produk dan paket langsung lewat WhatsApp","Konsultasi penyuluh, panduan urban farming, testimoni, dan FAQ","Pencarian produk dan paket langsung dari menu","Kelola teks, gambar, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/tanimakmur-preview.webp',
+   '["/assets/templates/tanimakmur-1.webp","/assets/templates/tanimakmur-2.webp"]',
+   'tanimakmur', NULL, 'published', 8);
 
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;
