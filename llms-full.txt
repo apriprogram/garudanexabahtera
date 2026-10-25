@@ -163,6 +163,32 @@ GlowStory adalah template website toko skincare dan kosmetik dengan suasana hang
 
 Tiga fitur mendorong pembelian berulang: kuis jenis kulit yang menyusun rutinitas pagi dan malam beserta produknya, kalkulator langganan isi ulang yang langsung menunjukkan hemat per kiriman dan per tahun (dikonfirmasi lewat WhatsApp, tanpa penagihan otomatis), serta ulasan pelanggan berfoto. Ada juga strip brand lokal, tanya jawab, dan pita ajakan. Semua teks, foto, harga, pertanyaan kuis, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.
 
+### Madani
+- Halaman: https://garudanexa.com/template/madani
+- Kategori: Sekolah & Pendidikan
+- Harga: Rp1.690.000 (per 25 Oktober 2026), sudah termasuk template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Ringkasan: Template website sekolah Islam untuk SMA IT, madrasah aliyah, dan sekolah berasrama: slider foto, profil, berita, agenda, dan PPDB lewat WhatsApp.
+- Fitur: Hero slider foto dengan tombol Daftar PPDB dan kartu info pendaftaran; PPDB: jalur, jadwal, syarat, alur, biaya, dan formulir minat ke WhatsApp; Sambutan kepala sekolah, profil, visi & misi, dan statistik sekolah; Program unggulan, prestasi, fasilitas, dan galeri kegiatan; Berita, pengumuman bertanda Penting, dan agenda kegiatan; Cerita alumni, tanya jawab, dan peta lokasi Google Maps; Warna tema bisa diganti (hijau, biru, atau warna lain) lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/madani (konten demo fiktif)
+
+Madani tampil teduh dan rapi sejak layar pertama: slider foto sekolah selebar layar dengan menu pil, judul dengan kata sorotan, tombol Daftar PPDB, dan kartu info gelombang pendaftaran. Di bawahnya tersusun strip keunggulan, sambutan kepala sekolah, profil dengan tab visi, misi, dan nilai, statistik siswa dan guru, program unggulan seperti tahfidz dan kelas sains, daftar prestasi, fasilitas, berita yang bisa dibaca di tempat, pengumuman bertanda Penting, agenda kegiatan, galeri, cerita alumni, tanya jawab, serta lokasi dengan peta Google Maps.
+
+Cocok untuk SMA Islam terpadu, madrasah aliyah, dan sekolah berasrama. Bagian PPDB memuat jalur pendaftaran, jadwal, syarat, alur, dan rincian biaya, plus formulir minat yang menyusun pesan WhatsApp untuk panitia; data tidak disimpan di website dan tidak ada pembayaran online. Demo memakai SMA IT Nurul Azka, sekolah fiktif di Bogor. Semua teks, foto, dan warna tema (hijau, biru, atau warna lain) bisa Anda ubah sendiri lewat CMS tanpa coding.
+
+### Cakrawala
+- Halaman: https://garudanexa.com/template/cakrawala
+- Kategori: Sekolah & Pendidikan
+- Harga: Rp1.690.000 (per 25 Oktober 2026), sudah termasuk template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Ringkasan: Template website SMK dan SMA yang modern: hero slider foto, PPDB dengan formulir ke WhatsApp, berita, pengumuman, alumni, dan BKK.
+- Fitur: Hero slider foto dengan menu pil, pengumuman PPDB, dan kartu info; PPDB bertab: jalur, jadwal, syarat, alur, dan biaya; Formulir pendaftaran singkat yang menyusun pesan WhatsApp untuk panitia; Berita dengan filter kategori, pengumuman bertanggal, dan agenda kegiatan; Sambutan kepala sekolah, profil, visi & misi, program keahlian, dan prestasi; Teaching factory, mitra industri, alumni, dan Bursa Kerja Khusus; Satu warna tema yang bisa diganti, misalnya biru atau hijau; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/cakrawala (konten demo fiktif)
+
+Cakrawala membuat website sekolah tampil rapi dan meyakinkan sejak layar pertama: slider foto besar selebar layar dengan logo sekolah dan menu pil, pengumuman PPDB di bagian paling atas, dan tiga kartu info. Di bawahnya tersusun statistik sekolah, sambutan kepala sekolah, profil dengan visi dan misi, program keahlian, teaching factory dan mitra industri, prestasi, PPDB (jalur, jadwal, syarat, alur, biaya, dan formulir singkat), berita dengan filter kategori, pengumuman, agenda, cerita alumni, Bursa Kerja Khusus, fasilitas, galeri, tanya jawab, serta lokasi dengan Google Maps.
+
+Cocok untuk SMK negeri maupun swasta, dan bisa dipakai SMA dengan mengganti program keahlian menjadi peminatan. Formulir PPDB menyusun pesan WhatsApp untuk panitia; tidak ada penyimpanan data pendaftar atau pembayaran online. Semua teks, foto, jadwal, dan satu warna tema (misalnya biru atau hijau) bisa Anda ubah sendiri lewat CMS tanpa coding.
+
 ## Jasa custom
 Diperbarui 25 Oktober 2026.
 

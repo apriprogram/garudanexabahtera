@@ -29,6 +29,10 @@
     <lastmod>2026-10-25</lastmod>
   </url>
   <url>
+    <loc>https://garudanexa.com/template/kategori/sekolah-pendidikan</loc>
+    <lastmod>2026-10-25</lastmod>
+  </url>
+  <url>
     <loc>https://garudanexa.com/harga</loc>
     <lastmod>2026-10-25</lastmod>
   </url>
@@ -163,6 +167,20 @@
     <lastmod>2026-10-25</lastmod>
     <image:image>
       <image:loc>https://garudanexa.com/assets/templates/glowstory-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/madani</loc>
+    <lastmod>2026-10-25</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/madani-preview.webp</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/cakrawala</loc>
+    <lastmod>2026-10-25</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/cakrawala-preview.webp</image:loc>
     </image:image>
   </url>
 </urlset>

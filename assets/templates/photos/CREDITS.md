@@ -353,15 +353,15 @@ Slide hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; foto suasana 4:3 `-12
 mendatar 3:2, galeri tegak 4:5 1200×1500, kepala sekolah 4:5 `-960.webp` + `-800.webp`); potret alumni 1:1 `-480.webp` +
 `-240.webp`. Diunduh lewat tautan unduh resmi dan dicek lisensinya (Unsplash License, bukan Unsplash+) 2026-10-25. Logo
 atau tulisan yang terbaca dipotong keluar. Nama sekolah, kepala sekolah, siswa, dan alumni di demo fiktif dan tidak
-berhubungan dengan orang atau sekolah di foto (sebagian foto dari akun publikasi sebuah SMK negeri; nama sekolahnya tidak
-tampil di potongan foto).
+berhubungan dengan orang atau sekolah di foto (sebagian foto dari akun publikasi sebuah SMK negeri dan sebuah sekolah
+kuliner; nama dan logo sekolahnya tidak tampil di potongan foto).
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
 | `cakrawala-hero-1-*` | Siswa berseragam putih abu-abu belajar bersama di gazebo sekolah | https://unsplash.com/photos/_y4FqRhxkR8 | Ed Us |
 | `cakrawala-hero-2-*` | Siswa berseragam batik mengerjakan ujian di kelas | https://unsplash.com/photos/TmdrCRVDOnQ | Fajar Herlambang STUDIO |
 | `cakrawala-hero-3-*` | Siswa menggerinda besi di bengkel las bersama instruktur (dipotong, papan nama di atas dibuang) | https://unsplash.com/photos/k9Dc5zT1Gq0 | PTTI EDU |
-| `cakrawala-hero-4-*` | Siswi bercelemek memasak di dapur praktik (papan nama ruangan di latar dikaburkan) | https://unsplash.com/photos/yjG68tEvtu8 | Fajar Herlambang STUDIO |
+| `cakrawala-hero-4-*` | Siswa tata boga berseragam koki memasak di dapur praktik (dipotong 16:9; logo, emblem lengan, dan tulisan sekolah asal di seragam dihapus) | https://unsplash.com/photos/GF_XTjtTSgc | Trường Trung Cấp Kinh Tế Du Lịch TP.HCM (CET) |
 | `cakrawala-kepsek-*` | Pria berkemeja batik tersenyum (dipotong dari foto dua orang) | https://unsplash.com/photos/XNiAXk5KQ5s | Marsha Dhita |
 | `cakrawala-profil-*` | Gedung sekolah dua lantai dan siswa di halaman | https://unsplash.com/photos/VPMsWJakm9E | Publikasi SMKN 1 Cibadak |
 | `cakrawala-ppdb-*` | Guru memeriksa berkas bersama dua siswa di lapangan | https://unsplash.com/photos/meovJ4hqaao | Fajar Herlambang STUDIO |
