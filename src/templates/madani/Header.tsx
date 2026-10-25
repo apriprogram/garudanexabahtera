@@ -1,4 +1,4 @@
-// Header Madani: menu di ATAS bingkai foto hero — kiri simbol (lingkaran warna sorotan) + nama sekolah, tengah pil kaca
+// Header Madani: menu di ATAS foto hero — kiri simbol (lingkaran warna sorotan) + nama sekolah, tengah pil kaca
 // berisi tautan (item aktif = pil warna sorotan), kanan tombol "PPDB" warna sorotan dengan lingkaran panah. Header berupa
 // lapisan lengket setinggi 0 yang menumpang di atas hero; setelah digulir (atau saat menu terbuka) menjadi bilah putih
 // tembus + blur dengan teks warna tema tua. Tanpa hero → bilah putih biasa. HP: simbol + nama + tombol menu; panel menu

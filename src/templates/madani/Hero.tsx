@@ -1,5 +1,5 @@
-// Hero Madani — slider foto latar di dalam BINGKAI MEMBULAT (data-hero-layout="framed-slider"): foto mengisi bingkai
-// yang menjorok dari tepi halaman, menu pil menumpang di atasnya (./Header). Slide pertama = isi hero, hingga 3 slide
+// Hero Madani — slider foto latar selebar layar dari tepi ke tepi (data-hero-layout="framed-slider", nama lama dipertahankan
+// untuk tes & CSS), menu pil menumpang di atasnya (./Header). Slide pertama = isi hero, hingga 3 slide
 // tambahan (`hero.slides`): foto berganti dengan pudar, label/judul/deskripsi ikut berganti; tombol dan kartu info tetap.
 // Kontrol: tombol sebelumnya/berikutnya, penghitung "01 / 04", titik per slide dengan bilah progres, dan tombol jeda.
 // Berganti otomatis hanya bila gerak menyala (bukan pratinjau CMS / prefers-reduced-motion), berhenti saat kursor di

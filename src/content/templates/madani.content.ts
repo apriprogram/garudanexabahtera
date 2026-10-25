@@ -25,7 +25,7 @@ export const content: TemplatePageContent = {
     },
     {
       name: 'Hero slider foto',
-      text: 'Hingga 4 foto latar di dalam bingkai membulat, masing-masing dengan judul dan deskripsi sendiri. Slide berganti otomatis, berhenti saat disorot, bisa diatur dengan tombol dan keyboard, serta bisa digeser di HP. Ada dua tombol dan kartu info PPDB.',
+      text: 'Hingga 4 foto latar selebar layar, masing-masing dengan judul dan deskripsi sendiri. Slide berganti otomatis, berhenti saat disorot, bisa diatur dengan tombol dan keyboard, serta bisa digeser di HP. Ada dua tombol dan kartu info PPDB.',
     },
     {
       name: 'Strip info & sambutan',

@@ -69,7 +69,7 @@ export const madaniSections: TemplateSection[] = [
     key: 'hero',
     label: 'Hero (slider foto)',
     description:
-      'Slider foto latar di dalam bingkai membulat dengan menu di atasnya, judul, dua tombol, dan kartu info PPDB. Isi di bawah ini adalah slide pertama; tambah hingga 3 slide lagi di “Slide tambahan”.',
+      'Slider foto latar selebar layar dengan menu di atasnya, judul, dua tombol, dan kartu info PPDB. Isi di bawah ini adalah slide pertama; tambah hingga 3 slide lagi di “Slide tambahan”.',
     toggleable: true,
     fields: [
       t('eyebrow', 'Label kecil di atas judul', { placeholder: 'mis. PPDB 2027/2028 telah dibuka', maxLength: 60, help: 'Kosongkan untuk menyembunyikan.' }),

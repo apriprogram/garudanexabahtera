@@ -1,5 +1,5 @@
 // Gaya Cakrawala "Clear horizon": website sekolah (SMK/SMA) yang bersih dan percaya diri. Halaman putih, hero foto
-// slider di dalam bingkai membulat (inset), menu pil kaca di atas foto, kartu info yang menumpang di tepi bawah hero,
+// slider selebar layar dengan logo + menu pil kaca di atas foto, kartu info yang menumpang di tepi bawah hero,
 // panel abu kebiruan sangat muda, satu pita gelap biru tinta (teaching factory) dan footer biru tinta. Judul Plus
 // Jakarta Sans 600/700, isi Inter. DATAR: tanpa bayangan; garis tipis (ring) dan bidang warna menggantikan bayangan.
 // Warna utama = warna tema dari CMS (--tpl-accent* milik Shell + --ck-* dari ./model): ganti biru ↔ hijau di satu

@@ -1,5 +1,5 @@
-// Header Cakrawala: bilah pengumuman tipis (PPDB) di paling atas, lalu menu yang MENUMPANG di dalam bingkai foto hero:
-// logo putih kiri, menu pil kaca di tengah (item aktif = pil putih), tombol pil putih + lingkaran panah di kanan
+// Header Cakrawala: bilah pengumuman tipis (PPDB) di paling atas, lalu menu yang MENUMPANG di atas foto hero:
+// logo kiri (logo sekolah dari CMS, atau simbol cakrawala putih), menu pil kaca di tengah (item aktif = pil putih), tombol pil putih + lingkaran panah di kanan
 // (referensi CBRLP/MedixWeb). Setelah digulir (atau saat menu HP terbuka) menjadi bilah putih tembus + blur dengan
 // menu pil abu. Tanpa hero → bilah putih biasa. HP: logo + tombol menu; panel menu di bawah bilah, Esc menutup dan
 // mengembalikan fokus ke tombol menu.

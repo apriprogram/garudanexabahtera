@@ -1,8 +1,8 @@
-// Hero Cakrawala — "Horizon" (data-hero-layout="horizon"): SLIDER foto latar di dalam bingkai membulat (inset) di halaman
-// putih; menu pil menumpang di atasnya (./Header). Slide 1 = isi hero, hingga 3 slide tambahan (`hero.slides`): foto
+// Hero Cakrawala — "Horizon" (data-hero-layout="horizon"): SLIDER foto latar selebar layar dari tepi ke tepi; menu pil
+// menumpang di atasnya (./Header). Slide 1 = isi hero, hingga 3 slide tambahan (`hero.slides`): foto
 // berganti dengan pudar + zoom pelan, label/judul/deskripsi ikut berganti; tombol, foto alumni, dan kartu info tetap.
-// Kontrol "01 02 03 04" (tombol per slide + bilah progres) dengan tombol sebelumnya/berikutnya dan jeda: vertikal di
-// kanan (referensi Negmar) pada layar lebar, mendatar di bawah tombol pada HP. Berganti otomatis hanya bila gerak
+// Kontrol "01 02 03 04" (tombol per slide + bilah progres) dengan tombol sebelumnya/berikutnya dan jeda dalam satu pil
+// kaca mendatar di kiri bawah, sebaris dengan kartu info PPDB di kanan (tidak saling menimpa). Berganti otomatis hanya bila gerak
 // menyala (bukan pratinjau CMS / prefers-reduced-motion); berhenti saat hero disorot atau difokus; tombol panah kiri/
 // kanan saat fokus di kontrol; bisa digeser di HP. Foto slide 1 = LCP (eager + fetchpriority high), foto lain lazy.
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
@@ -97,19 +97,19 @@ function SlideControls({
       onSelect(index - 1);
     }
   };
-  const round = `flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${GLASS} transition-colors hover:bg-white/25`;
+  const round = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/[0.16]';
   return (
     <div
       role="group"
       aria-label="Kontrol slide"
       onKeyDown={onKeyDown}
       style={{ '--ck-autoplay': `${AUTOPLAY_MS}ms` } as CSSProperties}
-      className="flex items-center gap-1 @6xl:flex-col @6xl:gap-2"
+      className={`inline-flex max-w-full items-center gap-0.5 rounded-full p-1 ${GLASS}`}
     >
       <button type="button" onClick={() => onSelect(index - 1)} aria-label="Slide sebelumnya" className={round}>
-        <ChevronLeft className="h-5 w-5 @6xl:rotate-90" aria-hidden />
+        <ChevronLeft className="h-5 w-5" aria-hidden />
       </button>
-      <ul className="flex items-center @6xl:flex-col @6xl:py-2">
+      <ul className="flex items-center">
         {Array.from({ length: count }, (_, i) => {
           const current = i === index;
           return (
@@ -119,7 +119,7 @@ function SlideControls({
                 onClick={() => onSelect(i)}
                 aria-label={`Slide ${i + 1} dari ${count}`}
                 aria-current={current ? 'true' : undefined}
-                className={`group flex h-11 min-w-11 flex-col items-center justify-center gap-1.5 px-1.5 text-[13px] font-semibold tabular-nums transition-colors @6xl:h-12 ${
+                className={`group flex h-11 min-w-11 flex-col items-center justify-center gap-1.5 px-1.5 text-[13px] font-semibold tabular-nums transition-colors ${
                   current ? 'text-white' : 'text-white/55 hover:text-white'
                 }`}
               >
@@ -143,10 +143,10 @@ function SlideControls({
         })}
       </ul>
       <button type="button" onClick={() => onSelect(index + 1)} aria-label="Slide berikutnya" className={round}>
-        <ChevronRight className="h-5 w-5 @6xl:rotate-90" aria-hidden />
+        <ChevronRight className="h-5 w-5" aria-hidden />
       </button>
       {canAutoplay && (
-        <button type="button" onClick={onTogglePause} aria-label={paused ? 'Putar slide otomatis' : 'Jeda slide otomatis'} className={`${round} ml-1 @6xl:ml-0 @6xl:mt-2`}>
+        <button type="button" onClick={onTogglePause} aria-label={paused ? 'Putar slide otomatis' : 'Jeda slide otomatis'} className={`${round} ml-0.5 bg-white/[0.12]`}>
           {paused ? <Play className="h-3.5 w-3.5 translate-x-px fill-current" aria-hidden /> : <Pause className="h-3.5 w-3.5 fill-current" aria-hidden />}
         </button>
       )}
@@ -264,7 +264,7 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
         {/* Isi sejajar dengan isi header (max-w 1680 + INSET + INSET_PAD) */}
         <div className={`mx-auto max-w-[1680px] ${INSET}`}>
         <div
-          className={`relative flex min-h-[620px] flex-col justify-end gap-8 pb-7 pt-[104px] @3xl:min-h-[680px] @3xl:pt-[128px] @5xl:min-h-[max(640px,min(calc(100svh-96px),860px))] @6xl:pr-28 ${
+          className={`relative flex min-h-[620px] flex-col justify-end gap-8 pb-7 pt-[104px] @3xl:min-h-[680px] @3xl:pt-[128px] @5xl:min-h-[max(640px,min(calc(100svh-96px),860px))] ${
             overlap ? '@5xl:pb-[136px]' : '@5xl:pb-14'
           } ${INSET_PAD}`}
         >
@@ -304,9 +304,10 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
             )}
           </div>
 
-          <div className="flex flex-col gap-5 @5xl:flex-row @5xl:items-end @5xl:justify-between">
+          {/* Baris bawah: pil kontrol slide di kiri, kartu info PPDB di kanan (layar lebar); di HP bertumpuk */}
+          <div className="flex flex-col items-start gap-5 @5xl:flex-row @5xl:items-end @5xl:justify-between">
             {count > 1 && (
-              <div className="@6xl:absolute @6xl:right-6 @6xl:top-1/2 @6xl:-translate-y-1/2 @min-[96rem]:right-10">
+              <div className="max-w-full">
                 <SlideControls
                   count={count}
                   index={index}
@@ -319,7 +320,7 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
                 />
               </div>
             )}
-            <div className="@5xl:ml-auto">
+            <div className="w-full @5xl:ml-auto @5xl:w-auto">
               <InfoCard m={m} />
             </div>
           </div>

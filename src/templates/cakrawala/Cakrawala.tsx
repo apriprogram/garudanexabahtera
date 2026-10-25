@@ -1,5 +1,5 @@
 // Template "Cakrawala" — "Clear horizon": website sekolah (SMK, bisa juga SMA) yang modern, sederhana, dan profesional.
-// Halaman putih dengan hero SLIDER foto di dalam bingkai membulat, menu pil kaca di atasnya, bilah pengumuman PPDB, dan
+// Halaman putih dengan hero SLIDER foto selebar layar, logo + menu pil kaca di atasnya, bilah pengumuman PPDB, dan
 // tiga kartu info yang menumpang di tepi bawah hero; lalu statistik, sambutan kepala sekolah, profil & visi-misi
 // (panel abu), program keahlian, teaching factory & mitra industri (panel biru tinta), prestasi, PPDB (tab jalur/
 // jadwal/syarat/alur/biaya + formulir yang menyusun pesan WhatsApp), berita berfilter, pengumuman & agenda, alumni,

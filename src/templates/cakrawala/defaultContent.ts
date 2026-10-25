@@ -15,7 +15,8 @@ export const cakrawalaContent: SiteContent = {
   brand: {
     company_name: SCHOOL,
     tagline: 'Sekolah Vokasi Swasta di Bandung',
-    logo: '',
+    // Logo demo: lambang Tut Wuri Handayani (SVG dari berkas pemilik 2026-10-25); pembeli menggantinya di CMS
+    logo: '/assets/templates/logos/cakrawala-logo-tut-wuri.svg',
     accent_color: CAKRAWALA_ACCENT,
   },
   hero: {

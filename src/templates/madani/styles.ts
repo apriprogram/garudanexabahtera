@@ -1,6 +1,6 @@
-// Gaya Madani "Teduh & rapi": website sekolah Islam yang modern, sederhana, dan profesional. Hero = slider foto di dalam
-// bingkai membulat (menu pil di atasnya), lalu halaman putih lapang dengan panel krem/warna tema yang juga membulat dan
-// menjorok dari tepi (senada dengan bingkai hero). Judul Plus Jakarta Sans 600 berwarna tema tua, isi Inter; tombol
+// Gaya Madani "Teduh & rapi": website sekolah Islam yang modern, sederhana, dan profesional. Hero = slider foto selebar
+// layar (menu pil di atasnya), lalu halaman putih lapang dengan panel krem/warna tema yang membulat dan menjorok dari
+// tepi. Judul Plus Jakarta Sans 600 berwarna tema tua, isi Inter; tombol
 // pil warna sorotan dengan lingkaran panah; label kecil bertitik; kartu radius 24 TANPA bayangan (garis tipis atau
 // bidang krem). Warna tema & sorotan dari CMS lewat variabel --md-* (./model.ts madaniVars). Ukuran memakai container
 // query (@…) karena template dirender di bingkai HP 390 / panel CMS.

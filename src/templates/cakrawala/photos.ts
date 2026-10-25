@@ -17,7 +17,7 @@ const HERO: readonly KitPhotoSpec[] = [
   ['cakrawala-hero-1', 1920, 1080, 'Siswa berseragam putih abu-abu belajar bersama di gazebo halaman sekolah'],
   ['cakrawala-hero-2', 1920, 1080, 'Siswa berseragam batik biru mengerjakan ujian tertulis di ruang kelas'],
   ['cakrawala-hero-3', 1920, 1080, 'Siswa berkacamata pelindung menggerinda besi di bengkel las didampingi instruktur'],
-  ['cakrawala-hero-4', 1920, 1080, 'Siswi berhijab dan bercelemek memasak di dapur praktik tata boga'],
+  ['cakrawala-hero-4', 1920, 1080, 'Siswa tata boga berseragam koki memasak sup di dapur praktik, disimak teman sekelas'],
 ];
 
 const BASE = definePhotos({

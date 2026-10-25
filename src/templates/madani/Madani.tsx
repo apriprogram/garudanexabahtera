@@ -1,5 +1,5 @@
-// Template "Madani" — website sekolah Islam (SMA IT / MA), modern, sederhana, dan profesional. Hero = slider foto di
-// dalam bingkai membulat dengan menu pil di atasnya, judul + kata sorotan, tombol "Daftar PPDB" warna sorotan, dan
+// Template "Madani" — website sekolah Islam (SMA IT / MA), modern, sederhana, dan profesional. Hero = slider foto
+// selebar layar dengan menu pil di atasnya, judul + kata sorotan, tombol "Daftar PPDB" warna sorotan, dan
 // kartu info PPDB; lalu halaman putih lapang dengan panel krem/warna tema yang juga membulat: strip info, sambutan
 // kepala sekolah, profil (tab visi & misi), statistik, program unggulan, prestasi, fasilitas, PPDB (jalur, jadwal,
 // syarat, alur, biaya, formulir minat → WhatsApp), berita, pengumuman & agenda, galeri, alumni, tanya jawab, ajakan,
