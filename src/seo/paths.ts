@@ -25,7 +25,7 @@ export type HubKey = keyof typeof HUB_PATHS;
  * Slug halaman kategori /template/kategori/{slug}. Nama kategori di DB dipetakan ke slug ini oleh
  * src/content/categories.ts (WP5). "kategori" sendiri tidak boleh menjadi slug template (ditolak kedua backend).
  */
-export const CATEGORY_SLUGS = ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup', 'yoga-wellness'] as const;
+export const CATEGORY_SLUGS = ['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup', 'yoga-wellness', 'toko-online'] as const;
 
 export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
 

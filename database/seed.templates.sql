@@ -1,5 +1,5 @@
 -- ============================================================================
--- Garuda Nexa — CONTOH katalog template (2 Company Profile + 3 template 2026-10-22 + Serenity 2026-10-25)
+-- Garuda Nexa — CONTOH katalog template (2 Company Profile + 3 template 2026-10-22 + Serenity + 5 toko online 2026-10-25)
 -- ============================================================================
 -- Jalankan setelah migrasi 2026-10-19_004 (atau schema.sql untuk DB baru):
 --   mysql -u root db_garudanexabahtera < database/seed.templates.sql
@@ -92,5 +92,100 @@ Cocok untuk studio yoga dan pilates, kelas olahraga ringan, instruktur yoga priv
    '/assets/templates/serenity-preview.webp',
    '["/assets/templates/serenity-1.webp","/assets/templates/serenity-2.webp"]',
    'serenity', NULL, 'published', 6);
+
+-- SkyNusa (2026-10-25, Toko Online; DB lama: migrasi 2026-10-25_019). Satu statement per template toko
+-- online agar baris yang dirilis bersamaan bisa ditambah tanpa mengubah daftar VALUES lain.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('skynusa',
+   'SkyNusa',
+   'Toko Online',
+   'Website toko drone yang modern untuk menjual drone foto, wedding, dan pemetaan, lengkap dengan paket, sewa harian, dan garansi servis.',
+   'SkyNusa tampil seperti lembar spesifikasi yang rapi sejak layar pertama: judul dua nada di kanvas abu berkisi, foto drone dengan kartu angka spesifikasi, dan strip empat keunggulan toko. Di bawahnya tersusun kategori per kebutuhan (foto, wedding, pemetaan) yang memfilter daftar drone, kartu produk dengan harga coret dan tombol keranjang, paket bundling drone + tas + baterai cadangan, kalkulator sewa harian, garansi servis lokal, kelas terbang gratis, cerita pelanggan, tanya jawab, serta kontak dengan peta lokasi.
+
+Cocok untuk toko dan reseller drone, penyedia sewa drone, bengkel servis drone, hingga toko kamera yang juga menjual drone. Pengunjung bisa mengisi keranjang dan menghitung biaya sewa, lalu mengirim pesanan lewat WhatsApp; tidak ada pembayaran online. Semua teks, gambar, harga, isi paket, tarif sewa, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero lembar spesifikasi dengan foto drone dan kartu angka spesifikasi","Kategori per kebutuhan yang memfilter daftar drone","Kartu produk dengan harga coret, label, dan keranjang yang dikirim ke WhatsApp","Paket bundling drone + tas + baterai cadangan dengan label hemat","Kalkulator sewa harian: unit, tanggal, lama sewa, dan potongan","Garansi servis lokal, kelas terbang gratis, cerita pelanggan, dan FAQ","Kelola teks, gambar, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/skynusa-preview.webp',
+   '["/assets/templates/skynusa-1.webp","/assets/templates/skynusa-2.webp"]',
+   'skynusa', NULL, 'published', 7);
+
+-- TaniMakmur (2026-10-25, Toko Online; DB lama: migrasi 2026-10-25_020). Satu statement per template toko
+-- online agar baris yang dirilis bersamaan bisa ditambah tanpa mengubah daftar VALUES lain.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('tanimakmur',
+   'TaniMakmur',
+   'Toko Online',
+   'Toko online pertanian untuk benih, pupuk, dan alat tani, lengkap dengan paket per tanaman dan konsultasi lewat WhatsApp.',
+   'TaniMakmur dirancang untuk toko pertanian yang ingin berjualan online dengan tampilan segar dan meyakinkan. Halaman dibuka dengan foto ladang selebar layar, judul besar, kartu angka, dan strip keunggulan toko. Di bawahnya tersusun kategori produk, pemilih Pilih Tanamanmu yang menampilkan paket lengkap per jenis tanaman (isi paket, jadwal tanam, dan harga hemat), produk terlaris dengan rating dan filter kategori, konsultasi gratis dengan penyuluh lewat WhatsApp, panduan urban farming, testimoni, tanya jawab, serta kontak dengan peta lokasi.
+
+Cocok untuk toko benih, pupuk, dan alat tani, kios saprotan, penjual perlengkapan hidroponik, hingga usaha urban farming. Pembeli memesan produk atau paket lewat WhatsApp dengan pesan yang sudah berisi nama produknya. Semua teks, gambar, harga, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero foto ladang selebar layar dengan kartu angka dan strip keunggulan","Pilih Tanamanmu: paket per jenis tanaman dengan isi, jadwal tanam, dan harga hemat","Produk terlaris dengan rating, harga coret, dan filter kategori","Pesan produk dan paket langsung lewat WhatsApp","Konsultasi penyuluh, panduan urban farming, testimoni, dan FAQ","Pencarian produk dan paket langsung dari menu","Kelola teks, gambar, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/tanimakmur-preview.webp',
+   '["/assets/templates/tanimakmur-1.webp","/assets/templates/tanimakmur-2.webp"]',
+   'tanimakmur', NULL, 'published', 8);
+
+-- PuncakGear (2026-10-25, Toko Online; DB lama: migrasi 2026-10-25_021). Satu statement per template toko
+-- online agar baris yang dirilis bersamaan bisa ditambah tanpa mengubah daftar VALUES lain.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('puncakgear',
+   'PuncakGear',
+   'Toko Online',
+   'Website toko perlengkapan mendaki dengan panduan per gunung dan kalkulator sewa alat untuk pendaki pemula.',
+   'PuncakGear tampil gagah sejak layar pertama: foto pendaki selebar layar dengan menu transparan, judul huruf kapital besar, tombol pil warna terang, dan kartu produk kecil. Di bawahnya tersusun kategori perlengkapan, produk terlaris dengan filter kategori dan tombol pesan, panduan per gunung (misalnya Rinjani, Semeru, Prau) berisi jalur populer, catatan keselamatan, dan daftar perlengkapan yang bisa dicentang pengunjung, lalu bagian sewa alat dengan kalkulator biaya per hari, tips keselamatan, cerita pendaki, tanya jawab, dan lokasi basecamp.
+
+Cocok untuk toko outdoor, penyewaan alat camping dan mendaki, maupun basecamp yang juga menjual perlengkapan. Pesanan, sewa, dan konsultasi dikirim lewat WhatsApp lengkap dengan nama produk, daftar alat, lama sewa, dan perkiraan totalnya. Semua teks, foto, harga, daftar gunung, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero poster foto selebar layar dengan kartu produk","Produk terlaris dengan filter kategori dan tombol pesan ke WhatsApp","Panduan per gunung dengan daftar perlengkapan yang bisa dicentang","Kalkulator sewa alat per hari dengan diskon lama sewa","Tips keselamatan, cerita pendaki, dan tanya jawab (FAQ)","Pencarian produk, gunung, dan alat sewa langsung dari menu","Kelola teks, foto, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/puncakgear-preview.webp',
+   '["/assets/templates/puncakgear-1.webp","/assets/templates/puncakgear-2.webp"]',
+   'puncakgear', NULL, 'published', 9);
+
+-- GadgetKu.id (2026-10-25, Toko Online; DB lama: migrasi 2026-10-25_022). Satu statement per template toko
+-- online agar baris yang dirilis bersamaan bisa ditambah tanpa mengubah daftar VALUES lain.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('gadgetku',
+   'GadgetKu.id',
+   'Toko Online',
+   'Template website toko aksesoris HP yang bersih dan modern, dengan pencarian aksesoris berdasarkan tipe HP.',
+   'GadgetKu.id dibuat untuk toko casing, tempered glass, charger, kabel, earphone, dan power bank. Pembeli memilih merek lalu tipe HP-nya, dan aksesoris yang cocok langsung tampil: casing dan tempered glass sesuai tipe, kabel sesuai port, plus charger dan earphone untuk semua HP. Di halaman yang sama ada kartu kategori berfoto besar, baris produk terbaru dengan harga coret dan penyaring kategori, paket bundling hemat yang menghitung potongan harganya sendiri, serta layanan custom casing: pengunjung mencoba fotonya sendiri di mockup casing langsung di browser.
+
+Cocok untuk toko aksesoris HP di ruko atau mal, penjual online yang juga berjualan di marketplace, dan usaha casing custom. Semua pesanan diarahkan ke WhatsApp berisi nama produk, harga, dan tipe HP pembeli. Teks, foto, produk, harga, daftar tipe HP, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Pencarian aksesoris berdasarkan merek dan tipe HP","Baris produk terbaru dengan harga coret, label diskon otomatis, dan penyaring kategori","Paket bundling hemat dengan potongan harga yang dihitung otomatis","Coba casing custom dengan foto sendiri langsung di browser","Pesan lewat WhatsApp berisi nama produk, harga, dan tipe HP","Kelola produk, harga, tipe HP, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/gadgetku-preview.webp',
+   '["/assets/templates/gadgetku-1.webp","/assets/templates/gadgetku-2.webp"]',
+   'gadgetku', NULL, 'published', 10);
+
+-- GlowStory (2026-10-25, Toko Online; DB lama: migrasi 2026-10-25_023). Satu statement per template toko
+-- online agar baris yang dirilis bersamaan bisa ditambah tanpa mengubah daftar VALUES lain.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('glowstory',
+   'GlowStory',
+   'Toko Online',
+   'Template website toko skincare & kosmetik online untuk brand lokal: kuis jenis kulit, pesanan lewat WhatsApp, dan kalkulator langganan isi ulang.',
+   'GlowStory adalah template website toko skincare dan kosmetik dengan suasana hangat seperti katalog butik: kolase foto produk dengan kartu produk unggulan dan lencana rating, strip keunggulan toko, kategori, serta produk terlaris lengkap dengan harga coret, rating, dan saringan per kategori. Pengunjung menyusun daftar belanja di halaman lalu mengirimnya sebagai pesanan WhatsApp lengkap dengan subtotal; ongkir dan pembayaran Anda konfirmasi lewat chat.
+
+Tiga fitur mendorong pembelian berulang: kuis jenis kulit yang menyusun rutinitas pagi dan malam beserta produknya, kalkulator langganan isi ulang yang langsung menunjukkan hemat per kiriman dan per tahun (dikonfirmasi lewat WhatsApp, tanpa penagihan otomatis), serta ulasan pelanggan berfoto. Ada juga strip brand lokal, tanya jawab, dan pita ajakan. Semua teks, foto, harga, pertanyaan kuis, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Kuis jenis kulit dengan hasil rutinitas pagi & malam beserta produknya","Daftar belanja yang dikirim sebagai pesanan WhatsApp lengkap dengan subtotal","Kalkulator langganan isi ulang: harga per kiriman dan hemat setahun","Produk terlaris dengan harga coret, rating, label, dan saringan kategori","Ulasan pelanggan berfoto yang bisa diperbesar","Kelola teks, foto, harga, kuis, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/glowstory-preview.webp',
+   '["/assets/templates/glowstory-1.webp","/assets/templates/glowstory-2.webp"]',
+   'glowstory', NULL, 'published', 11);
 
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

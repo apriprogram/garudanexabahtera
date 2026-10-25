@@ -7,7 +7,9 @@ Backend: `backend/server.js` (produksi, MySQL 8 di docker) dan `backend/api.php`
 database/
 ├── schema.sql          # SKEMA KANONIK: satu-satunya sumber kebenaran struktur tabel
 ├── seed.sql            # data awal minimal untuk DB baru (idempoten, tanpa akun admin)
-├── seed.templates.sql  # CONTOH katalog: 2 Company Profile + Arena Club, Aura Studio, Finova, Serenity (harga contoh, idempoten)
+├── seed.templates.sql  # CONTOH katalog: 2 Company Profile + Arena Club, Aura Studio, Finova, Serenity, TaniMakmur (harga contoh, idempoten)
+
+├── seed.templates.sql  # CONTOH katalog: 2 Company Profile + Arena Club, Aura Studio, Finova, Serenity, SkyNusa (harga contoh, idempoten)
 ├── seed.local.sql      # KHUSUS LOKAL, di-gitignore (database/*.local.sql): akun uji XAMPP
 ├── migrations/         # perubahan untuk DB yang SUDAH ada, dijalankan berurutan
 │   ├── 2026-10-19_001_align_schema_with_backend.sql
@@ -118,6 +120,25 @@ tidak dicatat sebagai baseline di `schema.sql`).
 `2026-10-25_018` (data saja) membuat/menyamakan baris katalog `serenity` (template wellness) berdasarkan slug, pola sama
 dengan 008: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan
 `template_code` `serenity` ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-25_020` (data saja) membuat/menyamakan baris katalog `tanimakmur` (toko online pertanian) berdasarkan slug, pola
+sama dengan 018: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan
+`template_code` `tanimakmur` ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-25_021` (data saja) membuat/menyamakan baris katalog `puncakgear` (toko perlengkapan mendaki, kategori Toko
+Online) berdasarkan slug, pola sama dengan 018: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan
+setelah kode yang mendaftarkan `template_code` `puncakgear` ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-25_022` (data saja) membuat/menyamakan baris katalog `gadgetku` (GadgetKu.id, toko aksesoris HP, kategori Toko
+Online) berdasarkan slug, pola sama dengan 018. Jalankan setelah kode yang mendaftarkan `template_code` `gadgetku`
+ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-25_023` (data saja) membuat/menyamakan baris katalog `glowstory` (toko online kecantikan, kategori Toko Online)
+berdasarkan slug, pola sama dengan 018. Jalankan setelah kode yang mendaftarkan `template_code` `glowstory` ter-deploy.
+
+`2026-10-25_019` (data saja) membuat/menyamakan baris katalog `skynusa` (toko drone, kategori "Toko Online") berdasarkan
+slug, pola sama dengan 018: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang
+mendaftarkan `template_code` `skynusa` ter-deploy. DB baru cukup `seed.templates.sql`.
 
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 

@@ -110,6 +110,20 @@ export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
     hasGuide: true,
     guides: ['template-vs-jasa-website-custom'],
   },
+  // Toko online (2026-10-25): SkyNusa, TaniMakmur, PuncakGear, GadgetKu.id, GlowStory (kategori DB "Toko Online")
+  'toko-online': {
+    slug: 'toko-online',
+    name: 'Toko online',
+    h1: 'Template website toko online',
+    title: 'Template Website Toko Online Siap Pakai | Garuda Nexa',
+    description:
+      'Template website toko online untuk drone, pertanian, outdoor, aksesoris HP & skincare. Mulai {harga_min}, termasuk domain, hosting & SSL. Lihat demonya.',
+    descriptionNoPrice:
+      'Template website toko online untuk drone, pertanian, outdoor, aksesoris HP & skincare, sudah termasuk domain, hosting & SSL. Lihat demonya.',
+    niche: 'toko online',
+    hasGuide: true,
+    guides: ['template-vs-jasa-website-custom'],
+  },
 };
 
 /** Urutan tampil kategori (chip katalog, footer, beranda). */

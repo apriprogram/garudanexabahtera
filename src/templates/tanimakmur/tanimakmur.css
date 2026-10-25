@@ -1,0 +1,92 @@
+/*
+ * CSS lokal TaniMakmur (diimpor ./TaniMakmur.tsx): lapisan hijau foto hero, latar cadangan tanpa foto, garis bawah
+ * kata sorotan, buka-tutup FAQ, dan animasi masuk kartu angka hero. Gerak hanya bila root template
+ * ber-data-tpl-motion="on" (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak → statis.
+ */
+
+@layer components {
+  /* Latar hero bila foto kosong/gagal: ladang hijau tua dari gradasi */
+  .tm-hero-fallback {
+    background:
+      radial-gradient(120% 80% at 70% 110%, #3f6b2c 0%, transparent 60%),
+      linear-gradient(160deg, #2c5221 0%, #1e3a16 55%, #13260e 100%);
+  }
+
+  /*
+   * Lapisan foto hero: rona hijau tua tipis di seluruh foto, gelap di atas (di belakang menu), kiri (di belakang judul),
+   * dan bawah (kartu angka). Wadah sempit (HP, tablet): teks melebar penuh, jadi lapisan dibuat rata atas-bawah.
+   */
+  .tm-hero-scrim {
+    background:
+      linear-gradient(180deg, rgb(10 24 8 / 0.55) 0%, rgb(10 24 8 / 0) 24%),
+      linear-gradient(90deg, rgb(16 36 12 / 0.78) 0%, rgb(16 36 12 / 0.5) 42%, rgb(16 36 12 / 0.18) 78%),
+      linear-gradient(0deg, rgb(10 22 8 / 0.82) 0%, rgb(10 22 8 / 0.2) 34%, rgb(10 22 8 / 0) 50%),
+      linear-gradient(rgb(30 58 22 / 0.28), rgb(30 58 22 / 0.28));
+  }
+
+  @container (max-width: 1023px) {
+    .tm-hero-scrim {
+      background:
+        linear-gradient(180deg, rgb(12 28 9 / 0.7) 0%, rgb(12 28 9 / 0.55) 46%, rgb(10 22 8 / 0.88) 100%),
+        linear-gradient(rgb(30 58 22 / 0.3), rgb(30 58 22 / 0.3));
+    }
+  }
+
+  /* Kata sorotan di latar terang: warna aksen gelap + garis bawah tebal warna aksen asli */
+  .tm-underline {
+    background-image: linear-gradient(var(--tpl-accent), var(--tpl-accent));
+    background-repeat: no-repeat;
+    background-size: 100% 0.14em;
+    background-position: 0 92%;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  @media (forced-colors: active) {
+    .tm-underline {
+      background: none;
+      text-decoration: underline;
+    }
+  }
+
+  /* FAQ: tinggi panel jawaban 0fr → 1fr (transisi hanya bila gerak menyala) */
+  .tm-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .tm-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .tm-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Kartu angka hero: masuk saat halaman dibuka (selalu di tepi bawah layar, jadi bukan "muncul saat digulir") */
+  [data-tpl-motion='on'] .tm-rise {
+    animation: tm-rise 0.8s var(--tpl-ease, ease) both;
+    animation-delay: var(--tm-delay, 0ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .tm-collapse {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .tm-rise {
+      animation: none;
+    }
+  }
+}
+
+@keyframes tm-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

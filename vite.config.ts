@@ -117,6 +117,9 @@ export default defineConfig({
     rolldownOptions: { plugins: [esToolkitCompatEsm] },
   },
   server: {
+    // Worktree sesi paralel (.claude/worktrees/*) berada di dalam folder ini: tanpa ini dev server mengawasi isinya, dan
+    // folder yang dihapus git di worktree itu tertahan "delete pending" (Access denied) di Windows
+    watch: { ignored: ['**/.claude/worktrees/**'] },
     proxy: {
       '/api.php': {
         target: apiTarget,

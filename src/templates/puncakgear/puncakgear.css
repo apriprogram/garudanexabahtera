@@ -1,0 +1,98 @@
+/*
+ * CSS lokal PuncakGear (diimpor ./PuncakGear.tsx): lapisan gelap foto hero, latar cadangan tanpa foto, rel geser tanpa
+ * scrollbar, buka-tutup FAQ, pudar panel panduan saat berganti gunung, dan animasi masuk baris bawah hero. Gerak hanya
+ * bila root template ber-data-tpl-motion="on" (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak →
+ * statis.
+ */
+
+@layer components {
+  /* Latar hero bila foto kosong/gagal: langit biru pegunungan dari gradasi */
+  .pg-hero-fallback {
+    background: linear-gradient(170deg, #1d4f86 0%, #3b78b5 45%, #6a8f6a 78%, #3f5a2e 100%);
+  }
+
+  /*
+   * Lapisan gelap foto hero: atas (di belakang menu), kiri (di belakang judul raksasa), bawah (kalimat & angka).
+   * Wadah sempit (HP, tablet): teks melebar penuh, jadi lapisan dibuat rata atas-bawah.
+   */
+  .pg-hero-scrim {
+    background:
+      linear-gradient(180deg, rgb(6 16 26 / 0.5) 0%, rgb(6 16 26 / 0) 22%),
+      linear-gradient(90deg, rgb(6 16 26 / 0.62) 0%, rgb(6 16 26 / 0.42) 38%, rgb(6 16 26 / 0) 66%),
+      linear-gradient(0deg, rgb(8 14 10 / 0.72) 0%, rgb(8 14 10 / 0.3) 26%, rgb(8 14 10 / 0) 44%);
+  }
+
+  @container (max-width: 1023px) {
+    .pg-hero-scrim {
+      background: linear-gradient(180deg, rgb(6 16 26 / 0.58) 0%, rgb(6 16 26 / 0.42) 46%, rgb(8 14 10 / 0.82) 100%);
+    }
+  }
+
+  /* Rel geser mendatar (kategori, gunung, chip filter): tanpa scrollbar, tetap bisa digeser/di-tab */
+  .pg-rail {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pg-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* FAQ: tinggi panel jawaban 0fr → 1fr (transisi hanya bila gerak menyala) */
+  .pg-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .pg-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .pg-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Panel panduan: isi gunung baru memudar masuk */
+  [data-tpl-motion='on'] .pg-fade {
+    animation: pg-fade 0.45s var(--tpl-ease, ease) both;
+  }
+
+  /* Baris bawah hero: masuk saat halaman dibuka (selalu di tepi bawah layar, jadi bukan "muncul saat digulir") */
+  [data-tpl-motion='on'] .pg-rise {
+    animation: pg-rise 0.8s var(--tpl-ease, ease) both;
+    animation-delay: var(--pg-delay, 0ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .pg-collapse {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .pg-fade,
+    [data-tpl-motion='on'] .pg-rise {
+      animation: none;
+    }
+  }
+}
+
+@keyframes pg-fade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pg-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

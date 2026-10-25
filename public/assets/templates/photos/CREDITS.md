@@ -141,3 +141,172 @@ hangat dan pita sutra pelangi (lukisan digital orisinal Garuda Nexa) di langit.
 | `serenity-portrait-1-*` | Perempuan berhijab tersenyum, latar dedaunan | https://unsplash.com/photos/2lFt6pdPPoQ | muhammad iswandi |
 | `serenity-portrait-2-*` | Pria berkemeja putih tersenyum | https://unsplash.com/photos/OFSQ6bHjFjs | Hà Nguyễn |
 | `serenity-portrait-3-*` | Perempuan berhijab hitam tersenyum di jalan | https://unsplash.com/photos/V_kHZleK2Cg | Yeremia Krisnamurti |
+
+## TaniMakmur (toko tani, fiktif)
+
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero 1920×1200, kategori & panduan 4:3 1200×900, paket tanam 1:1 1200×1200,
+konsultasi 4:5 1200×1500, foto bulat hero 1:1 1000×1000); produk 1:1 `-640.webp` + `-240.webp`; potret 1:1 dan kartu
+kutipan hero 4:3 `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash License, bukan Unsplash+) 2026-10-25.
+Dipotong ulang; foto bertekstur rapat (daun, tanah, butiran) dihaluskan tipis agar ringan, `tanimakmur-hero-*`
+digelapkan sedikit.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `tanimakmur-hero-*` | Kebun sayur hijau berbaris dengan pepohonan | https://unsplash.com/photos/VYKhztyEh44 | Piyal Pakira |
+| `tanimakmur-cabai-*` | Cabai rawit merah dan hijau di tanaman | https://unsplash.com/photos/L2xhGmPmMNs | Steve A Johnson |
+| `tanimakmur-ladang-*` | Petani bertopi tersenyum di tepi sawah | https://unsplash.com/photos/hZCGpX7pb9U | Polina Kuzovkova |
+| `tanimakmur-benih-*` | Bibit muda di pot hitam, dilihat dari atas | https://unsplash.com/photos/4PG6wLlVag4 | Markus Spiske |
+| `tanimakmur-pupuk-*` | Tangan menggenggam kompos | https://unsplash.com/photos/bQ9y93kdk4c | Alicia Christin Gerald |
+| `tanimakmur-pestisida-*` | Perempuan menyemprot tanaman dengan sprayer kuning | https://unsplash.com/photos/suAnIFXSuuI | Trung Thanh |
+| `tanimakmur-alat-*` | Gunting dahan, sarung tangan, dan pot di meja | https://unsplash.com/photos/TsOeGUwWzWo | Eco Warrior Princess |
+| `tanimakmur-paket-cabai-*` | Tanaman cabai berbuah lebat di pot | https://unsplash.com/photos/F3wHYuroank | Bauble And Bin |
+| `tanimakmur-paket-hidroponik-*` | Selada hidroponik di rumah tanam | https://unsplash.com/photos/lq6RPxANYaQ | Ames May |
+| `tanimakmur-paket-tomat-*` | Tomat ceri ranum di batang | https://unsplash.com/photos/hQXXWiG68YQ | Chris Weiher |
+| `tanimakmur-paket-sayur-*` | Pakcoy dan selada keriting di kebun | https://unsplash.com/photos/X_0eZ5GXtMg | Doris Mangalu |
+| `tanimakmur-produk-benih-cabai-*` | Cabai merah di tanaman dengan butir air | https://unsplash.com/photos/ucgmNG_scbg | Georg Eiermann |
+| `tanimakmur-produk-benih-tomat-*` | Tandan tomat merah dan hijau | https://unsplash.com/photos/5Oi5sG6G0z8 | Shalev Cohen |
+| `tanimakmur-produk-kompos-*` | Dua tangan menampung kompos | https://unsplash.com/photos/qqRl8fd7Rxs | EqualStock |
+| `tanimakmur-produk-npk-*` | Butiran putih dilihat dari dekat | https://unsplash.com/photos/jvFgC2F4gf8 | Kenneth Berrios Alvarez |
+| `tanimakmur-produk-mimba-*` | Perempuan menyemprot tanaman dengan botol semprot | https://unsplash.com/photos/L1TR0TrcZfk | Vitaly Gariev |
+| `tanimakmur-produk-tower-*` | Tower hidroponik putih berisi selada | https://unsplash.com/photos/Q1Q0vEgiIbI | Nadine Primeau |
+| `tanimakmur-produk-sprayer-*` | Sprayer punggung hijau di rak kayu | https://unsplash.com/photos/yMwHXzpQrDk | jason hu |
+| `tanimakmur-produk-sekop-*` | Sekop tanam stainless bergagang kayu | https://unsplash.com/photos/JR7IPWMMXcc | gryffyn m |
+| `tanimakmur-konsultasi-*` | Petani muda bertopi memegang ponsel | https://unsplash.com/photos/rCsQF5qn1F8 | Junior REIS |
+| `tanimakmur-penyuluh-1-*` | Perempuan berkerudung tersenyum di antara daun | https://unsplash.com/photos/9oB_oMM9cn8 | muhammad iswandi |
+| `tanimakmur-penyuluh-2-*` | Bapak petani bertopi tersenyum | https://unsplash.com/photos/Jp-Gx8Rtpwc | Luiz Guimaraes |
+| `tanimakmur-portrait-1-*` | Perempuan muda tersenyum di dekat jendela | https://unsplash.com/photos/jBqMJdzTcgA | Phước Sang |
+| `tanimakmur-portrait-2-*` | Pria berambut panjang tersenyum | https://unsplash.com/photos/D4Of2Au_Kso | George Dagerotip |
+| `tanimakmur-portrait-3-*` | Ibu tersenyum lebar | https://unsplash.com/photos/PUCJOgc5PXU | Mauro-Fabio Cilurzo |
+| `tanimakmur-tips-pot-*` | Menyiram tanaman di pot besar di balkon | https://unsplash.com/photos/pzmIDZryioA | Waleed Baloch |
+| `tanimakmur-tips-semai-*` | Kecambah di baki semai | https://unsplash.com/photos/vrbZVyX2k4I | Markus Spiske |
+| `tanimakmur-tips-kompos-*` | Sekop kecil berisi tanah kompos | https://unsplash.com/photos/BduDcrySLKM | Neslihan Gunaydin |
+| `tanimakmur-tips-hidroponik-*` | Daun selada keriting dari dekat | https://unsplash.com/photos/6djmntSYfoE | engin akyurt |
+
+## PuncakGear (Tapak Rimba Outdoor, fiktif)
+
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero 1920×1200, kartu kategori & sewa 4:5 1200×1500, produk 1:1 1200×1200,
+panduan gunung 4:3 1600×1200, keselamatan 16:10 1600×1000); potret testimoni 1:1 `-480.webp` + `-240.webp`. Diunduh dan
+dicek lisensinya (Unsplash License, bukan Unsplash+) 2026-10-25. Logo merek yang terbaca disamarkan (inpaint) di
+`puncakgear-hero-*` (logo di ransel), `puncakgear-produk-sepatu-*` (logo & label di sisi sepatu), dan
+`puncakgear-kategori-carrier-*` (logo di penutup carrier), agar demo tidak terkesan menjual merek tertentu.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `puncakgear-hero-*` | Pendaki dengan carrier & trekking pole di puncak bukit, langit biru (logo disamarkan) | https://unsplash.com/photos/m70uKZsv_e4 | Amey Meher |
+| `puncakgear-kategori-tenda-*` | Tenda dome oranye di padang rumput pegunungan | https://unsplash.com/photos/wTVr4HR4SBI | Jesse Gardner |
+| `puncakgear-kategori-carrier-*` | Pendaki membawa carrier biru di hutan berkabut (logo disamarkan) | https://unsplash.com/photos/LFGGCsj41Bc | Tristan Pineda |
+| `puncakgear-kategori-sleeping-bag-*` | Dua pendaki dalam sleeping bag di atas matras | https://unsplash.com/photos/0LARSp0JVmQ | Lucas Canino |
+| `puncakgear-kategori-sepatu-*` | Sepasang sepatu gunung di atas batu | https://unsplash.com/photos/04pKez8CiIo | Chaewool Kim |
+| `puncakgear-kategori-darurat-*` | Pendaki dengan headlamp merah di puncak saat senja | https://unsplash.com/photos/OV3IgoqwGHw | Marek Piwnicki |
+| `puncakgear-produk-tenda-*` | Tenda dome merah di lembah pegunungan | https://unsplash.com/photos/uKQCVPMR-lo | Slava Auchynnikau |
+| `puncakgear-produk-carrier-*` | Carrier oranye dengan botol minum di atas batu | https://unsplash.com/photos/XMqqQc6at4I | Anastasiia Shyrokykh |
+| `puncakgear-produk-sleeping-bag-*` | Sleeping bag oranye & biru di camp berbatu | https://unsplash.com/photos/Uhtx0dDtw9M | Sylvain Mauroux |
+| `puncakgear-produk-sepatu-*` | Sepatu gunung mid hitam di atas batu (logo disamarkan) | https://unsplash.com/photos/p3rDtB66cws | Ajeet Panesar |
+| `puncakgear-produk-trekking-pole-*` | Sepasang trekking pole di padang rumput | https://unsplash.com/photos/zW8NsaUruMU | Field Forest and Fire |
+| `puncakgear-produk-matras-*` | Matras foam gulung terikat di carrier | https://unsplash.com/photos/mgsvJeYQug0 | where is pykh |
+| `puncakgear-produk-kompor-*` | Kompor portabel dengan panci di meja kayu | https://unsplash.com/photos/E8wt2RdEFoY | Dex Ezekiel |
+| `puncakgear-produk-p3k-*` | Tas P3K hijau "First Aid" | https://unsplash.com/photos/t-wsT0Wdeyw | Rhii Photography |
+| `puncakgear-rinjani-*` | Danau Segara Anak dari puncak Gunung Rinjani | https://unsplash.com/photos/OYDPdqZdJY4 | Fahrul Razi |
+| `puncakgear-semeru-*` | Pendaki dan tenda di Ranu Kumbolo, Semeru | https://unsplash.com/photos/R4MCLUnU9nk | Falaq Lazuardi |
+| `puncakgear-prau-*` | Deretan gunung dilihat dari Gunung Prau | https://unsplash.com/photos/Z5SnhK9mDQM | Muhammad Fadil |
+| `puncakgear-merbabu-*` | Gunung Merapi saat fajar dari Gunung Merbabu | https://unsplash.com/photos/iE_Y-NNjJ8k | Dan Gilmour |
+| `puncakgear-sindoro-*` | Gunung Sindoro di atas ladang dan permukiman | https://unsplash.com/photos/j3KGC-7ZL4g | Gradikaa Aggi |
+| `puncakgear-sewa-*` | Rombongan pendaki di punggungan berumput, Indonesia | https://unsplash.com/photos/Fb3dwD2Qjj0 | Yub 12 |
+| `puncakgear-keselamatan-*` | Pendaki beristirahat di puncak berbatu, Temanggung | https://unsplash.com/photos/OLRUB4nRqls | Idris Hasibuan |
+| `puncakgear-portrait-1-*` | Perempuan berhijab berkacamata tersenyum, latar gunung | https://unsplash.com/photos/vl2UKsXDmsY | Aditya Enggar Perdana |
+| `puncakgear-portrait-2-*` | Pria berkupluk oranye membawa carrier di jalur hutan | https://unsplash.com/photos/xgiHQVcX2WY | Andri Hermawan |
+| `puncakgear-portrait-3-*` | Pria berjaket merah, latar gunung di atas awan (Bromo) | https://unsplash.com/photos/QRSH2gMCCC0 | visualsofdana |
+
+## GadgetKu.id (toko aksesori HP, fiktif)
+
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero 1920×1200, kategori 4:3 1200×900, produk 1:1 1200×1200, contoh foto
+casing custom 3:4 1200×1600); potret ulasan 1:1 `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash
+License, bukan Unsplash+) 2026-10-25; hanya dipotong, diperkecil, dan dikompres (latar semen/kayu pada `gadgetku-powerbank-*`,
+`gadgetku-charger-20w-*`, dan `gadgetku-kabel-usbc-*` sedikit dihaluskan agar file lebih ringan). Logo, ikon, mockup casing,
+dan garis HP adalah SVG buatan sendiri di kode template.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `gadgetku-hero-*` | Bagian belakang HP hitam dengan tiga kamera | https://unsplash.com/photos/zJ4XmQsZzMI | ubeyonroad |
+| `gadgetku-kat-casing-*` | Empat casing HP warna pastel dan bunga matahari | https://unsplash.com/photos/FQXbLmlmvWY | Grysell Alvarez |
+| `gadgetku-kat-tg-*` | Layar kaca HP di atas meja abu-abu | https://unsplash.com/photos/J7xrBW_oYJc | Lorenzo Rui |
+| `gadgetku-kat-charger-*` | Kepala charger putih di depan dinding kuning | https://unsplash.com/photos/9QTFMkh-ezM | Markus Winkler |
+| `gadgetku-kat-kabel-*` | Tiga kabel data jalin oranye di latar biru | https://unsplash.com/photos/yh0UtueiZ-I | Lucian Alexe |
+| `gadgetku-kat-earphone-*` | Earphone nirkabel hitam dan kotak pengisinya | https://unsplash.com/photos/HuTUDQqr88c | Roger Cai |
+| `gadgetku-kat-powerbank-*` | Tangan memegang power bank hijau dan HP | https://unsplash.com/photos/APdfyW0Aq-E | I'M ZION |
+| `gadgetku-casing-silikon-*` | HP bercasing silikon biru di samping sukulen | https://unsplash.com/photos/qEoKzD2zJjE | Daniel Korpai |
+| `gadgetku-casing-bening-*` | Casing bening dengan lingkaran magnet | https://unsplash.com/photos/v38zp8oXaEg | Lee Peterson |
+| `gadgetku-tg-fullcover-*` | HP dengan layar bergambar daun hijau | https://unsplash.com/photos/dKXVCyFuIAQ | Mohammad Rahman |
+| `gadgetku-tg-antispy-*` | Layar HP mengilap di atas alas kuning berlubang | https://unsplash.com/photos/GGibLLnU59c | Sam Grozyan |
+| `gadgetku-charger-20w-*` | Kepala charger putih dan kabel USB di meja kayu | https://unsplash.com/photos/jBm1x5hB4cQ | Arturo Añez |
+| `gadgetku-charger-45w-*` | Charger putih kecil di permukaan hijau gelap | https://unsplash.com/photos/ZUabNmumOcA | Steve A Johnson |
+| `gadgetku-kabel-usbc-*` | Kabel USB-C jalin hitam tergulung | https://unsplash.com/photos/RWxeE7wu1T8 | Mika Baumeister |
+| `gadgetku-kabel-lightning-*` | Kabel data putih dengan ujung USB-A | https://unsplash.com/photos/6cXZnFCd2KQ | Adam Birkett |
+| `gadgetku-tws-*` | Sepasang earbuds nirkabel hitam di latar putih | https://unsplash.com/photos/XGIulH5L8lU | Behnam Norouzi |
+| `gadgetku-tws-gaming-*` | Earbuds bluetooth hitam dengan cahaya merah ungu | https://unsplash.com/photos/YwJGDLKOE48 | TheRegisti |
+| `gadgetku-powerbank-*` | Power bank putih dengan kabel tiga cabang | https://unsplash.com/photos/7JbgHNq4h4k | Andrey Matveev |
+| `gadgetku-custom-sample-*` | Kucing oranye putih di keranjang anyaman | https://unsplash.com/photos/_867Jy8LCkI | Daria Averina |
+| `gadgetku-portrait-1-*` | Pria muda berkaus putih | https://unsplash.com/photos/kw9kHqYuc3g | Adismara Putri Pradiri |
+| `gadgetku-portrait-2-*` | Perempuan muda berhijab biru tersenyum | https://unsplash.com/photos/O1z8oNDidaM | irwan wahyudi |
+| `gadgetku-portrait-3-*` | Perempuan muda tersenyum, dagu bertumpu di tangan | https://unsplash.com/photos/jBqMJdzTcgA | Phước Sang |
+
+## GlowStory (Seruni Beauty, fiktif)
+
+Foto suasana `-1200.webp` + `-800.webp` (hero besar, kategori, produk, kuis, isi ulang, dan foto ulasan 4:5 1200×1500;
+dua foto kecil hero & panel ajakan 4:3 1200×900). Diunduh dan dicek lisensinya (Unsplash License, bukan Unsplash+)
+2026-10-25. Dipilih tanpa merek asli yang terbaca karena merek & produk demo fiktif (kandidat berlabel Le Labo, OUAI,
+Endless Pure, Kalos, Poko, Nude by Nature, dsb. dibuang). Semua foto hanya dipotong & diperkecil; `glowstory-review-4-*`
+dipotong 4% di tiap sisi untuk membuang bingkai putih foto aslinya.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `glowstory-hero-*` | Botol serum kaca amber di atas alas kayu, bayangan daun | https://unsplash.com/photos/GDSNp1RJyLE | Kadarius Seegars |
+| `glowstory-hero-2-*` | Tetesan serum & krim dalam cawan kaca dengan daun | https://unsplash.com/photos/g6q3lFAe3kA | ibnu ihza |
+| `glowstory-hero-3-*` | Olesan lipstik empat warna di latar merah muda | https://unsplash.com/photos/crSkE1CKQL0 | Ashley Piszek |
+| `glowstory-skincare-*` | Botol serum merah muda dan spons putih | https://unsplash.com/photos/87UiYDcK3_I | Marina Zaharkina |
+| `glowstory-makeup-*` | Kuas rias, lipstik, dan bedak padat di latar krem | https://unsplash.com/photos/xwM61TPMlYk | Shamblen Studios |
+| `glowstory-bodycare-*` | Handuk, garam mandi, sikat badan, dan sabun dari atas | https://unsplash.com/photos/pBBxMUCgwuU | Diana Light |
+| `glowstory-serum-*` | Botol serum amber berlabel polos di atas balok beton | https://unsplash.com/photos/MkuwnDkT1s0 | Avtar Singh |
+| `glowstory-pelembap-*` | Toples kaca buram di samping kotak kemasan polos | https://unsplash.com/photos/w-IvqlYGYAU | Avtar Singh |
+| `glowstory-sunscreen-*` | Dua tube putih polos di atas balok peach | https://unsplash.com/photos/Xp0bTCLD07k | Point Normal |
+| `glowstory-pembersih-*` | Tube putih polos di atas olesan krim | https://unsplash.com/photos/4uN0JxJGRQE | Birgith Roosipuu |
+| `glowstory-lipstik-*` | Tiga lipstik silver dengan batu kristal, latar merah muda | https://unsplash.com/photos/-NLfVaPLwmQ | Jen Vazquez |
+| `glowstory-bedak-*` | Dua wadah bedak tabur dan kuas kecil | https://unsplash.com/photos/8JsIE0k0aLU | Superkitina |
+| `glowstory-losion-*` | Botol pompa putih polos di atas kain cokelat | https://unsplash.com/photos/LtGwgq7r_mc | Sincerely Media |
+| `glowstory-lulur-*` | Toples lulur kopi dengan sendok kayu dan biji kopi | https://unsplash.com/photos/uTbHMwAhuwg | Anish Raheja |
+| `glowstory-quiz-*` | Perempuan dengan titik krim di pipi, dinding terakota | https://unsplash.com/photos/YG1ZAl9Sb20 | Cherrydeck |
+| `glowstory-refill-*` | Botol pompa merah muda di latar oranye | https://unsplash.com/photos/gUZv1Fdkfgw | Birgith Roosipuu |
+| `glowstory-review-1-*` | Tetesan serum dari pipet ke punggung tangan | https://unsplash.com/photos/80wCkpt-IKE | Enecta Cannabis extracts |
+| `glowstory-review-2-*` | Dua perempuan bermasker wajah berswafoto | https://unsplash.com/photos/XKXWkJEQmcs | Thomas Lee |
+| `glowstory-review-3-*` | Tiga olesan losion di lengan, latar linen | https://unsplash.com/photos/CxmQXVqzyIE | xandro Vandewalle |
+| `glowstory-review-4-*` | Perempuan mengedipkan mata sambil memegang cermin bedak (dipotong, lihat di atas) | https://unsplash.com/photos/0ZPo-47oWY4 | Le Tran Hoang Oanh |
+| `glowstory-cta-*` | Aneka botol perawatan kulit di latar terakota | https://unsplash.com/photos/wy7OK3cFqAY | pmv chamara |
+
+## SkyNusa (toko drone, fiktif)
+
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero & sewa 4:5 1200×1500; kategori, produk, paket, servis, kelas 4:3
+1200×900; ajakan 16:9 1600×900); potret testimoni 1:1 `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash
+License, bukan Unsplash+) 2026-10-25. `skynusa-lipat-*` diberi bidang putih atas-bawah (bukan dipotong) agar baling-baling
+utuh; `skynusa-pemetaan-*` dihaluskan sedikit agar file WebP tetap ringan. Nama produk di demo generik; nama orang di
+testimoni fiktif dan tidak berhubungan dengan orang di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `skynusa-hero-*` | Drone lipat melayang di langit berkabut | https://unsplash.com/photos/6nRjHtBDk4o | Kaleb Kendall |
+| `skynusa-foto-*` | Foto udara pulau berbukit dan teluk biru | https://unsplash.com/photos/jgmkPYqOzN0 | David Köhler |
+| `skynusa-wedding-*` | Foto udara pengantin berkerudung panjang di antara tamu | https://unsplash.com/photos/k0L99LYpn0E | Ryleigh Henschen |
+| `skynusa-pemetaan-*` | Foto udara tegak lurus petak sawah | https://unsplash.com/photos/gkzByAvMki8 | Ivan Bandura |
+| `skynusa-mini-*` | Drone mini putih di latar putih | https://unsplash.com/photos/KmJjOfCsBk0 | JJ Shev |
+| `skynusa-lipat-*` | Drone lipat abu-abu di latar putih | https://unsplash.com/photos/PAf9rj_DKCU | Rythik |
+| `skynusa-sinema-*` | Drone sinema dengan kamera gimbal di atas pegunungan bersalju | https://unsplash.com/photos/pWtNPCpvVA8 | Mitch Nielsen |
+| `skynusa-survei-*` | Drone putih berkaki tinggi di langit biru | https://unsplash.com/photos/I9TaTsU_VnE | Annie Spratt |
+| `skynusa-paket-pemula-*` | Drone mini, remote, tas, dan aksesori tertata di meja kayu | https://unsplash.com/photos/TnjBw8dtE2U | Jp Valery |
+| `skynusa-paket-wedding-*` | Drone lipat, remote, kamera, dan lensa di meja kayu | https://unsplash.com/photos/28ydDnpskh0 | Aaron Burden |
+| `skynusa-paket-pemetaan-*` | Pengisi daya baterai drone tiga slot | https://unsplash.com/photos/9wDtHKYaDj8 | Xander Sauviller |
+| `skynusa-sewa-*` | Pria mengamati drone di atas perbukitan | https://unsplash.com/photos/uln2oLjaprc | Tandem X Visuals |
+| `skynusa-servis-*` | Teknisi menyolder papan elektronik di meja kerja | https://unsplash.com/photos/M64oBzDDjsY | Arabian Infotech Qatar |
+| `skynusa-kelas-*` | Pria menerbangkan drone di langit biru | https://unsplash.com/photos/CeHGoFLzvNU | Quilia |
+| `skynusa-cta-*` | Bukit kebun teh berkabut | https://unsplash.com/photos/WX2xpcJK3q0 | KIMO |
+| `skynusa-portrait-1-*` | Pria berkacamata membawa kamera di jalan kota | https://unsplash.com/photos/hnM1z-_FGDM | Aunnop Suthumno |
+| `skynusa-portrait-2-*` | Perempuan berhijab abu-abu bertopang dagu | https://unsplash.com/photos/hxLv1jqP0_o | Muhammad Ruqi Yaddin |
+| `skynusa-portrait-3-*` | Pria muda dengan latar cahaya senja | https://unsplash.com/photos/TBUA5KHJn6k | Arjunsyah |

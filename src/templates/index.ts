@@ -4,8 +4,13 @@ import { arenaClub } from './arena-club';
 import { auraStudio } from './aura-studio';
 import { corporateNexa } from './corporate-nexa';
 import { finova } from './finova';
+import { gadgetku } from './gadgetku';
+import { glowstory } from './glowstory';
+import { puncakgear } from './puncakgear';
 import { serenity } from './serenity';
+import { skynusa } from './skynusa';
 import { startupClean } from './startup-clean';
+import { tanimakmur } from './tanimakmur';
 import { applyIntroduced } from './shared/compat';
 import { isPlainObject, toListItem } from './shared/utils';
 import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from './types';
@@ -13,6 +18,11 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // Urutan = urutan pilihan "Kode template" di admin (sama dengan sort_order katalog).
 // Template 2026-10-22 (arena-club, aura-studio, finova): brief di docs/platform/TEMPLATE-BRIEFS-2026-10.md.
 // Serenity (2026-10-25): studio wellness, hero foto layar penuh (src/templates/serenity/Serenity.tsx).
+// SkyNusa (2026-10-25): toko drone, hero lembar spesifikasi + keranjang demo (src/templates/skynusa/SkyNusa.tsx).
+// TaniMakmur (2026-10-25): toko tani, paket per tanaman (src/templates/tanimakmur/TaniMakmur.tsx).
+// PuncakGear (2026-10-25): toko perlengkapan mendaki, panduan per gunung + sewa alat (src/templates/puncakgear/PuncakGear.tsx).
+// GadgetKu.id (2026-10-25): toko aksesori HP, cari per tipe HP + custom casing (src/templates/gadgetku/GadgetKu.tsx).
+// GlowStory (2026-10-25): toko online kecantikan, kuis jenis kulit + langganan isi ulang (src/templates/glowstory/GlowStory.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -20,6 +30,11 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [auraStudio.code]: auraStudio,
   [finova.code]: finova,
   [serenity.code]: serenity,
+  [skynusa.code]: skynusa,
+  [tanimakmur.code]: tanimakmur,
+  [puncakgear.code]: puncakgear,
+  [gadgetku.code]: gadgetku,
+  [glowstory.code]: glowstory,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */

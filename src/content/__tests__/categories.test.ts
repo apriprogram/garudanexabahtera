@@ -36,7 +36,7 @@ const data = (templates: Template[]): SeoData => ({
 });
 
 describe('src/content/categories', () => {
-  it('memetakan nama kategori di DB ke 5 slug (aturan sama dengan categorySlugOf & seo.php)', () => {
+  it('memetakan nama kategori di DB ke 6 slug (aturan sama dengan categorySlugOf & seo.php)', () => {
     expect(CATEGORY_LIST.map((c) => c.slug)).toEqual([...CATEGORY_SLUGS]);
     expect(categoryOf('Company Profile')?.slug).toBe('company-profile');
     expect(categoryOf('Kecantikan & Klinik')?.slug).toBe('kecantikan-klinik');
@@ -44,6 +44,7 @@ describe('src/content/categories', () => {
     expect(categoryOf('Fintech & Startup')?.slug).toBe('fintech-startup');
     expect(categoryOf('Yoga & Wellness')?.slug).toBe('yoga-wellness');
     expect(templatesInCategory(FIXTURE_TEMPLATES, 'yoga-wellness').map((t) => t.slug)).toEqual(['serenity']);
+    expect(categoryOf('Toko Online')?.slug).toBe('toko-online');
     expect(categoryOf(' company profile ')?.slug).toBe('company-profile');
     expect(categoryOf('Kuliner')).toBeNull();
     expect(categoryOf('')).toBeNull();
@@ -99,7 +100,10 @@ describe('src/content/categories', () => {
     expect(isCategoryIndexable({ ...CATEGORIES['fintech-startup'], hasGuide: false }, 1)).toBe(false);
     expect(isCategoryIndexable(CATEGORIES['fintech-startup'], 0)).toBe(false);
 
-    const full = data(FIXTURE_TEMPLATES);
+    // Fixture bersama belum punya template "Toko Online" (2026-10-25): satu baris contoh agar semua kategori terisi
+    const toko: Template = { ...FIXTURE_TEMPLATES[4], id: 41, slug: 'skynusa', name: 'SkyNusa', category: 'Toko Online', template_code: 'skynusa' };
+    const full = data([...FIXTURE_TEMPLATES, toko]);
+    expect(getHead(categoryPath('toko-online'), data(FIXTURE_TEMPLATES)).robots).toBe('noindex,follow');
     for (const slug of CATEGORY_SLUGS) {
       const head = getHead(categoryPath(slug), full);
       expect(head.robots, slug).toBe('index,follow');
