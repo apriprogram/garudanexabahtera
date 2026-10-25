@@ -10,4 +10,5 @@ export const madani: TemplateDefinition = {
   sections: madaniSections,
   defaultContent: madaniContent,
   Component: Madani,
+  features: { posts: true },
 };

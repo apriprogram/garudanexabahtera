@@ -63,12 +63,23 @@ export interface TemplateRenderProps {
   motion?: boolean;
 }
 
+export interface TemplateFeatures {
+  /**
+   * Berita & pengumuman dikelola sebagai tulisan (tabel site_posts) dengan halaman sendiri /berita/{slug} dan
+   * /pengumuman/{slug}, foto, jumlah dilihat, dan SEO per tulisan (docs/platform/SITE-POSTS-SEO-SPEC.md). Daftar kode
+   * template yang sama ada di backend (SP_POST_TEMPLATE_CODES / POST_TEMPLATE_CODES).
+   */
+  posts?: boolean;
+}
+
 export interface TemplateDefinition {
   code: string;
   name: string;
   sections: TemplateSection[];
   defaultContent: SiteContent;
   Component: ComponentType<TemplateRenderProps>;
+  /** Fitur tambahan; tidak diisi = tidak ada */
+  features?: TemplateFeatures;
 }
 
 export const isListField = (field: AnyTemplateField): field is TemplateListField => field.type === 'list';

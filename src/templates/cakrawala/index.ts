@@ -10,4 +10,5 @@ export const cakrawala: TemplateDefinition = {
   sections: cakrawalaSections,
   defaultContent: cakrawalaContent,
   Component: Cakrawala,
+  features: { posts: true },
 };

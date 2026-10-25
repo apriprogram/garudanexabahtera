@@ -39,6 +39,9 @@ const KebijakanPengembalianDana = lazy(() => import('./pages/public/legal/Kebija
 const MyProjects = lazy(() => import('./pages/account/projects/MyProjects'));
 const MyProjectDetail = lazy(() => import('./pages/account/projects/MyProjectDetail'));
 const MyProjectDocument = lazy(() => import('./pages/account/projects/MyProjectDocument'));
+const SitePostsPage = lazy(() => import('./pages/account/posts/SitePostsPage'));
+const SitePostEditor = lazy(() => import('./pages/account/posts/SitePostEditor'));
+const SiteSeoPage = lazy(() => import('./pages/account/seo/SiteSeoPage'));
 
 /**
  * Website hanya berbahasa Indonesia (sakelar ID/EN & Google Translate dihapus): bersihkan sisa pilihan bahasa lama
@@ -116,7 +119,7 @@ function App() {
           <Route caseSensitive path="/template/kategori/:category" element={lazyPage(<CategoryPage />)} />
           <Route caseSensitive path="/template/:slug" element={lazyPage(<TemplateDetail />)} />
           <Route caseSensitive path="/demo/:slug" element={lazyPage(<TemplateDemo />)} />
-          <Route caseSensitive path="/situs/:siteId" element={lazyPage(<SitePreview />)} />
+          <Route caseSensitive path="/situs/:siteId/*" element={lazyPage(<SitePreview />)} />
           <Route caseSensitive path="/pesan/:slug" element={lazyPage(<OrderTemplate />)} />
           <Route caseSensitive path="/pesan-custom" element={lazyPage(<CustomOrder />)} />
           <Route caseSensitive path="/masuk" element={lazyPage(<CustomerLogin />)} />
@@ -145,6 +148,10 @@ function App() {
             <Route caseSensitive path="proyek" element={lazyPage(<MyProjects />)} />
             <Route caseSensitive path="proyek/:id" element={lazyPage(<MyProjectDetail />)} />
             <Route caseSensitive path="proyek/:id/dokumen/:docId" element={lazyPage(<MyProjectDocument />)} />
+            {/* Berita & pengumuman (template sekolah) dan SEO situs (docs/platform/SITE-POSTS-SEO-SPEC.md §8) */}
+            <Route caseSensitive path="situs/:siteId/berita" element={lazyPage(<SitePostsPage />)} />
+            <Route caseSensitive path="situs/:siteId/berita/:postId" element={lazyPage(<SitePostEditor />)} />
+            <Route caseSensitive path="situs/:siteId/seo" element={lazyPage(<SiteSeoPage />)} />
           </Route>
 
           {/* Login staf & panel admin */}
