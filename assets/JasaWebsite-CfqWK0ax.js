@@ -1,0 +1,1 @@
+import{r as e,t}from"./ServicePage-CISFvlj2.js";import{xt as n}from"./index-kO97aXBi.js";var r=n();function i(){return(0,r.jsx)(t,{service:e})}export{i as default};
