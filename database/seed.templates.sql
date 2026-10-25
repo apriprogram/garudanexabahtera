@@ -1,5 +1,5 @@
 -- ============================================================================
--- Garuda Nexa — CONTOH katalog template (2 Company Profile + 3 template 2026-10-22 + Serenity 2026-10-25)
+-- Garuda Nexa — CONTOH katalog template (2 Company Profile + 3 template 2026-10-22 + Serenity, SkyNusa 2026-10-25)
 -- ============================================================================
 -- Jalankan setelah migrasi 2026-10-19_004 (atau schema.sql untuk DB baru):
 --   mysql -u root db_garudanexabahtera < database/seed.templates.sql
@@ -91,6 +91,19 @@ Cocok untuk studio yoga dan pilates, kelas olahraga ringan, instruktur yoga priv
    1290000.00,
    '/assets/templates/serenity-preview.webp',
    '["/assets/templates/serenity-1.webp","/assets/templates/serenity-2.webp"]',
-   'serenity', NULL, 'published', 6);
+   'serenity', NULL, 'published', 6),
+
+  ('skynusa',
+   'SkyNusa',
+   'Toko Online',
+   'Website toko drone yang modern untuk menjual drone foto, wedding, dan pemetaan, lengkap dengan paket, sewa harian, dan garansi servis.',
+   'SkyNusa tampil seperti lembar spesifikasi yang rapi sejak layar pertama: judul dua nada di kanvas abu berkisi, foto drone dengan kartu angka spesifikasi, dan strip empat keunggulan toko. Di bawahnya tersusun kategori per kebutuhan (foto, wedding, pemetaan) yang memfilter daftar drone, kartu produk dengan harga coret dan tombol keranjang, paket bundling drone + tas + baterai cadangan, kalkulator sewa harian, garansi servis lokal, kelas terbang gratis, cerita pelanggan, tanya jawab, serta kontak dengan peta lokasi.
+
+Cocok untuk toko dan reseller drone, penyedia sewa drone, bengkel servis drone, hingga toko kamera yang juga menjual drone. Pengunjung bisa mengisi keranjang dan menghitung biaya sewa, lalu mengirim pesanan lewat WhatsApp; tidak ada pembayaran online. Semua teks, gambar, harga, isi paket, tarif sewa, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero lembar spesifikasi dengan foto drone dan kartu angka spesifikasi","Kategori per kebutuhan yang memfilter daftar drone","Kartu produk dengan harga coret, label, dan keranjang yang dikirim ke WhatsApp","Paket bundling drone + tas + baterai cadangan dengan label hemat","Kalkulator sewa harian: unit, tanggal, lama sewa, dan potongan","Garansi servis lokal, kelas terbang gratis, cerita pelanggan, dan FAQ","Kelola teks, gambar, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/skynusa-preview.webp',
+   '["/assets/templates/skynusa-1.webp","/assets/templates/skynusa-2.webp"]',
+   'skynusa', NULL, 'published', 7);
 
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'skynusa'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -33,7 +33,9 @@ const visibleText = (c: TemplatePageContent): string =>
 
 // Serenity (2026-10-25) belum ada di fixture prerender bersama: baris katalognya (migrasi 018) dibuat di sini
 const SERENITY: Template = { ...FIXTURE_TEMPLATES[4], id: 27, slug: 'serenity', name: 'Serenity', category: 'Yoga & Wellness', price: 1290000, template_code: 'serenity', sort_order: 6 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY].find((t) => t.slug === slug) as Template;
+// SkyNusa (2026-10-25, migrasi 019) juga belum ada di fixture prerender bersama
+const SKYNUSA: Template = { ...FIXTURE_TEMPLATES[4], id: 41, slug: 'skynusa', name: 'SkyNusa', category: 'Toko Online', price: 1590000, template_code: 'skynusa', sort_order: 7 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, SKYNUSA].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -54,6 +56,7 @@ describe('src/content/templates', () => {
       'aura-studio': 'Aura Studio: Template Website Klinik Kecantikan & Salon',
       finova: 'Finova: Template Website Fintech & Startup',
       serenity: 'Serenity: Template Website Studio Yoga & Pilates',
+      skynusa: 'SkyNusa: Template Website Toko Drone & Sewa Drone',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -63,6 +66,7 @@ describe('src/content/templates', () => {
       'aura-studio': 'Aura Studio: Template Website Klinik & Salon – Rp1,39 jt',
       finova: 'Finova: Template Website Fintech & Startup – Rp1,79 jt',
       serenity: 'Serenity: Template Website Studio Yoga – Rp1,29 jt',
+      skynusa: 'SkyNusa: Template Website Toko Drone – Rp1,59 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -124,6 +128,26 @@ describe('src/content/templates', () => {
     expect(serenity).not.toMatch(/menyembuhkan|mengobati|terapi|terbukti secara klinis|depresi|kecemasan/i);
     expect(serenity).toMatch(/bukan pengganti layanan kesehatan/);
     expect(serenity).toMatch(/tidak punya kalender/);
+    const skynusa = visibleText(templateContent('skynusa') as TemplatePageContent);
+    expect(skynusa).not.toMatch(/pembayaran online otomatis|bebas izin|tanpa izin|\bDJI\b/i);
+    expect(skynusa).toMatch(/tidak punya kalender ketersediaan unit/);
+    expect(skynusa).toMatch(/WhatsApp/);
+    expect(skynusa).toMatch(/bukan pembayaran online/);
+  });
+
+  it('SkyNusa: kata kunci "template website toko drone" di judul, meta, H1, dan paragraf pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('skynusa');
+    const keyword = /template website toko drone/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website toko drone: /);
+    expect(templateDescription(t)).toContain('Rp1.590.000 sudah termasuk domain, hosting & SSL tahun pertama');
+    expect(templateH1(t)).toMatch(keyword);
+    const c = templateContent('skynusa') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^SkyNusa adalah template website toko drone /);
+    const text = visibleText(c);
+    for (const phrase of ['website toko drone', 'website toko online drone', 'website sewa drone']) expect(text, phrase).toContain(phrase);
+    expect(TEMPLATE_COPY.skynusa?.niche).toBe('Toko & Sewa Drone');
+    expect(TEMPLATE_COPY.skynusa?.updated).toBe('2026-10-25');
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

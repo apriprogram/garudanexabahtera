@@ -141,3 +141,32 @@ hangat dan pita sutra pelangi (lukisan digital orisinal Garuda Nexa) di langit.
 | `serenity-portrait-1-*` | Perempuan berhijab tersenyum, latar dedaunan | https://unsplash.com/photos/2lFt6pdPPoQ | muhammad iswandi |
 | `serenity-portrait-2-*` | Pria berkemeja putih tersenyum | https://unsplash.com/photos/OFSQ6bHjFjs | Hà Nguyễn |
 | `serenity-portrait-3-*` | Perempuan berhijab hitam tersenyum di jalan | https://unsplash.com/photos/V_kHZleK2Cg | Yeremia Krisnamurti |
+
+## SkyNusa (toko drone, fiktif)
+
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero & sewa 4:5 1200×1500; kategori, produk, paket, servis, kelas 4:3
+1200×900; ajakan 16:9 1600×900); potret testimoni 1:1 `-480.webp` + `-240.webp`. Diunduh dan dicek lisensinya (Unsplash
+License, bukan Unsplash+) 2026-10-25. `skynusa-lipat-*` diberi bidang putih atas-bawah (bukan dipotong) agar baling-baling
+utuh; `skynusa-pemetaan-*` dihaluskan sedikit agar file WebP tetap ringan. Nama produk di demo generik; nama orang di
+testimoni fiktif dan tidak berhubungan dengan orang di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `skynusa-hero-*` | Drone lipat melayang di langit berkabut | https://unsplash.com/photos/6nRjHtBDk4o | Kaleb Kendall |
+| `skynusa-foto-*` | Foto udara pulau berbukit dan teluk biru | https://unsplash.com/photos/jgmkPYqOzN0 | David Köhler |
+| `skynusa-wedding-*` | Foto udara pengantin berkerudung panjang di antara tamu | https://unsplash.com/photos/k0L99LYpn0E | Ryleigh Henschen |
+| `skynusa-pemetaan-*` | Foto udara tegak lurus petak sawah | https://unsplash.com/photos/gkzByAvMki8 | Ivan Bandura |
+| `skynusa-mini-*` | Drone mini putih di latar putih | https://unsplash.com/photos/KmJjOfCsBk0 | JJ Shev |
+| `skynusa-lipat-*` | Drone lipat abu-abu di latar putih | https://unsplash.com/photos/PAf9rj_DKCU | Rythik |
+| `skynusa-sinema-*` | Drone sinema dengan kamera gimbal di atas pegunungan bersalju | https://unsplash.com/photos/pWtNPCpvVA8 | Mitch Nielsen |
+| `skynusa-survei-*` | Drone putih berkaki tinggi di langit biru | https://unsplash.com/photos/I9TaTsU_VnE | Annie Spratt |
+| `skynusa-paket-pemula-*` | Drone mini, remote, tas, dan aksesori tertata di meja kayu | https://unsplash.com/photos/TnjBw8dtE2U | Jp Valery |
+| `skynusa-paket-wedding-*` | Drone lipat, remote, kamera, dan lensa di meja kayu | https://unsplash.com/photos/28ydDnpskh0 | Aaron Burden |
+| `skynusa-paket-pemetaan-*` | Pengisi daya baterai drone tiga slot | https://unsplash.com/photos/9wDtHKYaDj8 | Xander Sauviller |
+| `skynusa-sewa-*` | Pria mengamati drone di atas perbukitan | https://unsplash.com/photos/uln2oLjaprc | Tandem X Visuals |
+| `skynusa-servis-*` | Teknisi menyolder papan elektronik di meja kerja | https://unsplash.com/photos/M64oBzDDjsY | Arabian Infotech Qatar |
+| `skynusa-kelas-*` | Pria menerbangkan drone di langit biru | https://unsplash.com/photos/CeHGoFLzvNU | Quilia |
+| `skynusa-cta-*` | Bukit kebun teh berkabut | https://unsplash.com/photos/WX2xpcJK3q0 | KIMO |
+| `skynusa-portrait-1-*` | Pria berkacamata membawa kamera di jalan kota | https://unsplash.com/photos/hnM1z-_FGDM | Aunnop Suthumno |
+| `skynusa-portrait-2-*` | Perempuan berhijab abu-abu bertopang dagu | https://unsplash.com/photos/hxLv1jqP0_o | Muhammad Ruqi Yaddin |
+| `skynusa-portrait-3-*` | Pria muda dengan latar cahaya senja | https://unsplash.com/photos/TBUA5KHJn6k | Arjunsyah |
