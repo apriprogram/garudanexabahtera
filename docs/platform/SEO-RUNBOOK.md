@@ -19,7 +19,7 @@ Semua contoh perintah dijalankan dari root repo di mesin deploy.
 
 Data prerender diambil dari API production (`PRERENDER_API`, bawaan `https://garudanexa.com`). Jadi harga, nama template, kategori dan `updated_at` di HTML, JSON-LD, sitemap dan llms.txt selalu sama dengan database pada saat deploy.
 
-`index.html` adalah shell netral yang juga disajikan untuk domain situs pembeli. Isinya hanya charset, viewport, `<title>Memuat situs…</title>`, favicon, theme-color dan font. Shell ini **tidak** berisi description, OG, canonical, manifest atau JSON-LD Garuda Nexa. Head lengkap host utama hanya ada di `_pre/*.html` dan ditulis `SeoManager` di klien, dan `SeoManager` hanya aktif di host utama (`isMainHost`). Di domain pembeli, head diatur `src/templates/siteHead.ts`.
+`index.html` adalah shell netral yang juga dipakai untuk domain situs pembeli. Isinya hanya charset, viewport, `<title>Memuat situs…</title>`, favicon, theme-color dan font. Shell ini **tidak** berisi description, OG, canonical, manifest atau JSON-LD Garuda Nexa. Head lengkap host utama hanya ada di `_pre/*.html` dan ditulis `SeoManager` di klien, dan `SeoManager` hanya aktif di host utama (`isMainHost`). Di domain pembeli, `site.php` menyisipkan head situs itu ke shell per request, lalu `src/templates/siteSeo.ts` menjaganya di browser (§8).
 
 ---
 
@@ -37,6 +37,7 @@ Deploy ulang (`node scripts/deploy-cpanel.mjs --push`, lalu Pull di cPanel, lalu
 | Profil sosial resmi diisi di Admin → Pengaturan (footer_instagram, dst.) | `sameAs` Organization dibaca dari settings saat deploy | Nilai `#` atau kosong dianggap belum ada. `garudanexa.id` dan akun `@garudanexa` sengaja tidak dipakai (keputusan default 4) |
 | Admin mengubah **kontak** (nomor WhatsApp/telepon, email: `footer_whatsapp`, `footer_phone`, `cta_phone`, …), **menu navbar** (Kelola navbar), **hero** (judul, gambar, video) atau **section yang disembunyikan** | Nilai ini ikut tertulis di HTML mentah semua halaman `_pre` dan di `gn-preload`. Crawler dan mesin AI terus membaca nilai lama sampai deploy ulang, walaupun pengunjung dengan JavaScript sudah melihat yang baru | Setelah deploy, cek footer `/` dan `/kontak` tanpa JavaScript (`curl -s $B/kontak \| grep -o '62[0-9]*' \| sort -u`) |
 | Artikel panduan **selesai disunting dan dicek faktanya** | Artikel draf tidak dikirim API publik (§4a) | Admin → Pengaturan website → Panduan → Edit → nyalakan **Terbitkan**, lalu deploy (prerender, sitemap, llms.txt) dan IndexNow |
+| Template situs pembeli **baru**, atau nama/tagline/deskripsi hero/logo **bawaan** template berubah | `site.php` membaca bawaan template dari `backend/modules/site_defaults.json`, bukan dari kode TypeScript (§8) | Jalankan `UPDATE_SITE_DEFAULTS=1 npx vitest run __tests__/backend/site-defaults.test.ts`, commit berkasnya, lalu deploy |
 
 Setelah deploy, jalankan pemeriksaan di §7.
 
@@ -221,6 +222,80 @@ Uji manual:
 - **Rich Results Test** (`https://search.google.com/test/rich-results`) untuk setiap `/template/{slug}`: Product snippet / Merchant listing dan Breadcrumb harus valid. Peringatan tentang `shippingDetails`, `hasMerchantReturnPolicy` atau `review` boleh: produk digital, tanpa ulasan buatan.
 - **validator.schema.org** untuk `/`: Organization dan WebSite tanpa error.
 - **Sharing Debugger Facebook** dan pratinjau tautan WhatsApp untuk `/` dan satu halaman template: gambar, judul dan harga (di judul) tampil.
-- **Domain pembeli:** buka satu situs pembeli. Lihat sumber halaman: judul dan description dari situs itu sendiri, tanpa `data-gn`, tanpa `garudanexa.com/#organization`, tanpa canonical ke garudanexa.com.
+- **Domain pembeli:** jalankan pemeriksaan §8.3 untuk satu situs pembeli. Sumber halaman: judul dan description dari situs itu sendiri, tanpa `data-gn`, tanpa `garudanexa.com/#organization`, tanpa canonical ke garudanexa.com.
 
 Tipe MIME `.webmanifest` dan `.txt` diatur di `deploy/cpanel/htaccess` (milik WP2). Jika `site.webmanifest` tersaji sebagai `text/plain` atau `application/octet-stream`, tambahkan `AddType application/manifest+json .webmanifest` di blok `mod_mime`.
+
+---
+
+## 8. Domain pembeli: `site.php`
+
+Situs pembeli (template yang dipesan dan sudah aktif) disajikan dari `public_html` yang sama dengan garudanexa.com. Kontraknya ada di [SITE-POSTS-SEO-SPEC.md](SITE-POSTS-SEO-SPEC.md) §3, §5 dan §6.
+
+### 8.1 Cara kerjanya
+
+| Bagian | Isi |
+|---|---|
+| `.htaccess` (blok "Domain pembeli") | Untuk host **selain** `garudanexa.com`: `/`, `/index.html`, path yang bukan file nyata, `robots.txt` dan `sitemap.xml` → `site.php`. `llms.txt`/`llms-full.txt` → 404. File nyata (`/assets/…`, gambar unggahan) tetap disajikan langsung. |
+| `site.php` (disalin `scripts/prerender.mjs` ke akar build) | Mencari situs di `template_sites` berdasarkan host, termasuk varian `www.`, dengan status apa pun. Lalu menulis jawabannya (tabel di bawah). |
+| `modules/site_defaults.json` | Nama, tagline, deskripsi, logo dan fitur tulisan bawaan setiap template. PHP tidak bisa menjalankan `resolveContent`, jadi nilai ini ditulis dari registri `TEMPLATES` oleh tes `site-defaults.test.ts`, dan disalin `prerender.mjs` ke `modules/`. |
+| `src/templates/siteSeo.ts` | Aturan head yang sama di browser (`buildSiteHead`, `applySiteSeoHead`). Klien hanya mengubah tag bertanda `data-site-seo`. Tes `__tests__/seo/site-seo.test.ts` membandingkan hasil PHP dan TypeScript untuk masukan yang sama. |
+
+Jawaban `site.php`:
+
+| Request | Jawaban |
+|---|---|
+| Host utama lain (`MAIN_HOSTS` di `.env`, bawaan sama dengan `src/templates/siteHosts.ts`, mis. `garudanexabahtera.web.id`), atau alamat IP | `index.html` dan file statis apa adanya, seperti sebelum `site.php` ada |
+| Host = varian `www.`/tanpa `www.` dari domain tersimpan | 301 ke `https://{domain tersimpan}{path}` |
+| `/`, `/berita`, `/pengumuman`, `/berita/{slug}`, `/pengumuman/{slug}` | 200: shell + head (title, description, robots, canonical, OG, Twitter, JSON-LD, ikon = logo situs, kode verifikasi Google/Bing) + `<main>` sederhana untuk crawler + `<script id="gn-preload">` berisi jawaban API yang dibutuhkan render pertama |
+| `/berita/`, `/berita/{slug}/` | 301 ke tanpa garis miring; `/index.html` → 301 ke `/` |
+| Tulisan draf/tidak ada, path lain, host tidak dikenal, situs nonaktif | 404 + `X-Robots-Tag: noindex` |
+| `robots.txt` | Per domain: `Allow` untuk aksi baca situs (`get_site_public`, `get_site_seo`, `get_site_posts`, `get_site_post`), `Disallow: /api.php`, `Sitemap: https://{domain}/sitemap.xml`. Situs nonaktif tetap `Allow: /` supaya Google melihat 404-nya |
+| `sitemap.xml` | Beranda, `/berita` dan `/pengumuman` yang punya tulisan, setiap tulisan terbit tanpa "Sembunyikan dari Google". Kosong bila situs belum boleh diindeks |
+| Database tidak bisa dihubungi | 503 + `Retry-After: 300`. Tabel `site_seo`/`site_posts` yang belum ada (migrasi 029 belum dijalankan) dianggap kosong, jadi situs tetap tampil |
+
+**Kapan situs boleh diindeks** (`robots` = `index,follow`): situs aktif, "Tampil di Google" di `/akun/situs/{id}/seo` tidak diatur ke **Tidak**, dan bila diatur **Otomatis**, nama sekolah/usaha di konten sudah diganti dari nama bawaan template. Daftar `/berita` hanya diindeks bila berisi minimal satu tulisan terbit. Tulisan dengan "Sembunyikan dari Google" selalu `noindex`.
+
+Domain pembeli tidak perlu deploy ulang saat isi, tulisan atau pengaturan SEO-nya berubah: semuanya dibaca dari database per request. IndexNow tidak dipakai untuk domain pembeli (spec §10).
+
+### 8.2 Syarat di server (pemilik)
+
+- Domain pembeli diarahkan ke `public_html` yang sama (alias/addon domain di cPanel) dan punya sertifikat SSL (AutoSSL). `.htaccess` memaksa HTTPS untuk semua host.
+- `.env` di luar `public_html` dibaca juga oleh `site.php` (MySQL). `MAIN_HOSTS` opsional: isi hanya bila host aplikasi utama berbeda dari daftar bawaan.
+- Migrasi `2026-10-26_029_site_posts_seo.sql` sudah dijalankan.
+- Pembeli memverifikasi domainnya sendiri di Google Search Console (kode meta di `/akun/situs/{id}/seo`, atau DNS), lalu mengirim `https://{domain}/sitemap.xml`.
+
+### 8.3 Memeriksa satu domain pembeli
+
+```bash
+D=https://sekolahcontoh.sch.id        # domain pembeli, persis seperti di Admin → Template aktif
+curl -sI $D/ | grep -iE '^(HTTP|content-type|cache-control|x-robots-tag)'   # 200, text/html, no-cache, tanpa x-robots-tag
+curl -s $D/ | grep -o '<title>[^<]*</title>'                                 # nama situs, bukan "Memuat situs…"
+curl -s $D/ | grep -o 'name="robots" content="[^"]*"'                        # index,follow (atau noindex,follow bila belum boleh, §8.1)
+curl -s $D/ | grep -o 'rel="canonical" href="[^"]*"'                         # https://{domain}/
+curl -s $D/ | grep -c 'data-gn\|garudanexa.com/#organization\|favicon.ico'  # 0
+curl -s $D/ | grep -c 'id="gn-preload"'                                      # 1
+curl -s $D/ | grep -o 'google-site-verification" content="[^"]*"'            # bila pembeli mengisi kode Google
+curl -sI "${D/https:\/\//https://www.}/" | grep -i '^location'               # https://{domain}/ (bila DNS www ada)
+curl -s -o /dev/null -w '%{http_code}\n' $D/halaman-tidak-ada                # 404
+curl -sI $D/halaman-tidak-ada | grep -i '^x-robots-tag'                      # noindex
+curl -s $D/robots.txt                                                        # Sitemap: https://{domain}/sitemap.xml
+curl -s $D/sitemap.xml | grep -o '<loc>[^<]*</loc>'                          # hanya URL domain ini
+curl -s -o /dev/null -w '%{http_code}\n' $D/llms.txt                         # 404
+curl -s -o /dev/null -w '%{http_code}\n' $D/site.php                         # 404
+# template sekolah: daftar & satu tulisan
+curl -s $D/berita | grep -o '<h1>[^<]*</h1>'                                 # <h1>Berita</h1>
+curl -s $D/berita | grep -o 'href="/berita/[a-z0-9-]*"' | head -3
+```
+
+Lalu, di browser:
+
+- **Rich Results Test** untuk satu tulisan `/berita/{slug}`: `NewsArticle` (pengumuman: `Article`) dan `Breadcrumb` valid.
+- **Search Console → Inspeksi URL** (milik pembeli): halaman yang dirender menampilkan isi situs, bukan "Situs belum bisa dimuat". Bila gagal, cek `robots.txt` domain itu: aksi `get_site_*` harus `Allow`.
+- **Pratinjau tautan WhatsApp**: judul, deskripsi dan gambar (gambar SEO situs, foto tulisan, atau logo PNG/JPG/WebP; logo SVG tidak dipakai sebagai gambar bagikan).
+
+### 8.4 Menguji secara lokal
+
+- Tes: `npx vitest run __tests__/backend/site-renderer.test.ts __tests__/seo/site-seo.test.ts __tests__/backend/site-defaults.test.ts`. Tes renderer juga menjalankan `php -S` dengan router yang meniru `.htaccess`, di database uji sementara pada MySQL lokal (`SITE_TEST_MYSQL_HOST`/`_USER`/`_PASS`, bawaan `127.0.0.1`/`root`/kosong; dilewati bila MySQL tidak ada).
+- Server dev Vite tidak menjalankan `site.php`. Situs pembeli di `http://{domain}.localhost:5173` tetap memakai head dari `siteSeo.ts` di browser (SiteHostGate, `src/templates/siteHosts.ts`).
+- Node/Docker tidak punya padanan `site.php` (spec §10); di sana domain pembeli tetap tanpa head dari server.

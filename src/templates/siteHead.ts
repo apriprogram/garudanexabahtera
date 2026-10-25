@@ -1,4 +1,8 @@
 // Judul tab, meta description, favicon, dan theme-color dari konten situs pembeli. Mengembalikan fungsi pemulih.
+//
+// DIGANTIKAN src/templates/siteSeo.ts (docs/platform/SITE-POSTS-SEO-SPEC.md §5): applySiteSeoHead menulis head lengkap
+// (canonical, robots, OG, JSON-LD) dengan aturan yang sama dengan backend/site.php. File ini tinggal untuk pemanggil
+// lama dan tes template (siteTitle, applySiteHead); jangan dipakai untuk kode baru.
 import { getTemplate, parseSiteContent, resolveContent } from './index';
 import { getSection, parseHex, safeImage, text } from './shared/utils';
 
@@ -28,8 +32,12 @@ function setMeta(name: string, value: string): () => void {
   };
 }
 
+/** @deprecated Pakai applySiteSeoHead (siteSeo.ts). */
 export function applySiteHead(templateCode: string | null | undefined, rawContent: unknown): () => void {
   if (typeof document === 'undefined') return () => undefined;
+  // Head dari site.php / applySiteSeoHead (tag bertanda data-site-seo) sudah lengkap: jangan ditimpa aturan lama
+  // (judul tanpa SEO situs, deskripsi tanpa pemotongan 155), supaya Google tidak melihat dua versi.
+  if (document.head.querySelector('[data-site-seo]')) return () => undefined;
   const def = getTemplate(templateCode);
   const content = def ? resolveContent(def, parseSiteContent(rawContent)) : {};
   const brand = getSection(content, 'brand');

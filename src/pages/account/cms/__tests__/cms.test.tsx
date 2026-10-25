@@ -314,6 +314,27 @@ describe('SiteEditor', { timeout: 30_000 }, () => {
     expect(event.defaultPrevented).toBe(false);
   });
 
+  it('navigasi situs di bawah kartu Situs Anda; template sekolah: menu Berita & catatan di section Pengumuman', async () => {
+    mockApi();
+    renderEditor();
+    await screen.findByRole('heading', { name: 'Kelola konten situs' });
+    let nav = screen.getByRole('navigation', { name: 'Menu situs' });
+    expect(within(nav).getByRole('link', { name: 'Konten' })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByRole('link', { name: 'SEO' })).toHaveAttribute('href', '/akun/situs/1/seo');
+    expect(within(nav).queryByRole('link', { name: 'Berita & Pengumuman' })).not.toBeInTheDocument();
+    cleanup();
+
+    site.template_code = 'madani';
+    renderEditor();
+    await screen.findByRole('heading', { name: 'Kelola konten situs' });
+    nav = screen.getByRole('navigation', { name: 'Menu situs' });
+    expect(within(nav).getByRole('link', { name: 'Berita & Pengumuman' })).toHaveAttribute('href', '/akun/situs/1/berita');
+    const section = document.querySelector<HTMLElement>('[data-cms-section="announcements"]')!;
+    fireEvent.click(within(section).getByRole('button', { name: /^Pengumuman/ }));
+    expect(within(section).getByText(/Kelola pengumuman lengkap/)).toBeInTheDocument();
+    expect(within(section).getByRole('link', { name: 'Buka Berita & Pengumuman' })).toHaveAttribute('href', '/akun/situs/1/berita?jenis=pengumuman');
+  });
+
   it('template tidak dikenal & situs bukan milik sendiri', async () => {
     site.template_code = 'tidak-ada';
     mockApi();

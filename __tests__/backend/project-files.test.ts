@@ -300,7 +300,7 @@ describe('access: staff only, folder closed to the web', () => {
     // Before the SPA fallback, inside the mod_rewrite block
     const at = HTACCESS.indexOf(rule![0]);
     expect(at).toBeGreaterThan(HTACCESS.indexOf('RewriteEngine On'));
-    expect(at).toBeLessThan(HTACCESS.indexOf('RewriteRule ^ index.html [L]'));
+    expect(at).toBeLessThan(HTACCESS.indexOf('RewriteRule ^ site.php [L]'));
   });
 
   it('nginx refuses the dokumen folder before the static/image locations', () => {

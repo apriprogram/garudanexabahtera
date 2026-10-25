@@ -42,6 +42,9 @@ import { logVisit, visitSourceFields, visitSources } from './modules/visits.js';
 import { handleGuideAction } from './modules/guides.js';
 // Masuk & daftar pembeli dengan Google: client ID publik + verifikasi ID token Google (docs/platform/GOOGLE-LOGIN.md)
 import { handleGoogleAuthAction } from './modules/google_auth.js';
+// Berita & pengumuman situs pembeli (site_posts, site_post_views) + SEO situs (site_seo), docs/platform/SITE-POSTS-SEO-SPEC.md.
+// Kepala halaman, robots.txt dan sitemap.xml domain pembeli hanya ada di backend/site.php (PHP); Node tidak punya padanannya
+import { handleSitePostAction } from './modules/site_posts.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -168,6 +171,7 @@ app.get('/api.php', async (req, res) => {
   if (await handleProjectDocsAction(action, req.query, req, res, pool)) return;
   if (await handleGuideAction(action, req.query, req, res, pool)) return;
   if (await handleGoogleAuthAction(action, req.query, req, res, pool)) return;
+  if (await handleSitePostAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -380,6 +384,7 @@ app.post('/api.php', async (req, res) => {
   if (await handleProjectDocsAction(action, req.body, req, res, pool)) return;
   if (await handleGuideAction(action, req.body, req, res, pool)) return;
   if (await handleGoogleAuthAction(action, req.body, req, res, pool)) return;
+  if (await handleSitePostAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {

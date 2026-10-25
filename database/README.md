@@ -122,6 +122,14 @@ dengan `UNIQUE KEY uq_users_google_sub`, untuk tombol "Daftar/Login dengan Googl
 Jalankan SEBELUM deploy kode yang memakainya (`customer_google_auth` membaca kolom ini). Client ID Google tidak ada di
 migrasi: diisi pemilik lewat setting `google_client_id` atau env `GOOGLE_CLIENT_ID` (GOOGLE-LOGIN.md §3).
 
+`2026-10-26_029` (skema saja, docs/platform/SITE-POSTS-SEO-SPEC.md): tiga tabel baru tanpa ALTER, jadi aman diimpor utuh
+lewat phpMyAdmin dan aman diulang. `site_posts` (berita & pengumuman template sekolah `madani`/`cakrawala`, slug unik
+per situs, foto di `assets/sites/{site}/posts/`), `site_post_views` (jumlah dilihat per tulisan, terpisah supaya
+tayangan tidak mengubah `updated_at`/lastmod sitemap) dan `site_seo` (pengaturan SEO per situs pembeli, semua template;
+tidak ada baris = bawaan, gambar di `assets/sites/{site}/seo/`). Jalankan SEBELUM deploy kode yang memakainya
+(`backend/modules/site_posts.php` dan `backend/site.php`). Folder foto ikut `assets/sites/`, jadi tidak ikut git maupun
+deploy.
+
 `2026-10-25_018` (data saja) membuat/menyamakan baris katalog `serenity` (template wellness) berdasarkan slug, pola sama
 dengan 008: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan
 `template_code` `serenity` ter-deploy. DB baru cukup `seed.templates.sql`.
@@ -324,3 +332,4 @@ kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin per
 | 2026-10-19_004 | Marketplace template: tabel `templates`, `template_orders`, `template_sites`, `template_order_logs`; `users.role` + `customer`; `project_client.show_on_website` + `source`. Data sekali jalan: navbar Template/Projects/Proses/FAQ (menu lain dinonaktifkan, tidak dihapus) dan `faq_data` tanpa harga/paket jasa custom. |
 | 2026-10-19_005 | **Belum dijalankan / menunggu persetujuan.** `DROP TABLE IF EXISTS` 25 tabel `monitor_*` / `monitoring_*`. |
 | 2026-10-20_006 | Data saja, lewat aksi admin `encrypt_list_products` (bukan file SQL, tidak tercatat di `schema_migrations`): `list_products.users` dienkripsi AES-256-GCM dengan `LIST_PRODUCTS_KEY`. Lihat "Migrasi 006" di atas. |
+| 2026-10-26_029 | Skema saja: tabel `site_posts` (berita & pengumuman template sekolah), `site_post_views` (jumlah dilihat per tulisan) dan `site_seo` (SEO per situs pembeli). Lihat catatan 029 di atas dan docs/platform/SITE-POSTS-SEO-SPEC.md. |

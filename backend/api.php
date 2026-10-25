@@ -41,6 +41,7 @@ const PUBLIC_ACTIONS = [
     'get_showcase_stats', 'showcase_like', 'showcase_view', 'nexa_chat',
     'get_guides', 'get_guide', 'guide_view',
     'google_auth_config', 'customer_google_auth',
+    'get_site_seo', 'get_site_posts', 'get_site_post', 'site_post_view',
 ];
 const ANY_ROLE_ACTIONS = [
     'pd_notifications_list', 'pd_notifications_read', 'pd_file',
@@ -49,6 +50,7 @@ const CUSTOMER_ACTIONS = [
     'customer_create_order', 'customer_pay_order', 'customer_get_orders', 'customer_get_order',
     'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment', 'customer_get_order_quote',
     'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
+    'customer_get_site_posts', 'customer_save_site_post', 'customer_delete_site_post', 'customer_get_site_seo', 'customer_save_site_seo',
 ];
 const ADMIN_ACTIONS = [
     'add_user', 'delete_user',
@@ -108,6 +110,9 @@ require_once __DIR__ . '/modules/visits.php';
 // Artikel panduan /panduan dari tabel guide_articles: daftar & isi publik, jumlah dilihat (guide_views), kelola di tab
 // admin Panduan (handle_guide_action)
 require_once __DIR__ . '/modules/guides.php';
+// Berita & pengumuman situs pembeli (template sekolah) dan SEO situs: bacaan publik, kelola di /akun (handle_site_post_action,
+// docs/platform/SITE-POSTS-SEO-SPEC.md)
+require_once __DIR__ . '/modules/site_posts.php';
 // Masuk & daftar pembeli dengan Google: client ID publik + verifikasi ID token Google (handle_google_auth_action,
 // docs/platform/GOOGLE-LOGIN.md)
 require_once __DIR__ . '/modules/google_auth.php';
@@ -191,6 +196,12 @@ if (handle_guide_action($conn, $action, $input, $authUser)) {
 }
 // Masuk & daftar pembeli dengan Google: google_auth_config, customer_google_auth (backend/modules/google_auth.php)
 if (handle_google_auth_action($conn, $action, $input)) {
+    $conn->close();
+    exit();
+}
+// Berita & pengumuman + SEO situs pembeli: get_site_seo/get_site_posts/get_site_post/site_post_view publik, customer_*
+// pembeli pemilik situs (backend/modules/site_posts.php)
+if (handle_site_post_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }

@@ -8,7 +8,8 @@
 //   3. per rute: head (getHead + renderHeadTags) + HTML aplikasi + <script id="gn-preload"> → OUT/_pre/{path}.html
 //   4. OUT/app.html (cangkang noindex untuk rute aplikasi), OUT/404.html (NotFound, noindex)
 //   5. sitemap.xml, llms.txt, llms-full.txt (scripts/seo/*.mjs, WP4), OG (opsional, WP3)
-//   6. OUT/seo.php + OUT/_pre/seo-fallback.json (cadangan template yang terbit setelah deploy)
+//   6. OUT/seo.php + OUT/_pre/seo-fallback.json (cadangan template yang terbit setelah deploy), OUT/site.php +
+//      OUT/modules/site_defaults.json (head SEO domain pembeli)
 //   7. daftar rute prerender ditulis ke blok gn-prerender di OUT/.htaccess
 //   8. cek kewarasan: tepat 1 <h1>/<title>/canonical per halaman, JSON-LD valid, title unik
 //
@@ -477,6 +478,22 @@ export function seoFallbackContext(ssr, data, sampleSlug, builtAt) {
   };
 }
 
+// ─── site.php ────────────────────────────────────────────────────────────────
+
+/**
+ * backend/modules/site_defaults.json → OUT/modules/site_defaults.json (dibaca site.php dan site_posts.php di produksi).
+ * Berkas rusak menggagalkan build: tanpa bawaan template, head domain pembeli kehilangan nama & deskripsi bawaan.
+ */
+export function copySiteDefaults(root, outDir) {
+  const source = join(root, 'backend', 'modules', 'site_defaults.json');
+  const defaults = JSON.parse(readFileSync(source, 'utf8'));
+  if (!defaults || typeof defaults !== 'object' || Array.isArray(defaults) || Object.keys(defaults).length === 0) {
+    throw new Error(`${source} kosong atau bukan objek: jalankan UPDATE_SITE_DEFAULTS=1 npx vitest run __tests__/backend/site-defaults.test.ts`);
+  }
+  mkdirSync(join(outDir, 'modules'), { recursive: true });
+  cpSync(source, join(outDir, 'modules', 'site_defaults.json'));
+}
+
 // ─── Builder paket lain (WP3/WP4) ────────────────────────────────────────────
 
 async function optionalModule(root, rel, exportsNeeded, strict, { required = true } = {}) {
@@ -667,6 +684,11 @@ export async function prerender({ root, outDir, deployDir, strict }) {
   // diprerender supaya bentuknya sama persis; Product & BreadcrumbList dibuat seo.php dari DB.
   cpSync(join(root, 'backend', 'seo.php'), join(outDir, 'seo.php'));
   writeFileSync(join(preDir, 'seo-fallback.json'), JSON.stringify(seoFallbackContext(ssr, data, slugs[0], builtAt), null, 2));
+  // site.php: head SEO, robots.txt & sitemap.xml domain pembeli (SITE-POSTS-SEO-SPEC §6), memakai helper seo.php. Bawaan
+  // template-nya (modules/site_defaults.json) tidak ikut salinan modules/*.php di deploy-cpanel.mjs, jadi disalin di sini;
+  // modules/.htaccess menutupnya dari web.
+  cpSync(join(root, 'backend', 'site.php'), join(outDir, 'site.php'));
+  copySiteDefaults(root, outDir);
 
   // Rute prerender → .htaccess
   const htaccessFile = join(outDir, '.htaccess');

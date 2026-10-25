@@ -43,6 +43,9 @@ Peran `users.role`: `admin`, `user` (staf), **`customer`** (baru, pembeli templa
     `get_site_public`, `submit_custom_order`, `customer_register`, `midtrans_notification`, `get_payment_config`.
   - `CUSTOMER_ACTIONS` (token dengan role `customer` SAJA): semua `customer_*` + `dev_simulate_payment`.
     Data selalu difilter `user_id = token.sub` (cegah IDOR; order/site milik orang lain → 404).
+  - Berita & pengumuman + SEO situs pembeli (§6, docs/platform/SITE-POSTS-SEO-SPEC.md): publik `get_site_seo`,
+    `get_site_posts`, `get_site_post`, `site_post_view`; pembeli `customer_get_site_posts`, `customer_save_site_post`,
+    `customer_delete_site_post`, `customer_get_site_seo`, `customer_save_site_seo`.
   - Selain itu = **aksi staf**: token role `admin` atau `user`. Token `customer` → 403.
   - `ADMIN_ACTIONS` (admin saja): yang lama + `admin_delete_template`.
   - **Nilai kontrak** (`project_client.price`, "Nilai kontrak" dokumen proyek) hanya diisi/diubah admin (keputusan
@@ -326,6 +329,33 @@ gambar tersimpan di posisi yang sama. Isian baru opsional, dirapikan `update_set
 yang berhasil: file buatan modul di `assets/projects/` yang tidak dirujuk `portfolio_data` (dibandingkan per nama) dan
 berumur lebih dari 24 jam dihapus (PHP juga `.project_video_<hex>.part` > 1 jam); tidak menyapu bila `portfolio_data`
 tersimpan bukan JSON array. `assets/projects/` hanya berisi unggahan: di-ignore git dan dikecualikan dari deploy.
+
+**Berita & pengumuman situs pembeli + SEO situs** (`backend/modules/site_posts.php` / `site_posts.js`, kontrak lengkap
+docs/platform/SITE-POSTS-SEO-SPEC.md §4, tipe `src/types/sitePosts.ts`). Tabel migrasi `2026-10-26_029`:
+`site_posts` (tulisan; slug unik per situs lintas jenis), `site_post_views` (jumlah dilihat per tulisan, terpisah supaya
+tayangan tidak mengubah `updated_at`) dan `site_seo` (satu baris per situs; tidak ada baris = bawaan). Fitur tulisan
+hanya untuk template berkode `madani` dan `cakrawala` (`SP_POST_TEMPLATE_CODES` = `POST_TEMPLATE_CODES` =
+`features.posts` di registri template); SEO untuk semua template. Error: `VALIDATION` (400, `errors` per field),
+`SITE_NOT_FOUND` (404), `POST_NOT_FOUND` (404), `POSTS_UNAVAILABLE` (403, aksi tulisan pada template tanpa fitur
+tulisan), `SITE_SUSPENDED` (409, menulis ke situs nonaktif), `SLUG_TAKEN` / `POST_LIMIT` (409), 429 untuk batas laju.
+Waktu (`updated_at`, `created_at`, `last_viewed_at`) berupa ISO 8601 WIB `YYYY-MM-DDTHH:MM:SS+07:00`.
+
+| Action | Input | Output |
+|---|---|---|
+| `get_site_seo` (publik, GET) | `site_id` | `{ seo: { title, description, og_image, schema_type, indexable } }`, hanya situs `active` |
+| `get_site_posts` (publik, GET) | `site_id, kind ('berita'\|'pengumuman'), limit? (1–100, bawaan 12)` | `{ posts: SitePostSummary[], total }` tulisan terbit, `published_at DESC, id DESC`; template tanpa fitur tulisan → `{ posts: [], total: 0 }` |
+| `get_site_post` (publik, GET) | `site_id, slug` | `{ post: SitePostPublic }`; draf/tidak ada → 404 `POST_NOT_FOUND` |
+| `site_post_view` (publik, POST) | `site_id, slug` | `{ views }`; +1 per kunjungan (klien sekali per sesi), maks 300/jam per IP; user-agent perayap tidak dihitung |
+| `customer_get_site_posts` (GET) | `site_id` | `{ posts: SitePostAdmin[] (draf juga, dengan view_count, last_viewed_at, url), limits: { max_posts: 500 } }` |
+| `customer_save_site_post` | `site_id, post: SitePostInput` (tanpa `post.id` = baru) | `{ post: SitePostAdmin }`; slug kosong dibuat dari judul (unik, `-2`, `-3`, …); foto data URI PNG/JPG/WEBP/GIF ≤ 2 MB → `assets/sites/{site}/posts/post_<12 hex>.<ext>`, foto lama dihapus; maks 500 tulisan per situs, 120 simpan/jam per pengguna |
+| `customer_delete_site_post` | `site_id, post_id` | `{ success: true }`; juga menghapus jumlah dilihat dan fotonya |
+| `customer_get_site_seo` (GET) | `site_id` | `{ seo: SiteSeoSettings, status: { indexable, reasons: ('suspended'\|'manual_noindex'\|'default_content')[] }, urls: { home, sitemap, robots } }` |
+| `customer_save_site_seo` | `site_id, seo: Partial<SiteSeoSettings>` (kunci yang tidak dikirim tetap; kode verifikasi boleh berupa seluruh tag meta) | sama dengan `customer_get_site_seo`; `og_image` data URI → `assets/sites/{site}/seo/seo_<12 hex>.<ext>` |
+
+Halaman situs pembeli di domainnya sendiri (kepala halaman SEO, `robots.txt`, `sitemap.xml`, 404/301 per rute) dirender
+`backend/site.php`, yang me-require `site_posts.php` untuk konstanta dan fungsi murninya. **Node tidak punya padanan
+`site.php`**: produksi adalah cPanel/PHP, jadi di Node/docker hanya aksi API di atas yang setara, sedangkan domain
+pembeli tetap dilayani `index.html` tanpa kepala SEO server (SITE-POSTS-SEO-SPEC.md §6 dan §10).
 
 ### Struktur kode backend
 - PHP: `backend/modules/templates.php` berisi fungsi `handle_platform_action(mysqli $conn, string $action, array $input, ?array $user): bool`

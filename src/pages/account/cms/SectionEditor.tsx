@@ -1,5 +1,6 @@
 // Satu section template di panel kiri CMS: bisa diciutkan, sakelar tampil/sembunyi (section toggleable),
 // lalu field-field section (teks, gambar, warna, list).
+import type { ReactNode } from 'react';
 import { ChevronDown, EyeOff } from 'lucide-react';
 import { isListField, type ListItem, type SiteContent, type TemplateSection } from '../../../templates/types';
 import { CmsField } from './CmsField';
@@ -23,6 +24,8 @@ interface SectionEditorProps {
   errors: ContentErrors;
   onBlurPath: (path: string) => void;
   readOnly?: boolean;
+  /** Pemberitahuan di atas field section ini, mis. berita/pengumuman dikelola di menu Berita & Pengumuman */
+  notice?: ReactNode;
 }
 
 export function SectionEditor({
@@ -39,6 +42,7 @@ export function SectionEditor({
   errors,
   onBlurPath,
   readOnly,
+  notice,
 }: SectionEditorProps) {
   const enabled = isSectionEnabled(content, section.key);
   const panelId = `cms-section-${section.key}`;
@@ -98,6 +102,7 @@ export function SectionEditor({
 
       {open && (
         <div id={panelId} className="space-y-5 border-t border-line px-4 py-5 sm:px-5">
+          {notice}
           {!enabled && (
             <Notice tone="info">
               Bagian ini disembunyikan dari situs. Isiannya tetap tersimpan dan tampil lagi saat Anda mengaktifkan sakelarnya.

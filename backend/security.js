@@ -41,6 +41,7 @@ export const PUBLIC_ACTIONS = new Set([
   'get_showcase_stats', 'showcase_like', 'showcase_view', 'nexa_chat',
   'get_guides', 'get_guide', 'guide_view',
   'google_auth_config', 'customer_google_auth',
+  'get_site_seo', 'get_site_posts', 'get_site_post', 'site_post_view',
 ]);
 export const ANY_ROLE_ACTIONS = new Set([
   'pd_notifications_list', 'pd_notifications_read', 'pd_file',
@@ -49,6 +50,7 @@ export const CUSTOMER_ACTIONS = new Set([
   'customer_create_order', 'customer_pay_order', 'customer_get_orders', 'customer_get_order',
   'customer_cancel_order', 'customer_get_site', 'customer_save_site_content', 'dev_simulate_payment', 'customer_get_order_quote',
   'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
+  'customer_get_site_posts', 'customer_save_site_post', 'customer_delete_site_post', 'customer_get_site_seo', 'customer_save_site_seo',
 ]);
 export const ADMIN_ACTIONS = new Set([
   'add_user', 'delete_user',

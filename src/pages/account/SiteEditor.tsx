@@ -5,7 +5,7 @@
 // Selama ada perubahan belum disimpan, konten dicadangkan di localStorage (`cms-draft-{siteId}`) dan ditawarkan untuk
 // dipulihkan saat editor dibuka lagi (mis. sesi habis di tengah mengedit, tab tertutup, atau keluar akun).
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { CalendarClock, ExternalLink, Globe, MessageCircle } from 'lucide-react';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { ApiError, apiGet, apiPost, errorMessage } from '../../lib/api';
@@ -13,6 +13,8 @@ import { formatTanggal, type Site } from '../../types/platform';
 import { getTemplate, resolveContent } from '../../templates';
 import type { ListItem, SiteContent } from '../../templates/types';
 import { helpWhatsappUrl, siteHelpMessage } from './components/orderCopy';
+import { SiteNav } from './components/SiteNav';
+import { postsListPath } from './posts/siteLinks';
 import { countNewImages, fieldDomId, readList, setEnabled, setList, setText } from './cms/content';
 import { EditorToolbar, type MobileTab, type SaveState } from './cms/EditorToolbar';
 import { EditorLoadError, EditorNotFound, EditorSkeleton, EditorUnknownTemplate } from './cms/EditorStates';
@@ -28,6 +30,8 @@ type LoadResult = { status: 'error'; message: string } | { status: 'not_found' }
 type LoadState = { status: 'loading' } | LoadResult;
 
 const LEAVE_MESSAGE = 'Perubahan yang belum disimpan akan hilang. Tetap tinggalkan halaman ini?';
+/** Section daftar berita/pengumuman di konten template berfitur tulisan (dikelola juga di menu Berita & Pengumuman). */
+const postKindOfSection = (key: string) => (key === 'news' ? 'berita' : key === 'announcements' ? 'pengumuman' : null);
 /** Batas server: 30 gambar baru per simpan; badan request dibatasi ±40 MB (PHP) / 64 MB (Node). */
 const MAX_NEW_IMAGES = 30;
 const MAX_PAYLOAD_BYTES = 30 * 1024 * 1024;
@@ -353,6 +357,7 @@ export default function SiteEditor() {
 
   const sitePath = `/situs/${site.id}`;
   const domainHref = `https://${site.domain}`;
+  const hasPosts = definition.features?.posts === true;
   const saveState: SaveState = readOnly ? 'readonly' : saving ? 'saving' : dirty ? 'dirty' : 'saved';
   const layoutVars = {
     '--cms-sticky-top': `calc(4rem + env(safe-area-inset-top) + ${toolbarHeight}px)`,
@@ -438,6 +443,7 @@ export default function SiteEditor() {
             )}
 
             <SiteInfo site={site} domainHref={domainHref} sitePath={sitePath} />
+            <SiteNav siteId={site.id} posts={hasPosts} />
 
             {definition.sections.map((section) => (
               <SectionEditor
@@ -459,6 +465,7 @@ export default function SiteEditor() {
                 errors={visibleErrors}
                 onBlurPath={markTouched}
                 readOnly={readOnly || saving}
+                notice={hasPosts ? <PostsNotice siteId={site.id} sectionKey={section.key} /> : undefined}
               />
             ))}
 
@@ -491,6 +498,25 @@ export default function SiteEditor() {
 
       <Toast toast={toast} onClose={dismissToast} />
     </div>
+  );
+}
+
+/** Section berita/pengumuman template sekolah: tulisan lengkap dikelola di menu Berita & Pengumuman. Section lain: kosong. */
+function PostsNotice({ siteId, sectionKey }: { siteId: number; sectionKey: string }) {
+  const kind = postKindOfSection(sectionKey);
+  if (!kind) return null;
+  return (
+    <Notice
+      tone="info"
+      action={
+        <Link to={postsListPath(siteId, kind)} className="btn btn-outline btn-sm">
+          Buka Berita &amp; Pengumuman
+        </Link>
+      }
+    >
+      Kelola {kind} lengkap (foto, halaman sendiri, SEO, jumlah dilihat) di menu Berita &amp; Pengumuman. Bila sudah ada {kind} terbit,
+      daftar di bawah ini tidak dipakai di situs.
+    </Notice>
   );
 }
 

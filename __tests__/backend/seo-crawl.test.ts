@@ -180,13 +180,13 @@ describe('deploy/cpanel/htaccess', () => {
     expect(wwwRule).toBeLessThan(https);
   });
 
-  it('redirects /index.html to https://garudanexa.com/ for real requests on the main host only, before the SPA rule', () => {
+  it('redirects /index.html to https://garudanexa.com/ for real requests on the main host only, before the buyer-domain rules', () => {
     const block = HTACCESS.match(
       /RewriteCond %\{HTTP_HOST\} \^garudanexa\\\.com\$ \[NC\]\n\s*RewriteCond %\{THE_REQUEST\} \\s\/index\\\.html\[\\s\?\]\n\s*RewriteRule \^index\\\.html\$ https:\/\/garudanexa\.com\/ \[R=301,L\]/,
     );
     expect(block).not.toBeNull();
     expect(HTACCESS.indexOf(block![0])).toBeGreaterThan(pos('RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]'));
-    expect(HTACCESS.indexOf(block![0])).toBeLessThan(pos('RewriteRule ^ index.html [L]'));
+    expect(HTACCESS.indexOf(block![0])).toBeLessThan(pos('RewriteRule ^index\\.html$ site.php [L]'));
   });
 
   it('caches JavaScript for a year whatever its MIME type, and hashed build files as immutable', () => {

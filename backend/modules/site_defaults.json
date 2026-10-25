@@ -1,0 +1,93 @@
+{
+  "arena-club": {
+    "company_name": "Lintang Padel & Tenis Club",
+    "tagline": "Main lebih seru, latihan lebih terarah",
+    "description": "Lapangan berstandar turnamen, pelatih bersertifikat, dan komunitas pemain yang hangat. Pesan lapangan atau ikut kelas percobaan minggu ini.",
+    "logo": "",
+    "posts": false
+  },
+  "aura-studio": {
+    "company_name": "Sekar Ayu Aesthetic Studio",
+    "tagline": "Rawat kulit dan kuku dengan sentuhan ahli",
+    "description": "Perawatan wajah dan kuku oleh terapis berpengalaman, di studio yang bersih, tenang, dan hangat.",
+    "logo": "",
+    "posts": false
+  },
+  "cakrawala": {
+    "company_name": "SMK Cakrawala Karya",
+    "tagline": "Sekolah Vokasi Swasta di Bandung",
+    "description": "SMK swasta di Kota Bandung dengan enam program keahlian, teaching factory, dan uji kompetensi bersama industri. Lulusan kami siap bekerja, kuliah, atau membuka usaha sendiri.",
+    "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
+    "posts": true
+  },
+  "corporate-nexa": {
+    "company_name": "PT Samudra Karya Persada",
+    "tagline": "Konsultan & kontraktor bangunan komersial",
+    "description": "Kami mendampingi perusahaan Anda dari perencanaan, desain, hingga konstruksi gedung kantor, gudang, dan fasilitas komersial dengan standar keselamatan kerja yang ketat.",
+    "logo": "",
+    "posts": false
+  },
+  "finova": {
+    "company_name": "Lumbung Arta",
+    "tagline": "Kelola uang keluarga dengan lebih tenang",
+    "description": "Catat pengeluaran, atur anggaran, dan bayar tagihan dari satu aplikasi. Lumbung Arta membantu keluarga, UMKM, dan koperasi mengambil keputusan keuangan dengan lebih yakin.",
+    "logo": "",
+    "posts": false
+  },
+  "gadgetku": {
+    "company_name": "GadgetKu.id",
+    "tagline": "Toko aksesoris HP: casing & tempered glass",
+    "description": "Toko aksesoris HP di Depok: pilih tipe HP-mu, lalu lihat casing, tempered glass, charger, kabel, earphone, dan power bank yang cocok. Tanpa salah beli.",
+    "logo": "",
+    "posts": false
+  },
+  "glowstory": {
+    "company_name": "Seruni Beauty",
+    "tagline": "Toko skincare & kosmetik lokal",
+    "description": "Skincare, makeup, dan perawatan tubuh dari brand lokal yang kami coba sendiri. Ikuti kuis kulit, temukan rutinitas yang pas, lalu isi ulang sebelum habis.",
+    "logo": "",
+    "posts": false
+  },
+  "madani": {
+    "company_name": "SMA IT Nurul Azka",
+    "tagline": "Sekolah Islam Terpadu & Asrama di Bogor",
+    "description": "SMA Islam Terpadu di Bogor dengan program tahfidz, kelas sains, dan bilingual Arab–Inggris. Pendaftaran peserta didik baru tahun ajaran 2027/2028 sudah dibuka.",
+    "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
+    "posts": true
+  },
+  "puncakgear": {
+    "company_name": "Tapak Rimba Outdoor",
+    "tagline": "Toko & Sewa Alat Pendakian di Malang",
+    "description": "Tenda, carrier, sleeping bag, dan sepatu gunung yang teruji di jalur Indonesia. Beli atau sewa di basecamp kami di Malang.",
+    "logo": "",
+    "posts": false
+  },
+  "serenity": {
+    "company_name": "Aruna Yoga",
+    "tagline": "Bergerak, bernapas, dan merasa lebih baik",
+    "description": "Aruna Yoga mengajak Anda bergerak pelan, bernapas lebih dalam, dan merasa nyaman di tubuh sendiri. Kelas kecil untuk pemula hingga yang sudah rutin, dipandu instruktur yang sabar.",
+    "logo": "",
+    "posts": false
+  },
+  "skynusa": {
+    "company_name": "SkyNusa",
+    "tagline": "Toko Drone, Servis & Sewa Drone Jakarta",
+    "description": "Toko drone di Jakarta: paket hemat drone + tas + baterai cadangan, garansi servis di bengkel sendiri, dan kelas terbang gratis untuk setiap pembeli. Belum siap membeli? Sewa harian juga ada.",
+    "logo": "",
+    "posts": false
+  },
+  "startup-clean": {
+    "company_name": "Kirana Labs",
+    "tagline": "Kasir & stok online untuk UMKM",
+    "description": "Kirana membantu UMKM mencatat penjualan, memantau stok, dan membaca laporan keuangan dari satu aplikasi yang mudah dipakai di HP maupun laptop.",
+    "logo": "",
+    "posts": false
+  },
+  "tanimakmur": {
+    "company_name": "TaniMakmur",
+    "tagline": "Toko tani online: benih, pupuk & alat tani",
+    "description": "Benih, pupuk, pestisida organik, dan alat tani skala kecil, juga dalam paket per jenis tanaman. Bingung mulai? Tanya penyuluh kami lewat WhatsApp, gratis.",
+    "logo": "",
+    "posts": false
+  }
+}

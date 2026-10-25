@@ -164,7 +164,7 @@ Tipe ada di `src/types/sitePosts.ts`.
 - `manual_noindex`: `index_mode = 'noindex'`;
 - `default_content`: `index_mode = 'auto'` dan (content NULL **atau** `brand.company_name` kosong / sama dengan bawaan template).
 
-`indexable` = tidak ada alasan. Nama bawaan per template ada di `_pre/site-defaults.json` (§6). Di Node dan di tes, bawaan dibaca dari `src/templates` lewat modul yang sama atau berkas JSON yang dibangun dari registri. Agen backend memilih cara yang konsisten dengan site.php dan dibuktikan dengan tes.
+`indexable` = tidak ada alasan. Nama bawaan per template dibaca dari `backend/modules/site_defaults.json` (§6), di PHP maupun Node.
 
 `urls` = `{home: https://{domain}/, sitemap: https://{domain}/sitemap.xml, robots: https://{domain}/robots.txt}`.
 
@@ -188,7 +188,7 @@ Aksi tulisan untuk template tanpa fitur tulisan mengembalikan `{posts: [], total
 
 Aturan ini sama persis di PHP (`site.php`) dan TS (`src/templates/siteSeo.ts`), dibuktikan dengan tes paritas.
 
-Nilai dasar (content NULL atau field kosong → bawaan template dari `site-defaults.json` / registri):
+Nilai dasar (content NULL atau field kosong → bawaan template dari `backend/modules/site_defaults.json` di PHP, registri `TEMPLATES` di TS):
 - `siteName` = `brand.company_name`.
 - `tagline` = `brand.tagline`.
 - `homeDescFallback` = `hero.subtitle` → `footer.description` → `brand.tagline`.
@@ -293,9 +293,15 @@ Aturan teks:
     - `^index\.html$` → `site.php`;
     - aturan catch-all `!-f !-d` → `site.php`, menggantikan `index.html`.
   - Perbarui tes struktur yang ada: `prerender.test.ts`, `seo-crawl.test.ts`.
-- **Build:**
-  - `scripts/prerender.mjs` menyalin `site.php` ke akar build, di sebelah `seo.php`.
-  - Prerender juga menulis `_pre/site-defaults.json`: per `template_code`, `{company_name, tagline, description, logo, posts}`, dari `resolveContent(def, null)` dan `def.features`. Sumbernya ekspor baru di `src/entry-server.tsx`.
+- **Build:** `scripts/prerender.mjs` menyalin `site.php` ke akar build, di sebelah `seo.php`. Pastikan `modules/site_defaults.json` ikut ter-deploy bersama `modules/*.php`.
+- **Bawaan template** ada di `backend/modules/site_defaults.json`, dibaca site.php, site_posts.php, dan site_posts.js:
+  ```json
+  { "madani": { "company_name": "…", "tagline": "…", "description": "…", "logo": "…", "posts": true }, … }
+  ```
+  - Berisi satu entri per template di registri.
+  - `description` = `homeDescFallback` dari `resolveContent(def, null)`.
+  - `posts` = `def.features?.posts === true`.
+  - Tes `__tests__/backend/site-defaults.test.ts` gagal bila berkas ini tidak sama dengan registri. Perbarui dengan `UPDATE_SITE_DEFAULTS=1 npx vitest run __tests__/backend/site-defaults.test.ts`.
 - **Node/docker:** tidak ada padanan `site.php`. Produksi adalah cPanel/PHP. Celah ini dicatat di SPEC.md; aksi API tetap setara.
 
 ## 7. Template (klien)

@@ -947,6 +947,60 @@ CREATE TABLE IF NOT EXISTS guide_views (
   PRIMARY KEY (page)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- News and announcements of customer sites on post-capable templates (madani, cakrawala), pages /berita/{slug} and
+-- /pengumuman/{slug} (migration 029, docs/platform/SITE-POSTS-SEO-SPEC.md). Slug unique per site across both kinds;
+-- kind / status are checked in code (backend/modules/site_posts.php = site_posts.js). No foreign keys, like the other
+-- marketplace tables.
+CREATE TABLE IF NOT EXISTS site_posts (
+  id              INT NOT NULL AUTO_INCREMENT,
+  site_id         INT NOT NULL,                           -- template_sites.id
+  kind            VARCHAR(12)  NOT NULL,                  -- 'berita' | 'pengumuman'
+  slug            VARCHAR(120) NOT NULL,
+  title           VARCHAR(160) NOT NULL,
+  excerpt         VARCHAR(300) NOT NULL DEFAULT '',
+  body            MEDIUMTEXT   NOT NULL,                  -- plain text; paragraphs separated by a blank line
+  category        VARCHAR(40)  NOT NULL DEFAULT '',
+  badge           VARCHAR(20)  NOT NULL DEFAULT '',       -- announcements: "Penting", "Wajib", …
+  image           VARCHAR(500) DEFAULT NULL,              -- /assets/sites/{site}/posts/post_<12hex>.<ext>
+  image_alt       VARCHAR(200) NOT NULL DEFAULT '',
+  link_url        VARCHAR(500) NOT NULL DEFAULT '',       -- extra link (PDF attachment, Drive, Instagram)
+  status          VARCHAR(12)  NOT NULL DEFAULT 'draft',  -- 'draft' | 'published'
+  published_at    DATE DEFAULT NULL,                      -- display date; today (WIB) when published without one
+  seo_title       VARCHAR(70)  NOT NULL DEFAULT '',
+  seo_description VARCHAR(160) NOT NULL DEFAULT '',
+  noindex         TINYINT(1)   NOT NULL DEFAULT 0,
+  created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_site_posts_slug (site_id, slug),
+  KEY idx_site_posts_list (site_id, kind, status, published_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Views per post (migration 029, action site_post_view): a separate table, so a view never changes
+-- site_posts.updated_at (the sitemap lastmod). Deleted together with its post.
+CREATE TABLE IF NOT EXISTS site_post_views (
+  post_id         INT NOT NULL,
+  site_id         INT NOT NULL,
+  view_count      INT UNSIGNED NOT NULL DEFAULT 0,
+  last_viewed_at  DATETIME DEFAULT NULL,
+  PRIMARY KEY (post_id),
+  KEY idx_site_post_views_site (site_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- SEO settings per customer site, every template (migration 029, /akun/situs/:id/seo). No row = all defaults.
+CREATE TABLE IF NOT EXISTS site_seo (
+  site_id             INT NOT NULL,
+  title               VARCHAR(70)  NOT NULL DEFAULT '',
+  description         VARCHAR(160) NOT NULL DEFAULT '',
+  og_image            VARCHAR(500) DEFAULT NULL,          -- /assets/sites/{site}/seo/seo_<12hex>.<ext>
+  google_verification VARCHAR(100) NOT NULL DEFAULT '',
+  bing_verification   VARCHAR(100) NOT NULL DEFAULT '',
+  index_mode          VARCHAR(10)  NOT NULL DEFAULT 'auto',   -- 'auto' | 'index' | 'noindex'
+  schema_type         VARCHAR(40)  NOT NULL DEFAULT '',       -- '' = automatic
+  updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (site_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- A fresh install already has every migration up to this baseline.
 -- (002, 003, 007 and the navbar/FAQ data steps of 004 only touch existing rows, which a
 --  fresh install does not have; with an empty navbar_menus the frontend uses its
@@ -966,7 +1020,8 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-24_014', 'baseline: navbar Tentang + Kontak (no navbar rows; the built-in menu has them)'),
   ('2026-10-24_015', 'baseline: navbar Kontak hidden (no navbar rows; the built-in menu has Tentang only)'),
   ('2026-10-24_016', 'baseline: showcase_stats (project card likes and views)'),
-  ('2026-10-25_027', 'baseline: users.google_sub (Google sign-in)');
+  ('2026-10-25_027', 'baseline: users.google_sub (Google sign-in)'),
+  ('2026-10-26_029', 'baseline: site_posts, site_post_views, site_seo (school news & announcements, customer site SEO)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):
