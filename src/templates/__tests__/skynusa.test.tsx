@@ -29,9 +29,12 @@ import {
   rentalMessage,
   rentalQuote,
   savings,
+  isoDate,
   setCartQty,
   skynusaVars,
   splitTags,
+  toInt,
+  validStartDate,
 } from '../skynusa/model';
 import { SKYNUSA_PHOTOS } from '../skynusa/photos';
 import { applySiteHead, siteTitle } from '../siteHead';
@@ -152,11 +155,40 @@ describe('SkyNusa: helper model', () => {
     expect(parsePrice('Hubungi kami')).toBeNull();
     expect(parsePrice('')).toBeNull();
     expect(parsePrice('Rp0')).toBeNull();
+    expect(parsePrice('12900000')).toBe(12_900_000);
+    // Hanya angka pertama: keterangan berangka di belakang harga tidak ikut digabung
+    expect(parsePrice('Rp450.000/24 jam')).toBe(450_000);
+    expect(parsePrice('Rp6.490.000 (2 unit)')).toBe(6_490_000);
+    expect(parsePrice('Rp12.900.000.')).toBe(12_900_000);
+    expect(parsePrice('mulai 1,5 jt / hari')).toBe(1_500_000);
+    expect(parsePrice('Rp6.490.000 (hemat 500 rb)')).toBe(6_490_000);
     expect(formatRupiah(12_900_000)).toBe('Rp12.900.000');
     expect(formatRupiah(950)).toBe('Rp950');
     expect(savings('Rp12.900.000', 'Rp13.900.000')).toBe(1_000_000);
     expect(savings('Rp12.900.000', 'Rp12.000.000')).toBeNull();
     expect(savings('Rp12.900.000', '')).toBeNull();
+  });
+
+  it('angka dari teks CMS (toInt): kelompok angka pertama, desimal tidak membengkak', () => {
+    expect(toInt('3')).toBe(3);
+    expect(toInt('10%')).toBe(10);
+    expect(toInt('3 hari')).toBe(3);
+    expect(toInt('7,5')).toBe(7);
+    expect(toInt('2.5')).toBe(2);
+    expect(toInt('')).toBe(0);
+    expect(toInt('tidak ada')).toBe(0);
+    // Potongan "7,5" tidak lagi menjadi 75%
+    expect(rentalQuote(450_000, 3, 2, toInt('7,5')).percent).toBe(7);
+  });
+
+  it('tanggal mulai sewa: hari ini atau sesudahnya; tanggal lampau / tidak valid ditolak; tanpa "hari ini" tidak dibatasi', () => {
+    expect(validStartDate('2026-10-25', '2026-10-25')).toBe('2026-10-25');
+    expect(validStartDate('2026-11-07', '2026-10-25')).toBe('2026-11-07');
+    expect(validStartDate('2026-10-24', '2026-10-25')).toBe('');
+    expect(validStartDate('2024-01-15', '2026-10-25')).toBe('');
+    expect(validStartDate('2026-02-30', '2026-01-01')).toBe('');
+    expect(validStartDate('', '2026-10-25')).toBe('');
+    expect(validStartDate('2024-01-15', '')).toBe('2024-01-15');
   });
 
   it('filter kebutuhan: label kategori yang punya produk, cocok tanpa beda huruf besar, filter tak dikenal → semua', () => {
@@ -322,6 +354,88 @@ describe('SkyNusa: demo', () => {
     expect(within(header).getByRole('link', { name: /Lihat drone/ })).toHaveAttribute('href', '#products');
   });
 
+  it('fokus kembali ke tombol pembuka saat keranjang/menu ditutup, dan tidak jatuh ke <body> saat baris dihapus atau dikosongkan', () => {
+    const container = demo();
+    const header = container.querySelector('header')!;
+    const products = section(container, 'products');
+    const addMini = () => fireEvent.click(within(products).getByRole('button', { name: 'Tambah Drone Mini 249 g ke keranjang' }));
+    addMini();
+    const toggle = within(header).getByRole('button', { name: 'Keranjang, 1 barang' });
+    fireEvent.click(toggle);
+    fireEvent.click(within(header).getByRole('button', { name: 'Tutup keranjang' }));
+    expect(document.getElementById(toggle.getAttribute('aria-controls')!)).toBeNull();
+    expect(toggle).toHaveFocus();
+
+    fireEvent.click(toggle);
+    const panel = document.getElementById(toggle.getAttribute('aria-controls')!)!;
+    // Jumlah dibaca lewat teks tersembunyi (bukan aria-label pada <span>)
+    expect(panel.querySelector('span[aria-label]')).toBeNull();
+    expect(within(panel).getByText('Jumlah Drone Mini 249 g:', { exact: false })).toHaveClass('sr-only');
+    fireEvent.click(within(panel).getByRole('button', { name: 'Hapus Drone Mini 249 g' }));
+    expect(within(header).getByRole('button', { name: 'Tutup keranjang' })).toHaveFocus();
+    expect(container.querySelector('[data-sn-announce]')?.textContent).toBe('Drone Mini 249 g dihapus dari keranjang. Isi keranjang: 0 barang.');
+
+    addMini();
+    addMini();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Kurangi Drone Mini 249 g' }));
+    expect(container.querySelector('[data-sn-announce]')?.textContent).toBe('Jumlah Drone Mini 249 g: 1. Isi keranjang: 1 barang.');
+    fireEvent.click(within(header).getByRole('button', { name: 'Kosongkan' }));
+    expect(within(header).getByRole('button', { name: 'Tutup keranjang' })).toHaveFocus();
+    expect(container.querySelector('[data-sn-announce]')?.textContent).toBe('Keranjang dikosongkan. Isi keranjang: 0 barang.');
+
+    const menuButton = within(header).getByRole('button', { name: 'Buka menu' });
+    fireEvent.click(menuButton);
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
+    expect(menuButton).toHaveFocus();
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('barang 9 unit: tombol Tambah nonaktif "Maks. 9", tanpa pengumuman "ditambahkan" palsu', () => {
+    const container = demo();
+    const add = within(section(container, 'products')).getByRole('button', { name: 'Tambah Drone Mini 249 g ke keranjang' });
+    for (let i = 0; i < 9; i += 1) fireEvent.click(add);
+    expect(add).toBeDisabled();
+    expect(add).toHaveAccessibleName('Drone Mini 249 g: sudah 9 unit di keranjang (maksimal)');
+    expect(add.textContent).toBe('Maks. 9');
+    expect(container.querySelector('[data-sn-announce]')?.textContent).toBe('Drone Mini 249 g ditambahkan ke keranjang. Isi keranjang: 9 barang.');
+    fireEvent.click(add);
+    expect(within(container.querySelector('header')!).getByRole('button', { name: 'Keranjang, 9 barang' })).toBeInTheDocument();
+  });
+
+  it('kalkulator sewa: tanggal lampau tidak dipakai (petunjuk + aria-invalid), pesan WhatsApp tanpa tanggal itu', async () => {
+    const rental = section(demo(), 'rental');
+    // "Hari ini" dihitung setelah tampil (hasil prerender tetap sama)
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    const input = within(rental).getByLabelText('2 · Tanggal mulai');
+    expect(input).toHaveAttribute('min', isoDate(new Date()));
+    fireEvent.change(input, { target: { value: '2024-01-15' } });
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAccessibleDescription('Pilih tanggal mulai hari ini atau sesudahnya.');
+    expect(rental.textContent).not.toContain('Jan 2024');
+    expect(rental.textContent).toContain('Pilih tanggal mulai untuk melihat tanggal kembali.');
+    const ask = within(rental).getByRole('link', { name: /Ajukan Sewa via WhatsApp/ });
+    const message = decodeURIComponent(ask.getAttribute('href') ?? '');
+    expect(message).toContain('(tanggal menyusul)');
+    expect(message).not.toContain('2024');
+    fireEvent.change(input, { target: { value: addDaysIso(isoDate(new Date()), 2) } });
+    expect(input).not.toHaveAttribute('aria-invalid');
+    expect(rental.textContent).toContain(`Ambil ${formatDateId(addDaysIso(isoDate(new Date()), 2))}`);
+  });
+
+  it('unit sewa tanpa tarif terbaca: tanpa "Rp0" dan tanpa "/hari", tarif dikonfirmasi lewat WhatsApp', () => {
+    const rental = section(demo({ rental: { items: [{ name: 'Drone Inspeksi', price: 'Hubungi kami', note: '' }] } }), 'rental');
+    expect(rental.textContent).toContain('Tarif unit ini dikonfirmasi lewat WhatsApp.');
+    expect(rental.textContent).toContain('Hubungi kami');
+    expect(rental.textContent).not.toContain('Rp0');
+    expect(rental.textContent).not.toContain('/hari');
+    expect(rental.textContent).not.toContain('Estimasi total');
+    expect(rental.textContent).not.toContain('hemat 10%');
+  });
+
   it('paket gelap: 3 paket, paket berlabel menonjol, hemat dari harga satuan, isi per baris, tanya paket ke WhatsApp', () => {
     const bundles = section(demo(), 'bundles');
     expect(bundles.getAttribute('data-tpl-tone')).toBe('inverse');
@@ -454,6 +568,18 @@ describe('SkyNusa: SEO situs pembeli', () => {
 });
 
 describe('SkyNusa: konten opsional kosong', () => {
+  it('toko khusus sewa (Drone & Paket disembunyikan): tanpa tombol, panel, dan pengumuman keranjang', () => {
+    const container = demo({ products: { enabled: false }, bundles: { enabled: false } });
+    const header = container.querySelector('header')!;
+    expect(within(header).queryByRole('button', { name: /Keranjang/ })).toBeNull();
+    expect(container.querySelector('[data-sn-announce]')).toBeNull();
+    expect(section(container, 'rental')).not.toBeNull();
+    // Satu bagian saja sudah cukup untuk menampilkan keranjang
+    cleanup();
+    const withBundles = demo({ products: { enabled: false } });
+    expect(within(withBundles.querySelector('header')!).getByRole('button', { name: 'Keranjang, 0 barang' })).toBeInTheDocument();
+  });
+
   it('hero tanpa foto → panggung abu dengan ikon drone tanpa img; tanpa spesifikasi & keunggulan → disembunyikan', () => {
     const hero = section(demo({ hero: { image: '', specs: [], features: [] } }), 'hero');
     expect(hero.querySelector('img')).toBeNull();
@@ -551,6 +677,17 @@ describe('SkyNusa: data katalog', () => {
     },
   );
 
+  it('teks katalog (migrasi 019 & baris seed yang sama) tanpa janji "garansi", sesuai aturan salinan halaman', () => {
+    const migration = sql('database/migrations/2026-10-25_019_skynusa_template.sql').replace(/^--.*$/gm, '');
+    const seed = sql('database/seed.templates.sql');
+    const row = seed.slice(seed.indexOf("('skynusa',"), seed.indexOf("'skynusa', NULL, 'published', 7)"));
+    expect(row.length).toBeGreaterThan(500);
+    for (const text of [migration, row]) {
+      expect(text).not.toMatch(/\b(dijamin|garansi|terbaik nomor|rating \d|bintang \d)\b/i);
+      expect(text).toContain('layanan servis lokal');
+    }
+  });
+
   it('migrasi 019 aman diulang (INSERT IGNORE + UPDATE berdasarkan slug, tanpa DELETE) dan tercatat di schema_migrations', () => {
     // Tanpa komentar SQL (komentar kepala menyebut "Tidak ada DELETE")
     const text = sql('database/migrations/2026-10-25_019_skynusa_template.sql').replace(/^--.*$/gm, '');
@@ -593,6 +730,6 @@ describe('SkyNusa: konten aneh', () => {
     } as unknown as SiteContent;
     const { container } = render(<def.Component content={resolveContent(def, weird)} />);
     expect(container.querySelector('a[href^="javascript:"]')).toBeNull();
-    expect(section(container, 'rental').textContent).toContain('Rp0');
+    expect(section(container, 'rental').textContent).toContain('Tarif unit ini dikonfirmasi lewat WhatsApp.');
   });
 });
