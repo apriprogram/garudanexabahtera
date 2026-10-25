@@ -151,7 +151,7 @@ export const glowstorySections: TemplateSection[] = [
     key: 'quiz',
     label: 'Kuis jenis kulit',
     description:
-      'Kuis 2–4 pertanyaan di halaman (tanpa login). Jawaban ke-1 setiap pertanyaan memberi poin untuk Tipe kulit ke-1, jawaban ke-2 untuk tipe ke-2, dan seterusnya; tipe dengan poin terbanyak menjadi hasil, lengkap dengan rutinitas pagi & malam.',
+      'Kuis 2–4 pertanyaan di halaman (tanpa login). Jawaban ke-1 setiap pertanyaan memberi poin untuk Tipe kulit ke-1, jawaban ke-2 untuk tipe ke-2, dan seterusnya; tipe dengan poin terbanyak menjadi hasil, lengkap dengan rutinitas pagi & malam. Bila sebuah tipe dihapus atau namanya dikosongkan, jawaban untuk tipe itu otomatis disembunyikan.',
     toggleable: true,
     fields: [
       sectionLabel('mis. Kuis Kulit'),
