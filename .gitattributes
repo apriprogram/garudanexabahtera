@@ -1,0 +1,3 @@
+# Modul Node dengan shebang (#!) yang juga diimpor Vitest: CRLF di baris shebang membuat Vite gagal mengurainya
+# ("SyntaxError: Invalid or unexpected token" di __tests__/seo/assets.test.ts)
+scripts/seo/og-images.mjs text eol=lf
