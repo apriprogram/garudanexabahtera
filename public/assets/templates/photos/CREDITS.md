@@ -181,3 +181,38 @@ digelapkan sedikit.
 | `tanimakmur-tips-semai-*` | Kecambah di baki semai | https://unsplash.com/photos/vrbZVyX2k4I | Markus Spiske |
 | `tanimakmur-tips-kompos-*` | Sekop kecil berisi tanah kompos | https://unsplash.com/photos/BduDcrySLKM | Neslihan Gunaydin |
 | `tanimakmur-tips-hidroponik-*` | Daun selada keriting dari dekat | https://unsplash.com/photos/6djmntSYfoE | engin akyurt |
+
+## PuncakGear (Tapak Rimba Outdoor, fiktif)
+
+Foto suasana `-<lebar>.webp` + `-800.webp` (hero 1920×1200, kartu kategori & sewa 4:5 1200×1500, produk 1:1 1200×1200,
+panduan gunung 4:3 1600×1200, keselamatan 16:10 1600×1000); potret testimoni 1:1 `-480.webp` + `-240.webp`. Diunduh dan
+dicek lisensinya (Unsplash License, bukan Unsplash+) 2026-10-25. Logo merek yang terbaca disamarkan (inpaint) di
+`puncakgear-hero-*` (logo di ransel), `puncakgear-produk-sepatu-*` (logo & label di sisi sepatu), dan
+`puncakgear-kategori-carrier-*` (logo di penutup carrier), agar demo tidak terkesan menjual merek tertentu.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `puncakgear-hero-*` | Pendaki dengan carrier & trekking pole di puncak bukit, langit biru (logo disamarkan) | https://unsplash.com/photos/m70uKZsv_e4 | Amey Meher |
+| `puncakgear-kategori-tenda-*` | Tenda dome oranye di padang rumput pegunungan | https://unsplash.com/photos/wTVr4HR4SBI | Jesse Gardner |
+| `puncakgear-kategori-carrier-*` | Pendaki membawa carrier biru di hutan berkabut (logo disamarkan) | https://unsplash.com/photos/LFGGCsj41Bc | Tristan Pineda |
+| `puncakgear-kategori-sleeping-bag-*` | Dua pendaki dalam sleeping bag di atas matras | https://unsplash.com/photos/0LARSp0JVmQ | Lucas Canino |
+| `puncakgear-kategori-sepatu-*` | Sepasang sepatu gunung di atas batu | https://unsplash.com/photos/04pKez8CiIo | Chaewool Kim |
+| `puncakgear-kategori-darurat-*` | Pendaki dengan headlamp merah di puncak saat senja | https://unsplash.com/photos/OV3IgoqwGHw | Marek Piwnicki |
+| `puncakgear-produk-tenda-*` | Tenda dome merah di lembah pegunungan | https://unsplash.com/photos/uKQCVPMR-lo | Slava Auchynnikau |
+| `puncakgear-produk-carrier-*` | Carrier oranye dengan botol minum di atas batu | https://unsplash.com/photos/XMqqQc6at4I | Anastasiia Shyrokykh |
+| `puncakgear-produk-sleeping-bag-*` | Sleeping bag oranye & biru di camp berbatu | https://unsplash.com/photos/Uhtx0dDtw9M | Sylvain Mauroux |
+| `puncakgear-produk-sepatu-*` | Sepatu gunung mid hitam di atas batu (logo disamarkan) | https://unsplash.com/photos/p3rDtB66cws | Ajeet Panesar |
+| `puncakgear-produk-trekking-pole-*` | Sepasang trekking pole di padang rumput | https://unsplash.com/photos/zW8NsaUruMU | Field Forest and Fire |
+| `puncakgear-produk-matras-*` | Matras foam gulung terikat di carrier | https://unsplash.com/photos/mgsvJeYQug0 | where is pykh |
+| `puncakgear-produk-kompor-*` | Kompor portabel dengan panci di meja kayu | https://unsplash.com/photos/E8wt2RdEFoY | Dex Ezekiel |
+| `puncakgear-produk-p3k-*` | Tas P3K hijau "First Aid" | https://unsplash.com/photos/t-wsT0Wdeyw | Rhii Photography |
+| `puncakgear-rinjani-*` | Danau Segara Anak dari puncak Gunung Rinjani | https://unsplash.com/photos/OYDPdqZdJY4 | Fahrul Razi |
+| `puncakgear-semeru-*` | Pendaki dan tenda di Ranu Kumbolo, Semeru | https://unsplash.com/photos/R4MCLUnU9nk | Falaq Lazuardi |
+| `puncakgear-prau-*` | Deretan gunung dilihat dari Gunung Prau | https://unsplash.com/photos/Z5SnhK9mDQM | Muhammad Fadil |
+| `puncakgear-merbabu-*` | Gunung Merapi saat fajar dari Gunung Merbabu | https://unsplash.com/photos/iE_Y-NNjJ8k | Dan Gilmour |
+| `puncakgear-sindoro-*` | Gunung Sindoro di atas ladang dan permukiman | https://unsplash.com/photos/j3KGC-7ZL4g | Gradikaa Aggi |
+| `puncakgear-sewa-*` | Rombongan pendaki di punggungan berumput, Indonesia | https://unsplash.com/photos/Fb3dwD2Qjj0 | Yub 12 |
+| `puncakgear-keselamatan-*` | Pendaki beristirahat di puncak berbatu, Temanggung | https://unsplash.com/photos/OLRUB4nRqls | Idris Hasibuan |
+| `puncakgear-portrait-1-*` | Perempuan berhijab berkacamata tersenyum, latar gunung | https://unsplash.com/photos/vl2UKsXDmsY | Aditya Enggar Perdana |
+| `puncakgear-portrait-2-*` | Pria berkupluk oranye membawa carrier di jalur hutan | https://unsplash.com/photos/xgiHQVcX2WY | Andri Hermawan |
+| `puncakgear-portrait-3-*` | Pria berjaket merah, latar gunung di atas awan (Bromo) | https://unsplash.com/photos/QRSH2gMCCC0 | visualsofdana |

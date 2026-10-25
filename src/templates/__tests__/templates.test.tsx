@@ -12,7 +12,7 @@ const defs = Object.values(TEMPLATES);
 
 describe('registry', () => {
   it('memuat semua template katalog', () => {
-    expect(Object.keys(TEMPLATES).sort()).toEqual(['arena-club', 'aura-studio', 'corporate-nexa', 'finova', 'serenity', 'startup-clean', 'tanimakmur']);
+    expect(Object.keys(TEMPLATES).sort()).toEqual(['arena-club', 'aura-studio', 'corporate-nexa', 'finova', 'puncakgear', 'serenity', 'startup-clean', 'tanimakmur']);
     for (const def of defs) {
       expect(def.code).toBeTruthy();
       expect(def.sections.length).toBeGreaterThan(5);
@@ -28,6 +28,7 @@ describe('registry', () => {
     expect(getTemplate('finova')?.name).toBe('Finova');
     expect(getTemplate('Serenity')?.name).toBe('Serenity');
     expect(getTemplate('TaniMakmur')?.name).toBe('TaniMakmur');
+    expect(getTemplate('PuncakGear')?.name).toBe('PuncakGear');
     for (const code of ['constructor', '__proto__', 'toString', '', null, undefined, 'tidak-ada']) expect(getTemplate(code)).toBeUndefined();
   });
 });

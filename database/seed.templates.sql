@@ -106,4 +106,23 @@ Cocok untuk toko benih, pupuk, dan alat tani, kios saprotan, penjual perlengkapa
    '["/assets/templates/tanimakmur-1.webp","/assets/templates/tanimakmur-2.webp"]',
    'tanimakmur', NULL, 'published', 8);
 
+-- PuncakGear (2026-10-25, toko perlengkapan mendaki; DB lama: migrasi 2026-10-25_021). Statement terpisah agar
+-- template toko online yang dirilis bersamaan bisa ditambahkan tanpa mengubah daftar VALUES di atas.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('puncakgear',
+   'PuncakGear',
+   'Toko Online',
+   'Website toko perlengkapan mendaki dengan panduan per gunung dan kalkulator sewa alat untuk pendaki pemula.',
+   'PuncakGear tampil gagah sejak layar pertama: foto pendaki selebar layar dengan menu transparan, judul huruf kapital besar, tombol pil warna terang, dan kartu produk kecil. Di bawahnya tersusun kategori perlengkapan, produk terlaris dengan filter kategori dan tombol pesan, panduan per gunung (misalnya Rinjani, Semeru, Prau) berisi jalur populer, catatan keselamatan, dan daftar perlengkapan yang bisa dicentang pengunjung, lalu bagian sewa alat dengan kalkulator biaya per hari, tips keselamatan, cerita pendaki, tanya jawab, dan lokasi basecamp.
+
+Cocok untuk toko outdoor, penyewaan alat camping dan mendaki, maupun basecamp yang juga menjual perlengkapan. Pesanan, sewa, dan konsultasi dikirim lewat WhatsApp lengkap dengan nama produk, daftar alat, lama sewa, dan perkiraan totalnya. Semua teks, foto, harga, daftar gunung, dan warna bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero poster foto selebar layar dengan kartu produk","Produk terlaris dengan filter kategori dan tombol pesan ke WhatsApp","Panduan per gunung dengan daftar perlengkapan yang bisa dicentang","Kalkulator sewa alat per hari dengan diskon lama sewa","Tips keselamatan, cerita pendaki, dan tanya jawab (FAQ)","Pencarian produk, gunung, dan alat sewa langsung dari menu","Kelola teks, foto, harga, dan warna sendiri lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/puncakgear-preview.webp',
+   '["/assets/templates/puncakgear-1.webp","/assets/templates/puncakgear-2.webp"]',
+   'puncakgear', NULL, 'published', 9);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

@@ -13,6 +13,7 @@ import { AURA_PHOTOS } from '../aura-studio/photos';
 import { FINOVA_PHOTOS } from '../finova/photos';
 import { SERENITY_PHOTOS } from '../serenity/photos';
 import { TANI_PHOTOS } from '../tanimakmur/photos';
+import { PUNCAK_PHOTOS } from '../puncakgear/photos';
 import { TEMPLATES, resolveContent } from '../index';
 import type { PhotoSet } from '../kit/photos';
 
@@ -29,7 +30,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit';
   photos: PhotoSet;
 }
 
@@ -40,6 +41,7 @@ const NEW_TEMPLATES: NewTemplate[] = [
   // Template 2026-10-25 (bukan bagian brief tiga template, tetapi memenuhi kontrak yang sama)
   { code: 'serenity', component: 'Serenity.tsx', heroLayout: 'fullbleed', photos: SERENITY_PHOTOS },
   { code: 'tanimakmur', component: 'TaniMakmur.tsx', heroLayout: 'field', photos: TANI_PHOTOS },
+  { code: 'puncakgear', component: 'PuncakGear.tsx', heroLayout: 'summit', photos: PUNCAK_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */

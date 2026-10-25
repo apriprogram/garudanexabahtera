@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -35,7 +35,9 @@ const visibleText = (c: TemplatePageContent): string =>
 const SERENITY: Template = { ...FIXTURE_TEMPLATES[4], id: 27, slug: 'serenity', name: 'Serenity', category: 'Yoga & Wellness', price: 1290000, template_code: 'serenity', sort_order: 6 };
 // TaniMakmur (2026-10-25, migrasi 020) juga belum ada di fixture bersama
 const TANIMAKMUR: Template = { ...FIXTURE_TEMPLATES[4], id: 33, slug: 'tanimakmur', name: 'TaniMakmur', category: 'Toko Online', price: 1590000, template_code: 'tanimakmur', sort_order: 8 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR].find((t) => t.slug === slug) as Template;
+// PuncakGear (2026-10-25, migrasi 021) juga belum ada di fixture prerender bersama
+const PUNCAKGEAR: Template = { ...FIXTURE_TEMPLATES[4], id: 31, slug: 'puncakgear', name: 'PuncakGear', category: 'Toko Online', price: 1590000, template_code: 'puncakgear', sort_order: 9 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -57,6 +59,7 @@ describe('src/content/templates', () => {
       finova: 'Finova: Template Website Fintech & Startup',
       serenity: 'Serenity: Template Website Studio Yoga & Pilates',
       tanimakmur: 'TaniMakmur: Template Website Toko Pertanian & Urban Farming',
+      puncakgear: 'PuncakGear: Template Website Toko Outdoor & Perlengkapan Pendakian',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -67,6 +70,7 @@ describe('src/content/templates', () => {
       finova: 'Finova: Template Website Fintech & Startup – Rp1,79 jt',
       serenity: 'Serenity: Template Website Studio Yoga – Rp1,29 jt',
       tanimakmur: 'TaniMakmur: Template Website Toko Pertanian – Rp1,59 jt',
+      puncakgear: 'PuncakGear: Template Website Toko Outdoor – Rp1,59 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -132,6 +136,9 @@ describe('src/content/templates', () => {
     expect(tani).not.toMatch(/pasti panen|pasti tumbuh|100% aman|bebas hama|hasil panen naik/i);
     expect(tani).toMatch(/tidak punya keranjang/);
     expect(tani).toMatch(/bergantung pada cuaca/);
+    const puncakgear = visibleText(templateContent('puncakgear') as TemplatePageContent);
+    expect(puncakgear).toMatch(/tidak punya keranjang belanja maupun pembayaran online/);
+    expect(puncakgear).toMatch(/bukan sumber resmi/);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -149,6 +156,27 @@ describe('src/content/templates', () => {
     expect(text).toMatch(/tidak ada keranjang belanja otomatis/);
     expect(text).not.toMatch(/\bcheckout otomatis|\bpayment gateway|\bbayar online di website/);
     expect(TEMPLATE_COPY.tanimakmur.updated).toBe('2026-10-25');
+  });
+
+  it('PuncakGear: kata kunci utama di title, meta, H1 & pembuka; kata kunci turunan di isi; niche spesifik', () => {
+    const t = bySlug('puncakgear');
+    const primary = /template website toko outdoor/i;
+    expect(templateTitle(t)).toMatch(primary);
+    expect(templateDescription(t)).toMatch(primary);
+    expect(templateDescription(t)).toBe(
+      'Template website toko outdoor & sewa alat pendakian, lengkap panduan per gunung. Rp1.590.000 sudah termasuk domain, hosting & SSL tahun pertama.',
+    );
+    expect(templateH1(t)).toMatch(primary);
+    const c = templateContent('puncakgear') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^PuncakGear adalah template website toko outdoor /);
+    const text = visibleText(c).toLowerCase();
+    for (const keyword of ['website toko perlengkapan pendakian', 'website toko alat gunung', 'website sewa alat pendakian']) expect(text, keyword).toContain(keyword);
+    expect(TEMPLATE_COPY.puncakgear.niche).toBe('Toko Outdoor & Sewa Alat Pendakian');
+    expect(TEMPLATE_PAGES.puncakgear.niche).toBe('toko outdoor & perlengkapan pendakian');
+    expect(TEMPLATE_COPY.puncakgear.updated).toBe('2026-10-25');
+    // Jujur: panduan & sewa sesuai demo, tanpa keranjang/pembayaran/stok/booking sungguhan
+    expect(text).not.toMatch(/checkout otomatis|bayar online di website|stok otomatis|booking online/);
+    expect(text).toMatch(/kalkulator sewa/);
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {
