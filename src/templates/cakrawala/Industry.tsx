@@ -24,9 +24,10 @@ function Partner({ name, logo, index }: { name: string; logo: string; index: num
     return <img src={src} alt={name} loading="lazy" decoding="async" width={140} height={40} className="h-9 w-auto max-w-[150px] object-contain opacity-80 brightness-0 invert" />;
   }
   return (
-    <span className="inline-flex items-center gap-2.5 text-white/75">
+    <span className="inline-flex max-w-full items-center gap-2.5 text-white/75">
       <PartnerMark shape={index} className="h-7 w-7 shrink-0 text-(--ck-bright)" />
-      <span className={`${DISPLAY} whitespace-nowrap text-[16px] font-bold tracking-[-0.02em]`}>{name}</span>
+      {/* Nama panjang (maks. 40 huruf) boleh turun baris di HP agar tidak melebar keluar panel */}
+      <span className={`${DISPLAY} min-w-0 text-[16px] font-bold leading-tight tracking-[-0.02em] [overflow-wrap:anywhere]`}>{name}</span>
     </span>
   );
 }
@@ -107,7 +108,7 @@ export function Industry({ m }: { m: CakrawalaModel }) {
               {partnersTitle && <h3 className={`${SUB_TITLE} text-white/70`}>{partnersTitle}</h3>}
               <ul className={`${partnersTitle ? 'mt-6' : ''} flex flex-wrap items-center gap-x-10 gap-y-6`}>
                 {partners.map((item, i) => (
-                  <li key={`${field(item, 'name')}-${i}`}>
+                  <li key={`${field(item, 'name')}-${i}`} className="min-w-0 max-w-full">
                     <Partner name={field(item, 'name')} logo={field(item, 'logo')} index={i} />
                   </li>
                 ))}

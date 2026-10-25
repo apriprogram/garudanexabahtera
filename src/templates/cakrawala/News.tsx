@@ -13,7 +13,7 @@ import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, list, safeUrl, text } from '../shared/utils';
 import type { ListItem } from '../types';
 import { KitPhoto } from '../kit/Photo';
-import { displayDate, filterNews, isUrgent, newsCategories, paragraphsOf, parseSchoolDate, type CakrawalaModel } from './model';
+import { displayDate, filterNews, isUrgent, newsCategories, newsItems, paragraphsOf, parseSchoolDate, type CakrawalaModel } from './model';
 import { CAKRAWALA_PHOTOS } from './photos';
 import { BTN, C, CARD, DISPLAY, SECTION_PAD, TYPE_C } from './styles';
 import { Eyebrow, PillLink, SectionHead } from './ui';
@@ -126,7 +126,7 @@ function NewsCard({ item, featured }: { item: ListItem; featured: boolean }) {
 
 export function News({ m }: { m: CakrawalaModel }) {
   const { news } = m;
-  const items = list(news, 'items', 9).filter((item) => field(item, 'title'));
+  const items = newsItems(news);
   const [category, setCategory] = useState<string | null>(null);
   if (items.length === 0) return null;
   const categories = newsCategories(items);
@@ -283,13 +283,17 @@ function Agenda({ m }: { m: CakrawalaModel }) {
 }
 
 /** Pengumuman & agenda berdampingan (layar lebar); satu saja tampil → selebar penuh. */
-export function Notices({ m }: { m: CakrawalaModel }) {
+/**
+ * Pengumuman & agenda berdampingan. Biasanya jarak atasnya = jarak bawah section Berita; `padTop` = jarak atas
+ * sendiri bila yang di atasnya panel tanpa jarak bawah (mis. Berita disembunyikan sehingga panel PPDB tepat di atas).
+ */
+export function Notices({ m, padTop = false }: { m: CakrawalaModel; padTop?: boolean }) {
   const showAnnouncements = m.shown('announcements');
   const showAgenda = m.shown('agenda');
   if (!showAnnouncements && !showAgenda) return null;
   const both = showAnnouncements && showAgenda;
   return (
-    <div className={`${CONTAINER} grid items-start gap-4 ${both ? '@5xl:grid-cols-12' : ''}`}>
+    <div className={`${CONTAINER} grid items-start gap-4 ${both ? '@5xl:grid-cols-12' : ''} ${padTop ? 'pt-14 @3xl:pt-20 @5xl:pt-24' : ''}`}>
       {showAnnouncements && (
         <div className={both ? '@5xl:col-span-7' : ''}>
           <Announcements m={m} />

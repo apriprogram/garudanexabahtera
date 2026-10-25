@@ -36,7 +36,7 @@ const title = (placeholder: string, maxLength = 110) => t('title', 'Judul', { pl
 const subtitle = (placeholder = 'Kalimat pengantar singkat.') => ta('subtitle', 'Deskripsi singkat', { placeholder, maxLength: 280 });
 const DATE_HELP = 'Tulis YYYY-MM-DD (mis. 2026-11-07) agar tampil sebagai "7 Nov 2026", atau teks bebas.';
 const WA_HELP = 'Kosongkan untuk membuka WhatsApp sekolah (nomor di bagian Lokasi & kontak).';
-const SECTION_LINK_HELP = 'Boleh tautan ke bagian halaman, mis. #ppdb, #news, atau #kontak.';
+const SECTION_LINK_HELP = 'Boleh tautan ke bagian halaman, mis. #ppdb, #berita, #jurusan, atau #kontak.';
 
 export const cakrawalaSections: TemplateSection[] = [
   {
@@ -55,7 +55,7 @@ export const cakrawalaSections: TemplateSection[] = [
         type: 'color',
         key: 'accent_color',
         label: 'Warna tema',
-        help: 'Klik salah satu pilihan cepat (mis. hijau #047857 atau biru #1D4ED8) atau tulis kode hex sendiri. Versi gelap untuk footer dan versi terang untuk teks di latar gelap dibuat otomatis agar tetap terbaca.',
+        help: 'Klik pilihan cepat (mis. hijau #047857), tombol "Pakai bawaan" untuk biru bawaan #1D4ED8, atau tulis kode hex sendiri. Versi gelap untuk footer dan versi terang untuk teks di latar gelap dibuat otomatis agar tetap terbaca.',
       },
     ],
   },
@@ -193,7 +193,8 @@ export const cakrawalaSections: TemplateSection[] = [
   {
     key: 'programs',
     label: 'Program keahlian / jurusan',
-    description: 'Kartu per jurusan dengan kode, ikon otomatis, deskripsi, chip kompetensi, dan keterangan kelas. SMA: ganti menjadi peminatan (mis. MIPA, IPS, Bahasa).',
+    description:
+      'Kartu per jurusan dengan kode, ikon otomatis, deskripsi, chip kompetensi, dan keterangan kelas. SMA: ganti menjadi peminatan (mis. MIPA, IPS, Bahasa); label kecil singkat (mis. "Peminatan") juga dipakai di menu dan formulir PPDB.',
     toggleable: true,
     fields: [
       eyebrow('mis. Program keahlian'),

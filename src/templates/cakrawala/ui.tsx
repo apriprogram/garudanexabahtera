@@ -21,15 +21,24 @@ export function Eyebrow({ children, tone = 'light', className = '' }: { children
   );
 }
 
-/** Judul dengan bagian `highlight` berwarna tema (≥ 5:1 di putih; di foto/pita gelap versi terang ≥ 5:1). */
-export function Highlighted({ title, highlight, tone = 'light' }: { title: string; highlight: string; tone?: Tone }) {
+/** Bagian `highlight` per latar: putih → tinta tema (≥ 5:1); pita gelap → versi terang (≥ 5:1 di --ck-deep); foto
+ *  hero → tetap putih dengan garis bawah tebal warna tema, karena warna terang di atas foto (lapisan gelap hanya
+ *  sebagian) bisa turun di bawah 3:1 tergantung fotonya. */
+const MARK = {
+  light: 'text-(--ck-ink)',
+  dark: 'text-(--ck-bright)',
+  photo: 'text-white underline decoration-(--ck-bright) decoration-[length:0.08em] underline-offset-[0.14em] [text-decoration-skip-ink:none]',
+} as const;
+
+/** Judul dengan bagian `highlight` ditandai warna tema (lihat MARK). */
+export function Highlighted({ title, highlight, tone = 'light' }: { title: string; highlight: string; tone?: Tone | 'photo' }) {
   const parts = splitHighlight(title, highlight);
   if (!parts) return <>{title}</>;
   const [before, mark, after] = parts;
   return (
     <>
       {before}
-      <span className={tone === 'dark' ? 'text-(--ck-bright)' : 'text-(--ck-ink)'}>{mark}</span>
+      <span className={MARK[tone]}>{mark}</span>
       {after}
     </>
   );

@@ -56,7 +56,7 @@ function Trust({ m }: { m: CakrawalaModel }) {
   if (!label) return null;
   const people = list(m.testimonials, 'items', 4).filter((item) => hasImage(field(item, 'photo')));
   return (
-    <div className="inline-flex max-w-full items-center gap-3 rounded-full bg-white/[0.12] py-1 pl-1 pr-4 ring-1 ring-inset ring-white/20 backdrop-blur-md">
+    <div className="inline-flex max-w-full items-center gap-3 rounded-[20px] bg-white/[0.12] py-1 pl-1 pr-4 ring-1 ring-inset ring-white/20 backdrop-blur-md">
       {people.length > 0 && (
         <span className="flex shrink-0 -space-x-2" aria-hidden>
           {people.slice(0, 3).map((item, i) => (
@@ -64,7 +64,7 @@ function Trust({ m }: { m: CakrawalaModel }) {
           ))}
         </span>
       )}
-      <span className={`min-w-0 truncate text-[13px] font-medium text-white/90 ${people.length ? '' : 'pl-3'}`}>{label}</span>
+      <span className={`line-clamp-2 min-w-0 py-0.5 text-[13px] font-medium leading-snug text-white/90 ${people.length ? '' : 'pl-3'}`}>{label}</span>
     </div>
   );
 }
@@ -194,11 +194,11 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
       )}
       {live ? (
         <h1 style={{ '--ck-delay': '80ms' } as CSSProperties} className={`ck-rise ${s.eyebrow ? 'mt-4' : ''} max-w-[18ch] text-balance text-white ${TYPE_C.h1}`}>
-          <Highlighted title={s.title} highlight={s.highlight} tone="dark" />
+          <Highlighted title={s.title} highlight={s.highlight} tone="photo" />
         </h1>
       ) : (
         <p className={`${s.eyebrow ? 'mt-4' : ''} max-w-[18ch] text-balance ${TYPE_C.h1}`}>
-          <Highlighted title={s.title} highlight={s.highlight} tone="dark" />
+          <Highlighted title={s.title} highlight={s.highlight} tone="photo" />
         </p>
       )}
       {s.subtitle && (
@@ -271,11 +271,13 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
               <Trust m={m} />
             </div>
             {/* Teks semua slide ditumpuk di satu sel grid: tinggi hero = teks terpanjang, jadi isi di bawahnya tidak
-                bergeser saat slide berganti. Teks slide lain tersembunyi dari pembaca layar dan bukan <h1>. */}
+                bergeser saat slide berganti. Teks slide lain tersembunyi dari pembaca layar dan bukan <h1>. Kunci
+                aktif/bayangan sengaja berganti agar animasi masuk (.ck-rise) diputar ulang; karena itu pengumuman
+                pembaca layar ada di wilayah live terpisah di bawah yang tidak pernah dipasang ulang. */}
             <div className="grid">
               {slides.map((s, i) =>
                 i === index ? (
-                  <div key={`aktif-${i}`} className="col-start-1 row-start-1" aria-live={count > 1 && !autoplay ? 'polite' : undefined}>
+                  <div key={`aktif-${i}`} className="col-start-1 row-start-1">
                     {textBlock(s, true)}
                   </div>
                 ) : (
@@ -285,6 +287,13 @@ export function Hero({ m, overlap }: { m: CakrawalaModel; overlap: boolean }) {
                 ),
               )}
             </div>
+            {count > 1 && (
+              // Wilayah live tetap: slide yang dipilih manual diumumkan (polite) saat tidak berganti otomatis
+              // (dijeda, hero difokus/disorot, gerak mati, pratinjau CMS); saat berganti otomatis diam (off).
+              <p className="sr-only" aria-live={autoplay && !holding ? 'off' : 'polite'} aria-atomic="true" data-ck-slide-status>
+                {`Slide ${index + 1} dari ${count}: ${slides[index].title}`}
+              </p>
+            )}
             {((m.primaryAction && primaryLabel) || (m.secondaryAction && secondaryLabel)) && (
               <div className="mt-8 flex flex-col items-stretch gap-3 @xl:flex-row @xl:items-center">
                 <PillLink action={m.primaryAction} label={primaryLabel} dot="accent" className={`${BTN.white} ${BTN.lg} justify-between`} />

@@ -24,14 +24,19 @@ import {
   isUrgent,
   navItems,
   newsCategories,
+  PAGE_SECTIONS,
   parseSchoolDate,
   ppdbMessage,
+  programNoun,
   programOption,
+  readCakrawala,
+  sectionTarget,
   titleTarget,
   validatePpdb,
   validPhone,
   wrapIndex,
 } from '../cakrawala/model';
+import { INPUT } from '../cakrawala/styles';
 import { CAKRAWALA_PHOTOS } from '../cakrawala/photos';
 import { applySiteHead, siteTitle } from '../siteHead';
 import { SiteRenderer } from '../SiteRenderer';
@@ -154,7 +159,8 @@ describe('Cakrawala: skema & konten bawaan', () => {
 describe('Cakrawala: helper model', () => {
   it('warna tema: biru tinta gelap (putih ≥ 12:1), versi terang ≥ 5:1 di atasnya, tinta ≥ 5:1 di putih; warna tidak valid → bawaan', () => {
     const white = rgb('#ffffff');
-    for (const accent of ['#1D4ED8', '#047857', '#FACC15', '#B91C1C', '#0E1A1C', '#7DD3FC']) {
+    // Termasuk semua pilihan cepat ColorField CMS (#B45309 dulu 4,39:1 tinta di tint) dan merah/magenta jenuh
+    for (const accent of ['#1D4ED8', '#047857', '#FACC15', '#B91C1C', '#0E1A1C', '#7DD3FC', '#211FFE', '#0E7490', '#B45309', '#7C3AED', '#BE185D', '#1F2937', '#FF0000', '#FF00FF']) {
       const vars = cakrawalaVars(accent) as Record<string, string>;
       const deep = rgb(vars['--ck-deep']);
       expect(contrast(deep, white), accent).toBeGreaterThanOrEqual(12);
@@ -162,6 +168,24 @@ describe('Cakrawala: helper model', () => {
       expect(contrast(rgb(vars['--ck-ink']), white), accent).toBeGreaterThanOrEqual(5);
       expect(contrast(rgb(vars['--ck-ink']), rgb(vars['--ck-tint'])), accent).toBeGreaterThanOrEqual(4.5);
     }
+    // Chip kecil (tinta tema di --ck-tint) lolos AA untuk SEMUA warna: kisi RGB 18 langkah (5.832 warna)
+    const steps = Array.from({ length: 18 }, (_, i) => Math.round((i * 255) / 17));
+    const worst = { inkOnTint: Infinity, inkOnWhite: Infinity, whiteOnDeep: Infinity, brightOnDeep: Infinity };
+    for (const r of steps)
+      for (const g of steps)
+        for (const b of steps) {
+          const vars = cakrawalaVars(`#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`) as Record<string, string>;
+          const ink = rgb(vars['--ck-ink']);
+          const deep = rgb(vars['--ck-deep']);
+          worst.inkOnTint = Math.min(worst.inkOnTint, contrast(ink, rgb(vars['--ck-tint'])));
+          worst.inkOnWhite = Math.min(worst.inkOnWhite, contrast(ink, white));
+          worst.whiteOnDeep = Math.min(worst.whiteOnDeep, contrast(white, deep));
+          worst.brightOnDeep = Math.min(worst.brightOnDeep, contrast(rgb(vars['--ck-bright']), deep));
+        }
+    expect(worst.inkOnTint).toBeGreaterThanOrEqual(4.5);
+    expect(worst.inkOnWhite).toBeGreaterThanOrEqual(5);
+    expect(worst.whiteOnDeep).toBeGreaterThanOrEqual(12);
+    expect(worst.brightOnDeep).toBeGreaterThanOrEqual(5);
     expect(cakrawalaVars('bukan warna')).toEqual(cakrawalaVars('#1D4ED8'));
     // Hijau menghasilkan pita gelap kehijauan, bukan biru
     const green = rgb((cakrawalaVars('#047857') as Record<string, string>)['--ck-deep']);
@@ -225,6 +249,13 @@ describe('Cakrawala: helper model', () => {
     });
     // Tanpa daftar jurusan/jalur (bagian disembunyikan) → pilihan tidak wajib
     expect(validatePpdb({ ...EMPTY_PPDB, name: 'Rani Putri', origin: 'SMP Negeri 3', phone: '081234567890' }, { programs: [], paths: [] })).toEqual({});
+    // SMA: sebutan program mengikuti label kecil section Program
+    expect(validatePpdb({ ...EMPTY_PPDB, name: 'Rani Putri', origin: 'SMP Negeri 3', phone: '081234567890' }, { programs: ['MIPA'], paths: [], programNoun: 'peminatan' })).toEqual({
+      program: 'Pilih peminatan.',
+    });
+    expect(
+      [{ eyebrow: 'Peminatan' }, { eyebrow: 'Program keahlian' }, { eyebrow: ' Peminatan  MIPA ' }, { eyebrow: '' }, {}, { eyebrow: 'Pilih jurusan yang sesuai minat dan bakatmu' }].map(programNoun),
+    ).toEqual(['peminatan', 'program keahlian', 'peminatan MIPA', 'program keahlian', 'program keahlian', 'program keahlian']);
     expect(ppdbMessage('SMK Cakrawala Karya', { name: ' Rani Putri ', origin: 'SMP Negeri 3', program: 'DKV — Desain Komunikasi Visual', path: '', phone: '0812 3456 7890', note: 'Mohon\ninfo   beasiswa' })).toBe(
       'Halo Panitia PPDB SMK Cakrawala Karya, saya ingin mendaftar.\nNama calon siswa: Rani Putri\nAsal sekolah: SMP Negeri 3\nPilihan program: DKV — Desain Komunikasi Visual\nNo. WhatsApp: 0812 3456 7890\nCatatan: Mohon info beasiswa\nMohon info langkah selanjutnya. Terima kasih.',
     );
@@ -254,6 +285,37 @@ describe('Cakrawala: helper model', () => {
     expect(iconKey('Akreditasi (Unggul)')).toBe('certificate');
     expect(iconKey('Sesuatu yang lain', 2)).toBe('award');
   });
+
+  it('tautan "#…": anchor Indonesia (#berita, #jurusan, #pendaftaran) ke section yang benar, anchor tak dikenal → cadangan', () => {
+    expect([...PAGE_SECTIONS]).toEqual(def.sections.map((s) => s.key).filter((k) => k !== 'brand'));
+    expect(['berita', '#Jurusan', 'pendaftaran', 'profil', 'kontak', 'tentang', 'beranda', 'news', 'lokasi', 'bkk'].map(sectionTarget)).toEqual([
+      'news',
+      'programs',
+      'ppdb',
+      'about',
+      'contact',
+      'about',
+      'hero',
+      'news',
+      'contact',
+      'careers',
+    ]);
+    expect(['xyz', 'brand', ''].map(sectionTarget)).toEqual([null, null, null]);
+
+    const m = readCakrawala(resolveContent(def, null));
+    const fallback = { kind: 'section', target: 'ppdb' } as const;
+    expect(m.shown('berita')).toBe(false);
+    expect(m.shown('xyz')).toBe(false);
+    expect(m.linkOr('#berita', fallback)).toEqual({ kind: 'section', target: 'news' });
+    expect(m.linkOr('#jurusan', fallback)).toEqual({ kind: 'section', target: 'programs' });
+    expect(m.linkOr('#kontak', fallback)).toEqual({ kind: 'section', target: 'contact' });
+    expect(m.linkOr('#beranda', fallback)).toEqual({ kind: 'section', target: 'hero' });
+    expect(m.linkOr('#salah-ketik', fallback)).toBe(fallback);
+    expect(m.linkOr('', fallback)).toEqual(fallback);
+    // Section tersembunyi → cadangan
+    const hidden = readCakrawala(resolveContent(def, { news: { enabled: false } }));
+    expect(hidden.linkOr('#berita', fallback)).toBe(fallback);
+  });
 });
 
 describe('Cakrawala: demo', () => {
@@ -265,6 +327,12 @@ describe('Cakrawala: demo', () => {
     expect(hero.getAttribute('data-hero-layout')).toBe('horizon');
     expect(hero.getAttribute('data-tpl-tone')).toBe('inverse');
     expect(hero.querySelector('h1')!.textContent).toBe('Terampil hari ini, siap berkarya esok hari');
+    // Bagian sorotan judul di atas foto: tetap putih (kontras tidak bergantung foto) + garis bawah warna tema
+    const mark = hero.querySelector('h1 span')!;
+    expect(mark.textContent).toBe('siap berkarya');
+    expect(mark.className).toContain('text-white');
+    expect(mark.className).toContain('decoration-(--ck-bright)');
+    expect(mark.className).not.toContain('text-(--ck-bright)');
     const img = hero.querySelector<HTMLImageElement>('img[fetchpriority="high"]')!;
     expect(img.getAttribute('src')).toBe('/assets/templates/photos/cakrawala-hero-1-1920.webp');
     expect(img.getAttribute('srcset')).toContain('-1280.webp 1280w');
@@ -276,7 +344,10 @@ describe('Cakrawala: demo', () => {
     expect(within(hero).getByRole('link', { name: 'Daftar PPDB' })).toHaveAttribute('href', '#ppdb');
     expect(within(hero).getByRole('link', { name: 'Profil sekolah' })).toHaveAttribute('href', '#tentang');
     expect(within(hero).getByRole('link', { name: 'Lihat jadwal' })).toHaveAttribute('href', '#ppdb');
-    expect(hero.textContent).toContain('Dipercaya 1.200+ keluarga di Bandung Raya');
+    // Teks kepercayaan: demo singkat agar muat di 390px; teks panjang pembeli turun baris (maks. 2), tidak terpotong "…"
+    const trust = within(hero).getByText('Dipercaya 1.200+ keluarga');
+    expect(trust.className).toContain('line-clamp-2');
+    expect(trust.className).not.toContain('truncate');
 
     expect(container.textContent).toContain('PPDB 2027/2028 Gelombang 1 dibuka hingga 31 Januari 2027');
     expect(within(container).getByRole('link', { name: 'Daftar sekarang' })).toHaveAttribute('href', '#ppdb');
@@ -342,6 +413,38 @@ describe('Cakrawala: demo', () => {
     fireEvent.click(within(controls).getByRole('button', { name: 'Jeda slide otomatis' }));
     expect(within(controls).getByRole('button', { name: 'Putar slide otomatis' })).toBeInTheDocument();
     expect(progress()).toHaveAttribute('data-run', 'false');
+  });
+
+  it('hero slider: wilayah live tetap (tidak dipasang ulang) mengumumkan slide yang dipilih manual; diam saat berganti otomatis', () => {
+    const hero = section(demo(), 'hero');
+    const status = () => hero.querySelector<HTMLElement>('[data-ck-slide-status]')!;
+    const live = status();
+    expect(hero.querySelectorAll('[aria-live]')).toHaveLength(1);
+    expect(live).toHaveClass('sr-only');
+    expect(live).toHaveAttribute('aria-atomic', 'true');
+    expect(live).toHaveTextContent('Slide 1 dari 4: Terampil hari ini, siap berkarya esok hari');
+    // Berganti otomatis tanpa disorot/difokus → off
+    expect(live).toHaveAttribute('aria-live', 'off');
+    // Fokus di kontrol (keyboard) → polite; pilihan berikutnya diumumkan di node yang SAMA
+    const controls = within(hero).getByRole('group', { name: 'Kontrol slide' });
+    const next = within(controls).getByRole('button', { name: 'Slide berikutnya' });
+    act(() => next.focus());
+    expect(status()).toBe(live);
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    fireEvent.click(next);
+    expect(status()).toBe(live);
+    expect(live.isConnected).toBe(true);
+    expect(live).toHaveTextContent('Slide 2 dari 4: Kelas yang dekat dengan dunia kerja nyata');
+    // Dijeda → tetap polite walau fokus pindah keluar hero
+    fireEvent.click(within(controls).getByRole('button', { name: 'Jeda slide otomatis' }));
+    act(() => (document.activeElement as HTMLElement | null)?.blur());
+    expect(hero.contains(document.activeElement)).toBe(false);
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    fireEvent.click(next);
+    expect(status()).toBe(live);
+    expect(live).toHaveTextContent(/^Slide 3 dari 4: /);
+    // Slide aktif tidak lagi membawa aria-live sendiri
+    expect(hero.querySelectorAll('.grid > [aria-live]')).toHaveLength(0);
   });
 
   it('kartu info menuju section dari judul, statistik dengan ikon, sambutan, profil + visi misi', () => {
@@ -430,6 +533,10 @@ describe('Cakrawala: demo', () => {
     const name = within(form).getByLabelText('Nama lengkap calon siswa');
     expect(name).toHaveAttribute('aria-invalid', 'true');
     expect(name).toHaveFocus();
+    // Cincin fokus memakai versi kontras warna tema (≥ 3:1 di putih juga untuk warna tema terang), bukan warna mentah
+    expect(INPUT).toContain('focus:ring-(--tpl-accent-ink)');
+    expect(INPUT).not.toMatch(/ring-\(--tpl-accent\)/);
+    expect(name.className).toContain('focus:ring-(--tpl-accent-ink)');
     expect(form.textContent).toContain('Tulis nama lengkap calon siswa.');
     expect(within(form).getByLabelText('Nomor WhatsApp orang tua/siswa')).toHaveAttribute('aria-invalid', 'true');
 
@@ -642,8 +749,43 @@ describe('Cakrawala: konten opsional kosong', () => {
     const nav = within(container.querySelector('header')!).getAllByRole('navigation', { name: 'Menu utama' })[0];
     expect(nav.textContent).toContain('Peminatan');
     expect(nav.textContent).not.toContain('BKK');
-    const options = Array.from((within(section(container, 'ppdb')).getByLabelText('Pilihan program keahlian') as HTMLSelectElement).options).map((o) => o.value);
-    expect(options).toEqual(['', 'MIPA — Matematika dan Ilmu Pengetahuan Alam', 'IPS — Ilmu Pengetahuan Sosial']);
+    // Formulir PPDB memakai sebutan dari label kecil "Peminatan" (bukan istilah SMK "program keahlian")
+    const ppdb = section(container, 'ppdb');
+    expect(within(ppdb).getByRole('form').textContent).not.toMatch(/program keahlian/i);
+    const select = within(ppdb).getByLabelText('Pilihan peminatan') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['', 'MIPA — Matematika dan Ilmu Pengetahuan Alam', 'IPS — Ilmu Pengetahuan Sosial']);
+    expect(select.options[0].textContent).toBe('Pilih peminatan');
+    fireEvent.click(within(ppdb).getByRole('button', { name: /Kirim lewat WhatsApp/ }));
+    expect(select).toHaveAttribute('aria-invalid', 'true');
+    expect(document.getElementById(select.getAttribute('aria-describedby')!)).toHaveTextContent('Pilih peminatan.');
+  });
+
+  it('Berita disembunyikan: pengumuman & agenda punya jarak atas sendiri (tidak menempel di panel PPDB)', () => {
+    const wrapper = (container: HTMLElement) => section(container, 'announcements').parentElement!.parentElement!;
+    const PAD = 'pt-14';
+    // Bawaan: jarak dari bawah section Berita, wadah tanpa jarak atas sendiri
+    expect(wrapper(demo()).className).not.toContain(PAD);
+    cleanup();
+    expect(wrapper(demo({ news: { enabled: false } })).className).toContain(PAD);
+    cleanup();
+    // Berita aktif tetapi tanpa judul → tidak dirender → sama dengan disembunyikan
+    expect(wrapper(demo({ news: { items: [{ title: '', excerpt: 'x' }] } })).className).toContain(PAD);
+    cleanup();
+    // Berita & PPDB disembunyikan → tepat di bawah Prestasi yang sudah punya jarak bawah → tanpa jarak ganda
+    const c = demo({ news: { enabled: false }, ppdb: { enabled: false } });
+    expect(sectionKeys(c).slice(sectionKeys(c).indexOf('achievements'), sectionKeys(c).indexOf('achievements') + 2)).toEqual(['achievements', 'announcements']);
+    expect(wrapper(c).className).not.toContain(PAD);
+  });
+
+  it('nama mitra industri panjang (40 huruf) boleh turun baris, tidak melebar keluar panel di HP', () => {
+    const long = 'PT Nusantara Teknologi Rekayasa Industri';
+    expect(long).toHaveLength(40);
+    const industry = section(demo({ industry: { partners: [{ name: long, logo: '' }] } }), 'industry');
+    const name = within(industry).getByText(long);
+    expect(name.className).not.toContain('whitespace-nowrap');
+    expect(name.className).toContain('min-w-0');
+    expect(name.closest('li')!.className).toContain('max-w-full');
+    expect(name.closest('li')!.className).toContain('min-w-0');
   });
 
   it('tanpa WhatsApp: formulir PPDB diganti tombol ke Kontak, lamaran BKK & tanya program ke Kontak', () => {
@@ -738,6 +880,11 @@ describe('Cakrawala: editor CMS', () => {
     expect(within(container).getByRole('group', { name: `Pilihan cepat ${color.label.toLowerCase()}` })).toBeInTheDocument();
     expect(within(container).getByRole('button', { name: 'Pakai warna #047857' })).toBeInTheDocument();
     expect(container.querySelector('input[type="color"]')).not.toBeNull();
+    // Bantuan hanya menunjuk pilihan cepat yang memang ada; biru bawaan (#1D4ED8, bukan pilihan cepat) lewat "Pakai bawaan"
+    const help = ('help' in color && color.help) || '';
+    expect(help).toContain('hijau #047857');
+    expect(help).toContain('"Pakai bawaan" untuk biru bawaan #1D4ED8');
+    expect(within(container).queryByRole('button', { name: 'Pakai warna #1D4ED8' })).toBeNull();
   });
 });
 

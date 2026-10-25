@@ -35,7 +35,7 @@ export const cakrawalaContent: SiteContent = {
     header_label: 'Daftar PPDB',
     header_url: '',
     image: cakrawalaPhoto('hero-1'),
-    trust_text: 'Dipercaya 1.200+ keluarga di Bandung Raya',
+    trust_text: 'Dipercaya 1.200+ keluarga',
     slides: [
       {
         image: cakrawalaPhoto('hero-2'),

@@ -16,6 +16,7 @@ import {
   EMPTY_PPDB,
   parseSchoolDate,
   ppdbMessage,
+  programNoun,
   programOption,
   validatePpdb,
   type CakrawalaModel,
@@ -233,6 +234,8 @@ function RegistrationForm({ m }: { m: CakrawalaModel }) {
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const programs = list(m.programs, 'items', 9).map(programOption).filter(Boolean);
   const programChoices = m.shown('programs') ? programs : [];
+  /** "program keahlian" (SMK) atau mis. "peminatan" (SMA), mengikuti label kecil section Program */
+  const noun = programNoun(m.programs);
   const paths = list(ppdb, 'paths', 6)
     .map((item) => field(item, 'name'))
     .filter(Boolean);
@@ -251,7 +254,7 @@ function RegistrationForm({ m }: { m: CakrawalaModel }) {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const found = validatePpdb(form, { programs: programChoices, paths });
+    const found = validatePpdb(form, { programs: programChoices, paths, programNoun: noun });
     setErrors(found);
     const first = (['name', 'origin', 'program', 'path', 'phone'] as (keyof PpdbForm)[]).find((key) => found[key]);
     if (first) {
@@ -348,7 +351,7 @@ function RegistrationForm({ m }: { m: CakrawalaModel }) {
           />
         </Field>
         {programChoices.length > 0 && (
-          <Field id={id('program')} label="Pilihan program keahlian" error={errors.program}>
+          <Field id={id('program')} label={`Pilihan ${noun}`} error={errors.program}>
             <div className="relative">
             <select
               ref={(el) => {
@@ -360,7 +363,7 @@ function RegistrationForm({ m }: { m: CakrawalaModel }) {
               className={`${INPUT} h-12 appearance-none pr-10 ${ring('program')}`}
               {...invalid('program')}
             >
-              <option value="">Pilih program</option>
+              <option value="">Pilih {noun}</option>
               {programChoices.map((option) => (
                 <option key={option} value={option}>
                   {option}

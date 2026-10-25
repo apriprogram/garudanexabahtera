@@ -18,7 +18,7 @@ import { Header, TopBar } from './Header';
 import { Hero } from './Hero';
 import { Achievements, Industry } from './Industry';
 import { Highlights, Stats } from './Intro';
-import { readCakrawala } from './model';
+import { newsItems, readCakrawala } from './model';
 import { News, Notices } from './News';
 import { Alumni, Careers } from './People';
 import { CAKRAWALA_PHOTOS } from './photos';
@@ -31,6 +31,11 @@ export default function Cakrawala({ content, preview = false, motion }: Template
   const m = readCakrawala(content);
   const heroOn = isEnabled(m.hero);
   const highlightsOn = m.shown('highlights');
+  const newsOn = isEnabled(m.news) && newsItems(m.news).length > 0;
+  const ppdbOn = isEnabled(m.ppdb);
+  // Pengumuman & agenda tidak punya jarak atas sendiri (jaraknya dari bawah Berita). Tanpa Berita: beri jarak sendiri,
+  // kecuali yang tepat di atasnya Prestasi (section dengan jarak bawah sendiri, saat PPDB juga disembunyikan).
+  const noticesPadTop = !newsOn && (ppdbOn || !m.shown('achievements'));
   return (
     <TemplateShell content={content} preview={preview} motion={motion} displayFont="jakarta" defaultAccent={CAKRAWALA_ACCENT}>
       <PhotoSetContext.Provider value={CAKRAWALA_PHOTOS}>
@@ -46,9 +51,9 @@ export default function Cakrawala({ content, preview = false, motion }: Template
             {isEnabled(m.programs) && <Programs m={m} />}
             {isEnabled(m.industry) && <Industry m={m} />}
             {isEnabled(m.achievements) && <Achievements m={m} />}
-            {isEnabled(m.ppdb) && <Ppdb m={m} />}
-            {isEnabled(m.news) && <News m={m} />}
-            <Notices m={m} />
+            {ppdbOn && <Ppdb m={m} />}
+            {newsOn && <News m={m} />}
+            <Notices m={m} padTop={noticesPadTop} />
             {isEnabled(m.testimonials) && <Alumni m={m} />}
             {isEnabled(m.careers) && <Careers m={m} />}
             {isEnabled(m.facilities) && <Facilities m={m} />}

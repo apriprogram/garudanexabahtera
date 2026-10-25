@@ -31,13 +31,15 @@ const BLACK: Rgb = [0, 0, 0];
 /** Biru malam: dasar pita gelap & footer (dicampur sedikit warna tema) */
 const NIGHT: Rgb = [4, 10, 28];
 const toHex = (rgb: Rgb) => `#${rgb.map((c) => Math.round(Math.min(255, Math.max(0, c))).toString(16).padStart(2, '0')).join('')}`;
-const mix = (a: Rgb, b: Rgb, amountOfA: number): Rgb => a.map((c, i) => c * amountOfA + b[i] * (1 - amountOfA)) as Rgb;
+/** Campuran dibulatkan ke bilangan bulat: kontras dihitung dari warna yang benar-benar ditulis sebagai hex. */
+const mix = (a: Rgb, b: Rgb, amountOfA: number): Rgb => a.map((c, i) => Math.round(c * amountOfA + b[i] * (1 - amountOfA))) as Rgb;
 
 /**
  * Variabel warna lokal Cakrawala (di samping --tpl-accent* milik Shell), semuanya diturunkan dari SATU warna tema:
  * --ck-deep: biru tinta (warna tema 26% + biru malam) untuk pita gelap, footer, dan lapisan foto hero; teks putih ≥ 12:1;
  * --ck-bright: warna tema dicerahkan sampai ≥ 5:1 terhadap --ck-deep (ikon, angka, label di pita gelap);
- * --ck-ink: warna tema digelapkan sampai ≥ 5:1 di putih (tetap ≥ 4,5:1 di panel bertint);
+ * --ck-ink: warna tema digelapkan sampai ≥ 5:1 di putih DAN ≥ 4,6:1 di --ck-tint (chip kecil 12px: kategori berita,
+ *   kuota jalur, label pengumuman, tingkat prestasi, ubin tanggal agenda), untuk warna apa pun dari CMS;
  * --ck-soft / --ck-tint / --ck-line: bidang lembut 5% / 10% dan garis 18% warna tema.
  */
 export function cakrawalaVars(accentRaw: string): CSSProperties {
@@ -46,14 +48,15 @@ export function cakrawalaVars(accentRaw: string): CSSProperties {
   for (let i = 0; i < 12 && contrast(deep, WHITE) < 12; i += 1) deep = mix(deep, NIGHT, 0.8);
   let bright = accent;
   for (let i = 0; i < 20 && contrast(bright, deep) < 5; i += 1) bright = mix(bright, WHITE, 0.8);
+  const tint = mix(accent, WHITE, 0.1);
   let ink = accent;
-  for (let i = 0; i < 20 && contrast(ink, WHITE) < 5; i += 1) ink = mix(ink, BLACK, 0.88);
+  for (let i = 0; i < 24 && (contrast(ink, WHITE) < 5 || contrast(ink, tint) < 4.6); i += 1) ink = mix(ink, BLACK, 0.88);
   return {
     '--ck-deep': toHex(deep),
     '--ck-bright': toHex(bright),
     '--ck-ink': toHex(ink),
     '--ck-soft': toHex(mix(accent, WHITE, 0.05)),
-    '--ck-tint': toHex(mix(accent, WHITE, 0.1)),
+    '--ck-tint': toHex(tint),
     '--ck-line': toHex(mix(accent, WHITE, 0.18)),
   } as CSSProperties;
 }
@@ -181,6 +184,9 @@ export const displayDate = (raw: string | null | undefined): string => parseScho
 
 // ─── Berita ───────────────────────────────────────────────────────────────────
 
+/** Berita yang tampil (berjudul, maks. 9); kosong → section Berita tidak dirender. */
+export const newsItems = (news: SectionContent): ListItem[] => list(news, 'items', 9).filter((item) => field(item, 'title'));
+
 const normalize = (value: string) =>
   value
     .normalize('NFD')
@@ -244,12 +250,31 @@ export function validPhone(raw: string): boolean {
   return digits.length >= 9 && digits.length <= 15 && /^(0|62|8)/.test(digits);
 }
 
-/** Pesan galat per isian (kosong = valid). `programs`/`paths` = pilihan yang tersedia (wajib dipilih bila ada). */
-export function validatePpdb(form: PpdbForm, options: { programs: string[]; paths: string[] }): PpdbErrors {
+export const DEFAULT_PROGRAM_NOUN = 'program keahlian';
+
+/**
+ * Sebutan pilihan program di formulir PPDB, dari label kecil section Program agar SMA tidak memakai istilah SMK:
+ * "Peminatan" → "peminatan", "Program keahlian" → "program keahlian" (singkatan seperti "MIPA" tetap kapital).
+ * Kosong atau panjang (> 3 kata / > 24 huruf, mis. kalimat) → "program keahlian".
+ */
+export function programNoun(programs: SectionContent): string {
+  const eyebrow = text(programs, 'eyebrow').replace(/\s+/g, ' ').trim();
+  if (!eyebrow || eyebrow.length > 24 || eyebrow.split(' ').length > 3) return DEFAULT_PROGRAM_NOUN;
+  return eyebrow
+    .split(' ')
+    .map((word) => (/^\p{Lu}\p{Ll}/u.test(word) ? word.toLowerCase() : word))
+    .join(' ');
+}
+
+/**
+ * Pesan galat per isian (kosong = valid). `programs`/`paths` = pilihan yang tersedia (wajib dipilih bila ada);
+ * `programNoun` = sebutan program (lihat programNoun), bawaan "program keahlian".
+ */
+export function validatePpdb(form: PpdbForm, options: { programs: string[]; paths: string[]; programNoun?: string }): PpdbErrors {
   const errors: PpdbErrors = {};
   if (form.name.trim().length < 3) errors.name = 'Tulis nama lengkap calon siswa.';
   if (form.origin.trim().length < 3) errors.origin = 'Tulis nama sekolah asal (SMP/MTs).';
-  if (options.programs.length > 0 && !options.programs.includes(form.program)) errors.program = 'Pilih program keahlian.';
+  if (options.programs.length > 0 && !options.programs.includes(form.program)) errors.program = `Pilih ${options.programNoun || DEFAULT_PROGRAM_NOUN}.`;
   if (options.paths.length > 0 && !options.paths.includes(form.path)) errors.path = 'Pilih jalur pendaftaran.';
   if (!validPhone(form.phone)) errors.phone = 'Tulis nomor WhatsApp yang aktif, mis. 081234567890.';
   return errors;
@@ -295,6 +320,67 @@ export interface SocialLink {
 export const socialLinks = (footer: SectionContent): SocialLink[] =>
   SOCIAL_FIELDS.map(({ key, label }) => ({ key, label, href: safeUrl(text(footer, key)) ?? '' })).filter((s) => s.href);
 
+// ─── Tujuan tautan "#…" ───────────────────────────────────────────────────────
+
+/** Kunci section yang punya tempat di halaman (urutan halaman; = section skema tanpa `brand`). */
+export const PAGE_SECTIONS = [
+  'hero',
+  'highlights',
+  'stats',
+  'welcome',
+  'about',
+  'programs',
+  'industry',
+  'achievements',
+  'ppdb',
+  'news',
+  'announcements',
+  'agenda',
+  'testimonials',
+  'careers',
+  'facilities',
+  'gallery',
+  'faq',
+  'contact',
+  'footer',
+] as const;
+const KNOWN_SECTIONS = new Set<string>(PAGE_SECTIONS);
+
+/** Anchor berbahasa Indonesia yang wajar diketik pembeli → kunci section (anchor bersama seperti #kontak, #tentang,
+ *  #galeri, #testimoni sudah diterjemahkan sectionFromAnchor). */
+const ANCHOR_ALIASES: Record<string, string> = {
+  profil: 'about',
+  'visi-misi': 'about',
+  sambutan: 'welcome',
+  statistik: 'stats',
+  jurusan: 'programs',
+  program: 'programs',
+  peminatan: 'programs',
+  industri: 'industry',
+  tefa: 'industry',
+  prestasi: 'achievements',
+  pendaftaran: 'ppdb',
+  spmb: 'ppdb',
+  berita: 'news',
+  pengumuman: 'announcements',
+  kegiatan: 'agenda',
+  alumni: 'testimonials',
+  bkk: 'careers',
+  karier: 'careers',
+  karir: 'careers',
+  loker: 'careers',
+  fasilitas: 'facilities',
+  'tanya-jawab': 'faq',
+  lokasi: 'contact',
+};
+
+/** Target tautan section ("berita", "news", "kontak") → kunci section di halaman, atau null bila tidak dikenal. */
+export function sectionTarget(target: string): string | null {
+  const clean = sectionFromAnchor(target);
+  const key = ANCHOR_ALIASES[clean] ?? clean;
+  return KNOWN_SECTIONS.has(key) ? key : null;
+}
+
 // ─── Model ────────────────────────────────────────────────────────────────────
 
 export function readCakrawala(content: SiteContent) {
@@ -313,7 +399,9 @@ export function readCakrawala(content: SiteContent) {
   /** Tujuan "hubungi": WhatsApp bila ada nomor, kalau tidak section Kontak, kalau tidak null (tombol disembunyikan). */
   const startAction: LinkAction | null = waAction ?? contactAction;
 
+  /** Section tampil di halaman? Kunci yang tidak dikenal (mis. salah ketik di field URL) → false. */
   const shown = (key: string): boolean => {
+    if (!KNOWN_SECTIONS.has(key)) return false;
     const s = section(key);
     if (!isEnabled(s)) return false;
     switch (key) {
@@ -335,11 +423,16 @@ export function readCakrawala(content: SiteContent) {
     }
   };
   const sectionAction = (key: string): LinkAction | null => (shown(key) ? { kind: 'section', target: key } : null);
-  /** Isi field URL: "#ppdb" dsb. hanya bila section itu tampil; kosong → `fallback`. */
+  /**
+   * Isi field URL: "#ppdb", "#berita", "#kontak" dsb. hanya bila section itu tampil (anchor Indonesia diterjemahkan ke
+   * kunci section); anchor tak dikenal / section tersembunyi / kosong → `fallback`.
+   */
   const linkOr = (raw: string, fallback: LinkAction | null): LinkAction | null => {
     const action = resolveAction(raw, fallback);
-    if (action?.kind === 'section' && action.target !== 'hero' && !shown(sectionFromAnchor(action.target))) return fallback;
-    return action;
+    if (action?.kind !== 'section') return action;
+    const target = sectionTarget(action.target);
+    if (target === 'hero') return { kind: 'section', target };
+    return target && shown(target) ? { kind: 'section', target } : fallback;
   };
 
   /** Nomor WhatsApp panitia PPDB: isian PPDB, kalau kosong nomor di Kontak. */

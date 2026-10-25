@@ -84,6 +84,7 @@ export const PANEL = {
   deep: `ck-deep rounded-[24px] text-white @3xl:rounded-[32px] ${INSET_PAD}`,
 } as const;
 
-/** Isian formulir: 16px di HP (iOS tidak memperbesar), garis tipis, fokus cincin tema. */
+/** Isian formulir: 16px di HP (iOS tidak memperbesar), garis tipis, fokus cincin tema versi kontras (--tpl-accent-ink ≥ 3:1
+ *  di putih, juga untuk warna tema terang dari CMS). */
 export const INPUT =
-  'block w-full rounded-[12px] bg-white px-4 text-[16px] text-[#0D1830] ring-1 ring-inset ring-black/[0.14] placeholder:text-[#6B7280] transition-colors focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-(--tpl-accent) @3xl:text-[15px]';
+  'block w-full rounded-[12px] bg-white px-4 text-[16px] text-[#0D1830] ring-1 ring-inset ring-black/[0.14] placeholder:text-[#6B7280] transition-colors focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-(--tpl-accent-ink) @3xl:text-[15px]';
