@@ -310,3 +310,39 @@ testimoni fiktif dan tidak berhubungan dengan orang di foto.
 | `skynusa-portrait-1-*` | Pria berkacamata membawa kamera di jalan kota | https://unsplash.com/photos/hnM1z-_FGDM | Aunnop Suthumno |
 | `skynusa-portrait-2-*` | Perempuan berhijab abu-abu bertopang dagu | https://unsplash.com/photos/hxLv1jqP0_o | Muhammad Ruqi Yaddin |
 | `skynusa-portrait-3-*` | Pria muda dengan latar cahaya senja | https://unsplash.com/photos/TBUA5KHJn6k | Arjunsyah |
+
+## Madani (SMA IT Nurul Azka, sekolah Islam fiktif)
+
+Slide hero `-1920.webp` + `-800.webp` (16:10); profil, sambutan, dan wisuda `-1200.webp` + `-800.webp` (4:5); program,
+berita, fasilitas, dan galeri `-1200.webp` + `-800.webp` (4:3); potret alumni 1:1 `-480.webp` + `-240.webp`. Diunduh dan
+dicek lisensinya (Unsplash License, bukan Unsplash+) 2026-10-25. Siswi di foto berjilbab dan siswa berpakaian sopan;
+dipilih tanpa logo merek yang terbaca. `madani-galeri-pramuka-*` dipotong agar tanda air fotografer di pojok bawah tidak
+ikut. Nama sekolah, guru, siswa, dan alumni di demo fiktif dan tidak berhubungan dengan orang atau sekolah di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `madani-hero-*` | Tiga siswi berjilbab putih membaca buku di taman sekolah | https://unsplash.com/photos/Is4G8J1gqE8 | Muh Makhlad |
+| `madani-slide-kampus-*` | Gedung sekolah tiga lantai dan lapangan olahraga hijau | https://unsplash.com/photos/s53DwzbeD6Q | Haidan |
+| `madani-slide-kajian-*` | Siswa berpeci duduk bersila mengikuti kajian di aula | https://unsplash.com/photos/xLoEfZxoGh4 | Muhammad Azzam |
+| `madani-slide-santri-*` | Dua siswa berpeci dan bersarung membaca buku bersama | https://unsplash.com/photos/56oH4XytXko | Muh Makhlad |
+| `madani-profil-*` | Tiga siswi berjilbab putih berdiskusi di teras sekolah | https://unsplash.com/photos/JvS_AaDbzzw | Ed Us |
+| `madani-sambutan-*` | Guru berjilbab dan berkebaya hijau di depan papan tulis | https://unsplash.com/photos/W-k6wItKma8 | Fajar Herlambang STUDIO |
+| `madani-tahfidz-*` | Siswi berjilbab membaca Al-Qur'an di atas rehal | https://unsplash.com/photos/dzX6fui33UA | Andri Helmansyah |
+| `madani-olimpiade-*` | Siswa berseragam batik mengerjakan soal di kelas | https://unsplash.com/photos/TmdrCRVDOnQ | Fajar Herlambang STUDIO |
+| `madani-bilingual-*` | Tiga siswi berjilbab tersenyum di ruang kelas | https://unsplash.com/photos/qQcX17o9EWU | Mufid Majnun |
+| `madani-karakter-*` | Pemateri berpeci menyampaikan kajian di depan siswa | https://unsplash.com/photos/Jbk_Tce8Z1U | Raka Dwi Wicaksana |
+| `madani-asrama-*` | Rombongan siswa putra berbaju koko dan bersarung | https://unsplash.com/photos/HqYCPzhvXBk | Mufid Majnun |
+| `madani-digital-*` | Siswi berjilbab belajar pemrograman di laboratorium komputer | https://unsplash.com/photos/wr6eqJyxWy8 | FLASHCOM INDONESIA |
+| `madani-berita-olimpiade-*` | Barisan siswi berjilbab putih menulis jawaban lomba | https://unsplash.com/photos/hkQqXWb0DAY | Herlambang Tinasih Gusti |
+| `madani-berita-wisuda-*` | Siswi berjilbab merah muda berselempang wisuda | https://unsplash.com/photos/dlDiUigJTiY | Muh Makhlad |
+| `madani-berita-ramadan-*` | Siswa berpeci membaca Al-Qur'an di masjid berkarpet | https://unsplash.com/photos/1Xq9EMStf2o | Aldin Nasrun |
+| `madani-lab-*` | Laboratorium IPA sekolah dengan meja praktikum | https://unsplash.com/photos/NdgBzWnDfYY | Lusia Komala Widiastuti |
+| `madani-galeri-lapangan-*` | Gedung sekolah dan lapangan futsal dari atas | https://unsplash.com/photos/pnwHaQnv9GY | Haidan |
+| `madani-galeri-perpustakaan-*` | Empat siswi berjilbab di perpustakaan | https://unsplash.com/photos/TDWgUTXmGVI | Andri Helmansyah |
+| `madani-galeri-pramuka-*` | Barisan siswi pramuka berjilbab cokelat | https://unsplash.com/photos/rFYx9YbvdwE | Mochammad Hafidz |
+| `madani-galeri-paskibra-*` | Siswi petugas upacara berjilbab dan berpeci hitam | https://unsplash.com/photos/zMVMTeX-T1w | Syahrul Alamsyah Wahid |
+| `madani-galeri-wisuda-*` | Siswi berjilbab memakai toga wisuda | https://unsplash.com/photos/sH3GLBdk2p8 | Abiyu Bayuaji |
+| `madani-galeri-acara-*` | Siswi berjilbab krem di aula saat kajian | https://unsplash.com/photos/7OMutRyqw_k | Wina Zen |
+| `madani-portrait-1-*` | Perempuan muda berjilbab putih tersenyum | https://unsplash.com/photos/J6kMThsc41M | Mufid Majnun |
+| `madani-portrait-2-*` | Pemuda berkemeja batik membawa ransel | https://unsplash.com/photos/guhDE26cHbc | Saung Digital |
+| `madani-portrait-3-*` | Perempuan muda berjilbab cokelat tertawa | https://unsplash.com/photos/N-lCdqdAdes | Muhammad Rizqi |

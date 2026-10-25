@@ -188,4 +188,23 @@ Tiga fitur mendorong pembelian berulang: kuis jenis kulit yang menyusun rutinita
    '["/assets/templates/glowstory-1.webp","/assets/templates/glowstory-2.webp"]',
    'glowstory', NULL, 'published', 11);
 
+-- Madani (2026-10-25, Sekolah & Pendidikan; DB lama: migrasi 2026-10-25_024). Satu statement per template agar baris
+-- yang dirilis bersamaan bisa ditambah tanpa mengubah daftar VALUES lain.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('madani',
+   'Madani',
+   'Sekolah & Pendidikan',
+   'Template website sekolah Islam untuk SMA IT, madrasah aliyah, dan sekolah berasrama: slider foto, profil, berita, agenda, dan PPDB lewat WhatsApp.',
+   'Madani tampil teduh dan rapi sejak layar pertama: slider foto sekolah di dalam bingkai membulat dengan menu pil, judul dengan kata sorotan, tombol Daftar PPDB, dan kartu info gelombang pendaftaran. Di bawahnya tersusun strip keunggulan, sambutan kepala sekolah, profil dengan tab visi, misi, dan nilai, statistik siswa dan guru, program unggulan seperti tahfidz dan kelas sains, daftar prestasi, fasilitas, berita yang bisa dibaca di tempat, pengumuman bertanda Penting, agenda kegiatan, galeri, cerita alumni, tanya jawab, serta lokasi dengan peta Google Maps.
+
+Cocok untuk SMA Islam terpadu, madrasah aliyah, dan sekolah berasrama. Bagian PPDB memuat jalur pendaftaran, jadwal, syarat, alur, dan rincian biaya, plus formulir minat yang menyusun pesan WhatsApp untuk panitia; data tidak disimpan di website dan tidak ada pembayaran online. Demo memakai SMA IT Nurul Azka, sekolah fiktif di Bogor. Semua teks, foto, dan warna tema (hijau, biru, atau warna lain) bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero slider foto dengan tombol Daftar PPDB dan kartu info pendaftaran","PPDB: jalur, jadwal, syarat, alur, biaya, dan formulir minat ke WhatsApp","Sambutan kepala sekolah, profil, visi & misi, dan statistik sekolah","Program unggulan, prestasi, fasilitas, dan galeri kegiatan","Berita, pengumuman bertanda Penting, dan agenda kegiatan","Cerita alumni, tanya jawab, dan peta lokasi Google Maps","Warna tema bisa diganti (hijau, biru, atau warna lain) lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/madani-preview.webp',
+   '["/assets/templates/madani-1.webp","/assets/templates/madani-2.webp"]',
+   'madani', NULL, 'published', 12);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

@@ -6,6 +6,7 @@ import { corporateNexa } from './corporate-nexa';
 import { finova } from './finova';
 import { gadgetku } from './gadgetku';
 import { glowstory } from './glowstory';
+import { madani } from './madani';
 import { puncakgear } from './puncakgear';
 import { serenity } from './serenity';
 import { skynusa } from './skynusa';
@@ -23,6 +24,7 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // PuncakGear (2026-10-25): toko perlengkapan mendaki, panduan per gunung + sewa alat (src/templates/puncakgear/PuncakGear.tsx).
 // GadgetKu.id (2026-10-25): toko aksesori HP, cari per tipe HP + custom casing (src/templates/gadgetku/GadgetKu.tsx).
 // GlowStory (2026-10-25): toko online kecantikan, kuis jenis kulit + langganan isi ulang (src/templates/glowstory/GlowStory.tsx).
+// Madani (2026-10-25): website sekolah Islam SMA/MA, slider foto berbingkai + PPDB ke WhatsApp (src/templates/madani/Madani.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -35,6 +37,7 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [puncakgear.code]: puncakgear,
   [gadgetku.code]: gadgetku,
   [glowstory.code]: glowstory,
+  [madani.code]: madani,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */
