@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'velora'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -49,7 +49,9 @@ const MADANI: Template = { ...FIXTURE_TEMPLATES[4], id: 66, slug: 'madani', name
 const CAKRAWALA: Template = { ...FIXTURE_TEMPLATES[4], id: 67, slug: 'cakrawala', name: 'Cakrawala', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'cakrawala', sort_order: 13 };
 // Bestari (2026-10-26, migrasi 028, website SMA) juga belum ada di fixture prerender bersama
 const BESTARI: Template = { ...FIXTURE_TEMPLATES[4], id: 83, slug: 'bestari', name: 'Bestari', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'bestari', sort_order: 14 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI].find((t) => t.slug === slug) as Template;
+// Velora (2026-10-27, migrasi 033, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
+const VELORA: Template = { ...FIXTURE_TEMPLATES[4], id: 88, slug: 'velora', name: 'Velora', category: 'Company Profile', price: 1890000, template_code: 'velora', sort_order: 17 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, VELORA].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -78,6 +80,7 @@ describe('src/content/templates', () => {
       madani: 'Madani: Template Website Sekolah Islam & PPDB Online',
       cakrawala: 'Cakrawala: Template Website SMK & SMA dengan Halaman PPDB',
       bestari: 'Bestari: Template Website SMA dengan Halaman PPDB',
+      velora: 'Velora: Template Website Perusahaan Otomotif Berbahasa Inggris',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -95,6 +98,7 @@ describe('src/content/templates', () => {
       madani: 'Madani: Template Website Sekolah Islam – Rp1,69 jt',
       cakrawala: 'Cakrawala: Template Website SMK & SMA – Rp1,69 jt',
       bestari: 'Bestari: Template Website SMA & PPDB Online – Rp1,69 jt',
+      velora: 'Velora: Template Website Perusahaan Otomotif – Rp1,89 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -194,6 +198,16 @@ describe('src/content/templates', () => {
     expect(bestari).not.toMatch(/e-rapor tersedia|sistem informasi akademik lengkap|data pendaftar tersimpan|pembayaran online tersedia|tes calistung/i);
     // Bestari kini template SMA (2026-10-26): tidak ada sisa salinan sekolah dasar
     expect(bestari).not.toMatch(/\bSD\b|sekolah dasar|TK\/PAUD/);
+    const velora = visibleText(templateContent('velora') as TemplatePageContent);
+    expect(velora).toMatch(/tidak menyimpan data/);
+    expect(velora).toMatch(/tidak punya sistem booking/);
+    expect(velora).toMatch(/fiktif/);
+    expect(velora).toMatch(/bahasa Indonesia/);
+    expect(velora).not.toMatch(/booking online tersedia|pembayaran online tersedia|stok real-?time|ISO 9001|terdaftar di bursa/i);
+    // Semua teks yang tampil (termasuk label & pesan galat formulir) adalah field CMS: salinan katalog tidak boleh menyebut
+    // teks tertanam, dan memang menjanjikan label formulir bisa diganti
+    expect(velora).toMatch(/label dan pesan galat formulir/);
+    expect(velora).not.toMatch(/tertanam di template|tetap berbahasa Inggris/);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -323,6 +337,24 @@ describe('src/content/templates', () => {
     expect(TEMPLATE_COPY.bestari?.niche).toBe('Sekolah Menengah Atas (SMA)');
     expect(TEMPLATE_PAGES.bestari?.niche).toBe('sekolah menengah atas');
     expect(TEMPLATE_COPY.bestari?.updated).toBe('2026-10-26');
+  });
+
+  it('Velora: kata kunci "template website perusahaan otomotif" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('velora');
+    const keyword = /template website perusahaan otomotif/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website perusahaan otomotif /);
+    expect(templateDescription(t)).toContain('Rp1.890.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toMatch(keyword);
+    const c = templateContent('velora') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Velora adalah template website perusahaan otomotif /);
+    const text = visibleText(c);
+    for (const phrase of ['website dealer mobil', 'template company profile bahasa Inggris', 'website perusahaan multinasional']) expect(text, phrase).toContain(phrase);
+    // Wajar, bukan ditumpuk
+    expect(text.toLowerCase().split('template website perusahaan otomotif').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.velora?.niche).toBe('Perusahaan Otomotif');
+    expect(TEMPLATE_PAGES.velora?.niche).toBe('perusahaan otomotif');
+    expect(TEMPLATE_COPY.velora?.updated).toBe('2026-10-27');
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

@@ -96,5 +96,12 @@
     "description": "Benih, pupuk, pestisida organik, dan alat tani skala kecil, juga dalam paket per jenis tanaman. Bingung mulai? Tanya penyuluh kami lewat WhatsApp, gratis.",
     "logo": "",
     "posts": false
+  },
+  "velora": {
+    "company_name": "Velora Motor Group",
+    "tagline": "Premium cars & electric mobility · Zurich",
+    "description": "Velora Motor Group designs, builds and services premium cars and electric mobility for drivers in 64 countries, from our engineering base in Zurich.",
+    "logo": "",
+    "posts": false
   }
 }

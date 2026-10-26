@@ -244,4 +244,22 @@ Cocok untuk SMA swasta maupun negeri, dan bisa dipakai MA dengan mengganti isi p
    '["/assets/templates/bestari-1.webp","/assets/templates/bestari-2.webp"]',
    'bestari', NULL, 'published', 14);
 
+-- Velora (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_033). Demo: Velora Motor Group (grup otomotif fiktif, Zurich), salinan demo berbahasa Inggris.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('velora',
+   'Velora',
+   'Company Profile',
+   'Template company profile berbahasa Inggris untuk grup otomotif dan perusahaan besar: hero kartu foto, jajaran model berfilter, carousel teknologi, dan formulir test drive ke WhatsApp/email.',
+   'Velora menampilkan perusahaan besar dengan gaya showroom yang gelap dan elegan: kartu foto lebar dengan menu di dalamnya, judul dengan satu kata di dalam pil dan chip panah merah, serta kartu sorotan yang bisa menautkan video. Di bawahnya tersusun filosofi perusahaan, bento kartu foto dan baris berpanah, jajaran model dengan tombol filter, langkah kepemilikan, carousel teknologi yang melebar saat dipilih, angka perusahaan yang menghitung naik, dinding potret testimoni, newsroom, formulir test drive, daftar studio atau dealer dengan Google Maps, dan footer dengan newsletter.
+
+Salinan demo berbahasa Inggris untuk grup otomotif fiktif Velora Motor Group, cocok untuk perusahaan multinasional, eksportir, dealer, dan perusahaan yang melayani klien luar negeri. Formulir test drive dan newsletter hanya menyusun pesan WhatsApp atau email; tidak ada penyimpanan data, sistem booking, atau pembayaran online. Semua teks yang tampil, termasuk label dan pesan galat formulir, bisa Anda ganti lewat CMS (juga ke bahasa Indonesia), begitu pula foto dan warna aksen, tanpa coding.',
+   '["Hero kartu foto lebar dengan menu di dalamnya, judul berpil, dan kartu sorotan yang bisa menautkan video","Jajaran produk atau model dengan tombol filter kategori, harga, dan spesifikasi singkat","Carousel teknologi yang melebar saat dipilih dan angka perusahaan yang menghitung naik","Dinding potret testimoni yang bisa diklik dan newsroom berita perusahaan","Formulir test drive yang menyusun pesan WhatsApp atau email, tanpa menyimpan data","Daftar studio atau dealer dengan Google Maps dan footer dengan newsletter lewat email","Salinan demo berbahasa Inggris; semua teks yang tampil (termasuk label formulir), foto, dan warna aksen bisa diubah lewat CMS","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1890000.00,
+   '/assets/templates/velora-preview.webp',
+   '["/assets/templates/velora-1.webp","/assets/templates/velora-2.webp"]',
+   'velora', NULL, 'published', 17);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;
