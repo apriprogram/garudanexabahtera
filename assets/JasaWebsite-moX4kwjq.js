@@ -1,0 +1,1 @@
+import{r as e,t}from"./ServicePage-JeIo_Ay2.js";import{Ct as n}from"./index-Dok2D4AE.js";var r=n();function i(){return(0,r.jsx)(t,{service:e})}export{i as default};

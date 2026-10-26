@@ -1,0 +1,1 @@
+import{$r as e,ai as t}from"./index-Dok2D4AE.js";import{a as n,o as r,s as i}from"./proxy-DAGFgHtH.js";var a=t(e(),1);function o(){!r.current&&n();let[e]=(0,a.useState)(i.current);return e}export{o as t};
