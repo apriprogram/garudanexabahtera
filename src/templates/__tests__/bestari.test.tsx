@@ -861,7 +861,7 @@ describe('Bestari: berita & pengumuman dari tulisan (site_posts)', () => {
     fireEvent.click(within(filters).getByRole('button', { name: 'Kegiatan' }));
     expect(Array.from(news.querySelectorAll('article h3')).map((h) => h.textContent)).toEqual([NEWS[1].title]);
     expect(within(news).getByRole('link', { name: /Lihat semua berita/ })).toHaveAttribute('href', '/berita');
-    expect(within(news).getByRole('link', { name: /Berita lainnya di Instagram/ })).toHaveAttribute('href', 'https://instagram.com/sdbestaricendekia');
+    expect(within(news).getByRole('link', { name: /Berita lainnya di Instagram/ })).toHaveAttribute('href', 'https://instagram.com/smabestaricendekia');
 
     const announcements = section(container, 'announcements');
     expect(within(announcements).getByRole('link', { name: ANNOUNCEMENTS[0].title }).closest('li')!.className).toContain('relative');

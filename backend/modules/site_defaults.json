@@ -14,9 +14,9 @@
     "posts": false
   },
   "bestari": {
-    "company_name": "SD Bestari Cendekia",
-    "tagline": "Sekolah Dasar Swasta di Yogyakarta",
-    "description": "SD swasta di Kota Yogyakarta dengan kelas kecil, program literasi bilingual, sains, seni, dan pramuka. Kami menemani anak belajar dengan hangat, tertib, dan penuh rasa ingin tahu.",
+    "company_name": "SMA Bestari Cendekia",
+    "tagline": "SMA Swasta di Yogyakarta",
+    "description": "SMA swasta di Kota Yogyakarta dengan kelas kecil, mapel pilihan Kurikulum Merdeka, bimbingan masuk perguruan tinggi, serta klub riset, debat, seni, dan olahraga.",
     "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
     "posts": true
   },
