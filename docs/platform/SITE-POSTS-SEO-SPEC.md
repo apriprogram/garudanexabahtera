@@ -91,9 +91,9 @@ Aturan tabel:
 | Path | Isi | Status HTTP (site.php) |
 |---|---|---|
 | `/` | Beranda template | 200 |
-| `/berita`, `/pengumuman` | Daftar tulisan terbit jenis itu, terbaru dulu, maks 100 | 200. `noindex,follow` bila kosong atau template tanpa fitur tulisan |
-| `/berita/{slug}`, `/pengumuman/{slug}` | Satu tulisan terbit | 200; tidak ada / draf / jenis salah → 404 |
-| `/berita/`, `/berita/x/` | Garis miring di akhir | 301 ke tanpa garis miring |
+| `/berita`, `/pengumuman` | Daftar tulisan terbit jenis itu, terbaru dulu, maks 100 | 200. `noindex,follow` bila kosong. Template tanpa fitur tulisan → 404 + `X-Robots-Tag: noindex` |
+| `/berita/{slug}`, `/pengumuman/{slug}` | Satu tulisan terbit | 200; tidak ada / draf / jenis salah / template tanpa fitur tulisan → 404 |
+| `/berita/`, `/berita/x/` | Garis miring di akhir | 301 ke tanpa garis miring (juga untuk template tanpa fitur tulisan, lalu 404) |
 | `/robots.txt`, `/sitemap.xml` | Per host (§6) | 200 |
 | `/llms.txt`, `/llms-full.txt` | Milik Garuda Nexa, tidak untuk domain pembeli | 404 |
 | Lainnya (bukan file nyata) | — | 404 + `X-Robots-Tag: noindex` |
@@ -101,6 +101,8 @@ Aturan tabel:
 Aturan rute:
 - Slug: `^[a-z0-9]+(?:-[a-z0-9]+)*$`, maks 120 karakter, unik per situs (lintas jenis).
 - Parser bersama ada di `src/templates/siteRoutes.ts`; site.php wajib setara.
+- Server dan klien sepakat soal "tidak ditemukan": template tanpa fitur tulisan (`posts` di `site_defaults.json`) hanya punya beranda. site.php menjawab 404 untuk `/berita`, `/pengumuman`, dan tulisan; klien menampilkan "Halaman tidak ditemukan" dan mengirim rute `{kind:'notfound'}` ke `applySiteSeoHead` (`servedRoute`).
+- Navigasi tanpa muat ulang ke path bergaris miring di akhir (`/pengumuman/`) diganti (replace) ke path tanpa garis miring, meniru 301.
 - Di host utama, pratinjau ada di `/situs/{id}`, `/situs/{id}/berita/{slug}`, dan seterusnya. Rutenya `/situs/:siteId/*`, disajikan lewat `app.html` (noindex).
 
 ## 4. API
@@ -262,11 +264,12 @@ Aturan teks:
 - **Preload:**
   - `<script id="gn-preload" type="application/json">` dengan `{path, builtAt, api}`.
   - Kunci `api` dibuat tepat seperti `apiUrl()` di klien: `URLSearchParams`, kunci `action` dulu, lalu parameter sesuai urutan di tabel §4.2. Untuk tulisan, kunci `apiUrl('get_site_posts', {site_id, kind, limit})`.
-  - Isinya: `get_site_public` (`domain`), `get_site_seo`, dan menurut rute:
+  - Isinya: `get_site_public` (`domain`), `get_site_seo`, dan menurut rute (template berfitur tulisan):
     - beranda: `get_site_posts` berita & pengumuman `limit=12`;
-    - daftar: jenis itu `limit=100`;
-    - tulisan: `get_site_post`.
-  - Dengan begitu Google tidak perlu memanggil `/api.php` saat render pertama.
+    - daftar: jenis itu `limit=100`, jenis lain `limit=12`;
+    - tulisan: `get_site_post` + `get_site_posts` berita & pengumuman `limit=12` (menu/footer dan "tulisan lainnya").
+  - Kunci ini sama dengan yang diminta `useSitePages` di rute itu. Dengan begitu Google tidak perlu memanggil `/api.php` saat render pertama.
+  - Klien menyegarkan semua kunci itu. Refresh yang gagal (jaringan, 5xx) atau jawaban yang bukan bentuk API (mis. HTML dari host/CDN) **tidak pernah** menimpa data preload: artikel, robots `index,follow`, dan canonical tetap.
 - **`robots.txt`** (per host aktif):
   ```
   User-agent: *
@@ -320,11 +323,17 @@ Aturan teks:
 - **Fallback:**
   - Daftar tulisan jenis itu berupa array tidak kosong → tulisan dipakai, dan kartu menautkan `basePath + /berita/{slug}`.
   - `null` atau kosong → daftar `items` dari konten CMS seperti sekarang. Demo, pratinjau CMS, dan situs lama tidak berubah.
+  - `undefined` = daftar masih dimuat di situs live berfitur tulisan → section itu kosong dulu, bukan item CMS/demo yang lalu berganti.
+  - Daftar beranda kedua jenis diminta (dan dipertahankan dari cache/preload) di **setiap** rute, jadi menu, footer, dan beranda setelah kembali tidak jatuh ke item CMS.
 - **Rute daftar & tulisan:** template merender header (tanpa overlay hero) + halaman daftar/tulisan + footer miliknya.
   - Komponen bersama ada di `src/templates/shared/posts/`: kartu, daftar, artikel.
   - Gaya mengikuti token template (warna aksen dari `brand.accent_color`, font template).
   - Tepat satu H1 per halaman.
   - Foto memakai `width`/`height` + `loading="lazy"`, kecuali foto utama artikel.
+- **Tautan di dalam situs** (`SiteLink`): hanya path yang dikenali `parseSiteRoute` (`/`, `/berita`, `/pengumuman`, `/berita/{slug}`, `/#anchor`) yang diberi awalan `basePath` dan dibuka tanpa muat ulang, baik dari tautan tambahan tulisan maupun URL tombol/menu CMS (`resolveAction`). Path lain di situs yang sama (mis. lampiran `/assets/…/brosur.pdf`) tetap `<a href>` biasa.
+- **Setelah pindah halaman** (`useSiteNavigate`): lewat tautan tanpa hash → langsung ke atas (`behavior: 'instant'`, layout effect) dan fokus ke H1 halaman baru (`tabIndex=-1`); hash → digulir TemplateShell, fokus tidak dipindah; tombol kembali/maju → posisi gulir terakhir entri riwayat itu dipulihkan (TemplateShell tidak menggulir ulang ke hash-nya).
+- **Header** Madani/Cakrawala tetap terpasang saat pindah halaman; penanda section aktif mengamati ulang section setiap halaman berganti.
+- **Foto utama artikel** di bingkai berasio tetap (4:3 → 16:10, maks. 80% tinggi layar, `object-contain`), supaya isi di bawahnya tidak bergeser saat foto dimuat.
 - **Tautan section** di halaman selain beranda harus menuju `basePath + '/#anchor'`.
   - Tambahkan `news: 'berita'`, `announcements: 'pengumuman'`, `agenda: 'agenda'` ke `SECTION_ANCHOR`.
   - Madani "Buka tautan" menjadi "Baca selengkapnya" untuk tulisan.

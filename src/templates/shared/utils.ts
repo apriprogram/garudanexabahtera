@@ -1,6 +1,7 @@
 // Helper murni untuk renderer template situs pembeli. Semua fungsi tahan terhadap konten aneh
 // (null, angka, string di tempat list, URL berbahaya) karena konten berasal dari pengguna.
 import type { CSSProperties } from 'react';
+import { siteRoutePath } from '../siteRoutes';
 import type { ListItem, SectionContent, SiteContent } from '../types';
 
 export const isPlainObject = (value: unknown): value is Record<string, unknown> =>
@@ -238,11 +239,20 @@ export const sectionFromAnchor = (value: string): string => {
  */
 export type LinkAction = { kind: 'section'; target: string } | { kind: 'external'; href: string } | { kind: 'site'; path: string };
 
-/** Isi field URL dari CMS → aksi. Kosong / tidak valid → `fallback`. "#kontak" → gulir ke section. */
+/**
+ * Isi field URL dari CMS → aksi. Kosong / tidak valid → `fallback`. "#kontak" dan "/#kontak" → gulir ke section (dari
+ * halaman lain: ke beranda dulu). Halaman situs ini ("/", "/berita", "/pengumuman/{slug}") → `site`, supaya diberi awalan
+ * basePath di pratinjau /situs/:id dan dibuka tanpa muat ulang. Path lain ("/assets/…pdf") → tautan biasa.
+ */
 export function resolveAction(raw: string, fallback: LinkAction | null): LinkAction | null {
   const value = (raw || '').trim();
   if (!value) return fallback;
   if (value.startsWith('#')) return { kind: 'section', target: sectionFromAnchor(value) };
+  const path = siteRoutePath(value);
+  if (path !== null) {
+    const anchor = /^\/#([\w-]+)$/.exec(path)?.[1];
+    return anchor ? { kind: 'section', target: sectionFromAnchor(anchor) } : { kind: 'site', path };
+  }
   const href = safeUrl(value);
   return href ? { kind: 'external', href } : fallback;
 }

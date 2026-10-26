@@ -2,9 +2,10 @@
 // - useSitePublic: situs aktif lewat `get_site_public` (site_id atau domain). Kontrak: SPEC §6.
 // - useSitePages: SEO situs + berita/pengumuman per rute (docs/platform/SITE-POSTS-SEO-SPEC.md §4.2, §7).
 // Render pertama memakai data preload dari backend/site.php (peekApiGet, kunci = apiUrl dengan urutan parameter yang
-// SAMA dengan site_api_url di site.php), lalu data terbaru diminta ke server. Gagal menyegarkan data preload → data
-// preload tetap dipakai.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+// SAMA dengan site_api_url di site.php), lalu data terbaru diminta ke server. Gagal menyegarkan data preload (jaringan,
+// 5xx, atau jawaban yang bukan bentuk API seperti halaman HTML dari host/CDN) → data preload tetap dipakai.
+// - useSiteNavigate: pindah halaman tanpa memuat ulang + gulir, fokus, dan posisi gulir per entri riwayat.
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { ApiError, apiGet, apiPost, apiUrl, peekApiGet } from '../lib/api';
 import type { SiteRoute } from './siteRoutes';
@@ -27,6 +28,9 @@ export type SiteLoadState =
 export type SiteQuery = { site_id: number } | { domain: string };
 
 const isNotFound = (err: unknown) => err instanceof ApiError && (err.status === 404 || err.status === 400 || err.code === 'SITE_NOT_FOUND');
+
+/** Jawaban 2xx yang bukan bentuk API (mis. halaman HTML dari host/CDN/WAF → null): gagal, bukan "tidak ada". */
+const invalidResponse = () => new ApiError('Jawaban server tidak sah.', 200, 'INVALID_RESPONSE');
 
 const isSite = (value: unknown): value is PublicSite =>
   !!value && typeof value === 'object' && typeof (value as PublicSite).template_code === 'string';
@@ -64,7 +68,9 @@ async function fetchSite(query: SiteQuery): Promise<PublicSite | null> {
   for (const params of siteAttempts(query)) {
     try {
       const data = await apiGet<{ site?: unknown }>('get_site_public', params);
-      return isSite(data?.site) ? data.site : null;
+      // Situs yang tidak ada dijawab 404 (SITE_NOT_FOUND); jawaban lain tanpa situs = gagal (data preload tetap dipakai)
+      if (!isSite(data?.site)) throw invalidResponse();
+      return data.site;
     } catch (err) {
       if (!isNotFound(err)) throw err;
     }
@@ -136,12 +142,30 @@ const urlOf = (req: Request) => apiUrl(req.action, req.params);
 
 type Entry = { status: 'ready'; data: unknown } | { status: 'error'; error: unknown };
 
-const asRecord = (value: unknown): Record<string, unknown> => (value && typeof value === 'object' ? (value as Record<string, unknown>) : {});
+const isObject = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
+const asRecord = (value: unknown): Record<string, unknown> => (isObject(value) ? value : {});
 
 const isPostSummary = (value: unknown): value is SitePostSummary => {
   const p = asRecord(value);
   return typeof p.slug === 'string' && typeof p.title === 'string' && (SITE_POST_KINDS as readonly unknown[]).includes(p.kind);
 };
+
+/**
+ * Jawaban berbentuk API untuk aksi ini: {seo: {…}}, {posts: […]}, {post: {…}}. Selain itu (null dari jawaban 2xx yang
+ * bukan JSON, objek lain) = gagal, bukan "tidak ada tulisan": tidak pernah menimpa data yang sudah tampil.
+ */
+function isValidBody(action: Request['action'], data: unknown): boolean {
+  if (!isObject(data)) return false;
+  if (action === 'get_site_seo') return isObject(data.seo);
+  if (action === 'get_site_posts') return Array.isArray(data.posts);
+  return isPostSummary(data.post);
+}
+
+/** Data preload site.php yang sah untuk permintaan ini, atau undefined. */
+function preloaded(req: Request): unknown {
+  const data = peekApiGet<unknown>(req.action, req.params);
+  return data !== undefined && isValidBody(req.action, data) ? data : undefined;
+}
 
 /** Respons get_site_posts → daftar tulisan yang sah + total. */
 function readList(data: unknown): { posts: SitePostSummary[]; total: number } {
@@ -154,23 +178,26 @@ function readList(data: unknown): { posts: SitePostSummary[]; total: number } {
 const errorMessage = (err: unknown) =>
   err instanceof ApiError && err.code === 'NETWORK' ? err.message : 'Halaman ini belum bisa dimuat karena kendala server. Silakan coba lagi beberapa saat lagi.';
 
-/** Permintaan yang dibutuhkan rute ini. `primary` = data utama halaman (gagal → pesan + Coba lagi). */
+/**
+ * Permintaan yang dibutuhkan rute ini. `primary` = data utama halaman (gagal → pesan + Coba lagi). Di SETIAP rute
+ * template berfitur tulisan, daftar beranda kedua jenis (limit 12) ikut diminta: menu & footer (yang membaca daftar itu)
+ * sama di semua halaman, "tulisan lainnya" di halaman tulisan, dan kembali ke beranda tanpa menunggu. Halaman daftar
+ * memakai daftarnya sendiri (limit 100) untuk jenis itu. site.php mempreload kunci yang sama (spec §6).
+ */
 function requestsFor(siteId: number, route: SiteRoute, posts: boolean, skipPost: boolean): { all: Request[]; primary: Request[] } {
   const seo = seoRequest(siteId);
   if (!posts) return { all: [seo], primary: [] };
-  if (route.kind === 'home') return { all: [seo, ...SITE_POST_KINDS.map((kind) => postsRequest(siteId, kind, HOME_POSTS_LIMIT))], primary: [] };
+  const homeLists = (except?: SitePostKind) =>
+    SITE_POST_KINDS.filter((kind) => kind !== except).map((kind) => postsRequest(siteId, kind, HOME_POSTS_LIMIT));
   if (route.kind === 'list') {
     const list = postsRequest(siteId, route.postKind, LIST_POSTS_LIMIT);
-    return { all: [seo, list], primary: [list] };
+    return { all: [seo, list, ...homeLists(route.postKind)], primary: [list] };
   }
-  if (route.kind === 'post') {
-    if (skipPost) return { all: [seo], primary: [] };
+  if (route.kind === 'post' && !skipPost) {
     const post = postRequest(siteId, route.slug);
-    // Daftar jenis yang sama untuk "tulisan lainnya" (kunci beranda: sering sudah dimuat); gagal → tanpa daftar itu
-    const related = postsRequest(siteId, route.postKind, HOME_POSTS_LIMIT);
-    return { all: [seo, post, related], primary: [post] };
+    return { all: [seo, post, ...homeLists()], primary: [post] };
   }
-  return { all: [seo], primary: [] };
+  return { all: [seo, ...homeLists()], primary: [] };
 }
 
 export interface SitePagesOptions {
@@ -208,17 +235,21 @@ export function useSitePages(siteId: number | null, route: SiteRoute, options: S
       started.current.add(url);
       apiGet<unknown>(req.action, req.params)
         .then((data) => {
+          if (!isValidBody(req.action, data)) throw invalidResponse();
           setCache((prev) => {
             const old = prev[url];
             if (old?.status === 'ready' && sameJson(old.data, data)) return prev;
             // Sama dengan data preload yang sedang tampil → tidak ada yang berubah (template & head tidak dirender ulang)
-            if (!old && sameJson(peekApiGet<unknown>(req.action, req.params), data)) return prev;
+            if (!old && sameJson(preloaded(req), data)) return prev;
             return { ...prev, [url]: { status: 'ready', data } };
           });
         })
         .catch((error: unknown) => {
-          // Data yang sudah ada (preload / permintaan sebelumnya) tetap dipakai
-          setCache((prev) => (prev[url]?.status === 'ready' ? prev : { ...prev, [url]: { status: 'error', error } }));
+          // Data yang sudah ada (permintaan sebelumnya, atau preload site.php yang tidak pernah masuk cache) tetap dipakai:
+          // halaman yang sudah dilayani server tidak berganti layar gagal / noindex karena satu refresh gagal
+          setCache((prev) =>
+            prev[url]?.status === 'ready' || (!prev[url] && preloaded(req) !== undefined) ? prev : { ...prev, [url]: { status: 'error', error } },
+          );
         });
     }
     // `wanted` mewakili requests.all; attempt = Coba lagi
@@ -236,12 +267,12 @@ export function useSitePages(siteId: number | null, route: SiteRoute, options: S
   }, [requests]);
 
   return useMemo(() => {
-    /** Entri cache, atau data preload site.php untuk URL ini */
+    /** Entri cache, atau data preload site.php untuk URL ini; undefined = belum ada jawaban (masih dimuat) */
     const entry = (req: Request): Entry | undefined => {
       const url = urlOf(req);
       if (cache[url]) return cache[url];
-      const peeked = peekApiGet<unknown>(req.action, req.params);
-      return peeked === undefined ? undefined : { status: 'ready', data: peeked };
+      const data = preloaded(req);
+      return data === undefined ? undefined : { status: 'ready', data };
     };
     const list = (req: Request) => {
       const e = entry(req);
@@ -257,6 +288,15 @@ export function useSitePages(siteId: number | null, route: SiteRoute, options: S
       const lists = [LIST_POSTS_LIMIT, HOME_POSTS_LIMIT].map((limit) => list(postsRequest(siteId, kind, limit)));
       return lists.find((l) => l !== null) ?? null;
     };
+    /**
+     * Tulisan jenis ini untuk beranda, menu, footer, dan "tulisan lainnya": daftar yang sudah ada (cache/preload); daftar
+     * beranda masih dimuat → undefined (section kosong dulu, bukan item CMS/demo); gagal → null (daftar dari konten CMS).
+     */
+    const homePosts = (kind: SitePostKind): SitePostSummary[] | null | undefined => {
+      const found = anyList(kind);
+      if (found) return found.posts;
+      return siteId !== null && failure(postsRequest(siteId, kind, HOME_POSTS_LIMIT)) ? null : undefined;
+    };
 
     const empty: SitePostsByKind = { berita: null, pengumuman: null };
     const seoBody = siteId === null ? null : entry(seoRequest(siteId));
@@ -267,21 +307,20 @@ export function useSitePages(siteId: number | null, route: SiteRoute, options: S
     if (siteId === null || !hasPosts) return { seo, data, listCount };
 
     const errorOf = (err: unknown) => ({ message: errorMessage(err), retry });
-    if (route.kind === 'home') {
-      data.posts = { berita: anyList('berita')?.posts ?? null, pengumuman: anyList('pengumuman')?.posts ?? null };
-    } else if (route.kind === 'list') {
+    data.posts = { berita: homePosts('berita'), pengumuman: homePosts('pengumuman') };
+    if (route.kind === 'list') {
       const req = postsRequest(siteId, route.postKind, LIST_POSTS_LIMIT);
       const full = list(req);
       // Daftar beranda yang sudah lengkap (semua tulisan muat) dipakai sambil menunggu
       const home = list(postsRequest(siteId, route.postKind, HOME_POSTS_LIMIT));
       const shown = full ?? (home && home.posts.length >= home.total ? home : null);
       const err = failure(req);
-      data.posts = { ...empty, [route.postKind]: shown ? shown.posts : err && isNotFound(err) ? [] : null };
+      // Daftar halaman ini: null = memuat / gagal (PostList: kerangka atau pesan + Coba lagi)
+      data.posts = { ...data.posts, [route.postKind]: shown ? shown.posts : err && isNotFound(err) ? [] : null };
       data.total = shown?.total ?? 0;
       listCount = shown ? shown.total : 0;
       if (!shown && err && !isNotFound(err)) data.error = errorOf(err);
     } else if (route.kind === 'post') {
-      data.posts = { ...empty, [route.postKind]: anyList(route.postKind)?.posts ?? null };
       if (skipPost) data.post = null;
       else {
         const req = postRequest(siteId, route.slug);
@@ -301,28 +340,108 @@ export function useSitePages(siteId: number | null, route: SiteRoute, options: S
 
 // ─── Navigasi ───────────────────────────────────────────────────────────────
 
+/** Posisi gulir terakhir per entri riwayat (location.key) selama halaman ini dimuat: untuk tombol kembali/maju browser. */
+const scrollByEntry = new Map<string, number>();
+
+/** Gulir langsung tanpa animasi (`scroll-behavior: smooth` di <html> tidak ikut). */
+const jumpTo = (top: number) => window.scrollTo({ top, behavior: 'instant' });
+
+/**
+ * Fokus ke H1 halaman baru setelah pindah halaman lewat tautan: pembaca layar mengumumkan halaman baru dan Tab berikutnya
+ * mulai dari isinya, bukan dari awal header. H1 bisa muncul belakangan (kerangka memuat → artikel), jadi ditunggu
+ * sebentar. Fokus yang sudah dipindahkan pengunjung sendiri tidak direbut. Hasil = fungsi pembersih.
+ */
+function focusPageHeading(): () => void {
+  const before = document.activeElement;
+  const tryFocus = (): boolean => {
+    const active = document.activeElement;
+    if (active && active !== before && active !== document.body && active.isConnected) return true;
+    const heading = document.querySelector<HTMLElement>('main h1') ?? document.querySelector<HTMLElement>('h1');
+    if (!heading) return false;
+    // tabIndex -1: bisa difokus lewat skrip, tidak masuk urutan Tab
+    if (!heading.hasAttribute('tabindex')) heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    return true;
+  };
+  if (tryFocus() || typeof MutationObserver !== 'function') return () => undefined;
+  let timer = 0;
+  const observer = new MutationObserver(() => {
+    if (tryFocus()) stop();
+  });
+  const stop = () => {
+    observer.disconnect();
+    window.clearTimeout(timer);
+  };
+  observer.observe(document.body, { childList: true, subtree: true });
+  timer = window.setTimeout(stop, 10_000);
+  return stop;
+}
+
+export interface SiteNavigation {
+  /** SiteDataContext.navigate */
+  navigate: (path: string) => void;
+  /** SiteDataContext.historyPop */
+  historyPop: boolean;
+}
+
 /**
  * Pindah halaman di dalam situs tanpa memuat ulang (SiteDataContext.navigate): path relatif akar situs → path router
- * dengan awalan basePath. Setelah pindah halaman lewat tautan (PUSH/REPLACE) tanpa hash, gulir ke atas; tombol
- * kembali/maju browser (POP) dibiarkan. Hash ("/#berita") digulir oleh TemplateShell.
+ * dengan awalan basePath.
+ * - Lewat tautan (PUSH/REPLACE) tanpa hash: langsung ke atas sebelum halaman baru tampil, lalu fokus ke H1-nya.
+ * - Hash ("/#berita"): digulir TemplateShell, fokus tidak dipindah.
+ * - Tombol kembali/maju browser (POP): posisi gulir terakhir entri riwayat itu dipulihkan (mis. kembali dari artikel ke
+ *   section Berita di beranda), dan `historyPop` mencegah TemplateShell menggulir ulang ke hash-nya.
+ * - Tautan ke halaman yang sedang dibuka (tanpa hash): gulir ke atas saja, tanpa entri riwayat ganda.
  */
-export function useSiteNavigate(basePath: string): (path: string) => void {
+export function useSiteNavigate(basePath: string): SiteNavigation {
   const routerNavigate = useNavigate();
-  const { pathname, hash } = useLocation();
+  const { pathname, hash, key } = useLocation();
   const type = useNavigationType();
-  const first = useRef(true);
+  const handled = useRef(pathname);
+  const current = useRef({ key, pathname });
+  // Sudah pernah pindah halaman lewat tautan di sini: POP sesudahnya = kembali/maju di dalam situs
+  const [navigated, setNavigated] = useState(false);
+
+  // Entri yang sedang tampil, untuk pencatat gulir & navigate (diperbarui sebelum gulir di bawah)
+  useLayoutEffect(() => {
+    current.current = { key, pathname };
+  }, [key, pathname]);
 
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
+    const record = () => scrollByEntry.set(current.current.key, window.scrollY);
+    window.addEventListener('scroll', record, { passive: true });
+    return () => window.removeEventListener('scroll', record);
+  }, []);
+
+  // Layout effect: posisi gulir sudah benar sebelum halaman baru dilukis (tanpa kilasan di posisi lama)
+  useLayoutEffect(() => {
+    if (handled.current === pathname) return;
+    handled.current = pathname;
+    if (type === 'POP') {
+      const top = scrollByEntry.get(key);
+      if (top !== undefined) jumpTo(top);
       return;
     }
-    if (type !== 'POP' && !hash && typeof window !== 'undefined') window.scrollTo(0, 0);
+    if (hash) return;
+    jumpTo(0);
+    return focusPageHeading();
     // Hanya saat path berubah
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  return useCallback((path: string) => routerNavigate(siteHref(basePath, path)), [routerNavigate, basePath]);
+  const navigate = useCallback(
+    (path: string) => {
+      const href = siteHref(basePath, path);
+      setNavigated(true);
+      if (!href.includes('#') && href === current.current.pathname) {
+        window.scrollTo({ top: 0 });
+        return;
+      }
+      routerNavigate(href);
+    },
+    [routerNavigate, basePath],
+  );
+  return { navigate, historyPop: navigated && type === 'POP' };
 }
 
 // ─── Jumlah dilihat ─────────────────────────────────────────────────────────

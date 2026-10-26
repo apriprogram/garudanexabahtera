@@ -1,14 +1,20 @@
 // Hook kecil Madani: section yang sedang dibaca (pil menu aktif), "sudah digulir" (bilah putih lengket), dan tinggi
 // elemen (kartu formulir PPDB yang lengket). Tanpa IntersectionObserver / ResizeObserver (perayap, jsdom) → nilai awal.
 import { useEffect, useState, type RefObject } from 'react';
+import { useSiteData } from '../shared/siteData';
 
-/** Kunci section yang sedang di tengah layar (dari daftar `keys`), atau null. */
+/**
+ * Kunci section yang sedang di tengah layar (dari daftar `keys`), atau null. Header tetap terpasang saat pindah halaman
+ * di dalam situs (beranda ↔ /berita/{slug}), jadi section dicari & diamati ulang setiap halaman berganti: section beranda
+ * yang dipasang lagi adalah elemen baru.
+ */
 export function useActiveSection(anchor: RefObject<HTMLElement | null>, keys: string[]): string | null {
   const [active, setActive] = useState<string | null>(null);
   const signature = keys.join(',');
+  const page = useSiteData().route.kind;
   useEffect(() => {
     const root = anchor.current?.closest('[data-tpl-root]');
-    if (!root || typeof IntersectionObserver !== 'function' || !signature) return;
+    if (page !== 'home' || !root || typeof IntersectionObserver !== 'function' || !signature) return;
     const targets = signature
       .split(',')
       .map((key) => root.querySelector<HTMLElement>(`[data-tpl-section="${key}"]`))
@@ -23,8 +29,9 @@ export function useActiveSection(anchor: RefObject<HTMLElement | null>, keys: st
     );
     for (const el of targets) observer.observe(el);
     return () => observer.disconnect();
-  }, [anchor, signature]);
-  return active;
+  }, [anchor, signature, page]);
+  // Halaman selain beranda tidak punya section: tanpa penanda (nilai lama dari beranda tidak dipakai)
+  return page === 'home' ? active : null;
 }
 
 /** Tinggi elemen (px, dibulatkan) yang diperbarui saat ukurannya berubah. Tanpa ResizeObserver → 0. */

@@ -29,6 +29,35 @@ export function parseSiteRoute(pathname: string): SiteRoute {
   return { kind: 'post', postKind, slug };
 }
 
+const NOT_FOUND: SiteRoute = { kind: 'notfound' };
+
+/**
+ * Rute yang benar-benar dilayani situs ini: template tanpa fitur tulisan hanya punya beranda, jadi /berita, /pengumuman,
+ * dan tulisan = tidak ditemukan (site.php menjawab 404 + noindex untuk path yang sama, spec §3).
+ */
+export const servedRoute = (route: SiteRoute, posts: boolean): SiteRoute =>
+  posts || route.kind === 'home' || route.kind === 'notfound' ? route : NOT_FOUND;
+
+/** Garis miring di akhir dibuang ("/berita/" → "/berita", "//" → "/"), seperti pengalihan 301 di site.php. */
+export const trimTrailingSlash = (pathname: string): string => (pathname === '/' ? pathname : pathname.replace(/\/+$/, '') || '/');
+
+/**
+ * Isian tautan "/path" atau "/path#anchor" yang menuju halaman situs ini (beranda, daftar, tulisan) → path relatif akar
+ * situs yang dirapikan ("/berita/" → "/berita"). Selain itu null: file nyata di situs yang sama ("/assets/…/brosur.pdf"),
+ * path tak dikenal, path ber-query, atau "//host" tetap tautan biasa, bukan navigasi di dalam situs.
+ */
+export function siteRoutePath(raw: string): string | null {
+  const value = raw.trim();
+  if (!value.startsWith('/') || value.startsWith('//')) return null;
+  const at = value.indexOf('#');
+  const path = at === -1 ? value : value.slice(0, at);
+  const hash = at === -1 ? '' : value.slice(at);
+  if (path.includes('?') || !/^(#[\w-]*)?$/.test(hash)) return null;
+  const clean = trimTrailingSlash(path);
+  if (parseSiteRoute(clean).kind === 'notfound') return null;
+  return hash.length > 1 ? `${clean}${hash}` : clean;
+}
+
 /** Rute → path relatif akar situs. */
 export function sitePath(route: SiteRoute): string {
   switch (route.kind) {

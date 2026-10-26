@@ -49,8 +49,8 @@ export function PostList({ kind, siteName, theme }: { kind: SitePostKind; siteNa
   const Icon = kind === 'berita' ? Newspaper : Megaphone;
 
   let body;
-  if (posts === null && error) body = <LoadError message={error.message} retry={error.retry} theme={theme} />;
-  else if (posts === null) body = <ListSkeleton kind={kind} theme={theme} />;
+  if (!posts && error) body = <LoadError message={error.message} retry={error.retry} theme={theme} />;
+  else if (!posts) body = <ListSkeleton kind={kind} theme={theme} />;
   else if (posts.length === 0) {
     body = (
       <StatusBlock

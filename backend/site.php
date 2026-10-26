@@ -802,17 +802,24 @@ function site_handle(array $req, callable $query): array {
         } else {
             $route = site_parse_route($path);
         }
+        // Template tanpa fitur tulisan hanya punya beranda: /berita, /pengumuman, dan tulisan = 404 noindex (klien:
+        // servedRoute di siteRoutes.ts menampilkan "Halaman tidak ditemukan" dengan head yang sama)
+        if (!$defaults['posts'] && ($route['kind'] === 'list' || $route['kind'] === 'post')) $route = ['kind' => 'notfound'];
 
+        // Daftar per jenis + batasnya (kunci preload). Beranda: kedua jenis limit 12. Daftar & tulisan: daftar beranda
+        // kedua jenis juga (menu/footer & "tulisan lainnya", seperti yang diminta useSitePages di setiap rute), kecuali
+        // jenis halaman daftar itu sendiri = limit 100.
         $empty = ['posts' => [], 'total' => 0];
         $lists = [];
+        $limits = [];
         $post = null;
-        if ($route['kind'] === 'home') {
+        if ($route['kind'] !== 'notfound') {
             foreach (SITE_POST_KINDS as $kind) {
-                $lists[$kind] = $defaults['posts'] ? site_find_posts($query, $siteId, $kind, SITE_HOME_POSTS_LIMIT) : $empty;
+                $limits[$kind] = $route['kind'] === 'list' && $kind === $route['postKind'] ? SITE_LIST_POSTS_LIMIT : SITE_HOME_POSTS_LIMIT;
+                $lists[$kind] = $defaults['posts'] ? site_find_posts($query, $siteId, $kind, $limits[$kind]) : $empty;
             }
-        } elseif ($route['kind'] === 'list') {
-            $lists[$route['postKind']] = $defaults['posts'] ? site_find_posts($query, $siteId, $route['postKind'], SITE_LIST_POSTS_LIMIT) : $empty;
-        } elseif ($route['kind'] === 'post' && $defaults['posts']) {
+        }
+        if ($route['kind'] === 'post') {
             $post = site_find_post($query, $siteId, $route['slug']);
             if ($post !== null && $post['kind'] !== $route['postKind']) $post = null;
         }
@@ -839,8 +846,7 @@ function site_handle(array $req, callable $query): array {
         site_api_url('get_site_seo', ['site_id' => $siteId]) => ['seo' => $seo],
     ];
     foreach ($lists as $kind => $list) {
-        $limit = $route['kind'] === 'home' ? SITE_HOME_POSTS_LIMIT : SITE_LIST_POSTS_LIMIT;
-        $api[site_api_url('get_site_posts', ['site_id' => $siteId, 'kind' => $kind, 'limit' => $limit])] = $list;
+        $api[site_api_url('get_site_posts', ['site_id' => $siteId, 'kind' => $kind, 'limit' => $limits[$kind]])] = $list;
     }
     if ($post !== null) $api[site_api_url('get_site_post', ['site_id' => $siteId, 'slug' => $route['slug']])] = ['post' => $post];
     $preload = ['path' => $found ? site_path($route) : null, 'builtAt' => (string)($req['now'] ?? gmdate('Y-m-d\TH:i:s\Z')), 'api' => $api];

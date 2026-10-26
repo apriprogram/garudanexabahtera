@@ -67,16 +67,20 @@ export function PostChip({ label, badge = false, theme }: { label: string; badge
   );
 }
 
+/** Bingkai foto utama artikel (juga dipakai kerangka memuat): rasio tetap 4:3 → 16:10, maks. setinggi 80% layar. */
+export const POST_IMAGE_FRAME = 'aspect-[4/3] max-h-[min(80vh,860px)] w-full @3xl:aspect-[16/10]';
+
 /**
- * Foto utama artikel: ukuran asli (poster pengumuman tegak tidak terpotong), maks. setinggi 80% layar, di bingkai lembut.
- * Dimuat segera (foto LCP halaman); width/height awal 16:10 sampai ukuran asli diketahui. Gagal dimuat → disembunyikan.
+ * Foto utama artikel di bingkai lembut berukuran tetap (POST_IMAGE_FRAME): ruangnya sudah tersedia sebelum foto selesai
+ * dimuat, jadi isi di bawahnya tidak bergeser. Foto utuh di dalamnya (object-contain: poster pengumuman tegak tidak
+ * terpotong). Dimuat segera (foto LCP halaman). Gagal dimuat → disembunyikan.
  */
 export function PostImage({ src, alt, theme }: { src: string | null | undefined; alt: string; theme: PostTheme }) {
   const url = safeImage(src);
   const [broken, setBroken] = useState<string | null>(null);
   if (!url || broken === url) return null;
   return (
-    <figure className={`mt-8 flex justify-center overflow-hidden @3xl:mt-10 ${theme.photoRadius} ${theme.soft}`}>
+    <figure className={`relative mt-8 overflow-hidden @3xl:mt-10 ${POST_IMAGE_FRAME} ${theme.photoRadius} ${theme.soft}`}>
       <img
         src={url}
         alt={alt}
@@ -86,7 +90,7 @@ export function PostImage({ src, alt, theme }: { src: string | null | undefined;
         fetchPriority="high"
         decoding="async"
         onError={() => setBroken(url)}
-        className="block h-auto max-h-[min(80vh,860px)] w-auto max-w-full object-contain"
+        className="absolute inset-0 block h-full w-full object-contain"
       />
     </figure>
   );

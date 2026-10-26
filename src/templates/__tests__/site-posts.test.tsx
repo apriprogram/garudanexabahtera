@@ -3,14 +3,16 @@
 // Berita & pengumuman template sekolah (docs/platform/SITE-POSTS-SEO-SPEC.md §7): helper bersama (shared/posts/model,
 // siteHref), beranda Madani & Cakrawala memakai tulisan dari SiteDataContext atau kembali ke konten CMS PERSIS seperti
 // sebelumnya, halaman daftar & tulisan (satu H1, remah roti, tautan <a href> yang bisa dirayapi, foto lazy + ukuran),
-// tidak ditemukan / memuat / gagal, tautan section di halaman selain beranda, navigasi tanpa muat ulang, anchor #berita.
+// tidak ditemukan / memuat / gagal, tautan section di halaman selain beranda, navigasi tanpa muat ulang, anchor #berita,
+// tautan "/path" (halaman situs vs file nyata), penanda section aktif setelah pindah halaman, bingkai foto artikel.
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SiteRenderer } from '../SiteRenderer';
 import { SITE_DATA_DEFAULT, siteHref, type SiteData } from '../shared/siteData';
 import { POST_PATH_KEY, postDate, postLinkTarget, postParagraphs, relatedPosts, withPostItems } from '../shared/posts/model';
-import { SECTION_ANCHOR, sectionFromAnchor } from '../shared/utils';
+import { SECTION_ANCHOR, resolveAction, sectionFromAnchor } from '../shared/utils';
+import { siteRoutePath } from '../siteRoutes';
 import type { SiteContent } from '../types';
 import { ANNOUNCEMENTS, NEWS, POST } from './fixtures/sitePosts';
 
@@ -54,6 +56,11 @@ describe('shared/posts: helper', () => {
     expect(postLinkTarget('mailto:tu@sekolah.sch.id')).toMatchObject({ kind: 'external', label: 'tu@sekolah.sch.id' });
     expect(postLinkTarget('javascript:alert(1)')).toBeNull();
     expect(postLinkTarget('//evil.example')).toBeNull();
+    // "/path": halaman situs (garis miring di akhir dirapikan) → navigasi di dalam situs; file nyata / path lain → tautan biasa
+    expect(postLinkTarget('/berita/')).toEqual({ kind: 'site', path: '/berita' });
+    expect(postLinkTarget('/#kontak')).toEqual({ kind: 'site', path: '/#kontak' });
+    expect(postLinkTarget('/assets/sites/7/posts/brosur%20ppdb.pdf')).toEqual({ kind: 'external', href: '/assets/sites/7/posts/brosur%20ppdb.pdf', label: 'brosur ppdb.pdf' });
+    expect(postLinkTarget('/berita?hal=2')).toMatchObject({ kind: 'external', href: '/berita?hal=2' });
 
     expect(relatedPosts(NEWS, NEWS[0].slug).map((p) => p.slug)).toEqual([NEWS[1].slug]);
     expect(relatedPosts(null, 'x')).toEqual([]);
@@ -62,6 +69,23 @@ describe('shared/posts: helper', () => {
     expect(siteHref('', '/berita/x')).toBe('/berita/x');
     expect(siteHref('/situs/7', '/')).toBe('/situs/7');
     expect(siteHref('/situs/7/', '/#kontak')).toBe('/situs/7/#kontak');
+  });
+
+  it('siteRoutePath & resolveAction: URL CMS ke halaman situs → `site`/section (basePath), path lain → tautan biasa', () => {
+    expect(['/', '/berita', '/pengumuman/', '/berita/juara#isi', '/#kontak', '/#'].map(siteRoutePath)).toEqual([
+      '/',
+      '/berita',
+      '/pengumuman',
+      '/berita/juara#isi',
+      '/#kontak',
+      '/',
+    ]);
+    expect(['/assets/x.pdf', '/berita?x=1', '//evil.example', '/agenda', 'berita', '/#a b'].map(siteRoutePath)).toEqual([null, null, null, null, null, null]);
+    expect(resolveAction('/berita', null)).toEqual({ kind: 'site', path: '/berita' });
+    expect(resolveAction('/pengumuman/jadwal-ujian/', null)).toEqual({ kind: 'site', path: '/pengumuman/jadwal-ujian' });
+    expect(resolveAction('/', null)).toEqual({ kind: 'site', path: '/' });
+    expect(resolveAction('/#kontak', null)).toEqual({ kind: 'section', target: 'contact' });
+    expect(resolveAction('/assets/sites/7/brosur.pdf', null)).toEqual({ kind: 'external', href: '/assets/sites/7/brosur.pdf' });
   });
 
   it('withPostItems: tanpa tulisan → objek konten yang sama; dengan tulisan → items diganti, judul section tetap', () => {
@@ -75,6 +99,10 @@ describe('shared/posts: helper', () => {
     expect(merged.announcements).toBe(content.announcements);
     expect(withPostItems(null as unknown as SiteContent, { berita: null, pengumuman: null })).toBeNull();
     expect(withPostItems(null as unknown as SiteContent, { berita: NEWS, pengumuman: null }).news.items).toHaveLength(2);
+    // Masih dimuat (undefined) → section tanpa item, bukan item CMS/demo yang lalu berganti
+    const loading = withPostItems(content, { berita: undefined, pengumuman: [] });
+    expect(loading.news).toEqual({ title: 'Kabar sekolah', items: [] });
+    expect(loading.announcements).toBe(content.announcements);
   });
 
   it('anchor Indonesia untuk section sekolah', () => {
@@ -220,6 +248,10 @@ describe.each(['madani', 'cakrawala'] as const)('%s: halaman daftar & tulisan', 
     expect(hero).toHaveAttribute('fetchpriority', 'high');
     expect(hero).toHaveAttribute('width');
     expect(hero).toHaveAttribute('height');
+    // Ruang foto disediakan sebelum foto dimuat: bingkai berasio tetap, foto mengisi bingkai (tanpa geser isi di bawahnya)
+    expect(hero.closest('figure')!.className).toMatch(/(^| )aspect-\[4\/3\]( |$)/);
+    expect(hero.closest('figure')!.className).toContain('w-full');
+    expect(hero.className).toMatch(/absolute.*h-full.*w-full/);
     const paragraphs = Array.from(main.querySelectorAll('article > div p')).map((p) => p.textContent);
     expect(paragraphs).toEqual(['Paragraf pertama berita.', 'Paragraf kedua\nbaris kedua.', '<script>alert(1)</script> bukan HTML']);
     expect(root.querySelector('script')).toBeNull();
@@ -278,6 +310,65 @@ describe('navigasi di dalam situs', () => {
     document.removeEventListener('click', record);
     expect(prevented).toEqual([true, false, true]);
     expect(scrolled).toEqual([]);
+  });
+
+  it('tautan tambahan ke file nyata di situs yang sama → <a href> biasa tanpa basePath, tidak lewat navigate', () => {
+    const navigate = vi.fn();
+    const post = { ...POST, link_url: '/assets/sites/7/posts/brosur.pdf' };
+    const root = site('cakrawala', { route: { kind: 'post', postKind: 'berita', slug: POST.slug }, post, navigate, basePath: '/situs/7' });
+    const link = within(root.querySelector('main')!).getByRole('link', { name: /brosur\.pdf/ });
+    expect(link).toHaveAttribute('href', '/assets/sites/7/posts/brosur.pdf');
+    expect(link).not.toHaveAttribute('target');
+    const prevented: boolean[] = [];
+    const record = (e: Event) => {
+      prevented.push(e.defaultPrevented);
+      e.preventDefault();
+    };
+    document.addEventListener('click', record);
+    fireEvent.click(link);
+    document.removeEventListener('click', record);
+    expect(prevented).toEqual([false]);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it.each(['madani', 'cakrawala'] as const)('%s: penanda section aktif mengamati ulang section setelah beranda → tulisan → beranda', (code) => {
+    // Pengamat section aktif header (rootMargin useActiveSection), bukan pengamat animasi/lengket lain
+    const live: Element[][] = [];
+    class RecordingObserver {
+      private targets: Element[] = [];
+      constructor(_callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+        if (options?.rootMargin === '-40% 0px -55% 0px') live.push(this.targets);
+      }
+      observe(el: Element) {
+        this.targets.push(el);
+      }
+      unobserve(el: Element) {
+        const at = this.targets.indexOf(el);
+        if (at >= 0) this.targets.splice(at, 1);
+      }
+      disconnect() {
+        this.targets.length = 0;
+      }
+      takeRecords() {
+        return [];
+      }
+    }
+    // window.IntersectionObserver di __tests__/setup.ts: writable, tidak configurable (vi.stubGlobal tidak bisa)
+    const original = window.IntersectionObserver;
+    window.IntersectionObserver = RecordingObserver as unknown as typeof IntersectionObserver;
+    try {
+      const home = { ...SITE_DATA_DEFAULT, ...WITH_POSTS };
+      const view = render(<SiteRenderer templateCode={code} content={null} data={home} />);
+      view.rerender(<SiteRenderer templateCode={code} content={null} data={{ ...home, route: { kind: 'post', postKind: 'berita', slug: POST.slug }, post: POST }} />);
+      view.rerender(<SiteRenderer templateCode={code} content={null} data={{ ...home }} />);
+      const about = view.container.querySelector('[data-tpl-section="about"]');
+      expect(about).not.toBeNull();
+      // Section beranda yang dipasang lagi (elemen baru) diamati; tidak ada pengamat yang masih memegang section lama
+      expect(live.some((targets) => targets.includes(about!))).toBe(true);
+      expect(live.flat().every((el) => el.isConnected)).toBe(true);
+    } finally {
+      window.IntersectionObserver = original;
+    }
   });
 
   it('beranda dibuka dengan "#berita" → gulir ke section Berita', () => {

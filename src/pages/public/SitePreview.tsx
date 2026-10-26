@@ -8,7 +8,7 @@ import { getTemplate, type SiteContent } from '../../templates';
 import { SiteRenderer } from '../../templates/SiteRenderer';
 import { SiteStatus } from '../../templates/SiteStatus';
 import type { SiteData } from '../../templates/shared/siteData';
-import { parseSiteRoute, sitePath } from '../../templates/siteRoutes';
+import { parseSiteRoute, servedRoute, sitePath } from '../../templates/siteRoutes';
 import { applySiteSeoHead, removeSiteSeoHead } from '../../templates/siteSeo';
 import { useSiteNavigate, useSitePages, useSitePublic } from '../../templates/useSitePublic';
 
@@ -26,9 +26,11 @@ export default function SitePreview() {
   const site = state.status === 'ready' ? state.site : null;
   const hasPosts = getTemplate(site?.template_code)?.features?.posts === true;
   const pages = useSitePages(site ? site.id : null, route, { posts: hasPosts });
-  const navigate = useSiteNavigate(basePath);
-  const data = useMemo<SiteData>(() => ({ ...pages.data, basePath, navigate }), [pages.data, basePath, navigate]);
-  const post = route.kind === 'post' ? (hasPosts ? pages.data.post : null) : undefined;
+  const { navigate, historyPop } = useSiteNavigate(basePath);
+  const data = useMemo<SiteData>(() => ({ ...pages.data, basePath, navigate, historyPop }), [pages.data, basePath, navigate, historyPop]);
+  // Rute untuk kepala halaman: template tanpa fitur tulisan → /berita dsb. = tidak ditemukan (sama dengan domain pembeli)
+  const headRoute = useMemo(() => servedRoute(route, hasPosts), [route, hasPosts]);
+  const post = headRoute.kind === 'post' ? pages.data.post : undefined;
   const [bannerOpen, setBannerOpen] = useState(true);
 
   useEffect(() => {
@@ -45,11 +47,11 @@ export default function SitePreview() {
       templateCode: site.template_code,
       content: site.content as SiteContent | null,
       seo: pages.seo,
-      route,
+      route: headRoute,
       post,
-      listCount: route.kind === 'list' ? (pages.listCount ?? 0) : undefined,
+      listCount: headRoute.kind === 'list' ? (pages.listCount ?? 0) : undefined,
     });
-  }, [site, state.status, pages.seo, route, post, pages.listCount]);
+  }, [site, state.status, pages.seo, headRoute, post, pages.listCount]);
 
   // Tag situs pembeli (title, ikon, theme-color, JSON-LD) dilepas saat pratinjau ditutup
   useEffect(() => () => removeSiteSeoHead(), []);

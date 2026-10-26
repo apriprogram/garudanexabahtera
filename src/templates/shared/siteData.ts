@@ -8,8 +8,12 @@ import { createContext, useContext } from 'react';
 import type { SiteRoute } from '../siteRoutes';
 import type { SitePostKind, SitePostPublic, SitePostSummary } from '../../types/sitePosts';
 
-/** Tulisan terbit per jenis. null = tidak dimuat (template memakai daftar dari konten CMS). */
-export type SitePostsByKind = Record<SitePostKind, SitePostSummary[] | null>;
+/**
+ * Tulisan terbit per jenis. null = tidak dipakai/gagal dimuat dan [] = belum ada tulisan (template memakai daftar dari
+ * konten CMS); undefined = masih dimuat di situs live berfitur tulisan (section beranda jenis itu kosong dulu, bukan item
+ * CMS/demo yang lalu berganti).
+ */
+export type SitePostsByKind = Record<SitePostKind, SitePostSummary[] | null | undefined>;
 
 export interface SiteData {
   route: SiteRoute;
@@ -27,6 +31,11 @@ export interface SiteData {
    * Tidak ada = tautan biasa (browser memuat halaman baru).
    */
   navigate?: (path: string) => void;
+  /**
+   * Halaman ini dibuka lagi lewat tombol kembali/maju browser setelah pindah halaman di dalam situs: posisi gulirnya
+   * dipulihkan (useSiteNavigate), jadi hash ("/#kontak") tidak digulir ulang oleh TemplateShell.
+   */
+  historyPop?: boolean;
 }
 
 export const SITE_DATA_DEFAULT: SiteData = {

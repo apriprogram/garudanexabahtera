@@ -16,7 +16,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { apiUrl } from '../../src/lib/api';
-import { parseSiteRoute } from '../../src/templates/siteRoutes';
+import { getTemplate } from '../../src/templates';
+import { parseSiteRoute, servedRoute } from '../../src/templates/siteRoutes';
 import { buildSiteHead, type SiteHeadInput } from '../../src/templates/siteSeo';
 import type { SitePostPublic, SitePostSummary, SiteSeoPublic } from '../../src/types/sitePosts';
 
@@ -273,12 +274,12 @@ function serverHead(html: string) {
   };
 }
 
-/** Head yang dihitung klien (buildSiteHead) dari data preload halaman yang sama. */
+/** Head yang dihitung klien (buildSiteHead) dari data preload halaman yang sama, dengan rute seperti CustomerSite. */
 function clientHead(html: string, domain: string, path: string) {
   const { api } = preloadOf(html);
   const site = (api[apiUrl('get_site_public', { domain })] as { site: { id: number; template_code: string; content: SiteHeadInput['content'] } }).site;
   const seo = (api[apiUrl('get_site_seo', { site_id: site.id })] as { seo: SiteSeoPublic }).seo;
-  const route = parseSiteRoute(path);
+  const route = servedRoute(parseSiteRoute(path), getTemplate(site.template_code)?.features?.posts === true);
   const input: SiteHeadInput = { domain, templateCode: site.template_code, content: site.content, seo, route };
   if (route.kind === 'post') {
     const body = api[apiUrl('get_site_post', { site_id: site.id, slug: route.slug })] as { post: SitePostPublic } | undefined;
@@ -376,7 +377,13 @@ describe.skipIf(!PHP_AVAILABLE)('backend/site.php: site_handle dengan database t
     expect(serverHead(list.body)).toMatchObject({ title: 'Berita · SMA Negeri 1 Contoh', robots: 'index,follow', canonical: 'https://sekolah.test/berita' });
     expect(list.body).toContain('<h1>Berita</h1>');
     expect(list.body).toContain('<a href="/berita/kegiatan-pramuka">Kegiatan Pramuka</a> <time datetime="2026-10-18">18 Oktober 2026</time>');
-    expect(Object.keys(preloadOf(list.body).api)).toContain(apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 100 }));
+    // Kunci preload = permintaan useSitePages di rute daftar: daftar ini (limit 100) + daftar beranda jenis lain (menu/footer)
+    expect(Object.keys(preloadOf(list.body).api)).toEqual([
+      apiUrl('get_site_public', { domain: 'sekolah.test' }),
+      apiUrl('get_site_seo', { site_id: 7 }),
+      apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 100 }),
+      apiUrl('get_site_posts', { site_id: 7, kind: 'pengumuman', limit: 12 }),
+    ]);
     // Pengumuman: satu-satunya terbit ber-noindex tetap ada di daftar; robots daftar mengikuti jumlah tulisan terbit
     expect(empty.status).toBe(200);
     expect(serverHead(empty.body)).toEqual(clientHead(empty.body, 'sekolah.test', '/pengumuman'));
@@ -398,6 +405,15 @@ describe.skipIf(!PHP_AVAILABLE)('backend/site.php: site_handle dengan database t
     expect(html.match(/<h1[\s>]/g)).toHaveLength(1);
     const preload = preloadOf(html);
     expect(preload.path).toBe('/berita/juara-olimpiade');
+    // Kunci preload = permintaan useSitePages di rute tulisan: tulisan + daftar beranda kedua jenis (menu/footer, "tulisan lainnya")
+    expect(Object.keys(preload.api)).toEqual([
+      apiUrl('get_site_public', { domain: 'sekolah.test' }),
+      apiUrl('get_site_seo', { site_id: 7 }),
+      apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 12 }),
+      apiUrl('get_site_posts', { site_id: 7, kind: 'pengumuman', limit: 12 }),
+      apiUrl('get_site_post', { site_id: 7, slug: 'juara-olimpiade' }),
+    ]);
+    expect((preload.api[apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 12 })] as { total: number }).total).toBe(2);
     expect((preload.api[apiUrl('get_site_post', { site_id: 7, slug: 'juara-olimpiade' })] as { post: SitePostPublic }).post).toMatchObject({
       body: 'Paragraf pertama.\nBaris kedua.\n\nParagraf kedua & "kutip".',
       seo_title: '',
@@ -595,19 +611,32 @@ describe.skipIf(!PHP_AVAILABLE)('backend/site.php: site_handle dengan database t
     expect(header(home, 'Content-Type')).toBe('text/html; charset=utf-8');
   });
 
-  it('template tanpa fitur tulisan: /berita 200 noindex tanpa membaca site_posts; /berita/{slug} 404', () => {
-    const [list, item, homePage] = runHandle([
+  it('template tanpa fitur tulisan: /berita, /pengumuman, /berita/{slug} 404 noindex (sama dengan klien) tanpa membaca site_posts', () => {
+    const [list, announcements, item, slash, homePage] = runHandle([
       { host: 'keuangan.test', uri: '/berita' },
+      { host: 'keuangan.test', uri: '/pengumuman' },
       { host: 'keuangan.test', uri: '/berita/apa-saja' },
+      { host: 'keuangan.test', uri: '/berita/' },
       { host: 'keuangan.test', uri: '/' },
     ]);
-    expect(list.status).toBe(200);
-    expect(serverHead(list.body).robots).toBe('noindex,follow');
-    expect(item.status).toBe(404);
+    const paths = ['/berita', '/pengumuman', '/berita/apa-saja'];
+    [list, announcements, item].forEach((res, i) => {
+      expect(res.status, paths[i]).toBe(404);
+      expect(header(res, 'X-Robots-Tag'), paths[i]).toBe('noindex');
+      const h = serverHead(res.body);
+      expect(h, paths[i]).toMatchObject({ title: 'Halaman tidak ditemukan · Koperasi Maju', robots: 'noindex,follow', canonical: null });
+      // Klien (CustomerSite: servedRoute → notfound) menghitung head yang sama
+      expect(h, paths[i]).toEqual(clientHead(res.body, 'keuangan.test', paths[i]));
+      expect(res.body, paths[i]).toContain('<h1>Halaman tidak ditemukan</h1>');
+      expect(preloadOf(res.body).path, paths[i]).toBeNull();
+    });
+    // Garis miring di akhir tetap dialihkan dulu (sama dengan klien), lalu 404
+    expect(slash.status).toBe(301);
+    expect(header(slash, 'Location')).toBe('https://keuangan.test/berita');
     expect(serverHead(homePage.body)).toEqual(clientHead(homePage.body, 'keuangan.test', '/'));
     expect(serverHead(homePage.body).jsonLd['@graph'][0]['@type']).toBe('Organization');
     expect(preloadOf(homePage.body).api[apiUrl('get_site_posts', { site_id: 10, kind: 'berita', limit: 12 })]).toEqual({ posts: [], total: 0 });
-    for (const res of [list, item, homePage]) expect(res.queries.some(([sql]) => sql.includes('site_posts'))).toBe(false);
+    for (const res of [list, announcements, item, homePage]) expect(res.queries.some(([sql]) => sql.includes('site_posts'))).toBe(false);
   });
 
   it('tabel baru belum ada (migrasi 029 belum dijalankan): halaman tetap 200 dengan bawaan; database mati: 503', () => {

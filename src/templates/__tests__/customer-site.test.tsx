@@ -3,10 +3,12 @@
 // Situs pembeli di domainnya sendiri (CustomerSite, docs/platform/SITE-POSTS-SEO-SPEC.md §3, §6, §7): rute dari path,
 // render pertama dari preload backend/site.php (kunci apiUrl dengan urutan parameter yang sama), lalu data terbaru dari
 // API; kepala halaman (siteSeo.ts); tulisan tidak ada / path tak dikenal = noindex; jumlah dilihat sekali per sesi;
-// gagal → Coba lagi; situs tidak ada & template tanpa fitur berita.
+// gagal → Coba lagi; refresh gagal/tidak sah tidak menimpa preload; situs tidak ada & template tanpa fitur berita;
+// garis miring di akhir; daftar beranda kedua jenis di setiap rute; gulir, fokus H1, dan posisi gulir saat kembali.
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { useEffect } from 'react';
+import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiUrl } from '../../lib/api';
 import { primePreload, resetPreload } from '../../lib/preload';
@@ -62,12 +64,31 @@ const appear = (root: ParentNode, selector: string) => until(() => expect(root.q
 
 const meta = (key: string) => document.head.querySelector(`[data-site-seo="${key}"]`)?.getAttribute(key === 'canonical' ? 'href' : 'content') ?? null;
 
+/** Lokasi router saat ini dan navigate (mis. -1 = tombol kembali browser). */
+const router: { pathname: string; navigate: NavigateFunction | null } = { pathname: '', navigate: null };
+function RouterProbe() {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    router.pathname = pathname;
+    router.navigate = navigate;
+  }, [pathname, navigate]);
+  return null;
+}
+
 const open = (path: string) =>
   render(
     <MemoryRouter initialEntries={[path]}>
       <CustomerSite hostname={DOMAIN} />
+      <RouterProbe />
     </MemoryRouter>,
   );
+
+/** Jawaban API yang sudah dikirim selesai diproses. */
+const settle = () =>
+  act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
 
 /** Preload seperti backend/site.php untuk path ini (kunci = site_api_url). */
 const preload = (path: string | null, api: Record<string, unknown>) =>
@@ -84,6 +105,7 @@ const preload = (path: string | null, api: Record<string, unknown>) =>
 beforeEach(() => {
   handlers = defaultHandlers();
   fetchMock.mockClear();
+  vi.mocked(window.scrollTo).mockClear();
   vi.stubGlobal('fetch', fetchMock);
   Element.prototype.scrollIntoView = vi.fn();
 });
@@ -149,6 +171,44 @@ describe('CustomerSite: preload site.php', () => {
     expect(views()).toHaveLength(0);
   });
 
+  it.each([
+    ['jaringan putus', () => Promise.reject(new TypeError('Failed to fetch'))],
+    ['jawaban HTML 200 (host/CDN)', () => new Response('<!doctype html><title>Sibuk</title>', { status: 200, headers: { 'Content-Type': 'text/html' } })],
+    ['jawaban 500', () => json(500, { error: 'Server error', code: 'SERVER' })],
+  ] as [string, Handler][])('refresh gagal (%s) tidak menimpa preload: artikel, index,follow, canonical tetap', async (_, fail) => {
+    for (const action of ['get_site_public', 'get_site_seo', 'get_site_posts', 'get_site_post']) handlers[action] = fail;
+    preload('/berita/juara-olimpiade-sains', {
+      [apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 12 })]: { posts: NEWS, total: 2 },
+      [apiUrl('get_site_posts', { site_id: 7, kind: 'pengumuman', limit: 12 })]: { posts: ANNOUNCEMENTS, total: 1 },
+      [apiUrl('get_site_post', { site_id: 7, slug: POST.slug })]: { post: POST },
+    });
+    const { container } = open('/berita/juara-olimpiade-sains');
+    await waitFor(() => expect(gets()).toContain(apiUrl('get_site_post', { site_id: 7, slug: POST.slug })));
+    await settle();
+    expect(container.querySelectorAll('h1')).toHaveLength(1);
+    expect(container.querySelector('h1')).toHaveTextContent(POST.title);
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(meta('robots')).toBe('index,follow');
+    expect(meta('canonical')).toBe(`https://${DOMAIN}/berita/juara-olimpiade-sains`);
+    expect(meta('og:type')).toBe('article');
+    // "Berita lainnya" dari daftar preload
+    expect(container.querySelector('main section h2')).toHaveTextContent('Berita lainnya');
+  });
+
+  it('refresh daftar berupa HTML 200 → daftar dari preload tetap (bukan daftar kosong + noindex)', async () => {
+    handlers.get_site_posts = () => new Response('<html>Sibuk</html>', { status: 200, headers: { 'Content-Type': 'text/html' } });
+    preload('/berita', {
+      [apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 100 })]: { posts: NEWS, total: 2 },
+      [apiUrl('get_site_posts', { site_id: 7, kind: 'pengumuman', limit: 12 })]: { posts: ANNOUNCEMENTS, total: 1 },
+    });
+    const { container } = open('/berita');
+    await waitFor(() => expect(gets()).toContain(apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 100 })));
+    await settle();
+    expect(within(container.querySelector('main')!).getByRole('link', { name: NEWS[0].title })).toHaveAttribute('href', '/berita/juara-olimpiade-sains');
+    expect(meta('robots')).toBe('index,follow');
+    expect(meta('canonical')).toBe(`https://${DOMAIN}/berita`);
+  });
+
   it('beranda dari preload: kartu berita & pengumuman dari tulisan, tautan <a href> tanpa basePath', () => {
     preload('/', {
       [apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 12 })]: { posts: NEWS, total: 2 },
@@ -175,6 +235,10 @@ describe('CustomerSite: tanpa preload', () => {
     fireEvent.click(card);
     await until(() => expect(container.querySelector('h1')).toHaveTextContent(POST.title));
     expect(container.querySelector('[data-site-page="post"]')).not.toBeNull();
+    // Langsung ke atas (tanpa animasi) dan fokus ke H1 halaman baru (diumumkan pembaca layar)
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+    await waitFor(() => expect(document.activeElement).toBe(container.querySelector('h1')));
+    expect(container.querySelector('h1')).toHaveAttribute('tabindex', '-1');
     expect(gets()).toContain(apiUrl('get_site_post', { site_id: 7, slug: POST.slug }));
     await waitFor(() => expect(views()).toHaveLength(1));
     // Remah roti → daftar berita
@@ -183,17 +247,60 @@ describe('CustomerSite: tanpa preload', () => {
     expect(container.querySelector('[data-site-page="list"]')).not.toBeNull();
     expect(gets()).toContain(apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 100 }));
     expect(meta('canonical')).toBe(`https://${DOMAIN}/berita`);
-    // Menu "Profil" di header → kembali ke beranda dengan hash
+    // Menu "Profil" di header → kembali ke beranda dengan hash: digulir ke section, fokus tidak dipindah ke H1
+    vi.mocked(window.scrollTo).mockClear();
     fireEvent.click(within(container.querySelector('header')!).getAllByRole('link', { name: 'Profil' })[0]);
     await appear(container, '[data-tpl-section="news"]');
     expect(container.querySelector('[data-site-page]')).toBeNull();
+    expect(router.pathname).toBe('/');
+    expect(window.scrollTo).not.toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+    expect(document.activeElement).not.toBe(container.querySelector('h1'));
+  });
+
+  it('tombol kembali dari artikel → posisi gulir beranda dipulihkan, hash tidak digulir ulang', async () => {
+    const scrollY = Object.getOwnPropertyDescriptor(window, 'scrollY');
+    let y = 0;
+    Object.defineProperty(window, 'scrollY', { configurable: true, get: () => y });
+    try {
+      const { container } = open('/berita');
+      await appear(container, 'header a[href="/#tentang"]');
+      // Menu → beranda "/#tentang" (digulir ke Profil), lalu pengunjung menggulir sampai Berita. TemplateShell membaca
+      // hash dari window.location (MemoryRouter tidak mengubahnya), jadi URL jsdom diisi hash yang sama.
+      window.history.replaceState(null, '', '/#tentang');
+      fireEvent.click(container.querySelector<HTMLElement>('header a[href="/#tentang"]')!);
+      await appear(container, '[data-tpl-section="news"] a[href="/berita/juara-olimpiade-sains"]');
+      await until(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled());
+      y = 2400;
+      window.dispatchEvent(new Event('scroll'));
+      const card = within(container.querySelector<HTMLElement>('[data-tpl-section="news"]')!).getByRole('link', { name: NEWS[0].title });
+      fireEvent.click(card);
+      await until(() => expect(container.querySelector('h1')).toHaveTextContent(POST.title));
+      y = 0;
+      window.dispatchEvent(new Event('scroll'));
+      vi.mocked(window.scrollTo).mockClear();
+      vi.mocked(Element.prototype.scrollIntoView).mockClear();
+      act(() => {
+        void router.navigate!(-1);
+      });
+      await appear(container, '[data-tpl-section="news"]');
+      expect(router.pathname).toBe('/');
+      expect(window.scrollTo).toHaveBeenCalledWith({ top: 2400, behavior: 'instant' });
+      await settle();
+      await settle();
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState(null, '', '/');
+      if (scrollY) Object.defineProperty(window, 'scrollY', scrollY);
+      else delete (window as { scrollY?: number }).scrollY;
+    }
   });
 
   it('path tak dikenal → "Halaman tidak ditemukan" di dalam template, noindex', async () => {
     const { container } = open('/tentang-kami');
     await until(() => expect(container.querySelector('h1')).toHaveTextContent('Halaman tidak ditemukan'));
     expect(container.querySelector('header')).not.toBeNull();
-    expect(meta('robots')).toBe('noindex,follow');
+    // Head diterapkan di effect sesudah render (bisa satu giliran setelah H1 tampil)
+    await waitFor(() => expect(meta('robots')).toBe('noindex,follow'));
     expect(meta('canonical')).toBeNull();
   });
 
@@ -228,6 +335,47 @@ describe('CustomerSite: tanpa preload', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Halaman tidak ditemukan' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ke beranda' })).toHaveAttribute('href', '/');
     await waitFor(() => expect(meta('robots')).toBe('noindex,follow'));
+    // Head = rute tidak ditemukan, sama dengan 404 site.php (bukan "Berita · …" dengan canonical)
+    expect(document.title).toMatch(/^Halaman tidak ditemukan/);
+    expect(meta('description')).toMatch(/^Halaman yang Anda cari tidak ada/);
+    expect(meta('canonical')).toBeNull();
     expect(gets().some((url) => url.includes('get_site_posts'))).toBe(false);
+  });
+
+  it('path bergaris miring di akhir ("/pengumuman/") → diganti "/pengumuman" seperti 301 site.php', async () => {
+    const { container } = open('/pengumuman/');
+    await until(() => expect(router.pathname).toBe('/pengumuman'));
+    await appear(container, '[data-site-page="list"]');
+    expect(container.querySelector('h1')).toHaveTextContent('Pengumuman');
+    await waitFor(() => expect(meta('canonical')).toBe(`https://${DOMAIN}/pengumuman`));
+  });
+
+  it('daftar beranda kedua jenis di setiap rute: menu "Berita" tetap ada di /pengumuman walau daftar CMS kosong', async () => {
+    handlers.get_site_public = () => json(200, { site: { ...SITE, content: { ...SITE.content, news: { items: [] } } } });
+    const { container } = open('/pengumuman');
+    await appear(container, '[data-site-page="list"] a[href="/pengumuman/jadwal-ujian-akhir-semester"]');
+    expect(gets()).toEqual(expect.arrayContaining([apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 12 })]));
+    await until(() => expect(container.querySelector('header a[href="/#berita"]')).not.toBeNull());
+  });
+
+  it('kembali ke beranda saat daftar pengumuman masih dimuat: tidak ada item CMS/demo sekilas', async () => {
+    let release: () => void = () => undefined;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    handlers.get_site_posts = async (q) => {
+      if (q.get('kind') === 'pengumuman') await pending;
+      const posts = q.get('kind') === 'berita' ? NEWS : ANNOUNCEMENTS;
+      return json(200, { posts, total: posts.length });
+    };
+    const { container } = open('/berita/juara-olimpiade-sains');
+    await until(() => expect(container.querySelector('h1')).toHaveTextContent(POST.title));
+    fireEvent.click(within(container.querySelector('main')!).getByRole('link', { name: 'Ke beranda' }));
+    await appear(container, '[data-tpl-section="news"] a[href="/berita/juara-olimpiade-sains"]');
+    // Pengumuman demo template ("Jadwal asesmen …") tidak tampil sambil menunggu
+    expect(container.textContent).not.toContain('Jadwal asesmen sumatif');
+    release();
+    await appear(container, '[data-tpl-section="announcements"] a[href="/pengumuman/jadwal-ujian-akhir-semester"]');
+    expect(container.textContent).not.toContain('Jadwal asesmen sumatif');
   });
 });

@@ -8,7 +8,7 @@ import { useSiteData } from '../siteData';
 import type { SitePostPublic } from '../../../types/sitePosts';
 import { POST_KIND_LABEL, postImageAlt, postLinkTarget, postParagraphs, relatedPosts, type PostLinkTarget } from './model';
 import { PostCard } from './PostCard';
-import { Breadcrumb, PAGE_H1, PostChip, PostDateText, PostImage, Skeleton } from './parts';
+import { Breadcrumb, PAGE_H1, POST_IMAGE_FRAME, PostChip, PostDateText, PostImage, Skeleton } from './parts';
 import type { PostTheme } from './theme';
 
 function ExtraLink({ target, theme }: { target: PostLinkTarget; theme: PostTheme }) {
@@ -37,7 +37,7 @@ export function PostArticleSkeleton({ theme }: { theme: PostTheme }) {
       <Skeleton theme={theme} className="h-4 w-48 rounded-full" />
       <Skeleton theme={theme} className="mt-8 h-9 w-11/12 rounded-2xl" />
       <Skeleton theme={theme} className="mt-3 h-9 w-2/3 rounded-2xl" />
-      <Skeleton theme={theme} className={`mt-8 aspect-[16/10] w-full ${theme.photoRadius}`} />
+      <Skeleton theme={theme} className={`mt-8 ${POST_IMAGE_FRAME} ${theme.photoRadius}`} />
       <Skeleton theme={theme} className="mt-8 h-4 w-full rounded-full" />
       <Skeleton theme={theme} className="mt-3 h-4 w-5/6 rounded-full" />
     </div>

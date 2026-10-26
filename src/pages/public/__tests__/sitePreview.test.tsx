@@ -2,7 +2,8 @@
 // Jalankan: npx vitest run src/pages/public/__tests__/sitePreview.test.tsx
 // Pratinjau situs pembeli di host utama (/situs/:siteId/*, docs/platform/SITE-POSTS-SEO-SPEC.md §3, §7): rute di
 // dalamnya sama dengan domain pembeli dengan basePath "/situs/{id}", head selalu noindex tanpa canonical, tidak
-// menghitung jumlah dilihat, dan semua tag situs pembeli dilepas (ikon shell kembali) saat pratinjau ditutup.
+// menghitung jumlah dilihat, dan semua tag situs pembeli dilepas (ikon shell kembali) saat pratinjau ditutup. URL CMS ke
+// halaman situs ("/pengumuman", "/#kontak") ikut diberi awalan pratinjau dan dibuka tanpa muat ulang.
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -23,13 +24,18 @@ const SITE = {
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
+/** Konten situs pengganti untuk satu tes (null = SITE.content). */
+let contentOverride: Record<string, unknown> | null = null;
+
 const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
   void init; // dibaca lewat fetchMock.mock.calls (posts())
   const url = new URL(String(input), 'http://localhost');
   const q = url.searchParams;
   switch (q.get('action')) {
     case 'get_site_public':
-      return q.get('site_id') === '7' ? json(200, { site: SITE }) : json(404, { error: 'Situs tidak ditemukan.', code: 'SITE_NOT_FOUND' });
+      return q.get('site_id') === '7'
+        ? json(200, { site: contentOverride ? { ...SITE, content: contentOverride } : SITE })
+        : json(404, { error: 'Situs tidak ditemukan.', code: 'SITE_NOT_FOUND' });
     case 'get_site_seo':
       return json(200, { seo: { title: '', description: '', og_image: null, schema_type: '', indexable: true } });
     case 'get_site_posts': {
@@ -72,6 +78,7 @@ beforeEach(() => {
   document.head.appendChild(shellIcon);
 });
 afterEach(() => {
+  contentOverride = null;
   cleanup();
   removeSiteSeoHead();
   shellIcon.remove();
@@ -124,6 +131,19 @@ describe('SitePreview: /situs/:siteId/*', () => {
     open('/situs/abc/berita');
     expect(await screen.findByRole('heading', { level: 1, name: /Situs tidak ditemukan/ })).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => String(input).includes('site_id=abc'))).toBe(false);
+  });
+
+  it('URL tombol CMS ke halaman situs: awalan /situs/7 dan tanpa muat ulang; "/#kontak" → gulir di beranda', async () => {
+    contentOverride = { ...SITE.content, hero: { secondary_url: '/pengumuman', primary_url: '/#kontak' } };
+    const { container } = open('/situs/7');
+    await appear(container, '[data-tpl-section="news"] a[href="/situs/7/berita/juara-olimpiade-sains"]');
+    const hero = container.querySelector<HTMLElement>('main')!;
+    const toList = within(hero).getAllByRole('link', { name: /Profil Sekolah/ })[0];
+    expect(toList).toHaveAttribute('href', '/situs/7/pengumuman');
+    expect(within(hero).getAllByRole('link', { name: /Daftar PPDB/ })[0]).toHaveAttribute('href', '#kontak');
+    fireEvent.click(toList);
+    await until(() => expect(container.querySelector('h1')).toHaveTextContent('Pengumuman'));
+    expect(container.querySelector('[data-site-page="list"]')).not.toBeNull();
   });
 
   it('ditutup → tag situs pembeli dilepas dan favicon shell kembali', async () => {

@@ -1,7 +1,7 @@
 // Turunan tulisan situs (fungsi murni, tanpa React): tanggal Indonesia, paragraf isi, item list dari tulisan untuk
 // section beranda template sekolah, tautan tambahan, dan tulisan terkait. Data dari API publik (src/types/sitePosts.ts).
 import type { ListItem, SiteContent } from '../../types';
-import { postPath } from '../../siteRoutes';
+import { postPath, siteRoutePath } from '../../siteRoutes';
 import { isPlainObject, safeUrl } from '../utils';
 import type { SitePostsByKind } from '../siteData';
 import type { SitePostKind, SitePostSummary } from '../../../types/sitePosts';
@@ -92,17 +92,20 @@ export const usablePosts = (posts: SitePostSummary[] | null | undefined): SitePo
 
 /**
  * Konten dengan `items` section berita/pengumuman diganti tulisan terbit (bila ada tulisan jenis itu). Section lain,
- * judul section, dan `enabled` tetap dari konten. Tanpa tulisan → konten yang sama persis (objek yang sama).
+ * judul section, dan `enabled` tetap dari konten. Tanpa tulisan (null/[]) → konten yang sama persis (objek yang sama).
+ * Daftar yang masih dimuat (undefined, situs live berfitur tulisan) → section itu tanpa item dulu: item CMS/demo tidak
+ * tampil sekilas lalu berganti tulisan.
  */
 export function withPostItems(content: SiteContent, posts: SitePostsByKind, sections: Record<string, SitePostKind> = POST_SECTIONS): SiteContent {
   const base: Record<string, unknown> = isPlainObject(content) ? content : {};
   let result: SiteContent | null = null;
   for (const [key, kind] of Object.entries(sections)) {
-    const list = usablePosts(posts?.[kind]);
-    if (!list) continue;
+    const raw = posts?.[kind];
+    const list = usablePosts(raw);
+    if (!list && raw !== undefined) continue;
     result ??= { ...(base as SiteContent) };
     const section = isPlainObject(base[key]) ? (base[key] as SiteContent[string]) : {};
-    result[key] = { ...section, items: list.map(postItem) };
+    result[key] = { ...section, items: list ? list.map(postItem) : [] };
   }
   return result ?? content;
 }
@@ -111,15 +114,30 @@ export function withPostItems(content: SiteContent, posts: SitePostsByKind, sect
 
 export type PostLinkTarget = { kind: 'site'; path: string } | { kind: 'section'; anchor: string } | { kind: 'external'; href: string; label: string };
 
+/** Label tautan ke path di situs yang sama: nama file/segmen terakhir ("/assets/…/brosur.pdf" → "brosur.pdf"). */
+function pathLabel(value: string): string {
+  const last = value.split(/[?#]/)[0].split('/').filter(Boolean).pop() ?? '';
+  try {
+    return decodeURIComponent(last) || value;
+  } catch {
+    return last || value;
+  }
+}
+
 /**
- * Tautan tambahan tulisan (link_url): "/path" → halaman situs, "#anchor" → section beranda, http(s)/mailto/tel → keluar
- * (label = nama host, mis. "drive.google.com"). Tidak sah → null.
+ * Tautan tambahan tulisan (link_url): "#anchor" → section beranda; "/path" halaman situs (beranda, daftar, tulisan;
+ * "/berita/" dirapikan) → navigasi di dalam situs; "/path" lain di situs yang sama (file nyata seperti lampiran PDF) →
+ * tautan biasa ke URL aslinya (label = nama file); http(s)/mailto/tel → keluar (label = nama host, mis.
+ * "drive.google.com"). Tidak sah → null.
  */
 export function postLinkTarget(raw: string | null | undefined): PostLinkTarget | null {
   const value = (raw || '').trim();
   if (!value) return null;
   if (/^#[\w-]+$/.test(value)) return { kind: 'section', anchor: value.slice(1) };
-  if (value.startsWith('/') && !value.startsWith('//')) return { kind: 'site', path: value };
+  if (value.startsWith('/') && !value.startsWith('//')) {
+    const path = siteRoutePath(value);
+    return path !== null ? { kind: 'site', path } : { kind: 'external', href: value, label: pathLabel(value) };
+  }
   const href = safeUrl(value);
   if (!href || !/^(https?:|mailto:|tel:)/i.test(href)) return null;
   let label = href.replace(/^(mailto:|tel:)/i, '');

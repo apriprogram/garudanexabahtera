@@ -207,10 +207,12 @@ export function TemplateShell({ content, preview = false, motion, displayFont = 
   }, [notice]);
 
   // Situs live: buka langsung ke #kontak dsb. bila URL membawa hash, juga saat kembali ke beranda dari halaman tulisan
-  // ("/#berita") tanpa memuat ulang halaman
-  const onHome = useSiteData().route.kind === 'home';
+  // ("/#berita") tanpa memuat ulang halaman. Tombol kembali/maju browser (historyPop) memulihkan posisi gulir terakhir
+  // halaman itu, jadi hash-nya tidak digulir ulang.
+  const { route, historyPop = false } = useSiteData();
+  const onHome = route.kind === 'home';
   useEffect(() => {
-    if (preview || !onHome || typeof window === 'undefined' || !window.location.hash) return;
+    if (preview || !onHome || historyPop || typeof window === 'undefined' || !window.location.hash) return;
     const timer = window.setTimeout(() => {
       let target = window.location.hash.slice(1);
       try {
@@ -221,7 +223,7 @@ export function TemplateShell({ content, preview = false, motion, displayFont = 
       goTo(target);
     }, 60);
     return () => window.clearTimeout(timer);
-  }, [preview, onHome, goTo]);
+  }, [preview, onHome, historyPop, goTo]);
 
   const runtime = useMemo(() => ({ preview, motion: motionAllowed, goTo }), [preview, motionAllowed, goTo]);
   const waIcon = <WhatsAppIcon className={preview ? 'h-6 w-6' : 'h-6 w-6 sm:h-7 sm:w-7'} />;
