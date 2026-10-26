@@ -62,6 +62,13 @@
     "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
     "posts": true
   },
+  "portline": {
+    "company_name": "Portline Group",
+    "tagline": "Integrated shipping & logistics, Rotterdam",
+    "description": "Portline Group moves containers, energy and project cargo for customers in more than 90 countries, through one network of ships, terminals and inland logistics.",
+    "logo": "",
+    "posts": false
+  },
   "puncakgear": {
     "company_name": "Tapak Rimba Outdoor",
     "tagline": "Toko & Sewa Alat Pendakian di Malang",

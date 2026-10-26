@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'portline'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -49,7 +49,9 @@ const MADANI: Template = { ...FIXTURE_TEMPLATES[4], id: 66, slug: 'madani', name
 const CAKRAWALA: Template = { ...FIXTURE_TEMPLATES[4], id: 67, slug: 'cakrawala', name: 'Cakrawala', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'cakrawala', sort_order: 13 };
 // Bestari (2026-10-26, migrasi 028, website SMA) juga belum ada di fixture prerender bersama
 const BESTARI: Template = { ...FIXTURE_TEMPLATES[4], id: 83, slug: 'bestari', name: 'Bestari', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'bestari', sort_order: 14 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI].find((t) => t.slug === slug) as Template;
+// Portline (2026-10-27, migrasi 032, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
+const PORTLINE: Template = { ...FIXTURE_TEMPLATES[4], id: 87, slug: 'portline', name: 'Portline', category: 'Company Profile', price: 1890000, template_code: 'portline', sort_order: 16 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, PORTLINE].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -78,6 +80,7 @@ describe('src/content/templates', () => {
       madani: 'Madani: Template Website Sekolah Islam & PPDB Online',
       cakrawala: 'Cakrawala: Template Website SMK & SMA dengan Halaman PPDB',
       bestari: 'Bestari: Template Website SMA dengan Halaman PPDB',
+      portline: 'Portline: Template Website Perusahaan Pelayaran & Logistik',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -95,6 +98,7 @@ describe('src/content/templates', () => {
       madani: 'Madani: Template Website Sekolah Islam – Rp1,69 jt',
       cakrawala: 'Cakrawala: Template Website SMK & SMA – Rp1,69 jt',
       bestari: 'Bestari: Template Website SMA & PPDB Online – Rp1,69 jt',
+      portline: 'Portline: Template Website Perusahaan Pelayaran – Rp1,89 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -194,6 +198,12 @@ describe('src/content/templates', () => {
     expect(bestari).not.toMatch(/e-rapor tersedia|sistem informasi akademik lengkap|data pendaftar tersimpan|pembayaran online tersedia|tes calistung/i);
     // Bestari kini template SMA (2026-10-26): tidak ada sisa salinan sekolah dasar
     expect(bestari).not.toMatch(/\bSD\b|sekolah dasar|TK\/PAUD/);
+    // Portline (2026-10-27): formulir hanya menyusun pesan, "Track a shipment" hanya tautan, demo fiktif, tanpa merek nyata
+    const portline = visibleText(templateContent('portline') as TemplatePageContent);
+    expect(portline).toMatch(/data tidak disimpan di website|Tidak ada data yang disimpan di website/);
+    expect(portline).toMatch(/bukan sistem pelacakan/);
+    expect(portline).toMatch(/fiktif/);
+    expect(portline).not.toMatch(/pelacakan kiriman real-?time tersedia|booking online tersedia|ISO 9001|IMO approved|terdaftar di bursa|\bMaersk\b|\bMSC\b|\bCOSCO\b/i);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -323,6 +333,24 @@ describe('src/content/templates', () => {
     expect(TEMPLATE_COPY.bestari?.niche).toBe('Sekolah Menengah Atas (SMA)');
     expect(TEMPLATE_PAGES.bestari?.niche).toBe('sekolah menengah atas');
     expect(TEMPLATE_COPY.bestari?.updated).toBe('2026-10-26');
+  });
+
+  it('Portline: kata kunci "template website perusahaan pelayaran" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('portline');
+    const keyword = /template website perusahaan pelayaran/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website perusahaan pelayaran /);
+    expect(templateDescription(t)).toContain('Rp1.890.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toMatch(keyword);
+    const c = templateContent('portline') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Portline adalah template website perusahaan pelayaran /);
+    const text = visibleText(c);
+    for (const phrase of ['website perusahaan logistik', 'template company profile bahasa Inggris', 'bahasa Indonesia']) expect(text, phrase).toContain(phrase);
+    // Wajar, bukan ditumpuk
+    expect(text.toLowerCase().split('template website perusahaan pelayaran').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.portline?.niche).toBe('Perusahaan Pelayaran & Logistik');
+    expect(TEMPLATE_PAGES.portline?.niche).toBe('perusahaan pelayaran & logistik');
+    expect(TEMPLATE_COPY.portline?.updated).toBe('2026-10-27');
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

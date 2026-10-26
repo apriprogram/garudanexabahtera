@@ -244,4 +244,22 @@ Cocok untuk SMA swasta maupun negeri, dan bisa dipakai MA dengan mengganti isi p
    '["/assets/templates/bestari-1.webp","/assets/templates/bestari-2.webp"]',
    'bestari', NULL, 'published', 14);
 
+-- Portline (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_032). Demo: Portline Group, Rotterdam (fiktif), konten berbahasa Inggris.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('portline',
+   'Portline',
+   'Company Profile',
+   'Template company profile berbahasa Inggris untuk perusahaan pelayaran, logistik, dan grup multinasional: hero slider berindeks, newsroom bertagar, armada, jaringan global, dan formulir enquiry.',
+   'Portline membuat perusahaan pelayaran, logistik, atau grup multinasional tampil seperti korporasi internasional sejak layar pertama: slider foto selebar layar dengan indeks 01/02/03, lingkaran radar, menu dua lapis dengan tombol biru dan pilihan bahasa, serta deret logo perusahaan grup. Di bawahnya tersusun newsroom berbentuk mosaik dengan filter tagar, liputan media, angka perusahaan berikon, kartu perusahaan grup atau layanan, carousel armada yang melebar, jaringan global per kawasan, pita keberlanjutan, banner karier, pimpinan, kontak kantor pusat dan kantor regional, serta footer navy multi-kolom.
+
+Konten demo berbahasa Inggris (Portline Group, fiktif) dan bisa diganti seluruhnya lewat CMS, termasuk ke bahasa Indonesia; teks tombol dan label formulir mengikuti pilihan bahasa en/id. Formulir enquiry menyusun pesan WhatsApp atau email untuk tim Anda; tidak ada data yang disimpan, dan tombol seperti "Track a shipment" hanya tautan, bukan sistem pelacakan. Satu warna tema bisa Anda ganti sendiri tanpa coding.',
+   '["Konten demo berbahasa Inggris untuk perusahaan besar, multinasional, dan eksportir","Hero slider foto selebar layar dengan indeks 01/02/03 dan deret logo perusahaan grup","Menu dua lapis dengan tombol utilitas dan pilihan bahasa EN | ID (tautan ke versi bahasa lain)","Newsroom mosaik dengan filter tagar, isi berita, dan liputan media","Kartu perusahaan grup, carousel armada, dan jaringan global per kawasan","Formulir enquiry yang menyusun pesan WhatsApp atau email, tanpa menyimpan data","Teks tombol & label formulir bahasa Inggris atau Indonesia, satu warna tema yang bisa diganti","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1890000.00,
+   '/assets/templates/portline-preview.webp',
+   '["/assets/templates/portline-1.webp","/assets/templates/portline-2.webp"]',
+   'portline', NULL, 'published', 16);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

@@ -26,7 +26,8 @@ database/
 │   ├── …                                           # 012–025: lihat catatan per migrasi di bawah
 │   ├── 2026-10-25_026_domain_renewal_profile.sql   # domain berbayar, masa aktif, template_renewals, profil pembeli
 │   ├── 2026-10-25_027_google_sign_in.sql           # users.google_sub: masuk & daftar pembeli dengan Google
-│   └── 2026-10-26_028_bestari_template.sql         # data: katalog Bestari (SMA), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-26_028_bestari_template.sql         # data: katalog Bestari (SMA), jalankan SETELAH deploy kodenya
+│   └── 2026-10-27_032_portline_template.sql        # data: katalog Portline (company profile pelayaran, Inggris), SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -177,6 +178,11 @@ itu. Jalankan setelah kode yang mendaftarkan `template_code` `cakrawala` ter-dep
 Pendidikan", Rp1.690.000, sort_order 14) berdasarkan slug, pola sama dengan 025: menjalankan ulang MENIMPA perubahan admin
 pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code` `bestari` ter-deploy. DB baru cukup
 `seed.templates.sql`.
+
+`2026-10-27_032` (data saja) membuat/menyamakan baris katalog `portline` (company profile berbahasa Inggris untuk grup
+pelayaran & logistik, kategori "Company Profile", Rp1.890.000, sort_order 16) berdasarkan slug, pola sama dengan 028:
+menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code`
+`portline` ter-deploy. DB baru cukup `seed.templates.sql`.
 
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
