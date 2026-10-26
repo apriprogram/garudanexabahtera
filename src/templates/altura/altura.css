@@ -1,0 +1,167 @@
+/*
+ * CSS lokal Altura (diimpor ./Altura.tsx): panel hero yang masuk bergeser (hanya transform: foto LCP tidak disembunyikan),
+ * lekuk "notch" kartu pilar tempat bulatan panah, lapisan gelap pita angka & CTA, garis angka yang digambar dari bawah,
+ * akordion proyek yang melebar halus, rel geser tanpa scrollbar, dan wordmark footer. Gerak hanya bila root template
+ * ber-data-tpl-motion="on" (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak → statis. Tanpa bayangan.
+ */
+
+@layer components {
+  /* ─── Hero: panel masuk bergeser (transform saja, tanpa opacity) ───────────── */
+  [data-tpl-motion='on'] .al-enter-left {
+    animation: al-enter-left 1s var(--tpl-ease, ease) both;
+  }
+
+  [data-tpl-motion='on'] .al-enter-right {
+    animation: al-enter-right 1s var(--tpl-ease, ease) both;
+  }
+
+  /* ─── Kartu pilar: lekuk sudut kanan-bawah berwarna latar halaman ─────────── */
+  .al-notch {
+    --al-notch-r: 22px;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    width: 72px;
+    height: 72px;
+    padding: 0 0 2px 0;
+    background: var(--al-notch-bg, #ffffff);
+    border-top-left-radius: 26px;
+  }
+
+  .al-notch::before,
+  .al-notch::after {
+    content: '';
+    position: absolute;
+    width: var(--al-notch-r);
+    height: var(--al-notch-r);
+    background: radial-gradient(circle at 0 0, transparent calc(var(--al-notch-r) - 0.5px), var(--al-notch-bg, #ffffff) var(--al-notch-r));
+  }
+
+  .al-notch::before {
+    right: 0;
+    top: calc(var(--al-notch-r) * -1);
+  }
+
+  .al-notch::after {
+    left: calc(var(--al-notch-r) * -1);
+    bottom: 0;
+  }
+
+  /* Foto gedung di kartu berwarna tema: memudar ke atas agar tampak "keluar" dari kartu */
+  .al-fade-top {
+    -webkit-mask-image: linear-gradient(to top, #000 62%, transparent 100%);
+    mask-image: linear-gradient(to top, #000 62%, transparent 100%);
+  }
+
+  /* ─── Pita angka: kabut gelap di atas foto cakrawala (angka putih ≥ 4,5:1) ─── */
+  .al-stats-scrim {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--al-deep) 92%, transparent) 0%, color-mix(in srgb, var(--al-deep) 62%, transparent) 42%, color-mix(in srgb, var(--al-deep) 70%, transparent) 70%, var(--al-deep) 100%),
+      color-mix(in srgb, var(--al-deep) 30%, transparent);
+  }
+
+  /* Garis angka digambar dari bawah saat kolomnya muncul (<Reveal> memberi data-reveal) */
+  .al-line {
+    transform-origin: bottom center;
+  }
+
+  [data-tpl-motion='on'] .al-line {
+    transition: transform 1.4s var(--tpl-ease, ease);
+    transition-delay: calc(var(--tpl-delay, 0ms) + 120ms);
+  }
+
+  [data-tpl-motion='on'] [data-reveal='pending'] .al-line {
+    transform: scaleY(0);
+  }
+
+  /* ─── Akordion proyek: kartu aktif melebar halus ─────────────────────────── */
+  [data-tpl-motion='on'] .al-dev {
+    transition: flex-grow 0.75s var(--tpl-ease, ease);
+  }
+
+  [data-tpl-motion='on'] .al-dev-body {
+    transition:
+      opacity 0.45s var(--tpl-ease, ease) 0.25s,
+      visibility 0s linear 0s;
+  }
+
+  [data-tpl-motion='on'] .al-dev-label {
+    transition: opacity 0.35s var(--tpl-ease, ease);
+  }
+
+  .al-dev-scrim {
+    background: linear-gradient(0deg, color-mix(in srgb, var(--al-deep) 92%, transparent) 0%, color-mix(in srgb, var(--al-deep) 55%, transparent) 42%, color-mix(in srgb, var(--al-deep) 10%, transparent) 75%);
+  }
+
+  .al-dev[data-active='false'] .al-dev-scrim {
+    background: color-mix(in srgb, var(--al-deep) 62%, transparent);
+  }
+
+  @container (max-width: 895px) {
+    .al-dev[data-active='false'] .al-dev-scrim {
+      background: linear-gradient(0deg, color-mix(in srgb, var(--al-deep) 92%, transparent) 0%, color-mix(in srgb, var(--al-deep) 55%, transparent) 42%, color-mix(in srgb, var(--al-deep) 10%, transparent) 75%);
+    }
+  }
+
+  /* ─── CTA: lapisan gelap foto malam ───────────────────────────────────────── */
+  .al-cta-scrim {
+    background:
+      radial-gradient(60% 70% at 50% 45%, color-mix(in srgb, var(--al-deep) 58%, transparent), color-mix(in srgb, var(--al-deep) 80%, transparent) 100%),
+      color-mix(in srgb, var(--al-deep) 25%, transparent);
+  }
+
+  /* Rel geser horizontal (filter, kartu proyek & pimpinan di HP) tanpa scrollbar */
+  .al-rail {
+    scrollbar-width: none;
+  }
+
+  .al-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .al-enter-left,
+    [data-tpl-motion='on'] .al-enter-right {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .al-line,
+    [data-tpl-motion='on'] .al-dev,
+    [data-tpl-motion='on'] .al-dev-body,
+    [data-tpl-motion='on'] .al-dev-label {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] [data-reveal='pending'] .al-line {
+      transform: none;
+    }
+  }
+
+  @media print {
+    .al-stats-scrim,
+    .al-cta-scrim {
+      display: none;
+    }
+  }
+}
+
+@keyframes al-enter-left {
+  from {
+    transform: translate3d(-28px, 0, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes al-enter-right {
+  from {
+    transform: translate3d(28px, 0, 0);
+  }
+  to {
+    transform: none;
+  }
+}

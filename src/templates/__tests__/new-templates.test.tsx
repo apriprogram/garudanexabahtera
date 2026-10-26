@@ -8,6 +8,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { ALTURA_PHOTOS } from '../altura/photos';
 import { ARENA_PHOTOS } from '../arena-club/photos';
 import { AURA_PHOTOS } from '../aura-studio/photos';
 import { BESTARI_PHOTOS } from '../bestari/photos';
@@ -36,7 +37,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'diptych';
   photos: PhotoSet;
 }
 
@@ -54,6 +55,7 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'madani', component: 'Madani.tsx', heroLayout: 'framed-slider', photos: MADANI_PHOTOS },
   { code: 'cakrawala', component: 'Cakrawala.tsx', heroLayout: 'horizon', photos: CAKRAWALA_PHOTOS },
   { code: 'bestari', component: 'Bestari.tsx', heroLayout: 'canvas', photos: BESTARI_PHOTOS },
+  { code: 'altura', component: 'Altura.tsx', heroLayout: 'diptych', photos: ALTURA_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */

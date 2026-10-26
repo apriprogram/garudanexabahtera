@@ -423,3 +423,43 @@ orang tua, dan alumni di demo fiktif dan tidak berhubungan dengan orang atau sek
 | `bestari-ortu-1-*` | Ibu berambut panjang tersenyum (dipotong dari foto keluarga) | https://unsplash.com/photos/GVnag1XQ_4U | Fery Abdurrahman |
 | `bestari-ortu-2-*` | Bapak berkacamata tersenyum (dipotong dari foto dua orang) | https://unsplash.com/photos/Ay3P0TQnzzs | Soya__ bear |
 | `bestari-alumni-1-*` | Perempuan muda berkerudung abu-abu berkacamata | https://unsplash.com/photos/Rjy1a_VmF-U | Ilmi Amali Q.A |
+
+## Altura (Altura Developments, fiktif)
+
+Hero menara 3:4 `-1200.webp` + `-800.webp`; tegak 4:5 `-960.webp` + `-800.webp` (kartu pilar, potret pimpinan, foto
+testimoni); persegi `-1200.webp` + `-800.webp` (kartu proyek); mendatar 4:3 / 3:2 `-1200.webp` + `-800.webp`; pita angka &
+ajakan 16:9 `-1600.webp` + `-800.webp`. Diambil dari daftar kandidat foto GRATIS (Unsplash License, bukan Unsplash+) yang
+dikumpulkan sesi integrasi 2026-10-27, lalu dipotong dan dikompres ke WebP; nama fotografer di bawah berasal dari daftar
+kandidat dan BELUM diverifikasi di halaman foto (tanda "(verifikasi)"). Logo kecil pengembang asli di foto hero dan nama
+toko di dinding podium disamarkan (inpaint/clone); foto keluarga dengan wajah anak tidak dipakai. Beberapa foto adalah
+render arsitektur. Nama perusahaan, proyek, pimpinan, penghuni, dan alamat di demo fiktif dan tidak berhubungan dengan
+orang atau gedung di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `altura-hero-*` | Menara hunian putih berbalkon bertanaman saat senja (render arsitektur; logo kecil di tiang lobi & dinding gerbang disamarkan) | https://unsplash.com/photos/z72tjb_3tss | Nataliia Kvitovska (verifikasi) |
+| `altura-impact-*` | Menara apartemen ramping berbalkon bertingkat | https://unsplash.com/photos/vfosqiRPSNo | Aalo Lens (verifikasi) |
+| `altura-values-*` | Maket arsitektur karton dengan pohon miniatur | https://unsplash.com/photos/Mb32AJpqd-g | Marsumilae (verifikasi) |
+| `altura-skyline-*` | Cakrawala kota dengan derek konstruksi saat senja | https://unsplash.com/photos/SMRSsHqOOAw | taro ohtani (verifikasi) |
+| `altura-team-*` | Tim arsitek berdiskusi di atas denah, dilihat dari atas | https://unsplash.com/photos/PZilVx5rWF4 | Vitaly Gariev (verifikasi) |
+| `altura-dev-1-*` | Menara hunian berbalkon melengkung penuh tanaman | https://unsplash.com/photos/--_TSh-lvHI | Janke Laskowski (verifikasi) |
+| `altura-dev-2-*` | Menara kaca biru bermahkota kaca | https://unsplash.com/photos/9DOnZn0Ywm0 | Dubai Prod (verifikasi) |
+| `altura-dev-3-*` | Menara apartemen ramping bergaris putih | https://unsplash.com/photos/slRQloffRdM | Thomas K (verifikasi) |
+| `altura-dev-4-*` | Gedung apartemen putih berbalkon dan berpergola | https://unsplash.com/photos/FIc4d8PsaBg | Ruben Gruber (verifikasi) |
+| `altura-dev-5-*` | Gedung bertingkat dengan teras tanaman menjuntai | https://unsplash.com/photos/pxqzxAYtQwY | Felix (verifikasi) |
+| `altura-res-1-*` | Vila modern berkolam renang dengan payung dan halaman rumput (render) | https://unsplash.com/photos/WaC-JFfF21M | Salman Saqib (verifikasi) |
+| `altura-res-2-*` | Rumah modern putih berkolam memanjang | https://unsplash.com/photos/e5b1RBCHP2w | Maverick Frame (verifikasi) |
+| `altura-com-1-*` | Lobi kantor bermarmer dengan meja resepsionis (render) | https://unsplash.com/photos/pt0nGH-NvoA | Ceba Solutions (verifikasi) |
+| `altura-com-2-*` | Lounge kantor terbuka dengan sofa melengkung (render) | https://unsplash.com/photos/QVVHV24DA_o | Zoshua Colah (verifikasi) |
+| `altura-hos-1-*` | Dek kolam resor dengan kursi berjemur kayu (render) | https://unsplash.com/photos/yEEKtvDuRuU | Rosemary Media (verifikasi) |
+| `altura-hos-2-*` | Vila resor berkolam renang dan pohon palem (render) | https://unsplash.com/photos/F1q1V0TOuYE | Esphera ArqEng (verifikasi) |
+| `altura-mix-1-*` | Kawasan campuran: menara, podium, palem, dan air mancur (nama toko di dinding podium disamarkan) | https://unsplash.com/photos/UFVlfxAbfjU | Alhasan Husni (verifikasi) |
+| `altura-mix-2-*` | Menara hunian bertingkat tinggi berbalkon | https://unsplash.com/photos/FPSVXh28BOI | Pavlo Antonio (verifikasi) |
+| `altura-leader-1-*` | Potret perempuan berambut pirang berblazer kotak-kotak (dipotong setengah badan) | https://unsplash.com/photos/14sDcYjYl9Q | Md Ishak Rahman (verifikasi) |
+| `altura-leader-2-*` | Potret laki-laki berjas biru tua (dipotong setengah badan) | https://unsplash.com/photos/oBvOQWDZBXY | Md Ishak Rahman (verifikasi) |
+| `altura-leader-3-*` | Potret laki-laki berjas gelap dan berdasi bergaris (dipotong setengah badan) | https://unsplash.com/photos/ml-pxK0Ovmw | Redd Francisco (verifikasi) |
+| `altura-living-*` | Ruang keluarga apartemen mewah (dipotong tanpa layar TV bertulisan) | https://unsplash.com/photos/LqGf5UvHCZ8 | Melrose By The Lake (verifikasi) |
+| `altura-insight-1-*` | Maket arsitektur putih berbentuk lengkung | https://unsplash.com/photos/AdY7-Z-8EF4 | Planet Volumes (verifikasi) |
+| `altura-insight-2-*` | Kawasan hunian bertingkat di antara pepohonan dari udara | https://unsplash.com/photos/IvDLrpSJzQg | Kirill Fokin (verifikasi) |
+| `altura-insight-3-*` | Ruang tamu apartemen bernuansa krem (dipotong tanpa patung balon) | https://unsplash.com/photos/7NvBEeHDY7M | Prydumano Design (verifikasi) |
+| `altura-night-*` | Siluet cakrawala kota pada malam hari (dipotong tanpa papan reklame menyala) | https://unsplash.com/photos/xYu-SKOQ0Dc | Osman Rana (verifikasi) |

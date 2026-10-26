@@ -1,5 +1,6 @@
 // Registry template situs pembeli. Kontrak: docs/platform/SPEC.md §7.
 // Kunci = `template_code` di tabel templates / template_orders / template_sites.
+import { altura } from './altura';
 import { arenaClub } from './arena-club';
 import { auraStudio } from './aura-studio';
 import { bestari } from './bestari';
@@ -29,6 +30,7 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // Madani (2026-10-25): website sekolah Islam SMA/MA, slider foto berbingkai + PPDB ke WhatsApp (src/templates/madani/Madani.tsx).
 // Cakrawala (2026-10-25): website SMK/SMA, hero slider foto + PPDB lewat WhatsApp (src/templates/cakrawala/Cakrawala.tsx).
 // Bestari (2026-10-26): website SMA, hero slider foto + navbar transparan + PPDB lewat WhatsApp (src/templates/bestari/Bestari.tsx).
+// Altura (2026-10-27): company profile developer properti global berbahasa Inggris, hero dua panel (src/templates/altura/Altura.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -44,6 +46,7 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [madani.code]: madani,
   [cakrawala.code]: cakrawala,
   [bestari.code]: bestari,
+  [altura.code]: altura,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */
