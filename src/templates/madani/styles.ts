@@ -5,6 +5,7 @@
 // bidang krem). Warna tema & sorotan dari CMS lewat variabel --md-* (./model.ts madaniVars). Ukuran memakai container
 // query (@…) karena template dirender di bingkai HP 390 / panel CMS.
 import { FONT_DISPLAY } from '../shared/layout';
+import { postTheme } from '../shared/posts/theme';
 
 /** Warna tetap (tidak ikut warna tema). */
 export const C = {
@@ -75,3 +76,22 @@ export const CARD = {
 
 /** Kaca tipis di atas foto hero: warna tema tua tembus agar teks putih ≥ 4,5:1 */
 export const GLASS = 'bg-[color-mix(in_srgb,var(--md-deep)_58%,transparent)] ring-1 ring-inset ring-white/20 backdrop-blur-xl';
+
+/** Halaman berita & pengumuman (/berita, /berita/{slug}; shared/posts) dengan token Madani: judul warna tema tua,
+ *  bidang krem, chip tint, tombol pil warna tema, kartu radius 24. */
+export const POST_THEME = postTheme({
+  display: DISPLAY,
+  heading: 'text-(--md-deep)',
+  body: C.body,
+  muted: C.muted,
+  accent: 'text-(--md-ink)',
+  chip: 'bg-(--md-tint) text-(--md-ink)',
+  urgent: 'bg-[#FDECEA] text-[#9B1C1C]',
+  soft: C.cream,
+  card: 'bg-white ring-1 ring-inset ring-black/[0.08]',
+  line: C.line,
+  radius: 'rounded-[24px]',
+  photoRadius: 'rounded-[22px]',
+  button: `${BTN.primary} ${BTN.md} px-5`,
+  buttonGhost: `${BTN.ghost} ${BTN.md} px-5`,
+});

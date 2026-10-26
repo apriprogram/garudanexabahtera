@@ -1,15 +1,19 @@
 // Pengumuman (kunci `announcements`) + Agenda (kunci `agenda`): dua section yang berdampingan di layar lebar (7 + 5
 // kolom) dan bertumpuk di HP; masing-masing tetap section sendiri (bisa disembunyikan). Pengumuman: baris bergaris tipis
-// dengan blok tanggal krem, judul H3, lencana (mis. "Penting", merah lembut), isi, dan tautan opsional. Agenda: kartu
-// krem berisi kegiatan dengan pil tanggal, waktu, tempat, dan chip kategori.
+// dengan blok tanggal krem, judul H3, lencana (mis. "Penting", merah lembut), isi, dan tautan opsional. Pengumuman dari
+// tulisan (site_posts): baris menaut ke halaman /pengumuman/{slug} lewat judulnya + "Lihat semua pengumuman". Agenda:
+// kartu krem berisi kegiatan dengan pil tanggal, waktu, tempat, dan chip kategori.
 import { ArrowRight, Clock, MapPin } from 'lucide-react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
+import { useSitePosts } from '../shared/posts/hooks';
+import { POST_PATH_KEY } from '../shared/posts/model';
 import { ActionLink, TemplateSection } from '../shared/Shell';
+import { SiteLink } from '../shared/SiteLink';
 import { field, isEnabled, list, resolveAction, text } from '../shared/utils';
 import { parseSchoolDate, type MadaniModel } from './model';
-import { DateText } from './News';
+import { DateText, MoreHint, STRETCHED_LINK } from './News';
 import { C, DISPLAY, SECTION_PAD, TYPE_M } from './styles';
 import { Chip, Eyebrow } from './ui';
 
@@ -32,6 +36,7 @@ function Head({ eyebrow, title }: { eyebrow: string; title: string }) {
 
 function Announcements({ m, wide }: { m: MadaniModel; wide: boolean }) {
   const { announcements: a } = m;
+  const posts = useSitePosts('pengumuman');
   const items = list(a, 'items', 8).filter((item) => field(item, 'title'));
   return (
     <TemplateSection sectionKey="announcements" className={`min-w-0 ${wide ? '@5xl:col-span-12' : '@5xl:col-span-7'}`}>
@@ -40,9 +45,16 @@ function Announcements({ m, wide }: { m: MadaniModel; wide: boolean }) {
         {items.map((item, i) => {
           const date = parseSchoolDate(field(item, 'date'));
           const badge = field(item, 'badge');
-          const link = resolveAction(field(item, 'url'), null);
+          /** Tulisan: path halaman pengumuman; kosong = item CMS */
+          const postPath = field(item, POST_PATH_KEY);
+          const link = postPath ? null : resolveAction(field(item, 'url'), null);
           return (
-            <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 50)} className="flex gap-4 border-b border-black/[0.08] py-5 @3xl:gap-5">
+            <Reveal
+              as="li"
+              key={`${field(item, 'title')}-${i}`}
+              delay={stagger(i, 50)}
+              className={`flex gap-4 border-b border-black/[0.08] py-5 @3xl:gap-5 ${postPath ? 'group relative' : ''}`}
+            >
               {date ? (
                 <time
                   dateTime={date.iso}
@@ -63,8 +75,21 @@ function Announcements({ m, wide }: { m: MadaniModel; wide: boolean }) {
                   )}
                   {!date && field(item, 'date') && <span className={`text-[13px] font-medium ${C.muted}`}>{field(item, 'date')}</span>}
                 </div>
-                <h3 className={`${badge || (!date && field(item, 'date')) ? 'mt-1.5' : ''} text-[16.5px] font-semibold leading-snug text-(--md-deep)`}>{field(item, 'title')}</h3>
+                <h3 className={`${badge || (!date && field(item, 'date')) ? 'mt-1.5' : ''} text-[16.5px] font-semibold leading-snug text-(--md-deep)`}>
+                  {postPath ? (
+                    <SiteLink path={postPath} className={STRETCHED_LINK}>
+                      {field(item, 'title')}
+                    </SiteLink>
+                  ) : (
+                    field(item, 'title')
+                  )}
+                </h3>
                 {field(item, 'text') && <p className={`mt-1 text-[14.5px] leading-relaxed ${C.muted}`}>{field(item, 'text')}</p>}
+                {postPath && (
+                  <div className="mt-1">
+                    <MoreHint />
+                  </div>
+                )}
                 {link && (
                   <ActionLink action={link} className="mt-2 inline-flex min-h-10 items-center gap-1.5 text-[14px] font-semibold text-(--md-ink)">
                     Lihat detail
@@ -77,6 +102,12 @@ function Announcements({ m, wide }: { m: MadaniModel; wide: boolean }) {
           );
         })}
       </ul>
+      {posts && (
+        <SiteLink path="/pengumuman" className="group mt-5 inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-(--md-ink)">
+          <span className="underline decoration-current/30 underline-offset-4 group-hover:decoration-current">Lihat semua pengumuman</span>
+          <ArrowRight aria-hidden className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+        </SiteLink>
+      )}
     </TemplateSection>
   );
 }

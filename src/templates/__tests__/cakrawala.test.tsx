@@ -359,7 +359,7 @@ describe('Cakrawala: demo', () => {
       'Profil|#tentang',
       'Jurusan|#programs',
       'PPDB|#ppdb',
-      'Berita|#news',
+      'Berita|#berita',
       'BKK|#careers',
       'Kontak|#kontak',
     ]);

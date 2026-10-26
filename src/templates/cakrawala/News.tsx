@@ -4,19 +4,50 @@
 // tautan berita bila diisi, kalau tidak membuka isi lengkap di kartu (aria-expanded). Pengumuman: kartu abu berisi
 // daftar bertanggal dengan label "Penting" merah lembut dan tautan lampiran. Agenda: kartu putih bergaris tipis dengan
 // ubin tanggal, waktu, dan tempat.
-import { ArrowUpRight, CalendarDays, ChevronDown, Clock, MapPin, Paperclip } from 'lucide-react';
+// Berita/pengumuman dari tulisan (site_posts, kunci POST_PATH_KEY): kartu menaut ke halaman tulisan lewat judulnya
+// ("Baca selengkapnya", bukan isi di tempat atau "Lihat lampiran"), plus "Lihat semua berita/pengumuman".
+import { ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Clock, MapPin, Paperclip } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
+import { useSitePosts } from '../shared/posts/hooks';
+import { POST_PATH_KEY } from '../shared/posts/model';
 import { ActionLink, TemplateSection } from '../shared/Shell';
+import { SiteLink } from '../shared/SiteLink';
 import { field, hasImage, list, safeUrl, text } from '../shared/utils';
 import type { ListItem } from '../types';
 import { KitPhoto } from '../kit/Photo';
 import { displayDate, filterNews, isUrgent, newsCategories, newsItems, paragraphsOf, parseSchoolDate, type CakrawalaModel } from './model';
 import { CAKRAWALA_PHOTOS } from './photos';
 import { BTN, C, CARD, DISPLAY, SECTION_PAD, TYPE_C } from './styles';
-import { Eyebrow, PillLink, SectionHead } from './ui';
+import { Eyebrow, PillLink, SectionHead, TextLink } from './ui';
+
+/** Judul tulisan sebagai tautan selebar kartu (kartu `relative`); cincin fokus mengelilingi kartu. */
+const STRETCHED_LINK =
+  "after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-4 focus-visible:after:outline-(--ck-ink) decoration-current/40 underline-offset-4 group-hover:underline";
+
+/** Judul item: tautan ke halaman tulisan bila item berasal dari tulisan, selain itu teks biasa. */
+function ItemTitle({ item }: { item: ListItem }) {
+  const title = field(item, 'title');
+  const postPath = field(item, POST_PATH_KEY);
+  if (!postPath) return <>{title}</>;
+  return (
+    <SiteLink path={postPath} className={STRETCHED_LINK}>
+      {title}
+    </SiteLink>
+  );
+}
+
+/** "Baca selengkapnya →" di kartu tulisan (hiasan: tautannya judul kartu). */
+function MoreHint({ className = 'mt-4' }: { className?: string }) {
+  return (
+    <span aria-hidden className={`inline-flex min-h-10 items-center gap-1.5 text-[14px] font-semibold text-(--ck-ink) ${className}`}>
+      <span className="underline decoration-current/30 underline-offset-4 group-hover:decoration-current">Baca selengkapnya</span>
+      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+    </span>
+  );
+}
 
 function DateText({ raw, className = '' }: { raw: string; className?: string }) {
   const date = parseSchoolDate(raw);
@@ -50,6 +81,8 @@ function Meta({ item }: { item: ListItem }) {
 function ReadMore({ item, title }: { item: ListItem; title: string }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  // Tulisan: tautannya judul kartu (halaman /berita/{slug})
+  if (field(item, POST_PATH_KEY)) return <MoreHint />;
   const href = safeUrl(field(item, 'url'));
   const body = paragraphsOf(field(item, 'body'));
   if (href) {
@@ -90,21 +123,26 @@ function ReadMore({ item, title }: { item: ListItem; title: string }) {
 function NewsCard({ item, featured }: { item: ListItem; featured: boolean }) {
   const title = field(item, 'title');
   const image = field(item, 'image');
+  const post = !!field(item, POST_PATH_KEY);
   const photo = hasImage(image) && (
     <KitPhoto
       src={image}
-      alt={CAKRAWALA_PHOTOS.alt(image, title)}
+      alt={field(item, 'image_alt') || CAKRAWALA_PHOTOS.alt(image, title)}
       sizes={featured ? '(min-width: 1024px) 50vw, 92vw' : '(min-width: 1024px) 220px, 34vw'}
+      width={post ? (featured ? 1600 : 1200) : undefined}
+      height={post ? (featured ? 1000 : 900) : undefined}
       className={featured ? 'aspect-[16/10] rounded-[20px]' : 'aspect-[4/3] w-[34%] max-w-[220px] shrink-0 self-start rounded-[16px] @xl:w-[38%]'}
     />
   );
   if (featured) {
     return (
-      <article className="flex h-full flex-col">
+      <article className={`flex h-full flex-col ${post ? 'group relative' : ''}`}>
         {photo}
         <div className={`flex flex-1 flex-col ${photo ? 'pt-5' : ''}`}>
           <Meta item={item} />
-          <h3 className={`mt-3 text-balance ${DISPLAY} text-[21px] font-semibold leading-snug tracking-[-0.02em] ${C.ink} @3xl:text-[26px]`}>{title}</h3>
+          <h3 className={`mt-3 text-balance ${DISPLAY} text-[21px] font-semibold leading-snug tracking-[-0.02em] ${C.ink} @3xl:text-[26px]`}>
+            <ItemTitle item={item} />
+          </h3>
           {field(item, 'excerpt') && <p className={`mt-2 ${TYPE_C.body} ${C.muted}`}>{field(item, 'excerpt')}</p>}
           <ReadMore item={item} title={title} />
         </div>
@@ -112,11 +150,13 @@ function NewsCard({ item, featured }: { item: ListItem; featured: boolean }) {
     );
   }
   return (
-    <article className="flex gap-4 @xl:gap-5">
+    <article className={`flex gap-4 @xl:gap-5 ${post ? 'group relative' : ''}`}>
       {photo}
       <div className="flex min-w-0 flex-1 flex-col">
         <Meta item={item} />
-        <h3 className={`mt-2.5 text-balance ${C.ink} ${TYPE_C.h3}`}>{title}</h3>
+        <h3 className={`mt-2.5 text-balance ${C.ink} ${TYPE_C.h3}`}>
+          <ItemTitle item={item} />
+        </h3>
         {field(item, 'excerpt') && <p className={`mt-1.5 line-clamp-3 ${TYPE_C.small} ${C.muted}`}>{field(item, 'excerpt')}</p>}
         <ReadMore item={item} title={title} />
       </div>
@@ -127,6 +167,7 @@ function NewsCard({ item, featured }: { item: ListItem; featured: boolean }) {
 export function News({ m }: { m: CakrawalaModel }) {
   const { news } = m;
   const items = newsItems(news);
+  const posts = useSitePosts('berita');
   const [category, setCategory] = useState<string | null>(null);
   if (items.length === 0) return null;
   const categories = newsCategories(items);
@@ -181,9 +222,12 @@ export function News({ m }: { m: CakrawalaModel }) {
             </ul>
           )}
         </div>
-        {buttonLabel && buttonUrl && (
-          <div className="mt-10 flex justify-center @3xl:mt-12">
-            <PillLink action={{ kind: 'external', href: buttonUrl }} label={buttonLabel} dot="ink" className={`${BTN.outline} ${BTN.md}`} />
+        {(posts || (buttonLabel && buttonUrl)) && (
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 @xl:flex-row @3xl:mt-12">
+            {posts && <PillLink action={{ kind: 'site', path: '/berita' }} label="Lihat semua berita" dot="white" className={`${BTN.ink} ${BTN.md}`} />}
+            {buttonLabel && buttonUrl && (
+              <PillLink action={{ kind: 'external', href: buttonUrl }} label={buttonLabel} dot="ink" className={`${BTN.outline} ${BTN.md}`} />
+            )}
           </div>
         )}
       </div>
@@ -195,6 +239,7 @@ const SMALL_H2 = `${DISPLAY} text-balance text-[24px] font-semibold leading-tigh
 
 function Announcements({ m }: { m: CakrawalaModel }) {
   const { announcements } = m;
+  const posts = useSitePosts('pengumuman');
   const items = list(announcements, 'items', 8).filter((item) => field(item, 'title'));
   const eyebrow = text(announcements, 'eyebrow');
   const title = text(announcements, 'title');
@@ -205,18 +250,27 @@ function Announcements({ m }: { m: CakrawalaModel }) {
       <ul className="mt-6 grid gap-3">
         {items.map((item, i) => {
           const badge = field(item, 'badge');
-          const href = safeUrl(field(item, 'url'));
+          const post = !!field(item, POST_PATH_KEY);
+          const href = post ? null : safeUrl(field(item, 'url'));
           const date = field(item, 'date');
           return (
-            <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 60)} className="rounded-[16px] bg-white p-4 ring-1 ring-inset ring-black/[0.05] @3xl:p-5">
+            <Reveal
+              as="li"
+              key={`${field(item, 'title')}-${i}`}
+              delay={stagger(i, 60)}
+              className={`rounded-[16px] bg-white p-4 ring-1 ring-inset ring-black/[0.05] @3xl:p-5 ${post ? 'group relative' : ''}`}
+            >
               <div className="flex flex-wrap items-center gap-2">
                 {badge && (
                   <span className={`rounded-full px-2.5 py-0.5 text-[12px] font-semibold ${isUrgent(badge) ? 'bg-[#FEECEB] text-[#B42318]' : 'bg-(--ck-tint) text-(--ck-ink)'}`}>{badge}</span>
                 )}
                 {date && <DateText raw={date} className={`text-[12.5px] font-medium ${C.muted}`} />}
               </div>
-              <h3 className={`mt-2 text-[16px] font-semibold leading-snug ${C.ink}`}>{field(item, 'title')}</h3>
+              <h3 className={`mt-2 text-[16px] font-semibold leading-snug ${C.ink}`}>
+                <ItemTitle item={item} />
+              </h3>
               {field(item, 'text') && <p className={`mt-1 ${TYPE_C.small} ${C.muted}`}>{field(item, 'text')}</p>}
+              {post && <MoreHint className="mt-1.5" />}
               {href && (
                 <ActionLink action={{ kind: 'external', href }} className="group mt-2 inline-flex min-h-9 items-center gap-1.5 text-[13.5px] font-semibold text-(--ck-ink)">
                   <Paperclip aria-hidden className="h-3.5 w-3.5" />
@@ -227,6 +281,7 @@ function Announcements({ m }: { m: CakrawalaModel }) {
           );
         })}
       </ul>
+      {posts && <TextLink action={{ kind: 'site', path: '/pengumuman' }} label="Lihat semua pengumuman" className="mt-4" />}
     </TemplateSection>
   );
 }

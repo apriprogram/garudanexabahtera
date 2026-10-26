@@ -5,6 +5,7 @@
 // Warna utama = warna tema dari CMS (--tpl-accent* milik Shell + --ck-* dari ./model): ganti biru ↔ hijau di satu
 // isian. Ukuran memakai container query (@…) karena template dirender di bingkai HP 390 / panel CMS.
 import { FONT_DISPLAY } from '../shared/layout';
+import { postTheme } from '../shared/posts/theme';
 
 /** Warna netral tetap (tidak ikut warna tema). */
 export const C = {
@@ -92,3 +93,22 @@ export const BAND_DEEP = 'ck-deep text-white';
  *  di putih, juga untuk warna tema terang dari CMS). */
 export const INPUT =
   'block w-full rounded-[12px] bg-white px-4 text-[16px] text-[#0D1830] ring-1 ring-inset ring-black/[0.14] placeholder:text-[#6B7280] transition-colors focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-(--tpl-accent-ink) @3xl:text-[15px]';
+
+/** Halaman berita & pengumuman (/berita, /berita/{slug}; shared/posts) dengan token Cakrawala: judul tinta biru malam,
+ *  panel abu kebiruan, chip tint tema, tombol pil warna tema, kartu radius 20. */
+export const POST_THEME = postTheme({
+  display: `${DISPLAY} font-semibold`,
+  heading: C.ink,
+  body: 'text-[#26324A]',
+  muted: C.muted,
+  accent: 'text-(--ck-ink)',
+  chip: 'bg-(--ck-tint) text-(--ck-ink)',
+  urgent: 'bg-[#FEECEB] text-[#B42318]',
+  soft: C.panel,
+  card: 'bg-white ring-1 ring-inset ring-black/[0.07]',
+  line: 'border-black/[0.07]',
+  radius: 'rounded-[20px]',
+  photoRadius: 'rounded-[20px]',
+  button: `${BTN.primary} ${BTN.plain}`,
+  buttonGhost: `${BTN.outline} ${BTN.plain}`,
+});

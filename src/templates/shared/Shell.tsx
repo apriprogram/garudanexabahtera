@@ -2,6 +2,7 @@
 // viewport, sehingga pratinjau CMS versi HP tetap akurat), navigasi antar section, tombol WhatsApp melayang, dan tombol
 // "kembali ke atas" yang muncul setelah layar pertama.
 // Mode pratinjau (demo & CMS): tautan keluar tidak dibuka, tetapi memunculkan keterangan singkat di dekat tautan.
+// Halaman selain beranda (daftar/tulisan berita, lihat ./siteData): tautan section menuju beranda "basePath/#anchor".
 import { ArrowUp, Info } from 'lucide-react';
 import {
   createContext,
@@ -25,6 +26,8 @@ import { TEMPLATE_FONTS, useTemplateFont, type TemplateFont } from './fonts';
 import { WhatsAppIcon } from './icons';
 import './template.css';
 import { TemplateRuntimeContext, useTemplateRuntime } from './runtime';
+import { useSiteData } from './siteData';
+import { SiteLink } from './SiteLink';
 import {
   SECTION_ANCHOR,
   accentVars,
@@ -203,12 +206,22 @@ export function TemplateShell({ content, preview = false, motion, displayFont = 
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  // Situs live: buka langsung ke #kontak dsb. bila URL membawa hash
+  // Situs live: buka langsung ke #kontak dsb. bila URL membawa hash, juga saat kembali ke beranda dari halaman tulisan
+  // ("/#berita") tanpa memuat ulang halaman
+  const onHome = useSiteData().route.kind === 'home';
   useEffect(() => {
-    if (preview || typeof window === 'undefined' || !window.location.hash) return;
-    const timer = window.setTimeout(() => goTo(decodeURIComponent(window.location.hash.slice(1))), 60);
+    if (preview || !onHome || typeof window === 'undefined' || !window.location.hash) return;
+    const timer = window.setTimeout(() => {
+      let target = window.location.hash.slice(1);
+      try {
+        target = decodeURIComponent(target);
+      } catch {
+        // hash rusak (mis. "%E0") → apa adanya
+      }
+      goTo(target);
+    }, 60);
     return () => window.clearTimeout(timer);
-  }, [preview, goTo]);
+  }, [preview, onHome, goTo]);
 
   const runtime = useMemo(() => ({ preview, motion: motionAllowed, goTo }), [preview, motionAllowed, goTo]);
   const waIcon = <WhatsAppIcon className={preview ? 'h-6 w-6' : 'h-6 w-6 sm:h-7 sm:w-7'} />;
@@ -308,7 +321,8 @@ export function TemplateSection({
 }
 
 /**
- * Tautan dari konten: gulir ke section, atau tautan keluar (tab baru untuk http/https).
+ * Tautan dari konten: gulir ke section, halaman lain di situs (`site`), atau tautan keluar (tab baru untuk http/https).
+ * Di halaman selain beranda, tautan section menuju "basePath/#anchor" (logo/hero → beranda).
  * Mode pratinjau: tautan keluar tidak dibuka; klik/Enter memunculkan keterangan "Di situs asli, tautan ini membuka …".
  */
 export function ActionLink({
@@ -326,7 +340,22 @@ export function ActionLink({
 } & Omit<HTMLAttributes<HTMLAnchorElement>, 'className' | 'children' | 'onClick'>) {
   const { preview, goTo } = useTemplateRuntime();
   const notify = useContext(PreviewNoticeContext);
+  const onHome = useSiteData().route.kind === 'home';
   if (!action) return null;
+
+  if (!preview && (action.kind === 'site' || (action.kind === 'section' && !onHome))) {
+    const path =
+      action.kind === 'site'
+        ? action.path
+        : action.target === 'hero' || action.target === 'top'
+          ? '/'
+          : `/#${SECTION_ANCHOR[action.target] ?? action.target}`;
+    return (
+      <SiteLink {...rest} path={path} onNavigate={onNavigate} className={className}>
+        {children}
+      </SiteLink>
+    );
+  }
 
   if (action.kind === 'section') {
     const onClick = (e: MouseEvent<HTMLAnchorElement>) => {
@@ -345,7 +374,7 @@ export function ActionLink({
 
   if (preview) {
     const explain = (el: HTMLElement) => {
-      notify?.(el, previewMessage(action.href));
+      notify?.(el, previewMessage(action.kind === 'site' ? action.path : action.href));
       onNavigate?.();
     };
     return (
@@ -372,6 +401,7 @@ export function ActionLink({
     );
   }
 
+  if (action.kind === 'site') return null; // tidak terjangkau: `site` di luar pratinjau sudah dirender <SiteLink>
   const external = isExternalHref(action.href);
   return (
     <a

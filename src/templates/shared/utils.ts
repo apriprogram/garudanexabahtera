@@ -216,6 +216,10 @@ export const SECTION_ANCHOR: Record<string, string> = {
   cta: 'ajakan',
   contact: 'kontak',
   footer: 'footer',
+  // Template sekolah (Madani, Cakrawala): "/#berita" dari halaman tulisan & tautan CMS "#berita"
+  news: 'berita',
+  announcements: 'pengumuman',
+  agenda: 'agenda',
 };
 
 const ANCHOR_TO_SECTION: Record<string, string> = Object.fromEntries(
@@ -228,7 +232,11 @@ export const sectionFromAnchor = (value: string): string => {
   return ANCHOR_TO_SECTION[clean] ?? clean;
 };
 
-export type LinkAction = { kind: 'section'; target: string } | { kind: 'external'; href: string };
+/**
+ * Tujuan tautan: gulir ke section, tautan keluar/biasa, atau halaman lain di situs yang sama (`site`, path relatif akar
+ * situs seperti "/berita" — awalan basePath & navigasi tanpa muat ulang diurus <SiteLink>).
+ */
+export type LinkAction = { kind: 'section'; target: string } | { kind: 'external'; href: string } | { kind: 'site'; path: string };
 
 /** Isi field URL dari CMS → aksi. Kosong / tidak valid → `fallback`. "#kontak" → gulir ke section. */
 export function resolveAction(raw: string, fallback: LinkAction | null): LinkAction | null {

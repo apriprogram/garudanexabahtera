@@ -6,10 +6,14 @@
 // BKK, fasilitas, galeri, tanya jawab, lokasi & kontak dengan Google Maps, dan footer biru tinta. Satu warna tema dari
 // CMS (biru bawaan, mis. hijau untuk sekolah lain) menurunkan semua warna. Judul Plus Jakarta Sans, datar tanpa
 // bayangan, container query agar akurat di bingkai HP 390px dan panel CMS.
+// Berita & pengumuman dari tulisan (site_posts) bila ada, selain itu dari konten CMS; halaman /berita, /pengumuman, dan
+// tulisan = header tanpa overlay + halaman bersama (shared/posts) + footer (docs/platform/SITE-POSTS-SEO-SPEC.md §7).
 import type { TemplateRenderProps } from '../types';
 import { TemplateShell } from '../shared/Shell';
 import { isEnabled } from '../shared/utils';
 import { PhotoSetContext } from '../kit/context';
+import { useContentWithPosts, useSubPage } from '../shared/posts/hooks';
+import { PostPage } from '../shared/posts/PostPage';
 import { Facilities, Gallery } from './Campus';
 import { Contact, Faq } from './Closing';
 import { CAKRAWALA_ACCENT } from './defaultContent';
@@ -24,11 +28,13 @@ import { Alumni, Careers } from './People';
 import { CAKRAWALA_PHOTOS } from './photos';
 import { Ppdb } from './Ppdb';
 import { Programs } from './Programs';
+import { POST_THEME } from './styles';
 import { About, Welcome } from './Welcome';
 import './cakrawala.css';
 
 export default function Cakrawala({ content, preview = false, motion }: TemplateRenderProps) {
-  const m = readCakrawala(content);
+  const sub = useSubPage();
+  const m = readCakrawala(useContentWithPosts(content));
   const heroOn = isEnabled(m.hero);
   const highlightsOn = m.shown('highlights');
   const newsOn = isEnabled(m.news) && newsItems(m.news).length > 0;
@@ -40,27 +46,33 @@ export default function Cakrawala({ content, preview = false, motion }: Template
     <TemplateShell content={content} preview={preview} motion={motion} displayFont="jakarta" defaultAccent={CAKRAWALA_ACCENT}>
       <PhotoSetContext.Provider value={CAKRAWALA_PHOTOS}>
         <div style={m.colors} className="relative bg-white text-[#0D1830]">
-          {heroOn && <TopBar m={m} />}
-          <Header m={m} overlay={heroOn} />
-          <main>
-            {heroOn && <Hero m={m} overlap={highlightsOn} />}
-            {highlightsOn && <Highlights m={m} overlap={heroOn} />}
-            {m.shown('stats') && <Stats m={m} />}
-            {isEnabled(m.welcome) && <Welcome m={m} />}
-            {isEnabled(m.about) && <About m={m} />}
-            {isEnabled(m.programs) && <Programs m={m} />}
-            {isEnabled(m.industry) && <Industry m={m} />}
-            {isEnabled(m.achievements) && <Achievements m={m} />}
-            {ppdbOn && <Ppdb m={m} />}
-            {newsOn && <News m={m} />}
-            <Notices m={m} padTop={noticesPadTop} />
-            {isEnabled(m.testimonials) && <Alumni m={m} />}
-            {isEnabled(m.careers) && <Careers m={m} />}
-            {isEnabled(m.facilities) && <Facilities m={m} />}
-            {isEnabled(m.gallery) && <Gallery m={m} />}
-            {isEnabled(m.faq) && <Faq m={m} />}
-            {isEnabled(m.contact) && <Contact m={m} />}
-          </main>
+          {heroOn && !sub && <TopBar m={m} />}
+          <Header m={m} overlay={heroOn && !sub} />
+          {sub ? (
+            <main>
+              <PostPage siteName={m.companyName} theme={POST_THEME} />
+            </main>
+          ) : (
+            <main>
+              {heroOn && <Hero m={m} overlap={highlightsOn} />}
+              {highlightsOn && <Highlights m={m} overlap={heroOn} />}
+              {m.shown('stats') && <Stats m={m} />}
+              {isEnabled(m.welcome) && <Welcome m={m} />}
+              {isEnabled(m.about) && <About m={m} />}
+              {isEnabled(m.programs) && <Programs m={m} />}
+              {isEnabled(m.industry) && <Industry m={m} />}
+              {isEnabled(m.achievements) && <Achievements m={m} />}
+              {ppdbOn && <Ppdb m={m} />}
+              {newsOn && <News m={m} />}
+              <Notices m={m} padTop={noticesPadTop} />
+              {isEnabled(m.testimonials) && <Alumni m={m} />}
+              {isEnabled(m.careers) && <Careers m={m} />}
+              {isEnabled(m.facilities) && <Facilities m={m} />}
+              {isEnabled(m.gallery) && <Gallery m={m} />}
+              {isEnabled(m.faq) && <Faq m={m} />}
+              {isEnabled(m.contact) && <Contact m={m} />}
+            </main>
+          )}
           {isEnabled(m.footer) && <Footer m={m} />}
         </div>
       </PhotoSetContext.Provider>

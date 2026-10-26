@@ -1,20 +1,34 @@
-// Situs aktif pembeli di domain utama (/situs/:siteId): konten dari get_site_public {site_id}, dengan bar pratinjau tipis.
+// Situs aktif pembeli di domain utama (/situs/:siteId/*): konten dari get_site_public {site_id}, dengan bar pratinjau tipis.
+// Halaman di dalamnya sama dengan domain pembeli (/situs/12/berita, /situs/12/berita/{slug}; basePath "/situs/12"), tetapi
+// tanpa canonical & selalu noindex (domain null di applySiteSeoHead) dan tanpa menghitung jumlah dilihat.
 import { ExternalLink, Eye, Home as HomeIcon, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { getTemplate, type SiteContent } from '../../templates';
 import { SiteRenderer } from '../../templates/SiteRenderer';
 import { SiteStatus } from '../../templates/SiteStatus';
-import { applySiteHead } from '../../templates/siteHead';
-import { useSitePublic } from '../../templates/useSitePublic';
+import type { SiteData } from '../../templates/shared/siteData';
+import { parseSiteRoute, sitePath } from '../../templates/siteRoutes';
+import { applySiteSeoHead, removeSiteSeoHead } from '../../templates/siteSeo';
+import { useSiteNavigate, useSitePages, useSitePublic } from '../../templates/useSitePublic';
 
 const DOMAIN_PATTERN = /^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/i;
 
 export default function SitePreview() {
-  const { siteId } = useParams();
+  const { siteId, '*': rest = '' } = useParams();
   const id = Number(siteId);
   const valid = /^\d+$/.test(siteId || '') && Number.isSafeInteger(id) && id > 0;
+  const basePath = `/situs/${siteId ?? ''}`;
+  // "/situs/12/berita/" → "/berita" (di domain pembeli site.php mengalihkan garis miring di akhir)
+  const path = `/${rest.replace(/\/+$/, '')}`;
+  const route = useMemo(() => parseSiteRoute(path), [path]);
   const { state, retry } = useSitePublic(valid ? { site_id: id } : null);
   const site = state.status === 'ready' ? state.site : null;
+  const hasPosts = getTemplate(site?.template_code)?.features?.posts === true;
+  const pages = useSitePages(site ? site.id : null, route, { posts: hasPosts });
+  const navigate = useSiteNavigate(basePath);
+  const data = useMemo<SiteData>(() => ({ ...pages.data, basePath, navigate }), [pages.data, basePath, navigate]);
+  const post = route.kind === 'post' ? (hasPosts ? pages.data.post : null) : undefined;
   const [bannerOpen, setBannerOpen] = useState(true);
 
   useEffect(() => {
@@ -26,8 +40,19 @@ export default function SitePreview() {
         document.title = previous;
       };
     }
-    return applySiteHead(site.template_code, site.content);
-  }, [site, state.status]);
+    applySiteSeoHead({
+      domain: null,
+      templateCode: site.template_code,
+      content: site.content as SiteContent | null,
+      seo: pages.seo,
+      route,
+      post,
+      listCount: route.kind === 'list' ? (pages.listCount ?? 0) : undefined,
+    });
+  }, [site, state.status, pages.seo, route, post, pages.listCount]);
+
+  // Tag situs pembeli (title, ikon, theme-color, JSON-LD) dilepas saat pratinjau ditutup
+  useEffect(() => () => removeSiteSeoHead(), []);
 
   if (state.status === 'loading') return <SiteStatus kind="loading" />;
   if (state.status === 'error') return <SiteStatus kind="error" message={state.message} onRetry={retry} />;
@@ -57,9 +82,10 @@ export default function SitePreview() {
             <p className="min-w-0 flex-1 truncate text-brand-800">
               Pratinjau situs{domainOk && <span className="font-semibold"> {domain}</span>}
             </p>
+            {/* Halaman yang sama di domain pembeli (rute tak dikenal → beranda) */}
             {domainOk && (
               <a
-                href={`https://${domain}`}
+                href={`https://${domain}${sitePath(route)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex min-h-9 shrink-0 items-center gap-1 font-semibold text-primary hover:underline"
@@ -80,21 +106,34 @@ export default function SitePreview() {
           </div>
         </div>
       )}
-      <SiteRenderer
-        templateCode={state.site.template_code}
-        content={state.site.content}
-        fallback={
-          <SiteStatus
-            kind="unavailable"
-            fullScreen={false}
-            actions={
-              <Link to="/" className="btn btn-outline">
-                Ke beranda Garuda Nexa
-              </Link>
-            }
-          />
-        }
-      />
+      {route.kind !== 'home' && !hasPosts ? (
+        <SiteStatus
+          kind="pagenotfound"
+          fullScreen={false}
+          actions={
+            <Link to={basePath} className="btn btn-primary">
+              Ke beranda situs
+            </Link>
+          }
+        />
+      ) : (
+        <SiteRenderer
+          templateCode={state.site.template_code}
+          content={state.site.content}
+          data={data}
+          fallback={
+            <SiteStatus
+              kind="unavailable"
+              fullScreen={false}
+              actions={
+                <Link to="/" className="btn btn-outline">
+                  Ke beranda Garuda Nexa
+                </Link>
+              }
+            />
+          }
+        />
+      )}
     </>
   );
 }

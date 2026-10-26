@@ -1,9 +1,11 @@
-// Layar status situs pembeli (memuat, tidak ditemukan/nonaktif, gagal dimuat, template tidak tersedia). Tema terang.
-import { AlertCircle, Globe, LayoutTemplate, Loader2, RotateCw } from 'lucide-react';
+// Layar status situs pembeli (memuat, tidak ditemukan/nonaktif, halaman di dalam situs tidak ada, gagal dimuat, template
+// tidak tersedia). Tema terang.
+import { AlertCircle, Globe, LayoutTemplate, Loader2, RotateCw, SearchX } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { LogoMark } from '../components/ui/LogoMark';
 
-export type SiteStatusKind = 'loading' | 'notfound' | 'error' | 'unavailable';
+/** pagenotfound = situs ada, tetapi path-nya tidak (mis. /berita di template tanpa fitur berita) */
+export type SiteStatusKind = 'loading' | 'notfound' | 'pagenotfound' | 'error' | 'unavailable';
 
 interface SiteStatusProps {
   kind: SiteStatusKind;
@@ -21,6 +23,10 @@ const COPY: Record<Exclude<SiteStatusKind, 'loading'>, { title: string; body: st
   notfound: {
     title: 'Situs tidak ditemukan atau sedang nonaktif',
     body: 'Alamat ini belum terhubung ke situs aktif, atau situsnya sedang dinonaktifkan sementara. Jika Anda pemilik situs ini, silakan hubungi tim Garuda Nexa.',
+  },
+  pagenotfound: {
+    title: 'Halaman tidak ditemukan',
+    body: 'Alamat yang Anda buka tidak ada di situs ini. Periksa kembali alamatnya atau kembali ke beranda.',
   },
   error: {
     title: 'Situs belum bisa dimuat',
@@ -47,7 +53,7 @@ export function SiteStatus({ kind, message, onRetry, actions, poweredByHref, ful
   }
 
   const copy = COPY[kind];
-  const Icon = kind === 'error' ? AlertCircle : kind === 'unavailable' ? LayoutTemplate : Globe;
+  const Icon = kind === 'error' ? AlertCircle : kind === 'unavailable' ? LayoutTemplate : kind === 'pagenotfound' ? SearchX : Globe;
 
   return (
     <div className={`flex ${height} flex-col bg-canvas px-5`}>

@@ -1,8 +1,11 @@
 // Render satu situs (template + konten) dengan pengaman: kode template tidak dikenal atau konten yang membuat
 // komponen error tidak merusak halaman lain, tetapi menampilkan layar "tampilan belum tersedia".
+// `data` (rute, basePath, tulisan berita/pengumuman) diteruskan ke template lewat SiteDataContext (shared/siteData.ts);
+// tanpa `data` = beranda tanpa tulisan (demo, katalog).
 import { Component, useMemo, type ErrorInfo, type ReactNode } from 'react';
 import { getTemplate, parseSiteContent, resolveContent } from './index';
 import { SiteStatus } from './SiteStatus';
+import { SITE_DATA_DEFAULT, SiteDataContext, type SiteData } from './shared/siteData';
 
 class TemplateErrorBoundary extends Component<{ fallback: ReactNode; resetKey: unknown; children: ReactNode }, { failedKey: unknown; failed: boolean }> {
   state = { failed: false, failedKey: undefined as unknown };
@@ -40,17 +43,23 @@ interface SiteRendererProps {
   motion?: boolean;
   /** Layar bila template tidak tersedia / error (default: SiteStatus "unavailable" layar penuh) */
   fallback?: ReactNode;
+  /** Rute & tulisan situs (CustomerSite, SitePreview); bawaan: beranda tanpa tulisan */
+  data?: SiteData;
 }
 
-export function SiteRenderer({ templateCode, content, preview = false, motion = true, fallback }: SiteRendererProps) {
+export function SiteRenderer({ templateCode, content, preview = false, motion = true, fallback, data }: SiteRendererProps) {
   const def = getTemplate(templateCode);
   const resolved = useMemo(() => (def ? resolveContent(def, parseSiteContent(content)) : null), [def, content]);
+  // Konten ATAU halaman/data berubah (mis. pindah ke tulisan lain) → coba render lagi setelah error
+  const resetKey = useMemo(() => [resolved, data], [resolved, data]);
   const unavailable = fallback ?? <SiteStatus kind="unavailable" />;
   if (!def || !resolved) return <>{unavailable}</>;
   const Template = def.Component;
   return (
-    <TemplateErrorBoundary fallback={unavailable} resetKey={resolved}>
-      <Template content={resolved} preview={preview} motion={motion} />
+    <TemplateErrorBoundary fallback={unavailable} resetKey={resetKey}>
+      <SiteDataContext.Provider value={data ?? SITE_DATA_DEFAULT}>
+        <Template content={resolved} preview={preview} motion={motion} />
+      </SiteDataContext.Provider>
     </TemplateErrorBoundary>
   );
 }
