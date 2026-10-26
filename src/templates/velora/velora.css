@@ -1,0 +1,146 @@
+/*
+ * CSS lokal Velora (diimpor ./Velora.tsx): lapisan gelap foto hero & kartu, zoom-out pelan foto hero, chip panah yang
+ * bergeser saat disorot, filter model yang memudar masuk, kartu teknologi yang melebar halus, dinding testimoni yang
+ * naik bertahap, rel geser tanpa scrollbar. Gerak hanya bila root template ber-data-tpl-motion="on" (demo & situs live);
+ * pratinjau CMS, prefers-reduced-motion, dan cetak → statis. Tanpa bayangan.
+ */
+
+@layer components {
+  /* Lapisan gelap hero: pita atas (menu putih ≥ 4,5:1 di foto terang), kiri-bawah (judul), bawah (tombol). Wadah sempit
+     (HP, CMS): makin gelap ke bawah karena semua teks ada di bawah. */
+  .vl-hero-scrim {
+    background:
+      linear-gradient(180deg, rgb(13 14 16 / 0.62) 0, rgb(13 14 16 / 0.34) 120px, transparent 240px),
+      linear-gradient(90deg, rgb(13 14 16 / 0.62) 0%, rgb(13 14 16 / 0.28) 45%, transparent 70%),
+      linear-gradient(0deg, rgb(13 14 16 / 0.82) 0%, rgb(13 14 16 / 0.42) 34%, transparent 62%);
+  }
+
+  @container (max-width: 1023px) {
+    .vl-hero-scrim {
+      background:
+        linear-gradient(180deg, rgb(13 14 16 / 0.74) 0, rgb(13 14 16 / 0.5) 84px, rgb(13 14 16 / 0.16) 160px, transparent 240px),
+        linear-gradient(0deg, rgb(13 14 16 / 0.92) 0%, rgb(13 14 16 / 0.78) 40%, rgb(13 14 16 / 0.5) 62%, rgb(13 14 16 / 0.14) 80%, transparent 92%);
+    }
+  }
+
+  /* Lapisan gelap kartu foto (bento, teknologi, test drive): bawah untuk keterangan, atas-kiri untuk chip */
+  .vl-card-scrim {
+    background:
+      linear-gradient(0deg, rgb(13 14 16 / 0.86) 0%, rgb(13 14 16 / 0.42) 38%, transparent 66%),
+      linear-gradient(180deg, rgb(13 14 16 / 0.42) 0%, transparent 30%);
+  }
+
+  /* Zoom-out pelan foto hero (1.08 → 1) saat dimuat; foto tetap terlihat sejak awal (LCP tidak tertunda) */
+  [data-tpl-motion='on'] .vl-hero-zoom {
+    animation: vl-hero-zoom 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  /* Chip panah aksen di judul hero bergeser pelan saat judul disorot */
+  [data-tpl-motion='on'] .vl-chip svg {
+    transition: transform 0.5s var(--tpl-ease, ease);
+  }
+
+  [data-tpl-motion='on'] h1:hover .vl-chip svg {
+    transform: translate(2px, 2px);
+  }
+
+  /* Kartu model memudar masuk setelah filter berganti */
+  [data-tpl-motion='on'] .vl-fade-in {
+    animation: vl-fade-in 0.5s var(--tpl-ease, ease) both;
+    animation-delay: var(--vl-delay, 0ms);
+  }
+
+  /* Kartu teknologi (wadah ≥ 1152px): lebar berganti halus; lebih sempit → rel geser biasa */
+  @container (min-width: 1152px) {
+    .vl-eng-card {
+      flex-grow: 1;
+      flex-basis: 0;
+    }
+
+    .vl-eng-card[data-active='true'] {
+      flex-grow: 3.6;
+    }
+
+    [data-tpl-motion='on'] .vl-eng-card {
+      transition: flex-grow 0.7s var(--tpl-ease, ease);
+    }
+  }
+
+  [data-tpl-motion='on'] .vl-eng-card[data-active='true'] .vl-eng-text {
+    animation: vl-fade-in 0.6s var(--tpl-ease, ease) 0.15s both;
+  }
+
+  /* Dinding testimoni: ubin naik bertahap saat wadahnya muncul (Reveal pada wadah) */
+  [data-tpl-motion='on'] [data-reveal='pending'] .vl-wall-tile {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+
+  [data-tpl-motion='on'] .vl-wall-tile {
+    transition:
+      opacity 0.8s var(--tpl-ease, ease),
+      transform 0.9s var(--tpl-ease, ease);
+    transition-delay: var(--vl-delay, 0ms);
+  }
+
+  /* Kutipan testimoni berganti dengan pudar */
+  [data-tpl-motion='on'] .vl-quote {
+    animation: vl-fade-in 0.45s var(--tpl-ease, ease) both;
+  }
+
+  /* Rel geser horizontal tanpa scrollbar (filter model, kartu teknologi HP, dinding testimoni HP) */
+  .vl-rail {
+    scrollbar-width: none;
+  }
+
+  .vl-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .vl-hero-zoom,
+    [data-tpl-motion='on'] .vl-fade-in,
+    [data-tpl-motion='on'] .vl-quote,
+    [data-tpl-motion='on'] .vl-eng-card[data-active='true'] .vl-eng-text {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .vl-eng-card,
+    [data-tpl-motion='on'] .vl-wall-tile,
+    [data-tpl-motion='on'] .vl-chip svg {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] [data-reveal='pending'] .vl-wall-tile {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media print {
+    .vl-hero-scrim,
+    .vl-card-scrim {
+      display: none;
+    }
+  }
+}
+
+@keyframes vl-hero-zoom {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes vl-fade-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

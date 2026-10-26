@@ -20,6 +20,7 @@ import { SERENITY_PHOTOS } from '../serenity/photos';
 import { TANI_PHOTOS } from '../tanimakmur/photos';
 import { PUNCAK_PHOTOS } from '../puncakgear/photos';
 import { SKYNUSA_PHOTOS } from '../skynusa/photos';
+import { VELORA_PHOTOS } from '../velora/photos';
 import { TEMPLATES, resolveContent } from '../index';
 import type { PhotoSet } from '../kit/photos';
 
@@ -36,7 +37,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'showroom';
   photos: PhotoSet;
 }
 
@@ -54,6 +55,8 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'madani', component: 'Madani.tsx', heroLayout: 'framed-slider', photos: MADANI_PHOTOS },
   { code: 'cakrawala', component: 'Cakrawala.tsx', heroLayout: 'horizon', photos: CAKRAWALA_PHOTOS },
   { code: 'bestari', component: 'Bestari.tsx', heroLayout: 'canvas', photos: BESTARI_PHOTOS },
+  // Velora (2026-10-27): company profile Inggris grup otomotif, kartu foto hero "showroom"
+  { code: 'velora', component: 'Velora.tsx', heroLayout: 'showroom', photos: VELORA_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */
