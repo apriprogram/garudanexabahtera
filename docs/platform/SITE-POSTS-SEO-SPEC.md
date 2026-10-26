@@ -18,7 +18,7 @@ Foto unggahan disimpan sebagai **WebP/JPEG teroptimasi**, bukan SVG. Skill desig
 | Situs (klien) | Rute `/`, `/berita`, `/berita/{slug}`, `/pengumuman`, `/pengumuman/{slug}`. Template sekolah membaca tulisan lewat konteks. Kepala halaman dari `src/templates/siteSeo.ts`, dengan aturan yang sama seperti PHP. |
 | Akun | `/akun/situs/:siteId/berita` (daftar), `/akun/situs/:siteId/berita/:postId` (`baru` = tulisan baru), `/akun/situs/:siteId/seo`. Navigasi pil di editor konten. |
 
-Template dengan fitur tulisan: `madani` dan `cakrawala`.
+Template dengan fitur tulisan: `madani`, `cakrawala`, dan `bestari`.
 - Klien: `TemplateDefinition.features.posts` (`src/templates/types.ts`).
 - PHP: `SP_POST_TEMPLATE_CODES` di `site_posts.php`. Node: `POST_TEMPLATE_CODES` di `site_posts.js`.
 - Ketiga daftar dijaga oleh tes paritas. Template sekolah baru nanti cukup ditambahkan di ketiga tempat itu.
@@ -332,7 +332,7 @@ Aturan teks:
   - Foto memakai `width`/`height` + `loading="lazy"`, kecuali foto utama artikel.
 - **Tautan di dalam situs** (`SiteLink`): hanya path yang dikenali `parseSiteRoute` (`/`, `/berita`, `/pengumuman`, `/berita/{slug}`, `/#anchor`) yang diberi awalan `basePath` dan dibuka tanpa muat ulang, baik dari tautan tambahan tulisan maupun URL tombol/menu CMS (`resolveAction`). Path lain di situs yang sama (mis. lampiran `/assets/…/brosur.pdf`) tetap `<a href>` biasa.
 - **Setelah pindah halaman** (`useSiteNavigate`): lewat tautan tanpa hash → langsung ke atas (`behavior: 'instant'`, layout effect) dan fokus ke H1 halaman baru (`tabIndex=-1`); hash → digulir TemplateShell, fokus tidak dipindah; tombol kembali/maju → posisi gulir terakhir entri riwayat itu dipulihkan (TemplateShell tidak menggulir ulang ke hash-nya).
-- **Header** Madani/Cakrawala tetap terpasang saat pindah halaman; penanda section aktif mengamati ulang section setiap halaman berganti.
+- **Header** Madani/Cakrawala/Bestari tetap terpasang saat pindah halaman; penanda section aktif mengamati ulang section setiap halaman berganti.
 - **Foto utama artikel** di bingkai berasio tetap (4:3 → 16:10, maks. 80% tinggi layar, `object-contain`), supaya isi di bawahnya tidak bergeser saat foto dimuat.
 - **Tautan section** di halaman selain beranda harus menuju `basePath + '/#anchor'`.
   - Tambahkan `news: 'berita'`, `announcements: 'pengumuman'`, `agenda: 'agenda'` ke `SECTION_ANCHOR`.

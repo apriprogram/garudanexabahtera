@@ -335,7 +335,7 @@ tersimpan bukan JSON array. `assets/projects/` hanya berisi unggahan: di-ignore 
 docs/platform/SITE-POSTS-SEO-SPEC.md §4, tipe `src/types/sitePosts.ts`). Tabel migrasi `2026-10-26_029`:
 `site_posts` (tulisan; slug unik per situs lintas jenis), `site_post_views` (jumlah dilihat per tulisan, terpisah supaya
 tayangan tidak mengubah `updated_at`) dan `site_seo` (satu baris per situs; tidak ada baris = bawaan). Fitur tulisan
-hanya untuk template berkode `madani` dan `cakrawala` (`SP_POST_TEMPLATE_CODES` = `POST_TEMPLATE_CODES` =
+hanya untuk template berkode `madani`, `cakrawala`, dan `bestari` (`SP_POST_TEMPLATE_CODES` = `POST_TEMPLATE_CODES` =
 `features.posts` di registri template); SEO untuk semua template. Error: `VALIDATION` (400, `errors` per field),
 `SITE_NOT_FOUND` (404), `POST_NOT_FOUND` (404), `POSTS_UNAVAILABLE` (403, aksi tulisan pada template tanpa fitur
 tulisan), `SITE_SUSPENDED` (409, menulis ke situs nonaktif), `SLUG_TAKEN` / `POST_LIMIT` (409), 429 untuk batas laju.

@@ -4,8 +4,9 @@
 // slide hero, tanggal, filter berita, formulir PPDB SD dengan tanggal lahir → usia → pesan WhatsApp, ikon otomatis),
 // demo (urutan section, hero slider + gerak masuk hanya setelah pergantian, kartu sorotan, profil "+", alasan bernomor,
 // program, guru, PPDB bertab + formulir, berita berfilter, pengumuman & agenda, testimoni, galeri, FAQ, kontak + peta,
-// footer), kustomisasi warna, SEO situs pembeli, konten opsional kosong, pratinjau CMS diam, editor CMS, data katalog
-// (migrasi 028 + seed + gambar pratinjau), dan konten aneh.
+// footer), berita & pengumuman dari tulisan (site_posts: kartu bertautan, halaman /berita & /pengumuman dengan navbar
+// putih dan footer yang bukan section), kustomisasi warna, SEO situs pembeli, konten opsional kosong, pratinjau CMS
+// diam, editor CMS, data katalog (migrasi 028 + seed + gambar pratinjau), dan konten aneh.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
@@ -42,8 +43,10 @@ import { INPUT } from '../bestari/styles';
 import { BESTARI_PHOTOS } from '../bestari/photos';
 import { applySiteHead, siteTitle } from '../siteHead';
 import { SiteRenderer } from '../SiteRenderer';
+import { SITE_DATA_DEFAULT, type SiteData } from '../shared/siteData';
 import { contrast, parseHex } from '../shared/utils';
 import { isListField, type ListItem, type SiteContent } from '../types';
+import { ANNOUNCEMENTS, NEWS, POST } from './fixtures/sitePosts';
 
 // Demo panjang (19 section) + getByRole di jsdom: bisa lewat 5 dtk saat suite berjalan paralel
 vi.setConfig({ testTimeout: 30_000 });
@@ -85,6 +88,11 @@ const urls = (src: string) => {
 };
 const wa = (el: Element | null) => decodeURIComponent(el?.getAttribute('href') ?? '');
 const linkList = (root: Element) => Array.from(root.querySelectorAll('a')).map((a) => `${a.textContent}|${a.getAttribute('href')}`);
+/** Situs live dengan tulisan dari SiteDataContext (CustomerSite / SitePreview); `data` menimpa rute dsb. */
+const withPosts = (data: Partial<SiteData> = {}, content: unknown = null) =>
+  render(
+    <SiteRenderer templateCode="bestari" content={content} data={{ ...SITE_DATA_DEFAULT, posts: { berita: NEWS, pengumuman: ANNOUNCEMENTS }, ...data }} />,
+  ).container;
 
 let scrolled: (string | null)[] = [];
 beforeEach(() => {
@@ -454,7 +462,7 @@ describe('Bestari: demo', () => {
     // Logo & nama: tautan flex (bukan inline) agar duduk tepat di tengah tinggi navbar
     expect(within(header).getByRole('link', { name: /ke awal halaman/ }).className).toMatch(/^flex .*items-center/);
     const nav = within(header).getAllByRole('navigation', { name: 'Menu utama' })[0];
-    expect(linkList(nav)).toEqual(['Profil|#tentang', 'Program|#programs', 'Guru kami|#teachers', 'PPDB|#ppdb', 'Berita|#news', 'Kontak|#kontak']);
+    expect(linkList(nav)).toEqual(['Profil|#tentang', 'Program|#programs', 'Guru kami|#teachers', 'PPDB|#ppdb', 'Berita|#berita', 'Kontak|#kontak']);
     expect(header.querySelector('img[src="/assets/templates/logos/tut-wuri-handayani.svg"]'), 'logo demo').not.toBeNull();
     expect(demo({ brand: { logo: '' } }).querySelector('header svg[viewBox="0 0 32 32"]'), 'BestariMark').not.toBeNull();
     fireEvent.click(within(nav).getByRole('link', { name: 'Guru kami' }));
@@ -818,6 +826,62 @@ describe('Bestari: demo', () => {
       .map((f) => readFileSync(resolve(ROOT, `src/templates/bestari/${f}.${f === 'styles' ? 'ts' : 'tsx'}`), 'utf8'))
       .join('\n');
     expect(source).not.toMatch(/\bshadow-/);
+  });
+});
+
+describe('Bestari: berita & pengumuman dari tulisan (site_posts)', () => {
+  it('beranda: kartu berita bertautan selebar kartu + filter kategori, tombol "Lihat semua" di samping tombol CMS, pengumuman', () => {
+    const container = withPosts();
+    expect(def.features?.posts).toBe(true);
+    const news = section(container, 'news');
+    const title = within(news).getByRole('link', { name: NEWS[0].title });
+    expect(title).toHaveAttribute('href', '/berita/juara-olimpiade-sains');
+    expect(title.className).toContain('after:absolute');
+    expect(title.closest('article')!.className).toContain('relative');
+    const img = within(news).getByAltText(NEWS[0].image_alt);
+    expect(img).toHaveAttribute('width', '1200');
+    expect(img).toHaveAttribute('height', '800');
+    const filters = within(news).getByRole('group', { name: 'Saring berita menurut kategori' });
+    expect(within(filters).getAllByRole('button').map((b) => b.textContent)).toEqual(['Semua', 'Prestasi', 'Kegiatan']);
+    fireEvent.click(within(filters).getByRole('button', { name: 'Kegiatan' }));
+    expect(Array.from(news.querySelectorAll('article h3')).map((h) => h.textContent)).toEqual([NEWS[1].title]);
+    expect(within(news).getByRole('link', { name: /Lihat semua berita/ })).toHaveAttribute('href', '/berita');
+    expect(within(news).getByRole('link', { name: /Berita lainnya di Instagram/ })).toHaveAttribute('href', 'https://instagram.com/sdbestaricendekia');
+
+    const announcements = section(container, 'announcements');
+    expect(within(announcements).getByRole('link', { name: ANNOUNCEMENTS[0].title }).closest('li')!.className).toContain('relative');
+    expect(announcements.textContent).toContain('Baca selengkapnya');
+    expect(announcements.textContent).not.toContain('Lihat lampiran');
+    // Agenda tetap dari konten CMS
+    expect(section(container, 'agenda').querySelectorAll('time')).toHaveLength(4);
+  });
+
+  it('/pengumuman: navbar putih tanpa bilah info & hero, footer bukan section, tautan section menuju "/#anchor"', () => {
+    const container = withPosts({ route: { kind: 'list', postKind: 'pengumuman' } });
+    const header = container.querySelector('header')!;
+    expect(header.className).not.toContain('h-0');
+    expect(header.firstElementChild!.hasAttribute('data-tpl-tone')).toBe(false);
+    expect(header.textContent).not.toContain('PPDB 2027/2028 gelombang');
+    expect(container.querySelector('[data-hero-layout]')).toBeNull();
+    expect(sectionKeys(container)).toEqual([]);
+    expect(container.querySelectorAll('h1')).toHaveLength(1);
+    expect(container.querySelector('h1')!.className).toContain('font-medium');
+    const footer = Array.from(container.querySelectorAll('footer')).pop()!;
+    expect(footer.className).toContain('bs-deep');
+    expect(footer.hasAttribute('id')).toBe(false);
+    expect(within(footer).getByRole('link', { name: 'Daftar PPDB' })).toHaveAttribute('href', '/#ppdb');
+    expect(linkList(within(footer).getByRole('navigation', { name: 'Tautan footer' }))).toContain('Berita|/#berita');
+    // Tema Bestari: label pengumuman mendesak merah lembut
+    expect(within(container.querySelector('main')!).getByText('Penting').closest('span[class*="rounded-full"]')!.className).toContain('text-[#B42318]');
+  });
+
+  it('/berita/{slug}: satu H1, chip kategori warna tema Bestari, kembali ke daftar', () => {
+    const container = withPosts({ route: { kind: 'post', postKind: 'berita', slug: POST.slug }, post: POST });
+    const main = container.querySelector('main')!;
+    expect(container.querySelectorAll('h1')).toHaveLength(1);
+    expect(container.querySelector('h1')).toHaveTextContent(POST.title);
+    expect(within(main).getByText('Prestasi').closest('span[class*="rounded-full"]')!.className).toContain('bg-(--bs-tint)');
+    expect(within(main).getByRole('link', { name: /Semua berita/ })).toHaveAttribute('href', '/berita');
   });
 });
 

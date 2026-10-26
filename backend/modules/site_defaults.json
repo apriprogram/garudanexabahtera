@@ -13,6 +13,13 @@
     "logo": "",
     "posts": false
   },
+  "bestari": {
+    "company_name": "SD Bestari Cendekia",
+    "tagline": "Sekolah Dasar Swasta di Yogyakarta",
+    "description": "SD swasta di Kota Yogyakarta dengan kelas kecil, program literasi bilingual, sains, seni, dan pramuka. Kami menemani anak belajar dengan hangat, tertib, dan penuh rasa ingin tahu.",
+    "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
+    "posts": true
+  },
   "cakrawala": {
     "company_name": "SMK Cakrawala Karya",
     "tagline": "Sekolah Vokasi Swasta di Bandung",

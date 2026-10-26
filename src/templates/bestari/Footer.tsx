@@ -1,9 +1,11 @@
 // Footer Bestari: pita cokelat malam selebar layar dari tepi kiri ke kanan sampai dasar halaman; isinya tetap di dalam
 // CONTAINER. Atas: ajakan besar (judul + teks) dengan tombol pil putih + bulatan panah. Lalu empat kolom: logo +
 // deskripsi + media sosial, menu, program unggulan, kontak singkat. Bawah: hak cipta otomatis dari nama sekolah dan
-// tagline.
+// tagline. Di halaman /berita, /pengumuman, dan tulisan footer yang sama tampil, tetapi bukan section (tautan section di
+// dalamnya menuju "/#anchor" di beranda).
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
+import { useSubPage } from '../shared/posts/hooks';
 import { ActionLink } from '../shared/Shell';
 import { useTemplateRuntime } from '../shared/runtime';
 import { SOCIAL_FIELDS } from '../shared/social';
@@ -30,12 +32,14 @@ export function Footer({ m }: { m: BestariModel }) {
   const tel = telHref(phone);
   const mail = mailHref(email);
   const { preview } = useTemplateRuntime();
+  const sub = useSubPage();
 
   return (
-    // Tujuan tautan "#footer" (data-tpl-section + id di situs live), tetap landmark <footer>
+    // Tujuan tautan "#footer" di beranda (data-tpl-section + id di situs live), tetap landmark <footer>. Halaman selain
+    // beranda tidak punya section: "#footer" dari sana menuju "/#footer" di beranda.
     <footer
-      data-tpl-section="footer"
-      id={preview ? undefined : SECTION_ANCHOR.footer}
+      data-tpl-section={sub ? undefined : 'footer'}
+      id={preview || sub ? undefined : SECTION_ANCHOR.footer}
       data-tpl-tone="inverse"
       className="bs-deep scroll-mt-[calc(var(--tpl-sticky-top,0px)+72px)] pb-8 pt-14 text-white @3xl:pt-20"
     >

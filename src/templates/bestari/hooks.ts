@@ -1,14 +1,20 @@
 // Hook kecil Bestari: section yang sedang dibaca (penanda item menu) dan "sudah digulir" (bilah info atas dilipat).
 // Tanpa IntersectionObserver (perayap, jsdom lama) → nilai awal, tanpa error.
 import { useEffect, useState, type RefObject } from 'react';
+import { useSiteData } from '../shared/siteData';
 
-/** Kunci section yang sedang di tengah layar (dari daftar `keys`), atau null. */
+/**
+ * Kunci section yang sedang di tengah layar (dari daftar `keys`), atau null. Header tetap terpasang saat pindah halaman
+ * di dalam situs (beranda ↔ /berita/{slug}), jadi section dicari & diamati ulang setiap halaman berganti: section beranda
+ * yang dipasang lagi adalah elemen baru. Sama dengan madani/hooks.ts dan cakrawala/hooks.ts.
+ */
 export function useActiveSection(anchor: RefObject<HTMLElement | null>, keys: string[]): string | null {
   const [active, setActive] = useState<string | null>(null);
   const signature = keys.join(',');
+  const page = useSiteData().route.kind;
   useEffect(() => {
     const root = anchor.current?.closest('[data-tpl-root]');
-    if (!root || typeof IntersectionObserver !== 'function' || !signature) return;
+    if (page !== 'home' || !root || typeof IntersectionObserver !== 'function' || !signature) return;
     const targets = signature
       .split(',')
       .map((key) => root.querySelector<HTMLElement>(`[data-tpl-section="${key}"]`))
@@ -23,8 +29,9 @@ export function useActiveSection(anchor: RefObject<HTMLElement | null>, keys: st
     );
     for (const el of targets) observer.observe(el);
     return () => observer.disconnect();
-  }, [anchor, signature]);
-  return active;
+  }, [anchor, signature, page]);
+  // Halaman selain beranda tidak punya section: tanpa penanda (nilai lama dari beranda tidak dipakai)
+  return page === 'home' ? active : null;
 }
 
 /**

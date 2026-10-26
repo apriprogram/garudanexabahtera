@@ -10,4 +10,5 @@ export const bestari: TemplateDefinition = {
   sections: bestariSections,
   defaultContent: bestariContent,
   Component: Bestari,
+  features: { posts: true },
 };

@@ -5,19 +5,67 @@
 // Finovate): foto membulat di dalam kartu, chip kategori + tanggal (<time>), judul, ringkasan, "Baca selengkapnya"
 // (tautan berita bila diisi, kalau tidak membuka isi lengkap di kartu, aria-expanded). Pengumuman: daftar bergaris tipis
 // bertanggal dengan label "Penting" merah lembut dan tautan lampiran. Agenda: ubin tanggal warna tema, waktu, tempat.
-import { ArrowUpRight, CalendarDays, ChevronDown, Clock, MapPin, Paperclip } from 'lucide-react';
+// Berita/pengumuman dari tulisan (site_posts, kunci POST_PATH_KEY): kartu menaut ke halaman tulisan lewat judulnya
+// ("Baca selengkapnya", bukan isi di tempat atau "Lihat lampiran"), plus "Lihat semua berita/pengumuman".
+import { ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Clock, MapPin, Paperclip } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
+import { useSitePosts } from '../shared/posts/hooks';
+import { POST_PATH_KEY } from '../shared/posts/model';
 import { ActionLink, TemplateSection } from '../shared/Shell';
+import { SiteLink } from '../shared/SiteLink';
 import { field, hasImage, safeUrl, text } from '../shared/utils';
 import type { ListItem } from '../types';
 import { KitPhoto } from '../kit/Photo';
 import { displayDate, filterNews, isUrgent, newsCategories, newsItems, paragraphsOf, parseSchoolDate, type BestariModel } from './model';
 import { BESTARI_PHOTOS } from './photos';
 import { C, CARD, DISPLAY, SECTION_PAD, TYPE_B } from './styles';
-import { PillLink, SectionHead, SectionLabel } from './ui';
+import { PillLink, SectionHead, SectionLabel, TextLink } from './ui';
+
+/**
+ * Hover kartu tulisan per grup Tailwind (kartu berita `group/news`, baris pengumuman `group/notice`); kelas ditulis utuh
+ * agar terbaca Tailwind. Tautan judul selebar kartu: lapisan ::after mengikuti radius kartu, cincin fokus mengelilinginya.
+ */
+const POST_CARD = {
+  news: {
+    link: 'after:rounded-[24px] group-hover/news:underline',
+    line: 'group-hover/news:decoration-current',
+    arrow: 'group-hover/news:translate-x-0.5',
+  },
+  notice: {
+    link: 'after:-inset-x-2 after:rounded-[14px] group-hover/notice:underline',
+    line: 'group-hover/notice:decoration-current',
+    arrow: 'group-hover/notice:translate-x-0.5',
+  },
+} as const;
+type PostCardKind = keyof typeof POST_CARD;
+
+const STRETCHED_LINK =
+  "after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-(--bs-ink) decoration-current/40 underline-offset-4";
+
+/** Judul item: tautan ke halaman tulisan bila item berasal dari tulisan (kartu `relative`), selain itu teks biasa. */
+function ItemTitle({ item, card }: { item: ListItem; card: PostCardKind }) {
+  const title = field(item, 'title');
+  const postPath = field(item, POST_PATH_KEY);
+  if (!postPath) return <>{title}</>;
+  return (
+    <SiteLink path={postPath} className={`${STRETCHED_LINK} ${POST_CARD[card].link}`}>
+      {title}
+    </SiteLink>
+  );
+}
+
+/** "Baca selengkapnya →" di kartu tulisan (hiasan: tautannya judul kartu). */
+function MoreHint({ card, className = 'mt-3' }: { card: PostCardKind; className?: string }) {
+  return (
+    <span aria-hidden className={`inline-flex min-h-10 items-center gap-1.5 self-start text-[14px] font-semibold text-(--bs-ink) ${className}`}>
+      <span className={`underline decoration-current/30 underline-offset-4 ${POST_CARD[card].line}`}>Baca selengkapnya</span>
+      <ArrowRight className={`h-4 w-4 transition-transform duration-300 ${POST_CARD[card].arrow}`} />
+    </span>
+  );
+}
 
 function DateText({ raw, className = '' }: { raw: string; className?: string }) {
   const date = parseSchoolDate(raw);
@@ -34,6 +82,8 @@ function DateText({ raw, className = '' }: { raw: string; className?: string }) 
 function ReadMore({ item, title }: { item: ListItem; title: string }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  // Tulisan: tautannya judul kartu (halaman /berita/{slug})
+  if (field(item, POST_PATH_KEY)) return <MoreHint card="news" />;
   const href = safeUrl(field(item, 'url'));
   const body = paragraphsOf(field(item, 'body'));
   if (href) {
@@ -76,13 +126,16 @@ function NewsCard({ item }: { item: ListItem }) {
   const image = field(item, 'image');
   const category = field(item, 'category');
   const date = field(item, 'date');
+  const post = !!field(item, POST_PATH_KEY);
   return (
-    <article className="group/news flex h-full flex-col rounded-[24px] bg-[#F5F2ED] p-2.5">
+    <article className={`group/news flex h-full flex-col rounded-[24px] bg-[#F5F2ED] p-2.5 ${post ? 'relative' : ''}`}>
       {hasImage(image) && (
         <KitPhoto
           src={image}
-          alt={BESTARI_PHOTOS.alt(image, title)}
+          alt={field(item, 'image_alt') || BESTARI_PHOTOS.alt(image, title)}
           sizes="(min-width: 1024px) 31vw, (min-width: 768px) 46vw, 92vw"
+          width={post ? 1200 : undefined}
+          height={post ? 800 : undefined}
           className="aspect-[3/2] rounded-[18px]"
           imgClassName="transition-[scale] duration-700 ease-out group-hover/news:scale-[1.03]"
         />
@@ -99,7 +152,9 @@ function NewsCard({ item }: { item: ListItem }) {
             )}
           </p>
         )}
-        <h3 className={`mt-3 text-balance ${DISPLAY} text-[19px] font-medium leading-snug tracking-[-0.015em] ${C.ink} @3xl:text-[20px]`}>{title}</h3>
+        <h3 className={`mt-3 text-balance ${DISPLAY} text-[19px] font-medium leading-snug tracking-[-0.015em] ${C.ink} @3xl:text-[20px]`}>
+          <ItemTitle item={item} card="news" />
+        </h3>
         {field(item, 'excerpt') && <p className={`mt-2 ${TYPE_B.small} ${C.muted}`}>{field(item, 'excerpt')}</p>}
         <ReadMore item={item} title={title} />
       </div>
@@ -110,6 +165,7 @@ function NewsCard({ item }: { item: ListItem }) {
 export function News({ m }: { m: BestariModel }) {
   const { news } = m;
   const items = newsItems(news);
+  const posts = useSitePosts('berita');
   const [category, setCategory] = useState<string | null>(null);
   if (items.length === 0) return null;
   const categories = newsCategories(items);
@@ -155,9 +211,10 @@ export function News({ m }: { m: BestariModel }) {
             </Reveal>
           ))}
         </ul>
-        {buttonLabel && buttonUrl && (
-          <div className="mt-10 flex justify-center @3xl:mt-12">
-            <PillLink action={{ kind: 'external', href: buttonUrl }} label={buttonLabel} variant="outline" />
+        {(posts || (buttonLabel && buttonUrl)) && (
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 @xl:flex-row @3xl:mt-12">
+            {posts && <PillLink action={{ kind: 'site', path: '/berita' }} label="Lihat semua berita" variant="ink" />}
+            {buttonLabel && buttonUrl && <PillLink action={{ kind: 'external', href: buttonUrl }} label={buttonLabel} variant="outline" />}
           </div>
         )}
       </div>
@@ -170,6 +227,7 @@ const SMALL_H2 = `${DISPLAY} text-balance text-[25px] font-medium leading-tight 
 function Announcements({ m }: { m: BestariModel }) {
   const { announcements } = m;
   const items = m.items('announcements');
+  const posts = useSitePosts('pengumuman');
   const title = text(announcements, 'title');
   return (
     <TemplateSection sectionKey="announcements" className={`min-w-0 p-5 @3xl:p-8 ${CARD.white}`}>
@@ -178,18 +236,27 @@ function Announcements({ m }: { m: BestariModel }) {
       <ul className="mt-6 divide-y divide-[#1C1917]/[0.08]">
         {items.map((item, i) => {
           const badge = field(item, 'badge');
-          const href = safeUrl(field(item, 'url'));
+          const post = !!field(item, POST_PATH_KEY);
+          const href = post ? null : safeUrl(field(item, 'url'));
           const date = field(item, 'date');
           return (
-            <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 60)} className="py-4 first:pt-0 last:pb-0">
+            <Reveal
+              as="li"
+              key={`${field(item, 'title')}-${i}`}
+              delay={stagger(i, 60)}
+              className={`py-4 first:pt-0 last:pb-0 ${post ? 'group/notice relative' : ''}`}
+            >
               <div className="flex flex-wrap items-center gap-2">
                 {badge && (
                   <span className={`rounded-full px-2.5 py-0.5 text-[12px] font-semibold ${isUrgent(badge) ? 'bg-[#FEECEB] text-[#B42318]' : 'bg-(--bs-tint) text-(--bs-ink)'}`}>{badge}</span>
                 )}
                 {date && <DateText raw={date} className={`text-[12.5px] font-medium ${C.muted}`} />}
               </div>
-              <h3 className={`mt-2 text-[16px] font-semibold leading-snug ${C.ink}`}>{field(item, 'title')}</h3>
+              <h3 className={`mt-2 text-[16px] font-semibold leading-snug ${C.ink}`}>
+                <ItemTitle item={item} card="notice" />
+              </h3>
               {field(item, 'text') && <p className={`mt-1 ${TYPE_B.small} ${C.muted}`}>{field(item, 'text')}</p>}
+              {post && <MoreHint card="notice" className="mt-1" />}
               {href && (
                 <ActionLink action={{ kind: 'external', href }} className="group mt-2 inline-flex min-h-9 items-center gap-1.5 text-[13.5px] font-semibold text-(--bs-ink)">
                   <Paperclip aria-hidden className="h-3.5 w-3.5" />
@@ -200,6 +267,7 @@ function Announcements({ m }: { m: BestariModel }) {
           );
         })}
       </ul>
+      {posts && <TextLink action={{ kind: 'site', path: '/pengumuman' }} label="Lihat semua pengumuman" className="mt-5" />}
     </TemplateSection>
   );
 }

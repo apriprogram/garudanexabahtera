@@ -134,10 +134,10 @@ Jalankan SEBELUM deploy kode yang memakainya (`customer_google_auth` membaca kol
 migrasi: diisi pemilik lewat setting `google_client_id` atau env `GOOGLE_CLIENT_ID` (GOOGLE-LOGIN.md §3).
 
 `2026-10-26_029` (skema saja, docs/platform/SITE-POSTS-SEO-SPEC.md): tiga tabel baru tanpa ALTER, jadi aman diimpor utuh
-lewat phpMyAdmin dan aman diulang. `site_posts` (berita & pengumuman template sekolah `madani`/`cakrawala`, slug unik
-per situs, foto di `assets/sites/{site}/posts/`), `site_post_views` (jumlah dilihat per tulisan, terpisah supaya
-tayangan tidak mengubah `updated_at`/lastmod sitemap) dan `site_seo` (pengaturan SEO per situs pembeli, semua template;
-tidak ada baris = bawaan, gambar di `assets/sites/{site}/seo/`). Jalankan SEBELUM deploy kode yang memakainya
+lewat phpMyAdmin dan aman diulang. `site_posts` (berita & pengumuman template sekolah `madani`/`cakrawala`/`bestari`,
+slug unik per situs, foto di `assets/sites/{site}/posts/`), `site_post_views` (jumlah dilihat per tulisan, terpisah
+supaya tayangan tidak mengubah `updated_at`/lastmod sitemap) dan `site_seo` (pengaturan SEO per situs pembeli, semua
+template; tidak ada baris = bawaan, gambar di `assets/sites/{site}/seo/`). Jalankan SEBELUM deploy kode yang memakainya
 (`backend/modules/site_posts.php` dan `backend/site.php`). Folder foto ikut `assets/sites/`, jadi tidak ikut git maupun
 deploy.
 

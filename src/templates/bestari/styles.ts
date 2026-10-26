@@ -7,6 +7,7 @@
 // (@…) karena template dirender di bingkai HP 390 / panel CMS.
 import type { KitFont } from '../kit/fonts';
 import { FONT_DISPLAY } from '../shared/layout';
+import { postTheme } from '../shared/posts/theme';
 
 /** Huruf judul: Instrument Sans (Google Fonts, SIL Open Font License), termasuk miring untuk bagian sorotan. */
 export const BESTARI_FONT: KitFont = {
@@ -95,3 +96,23 @@ export const PANEL = 'rounded-[28px] bg-[#F5F2ED] @3xl:rounded-[36px]';
 /** Isian formulir: 16px di HP (iOS tidak memperbesar), garis tipis, fokus cincin tema versi kontras. */
 export const INPUT =
   'block w-full rounded-[14px] bg-white px-4 text-[16px] text-[#1C1917] ring-1 ring-inset ring-[#1C1917]/[0.16] placeholder:text-[#78716C] transition-colors focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-(--tpl-accent-ink) @3xl:text-[15px]';
+
+/** Halaman berita & pengumuman (/berita, /berita/{slug}; shared/posts) dengan token Bestari: judul Instrument Sans
+ *  berbobot sedang warna tinta hangat, panel pasir, chip tint tema, tombol pil warna tema / bergaris tipis, kartu
+ *  radius 24. */
+export const POST_THEME = postTheme({
+  display: `${DISPLAY} font-medium`,
+  heading: C.ink,
+  body: 'text-[#292524]',
+  muted: C.muted,
+  accent: 'text-(--bs-ink)',
+  chip: 'bg-(--bs-tint) text-(--bs-ink)',
+  urgent: 'bg-[#FEECEB] text-[#B42318]',
+  soft: C.panel,
+  card: 'bg-white ring-1 ring-inset ring-[#1C1917]/[0.08]',
+  line: 'border-[#1C1917]/[0.1]',
+  radius: 'rounded-[24px]',
+  photoRadius: 'rounded-[24px]',
+  button: `${BTN.primary} ${BTN.md} hover:bg-(--tpl-accent-hover)`,
+  buttonGhost: `${BTN.outline} ${BTN.md} hover:bg-[#F5F2ED]`,
+});

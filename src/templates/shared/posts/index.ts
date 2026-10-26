@@ -3,7 +3,8 @@
 // CustomerSite (domain pembeli) dan SitePreview (/situs/:id). Demo & pratinjau CMS tidak punya tulisan → beranda dengan
 // daftar dari konten CMS, persis seperti sebelumnya.
 //
-// CARA MEMAKAI DI TEMPLATE SEKOLAH BARU (contoh lengkap: ../../madani/Madani.tsx dan ../../cakrawala/Cakrawala.tsx)
+// CARA MEMAKAI DI TEMPLATE SEKOLAH BARU (contoh lengkap: ../../madani/Madani.tsx, ../../cakrawala/Cakrawala.tsx, dan
+// ../../bestari/Bestari.tsx)
 // 1. Daftarkan fiturnya: `features: { posts: true }` di index.ts template, POST_TEMPLATE_CODES (src/templates/
 //    postTemplates.ts), SP_POST_TEMPLATE_CODES (backend/modules/site_posts.php), POST_TEMPLATE_CODES (site_posts.js), lalu
 //    perbarui backend/modules/site_defaults.json (UPDATE_SITE_DEFAULTS=1, spec §6).
@@ -16,6 +17,8 @@
 //        {isEnabled(m.footer) && <Footer m={m} />}
 //      </TemplateShell>
 //    Tautan section di header/footer otomatis menuju "basePath/#anchor" di halaman selain beranda (ActionLink).
+//    Halaman selain beranda tidak punya section: footer yang ber-data-tpl-section (tujuan "#footer", mis. Bestari)
+//    melepas atribut itu dan id-nya saat useSubPage() (../../bestari/Footer.tsx).
 // 3. Tema halaman tulisan dari token template: `export const XXX_POST_THEME = postTheme({ heading, accent, chip, … })`
 //    (./theme.ts; yang tidak diisi memakai bawaan --tpl-accent*).
 // 4. Kartu beranda: item ber-`POST_PATH_KEY` = tulisan → judul & "Baca selengkapnya" berupa <SiteLink path={…}> (bukan

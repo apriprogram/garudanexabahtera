@@ -140,7 +140,7 @@ function mockApi(overrides: Partial<Record<string, (body: Record<string, unknown
       if (action === 'get_settings') return json(200, { footer_whatsapp: '0812-1111-2222' });
       if (action === 'customer_get_site') return json(200, { success: true, site: siteOut() });
       if (action === 'customer_get_site_posts') {
-        if (!['madani', 'cakrawala'].includes(site.template_code)) {
+        if (!['madani', 'cakrawala', 'bestari'].includes(site.template_code)) {
           return json(403, { error: 'Template situs ini belum mendukung berita & pengumuman.', code: 'POSTS_UNAVAILABLE' });
         }
         return json(200, { posts, limits: { max_posts: 500 } });

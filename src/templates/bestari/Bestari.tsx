@@ -8,11 +8,15 @@
 // malam selebar layar. Satu warna tema dari CMS (terakota bawaan) menurunkan semua warna. Judul Instrument Sans,
 // datar tanpa bayangan, gerak tenang (muncul saat digulir, slider pudar, hover pelan) yang mati pada
 // prefers-reduced-motion dan pratinjau CMS; container query agar akurat di bingkai HP 390px dan panel CMS.
+// Berita & pengumuman dari tulisan (site_posts) bila ada, selain itu dari konten CMS; halaman /berita, /pengumuman, dan
+// tulisan = header tanpa overlay + halaman bersama (shared/posts) + footer (docs/platform/SITE-POSTS-SEO-SPEC.md §7).
 import type { TemplateRenderProps } from '../types';
 import { useKitFont } from '../kit/fonts';
 import { PhotoSetContext } from '../kit/context';
 import { TemplateShell } from '../shared/Shell';
 import { isEnabled } from '../shared/utils';
+import { useContentWithPosts, useSubPage } from '../shared/posts/hooks';
+import { PostPage } from '../shared/posts/PostPage';
 import { About, Welcome, Why } from './About';
 import { Contact, Faq } from './Closing';
 import { Gallery, Testimonials } from './Community';
@@ -26,11 +30,12 @@ import { News, Notices } from './News';
 import { BESTARI_PHOTOS } from './photos';
 import { Ppdb } from './Ppdb';
 import { Achievements, Programs, Teachers } from './Programs';
-import { BESTARI_FONT } from './styles';
+import { BESTARI_FONT, POST_THEME } from './styles';
 import './bestari.css';
 
 export default function Bestari({ content, preview = false, motion }: TemplateRenderProps) {
-  const m = readBestari(content);
+  const sub = useSubPage();
+  const m = readBestari(useContentWithPosts(content));
   const fontStyle = useKitFont(BESTARI_FONT);
   const heroOn = isEnabled(m.hero);
   const highlightsOn = m.shown('highlights');
@@ -39,26 +44,33 @@ export default function Bestari({ content, preview = false, motion }: TemplateRe
     <TemplateShell content={content} preview={preview} motion={motion} defaultAccent={BESTARI_ACCENT}>
       <PhotoSetContext.Provider value={BESTARI_PHOTOS}>
         <div style={{ ...m.colors, ...fontStyle }} className="relative bg-white text-[#1C1917]">
-          <Header m={m} overlay={heroOn} />
-          <main>
-            {heroOn && <Hero m={m} overlap={highlightsOn} />}
-            {highlightsOn && <Highlights m={m} overlap={heroOn} />}
-            {m.shown('badges') && <Badges m={m} />}
-            {m.shown('about') && <About m={m} />}
-            {m.shown('stats') && <Stats m={m} />}
-            {m.shown('welcome') && <Welcome m={m} />}
-            {m.shown('why') && <Why m={m} padTop={!m.shown('welcome')} />}
-            {m.shown('programs') && <Programs m={m} />}
-            {m.shown('achievements') && <Achievements m={m} />}
-            {m.shown('teachers') && <Teachers m={m} />}
-            {isEnabled(m.ppdb) && <Ppdb m={m} />}
-            {newsOn && <News m={m} />}
-            <Notices m={m} padTop={!newsOn} />
-            {m.shown('testimonials') && <Testimonials m={m} />}
-            {m.shown('gallery') && <Gallery m={m} />}
-            {m.shown('faq') && <Faq m={m} />}
-            {isEnabled(m.contact) && <Contact m={m} />}
-          </main>
+          {/* Halaman selain beranda: navbar putih biasa (tanpa foto hero di bawahnya, tanpa bilah info) */}
+          <Header m={m} overlay={heroOn && !sub} />
+          {sub ? (
+            <main>
+              <PostPage siteName={m.companyName} theme={POST_THEME} />
+            </main>
+          ) : (
+            <main>
+              {heroOn && <Hero m={m} overlap={highlightsOn} />}
+              {highlightsOn && <Highlights m={m} overlap={heroOn} />}
+              {m.shown('badges') && <Badges m={m} />}
+              {m.shown('about') && <About m={m} />}
+              {m.shown('stats') && <Stats m={m} />}
+              {m.shown('welcome') && <Welcome m={m} />}
+              {m.shown('why') && <Why m={m} padTop={!m.shown('welcome')} />}
+              {m.shown('programs') && <Programs m={m} />}
+              {m.shown('achievements') && <Achievements m={m} />}
+              {m.shown('teachers') && <Teachers m={m} />}
+              {isEnabled(m.ppdb) && <Ppdb m={m} />}
+              {newsOn && <News m={m} />}
+              <Notices m={m} padTop={!newsOn} />
+              {m.shown('testimonials') && <Testimonials m={m} />}
+              {m.shown('gallery') && <Gallery m={m} />}
+              {m.shown('faq') && <Faq m={m} />}
+              {isEnabled(m.contact) && <Contact m={m} />}
+            </main>
+          )}
           {isEnabled(m.footer) && <Footer m={m} />}
         </div>
       </PhotoSetContext.Provider>

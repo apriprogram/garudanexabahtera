@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run src/templates/__tests__/site-posts.test.tsx
 // Berita & pengumuman template sekolah (docs/platform/SITE-POSTS-SEO-SPEC.md §7): helper bersama (shared/posts/model,
-// siteHref), beranda Madani & Cakrawala memakai tulisan dari SiteDataContext atau kembali ke konten CMS PERSIS seperti
+// siteHref), beranda Madani, Cakrawala & Bestari memakai tulisan dari SiteDataContext atau kembali ke konten CMS PERSIS seperti
 // sebelumnya, halaman daftar & tulisan (satu H1, remah roti, tautan <a href> yang bisa dirayapi, foto lazy + ukuran),
 // tidak ditemukan / memuat / gagal, tautan section di halaman selain beranda, navigasi tanpa muat ulang, anchor #berita,
 // tautan "/path" (halaman situs vs file nyata), penanda section aktif setelah pindah halaman, bingkai foto artikel.
@@ -12,13 +12,16 @@ import { SiteRenderer } from '../SiteRenderer';
 import { SITE_DATA_DEFAULT, siteHref, type SiteData } from '../shared/siteData';
 import { POST_PATH_KEY, postDate, postLinkTarget, postParagraphs, relatedPosts, withPostItems } from '../shared/posts/model';
 import { SECTION_ANCHOR, resolveAction, sectionFromAnchor } from '../shared/utils';
+import { POST_TEMPLATE_CODES } from '../postTemplates';
 import { siteRoutePath } from '../siteRoutes';
 import type { SiteContent } from '../types';
 import { ANNOUNCEMENTS, NEWS, POST } from './fixtures/sitePosts';
 
 vi.setConfig({ testTimeout: 60_000 });
 
-type Code = 'madani' | 'cakrawala';
+type Code = 'madani' | 'cakrawala' | 'bestari';
+/** Template berfitur tulisan (POST_TEMPLATE_CODES): semua tes tampilan dijalankan untuk masing-masing. */
+const CODES: Code[] = ['madani', 'cakrawala', 'bestari'];
 
 const site = (code: Code, data: Partial<SiteData> = {}, content: unknown = null) =>
   render(<SiteRenderer templateCode={code} content={content} data={{ ...SITE_DATA_DEFAULT, ...data }} />).container;
@@ -105,6 +108,10 @@ describe('shared/posts: helper', () => {
     expect(loading.announcements).toBe(content.announcements);
   });
 
+  it('tes tampilan di bawah mencakup setiap template berfitur tulisan', () => {
+    expect([...CODES].sort()).toEqual([...POST_TEMPLATE_CODES].sort());
+  });
+
   it('anchor Indonesia untuk section sekolah', () => {
     expect([SECTION_ANCHOR.news, SECTION_ANCHOR.announcements, SECTION_ANCHOR.agenda]).toEqual(['berita', 'pengumuman', 'agenda']);
     expect(['#berita', 'pengumuman', 'agenda'].map(sectionFromAnchor)).toEqual(['news', 'announcements', 'agenda']);
@@ -119,7 +126,7 @@ const snapshot = (root: HTMLElement) => ({
   images: Array.from(root.querySelectorAll('img')).map((img) => img.getAttribute('src')),
 });
 
-describe.each(['madani', 'cakrawala'] as const)('%s: beranda', (code) => {
+describe.each(CODES)('%s: beranda', (code) => {
   it('tanpa tulisan (null atau []) → beranda sama persis dengan demo/konten CMS', () => {
     const demo = snapshot(render(<SiteRenderer templateCode={code} content={null} />).container);
     cleanup();
@@ -170,13 +177,23 @@ describe.each(['madani', 'cakrawala'] as const)('%s: beranda', (code) => {
     expect(within(section(root, 'announcements')).getByRole('link', { name: /Lihat semua pengumuman/ })).toHaveAttribute('href', '/pengumuman');
   });
 
+  it('daftar masih dimuat (undefined) → judul berita & pengumuman CMS/demo tidak tampil sekilas', () => {
+    const demo = render(<SiteRenderer templateCode={code} content={null} />).container;
+    const titles = Array.from(demo.querySelectorAll('[data-tpl-section="news"] h3, [data-tpl-section="announcements"] h3')).map((h) => h.textContent ?? '');
+    expect(titles.length).toBeGreaterThan(0);
+    cleanup();
+    const root = site(code, { posts: { berita: undefined, pengumuman: undefined } });
+    for (const title of titles) expect(root.textContent).not.toContain(title);
+    expect(root.querySelectorAll('h1')).toHaveLength(1);
+  });
+
   it('section berita disembunyikan di CMS → tulisan tidak memunculkannya', () => {
     const root = site(code, WITH_POSTS, { news: { enabled: false } });
     expect(section(root, 'news')).toBeNull();
   });
 });
 
-describe.each(['madani', 'cakrawala'] as const)('%s: halaman daftar & tulisan', (code) => {
+describe.each(CODES)('%s: halaman daftar & tulisan', (code) => {
   it('/berita: header biasa, remah roti, satu H1, kartu <a href>, tautan menu ke beranda "/#anchor"', () => {
     const root = site(code, { ...WITH_POSTS, route: { kind: 'list', postKind: 'berita' }, total: 2 });
     expect(root.querySelector('[data-site-page="list"]')).not.toBeNull();
@@ -331,7 +348,7 @@ describe('navigasi di dalam situs', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it.each(['madani', 'cakrawala'] as const)('%s: penanda section aktif mengamati ulang section setelah beranda → tulisan → beranda', (code) => {
+  it.each(CODES)('%s: penanda section aktif mengamati ulang section setelah beranda → tulisan → beranda', (code) => {
     // Pengamat section aktif header (rootMargin useActiveSection), bukan pengamat animasi/lengket lain
     const live: Element[][] = [];
     class RecordingObserver {
