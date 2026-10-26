@@ -1,15 +1,17 @@
 // Program unggulan (kunci `programs`), prestasi (`achievements`), dan guru (`teachers`).
-// Program: panel pasir membulat; label pil di tengah + judul terpusat (referensi Finovate), lalu kartu FOTO tegak dengan
-// ikon bulat warna tema di kiri atas, tombol panah bulat "tanya program ini" (WhatsApp berisi nama program) di kanan
-// atas, dan label pil + nama + deskripsi di atas gradasi gelap. Foto membesar pelan saat disorot.
+// Program: panel pasir membulat; kiri label + judul + deskripsi + tombol sebelumnya/berikutnya, kanan CAROUSEL kartu
+// FOTO tegak (lebar tetap ±300 px, menjorok sampai tepi panel; HP: geser jari, kartu berikutnya mengintip). Kartu: ikon
+// bulat warna tema di kiri atas, tombol panah bulat "tanya program ini" (WhatsApp berisi nama program) di kanan atas, dan
+// label pil + nama + deskripsi di atas gradasi gelap. Foto membesar pelan saat disorot.
 // Prestasi: daftar bergaris tipis seperti tabel (tahun · peringkat · lomba & nama · tingkat) yang berubah warna pelan saat
 // disorot (referensi Bienes, minimalis).
 // Guru: panel pasir; kiri label + judul + deskripsi + tombol, kanan kartu foto guru (nama + jabatan). Di HP kartu dalam
 // rel geser mendatar (referensi Bienes "Our specialist team").
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
-import { stagger } from '../shared/motion';
+import { stagger, useMotionEnabled } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, initials, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
@@ -18,84 +20,155 @@ import { BESTARI_PHOTOS } from './photos';
 import { C, DISPLAY, EYEBROW, PANEL, PANEL_OUTER, SECTION_PAD, TYPE_B } from './styles';
 import { PillLink, SectionHead, SectionLabel, TitleIcon, Highlighted } from './ui';
 
+/** Posisi gulir rel: bisa digulir? sudah di awal / di ujung? (tombol dinonaktifkan di ujung, disembunyikan bila semua muat) */
+function useRailState(rail: RefObject<HTMLElement | null>) {
+  const [state, setState] = useState({ scrollable: false, atStart: true, atEnd: false });
+  useEffect(() => {
+    const el = rail.current;
+    if (!el) return;
+    const measure = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      const next = { scrollable: max > 4, atStart: el.scrollLeft <= 4, atEnd: el.scrollLeft >= max - 4 };
+      setState((prev) => (prev.scrollable === next.scrollable && prev.atStart === next.atStart && prev.atEnd === next.atEnd ? prev : next));
+    };
+    const frame = window.requestAnimationFrame(measure);
+    el.addEventListener('scroll', measure, { passive: true });
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    observer?.observe(el);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      el.removeEventListener('scroll', measure);
+      observer?.disconnect();
+    };
+  }, [rail]);
+  return state;
+}
+
 export function Programs({ m }: { m: BestariModel }) {
   const { programs } = m;
   const items = m.items('programs');
+  const railId = useId();
+  const rail = useRef<HTMLDivElement>(null);
+  const motion = useMotionEnabled();
+  const { scrollable, atStart, atEnd } = useRailState(rail);
   if (items.length === 0) return null;
-  // Baris rata tengah (flex-wrap): baris terakhir yang tidak penuh tetap di tengah di bawah judul terpusat. 4 program →
-  // 4 kolom di layar lebar, jumlah lain → 3 kolom.
-  const width = `w-full @2xl:w-[calc(50%-6px)] @3xl:w-[calc(50%-8px)] ${items.length === 4 ? '@6xl:w-[calc(25%-12px)]' : '@5xl:w-[calc(33.333%-10.667px)]'}`;
+  const title = text(programs, 'title');
+
+  // Geser satu kartu (lebar kartu + jarak); halus hanya bila gerak menyala
+  const move = (dir: 1 | -1) => {
+    const el = rail.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>('li');
+    const step = card ? card.getBoundingClientRect().width + 16 : el.clientWidth * 0.8;
+    el.scrollBy({ left: dir * step, behavior: motion ? 'smooth' : 'auto' });
+  };
+  const round =
+    'flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#1C1917] transition-[background-color,color,opacity] duration-300 hover:bg-[#1C1917] hover:text-white disabled:cursor-default disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-[#1C1917]';
 
   return (
     <TemplateSection sectionKey="programs" className="py-2">
       <div className={PANEL_OUTER}>
-        <div className={`${PANEL} ${SECTION_PAD}`}>
-          <div className={CONTAINER}>
-            <SectionHead
-              layout="center"
-              eyebrow={text(programs, 'eyebrow')}
-              number={m.number('programs')}
-              title={text(programs, 'title')}
-              highlight={text(programs, 'highlight')}
-              subtitle={text(programs, 'subtitle')}
-            />
-            <ul className="mt-10 flex flex-wrap justify-center gap-3 @3xl:mt-14 @3xl:gap-4">
-              {items.map((item, i) => {
-                const name = field(item, 'name');
-                const image = field(item, 'image');
-                const label = field(item, 'label');
-                const ask = m.waWith(`Halo ${m.companyName}, saya ingin bertanya tentang program ${name}.`) ?? m.ppdbAction;
-                return (
-                  <Reveal
-                    as="li"
-                    key={`${name}-${i}`}
-                    delay={stagger(i, 80)}
-                    data-tpl-tone="inverse"
-                    // Tanpa overflow-hidden dan tanpa min-h tetap di kartu: rasio 4:5 jadi tinggi minimum (min-height:auto)
-                    // dan kartu memanjang bila nama/deskripsinya panjang (foto & gradasi dipotong sudutnya sendiri)
-                    className={`group/card relative isolate flex aspect-[4/5] flex-col justify-between gap-6 rounded-[24px] bg-(--bs-deep) p-4 text-white @3xl:p-5 ${width}`}
-                  >
-                    {hasImage(image) && (
-                      <KitPhoto
-                        src={image}
-                        alt={BESTARI_PHOTOS.alt(image, name)}
-                        sizes="(min-width: 1152px) 25vw, (min-width: 672px) 46vw, 92vw"
-                        fallback="none"
-                        className="absolute inset-0 -z-20 rounded-[24px]"
-                        imgClassName="transition-[scale] duration-700 ease-out group-hover/card:scale-[1.04]"
-                      />
-                    )}
-                    <div
-                      aria-hidden
-                      className="absolute inset-0 -z-10 rounded-[24px] bg-[linear-gradient(180deg,rgb(24_16_12/0.3)_0%,transparent_22%,transparent_34%,rgb(24_16_12/0.62)_55%,rgb(24_16_12/0.92)_100%)]"
-                    />
-                    <div className="flex items-start justify-between gap-3">
-                      <span aria-hidden className="flex h-12 w-12 items-center justify-center rounded-full bg-(--tpl-accent) text-(--tpl-on-accent)">
-                        <TitleIcon title={name} index={i} className="h-[22px] w-[22px]" />
-                      </span>
-                      {ask && (
-                        <ActionLink
-                          action={ask}
-                          aria-label={`Tanya tentang program ${name}`}
-                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-[#1C1917] transition-colors duration-300 hover:bg-[#F5F2ED]"
-                        >
-                          <ArrowUpRight aria-hidden className="h-[18px] w-[18px] transition-transform duration-500 group-hover/card:rotate-45" />
-                        </ActionLink>
-                      )}
-                    </div>
-                    <div>
-                      {label && (
-                        <span className={`inline-flex h-7 items-center rounded-full bg-[rgb(24_16_12/0.6)] px-3 ${EYEBROW} text-[11px] text-white ring-1 ring-inset ring-white/25 backdrop-blur-md`}>
-                          {label}
-                        </span>
-                      )}
-                      <h3 className={`mt-3 text-balance ${DISPLAY} text-[21px] font-medium leading-snug tracking-[-0.02em] @3xl:text-[23px]`}>{name}</h3>
-                      {field(item, 'description') && <p className="mt-2 text-[14px] leading-relaxed text-white/[0.88]">{field(item, 'description')}</p>}
-                    </div>
-                  </Reveal>
-                );
-              })}
-            </ul>
+        <div className={`${PANEL} ${SECTION_PAD} overflow-hidden`}>
+          {/* HP–tablet: judul, rel, tombol bertumpuk. Layar lebar: kiri judul + tombol, kanan rel yang menjorok ke tepi panel */}
+          <div className={`${CONTAINER} grid gap-8 @3xl:gap-10 @5xl:grid-cols-12 @5xl:grid-rows-[auto_1fr] @5xl:gap-x-10 @5xl:gap-y-8`}>
+            <div className="min-w-0 @5xl:col-span-4 @5xl:row-start-1">
+              <SectionHead
+                layout="stack"
+                eyebrow={text(programs, 'eyebrow')}
+                number={m.number('programs')}
+                title={title}
+                highlight={text(programs, 'highlight')}
+                subtitle={text(programs, 'subtitle')}
+              />
+            </div>
+
+            <Reveal
+              variant="fade"
+              delay={120}
+              className="-mx-5 min-w-0 @2xl:-mx-8 @5xl:col-span-8 @5xl:col-start-5 @5xl:row-span-2 @5xl:row-start-1 @5xl:ml-0 @5xl:-mr-12 @5xl:self-center @min-[96rem]:-mr-16"
+            >
+              {/* Rel geser: bisa difokus & digulir dengan panah keyboard, berlabel untuk pembaca layar */}
+              <div
+                ref={rail}
+                id={railId}
+                role="region"
+                aria-roledescription="carousel"
+                aria-label={title ? `Daftar program: ${title}` : 'Daftar program'}
+                tabIndex={0}
+                className="bs-rail snap-x snap-mandatory scroll-px-5 overflow-x-auto overscroll-x-contain px-5 pb-1 @2xl:scroll-px-8 @2xl:px-8 @5xl:scroll-px-0 @5xl:pl-0 @5xl:pr-12 @min-[96rem]:pr-16"
+              >
+                <ul className="flex gap-4">
+                  {items.map((item, i) => {
+                    const name = field(item, 'name');
+                    const image = field(item, 'image');
+                    const label = field(item, 'label');
+                    const ask = m.waWith(`Halo ${m.companyName}, saya ingin bertanya tentang program ${name}.`) ?? m.ppdbAction;
+                    return (
+                      <li
+                        key={`${name}-${i}`}
+                        aria-roledescription="slide"
+                        aria-label={`${i + 1} dari ${items.length}: ${name}`}
+                        data-tpl-tone="inverse"
+                        // Lebar tetap (bukan ikut layar) agar kartu tidak kebesaran di desktop. Tanpa overflow-hidden dan
+                        // tanpa min-h tetap: rasio 4:5 jadi tinggi minimum dan kartu memanjang bila teksnya panjang (foto &
+                        // gradasi dipotong sudutnya sendiri)
+                        className="group/card relative isolate flex aspect-[4/5] w-[78%] max-w-[320px] shrink-0 snap-start flex-col justify-between gap-6 rounded-[24px] bg-(--bs-deep) p-4 text-white @xl:w-[300px] @3xl:p-5 @7xl:w-[320px] @7xl:max-w-none @min-[96rem]:w-[340px]"
+                      >
+                        {hasImage(image) && (
+                          <KitPhoto
+                            src={image}
+                            alt={BESTARI_PHOTOS.alt(image, name)}
+                            sizes="(min-width: 576px) 340px, 78vw"
+                            fallback="none"
+                            className="absolute inset-0 -z-20 rounded-[24px]"
+                            imgClassName="transition-[scale] duration-700 ease-out group-hover/card:scale-[1.04]"
+                          />
+                        )}
+                        <div
+                          aria-hidden
+                          className="absolute inset-0 -z-10 rounded-[24px] bg-[linear-gradient(180deg,rgb(24_16_12/0.3)_0%,transparent_22%,transparent_34%,rgb(24_16_12/0.62)_55%,rgb(24_16_12/0.92)_100%)]"
+                        />
+                        <div className="flex items-start justify-between gap-3">
+                          <span aria-hidden className="flex h-12 w-12 items-center justify-center rounded-full bg-(--tpl-accent) text-(--tpl-on-accent)">
+                            <TitleIcon title={name} index={i} className="h-[22px] w-[22px]" />
+                          </span>
+                          {ask && (
+                            <ActionLink
+                              action={ask}
+                              aria-label={`Tanya tentang program ${name}`}
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-[#1C1917] transition-colors duration-300 hover:bg-[#F5F2ED]"
+                            >
+                              <ArrowUpRight aria-hidden className="h-[18px] w-[18px] transition-transform duration-500 group-hover/card:rotate-45" />
+                            </ActionLink>
+                          )}
+                        </div>
+                        <div>
+                          {label && (
+                            <span className={`inline-flex h-7 items-center rounded-full bg-[rgb(24_16_12/0.6)] px-3 ${EYEBROW} text-[11px] text-white ring-1 ring-inset ring-white/25 backdrop-blur-md`}>
+                              {label}
+                            </span>
+                          )}
+                          <h3 className={`mt-3 text-balance ${DISPLAY} text-[21px] font-medium leading-snug tracking-[-0.02em] @3xl:text-[22px]`}>{name}</h3>
+                          {field(item, 'description') && <p className="mt-2 text-[14px] leading-relaxed text-white/[0.88]">{field(item, 'description')}</p>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </Reveal>
+
+            {/* Tombol geser: hanya bila ada kartu yang tidak muat; nonaktif di ujung rel */}
+            {scrollable && (
+              <div role="group" aria-label="Geser daftar program" className="flex items-center gap-2 @5xl:col-span-4 @5xl:row-start-2 @5xl:self-end">
+                <button type="button" onClick={() => move(-1)} disabled={atStart} aria-controls={railId} aria-label="Program sebelumnya" className={round}>
+                  <ArrowLeft aria-hidden className="h-[18px] w-[18px]" />
+                </button>
+                <button type="button" onClick={() => move(1)} disabled={atEnd} aria-controls={railId} aria-label="Program berikutnya" className={round}>
+                  <ArrowRight aria-hidden className="h-[18px] w-[18px]" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

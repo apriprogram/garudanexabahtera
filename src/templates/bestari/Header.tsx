@@ -1,8 +1,9 @@
-// Header Bestari: bilah info tipis di atas foto hero (email & telepon dari Kontak di kiri, pengumuman PPDB di kanan;
-// referensi Eduker), lalu menu PIL PUTIH yang melayang di atas foto (referensi Bienes): logo kiri, menu di tengah
-// (item aktif = pil pasir), tombol pil tinta + bulatan panah di kanan. Setelah digulir bilah info dilipat dan pil tetap
-// melayang di atas halaman. Tanpa hero → pil di atas latar putih tanpa bilah info. HP: logo + tombol menu; panel menu
-// terbuka di dalam pil yang sama, Esc menutup dan mengembalikan fokus ke tombol menu.
+// Header Bestari: navbar biasa selebar layar yang menempel di atas. Di atas foto hero (belum digulir) latarnya
+// transparan: bilah info tipis (email & telepon dari Kontak di kiri, pengumuman PPDB di kanan; referensi Eduker), lalu
+// logo kiri, menu di tengah, tombol pil warna tema di kanan, semuanya putih. Setelah digulir bilah info dilipat dan
+// navbar berlatar putih polos dengan teks gelap (tanpa garis tepi dan bayangan); kembali ke paling atas → latar
+// menghilang lagi. Tanpa hero → selalu putih tanpa bilah info. HP: logo + tombol menu; panel menu terbuka di bawah
+// navbar (navbar ikut putih), Esc menutup dan mengembalikan fokus ke tombol menu.
 import { ArrowRight, Mail, Megaphone, Menu, Phone, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { CONTAINER } from '../shared/layout';
@@ -30,7 +31,7 @@ export function Logo({ m, tone }: { m: BestariModel; tone: 'light' | 'dark' }) {
           <BestariMark className="h-5 w-5" />
         </span>
       }
-      nameClassName={`${DISPLAY} text-[16px] font-semibold tracking-[-0.02em] @3xl:text-[17px] ${light ? 'text-white' : C.ink}`}
+      nameClassName={`${DISPLAY} text-[16px] font-semibold leading-[1.2] tracking-[-0.02em] @3xl:text-[17px] ${light ? 'text-white' : C.ink}`}
     />
   );
 }
@@ -47,6 +48,7 @@ function InfoBar({ m, hidden }: { m: BestariModel; hidden: boolean }) {
   const link = 'inline-flex min-h-9 items-center gap-2 text-white transition-colors hover:text-white/80';
   return (
     <div
+      data-bs-infobar
       data-tpl-tone="inverse"
       aria-hidden={hidden || undefined}
       inert={hidden}
@@ -93,6 +95,8 @@ export function Header({ m, overlay }: { m: BestariModel; overlay: boolean }) {
   const sentinel = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const scrolled = useScrolledPast(sentinel);
+  // Latar putih: sudah digulir, tanpa hero, atau menu HP terbuka. Paling atas di atas foto → transparan, teks putih.
+  const solid = scrolled || !overlay || open;
   const active = useActiveSection(
     sentinel,
     m.nav.map((item) => item.key),
@@ -112,89 +116,101 @@ export function Header({ m, overlay }: { m: BestariModel; overlay: boolean }) {
 
   return (
     <>
-      {/* Penanda gulir: 64px di bawah tepi atas halaman */}
-      <div ref={sentinel} aria-hidden className="pointer-events-none absolute left-0 top-16 h-px w-px" />
-      <header className={`sticky top-[var(--tpl-sticky-top,0px)] z-30 ${overlay ? 'h-0' : 'bg-white pb-3'}`}>
-        {overlay && <InfoBar m={m} hidden={scrolled || open} />}
-        <div className="pt-3">
+      {/* Penanda gulir: 16px di bawah tepi atas halaman (begitu digulir sedikit, navbar jadi putih) */}
+      <div ref={sentinel} aria-hidden className="pointer-events-none absolute left-0 top-4 h-px w-px" />
+      <header className={`sticky top-[var(--tpl-sticky-top,0px)] z-30 ${overlay ? 'h-0' : ''}`}>
+        <div
+          data-tpl-tone={solid ? undefined : 'inverse'}
+          className={`transition-[background-color] duration-300 ${solid ? 'bg-white' : 'bg-transparent'}`}
+        >
+          {overlay && <InfoBar m={m} hidden={scrolled || open} />}
           <div className={CONTAINER}>
-            <div
-              className={`mx-auto max-w-[1280px] rounded-[31px] bg-white/[0.97] ring-1 ring-inset backdrop-blur-md transition-colors duration-300 ${
-                scrolled || !overlay ? 'ring-[#1C1917]/[0.1]' : 'ring-white/40'
-              }`}
-            >
-              <div className="flex h-[62px] items-center justify-between gap-3 pl-4 pr-2 @3xl:pl-5 @6xl:grid @6xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-                <ActionLink action={{ kind: 'section', target: 'hero' }} onNavigate={close} className="min-w-0 justify-self-start rounded-full" aria-label={`${m.companyName}, ke awal halaman`}>
-                  <Logo m={m} tone="dark" />
-                </ActionLink>
+            <div className="flex h-[68px] items-center justify-between gap-4 @5xl:h-[76px] @6xl:grid @6xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+              {/* flex (bukan inline): logo & nama tidak duduk di garis dasar teks, jadi tepat di tengah tinggi navbar di semua zoom */}
+              <ActionLink
+                action={{ kind: 'section', target: 'hero' }}
+                onNavigate={close}
+                className="flex min-w-0 items-center self-center justify-self-start rounded-full"
+                aria-label={`${m.companyName}, ke awal halaman`}
+              >
+                <Logo m={m} tone={solid ? 'dark' : 'light'} />
+              </ActionLink>
 
-                {m.nav.length > 0 && (
-                  <nav aria-label="Menu utama" className="hidden @6xl:block">
-                    <ul className="flex items-center gap-0.5">
-                      {m.nav.map((item) => {
-                        const isCurrent = active === item.key;
-                        return (
-                          <li key={item.key}>
-                            <ActionLink
-                              action={{ kind: 'section', target: item.key }}
-                              aria-current={isCurrent ? 'true' : undefined}
-                              className={`flex h-10 items-center rounded-full px-4 text-[14px] font-medium transition-colors duration-300 ${
-                                isCurrent ? `bg-[#F5F2ED] ${C.ink}` : 'text-[#57534E] hover:bg-[#F5F2ED] hover:text-[#1C1917]'
-                              }`}
-                            >
-                              {item.label}
-                            </ActionLink>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </nav>
-                )}
-
-                <div className="flex shrink-0 items-center justify-self-end gap-2">
-                  <span className="hidden @xl:inline-flex">
-                    <PillLink action={m.headerAction} label={m.headerLabel} variant="ink" />
-                  </span>
-                  {m.nav.length > 0 && (
-                    <button
-                      ref={menuButton}
-                      type="button"
-                      onClick={() => setOpen((v) => !v)}
-                      aria-expanded={open}
-                      aria-controls={menuId}
-                      aria-label={open ? 'Tutup menu' : 'Buka menu'}
-                      className={`flex h-11 w-11 items-center justify-center rounded-full bg-[#F5F2ED] transition-colors hover:bg-[#ECE7DF] @6xl:hidden ${C.ink}`}
-                    >
-                      {open ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {open && (
-                <nav id={menuId} aria-label="Menu utama" className="border-t border-[#1C1917]/[0.08] p-2 pb-3 @6xl:hidden">
-                  <ul>
-                    {m.nav.map((item) => (
-                      <li key={item.key}>
-                        <ActionLink
-                          action={{ kind: 'section', target: item.key }}
-                          onNavigate={close}
-                          aria-current={active === item.key ? 'true' : undefined}
-                          className={`flex h-12 items-center justify-between rounded-[18px] px-4 text-[16px] font-medium transition-colors hover:bg-[#F5F2ED] ${C.ink}`}
-                        >
-                          {item.label}
-                          <ArrowRight className={`h-4 w-4 ${C.muted}`} aria-hidden />
-                        </ActionLink>
-                      </li>
-                    ))}
+              {m.nav.length > 0 && (
+                <nav aria-label="Menu utama" className="hidden @6xl:block">
+                  <ul className="flex items-center gap-1">
+                    {m.nav.map((item) => {
+                      const isCurrent = active === item.key;
+                      const tone = solid
+                        ? isCurrent
+                          ? `bg-[#F5F2ED] ${C.ink}`
+                          : 'text-[#57534E] hover:bg-[#F5F2ED] hover:text-[#1C1917]'
+                        : isCurrent
+                          ? 'bg-white/[0.16] text-white'
+                          : 'text-white/[0.86] hover:bg-white/[0.12] hover:text-white';
+                      return (
+                        <li key={item.key}>
+                          <ActionLink
+                            action={{ kind: 'section', target: item.key }}
+                            aria-current={isCurrent ? 'true' : undefined}
+                            className={`flex h-10 items-center rounded-full px-4 text-[14.5px] font-medium transition-colors duration-300 ${tone}`}
+                          >
+                            {item.label}
+                          </ActionLink>
+                        </li>
+                      );
+                    })}
                   </ul>
-                  <div className="px-2 pt-2 @xl:hidden">
-                    <PillLink action={m.headerAction} label={m.headerLabel} variant="primary" size="lg" onNavigate={close} className="flex w-full" />
-                  </div>
                 </nav>
               )}
+
+              <div className="flex shrink-0 items-center self-center justify-self-end gap-2">
+                <span className="hidden items-center @xl:flex">
+                  <PillLink action={m.headerAction} label={m.headerLabel} variant="primary" />
+                </span>
+                {m.nav.length > 0 && (
+                  <button
+                    ref={menuButton}
+                    type="button"
+                    onClick={() => setOpen((v) => !v)}
+                    aria-expanded={open}
+                    aria-controls={menuId}
+                    aria-label={open ? 'Tutup menu' : 'Buka menu'}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-300 @6xl:hidden ${
+                      solid ? `bg-[#F5F2ED] hover:bg-[#ECE7DF] ${C.ink}` : 'bg-white/[0.14] text-white backdrop-blur-md hover:bg-white/[0.24]'
+                    }`}
+                  >
+                    {open ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
+
+          {open && (
+            <nav id={menuId} aria-label="Menu utama" className="max-h-[calc(100svh-68px)] overflow-y-auto border-t border-[#1C1917]/[0.08] @6xl:hidden">
+              <div className={`${CONTAINER} pb-4 pt-2`}>
+                <ul>
+                  {m.nav.map((item) => (
+                    <li key={item.key}>
+                      <ActionLink
+                        action={{ kind: 'section', target: item.key }}
+                        onNavigate={close}
+                        aria-current={active === item.key ? 'true' : undefined}
+                        className={`-mx-3 flex h-12 items-center justify-between rounded-[16px] px-3 text-[16px] font-medium transition-colors hover:bg-[#F5F2ED] ${C.ink}`}
+                      >
+                        {item.label}
+                        <ArrowRight className={`h-4 w-4 ${C.muted}`} aria-hidden />
+                      </ActionLink>
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-2 @xl:hidden">
+                  <PillLink action={m.headerAction} label={m.headerLabel} variant="primary" size="lg" onNavigate={close} className="flex w-full" />
+                </div>
+              </div>
+            </nav>
+          )}
         </div>
       </header>
     </>

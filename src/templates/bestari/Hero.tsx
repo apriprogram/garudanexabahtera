@@ -1,13 +1,14 @@
 // Hero Bestari — "Canvas" (data-hero-layout="canvas"): SLIDER foto latar selebar layar dari tepi kiri, kanan, dan atas;
-// bilah info + menu pil putih menumpang di atasnya (./Header). Slide 1 = isi hero, hingga 3 slide tambahan
-// (`hero.slides`): foto berganti dengan pudar, label/judul/deskripsi ikut berganti; tombol dan tiga angka (referensi
-// Bienes) tetap. Di bawah garis tipis: nomor slide "01 ── 02 ── 03" dengan bilah progres + tombol sebelumnya/
+// bilah info + navbar transparan menumpang di atasnya (./Header). Slide 1 = isi hero, hingga 3 slide tambahan
+// (`hero.slides`): foto berganti dengan pudar, label/judul/deskripsi ikut berganti; tombol dan tiga angka besar yang
+// menghitung naik saat terlihat (referensi Bienes) tetap. Di bawah garis tipis: nomor slide "01 ── 02 ── 03" dengan bilah progres + tombol sebelumnya/
 // berikutnya/jeda (bulat kaca). Berganti otomatis hanya bila gerak menyala (bukan pratinjau CMS / prefers-reduced-
 // motion); berhenti saat hero disorot atau difokus; panah kiri/kanan saat fokus di kontrol; bisa digeser di HP.
 // Foto slide 1 = LCP (eager + fetchpriority high) dan TIDAK dianimasikan masuk: zoom pelan & teks naik hanya untuk slide
 // yang tampil setelah pergantian. Foto slide lain lazy dan baru dipasang sesudah halaman tampil.
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { CountUp } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { useMotionEnabled } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
@@ -34,13 +35,17 @@ function HeroStats({ m }: { m: BestariModel }) {
   const items = list(m.hero, 'stats', 3).filter((item) => field(item, 'value') || field(item, 'label'));
   if (items.length === 0) return null;
   return (
-    <dl className="grid grid-cols-3 gap-3 @5xl:flex @5xl:justify-end @5xl:gap-0 @5xl:divide-x @5xl:divide-white/20">
+    // Kolom sama lebar dengan garis pemisah tipis; angka besar mengikuti lebar template (cqw) agar 3 angka selalu muat
+    <dl className="grid max-w-[620px] grid-cols-3 gap-4 @6xl:max-w-none @6xl:gap-0">
       {items.map((item, i) => (
-        <div key={`${field(item, 'label')}-${i}`} className="flex min-w-0 flex-col @5xl:px-6 @5xl:last:pr-0 @7xl:px-8">
+        <div key={`${field(item, 'label')}-${i}`} className="flex min-w-0 flex-col @6xl:border-l @6xl:border-white/25 @6xl:pl-6 @7xl:pl-7">
           {/* dt lebih dulu di DOM (urutan dl yang benar), tampil di bawah angka */}
-          <dt className="order-last mt-1.5 text-[12.5px] font-medium leading-snug text-white @3xl:text-[13.5px]">{field(item, 'label')}</dt>
-          <dd className={`${DISPLAY} text-[26px] font-medium leading-none tracking-[-0.03em] tabular-nums text-white @3xl:text-[34px] @6xl:text-[40px]`}>
-            {field(item, 'value')}
+          <dt className="order-last mt-2 text-[13px] font-medium leading-snug text-white/90 @3xl:text-[14.5px]">{field(item, 'label')}</dt>
+          <dd
+            className={`${DISPLAY} text-[34px] font-medium leading-none tracking-[-0.04em] tabular-nums text-white @3xl:text-[46px] @6xl:text-[length:clamp(46px,3.9cqw,68px)]`}
+          >
+            {/* Menghitung naik sekali saat terlihat; gerak mati / pratinjau CMS → angka akhir langsung */}
+            <CountUp value={field(item, 'value')} duration={1800} />
           </dd>
         </div>
       ))}
@@ -262,12 +267,13 @@ export function Hero({ m, overlap }: { m: BestariModel; overlap: boolean }) {
         <div aria-hidden className="bs-hero-scrim absolute inset-0 -z-10" />
 
         <div
-          className={`${CONTAINER} relative flex min-h-[680px] flex-col justify-end pb-5 pt-[176px] @3xl:min-h-[740px] @3xl:pt-[172px] @5xl:min-h-[max(720px,min(100svh,960px))] ${
+          // Jarak atas = bilah info + navbar + ruang napas, agar label & judul tidak pernah tertimpa menu
+          className={`${CONTAINER} relative flex min-h-[680px] flex-col justify-end pb-5 pt-[172px] @3xl:min-h-[740px] @3xl:pt-[180px] @5xl:min-h-[max(720px,min(100svh,960px))] @5xl:pt-[196px] ${
             overlap ? '@5xl:pb-[124px]' : '@5xl:pb-8'
           }`}
         >
-          <div className="grid gap-9 @5xl:grid-cols-12 @5xl:items-end @5xl:gap-10">
-            <div className="min-w-0 @5xl:col-span-8 @7xl:col-span-7">
+          <div className="grid gap-10 @6xl:grid-cols-12 @6xl:items-end @6xl:gap-10">
+            <div className="min-w-0 @6xl:col-span-7">
               {/* Teks semua slide ditumpuk di satu sel grid: tinggi hero = teks terpanjang, jadi isi di bawahnya tidak
                   bergeser saat slide berganti. Teks slide lain tersembunyi dari pembaca layar dan bukan <h1>. Kunci aktif
                   berganti agar animasi naik (.bs-rise, hanya setelah pergantian) diputar ulang; pengumuman pembaca layar
@@ -299,7 +305,7 @@ export function Hero({ m, overlap }: { m: BestariModel; overlap: boolean }) {
                 </div>
               )}
             </div>
-            <div className="min-w-0 @5xl:col-span-4 @7xl:col-span-5">
+            <div className="min-w-0 @6xl:col-span-5">
               <HeroStats m={m} />
             </div>
           </div>
