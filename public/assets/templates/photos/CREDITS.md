@@ -423,3 +423,51 @@ orang tua, dan alumni di demo fiktif dan tidak berhubungan dengan orang atau sek
 | `bestari-ortu-1-*` | Ibu berambut panjang tersenyum (dipotong dari foto keluarga) | https://unsplash.com/photos/GVnag1XQ_4U | Fery Abdurrahman |
 | `bestari-ortu-2-*` | Bapak berkacamata tersenyum (dipotong dari foto dua orang) | https://unsplash.com/photos/Ay3P0TQnzzs | Soya__ bear |
 | `bestari-alumni-1-*` | Perempuan muda berkerudung abu-abu berkacamata | https://unsplash.com/photos/Rjy1a_VmF-U | Ilmi Amali Q.A |
+
+## Velora (Velora Motor Group, fiktif)
+
+Foto suasana 16:9 `-1600.webp` + `-800.webp` (hero, latar test drive); kartu 4:3 / 3:2 / 16:10 `-1200.webp` + `-800.webp`
+(model, teknologi, bento, berita, kartu ulasan); foto tegak 4:5 `-960.webp` + `-800.webp` (bento tinggi, langkah
+kepemilikan); potret testimoni 4:5 `-480.webp` + `-240.webp`. Diambil dari daftar kandidat foto gratis Unsplash (bukan
+Unsplash+) yang dikumpulkan sesi integrasi 2026-10-27, lalu dipotong dan dikompres ke WebP. Emblem, tulisan merek, dan
+plat nomor mobil asli dihapus (OpenCV inpaint) atau dipotong agar tidak ada merek nyata yang terbaca; bentuk mobil tetap
+aslinya. Putaran kedua (2026-10-27) juga menghapus logo di velg (`velora-lumen`, `velora-vanta`), di setir & konsol audio
+(`velora-craft`), di colokan pengisian (`velora-electric`), di lengan robot (`velora-factory`), di tali kartu
+(`velora-research`), dan tulisan nama sirkuit di pintu mobil (`velora-news-1`). `velora-vanta` dan `velora-news-2` tampak
+sebagai render 3D, bukan foto kamera. Nama perusahaan, model (Aster, Kestrel GT, Terra, Lumen, Vanta R), dan orang di
+testimoni fiktif dan tidak berhubungan dengan orang, mobil, atau perusahaan di foto. Fotografer dan lisensi BELUM
+diverifikasi per foto (daftar kandidat tidak mencantumkan nama yang andal): sesi integrasi memeriksa halaman foto dan
+mengisi kolom fotografer.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `velora-hero-*` | Coupe gelap di jalan pegunungan berkelok saat senja | https://unsplash.com/photos/xFgL8xGIGpk | (verifikasi) |
+| `velora-review-*` | Coupe sport hitam di gurun saat matahari terbenam dengan kaktus saguaro | https://unsplash.com/photos/FJ4tgVimLzo | (verifikasi) |
+| `velora-mobility-*` | Pemandangan udara mobil di jalan pegunungan berkelok | https://unsplash.com/photos/l37vZUyjLhg | (verifikasi) |
+| `velora-craft-*` | Interior mobil gelap dengan setir merah-karbon dan konsol logam | https://unsplash.com/photos/dD9TVgCNvq0 | (verifikasi) |
+| `velora-electric-*` | Kabel pengisian tersambung ke port mobil listrik abu-abu | https://unsplash.com/photos/xJLsHl0hIik | (verifikasi) |
+| `velora-aster-*` | Sedan listrik putih menikung di jalan melengkung | https://unsplash.com/photos/fX2Ok_75gbY | (verifikasi) |
+| `velora-kestrel-*` | Coupe grand tourer putih di jembatan batu berkabut | https://unsplash.com/photos/LvKGWsrCUgI | (verifikasi) |
+| `velora-terra-*` | SUV hijau gelap melaju di tikungan gunung bersalju | https://unsplash.com/photos/6nVY4ePU6q0 | (verifikasi) |
+| `velora-lumen-*` | Crossover listrik kompak perak di studio abu-abu | https://unsplash.com/photos/jahkKdBXEVo | (verifikasi) |
+| `velora-vanta-*` | Coupe performa putih bersayap belakang di lantai gelap mengilap | https://unsplash.com/photos/BQwtmVs2K0o | (verifikasi) |
+| `velora-how-*` | SUV biru gelap di jalan hutan yang tersinari matahari | https://unsplash.com/photos/2Mg29ahUawo | (verifikasi) |
+| `velora-research-*` | Tiga insinyur memeriksa data di laptop di samping rig uji | https://unsplash.com/photos/bIltCMXIwRE | (verifikasi) |
+| `velora-factory-*` | Lengan robot mengelas bodi mobil di jalur perakitan pabrik bata | https://unsplash.com/photos/jHZ70nRk7Ns | (verifikasi) |
+| `velora-battery-*` | Mobil listrik putih tersambung ke tiang pengisian yang menampilkan daya | https://unsplash.com/photos/WZz3bISfJa8 | (verifikasi) |
+| `velora-design-*` | Patung mobil dari lapisan berwarna tembaga di latar hitam | https://unsplash.com/photos/chBJuExPzu0 | (verifikasi) |
+| `velora-safety-*` | Close-up lampu depan mobil dengan lensa proyektor | https://unsplash.com/photos/O-9ZolZHZvw | (verifikasi) |
+| `velora-news-1-*` | Coupe sport biru memimpin dua mobil di tikungan sirkuit | https://unsplash.com/photos/WGZudkq0-rI | (verifikasi) |
+| `velora-news-2-*` | Wallbox rumah mengisi SUV di carport dengan panel surya | https://unsplash.com/photos/EGKP0FpNSzI | (verifikasi) |
+| `velora-news-3-*` | Bagian depan mobil perunggu dengan lampu menyala di studio gelap | https://unsplash.com/photos/zSJ5DiS9e7o | (verifikasi) |
+| `velora-cta-*` | Jalan tol kosong menuju pegunungan saat senja dari balik kaca depan | https://unsplash.com/photos/hDEPW9-zzY0 | (verifikasi) |
+| `velora-portrait-1-*` | Perempuan berblazer putih tersenyum duduk di kursi kulit | https://unsplash.com/photos/4mUk_DFImbI | (verifikasi) |
+| `velora-portrait-2-*` | Laki-laki berjanggut bersweter gelap bersedekap | https://unsplash.com/photos/p5BoBF0XJUA | (verifikasi) |
+| `velora-portrait-3-*` | Perempuan berkemeja putih tersenyum di latar terang | https://unsplash.com/photos/1l6UeCc9P9o | (verifikasi) |
+| `velora-portrait-4-*` | Laki-laki berambut gelap bersweter abu-abu tersenyum | https://unsplash.com/photos/7YVZYZeITc8 | (verifikasi) |
+| `velora-portrait-5-*` | Perempuan berambut ikal berjaket garis tersenyum | https://unsplash.com/photos/SJvDxw0azqw | (verifikasi) |
+| `velora-portrait-6-*` | Laki-laki berkacamata berjas biru tua tersenyum | https://unsplash.com/photos/BiN3Bcxndj4 | (verifikasi) |
+| `velora-portrait-7-*` | Perempuan berambut panjang berjas putih tersenyum | https://unsplash.com/photos/SLd8M9knkGc | (verifikasi) |
+| `velora-portrait-8-*` | Laki-laki berkacamata berblazer gelap di kantor | https://unsplash.com/photos/pAtA8xe_iVM | (verifikasi) |
+| `velora-portrait-9-*` | Perempuan berblazer hitam tersenyum di jalan kota | https://unsplash.com/photos/2mMhaoBGjCs | (verifikasi) |
+| `velora-portrait-10-*` | Laki-laki muda berkemeja biru muda di luar ruangan | https://unsplash.com/photos/ksbXoAsU7Bo | (verifikasi) |
