@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-10-25T16:48:13.425Z",
+  "builtAt": "2026-10-26T17:15:24.056Z",
   "origin": "https://garudanexa.com",
   "brandName": "Garuda Nexa",
   "organizationId": "https://garudanexa.com/#organization",
@@ -77,7 +77,6 @@
   },
   "pricingIncludes": [
     "Template website + setup awal",
-    "Domain tahun pertama",
     "Hosting tahun pertama",
     "Sertifikat SSL (HTTPS) tahun pertama"
   ],
@@ -94,7 +93,7 @@
     }
   },
   "assetVersions": {
-    "/og/catalog.jpg": "3c3d84eb",
+    "/og/catalog.jpg": "3c486d23",
     "/og/default.jpg": "c2ca86bb",
     "/og/harga.jpg": "cadd9693",
     "/og/jasa-aplikasi.jpg": "ebad69cf",
@@ -110,6 +109,7 @@
     "/og/panduan.jpg": "a05fe2d7",
     "/og/template-arena-club.jpg": "b01803d7",
     "/og/template-aura-studio.jpg": "bb35a0a8",
+    "/og/template-bestari.jpg": "2435d63c",
     "/og/template-cakrawala.jpg": "00f1caf9",
     "/og/template-corporate-nexa.jpg": "e1900a49",
     "/og/template-finova.jpg": "565ceba1",
@@ -130,6 +130,9 @@
     "/assets/templates/aura-studio-2.webp": "95418b69",
     "/assets/templates/aura-studio-preview.svg": "e3e4b03b",
     "/assets/templates/aura-studio-preview.webp": "551532c4",
+    "/assets/templates/bestari-1.webp": "4ecbc89b",
+    "/assets/templates/bestari-2.webp": "84ba246a",
+    "/assets/templates/bestari-preview.webp": "57e64bbe",
     "/assets/templates/cakrawala-1.webp": "50503864",
     "/assets/templates/cakrawala-2.webp": "8cb21b13",
     "/assets/templates/cakrawala-preview.webp": "cb042b49",

@@ -1,17 +1,18 @@
 # Garuda Nexa
-> Garuda Nexa (PT Garuda Nexa Bahtera, Indonesia) menjual template website siap pakai yang sudah termasuk domain, hosting, dan SSL tahun pertama, serta menerima jasa pembuatan website dan aplikasi mobile Android/iOS custom.
+> Garuda Nexa (PT Garuda Nexa Bahtera, Indonesia) menjual template website siap pakai yang sudah termasuk setup awal, hosting, dan SSL tahun pertama (domain dipilih saat memesan, mulai Rp50.000/tahun), serta menerima jasa pembuatan website dan aplikasi mobile Android/iOS custom.
 
-Diperbarui 25 Oktober 2026.
+Diperbarui 27 Oktober 2026.
 
-- Harga template: Rp990.000–Rp1.790.000 (per 25 Oktober 2026)
-- Sudah termasuk: template website + setup awal, domain tahun pertama, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Harga template: Rp990.000–Rp1.790.000 (per 27 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
+- Sudah termasuk: template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
+- Domain (tidak termasuk harga template; dipilih dan dicek ketersediaannya saat memesan), harga per tahun, sama untuk perpanjangan: .com Rp250.000, .id Rp250.000, .co.id Rp350.000, .my.id Rp50.000, .web.id Rp50.000, .biz.id Rp100.000, .net Rp250.000, .org Rp250.000, .or.id Rp100.000, .sch.id Rp75.000, .ac.id Rp75.000
 - Bayar online via Midtrans; isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
 - Jasa custom: biaya website dan aplikasi custom disampaikan lewat penawaran setelah konsultasi gratis.
 - Jaminan: pesanan yang sudah lunas tetapi ditolak (misalnya domain tidak tersedia) mendapat pengembalian dana penuh ke metode pembayaran semula, paling lambat 7 hari kerja setelah pesanan ditolak.
 - Kontak: WhatsApp +62 851-8800-9152, info@garudanexa.com
 
 ## Template website
-- [Template Website Siap Pakai + Domain & Hosting](https://garudanexa.com/template): Katalog template website siap pakai: company profile, toko online, klinik, klub olahraga, studio yoga & fintech. Harga jelas, lihat demo, bayar online.
+- [Template Website Siap Pakai + Hosting & SSL](https://garudanexa.com/template): Katalog template website siap pakai: company profile, toko online, klinik, klub olahraga, studio yoga & fintech. Harga jelas, lihat demo, bayar online.
 - [Corporate Nexa](https://garudanexa.com/template/corporate-nexa): template Company Profile, Rp1.500.000. Company profile elegan untuk perusahaan yang ingin tampil profesional dan terpercaya.
 - [Startup Clean](https://garudanexa.com/template/startup-clean): template Company Profile, Rp990.000. Company profile modern dan ringan untuk startup, UMKM, dan bisnis digital.
 - [Arena Club](https://garudanexa.com/template/arena-club): template Olahraga & Komunitas, Rp1.290.000. Website klub olahraga yang enerjik untuk lapangan padel, tenis, futsal, badminton, gym, dan akademi olahraga.
@@ -32,7 +33,7 @@ Diperbarui 25 Oktober 2026.
 - [Pesan Website / Aplikasi Mobile Custom](https://garudanexa.com/pesan-custom): Ceritakan kebutuhan website atau aplikasi Android/iOS Anda. Konsultasi gratis, lalu kami kirim penawaran harga dan jadwal sesuai cakupan proyek.
 
 ## Harga & kebijakan
-- [Harga Template Website & Jasa Website 2026](https://garudanexa.com/harga): Harga template website Garuda Nexa mulai Rp990 rb termasuk domain, hosting & SSL tahun pertama. Bandingkan dengan website custom & biaya per tahun.
+- [Harga Template Website & Jasa Website 2026](https://garudanexa.com/harga): Harga template website Garuda Nexa mulai Rp990 rb, termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun. Lengkap dengan biaya perpanjangan.
 - [Syarat & Ketentuan](https://garudanexa.com/syarat-ketentuan): Ketentuan penggunaan garudanexa.com, pembelian template website, dan permintaan jasa website atau aplikasi mobile custom dari PT Garuda Nexa Bahtera.
 - [Kebijakan Privasi](https://garudanexa.com/kebijakan-privasi): Data pribadi yang kami kumpulkan di garudanexa.com, untuk apa dipakai, kepada siapa dibagikan, dan hak Anda sesuai UU Pelindungan Data Pribadi.
 - [Kebijakan Pengembalian Dana](https://garudanexa.com/kebijakan-pengembalian-dana): Kapan dana pembelian template website di Garuda Nexa dikembalikan, berapa jumlahnya, ke mana, dan berapa lama prosesnya.

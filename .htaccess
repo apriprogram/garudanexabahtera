@@ -108,11 +108,28 @@ DirectoryIndex index.html
   RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
   RewriteRule ^(akun|admin|pesan|demo|situs|masuk|daftar|login|auth)(/.*)?$ app.html [L]
 
-  # Domain pembeli (dan host lain): aplikasi satu halaman seperti sebelumnya, rute yang bukan file/folder → index.html
+  # ── Domain pembeli (dan host lain): semua halaman lewat site.php (docs/platform/SITE-POSTS-SEO-SPEC.md §6) ──
+  # site.php membaca path dari REQUEST_URI dan menulis head SEO per domain (title, canonical, OG, JSON-LD, preload),
+  # 301 www/apex ke domain tersimpan, 404 noindex untuk path/host yang tidak dikenal dan situs nonaktif. Host utama
+  # lain (MAIN_HOSTS di .env, mis. garudanexabahtera.web.id) dijawab site.php dengan index.html/file statis seperti dulu.
+  # robots.txt & sitemap.xml per domain (tanpa cek -f: file statis Garuda Nexa memang ada, tetapi bukan milik pembeli).
+  RewriteCond %{HTTP_HOST} !^garudanexa\.com$ [NC]
+  RewriteRule ^(robots\.txt|sitemap\.xml)$ site.php?file=$1 [L]
+  # llms.txt / llms-full.txt berisi fakta Garuda Nexa: bukan untuk domain pembeli
+  RewriteCond %{HTTP_HOST} !^garudanexa\.com$ [NC]
+  RewriteRule ^llms(-full)?\.txt$ site.php?gn404=1 [L]
+  # "/" adalah folder (DirectoryIndex akan menyajikan cangkang statis tanpa head) dan /index.html file nyata: keduanya
+  # ke site.php (/index.html dialihkan 301 ke /)
+  RewriteCond %{HTTP_HOST} !^garudanexa\.com$ [NC]
+  RewriteRule ^$ site.php [L]
+  RewriteCond %{HTTP_HOST} !^garudanexa\.com$ [NC]
+  RewriteRule ^index\.html$ site.php [L]
+  # Rute yang bukan file/folder (/berita, /berita/{slug}, path tak dikenal → 404). Sesudah rewrite site.php adalah
+  # file nyata, jadi aturan ini tidak berputar.
   RewriteCond %{HTTP_HOST} !^garudanexa\.com$ [NC]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ index.html [L]
+  RewriteRule ^ site.php [L]
 
   # Host utama: selebihnya 404 dari seo.php (isi 404.html), bukan R=404 + ErrorDocument (lihat aturan file internal
   # di atas). Query asli dibuang (?gn404=1 menggantikannya), jadi /x?slug=… tidak pernah merender template.

@@ -1,1 +1,0 @@
-import{_n as e,mn as t,rt as n}from"./index-PFMsfxZK.js";function r(r,i){for(let t of r){let r=n(i,t);if(r)return{href:e(r.slug),label:r.title,article:!0}}return{href:t.guides,label:`Panduan website untuk bisnis`,article:!1}}export{r as t};

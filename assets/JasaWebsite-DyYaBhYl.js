@@ -1,0 +1,1 @@
+import{r as e,t}from"./ServicePage-BjciJWdT.js";import{Ct as n}from"./index-CmsEhvdp.js";var r=n();function i(){return(0,r.jsx)(t,{service:e})}export{i as default};
