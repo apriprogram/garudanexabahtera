@@ -16,6 +16,7 @@ import { FINOVA_PHOTOS } from '../finova/photos';
 import { GADGETKU_PHOTOS } from '../gadgetku/photos';
 import { GLOWSTORY_PHOTOS } from '../glowstory/photos';
 import { MADANI_PHOTOS } from '../madani/photos';
+import { PORTLINE_PHOTOS } from '../portline/photos';
 import { SERENITY_PHOTOS } from '../serenity/photos';
 import { TANI_PHOTOS } from '../tanimakmur/photos';
 import { PUNCAK_PHOTOS } from '../puncakgear/photos';
@@ -36,7 +37,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'harbor';
   photos: PhotoSet;
 }
 
@@ -54,6 +55,7 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'madani', component: 'Madani.tsx', heroLayout: 'framed-slider', photos: MADANI_PHOTOS },
   { code: 'cakrawala', component: 'Cakrawala.tsx', heroLayout: 'horizon', photos: CAKRAWALA_PHOTOS },
   { code: 'bestari', component: 'Bestari.tsx', heroLayout: 'canvas', photos: BESTARI_PHOTOS },
+  { code: 'portline', component: 'Portline.tsx', heroLayout: 'harbor', photos: PORTLINE_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */
