@@ -3,7 +3,7 @@
 // Isinya harus sama dengan registri TEMPLATES: nama, tagline, deskripsi (hero.subtitle → footer.description →
 // brand.tagline), logo, dan fitur tulisan. Template baru / konten bawaan berubah → perbarui berkasnya dengan
 //   UPDATE_SITE_DEFAULTS=1 npx vitest run __tests__/backend/site-defaults.test.ts
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -69,21 +69,46 @@ describe('backend/modules/site_defaults.json', () => {
   });
 
   it('ikut ke build: prerender menyalinnya ke modules/ (salinan modules di deploy-cpanel.mjs hanya *.php)', () => {
+    const codes = Object.keys(TEMPLATES);
     const out = mkdtempSync(join(tmpdir(), 'gn-site-defaults-'));
     try {
-      copySiteDefaults(ROOT, out);
+      copySiteDefaults(ROOT, out, codes);
       expect(readFileSync(join(out, 'modules', 'site_defaults.json'), 'utf8')).toBe(readFileSync(FILE, 'utf8'));
       // Berkas kosong / rusak menggagalkan build, bukan head situs pembeli
       const broken = mkdtempSync(join(tmpdir(), 'gn-site-defaults-src-'));
       try {
         mkdirSync(join(broken, 'backend', 'modules'), { recursive: true });
         writeFileSync(join(broken, 'backend', 'modules', 'site_defaults.json'), '{}\n');
-        expect(() => copySiteDefaults(broken, out)).toThrow(/UPDATE_SITE_DEFAULTS=1/);
+        expect(() => copySiteDefaults(broken, out, codes)).toThrow(/UPDATE_SITE_DEFAULTS=1/);
         writeFileSync(join(broken, 'backend', 'modules', 'site_defaults.json'), '{');
-        expect(() => copySiteDefaults(broken, out)).toThrow();
+        expect(() => copySiteDefaults(broken, out, codes)).toThrow();
       } finally {
         rmSync(broken, { recursive: true, force: true });
       }
+    } finally {
+      rmSync(out, { recursive: true, force: true });
+    }
+  });
+
+  it('berkas basi menggagalkan build: kuncinya harus sama dengan kode template di registri bundel SSR', () => {
+    const codes = Object.keys(TEMPLATES);
+    const out = mkdtempSync(join(tmpdir(), 'gn-site-defaults-'));
+    try {
+      // Template baru di registri yang belum masuk berkas
+      expect(() => copySiteDefaults(ROOT, out, [...codes, 'template-baru'])).toThrow(
+        /tidak sama dengan registri template \(belum ada: template-baru\).*UPDATE_SITE_DEFAULTS=1 npx vitest run __tests__\/backend\/site-defaults\.test\.ts/,
+      );
+      // Template yang sudah dihapus dari registri masih ada di berkas
+      expect(() => copySiteDefaults(ROOT, out, codes.slice(1))).toThrow(new RegExp(`\\(tidak ada di registri: ${codes[0]}\\)`));
+      expect(() => copySiteDefaults(ROOT, out, [...codes.slice(1), 'template-baru'])).toThrow(
+        new RegExp(`belum ada: template-baru; tidak ada di registri: ${codes[0]}`),
+      );
+      // Bundel SSR tanpa templateCodes(): tidak bisa dicek, jadi tidak disalin diam-diam
+      expect(() => copySiteDefaults(ROOT, out, undefined)).toThrow(/templateCodes/);
+      expect(() => copySiteDefaults(ROOT, out, [])).toThrow(/templateCodes/);
+      // Urutan kode tidak penting
+      copySiteDefaults(ROOT, out, [...codes].reverse());
+      expect(existsSync(join(out, 'modules', 'site_defaults.json'))).toBe(true);
     } finally {
       rmSync(out, { recursive: true, force: true });
     }

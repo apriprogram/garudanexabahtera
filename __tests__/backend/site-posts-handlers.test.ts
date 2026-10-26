@@ -4,7 +4,8 @@
 // SQL) beserta baris jawabannya. PHP CLI dan Node harus menjawab sama (status, JSON, kode galat), mengirim kueri yang
 // sama dengan parameter yang sama, dan mengunggah/menghapus file yang sama. Kepemilikan situs, situs nonaktif, template
 // tanpa fitur tulisan, slug otomatis, foto lama yang dihapus, perayap yang tidak dihitung, dan file baru yang dibersihkan
-// saat database gagal ikut diuji. Bagian PHP dilewati bila `php` tidak ada.
+// saat database gagal ikut diuji, begitu juga simpan bersamaan dari tab lain (UPDATE bersyarat foto yang tadi dibaca:
+// tulisan hilang → 404, foto/baris SEO berubah → 409, file baru dihapus lagi). Bagian PHP dilewati bila `php` tidak ada.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -80,6 +81,9 @@ const TOKENS: Record<string, { php: string; node: string }> = {
   IMG_NEW: { php: '/assets/sites/7/posts/post_111111111111.png', node: `${S3}/assets/sites/7/posts/post_1700000000001_new001.png` },
   SEO_OLD: { php: '/assets/sites/7/seo/seo_0123456789ab.png', node: `${S3}/assets/sites/7/seo/seo_1700000000000_abc123.png` },
   SEO_NEW: { php: '/assets/sites/7/seo/seo_111111111111.png', node: `${S3}/assets/sites/7/seo/seo_1700000000001_new001.png` },
+  // Foto yang disimpan tab lain di antara baca dan simpan (hanya ada di baris tiruan, tidak di jawaban)
+  IMG_OTHER: { php: '/assets/sites/7/posts/post_222222222222.webp', node: `${S3}/assets/sites/7/posts/post_1700000000002_oth002.webp` },
+  SEO_OTHER: { php: '/assets/sites/7/seo/seo_222222222222.webp', node: `${S3}/assets/sites/7/seo/seo_1700000000002_oth002.webp` },
 };
 
 function materialize<T>(value: T, backend: 'php' | 'node'): T {
@@ -139,6 +143,7 @@ const Q = {
   slugs: 'SELECT slug FROM site_posts WHERE site_id = ? AND id <> ?',
   insert: 'INSERT INTO site_posts (site_id, kind, slug, title,',
   update: 'UPDATE site_posts SET kind = ?, slug = ?, title = ?',
+  recheck: 'SELECT image FROM site_posts WHERE id = ? AND site_id = ? LIMIT 1',
   reread: 'WHERE p.site_id = ? AND p.slug = ? LIMIT 1',
   adminList: 'WHERE p.site_id = ? ORDER BY p.published_at IS NULL DESC',
   deleteViews: 'DELETE FROM site_post_views WHERE post_id = ?',
@@ -149,10 +154,13 @@ const Q = {
   viewUpsert: 'INSERT INTO site_post_views (post_id, site_id, view_count, last_viewed_at)',
   viewCount: 'SELECT view_count FROM site_post_views WHERE post_id = ?',
   seoRow: 'FROM site_seo WHERE site_id = ? LIMIT 1',
-  seoUpsert: 'INSERT INTO site_seo (site_id, title, description, og_image,',
+  seoInsert: 'INSERT INTO site_seo (site_id, title, description, og_image,',
+  seoUpdate: 'UPDATE site_seo SET title = ?, description = ?, og_image = ?',
+  seoRecheck: 'SELECT og_image FROM site_seo WHERE site_id = ? LIMIT 1',
 };
 
-interface Step { q: string; rows?: unknown[]; error?: string }
+/** rows = hasil SELECT; affected = baris yang dikenai INSERT/UPDATE (bawaan 1); duplicate = kunci unik bentrok (1062). */
+interface Step { q: string; rows?: unknown[]; error?: string; affected?: number; duplicate?: boolean }
 interface Case {
   name: string;
   action: string;
@@ -236,6 +244,37 @@ const CASES: Case[] = [
   { name: 'tanpa data tulisan', action: 'customer_save_site_post', input: { site_id: 7, post: 'x' }, steps: [{ q: Q.ownSite, rows: [SITE] }] },
   { name: 'database gagal setelah foto diunggah', action: 'customer_save_site_post', input: { site_id: 7, post: NEW_POST },
     steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.count, rows: [{ n: 0 }] }, { q: Q.slugs, rows: [] }, { q: Q.insert, error: 'boom' }] },
+  // ── Pembeli: simpan bersamaan dari tab lain (UPDATE … AND image <=> foto yang tadi dibaca mengenai 0 baris) ──
+  { name: 'ubah tulisan: dihapus di tab lain saat foto diunggah', action: 'customer_save_site_post',
+    input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: JPEG } },
+    steps: [
+      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [] },
+    ] },
+  { name: 'ubah tulisan: foto diganti di tab lain saat foto diunggah', action: 'customer_save_site_post',
+    input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: JPEG } },
+    steps: [
+      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [{ image: 'IMG_OTHER' }] },
+    ] },
+  { name: 'ubah tulisan: foto baru tidak tersimpan walau foto lama masih sama', action: 'customer_save_site_post',
+    input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: JPEG } },
+    steps: [
+      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [{ image: 'IMG_OLD' }] },
+    ] },
+  { name: 'ubah tulisan tanpa foto baru: foto dihapus di tab lain', action: 'customer_save_site_post',
+    input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' } },
+    steps: [
+      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [{ image: null }] },
+    ] },
+  { name: 'ubah tulisan: isian sama persis (0 baris berubah)', action: 'customer_save_site_post',
+    input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' } },
+    steps: [
+      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [{ image: 'IMG_OLD' }] }, { q: Q.reread, rows: [ROW()] },
+    ] },
   // ── Pembeli: hapus ──
   { name: 'hapus tulisan', action: 'customer_delete_site_post', input: { site_id: 7, post_id: 15 },
     steps: [
@@ -251,11 +290,29 @@ const CASES: Case[] = [
   { name: 'SEO: simpan lengkap dengan gambar baru', action: 'customer_save_site_seo',
     input: { site_id: 7, seo: { title: ' SMA  Al-Hikmah ', description: 'Deskripsi.', og_image: PNG, google_verification: GOOGLE_TAG, bing_verification: '', index_mode: 'noindex', schema_type: 'HighSchool' } },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [SEO_ROW()] }, { q: Q.seoUpsert },
+      { q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [SEO_ROW()] }, { q: Q.seoUpdate },
       { q: Q.seoRow, rows: [SEO_ROW({ title: 'SMA Al-Hikmah', description: 'Deskripsi.', og_image: 'SEO_NEW', google_verification: 'Xy_1-abcdefghijklmnopqrstuvwxyzABCDEFGHIJK', index_mode: 'noindex', schema_type: 'HighSchool' })] },
     ] },
   { name: 'SEO: sebagian (index_mode saja)', action: 'customer_save_site_seo', input: { site_id: 7, seo: { index_mode: 'index' } },
-    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [SEO_ROW()] }, { q: Q.seoUpsert }, { q: Q.seoRow, rows: [SEO_ROW({ index_mode: 'index' })] }] },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [SEO_ROW()] }, { q: Q.seoUpdate }, { q: Q.seoRow, rows: [SEO_ROW({ index_mode: 'index' })] }] },
+  { name: 'SEO: simpan pertama (belum ada baris)', action: 'customer_save_site_seo', input: { site_id: 7, seo: { title: 'SMA Al-Hikmah', index_mode: 'index' } },
+    steps: [
+      { q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [] }, { q: Q.seoInsert },
+      { q: Q.seoRow, rows: [SEO_ROW({ title: 'SMA Al-Hikmah', description: '', og_image: null, google_verification: '', index_mode: 'index' })] },
+    ] },
+  // ── SEO: simpan bersamaan dari tab lain ──
+  { name: 'SEO: gambar diganti di tab lain saat gambar diunggah', action: 'customer_save_site_seo', input: { site_id: 7, seo: { og_image: PNG } },
+    steps: [
+      { q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [SEO_ROW()] }, { q: Q.seoUpdate, affected: 0 },
+      { q: Q.seoRecheck, rows: [{ og_image: 'SEO_OTHER' }] },
+    ] },
+  { name: 'SEO: baris dibuat tab lain (duplikat)', action: 'customer_save_site_seo', input: { site_id: 7, seo: { og_image: PNG } },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [] }, { q: Q.seoInsert, duplicate: true }] },
+  { name: 'SEO: isian sama persis (0 baris berubah)', action: 'customer_save_site_seo', input: { site_id: 7, seo: { index_mode: 'auto' } },
+    steps: [
+      { q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [SEO_ROW()] }, { q: Q.seoUpdate, affected: 0 },
+      { q: Q.seoRecheck, rows: [{ og_image: 'SEO_OLD' }] }, { q: Q.seoRow, rows: [SEO_ROW()] },
+    ] },
   { name: 'SEO: tidak valid', action: 'customer_save_site_seo', input: { site_id: 7, seo: { google_verification: 'pendek', schema_type: 'Church' } },
     steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [] }] },
   { name: 'SEO: situs nonaktif', action: 'customer_save_site_seo', input: { site_id: 7, seo: { index_mode: 'index' } },
@@ -308,7 +365,9 @@ async function runNode(c: Case): Promise<Outcome> {
       at++;
       queries.push({ q: step.q, params: values });
       if (step.error) throw new Error(step.error);
-      return [step.rows ?? { affectedRows: 1 }];
+      // Kunci unik bentrok: galat mysql2 yang diubah dbRun menjadi 409
+      if (step.duplicate) throw Object.assign(new Error("Duplicate entry '7' for key 'PRIMARY'"), { code: 'ER_DUP_ENTRY', errno: 1062 });
+      return [step.rows ?? { affectedRows: step.affected ?? 1 }];
     },
   };
   s3.uploads.length = 0;
@@ -415,7 +474,10 @@ describe('site_posts.js: aksi lengkap', () => {
   it('ubah tulisan: foto tetap / diganti (lama dihapus) / dihapus', () => {
     const keep = nodeOf('ubah tulisan: foto tetap, jadi draf');
     expect([keep.status, keep.uploads, keep.deletes]).toEqual([200, [], []]);
-    expect(keep.queries[3].params.slice(-10)).toEqual(['/assets/sites/7/posts/post_OLD.jpg', 'Piala', '', 'draft', '2026-10-20', '', '', 1, 15, 7]);
+    // Parameter terakhir = foto yang tadi dibaca (WHERE … AND image <=> ?)
+    expect(keep.queries[3].params.slice(-11)).toEqual([
+      '/assets/sites/7/posts/post_OLD.jpg', 'Piala', '', 'draft', '2026-10-20', '', '', 1, 15, 7, '/assets/sites/7/posts/post_OLD.jpg',
+    ]);
     expect(keep.body.post).toMatchObject({ status: 'draft', noindex: true, view_count: 12 });
 
     const replaced = nodeOf('ubah tulisan: foto diganti');
@@ -425,7 +487,7 @@ describe('site_posts.js: aksi lengkap', () => {
     expect([removed.status, removed.uploads, removed.deletes]).toEqual([200, [], ['/assets/sites/7/posts/post_OLD.jpg']]);
     expect(removed.queries[3].params.slice(0, 2)).toEqual(['berita', 'juara-olimpiade-sains']);
     expect(removed.queries[3].params[7]).toBeNull();
-    expect(removed.queries[3].params.slice(-2)).toEqual([15, 7]);
+    expect(removed.queries[3].params.slice(-3)).toEqual([15, 7, '/assets/sites/7/posts/post_OLD.jpg']);
   });
 
   it('simpan ditolak: slug dipakai, validasi, batas 500, tulisan tidak ada, tanpa data', () => {
@@ -452,6 +514,30 @@ describe('site_posts.js: aksi lengkap', () => {
     expect(out.deletes).toEqual(['/assets/sites/7/posts/post_NEW.png']);
   });
 
+  it('simpan bersamaan di tab lain: tulisan hilang 404, foto berubah 409, foto baru request ini dihapus lagi', () => {
+    const CHANGED = { error: 'Tulisan baru saja diubah di tab lain. Muat ulang lalu coba lagi.', code: 'POST_CHANGED' };
+    const NEW_JPG = '/assets/sites/7/posts/post_NEW.jpg';
+    const gone = nodeOf('ubah tulisan: dihapus di tab lain saat foto diunggah');
+    expect([gone.status, gone.body]).toEqual([404, { error: 'Tulisan tidak ditemukan.', code: 'POST_NOT_FOUND' }]);
+    expect([gone.uploads, gone.deletes]).toEqual([[['sites/7/posts', 'post']], [NEW_JPG]]);
+    expect(gone.queries.map((q) => q.q)).toEqual([Q.ownSite, Q.existing, Q.slugs, Q.update, Q.recheck]);
+    expect(gone.queries[3].params.slice(-3)).toEqual([15, 7, '/assets/sites/7/posts/post_OLD.jpg']);
+    expect(gone.queries[4].params).toEqual([15, 7]);
+
+    // Foto baru dihapus; foto lama dan foto tab lain tidak disentuh
+    const changed = nodeOf('ubah tulisan: foto diganti di tab lain saat foto diunggah');
+    expect([changed.status, changed.body, changed.deletes]).toEqual([409, CHANGED, [NEW_JPG]]);
+    const unsaved = nodeOf('ubah tulisan: foto baru tidak tersimpan walau foto lama masih sama');
+    expect([unsaved.status, unsaved.body, unsaved.deletes]).toEqual([409, CHANGED, [NEW_JPG]]);
+    const keepChanged = nodeOf('ubah tulisan tanpa foto baru: foto dihapus di tab lain');
+    expect([keepChanged.status, keepChanged.body, keepChanged.uploads, keepChanged.deletes]).toEqual([409, CHANGED, [], []]);
+
+    // 0 baris karena isian sama persis (mysqli menghitung baris yang berubah saja): tetap berhasil
+    const same = nodeOf('ubah tulisan: isian sama persis (0 baris berubah)');
+    expect([same.status, same.uploads, same.deletes]).toEqual([200, [], []]);
+    expect(same.body.post).toMatchObject({ id: 15, slug: 'juara-olimpiade', image: '/assets/sites/7/posts/post_OLD.jpg' });
+  });
+
   it('hapus tulisan beserta jumlah dilihat dan fotonya', () => {
     const out = nodeOf('hapus tulisan');
     expect([out.status, out.body, out.deletes]).toEqual([200, { success: true }, ['/assets/sites/7/posts/post_OLD.jpg']]);
@@ -474,19 +560,48 @@ describe('site_posts.js: aksi lengkap', () => {
     expect(full.uploads).toEqual([['sites/7/seo', 'seo']]);
     expect(full.deletes).toEqual(['/assets/sites/7/seo/seo_OLD.png']);
     const values = ['SMA Al-Hikmah', 'Deskripsi.', '/assets/sites/7/seo/seo_NEW.png', 'Xy_1-abcdefghijklmnopqrstuvwxyzABCDEFGHIJK', '', 'noindex', 'HighSchool'];
-    expect(full.queries[2].params).toEqual([7, ...values, ...values]);
+    // UPDATE … WHERE site_id = ? AND og_image <=> gambar yang tadi dibaca
+    expect(full.queries[2].params).toEqual([...values, 7, '/assets/sites/7/seo/seo_OLD.png']);
     expect(full.body.status).toEqual({ indexable: false, reasons: ['manual_noindex'] });
     expect(full.body.seo!.updated_at).toBe('2025-10-25T09:00:00+07:00');
 
     const partial = nodeOf('SEO: sebagian (index_mode saja)');
     const kept = ['SMA Al-Hikmah Bogor', 'Sekolah Islam di Bogor.', '/assets/sites/7/seo/seo_OLD.png', 'abcdefghijABCDEFGHIJ_-123', '', 'index', ''];
-    expect(partial.queries[2].params).toEqual([7, ...kept, ...kept]);
+    expect(partial.queries[2].params).toEqual([...kept, 7, '/assets/sites/7/seo/seo_OLD.png']);
     expect([partial.uploads, partial.deletes]).toEqual([[], []]);
 
     const invalid = nodeOf('SEO: tidak valid');
     expect(invalid.status).toBe(400);
     expect(Object.keys(invalid.body.errors!)).toEqual(['google_verification', 'schema_type']);
     expect(nodeOf('SEO: tanpa data').body).toEqual({ error: 'Pengaturan SEO wajib dikirim.', code: 'VALIDATION' });
+  });
+
+  it('SEO bersamaan di tab lain: baris pertama INSERT biasa, gambar/baris berubah → 409 dan gambar baru dihapus', () => {
+    const first = nodeOf('SEO: simpan pertama (belum ada baris)');
+    expect(first.status).toBe(200);
+    expect(first.queries.map((q) => q.q)).toEqual([Q.ownSite, Q.seoRow, Q.seoInsert, Q.seoRow]);
+    expect(first.queries[2].params).toEqual([7, 'SMA Al-Hikmah', '', null, '', '', 'index', '']);
+    expect(first.body.seo).toMatchObject({ title: 'SMA Al-Hikmah', og_image: null, index_mode: 'index' });
+
+    const CHANGED = { error: 'Pengaturan SEO baru saja diubah di tab lain. Muat ulang lalu coba lagi.', code: 'SEO_CHANGED' };
+    const NEW_PNG = '/assets/sites/7/seo/seo_NEW.png';
+    const changed = nodeOf('SEO: gambar diganti di tab lain saat gambar diunggah');
+    expect([changed.status, changed.body, changed.uploads, changed.deletes]).toEqual([409, CHANGED, [['sites/7/seo', 'seo']], [NEW_PNG]]);
+    expect(changed.queries[3].params).toEqual([7]);
+    const dup = nodeOf('SEO: baris dibuat tab lain (duplikat)');
+    expect([dup.status, dup.body, dup.deletes]).toEqual([409, CHANGED, [NEW_PNG]]);
+
+    const same = nodeOf('SEO: isian sama persis (0 baris berubah)');
+    expect([same.status, same.uploads, same.deletes]).toEqual([200, [], []]);
+    expect(same.body.seo!.index_mode).toBe('auto');
+  });
+
+  it('UPDATE bersyarat foto yang tadi dibaca, tanpa upsert, di kedua modul', () => {
+    for (const source of [read('backend', 'modules', 'site_posts.php'), read('backend', 'modules', 'site_posts.js')]) {
+      expect(source).toContain('WHERE id = ? AND site_id = ? AND image <=> ?');
+      expect(source).toContain('WHERE site_id = ? AND og_image <=> ?');
+      expect(source).not.toContain('ON DUPLICATE KEY UPDATE title');
+    }
   });
 
   it('publik: SEO tanpa kode verifikasi, daftar & tulisan terbit, situs nonaktif 404', () => {
@@ -552,8 +667,12 @@ function db_next(string $sql, array $params) {
     $GLOBALS['__at']++;
     $GLOBALS['__queries'][] = ['q' => $step['q'], 'params' => array_values($params)];
     if (isset($step['error'])) throw new Exception($step['error']);
+    // Kunci unik bentrok: db_run di api.php mengubah galat MySQL 1062 menjadi ApiError 409
+    if (!empty($step['duplicate'])) throw new ApiError('Data yang sama sudah ada (duplikat).', 409);
+    $GLOBALS['__affected'] = $step['affected'] ?? 1;
     return $step;
 }
+function db_affected_rows() { return (int)$GLOBALS['__affected']; }
 function db_one($conn, $sql, array $params = []) { return db_next($sql, $params)['rows'][0] ?? null; }
 function db_all($conn, $sql, array $params = []) { return db_next($sql, $params)['rows'] ?? []; }
 function db_run($conn, $sql, array $params = []) { db_next($sql, $params); return true; }
@@ -571,6 +690,7 @@ $out = ['today' => sp_today(), 'results' => []];
 foreach (json_decode(stream_get_contents(STDIN), true) as $case) {
     $GLOBALS['__steps'] = $case['steps'];
     $GLOBALS['__at'] = 0;
+    $GLOBALS['__affected'] = 0;
     $GLOBALS['__queries'] = [];
     $GLOBALS['__uploads'] = [];
     $GLOBALS['__deletes'] = [];

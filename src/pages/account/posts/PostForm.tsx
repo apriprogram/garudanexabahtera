@@ -2,7 +2,8 @@
 // Validasi sama dengan server (postModel.ts); error per kolom dari server tampil di bawah kolomnya dan kolom error pertama
 // difokuskan. Status dipilih lewat tombol: "Simpan draf" / "Terbitkan" (draf), "Simpan perubahan" / "Jadikan draf"
 // (sudah terbit). Bagian "SEO (opsional)" bisa dilipat. Selama ada perubahan belum disimpan, useLeaveGuard menahan
-// perpindahan halaman.
+// perpindahan halaman. Selama foto masih diproses, simpan (tombol & Ctrl+S) ditahan agar foto tidak tertinggal; isian
+// yang berubah selama permintaan simpan berjalan tidak ditimpa salinan server (mergeSavedDraft).
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ExternalLink, LoaderCircle, Search, Trash2 } from 'lucide-react';
@@ -37,6 +38,7 @@ import {
   inputFromDraft,
   isPostField,
   isSvgDataUri,
+  mergeSavedDraft,
   relativeTime,
   trimSlug,
   validatePostDraft,
@@ -52,6 +54,7 @@ const LEAVE_MESSAGE = 'Perubahan yang belum disimpan akan hilang. Tetap tinggalk
 const IMAGE_PATH = 'post.image';
 const PHOTO_HELP =
   'Foto mendatar 4:3, mis. 1200×900 px. Gunakan JPG, PNG, atau WEBP (SVG tidak untuk foto); foto besar dikompres menjadi WebP/JPEG.';
+const PHOTO_BUSY = 'Tunggu foto selesai diproses…';
 
 /** id elemen setiap kolom (label, pesan error, fokus ke error pertama). */
 const FIELD_ID: Record<PostField, string> = {
@@ -104,6 +107,8 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
   const [errors, setErrors] = useState<PostErrors>({});
   const [formError, setFormError] = useState('');
   const [savingAs, setSavingAs] = useState<SitePostStatus | null>(null);
+  // Foto sedang diperkecil di klien (ImageField): simpan ditahan sampai selesai
+  const [photoBusy, setPhotoBusy] = useState(false);
   // Bagian SEO terbuka sejak awal bila tulisan sudah punya isian SEO
   const [seoOpen, setSeoOpen] = useState(() => !!(initialPost && (initialPost.seo_title || initialPost.seo_description || initialPost.noindex)));
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -159,6 +164,10 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
 
   const save = async (status: SitePostStatus) => {
     if (saving || readOnly) return;
+    if (photoBusy) {
+      showToast('info', PHOTO_BUSY);
+      return;
+    }
     if (saved && !dirty && status === saved.status) {
       showToast('info', 'Belum ada perubahan untuk disimpan.');
       return;
@@ -174,10 +183,12 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
     }
 
     setSavingAs(status);
+    // Isian yang dikirim: pembanding bila isian berubah lagi selama permintaan berjalan
+    const sent = draft;
     try {
       const res = await apiPost<{ post: SitePostAdmin }>('customer_save_site_post', {
         site_id: site.id,
-        post: inputFromDraft(draft, kind, status, saved?.id),
+        post: inputFromDraft(sent, kind, status, saved?.id),
       });
       const post = res.post;
       const created = !saved;
@@ -185,7 +196,7 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
       const next = draftFromPost(post);
       setSaved(post);
       setInitial(next);
-      setDraft(next);
+      setDraft((current) => mergeSavedDraft(sent, current, next));
       setErrors({});
       onSaved(post, created);
       const view = { label: 'Lihat', onClick: () => window.open(post.url, '_blank', 'noopener,noreferrer') };
@@ -376,6 +387,7 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
               onChange={changeImage}
               error={errors.image}
               disabled={locked}
+              onProcessingChange={setPhotoBusy}
             />
             <Field
               id={FIELD_ID.image_alt}
@@ -670,40 +682,39 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
 
             {!readOnly && (
               <div className="mt-5 flex flex-col gap-2">
-                <button type="button" className="btn btn-primary w-full" onClick={() => void save('published')} disabled={saving || atLimit}>
+                <button type="button" className="btn btn-primary w-full" onClick={() => void save('published')} disabled={saving || atLimit || photoBusy}>
                   {savingAs === 'published' && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />}
                   {savingAs === 'published' ? 'Menyimpan...' : published ? 'Simpan perubahan' : 'Terbitkan'}
                 </button>
-                <button type="button" className="btn btn-outline w-full" onClick={() => void save('draft')} disabled={saving || atLimit}>
+                <button type="button" className="btn btn-outline w-full" onClick={() => void save('draft')} disabled={saving || atLimit || photoBusy}>
                   {savingAs === 'draft' && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />}
                   {savingAs === 'draft' ? 'Menyimpan...' : published ? 'Jadikan draf' : 'Simpan draf'}
                 </button>
                 <p className="text-center text-xs text-subtle" aria-live="polite">
-                  {dirty ? 'Ada perubahan yang belum disimpan.' : saved ? 'Semua perubahan tersimpan.' : ''}
+                  {photoBusy ? PHOTO_BUSY : dirty ? 'Ada perubahan yang belum disimpan.' : saved ? 'Semua perubahan tersimpan.' : ''}
                 </p>
               </div>
             )}
 
-            {(published || (saved && !readOnly)) && (
+            {/* Situs nonaktif tidak bisa dibuka siapa pun: tanpa "Lihat di situs" (dan tanpa Hapus, hanya-baca) */}
+            {saved && !readOnly && (
               <div className="mt-3 flex flex-col gap-1 border-t border-line pt-3">
-                {published && saved && (
+                {published && (
                   <a href={saved.url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm w-full">
                     <ExternalLink className="h-4 w-4" aria-hidden />
                     Lihat di situs
                     <span className="sr-only">(tab baru)</span>
                   </a>
                 )}
-                {saved && !readOnly && (
-                  <button
-                    type="button"
-                    onClick={() => setDeleteOpen(true)}
-                    disabled={saving}
-                    className="btn btn-ghost btn-sm w-full text-danger-700 hover:bg-danger-50 hover:text-danger-700"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden />
-                    Hapus {copy.noun}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setDeleteOpen(true)}
+                  disabled={saving}
+                  className="btn btn-ghost btn-sm w-full text-danger-700 hover:bg-danger-50 hover:text-danger-700"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                  Hapus {copy.noun}
+                </button>
               </div>
             )}
           </section>

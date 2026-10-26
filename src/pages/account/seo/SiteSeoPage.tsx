@@ -2,7 +2,9 @@
 // Kartu status (bisa tampil di Google, atau alasannya beserta cara memperbaikinya), lalu form: judul & deskripsi di
 // Google (dengan pratinjau cuplikan), gambar saat dibagikan, tampil di Google (Otomatis/Ya/Tidak), jenis organisasi, dan
 // kode verifikasi Google Search Console / Bing. Di samping: alamat sitemap & robots.txt, dan panduan singkat
-// mendaftarkan situs ke Google. Selama ada perubahan belum disimpan, useLeaveGuard menahan perpindahan halaman.
+// mendaftarkan situs ke Google. Selama ada perubahan belum disimpan, useLeaveGuard menahan perpindahan halaman. Selama
+// gambar masih diproses, simpan (tombol & Ctrl+S) ditahan; isian yang berubah selama permintaan simpan berjalan tidak
+// ditimpa salinan server (mergeSavedDraft).
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CircleCheck, ExternalLink, FileCode, Globe, LoaderCircle, TriangleAlert } from 'lucide-react';
@@ -21,7 +23,7 @@ import { useLeaveGuard } from '../cms/useLeaveGuard';
 import { useToast } from '../cms/useToast';
 import { Field } from '../components/Field';
 import { useDocumentTitle } from '../components/payment';
-import { charCount, cleanLine, isSvgDataUri } from '../posts/postModel';
+import { charCount, cleanLine, isSvgDataUri, mergeSavedDraft } from '../posts/postModel';
 import { hasPostsFeature, siteLinks } from '../posts/siteLinks';
 import { PageContainer, SitePageHeader, SitePageSkeleton, SuspendedNotice } from '../posts/SitePage';
 import { parseSiteId, useSiteLoader } from '../posts/useSiteLoader';
@@ -46,6 +48,7 @@ const LEAVE_MESSAGE = 'Perubahan yang belum disimpan akan hilang. Tetap tinggalk
 const IMAGE_PATH = 'seo.og_image';
 const SEARCH_CONSOLE_URL = 'https://search.google.com/search-console';
 const SVG_IMAGE_ERROR = 'SVG tidak bisa dipakai untuk gambar ini. Gunakan JPG, PNG, atau WEBP.';
+const IMAGE_BUSY = 'Tunggu gambar selesai diproses…';
 
 const fetchSeo = (siteId: number) => apiGet<SiteSeoResponse>('customer_get_site_seo', { site_id: siteId });
 
@@ -108,6 +111,8 @@ function SeoForm({ site, initial, onSuspended }: SeoFormProps) {
   const [errors, setErrors] = useState<SeoErrors>({});
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  // Gambar saat dibagikan sedang diperkecil di klien (ImageField): simpan ditahan sampai selesai
+  const [imageBusy, setImageBusy] = useState(false);
   const { toast, show: showToast, dismiss: dismissToast } = useToast();
   const formErrorRef = useRef<HTMLDivElement>(null);
 
@@ -134,6 +139,10 @@ function SeoForm({ site, initial, onSuspended }: SeoFormProps) {
 
   const save = async () => {
     if (saving || readOnly) return;
+    if (imageBusy) {
+      showToast('info', IMAGE_BUSY);
+      return;
+    }
     if (!dirty) {
       showToast('info', 'Belum ada perubahan untuk disimpan.');
       return;
@@ -149,12 +158,14 @@ function SeoForm({ site, initial, onSuspended }: SeoFormProps) {
     }
 
     setSaving(true);
+    // Isian yang dikirim: pembanding bila isian berubah lagi selama permintaan berjalan
+    const sent = draft;
     try {
-      const res = await apiPost<SiteSeoResponse>('customer_save_site_seo', { site_id: site.id, seo: inputFromSeoDraft(draft) });
+      const res = await apiPost<SiteSeoResponse>('customer_save_site_seo', { site_id: site.id, seo: inputFromSeoDraft(sent) });
       const next = draftFromSeo(res.seo);
       setResponse(res);
       setSaved(next);
-      setDraft(next);
+      setDraft((current) => mergeSavedDraft(sent, current, next));
       setErrors({});
       showToast('success', res.status.indexable ? 'Pengaturan SEO disimpan. Situs Anda bisa muncul di Google.' : 'Pengaturan SEO disimpan.');
     } catch (err) {
@@ -313,6 +324,7 @@ function SeoForm({ site, initial, onSuspended }: SeoFormProps) {
               }}
               error={errors.og_image}
               disabled={locked}
+              onProcessingChange={setImageBusy}
             />
           </FormCard>
 
@@ -429,10 +441,10 @@ function SeoForm({ site, initial, onSuspended }: SeoFormProps) {
           {!readOnly && (
             <div className="flex flex-col gap-3 rounded-[24px] bg-surface p-4 ring-1 ring-inset ring-line sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <p className="text-sm text-muted" aria-live="polite">
-                {dirty ? 'Ada perubahan yang belum disimpan.' : 'Semua perubahan sudah tersimpan.'}{' '}
+                {imageBusy ? IMAGE_BUSY : dirty ? 'Ada perubahan yang belum disimpan.' : 'Semua perubahan sudah tersimpan.'}{' '}
                 <span className="max-sm:hidden">Tekan Ctrl + S untuk menyimpan cepat.</span>
               </p>
-              <button type="button" onClick={() => void save()} disabled={!dirty || saving} className="btn btn-primary">
+              <button type="button" onClick={() => void save()} disabled={!dirty || saving || imageBusy} className="btn btn-primary">
                 {saving && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />}
                 {saving ? 'Menyimpan...' : 'Simpan pengaturan'}
               </button>

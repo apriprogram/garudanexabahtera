@@ -10,6 +10,7 @@ import {
   HTACCESS_MAX_LINE,
   HTACCESS_ROUTES_PER_RULE,
   PRELOAD_OMIT_SETTINGS,
+  SITE_DEFAULTS_UPDATE,
   USER_AGENT,
   checkPage,
   chunksFor,
@@ -487,6 +488,18 @@ describe('server render (src/entry-server.tsx)', () => {
     expect(lean.html).toBe(full.html);
     expect(full.html).not.toContain('Samudra');
   }, 30_000);
+
+  it('gives prerender the template registry codes, which match backend/modules/site_defaults.json', async () => {
+    const codes = await ssr.templateCodes();
+    const { TEMPLATES } = await import('../../src/templates');
+    expect(codes).toEqual(Object.keys(TEMPLATES));
+    const defaults = JSON.parse(readFileSync(join(ROOT, 'backend', 'modules', 'site_defaults.json'), 'utf8')) as Record<string, unknown>;
+    // Stale file → copySiteDefaults fails the deploy (rules in __tests__/backend/site-defaults.test.ts)
+    expect(Object.keys(defaults).sort()).toEqual([...codes].sort());
+    const source = readFileSync(join(ROOT, 'scripts', 'prerender.mjs'), 'utf8');
+    expect(source).toContain('copySiteDefaults(root, outDir, await ssr.templateCodes?.());');
+    expect(SITE_DEFAULTS_UPDATE).toBe('UPDATE_SITE_DEFAULTS=1 npx vitest run __tests__/backend/site-defaults.test.ts');
+  }, 180_000); // registri memuat semua komponen template (lambat di transform pertama)
 
   it('builds the seo.php context from the same TypeScript head (Organization/WebSite nodes)', () => {
     const data = ssr.seoDataFromApi(FIXTURE_API, FIXTURE_BUILT_AT);

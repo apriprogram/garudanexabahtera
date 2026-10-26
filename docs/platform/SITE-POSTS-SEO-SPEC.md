@@ -112,6 +112,7 @@ Konvensi mengikuti `guides.*`:
 - Situs bukan milik pemanggil atau tidak ada: 404 `SITE_NOT_FOUND`.
 - Situs nonaktif saat menulis: 409 `SITE_SUSPENDED`.
 - Template tanpa fitur tulisan: 403 `POSTS_UNAVAILABLE`, untuk aksi tulisan saja (SEO berlaku untuk semua template).
+- Tulisan atau SEO diubah tab lain di tengah simpan: 409 `POST_CHANGED` / `SEO_CHANGED` ("… baru saja diubah di tab lain. Muat ulang lalu coba lagi."). Foto baru yang sudah terunggah dihapus lagi.
 
 ### 4.1 Aksi pelanggan (`CUSTOMER_ACTIONS`, pakai token)
 Setiap handler:

@@ -15,9 +15,9 @@
 // backend/site.php (kepala halaman, robots.txt dan sitemap.xml domain pembeli) juga me-require file ini untuk konstanta
 // dan fungsi murni (sp_*_out, sp_index_reasons, sp_default_name, kolom SP_*_COLUMNS), jadi file ini tidak boleh punya
 // efek samping saat di-include: hanya konstanta dan fungsi.
-// Uses from api.php: ApiError, db_run/db_all/db_one, in_str/in_int, client_ip, rate_limit_wait/rate_limit_hit,
-// too_many_attempts, parse_upload, save_base64_asset, delete_local_asset; from templates.php: pf_require_customer,
-// pf_customer_site, pf_delete_generated.
+// Uses from api.php: ApiError, db_run/db_all/db_one/db_affected_rows, in_str/in_int, client_ip,
+// rate_limit_wait/rate_limit_hit, too_many_attempts, parse_upload, save_base64_asset, delete_local_asset; from
+// templates.php: pf_require_customer, pf_customer_site, pf_delete_generated.
 //
 // Panjang dihitung dalam karakter (mb_strlen = code point, sama dengan [...s].length di site_posts.js). Waktu keluar
 // sebagai ISO 8601 WIB (2026-10-26T09:30:00+07:00) dari UNIX_TIMESTAMP(), jadi tidak bergantung zona waktu sesi MySQL.
@@ -83,6 +83,8 @@ const SP_SITE_SUSPENDED = 'Situs sedang dinonaktifkan sehingga isinya tidak bisa
 const SP_POSTS_UNAVAILABLE = 'Template situs ini belum mendukung berita & pengumuman.';
 const SP_SLUG_TAKEN = 'Slug sudah dipakai tulisan lain di situs ini.';
 const SP_POST_LIMIT = 'Situs ini sudah punya 500 tulisan, jumlah maksimal. Hapus tulisan lama sebelum menulis yang baru.';
+const SP_POST_CHANGED = 'Tulisan baru saja diubah di tab lain. Muat ulang lalu coba lagi.';
+const SP_SEO_CHANGED = 'Pengaturan SEO baru saja diubah di tab lain. Muat ulang lalu coba lagi.';
 
 // Kolom SELECT tulisan (alias tabel p; tambah LEFT JOIN site_post_views v untuk SP_ADMIN_COLUMNS). Dipakai juga site.php
 // supaya data preload sama persis dengan jawaban API.
@@ -288,16 +290,20 @@ function sp_customer_save_site_post(mysqli $conn, array $input, ?array $user): a
     ];
     try {
         if ($existing) {
+            // Hanya menimpa foto yang tadi dibaca (image <=> foto awal): simpan bersamaan dari tab lain tidak meninggalkan
+            // file yatim dan tidak merujuk foto yang sudah dihapus
             db_run($conn, "UPDATE site_posts SET kind = ?, slug = ?, title = ?, excerpt = ?, body = ?, category = ?, badge = ?, image = ?,
                            image_alt = ?, link_url = ?, status = ?, published_at = ?, seo_title = ?, seo_description = ?, noindex = ?
-                           WHERE id = ? AND site_id = ?", array_merge($values, [$id, $siteId]));
+                           WHERE id = ? AND site_id = ? AND image <=> ?", array_merge($values, [$id, $siteId, $existing['image']]));
+            if (db_affected_rows() === 0) sp_check_post_update($conn, $id, $siteId, $existing['image'], $newFile !== null);
         } else {
             db_run($conn, "INSERT INTO site_posts (site_id, kind, slug, title, excerpt, body, category, badge, image, image_alt, link_url,
                            status, published_at, seo_title, seo_description, noindex) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 array_merge([$siteId], $values));
         }
     } catch (Throwable $e) {
-        // Tulisan tidak tersimpan: foto yang baru diunggah request ini tidak dirujuk apa pun
+        // Tulisan tidak tersimpan (database gagal, atau tulisan dihapus / fotonya diubah di tab lain): foto yang baru
+        // diunggah request ini tidak dirujuk apa pun
         if ($newFile !== null) delete_local_asset($newFile, $section);
         throw $e;
     }
@@ -346,7 +352,8 @@ function sp_customer_save_site_seo(mysqli $conn, array $input, ?array $user): ar
     $siteId = (int)$site['id'];
     $seoInput = sp_object($input['seo'] ?? null);
     if ($seoInput === null) throw new ApiError('Pengaturan SEO wajib dikirim.', 400, 'VALIDATION');
-    $current = sp_seo_settings_out(sp_seo_row($conn, $siteId));
+    $stored = sp_seo_row($conn, $siteId);
+    $current = sp_seo_settings_out($stored);
     [$seo, $errors] = sp_validate_seo($seoInput, $current);
     if ($errors) throw new ApiError(reset($errors), 400, 'VALIDATION', $errors);
 
@@ -361,11 +368,21 @@ function sp_customer_save_site_seo(mysqli $conn, array $input, ?array $user): ar
     }
     $values = [$seo['title'], $seo['description'], $image, $seo['google_verification'], $seo['bing_verification'], $seo['index_mode'], $seo['schema_type']];
     try {
-        db_run($conn, "INSERT INTO site_seo (site_id, title, description, og_image, google_verification, bing_verification, index_mode, schema_type)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE title = ?, description = ?, og_image = ?,
-                       google_verification = ?, bing_verification = ?, index_mode = ?, schema_type = ?", array_merge([$siteId], $values, $values));
+        if ($stored === null) {
+            // Baris pertama situs ini: INSERT biasa (bukan upsert), jadi baris yang baru saja dibuat tab lain tidak ditimpa
+            db_run($conn, "INSERT INTO site_seo (site_id, title, description, og_image, google_verification, bing_verification, index_mode, schema_type)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)", array_merge([$siteId], $values));
+        } else {
+            // Hanya menimpa gambar yang tadi dibaca (og_image <=> gambar awal), sama dengan simpan tulisan
+            db_run($conn, "UPDATE site_seo SET title = ?, description = ?, og_image = ?, google_verification = ?, bing_verification = ?,
+                           index_mode = ?, schema_type = ? WHERE site_id = ? AND og_image <=> ?", array_merge($values, [$siteId, $stored['og_image']]));
+            if (db_affected_rows() === 0) sp_check_seo_update($conn, $siteId, $stored['og_image'], $newFile !== null);
+        }
     } catch (Throwable $e) {
+        // Pengaturan tidak tersimpan: gambar yang baru diunggah request ini tidak dirujuk apa pun
         if ($newFile !== null) delete_local_asset($newFile, $section);
+        // Duplikat saat INSERT (db_run: ApiError 409) = baris dibuat tab lain di antara baca dan simpan
+        if ($stored === null && $e instanceof ApiError && $e->status === 409) throw sp_seo_changed();
         throw $e;
     }
     if ($current['og_image'] !== null && $current['og_image'] !== $image) pf_delete_generated($current['og_image'], $section);
@@ -413,6 +430,28 @@ function sp_site_index_reasons(array $site, ?array $seoRow): array {
 
 function sp_post_not_found(): ApiError {
     return new ApiError(SP_POST_NOT_FOUND, 404, 'POST_NOT_FOUND');
+}
+
+function sp_seo_changed(): ApiError {
+    return new ApiError(SP_SEO_CHANGED, 409, 'SEO_CHANGED');
+}
+
+/**
+ * UPDATE tulisan mengenai 0 baris. Tulisan sudah dihapus → 404 POST_NOT_FOUND. Fotonya bukan lagi $readImage (diganti
+ * atau dihapus di tab lain), atau foto baru request ini tidak tersimpan → 409 POST_CHANGED. Selain itu isiannya memang
+ * sama persis dengan yang tersimpan (mysqli menghitung baris yang berubah saja), jadi simpan dianggap berhasil.
+ * Sama dengan checkPostUpdate() di site_posts.js.
+ */
+function sp_check_post_update(mysqli $conn, int $id, int $siteId, ?string $readImage, bool $uploaded): void {
+    $now = db_one($conn, "SELECT image FROM site_posts WHERE id = ? AND site_id = ? LIMIT 1", [$id, $siteId]);
+    if (!$now) throw sp_post_not_found();
+    if ($uploaded || $now['image'] !== $readImage) throw new ApiError(SP_POST_CHANGED, 409, 'POST_CHANGED');
+}
+
+/** UPDATE site_seo mengenai 0 baris: aturan sp_check_post_update() untuk og_image (baris hilang juga 409 SEO_CHANGED). */
+function sp_check_seo_update(mysqli $conn, int $siteId, ?string $readImage, bool $uploaded): void {
+    $now = db_one($conn, "SELECT og_image FROM site_seo WHERE site_id = ? LIMIT 1", [$siteId]);
+    if (!$now || $uploaded || $now['og_image'] !== $readImage) throw sp_seo_changed();
 }
 
 // ════════════════════════════════════════════════════════════════════════════

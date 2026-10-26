@@ -60,8 +60,10 @@ const safeDecode = (value: string) => {
 /**
  * Breadcrumb setelah "Akun" untuk path ini; elemen terakhir = halaman yang sedang dibuka. Contoh:
  * /akun/pesanan/GN-1/nota/GNR-2 → Pesanan saya › GN-1 › Nota GNR-2.
+ * `search` (opsional, mis. location.search): ?jenis=pengumuman di editor tulisan ikut ke tautan "Berita & Pengumuman"
+ * supaya kembali ke tab daftar yang sama.
  */
-export function accountCrumbs(pathname: string): Crumb[] {
+export function accountCrumbs(pathname: string, search = ''): Crumb[] {
   const parts = clean(pathname).split('/').filter(Boolean).slice(1).map(safeDecode); // tanpa "akun"
   const [section, id, sub, subId] = parts;
   switch (section) {
@@ -87,10 +89,12 @@ export function accountCrumbs(pathname: string): Crumb[] {
       const siteTo = `/akun/situs/${encodeURIComponent(id)}`;
       // Berita & pengumuman dan SEO situs (docs/platform/SITE-POSTS-SEO-SPEC.md §8)
       if (sub === 'berita') {
+        // Sama dengan kindFromQuery/postsListPath: hanya pengumuman yang memakai query, berita = bawaan
+        const kindQuery = new URLSearchParams(search).get('jenis') === 'pengumuman' ? '?jenis=pengumuman' : '';
         return [
           { label: 'Situs saya', to: '/akun/situs' },
           { label: 'Kelola situs', to: siteTo },
-          { label: 'Berita & Pengumuman', to: subId ? `${siteTo}/berita` : null },
+          { label: 'Berita & Pengumuman', to: subId ? `${siteTo}/berita${kindQuery}` : null },
           ...(subId ? [{ label: subId === 'baru' ? 'Tulisan baru' : 'Edit tulisan', to: null }] : []),
         ];
       }

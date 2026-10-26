@@ -34,6 +34,16 @@ export { isPresentableProject, presentableProjects } from './components/sections
 export { PRELOAD_ELEMENT_ID, PRELOAD_URLS, seoDataFromApi, type PreloadData } from './lib/preload';
 
 /**
+ * Kode template registri TEMPLATES (src/templates). scripts/prerender.mjs (copySiteDefaults) menggagalkan build bila
+ * kunci backend/modules/site_defaults.json tidak sama dengan daftar ini. Registri (semua komponen template) baru dimuat
+ * saat dipanggil, jadi impor entri ini tetap ringan.
+ */
+export async function templateCodes(): Promise<string[]> {
+  const { TEMPLATES } = await import('./templates');
+  return Object.keys(TEMPLATES);
+}
+
+/**
  * Semua modul *.seo.ts (src/seo/routes.ts → SEO_MODULES), untuk memprerender rute noindex yang tetap publik (routes()
  * sebuah modul boleh mengembalikannya; sitemap tetap hanya memakai getIndexableRoutes). Kosong bila tidak diekspor.
  */

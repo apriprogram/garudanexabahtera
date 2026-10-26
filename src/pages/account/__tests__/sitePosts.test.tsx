@@ -1,17 +1,23 @@
 // @vitest-environment jsdom
 // Berita & pengumuman di panel akun (docs/platform/SITE-POSTS-SEO-SPEC.md §8): daftar, tulis/edit, simpan, hapus,
 // error per kolom dari server, foto SVG ditolak, penjaga perubahan belum disimpan, dan aturan murni postModel.
+// Perbaikan tinjauan: simpan ditahan selama foto diproses, isian yang berubah selama simpan tidak ditimpa, fokus setelah
+// hapus, tanpa tautan Lihat di situs nonaktif, dan ?jenis=pengumuman ikut di alamat editor.
 // Jalankan: npx vitest run src/pages/account/__tests__/sitePosts.test.tsx
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SitePostAdmin, SitePostInput } from '../../../types/sitePosts';
+import { prepareImage } from '../cms/image';
+import { ImageField } from '../cms/ImageField';
 import SitePostEditor from '../posts/SitePostEditor';
 import SitePostsPage from '../posts/SitePostsPage';
+import { editPostPath, newPostPath, postsListPath } from '../posts/siteLinks';
 import {
   draftFromPost,
   inputFromDraft,
+  mergeSavedDraft,
   relativeTime,
   slugFromTitle,
   uniqueSlug,
@@ -19,7 +25,29 @@ import {
   viewsLabel,
 } from '../posts/postModel';
 
+// prepareImage asli (canvas) tetap dipakai, kecuali tes yang menahannya dengan mockImplementationOnce
+vi.mock('../cms/image', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../cms/image')>();
+  return { ...actual, prepareImage: vi.fn(actual.prepareImage) };
+});
+
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+/** Janji yang diselesaikan sendiri oleh tes (foto yang masih diproses, permintaan yang masih berjalan). */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+const PHOTO_URI = 'data:image/webp;base64,UklGRg==';
+const PHOTO_BUSY = 'Tunggu foto selesai diproses…';
+const pngFile = () => new File(['png'], 'foto.png', { type: 'image/png' });
+const pickPhoto = (file: File) => fireEvent.change(document.querySelector<HTMLInputElement>('input[type="file"]')!, { target: { files: [file] } });
 
 const DOMAIN = 'sma-nurul-azka.sch.id';
 const HOUR = 3600_000;
@@ -82,7 +110,24 @@ const seoOut = () => ({
   urls: { home: `https://${DOMAIN}/`, sitemap: `https://${DOMAIN}/sitemap.xml`, robots: `https://${DOMAIN}/robots.txt` },
 });
 
-function mockApi(overrides: Partial<Record<string, (body: Record<string, unknown>) => Response>> = {}) {
+/** Simpan tulisan seperti server: id baru 99, slug dari judul, foto data URI → path tersimpan. */
+function savePost(body: Record<string, unknown>): Response {
+  const input = body.post as SitePostInput;
+  const id = input.id ?? 99;
+  const slug = input.slug || slugFromTitle(input.title, input.kind);
+  const saved = makePost({
+    ...input,
+    id,
+    slug,
+    image: typeof input.image === 'string' && input.image.startsWith('data:') ? '/assets/sites/1/posts/post_000000000000.webp' : (input.image ?? null),
+    published_at: input.published_at || (input.status === 'published' ? '2026-10-26' : null),
+    url: `https://${DOMAIN}/${input.kind}/${slug}`,
+  } as Partial<SitePostAdmin>);
+  posts = posts.some((p) => p.id === id) ? posts.map((p) => (p.id === id ? saved : p)) : [saved, ...posts];
+  return json(200, { post: saved });
+}
+
+function mockApi(overrides: Partial<Record<string, (body: Record<string, unknown>) => Response | Promise<Response>>> = {}) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -101,21 +146,7 @@ function mockApi(overrides: Partial<Record<string, (body: Record<string, unknown
         return json(200, { posts, limits: { max_posts: 500 } });
       }
       if (action === 'customer_get_site_seo') return json(200, seoOut());
-      if (action === 'customer_save_site_post') {
-        const input = body.post as SitePostInput;
-        const id = input.id ?? 99;
-        const slug = input.slug || slugFromTitle(input.title, input.kind);
-        const saved = makePost({
-          ...input,
-          id,
-          slug,
-          image: typeof input.image === 'string' && input.image.startsWith('data:') ? '/assets/sites/1/posts/post_000000000000.webp' : (input.image ?? null),
-          published_at: input.published_at || (input.status === 'published' ? '2026-10-26' : null),
-          url: `https://${DOMAIN}/${input.kind}/${slug}`,
-        } as Partial<SitePostAdmin>);
-        posts = posts.some((p) => p.id === id) ? posts.map((p) => (p.id === id ? saved : p)) : [saved, ...posts];
-        return json(200, { post: saved });
-      }
+      if (action === 'customer_save_site_post') return savePost(body);
       if (action === 'customer_delete_site_post') {
         posts = posts.filter((p) => p.id !== body.post_id);
         return json(200, {});
@@ -219,6 +250,60 @@ describe('postModel', () => {
     expect(relativeTime('2026-08-01T10:00:00+07:00', now)).toBe('1 Agustus 2026');
     expect(relativeTime(null, now)).toBeNull();
   });
+
+  it('mergeSavedDraft: kolom yang berubah selama simpan tetap isian lokal, sisanya salinan server', () => {
+    const sent = { ...draftFromPost(null), title: 'Rapat  guru', image: 'data:image/webp;base64,AAA=' };
+    const server = { ...sent, title: 'Rapat guru', slug: 'rapat-guru', image: '/assets/sites/1/posts/post_000000000000.webp' };
+    // Tidak berubah selama permintaan berjalan → salinan server apa adanya
+    expect(mergeSavedDraft(sent, sent, server)).toBe(server);
+    expect(mergeSavedDraft(sent, { ...sent }, server)).toEqual(server);
+    // Ringkasan & foto berubah selama simpan → tetap isian lokal; judul/slug ikut server
+    const current = { ...sent, excerpt: 'Ringkasan baru', image: PHOTO_URI, noindex: true };
+    expect(mergeSavedDraft(sent, current, server)).toEqual({ ...server, excerpt: 'Ringkasan baru', image: PHOTO_URI, noindex: true });
+  });
+
+  it('alamat editor & daftar membawa ?jenis=pengumuman (berita = tanpa query)', () => {
+    expect(editPostPath(1, 5, 'berita')).toBe('/akun/situs/1/berita/5');
+    expect(editPostPath(1, 5, 'pengumuman')).toBe('/akun/situs/1/berita/5?jenis=pengumuman');
+    expect(newPostPath(1, 'pengumuman')).toBe('/akun/situs/1/berita/baru?jenis=pengumuman');
+    expect(postsListPath(1, 'berita')).toBe('/akun/situs/1/berita');
+    expect(postsListPath(1, 'pengumuman')).toBe('/akun/situs/1/berita?jenis=pengumuman');
+  });
+});
+
+describe('ImageField onProcessingChange', () => {
+  const renderField = (onProcessingChange: (busy: boolean) => void) =>
+    render(
+      <ImageField
+        field={{ type: 'image', key: 'image', label: 'Foto utama' }}
+        path="post.image"
+        value=""
+        onChange={vi.fn()}
+        onProcessingChange={onProcessingChange}
+      />,
+    );
+
+  it('true saat mulai diproses, false saat selesai', async () => {
+    const photo = deferred<string>();
+    vi.mocked(prepareImage).mockImplementationOnce(() => photo.promise);
+    const busy = vi.fn();
+    renderField(busy);
+    pickPhoto(pngFile());
+    expect(busy.mock.calls).toEqual([[true]]);
+    await act(async () => photo.resolve(PHOTO_URI));
+    expect(busy.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('gagal diproses juga mengakhiri status sibuk', async () => {
+    const photo = deferred<string>();
+    vi.mocked(prepareImage).mockImplementationOnce(() => photo.promise);
+    const busy = vi.fn();
+    renderField(busy);
+    pickPhoto(pngFile());
+    await act(async () => photo.reject(new Error('Gambar tidak bisa dibaca. Coba file lain.')));
+    expect(busy.mock.calls).toEqual([[true], [false]]);
+    expect(screen.getByText('Gambar tidak bisa dibaca. Coba file lain.')).toBeInTheDocument();
+  });
 });
 
 describe('daftar berita & pengumuman', () => {
@@ -266,6 +351,11 @@ describe('daftar berita & pengumuman', () => {
     expect(within(screen.getByRole('tabpanel')).getByText('Libur semester ganjil')).toBeInTheDocument();
     expect(within(screen.getByRole('tabpanel')).getByText('Penting')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Tulis pengumuman' })).toHaveAttribute('href', '/akun/situs/1/berita/baru?jenis=pengumuman');
+    // Editor pengumuman membawa ?jenis supaya breadcrumb kembali ke tab Pengumuman
+    expect(screen.getByRole('link', { name: /^Edit pengumuman .Libur semester ganjil/ })).toHaveAttribute(
+      'href',
+      '/akun/situs/1/berita/3?jenis=pengumuman',
+    );
 
     // Panah kiri kembali ke tab Berita (pola ARIA tabs)
     fireEvent.keyDown(screen.getByRole('tab', { name: /Pengumuman/ }), { key: 'ArrowLeft' });
@@ -287,6 +377,51 @@ describe('daftar berita & pengumuman', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(screen.queryByText('Kegiatan pramuka')).not.toBeInTheDocument();
     expect(screen.getByText('Berita “Kegiatan pramuka” dihapus.')).toBeInTheDocument();
+    // Baris terakhir dihapus → fokus ke Edit baris sebelumnya, bukan jatuh ke <body>
+    await waitFor(() => expect(screen.getByRole('link', { name: /^Edit berita .Juara olimpiade sains/ })).toHaveFocus());
+  });
+
+  it('hapus baris pertama → fokus ke Edit baris berikutnya', async () => {
+    mockApi();
+    renderAt('/akun/situs/1/berita');
+    await screen.findByRole('heading', { level: 1, name: 'Berita & Pengumuman' });
+    const trigger = screen.getByRole('button', { name: /^Hapus berita .Juara olimpiade sains/ });
+    trigger.focus();
+    fireEvent.click(trigger);
+    await act(async () => {
+      fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Ya, hapus' }));
+    });
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(screen.queryByText('Juara olimpiade sains')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('link', { name: /^Edit berita .Kegiatan pramuka/ })).toHaveFocus());
+  });
+
+  it('hapus ditolak karena situs nonaktif → hanya-baca, fokus ke tautan Buka tulisan itu', async () => {
+    mockApi({ customer_delete_site_post: () => json(409, { error: 'Situs sedang dinonaktifkan.', code: 'SITE_SUSPENDED' }) });
+    renderAt('/akun/situs/1/berita');
+    await screen.findByRole('heading', { level: 1, name: 'Berita & Pengumuman' });
+    fireEvent.click(screen.getByRole('button', { name: /^Hapus berita .Kegiatan pramuka/ }));
+    await act(async () => {
+      fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Ya, hapus' }));
+    });
+    expect(await screen.findByText('Situs sedang dinonaktifkan')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Hapus/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Lihat/ })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('link', { name: /^Buka berita .Kegiatan pramuka/ })).toHaveFocus());
+  });
+
+  it('hapus satu-satunya tulisan di tab → fokus ke panel daftar', async () => {
+    mockApi();
+    renderAt('/akun/situs/1/berita?jenis=pengumuman');
+    await screen.findByRole('heading', { level: 1, name: 'Berita & Pengumuman' });
+    fireEvent.click(screen.getByRole('button', { name: /^Hapus pengumuman .Libur semester ganjil/ }));
+    await act(async () => {
+      fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Ya, hapus' }));
+    });
+    expect(await screen.findByText('Belum ada pengumuman')).toBeInTheDocument();
+    const panel = screen.getByRole('tabpanel');
+    expect(panel).toHaveAttribute('tabindex', '-1');
+    await waitFor(() => expect(panel).toHaveFocus());
   });
 
   it('gagal menghapus: pesan tampil di dalam dialog', async () => {
@@ -330,6 +465,9 @@ describe('daftar berita & pengumuman', () => {
     expect(screen.queryByRole('link', { name: 'Tulis berita' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Hapus/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /^Buka berita/ })).toHaveLength(2);
+    // Situs nonaktif tidak bisa dibuka: tulisan terbit pun tanpa tautan Lihat
+    expect(screen.getByText('Terbit')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Lihat/ })).not.toBeInTheDocument();
   });
 
   it('situs bukan milik pembeli → tidak ditemukan', async () => {
@@ -372,7 +510,7 @@ describe('editor tulisan', () => {
     });
     expect((saveCalls()[0].body.post as SitePostInput).id).toBeUndefined();
     expect(await screen.findByText(/Pengumuman diterbitkan/)).toBeInTheDocument();
-    await waitFor(() => expect(location()).toBe('/akun/situs/1/berita/99'));
+    await waitFor(() => expect(location()).toBe('/akun/situs/1/berita/99?jenis=pengumuman'));
     expect(screen.getByRole('heading', { level: 1, name: 'Edit pengumuman' })).toBeInTheDocument();
     // Form yang sama (tidak dipasang ulang): isian dan toast tetap
     expect(screen.getByLabelText('Judul')).toHaveValue('Libur akhir semester');
@@ -482,6 +620,94 @@ describe('editor tulisan', () => {
     await waitFor(() => expect(location()).toBe('/akun/situs/1/berita'));
     expect(await screen.findByText('Berita “Kegiatan pramuka” dihapus.')).toBeInTheDocument();
     expect(screen.queryByText('Kegiatan pramuka')).not.toBeInTheDocument();
+    // Tombol Hapus ikut hilang bersama editor: fokus ke pesan "… dihapus." di daftar
+    await waitFor(() => expect(document.activeElement).toHaveTextContent('Berita “Kegiatan pramuka” dihapus.'));
+    expect(document.activeElement).not.toBe(document.body);
+    // Pesan ditutup → fokus ke panel daftar
+    fireEvent.click(screen.getByRole('button', { name: 'Tutup pemberitahuan' }));
+    expect(screen.getByRole('tabpanel')).toHaveFocus();
+  });
+
+  it('foto masih diproses: tombol simpan & Ctrl+S ditahan sampai foto selesai', async () => {
+    const photo = deferred<string>();
+    vi.mocked(prepareImage).mockImplementationOnce(() => photo.promise);
+    mockApi();
+    renderAt('/akun/situs/1/berita/2');
+    await screen.findByRole('heading', { level: 1, name: 'Edit berita' });
+    fireEvent.change(screen.getByLabelText('Judul'), { target: { value: 'Kegiatan pramuka sabtu' } });
+    pickPhoto(pngFile());
+
+    expect(await screen.findByText('Memproses gambar...')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Terbitkan' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Simpan draf' })).toBeDisabled();
+    expect(screen.getByText(PHOTO_BUSY)).toBeInTheDocument();
+    // Ctrl+S tidak mengirim apa pun; toast mengulang petunjuknya
+    fireEvent.keyDown(window, { key: 's', ctrlKey: true });
+    expect(screen.getAllByText(PHOTO_BUSY)).toHaveLength(2);
+    expect(saveCalls()).toHaveLength(0);
+
+    await act(async () => photo.resolve(PHOTO_URI));
+    expect(screen.queryByText('Memproses gambar...')).not.toBeInTheDocument();
+    expect(screen.getByText('Ada perubahan yang belum disimpan.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Simpan draf' })).toBeEnabled();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Simpan draf' }));
+    });
+    expect(saveCalls()).toHaveLength(1);
+    expect(saveCalls()[0].body.post).toMatchObject({ id: 2, title: 'Kegiatan pramuka sabtu', image: PHOTO_URI });
+  });
+
+  it('foto gagal diproses: tombol simpan aktif lagi', async () => {
+    const photo = deferred<string>();
+    vi.mocked(prepareImage).mockImplementationOnce(() => photo.promise);
+    mockApi();
+    renderAt('/akun/situs/1/berita/2');
+    await screen.findByRole('heading', { level: 1, name: 'Edit berita' });
+    pickPhoto(pngFile());
+    expect(await screen.findByText(PHOTO_BUSY)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Terbitkan' })).toBeDisabled();
+    await act(async () => photo.reject(new Error('Gambar tidak bisa dibaca. Coba file lain.')));
+    expect(screen.getByText('Gambar tidak bisa dibaca. Coba file lain.')).toBeInTheDocument();
+    expect(screen.queryByText(PHOTO_BUSY)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Terbitkan' })).toBeEnabled();
+  });
+
+  it('isian yang berubah selama simpan berjalan tidak ditimpa salinan server', async () => {
+    const gate = deferred<void>();
+    mockApi({ customer_save_site_post: (body) => gate.promise.then(() => savePost(body)) });
+    renderAt('/akun/situs/1/berita/2');
+    await screen.findByRole('heading', { level: 1, name: 'Edit berita' });
+    fireEvent.change(screen.getByLabelText('Judul'), { target: { value: 'Kegiatan   pramuka sabtu' } });
+    fireEvent.change(screen.getByLabelText(/^Ringkasan/), { target: { value: 'Ringkasan lama' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Simpan draf' }));
+    });
+    expect(saveCalls()).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Menyimpan...' })).toBeInTheDocument();
+
+    // Isian berubah selama permintaan berjalan (mis. foto yang selesai diproses belakangan)
+    fireEvent.change(screen.getByLabelText(/^Ringkasan/), { target: { value: 'Ringkasan baru' } });
+    await act(async () => gate.resolve());
+
+    expect(await screen.findByText('Draf disimpan.')).toBeInTheDocument();
+    // Kolom yang tidak berubah memakai salinan server (spasi dirapatkan); yang berubah tetap isian lokal
+    expect(screen.getByLabelText('Judul')).toHaveValue('Kegiatan pramuka sabtu');
+    expect(screen.getByLabelText(/^Ringkasan/)).toHaveValue('Ringkasan baru');
+    expect(screen.getByText('Ada perubahan yang belum disimpan.')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Simpan draf' }));
+    });
+    expect(saveCalls()).toHaveLength(2);
+    expect(saveCalls()[1].body.post).toMatchObject({ id: 2, title: 'Kegiatan pramuka sabtu', excerpt: 'Ringkasan baru' });
+    expect(await screen.findByText('Semua perubahan tersimpan.')).toBeInTheDocument();
+  });
+
+  it('pengumuman: editor dibuka dengan ?jenis=pengumuman, tombol kembali ke tab Pengumuman', async () => {
+    mockApi();
+    renderAt('/akun/situs/1/berita/3?jenis=pengumuman');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Edit pengumuman' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Semua pengumuman/ })).toHaveAttribute('href', '/akun/situs/1/berita?jenis=pengumuman');
   });
 
   it('perubahan belum disimpan: pindah lewat navigasi situs ditanya dulu', async () => {
@@ -511,5 +737,8 @@ describe('editor tulisan', () => {
     expect(screen.getByLabelText('Judul')).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Simpan perubahan' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Hapus berita' })).not.toBeInTheDocument();
+    // Tulisan terbit, tetapi situsnya nonaktif: tanpa "Lihat di situs"
+    expect(screen.getByText('Berita ini tampil di situs Anda.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Lihat di situs/ })).not.toBeInTheDocument();
   });
 });

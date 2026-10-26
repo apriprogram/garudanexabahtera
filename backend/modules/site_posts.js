@@ -87,6 +87,8 @@ const SITE_SUSPENDED = 'Situs sedang dinonaktifkan sehingga isinya tidak bisa di
 const POSTS_UNAVAILABLE = 'Template situs ini belum mendukung berita & pengumuman.';
 const SLUG_TAKEN = 'Slug sudah dipakai tulisan lain di situs ini.';
 const POST_LIMIT = 'Situs ini sudah punya 500 tulisan, jumlah maksimal. Hapus tulisan lama sebelum menulis yang baru.';
+const POST_CHANGED = 'Tulisan baru saja diubah di tab lain. Muat ulang lalu coba lagi.';
+const SEO_CHANGED = 'Pengaturan SEO baru saja diubah di tab lain. Muat ulang lalu coba lagi.';
 
 // Kolom SELECT tulisan (alias tabel p; tambah LEFT JOIN site_post_views v untuk ADMIN_COLUMNS). Sama dengan SP_*_COLUMNS
 const SUMMARY_COLUMNS = 'p.id, p.kind, p.slug, p.title, p.excerpt, p.category, p.badge, p.image, p.image_alt, p.link_url, '
@@ -309,16 +311,21 @@ async function customerSaveSitePost(ctx) {
   ];
   try {
     if (existing) {
-      await dbRun(pool, `UPDATE site_posts SET kind = ?, slug = ?, title = ?, excerpt = ?, body = ?, category = ?, badge = ?, image = ?,
+      // Hanya menimpa foto yang tadi dibaca (image <=> foto awal): simpan bersamaan dari tab lain tidak meninggalkan
+      // file yatim dan tidak merujuk foto yang sudah dihapus
+      const readImage = existing.image ?? null;
+      const result = await dbRun(pool, `UPDATE site_posts SET kind = ?, slug = ?, title = ?, excerpt = ?, body = ?, category = ?, badge = ?, image = ?,
                            image_alt = ?, link_url = ?, status = ?, published_at = ?, seo_title = ?, seo_description = ?, noindex = ?
-                           WHERE id = ? AND site_id = ?`, [...values, id, siteId]);
+                           WHERE id = ? AND site_id = ? AND image <=> ?`, [...values, id, siteId, readImage]);
+      if (affectedRows(result) === 0) await checkPostUpdate(pool, id, siteId, readImage, newFile !== null);
     } else {
       await dbRun(pool, `INSERT INTO site_posts (site_id, kind, slug, title, excerpt, body, category, badge, image, image_alt, link_url,
                            status, published_at, seo_title, seo_description, noindex) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [siteId, ...values]);
     }
   } catch (err) {
-    // Tulisan tidak tersimpan: foto yang baru diunggah request ini tidak dirujuk apa pun
+    // Tulisan tidak tersimpan (database gagal, atau tulisan dihapus / fotonya diubah di tab lain): foto yang baru
+    // diunggah request ini tidak dirujuk apa pun
     if (newFile !== null) await deleteUpload(newFile, section);
     throw err;
   }
@@ -369,7 +376,8 @@ async function customerSaveSiteSeo(ctx) {
   const siteId = Number(site.id);
   const seoInput = inputObject(input.seo);
   if (seoInput === null) throw new SitePostError('Pengaturan SEO wajib dikirim.', 400, 'VALIDATION');
-  const current = seoSettingsOut(await seoRow(pool, siteId));
+  const stored = await seoRow(pool, siteId);
+  const current = seoSettingsOut(stored);
   const [seo, errors] = validateSiteSeo(seoInput, current);
   const keys = Object.keys(errors);
   if (keys.length) throw new SitePostError(errors[keys[0]], 400, 'VALIDATION', errors);
@@ -385,11 +393,22 @@ async function customerSaveSiteSeo(ctx) {
   }
   const values = [seo.title, seo.description, image, seo.google_verification, seo.bing_verification, seo.index_mode, seo.schema_type];
   try {
-    await dbRun(pool, `INSERT INTO site_seo (site_id, title, description, og_image, google_verification, bing_verification, index_mode, schema_type)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE title = ?, description = ?, og_image = ?,
-                       google_verification = ?, bing_verification = ?, index_mode = ?, schema_type = ?`, [siteId, ...values, ...values]);
+    if (stored === null) {
+      // Baris pertama situs ini: INSERT biasa (bukan upsert), jadi baris yang baru saja dibuat tab lain tidak ditimpa
+      await dbRun(pool, `INSERT INTO site_seo (site_id, title, description, og_image, google_verification, bing_verification, index_mode, schema_type)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [siteId, ...values]);
+    } else {
+      // Hanya menimpa gambar yang tadi dibaca (og_image <=> gambar awal), sama dengan simpan tulisan
+      const readImage = stored.og_image ?? null;
+      const result = await dbRun(pool, `UPDATE site_seo SET title = ?, description = ?, og_image = ?, google_verification = ?, bing_verification = ?,
+                           index_mode = ?, schema_type = ? WHERE site_id = ? AND og_image <=> ?`, [...values, siteId, readImage]);
+      if (affectedRows(result) === 0) await checkSeoUpdate(pool, siteId, readImage, newFile !== null);
+    }
   } catch (err) {
+    // Pengaturan tidak tersimpan: gambar yang baru diunggah request ini tidak dirujuk apa pun
     if (newFile !== null) await deleteUpload(newFile, section);
+    // Duplikat saat INSERT (dbRun: SitePostError 409) = baris dibuat tab lain di antara baca dan simpan
+    if (stored === null && err instanceof SitePostError && err.status === 409) throw seoChanged();
     throw err;
   }
   if (current.og_image !== null && current.og_image !== image) await deleteUpload(current.og_image, section);
@@ -446,6 +465,26 @@ function siteIndexReasons(site, seo) {
 }
 
 const postNotFound = () => new SitePostError(POST_NOT_FOUND, 404, 'POST_NOT_FOUND');
+
+const seoChanged = () => new SitePostError(SEO_CHANGED, 409, 'SEO_CHANGED');
+
+/**
+ * UPDATE tulisan mengenai 0 baris. Tulisan sudah dihapus → 404 POST_NOT_FOUND. Fotonya bukan lagi readImage (diganti
+ * atau dihapus di tab lain), atau foto baru request ini tidak tersimpan → 409 POST_CHANGED. Selain itu isiannya memang
+ * sama persis dengan yang tersimpan (mysqli di PHP menghitung baris yang berubah saja), jadi simpan dianggap berhasil.
+ * Sama dengan sp_check_post_update().
+ */
+async function checkPostUpdate(pool, id, siteId, readImage, uploaded) {
+  const now = await dbOne(pool, 'SELECT image FROM site_posts WHERE id = ? AND site_id = ? LIMIT 1', [id, siteId]);
+  if (!now) throw postNotFound();
+  if (uploaded || (now.image ?? null) !== readImage) throw new SitePostError(POST_CHANGED, 409, 'POST_CHANGED');
+}
+
+/** UPDATE site_seo mengenai 0 baris: aturan checkPostUpdate() untuk og_image (baris hilang juga 409 SEO_CHANGED). */
+async function checkSeoUpdate(pool, siteId, readImage, uploaded) {
+  const now = await dbOne(pool, 'SELECT og_image FROM site_seo WHERE site_id = ? LIMIT 1', [siteId]);
+  if (!now || uploaded || (now.og_image ?? null) !== readImage) throw seoChanged();
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // Validasi & aturan (fungsi murni, dites berdampingan dengan site_posts.php)
@@ -894,6 +933,10 @@ async function dbRun(db, sql, params = []) {
 }
 
 const dbAll = (db, sql, params = []) => dbRun(db, sql, params);
+
+// Baris yang dikenai INSERT/UPDATE (db_affected_rows() di api.php). mysql2 menghitung baris yang cocok (FOUND_ROWS),
+// mysqli baris yang berubah: checkPostUpdate / checkSeoUpdate menyamakan keduanya
+const affectedRows = (result) => Math.trunc(Number(result?.affectedRows ?? 0));
 
 async function dbOne(db, sql, params = []) {
   const rows = await dbRun(db, sql, params);

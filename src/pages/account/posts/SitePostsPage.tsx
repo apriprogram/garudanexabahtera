@@ -1,7 +1,8 @@
 // Daftar berita & pengumuman situs pembeli (/akun/situs/:siteId/berita), docs/platform/SITE-POSTS-SEO-SPEC.md §8.
 // Tab jenis (Berita / Pengumuman, disimpan di ?jenis=), kartu per tulisan: foto mini, judul, status, tanggal, jumlah
-// dilihat & terakhir dilihat; aksi Edit, Lihat (tab baru, hanya yang terbit) dan Hapus (konfirmasi). Template tanpa
-// fitur tulisan mendapat penjelasan; situs nonaktif hanya-baca.
+// dilihat & terakhir dilihat; aksi Edit, Lihat (tab baru, hanya yang terbit dan situsnya aktif) dan Hapus (konfirmasi).
+// Template tanpa fitur tulisan mendapat penjelasan; situs nonaktif hanya-baca. Setelah hapus, fokus pindah ke Edit tulisan
+// berikutnya (atau sebelumnya, atau panel daftar bila kosong); datang dari editor setelah hapus, fokus ke pesannya.
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CalendarDays, ExternalLink, Eye, ImageIcon, Megaphone, Newspaper, PenLine, Plus, Trash2 } from 'lucide-react';
@@ -40,8 +41,31 @@ export default function SitePostsPage() {
   const { toast, show: showToast, dismiss: dismissToast } = useToast();
   const [now] = useState(currentTime);
   const [deleting, setDeleting] = useState<SitePostAdmin | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const flashRef = useRef<HTMLDivElement>(null);
+  const editLinks = useRef(new Map<number, HTMLAnchorElement>());
+  // Tujuan fokus setelah hapus: id tulisan yang tautan Edit-nya difokuskan, 'panel' = panel daftar
+  const focusAfterDelete = useRef<number | 'panel' | null>(null);
+  const flashFocused = useRef(false);
+  const ready = load.status === 'ready';
 
   useDocumentTitle('Berita & Pengumuman');
+
+  // Baris yang dihapus hilang dari DOM: pindahkan fokus ke elemen yang tetap ada (tidak jatuh ke <body>)
+  useEffect(() => {
+    const target = focusAfterDelete.current;
+    if (target === null) return;
+    focusAfterDelete.current = null;
+    const link = target === 'panel' ? undefined : editLinks.current.get(target);
+    (link ?? panelRef.current)?.focus();
+  });
+
+  // Dari editor setelah hapus (tombolnya ikut hilang): fokus ke pesan "… dihapus." begitu daftar tampil
+  useEffect(() => {
+    if (!ready || !flash || flashFocused.current) return;
+    flashFocused.current = true;
+    flashRef.current?.focus();
+  }, [ready, flash]);
 
   // Pesan dari state navigasi cukup tampil sekali: buang dari riwayat supaya tidak muncul lagi saat dimuat ulang
   useEffect(() => {
@@ -100,9 +124,17 @@ export default function SitePostsPage() {
 
       <div className="mt-6 space-y-3 empty:hidden">
         {flash && (
-          <Notice tone="success" onClose={() => setFlash(null)}>
-            {flash}
-          </Notice>
+          <div ref={flashRef} tabIndex={-1} className="rounded-2xl outline-none">
+            <Notice
+              tone="success"
+              onClose={() => {
+                setFlash(null);
+                panelRef.current?.focus();
+              }}
+            >
+              {flash}
+            </Notice>
+          </div>
         )}
         {readOnly && <SuspendedNotice site={site} />}
         {full && !readOnly && (
@@ -117,7 +149,7 @@ export default function SitePostsPage() {
         {writeButton && <div className="flex [&>*]:max-sm:w-full">{writeButton}</div>}
       </div>
 
-      <div role="tabpanel" id="posts-panel" aria-labelledby={`posts-tab-${kind}`} className="mt-4">
+      <div ref={panelRef} role="tabpanel" id="posts-panel" aria-labelledby={`posts-tab-${kind}`} tabIndex={-1} className="mt-4 outline-none">
         <h2 className="sr-only">Daftar {copy.noun}</h2>
         {posts.length === 0 ? (
           <EmptyState
@@ -129,7 +161,18 @@ export default function SitePostsPage() {
         ) : (
           <ul className="space-y-3">
             {posts.map((post) => (
-              <PostRow key={post.id} post={post} siteId={site.id} now={now} readOnly={readOnly} onDelete={setDeleting} />
+              <PostRow
+                key={post.id}
+                post={post}
+                siteId={site.id}
+                now={now}
+                readOnly={readOnly}
+                onDelete={setDeleting}
+                editRef={(el) => {
+                  if (el) editLinks.current.set(post.id, el);
+                  else editLinks.current.delete(post.id);
+                }}
+              />
             ))}
           </ul>
         )}
@@ -150,11 +193,17 @@ export default function SitePostsPage() {
         post={deleting}
         onClose={() => setDeleting(null)}
         onDeleted={(post) => {
+          // Fokus berikutnya: Edit tulisan sesudahnya, atau sebelumnya, atau panel daftar bila tab ini jadi kosong
+          const index = posts.findIndex((item) => item.id === post.id);
+          const neighbor = index < 0 ? undefined : (posts[index + 1] ?? posts[index - 1]);
+          focusAfterDelete.current = neighbor ? neighbor.id : 'panel';
           setDeleting(null);
           updateData((current) => (current ? { ...current, posts: current.posts.filter((item) => item.id !== post.id) } : current));
           showToast('success', `${KIND_COPY[post.kind].label} “${post.title}” dihapus.`);
         }}
         onSuspended={(message) => {
+          // Situs jadi hanya-baca: tombol Hapus hilang, fokus ke tautan Buka tulisan yang sama
+          focusAfterDelete.current = deleting ? deleting.id : 'panel';
           setDeleting(null);
           markSuspended();
           showToast('danger', message);
@@ -227,9 +276,11 @@ interface PostRowProps {
   now: number;
   readOnly: boolean;
   onDelete: (post: SitePostAdmin) => void;
+  /** Tautan Edit baris ini (tujuan fokus setelah baris lain dihapus) */
+  editRef: (el: HTMLAnchorElement | null) => void;
 }
 
-function PostRow({ post, siteId, now, readOnly, onDelete }: PostRowProps) {
+function PostRow({ post, siteId, now, readOnly, onDelete, editRef }: PostRowProps) {
   const copy = KIND_COPY[post.kind];
   const date = postDate(post);
   const lastViewed = post.view_count > 0 ? relativeTime(post.last_viewed_at, now) : null;
@@ -266,11 +317,12 @@ function PostRow({ post, siteId, now, readOnly, onDelete }: PostRowProps) {
         </div>
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2 max-sm:border-t max-sm:border-line max-sm:pt-3">
-        <Link to={editPostPath(siteId, post.id)} aria-label={named(readOnly ? 'Buka' : 'Edit')} className="btn btn-outline btn-sm">
+        <Link ref={editRef} to={editPostPath(siteId, post.id, post.kind)} aria-label={named(readOnly ? 'Buka' : 'Edit')} className="btn btn-outline btn-sm">
           <PenLine className="h-4 w-4" aria-hidden />
           {readOnly ? 'Buka' : 'Edit'}
         </Link>
-        {published && (
+        {/* Situs nonaktif tidak bisa dibuka siapa pun: tautan Lihat hanya untuk tulisan terbit di situs aktif */}
+        {published && !readOnly && (
           <a
             href={post.url}
             target="_blank"

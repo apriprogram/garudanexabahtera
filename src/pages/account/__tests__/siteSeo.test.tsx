@@ -1,16 +1,36 @@
 // @vitest-environment jsdom
 // SEO situs di panel akun (/akun/situs/:siteId/seo, docs/platform/SITE-POSTS-SEO-SPEC.md §8): kartu status & alasan,
 // pratinjau Google, simpan, kode verifikasi dari tag meta, error per kolom, situs nonaktif, aturan murni seoModel.
+// Perbaikan tinjauan: simpan ditahan selama gambar diproses, isian yang berubah selama simpan tidak ditimpa.
 // Jalankan: npx vitest run src/pages/account/__tests__/siteSeo.test.tsx
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SiteIndexReason, SiteSeoResponse, SiteSeoSettings } from '../../../types/sitePosts';
+import { prepareImage } from '../cms/image';
 import SiteSeoPage from '../seo/SiteSeoPage';
 import { draftFromSeo, inputFromSeoDraft, validateSeoDraft, verificationToken } from '../seo/seoModel';
 
+// prepareImage asli (canvas) tetap dipakai, kecuali tes yang menahannya dengan mockImplementationOnce
+vi.mock('../cms/image', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../cms/image')>();
+  return { ...actual, prepareImage: vi.fn(actual.prepareImage) };
+});
+
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
+/** Janji yang diselesaikan sendiri oleh tes (gambar yang masih diproses, permintaan yang masih berjalan). */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
+const IMAGE_URI = 'data:image/webp;base64,UklGRg==';
+const IMAGE_BUSY = 'Tunggu gambar selesai diproses…';
 
 const DOMAIN = 'sma-nurul-azka.sch.id';
 const TOKEN = 'AbCdEfGhIjKlMnOpQrStUvWxYz_0123456789-xyz';
@@ -45,7 +65,22 @@ const seoOut = (): SiteSeoResponse => ({
   urls: { home: `https://${DOMAIN}/`, sitemap: `https://${DOMAIN}/sitemap.xml`, robots: `https://${DOMAIN}/robots.txt` },
 });
 
-function mockApi(overrides: Partial<Record<string, (body: Record<string, unknown>) => Response>> = {}) {
+/** Simpan SEO seperti server: gambar data URI → path tersimpan, kode verifikasi diambil dari tag meta. */
+function saveSeo(body: Record<string, unknown>): Response {
+  const input = body.seo as SiteSeoSettings;
+  seo = {
+    ...seo,
+    ...input,
+    og_image: typeof input.og_image === 'string' && input.og_image.startsWith('data:') ? '/assets/sites/1/seo/seo_000000000000.webp' : input.og_image,
+    google_verification: verificationToken(input.google_verification) ?? '',
+    bing_verification: verificationToken(input.bing_verification) ?? '',
+    updated_at: '2026-10-26T10:00:00+07:00',
+  };
+  reasons = input.index_mode === 'noindex' ? ['manual_noindex'] : input.index_mode === 'index' ? [] : reasons;
+  return json(200, seoOut());
+}
+
+function mockApi(overrides: Partial<Record<string, (body: Record<string, unknown>) => Response | Promise<Response>>> = {}) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -58,19 +93,7 @@ function mockApi(overrides: Partial<Record<string, (body: Record<string, unknown
       if (action === 'get_settings') return json(200, { footer_whatsapp: '0812-1111-2222' });
       if (action === 'customer_get_site') return json(200, { success: true, site: siteOut() });
       if (action === 'customer_get_site_seo') return json(200, seoOut());
-      if (action === 'customer_save_site_seo') {
-        const input = body.seo as SiteSeoSettings;
-        seo = {
-          ...seo,
-          ...input,
-          og_image: typeof input.og_image === 'string' && input.og_image.startsWith('data:') ? '/assets/sites/1/seo/seo_000000000000.webp' : input.og_image,
-          google_verification: verificationToken(input.google_verification) ?? '',
-          bing_verification: verificationToken(input.bing_verification) ?? '',
-          updated_at: '2026-10-26T10:00:00+07:00',
-        };
-        reasons = input.index_mode === 'noindex' ? ['manual_noindex'] : input.index_mode === 'index' ? [] : reasons;
-        return json(200, seoOut());
-      }
+      if (action === 'customer_save_site_seo') return saveSeo(body);
       return json(404, { error: 'tidak ada' });
     }),
   );
@@ -187,6 +210,62 @@ describe('halaman SEO situs', () => {
     // Kolom memakai nilai dari server (kode saja, bukan seluruh tag)
     expect(screen.getByLabelText(/^Kode verifikasi Google/)).toHaveValue(TOKEN);
     expect(screen.getByRole('button', { name: /Simpan pengaturan/ })).toBeDisabled();
+  });
+
+  it('gambar masih diproses: tombol Simpan & Ctrl+S ditahan sampai gambar selesai', async () => {
+    const image = deferred<string>();
+    vi.mocked(prepareImage).mockImplementationOnce(() => image.promise);
+    mockApi();
+    renderPage();
+    await screen.findByRole('heading', { level: 1, name: 'SEO situs' });
+    fireEvent.change(screen.getByLabelText(/^Judul di Google/), { target: { value: 'SMA IT Nurul Azka Bandung' } });
+    expect(screen.getByRole('button', { name: /Simpan pengaturan/ })).toBeEnabled();
+
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    fireEvent.change(fileInput, { target: { files: [new File(['png'], 'bagikan.png', { type: 'image/png' })] } });
+    expect(await screen.findByText('Memproses gambar...')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Simpan pengaturan/ })).toBeDisabled();
+    expect(screen.getByText(IMAGE_BUSY)).toBeInTheDocument();
+    // Ctrl+S tidak mengirim apa pun; toast mengulang petunjuknya
+    fireEvent.keyDown(window, { key: 's', ctrlKey: true });
+    expect(screen.getAllByText(IMAGE_BUSY)).toHaveLength(2);
+    expect(saveCalls()).toHaveLength(0);
+
+    await act(async () => image.resolve(IMAGE_URI));
+    expect(screen.getByText('Ada perubahan yang belum disimpan.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Simpan pengaturan/ })).toBeEnabled();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
+    });
+    expect(saveCalls()).toHaveLength(1);
+    expect(saveCalls()[0].body.seo).toMatchObject({ title: 'SMA IT Nurul Azka Bandung', og_image: IMAGE_URI });
+  });
+
+  it('isian yang berubah selama simpan berjalan tidak ditimpa salinan server', async () => {
+    const gate = deferred<void>();
+    mockApi({ customer_save_site_seo: (body) => gate.promise.then(() => saveSeo(body)) });
+    renderPage();
+    await screen.findByRole('heading', { level: 1, name: 'SEO situs' });
+    fireEvent.change(screen.getByLabelText(/^Kode verifikasi Google/), {
+      target: { value: `<meta name="google-site-verification" content="${TOKEN}" />` },
+    });
+    fireEvent.change(screen.getByLabelText(/^Judul di Google/), { target: { value: 'Judul pertama' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
+    });
+    expect(saveCalls()).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /Menyimpan/ })).toBeInTheDocument();
+
+    // Judul berubah selama permintaan berjalan
+    fireEvent.change(screen.getByLabelText(/^Judul di Google/), { target: { value: 'Judul kedua' } });
+    await act(async () => gate.resolve());
+
+    expect(await screen.findByText('Pengaturan SEO disimpan.')).toBeInTheDocument();
+    // Kolom yang tidak berubah memakai salinan server (kode saja); judul tetap isian lokal yang lebih baru
+    expect(screen.getByLabelText(/^Kode verifikasi Google/)).toHaveValue(TOKEN);
+    expect(screen.getByLabelText(/^Judul di Google/)).toHaveValue('Judul kedua');
+    expect(screen.getByText('Ada perubahan yang belum disimpan.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Simpan pengaturan/ })).toBeEnabled();
   });
 
   it('kode verifikasi tidak valid ditahan di klien dan kolomnya difokuskan', async () => {

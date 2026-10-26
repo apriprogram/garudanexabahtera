@@ -1,5 +1,6 @@
 // Field gambar CMS: pratinjau, unggah/ganti (klik atau seret file), hapus, kembali ke gambar bawaan.
 // Gambar diperkecil di klien (maks. 1600 px, ≤ 2 MB) lalu disimpan di konten sebagai data-URI sampai Simpan.
+// onProcessingChange (opsional) memberi tahu induk selama gambar diproses, mis. agar tombol Simpan ditahan dulu.
 import { useRef, useState, type DragEvent } from 'react';
 import { ImageOff, ImagePlus, Loader2, RotateCcw, Trash2, Upload } from 'lucide-react';
 import { errorMessage } from '../../../lib/api';
@@ -7,7 +8,12 @@ import { fieldDomId, imageSrc, isDataUri } from './content';
 import { FieldMessage, type FieldControlProps } from './FieldControl';
 import { ACCEPT_ATTR, MAX_IMAGE_DIMENSION, MAX_IMAGE_MB, prepareImage } from './image';
 
-export function ImageField({ field, path, value, onChange, error, disabled, defaultValue }: FieldControlProps) {
+interface ImageFieldProps extends FieldControlProps {
+  /** true saat gambar mulai diproses, false saat selesai (berhasil maupun gagal) */
+  onProcessingChange?: (busy: boolean) => void;
+}
+
+export function ImageField({ field, path, value, onChange, error, disabled, defaultValue, onProcessingChange }: ImageFieldProps) {
   const id = fieldDomId(path);
   const inputRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
@@ -28,6 +34,7 @@ export function ImageField({ field, path, value, onChange, error, disabled, defa
     if (!file || disabled) return;
     setUploadError('');
     setProcessing(true);
+    onProcessingChange?.(true);
     try {
       const dataUrl = await prepareImage(file);
       setBroken(null);
@@ -36,6 +43,7 @@ export function ImageField({ field, path, value, onChange, error, disabled, defa
       setUploadError(errorMessage(err, 'Gagal memproses gambar. Coba file lain.'));
     } finally {
       setProcessing(false);
+      onProcessingChange?.(false);
     }
   };
 

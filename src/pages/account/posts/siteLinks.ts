@@ -13,13 +13,14 @@ export const siteLinks = (siteId: number) => ({
   seo: `/akun/situs/${siteId}/seo`,
 });
 
+/** Query jenis tulisan: berita = bawaan (tanpa query), pengumuman = ?jenis=pengumuman. Breadcrumb ikut membacanya. */
+const kindQuery = (kind: SitePostKind) => (kind === 'pengumuman' ? '?jenis=pengumuman' : '');
+
 /** Daftar tulisan satu jenis: /akun/situs/1/berita (berita) atau /akun/situs/1/berita?jenis=pengumuman. */
-export const postsListPath = (siteId: number, kind: SitePostKind) =>
-  kind === 'pengumuman' ? `${siteLinks(siteId).posts}?jenis=pengumuman` : siteLinks(siteId).posts;
+export const postsListPath = (siteId: number, kind: SitePostKind) => `${siteLinks(siteId).posts}${kindQuery(kind)}`;
 
 /** Editor tulisan baru jenis itu. */
-export const newPostPath = (siteId: number, kind: SitePostKind) =>
-  `${siteLinks(siteId).posts}/baru${kind === 'pengumuman' ? '?jenis=pengumuman' : ''}`;
+export const newPostPath = (siteId: number, kind: SitePostKind) => `${siteLinks(siteId).posts}/baru${kindQuery(kind)}`;
 
-/** Editor tulisan yang sudah ada. */
-export const editPostPath = (siteId: number, postId: number) => `${siteLinks(siteId).posts}/${postId}`;
+/** Editor tulisan yang sudah ada; jenisnya ikut di query agar breadcrumb kembali ke tab daftar yang sama. */
+export const editPostPath = (siteId: number, postId: number, kind: SitePostKind) => `${siteLinks(siteId).posts}/${postId}${kindQuery(kind)}`;

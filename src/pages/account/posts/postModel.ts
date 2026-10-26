@@ -229,7 +229,22 @@ export function inputFromDraft(draft: PostDraft, kind: SitePostKind, status: Sit
   };
 }
 
-const lineError = (value: string, label: string, max: number): string | undefined =>
+/**
+ * Isian form setelah simpan berhasil. `sent` = isian saat permintaan dikirim, `current` = isian sekarang, `server` =
+ * salinan dari server. Kolom yang berubah selama permintaan berjalan (mis. foto yang baru selesai diproses) tetap
+ * memakai isian lokal yang lebih baru; kolom lain memakai nilai server (slug otomatis, path foto tersimpan, dst.).
+ * Dipakai form tulisan dan form SEO situs.
+ */
+export function mergeSavedDraft<T extends object>(sent: T, current: T, server: T): T {
+  if (current === sent) return server;
+  const merged = { ...server };
+  for (const key of Object.keys(server) as (keyof T)[]) {
+    if (!Object.is(current[key], sent[key])) merged[key] = current[key];
+  }
+  return merged;
+}
+
+const lineError =(value: string, label: string, max: number): string | undefined =>
   charCount(cleanLine(value)) > max ? `${label} maksimal ${max} karakter.` : undefined;
 
 export const TITLE_MIN = 3;

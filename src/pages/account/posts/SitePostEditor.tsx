@@ -81,7 +81,7 @@ export default function SitePostEditor() {
     updateData((current) => (current.posts ? { ...current, posts: { ...current.posts, posts: upsertPost(current.posts.posts, saved) } } : current));
     if (isCreated) {
       setCreated({ id: saved.id, formKey });
-      navigate(editPostPath(site.id, saved.id), { replace: true });
+      navigate(editPostPath(site.id, saved.id, saved.kind), { replace: true });
     }
   };
 

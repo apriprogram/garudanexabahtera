@@ -271,8 +271,8 @@ function AccountTopbar({
   drawerOpen: boolean;
   onOpenDrawer: () => void;
 }) {
-  const { pathname } = useLocation();
-  const crumbs = accountCrumbs(pathname);
+  const { pathname, search } = useLocation();
+  const crumbs = accountCrumbs(pathname, search);
   const [today] = useState(todayLabel);
 
   return (

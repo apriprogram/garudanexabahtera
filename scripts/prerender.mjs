@@ -9,7 +9,7 @@
 //   4. OUT/app.html (cangkang noindex untuk rute aplikasi), OUT/404.html (NotFound, noindex)
 //   5. sitemap.xml, llms.txt, llms-full.txt (scripts/seo/*.mjs, WP4), OG (opsional, WP3)
 //   6. OUT/seo.php + OUT/_pre/seo-fallback.json (cadangan template yang terbit setelah deploy), OUT/site.php +
-//      OUT/modules/site_defaults.json (head SEO domain pembeli)
+//      OUT/modules/site_defaults.json (head SEO domain pembeli; kuncinya harus sama dengan registri template)
 //   7. daftar rute prerender ditulis ke blok gn-prerender di OUT/.htaccess
 //   8. cek kewarasan: tepat 1 <h1>/<title>/canonical per halaman, JSON-LD valid, title unik
 //
@@ -480,15 +480,33 @@ export function seoFallbackContext(ssr, data, sampleSlug, builtAt) {
 
 // ─── site.php ────────────────────────────────────────────────────────────────
 
+export const SITE_DEFAULTS_UPDATE = 'UPDATE_SITE_DEFAULTS=1 npx vitest run __tests__/backend/site-defaults.test.ts';
+
 /**
  * backend/modules/site_defaults.json → OUT/modules/site_defaults.json (dibaca site.php dan site_posts.php di produksi).
- * Berkas rusak menggagalkan build: tanpa bawaan template, head domain pembeli kehilangan nama & deskripsi bawaan.
+ * templateCodes = kode template registri TEMPLATES dari bundel SSR (templateCodes() di src/entry-server.tsx). Berkas
+ * rusak, atau kuncinya tidak sama dengan kode registri (template baru/dihapus tanpa memperbarui berkas), menggagalkan
+ * build: tanpa bawaan template yang benar, head domain pembeli kehilangan nama & deskripsi bawaan dan status index
+ * salah menganggap konten pembeli sebagai konten bawaan (atau sebaliknya).
  */
-export function copySiteDefaults(root, outDir) {
+export function copySiteDefaults(root, outDir, templateCodes) {
   const source = join(root, 'backend', 'modules', 'site_defaults.json');
   const defaults = JSON.parse(readFileSync(source, 'utf8'));
   if (!defaults || typeof defaults !== 'object' || Array.isArray(defaults) || Object.keys(defaults).length === 0) {
-    throw new Error(`${source} kosong atau bukan objek: jalankan UPDATE_SITE_DEFAULTS=1 npx vitest run __tests__/backend/site-defaults.test.ts`);
+    throw new Error(`${source} kosong atau bukan objek: jalankan ${SITE_DEFAULTS_UPDATE}`);
+  }
+  if (!Array.isArray(templateCodes) || templateCodes.length === 0) {
+    throw new Error(`Kode template registri dari bundel SSR (templateCodes) tidak ada, jadi ${source} tidak bisa dicek.`);
+  }
+  const codes = new Set(templateCodes.map(String));
+  const missing = [...codes].filter((code) => !Object.hasOwn(defaults, code)).sort();
+  const unknown = Object.keys(defaults).filter((code) => !codes.has(code)).sort();
+  if (missing.length || unknown.length) {
+    const diff = [
+      missing.length ? `belum ada: ${missing.join(', ')}` : '',
+      unknown.length ? `tidak ada di registri: ${unknown.join(', ')}` : '',
+    ].filter(Boolean);
+    throw new Error(`${source} tidak sama dengan registri template (${diff.join('; ')}): jalankan ${SITE_DEFAULTS_UPDATE}, lalu commit berkasnya.`);
   }
   mkdirSync(join(outDir, 'modules'), { recursive: true });
   cpSync(source, join(outDir, 'modules', 'site_defaults.json'));
@@ -685,10 +703,10 @@ export async function prerender({ root, outDir, deployDir, strict }) {
   cpSync(join(root, 'backend', 'seo.php'), join(outDir, 'seo.php'));
   writeFileSync(join(preDir, 'seo-fallback.json'), JSON.stringify(seoFallbackContext(ssr, data, slugs[0], builtAt), null, 2));
   // site.php: head SEO, robots.txt & sitemap.xml domain pembeli (SITE-POSTS-SEO-SPEC §6), memakai helper seo.php. Bawaan
-  // template-nya (modules/site_defaults.json) tidak ikut salinan modules/*.php di deploy-cpanel.mjs, jadi disalin di sini;
-  // modules/.htaccess menutupnya dari web.
+  // template-nya (modules/site_defaults.json) tidak ikut salinan modules/*.php di deploy-cpanel.mjs, jadi disalin di sini
+  // setelah kuncinya dicocokkan dengan registri template di bundel SSR; modules/.htaccess menutupnya dari web.
   cpSync(join(root, 'backend', 'site.php'), join(outDir, 'site.php'));
-  copySiteDefaults(root, outDir);
+  copySiteDefaults(root, outDir, await ssr.templateCodes?.());
 
   // Rute prerender → .htaccess
   const htaccessFile = join(outDir, '.htaccess');
