@@ -74,7 +74,6 @@ export function Developments({ m }: { m: AlturaModel }) {
                         fallback="none"
                         sizes="(min-width: 896px) 60vw, 80vw"
                         className="absolute inset-0 -z-20"
-                        imgClassName="transition-[scale] duration-1000 group-hover:scale-[1.03]"
                       />
                       <span aria-hidden className="al-dev-scrim absolute inset-0 -z-10" />
                       {/* Layar lebar: tombol selebar kartu untuk membuka kartu ini (di bawah isi; tautan di isi tetap bisa diklik) */}

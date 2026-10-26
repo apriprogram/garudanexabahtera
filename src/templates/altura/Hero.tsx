@@ -78,7 +78,7 @@ export function Hero({ m }: { m: AlturaModel }) {
   return (
     <TemplateSection sectionKey="hero" data-hero-layout="diptych" className="pt-2.5 @2xl:pt-3 @5xl:pt-4">
       <div className={OUTER}>
-        <div className="grid gap-2.5 @3xl:h-[660px] @3xl:grid-cols-[48fr_52fr] @3xl:gap-3 @5xl:h-[min(86svh,820px)] @5xl:min-h-[680px] @7xl:gap-4">
+        <div className="grid gap-2.5 @3xl:min-h-[660px] @3xl:grid-cols-[48fr_52fr] @3xl:gap-3 @5xl:min-h-[max(680px,min(86svh,820px))] @7xl:gap-4">
           {/* Panel foto menara (LCP: eager + fetchpriority high, tidak pernah disembunyikan) */}
           <div className="al-enter-left relative min-w-0">
             <KitPhoto

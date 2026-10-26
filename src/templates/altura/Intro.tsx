@@ -110,7 +110,7 @@ export function Pillars({ m }: { m: AlturaModel }) {
                     </div>
                   )}
                   <span aria-hidden className="al-notch pointer-events-none">
-                    <ArrowDot size="lg" tone={kind === 'accent' ? 'ink' : 'accent'} />
+                    <ArrowDot size="lg" />
                   </span>
                 </article>
               </Reveal>
