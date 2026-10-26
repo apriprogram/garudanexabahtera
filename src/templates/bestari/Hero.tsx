@@ -34,18 +34,24 @@ interface Zoom {
 function HeroStats({ m }: { m: BestariModel }) {
   const items = list(m.hero, 'stats', 3).filter((item) => field(item, 'value') || field(item, 'label'));
   if (items.length === 0) return null;
+  // Angka terpanjang (min. 4 huruf) menentukan satu batas ukuran bersama: "640+" tetap ukuran penuh, "1.200+" / "12.500+"
+  // / "Unggul" mengecil sebatas muat di kolomnya (± 0,55em per huruf termasuk spasi huruf); cqi = lebar kolom (dd)
+  const chars = Math.max(4, ...items.map((item) => field(item, 'value').length));
+  const fit = { '--bs-fit': `${(100 / (chars * 0.55)).toFixed(1)}cqi` } as CSSProperties;
   return (
-    // Kolom sama lebar dengan garis pemisah tipis; angka besar mengikuti lebar template (cqw) agar 3 angka selalu muat
+    // Kolom sama lebar dengan garis pemisah tipis; ukuran angka mengikuti lebar template (cqw) dan dibatasi lebar kolom
     <dl className="grid max-w-[620px] grid-cols-3 gap-4 @6xl:max-w-none @6xl:gap-0">
       {items.map((item, i) => (
         <div key={`${field(item, 'label')}-${i}`} className="flex min-w-0 flex-col @6xl:border-l @6xl:border-white/25 @6xl:pl-6 @7xl:pl-7">
           {/* dt lebih dulu di DOM (urutan dl yang benar), tampil di bawah angka */}
           <dt className="order-last mt-2 text-[13px] font-medium leading-snug text-white/90 @3xl:text-[14.5px]">{field(item, 'label')}</dt>
           <dd
-            className={`${DISPLAY} text-[34px] font-medium leading-none tracking-[-0.04em] tabular-nums text-white @3xl:text-[46px] @6xl:text-[length:clamp(46px,3.9cqw,68px)]`}
+            className={`@container ${DISPLAY} text-[34px] font-medium leading-none tracking-[-0.04em] tabular-nums text-white @3xl:text-[46px] @6xl:text-[length:clamp(46px,3.9cqw,68px)]`}
           >
             {/* Menghitung naik sekali saat terlihat; gerak mati / pratinjau CMS → angka akhir langsung */}
-            <CountUp value={field(item, 'value')} duration={1800} />
+            <span className="block text-[length:min(1em,var(--bs-fit))]" style={fit}>
+              <CountUp value={field(item, 'value')} duration={1800} />
+            </span>
           </dd>
         </div>
       ))}

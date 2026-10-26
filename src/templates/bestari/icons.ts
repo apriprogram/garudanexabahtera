@@ -1,5 +1,5 @@
 // Ikon garis Bestari dipilih otomatis dari teks (kartu sorotan, lencana, angka sekolah, program), jadi CMS tidak butuh
-// kolom ikon. Kata kunci bahasa Indonesia khas sekolah dasar; tanpa kecocokan → ikon cadangan berurutan. Dirender lewat
+// kolom ikon. Kata kunci bahasa Indonesia khas sekolah (SMA, juga SD/SMP); tanpa kecocokan → ikon cadangan berurutan. Dirender lewat
 // <TitleIcon> (./ui).
 import {
   Award,
@@ -61,21 +61,22 @@ export type IconKey = keyof typeof ICONS;
 
 // Urutan penting: aturan yang lebih khusus di atas (mis. "Kelas bilingual" → bahasa, bukan kelas).
 const RULES: [RegExp, IconKey][] = [
-  [/ppdb|spmb|pendaftaran|daftar|penerimaan|formulir|murid baru/i, 'register'],
+  [/ppdb|spmb|pendaftaran|daftar|penerimaan|formulir|murid baru|siswa baru/i, 'register'],
   [/akreditasi|sertifika|terakreditasi/i, 'certificate'],
   [/adiwiyata|lingkungan|hijau|kebun|tanam/i, 'leaf'],
   [/ramah anak|perundungan|aman/i, 'shield'],
   [/karakter|peduli|santun|akhlak/i, 'heart'],
   [/robot|koding|coding|komputer|digital/i, 'robot'],
   [/sains|ipa|percobaan|eksperimen|stem|lab/i, 'science'],
+  [/debat|pidato|jurnalistik|public speaking/i, 'news'],
   [/bilingual|bahasa|inggris|english/i, 'language'],
   [/literasi|baca|buku|perpustakaan|kurikulum/i, 'book'],
-  [/karawitan|musik|paduan suara|angklung/i, 'music'],
+  [/karawitan|musik|paduan suara|angklung|marching band|drum band/i, 'music'],
   [/seni|tari|budaya|lukis/i, 'art'],
   [/pramuka|kemah|outbound/i, 'scout'],
-  [/olahraga|renang|futsal|sepak|atletik/i, 'sport'],
+  [/olahraga|renang|futsal|sepak|atletik|basket|voli/i, 'sport'],
   [/prestasi|juara|lomba|medali|olimpiade/i, 'trophy'],
-  [/alumni|lulusan|wisuda/i, 'alumni'],
+  [/alumni|lulusan|wisuda|kuliah|kampus|ptn|perguruan tinggi/i, 'alumni'],
   [/guru|pengajar|wali kelas|staf/i, 'teacher'],
   [/murid|siswa|anak|peserta didik/i, 'students'],
   [/agenda|jadwal|open house|kunjungan/i, 'calendar'],

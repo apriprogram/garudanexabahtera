@@ -28,7 +28,7 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // GlowStory (2026-10-25): toko online kecantikan, kuis jenis kulit + langganan isi ulang (src/templates/glowstory/GlowStory.tsx).
 // Madani (2026-10-25): website sekolah Islam SMA/MA, slider foto berbingkai + PPDB ke WhatsApp (src/templates/madani/Madani.tsx).
 // Cakrawala (2026-10-25): website SMK/SMA, hero slider foto + PPDB lewat WhatsApp (src/templates/cakrawala/Cakrawala.tsx).
-// Bestari (2026-10-26): website SD, hero slider foto + menu pil putih + PPDB lewat WhatsApp (src/templates/bestari/Bestari.tsx).
+// Bestari (2026-10-26): website SMA, hero slider foto + navbar transparan + PPDB lewat WhatsApp (src/templates/bestari/Bestari.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,

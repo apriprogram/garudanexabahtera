@@ -20,8 +20,11 @@ import { BESTARI_PHOTOS } from './photos';
 import { C, DISPLAY, EYEBROW, PANEL, PANEL_OUTER, SECTION_PAD, TYPE_B } from './styles';
 import { PillLink, SectionHead, SectionLabel, TitleIcon, Highlighted } from './ui';
 
-/** Posisi gulir rel: bisa digulir? sudah di awal / di ujung? (tombol dinonaktifkan di ujung, disembunyikan bila semua muat) */
-function useRailState(rail: RefObject<HTMLElement | null>) {
+/**
+ * Posisi gulir rel: bisa digulir? sudah di awal / di ujung? (tombol nonaktif di ujung, disembunyikan bila semua muat).
+ * Diukur ulang saat jumlah kartu berubah (CMS menambah/menghapus program) karena lebar kartu tetap.
+ */
+function useRailState(rail: RefObject<HTMLElement | null>, count: number) {
   const [state, setState] = useState({ scrollable: false, atStart: true, atEnd: false });
   useEffect(() => {
     const el = rail.current;
@@ -40,7 +43,7 @@ function useRailState(rail: RefObject<HTMLElement | null>) {
       el.removeEventListener('scroll', measure);
       observer?.disconnect();
     };
-  }, [rail]);
+  }, [rail, count]);
   return state;
 }
 
@@ -50,9 +53,13 @@ export function Programs({ m }: { m: BestariModel }) {
   const railId = useId();
   const rail = useRef<HTMLDivElement>(null);
   const motion = useMotionEnabled();
-  const { scrollable, atStart, atEnd } = useRailState(rail);
+  const { scrollable, atStart, atEnd } = useRailState(rail, items.length);
   if (items.length === 0) return null;
   const title = text(programs, 'title');
+  const eyebrow = text(programs, 'eyebrow');
+  const subtitle = text(programs, 'subtitle');
+  // Tanpa label/judul/deskripsi → rel selebar penuh (tidak menyisakan sepertiga panel kosong di kiri)
+  const hasHead = Boolean(eyebrow || title || subtitle);
 
   // Geser satu kartu (lebar kartu + jarak); halus hanya bila gerak menyala
   const move = (dir: 1 | -1) => {
@@ -63,29 +70,33 @@ export function Programs({ m }: { m: BestariModel }) {
     el.scrollBy({ left: dir * step, behavior: motion ? 'smooth' : 'auto' });
   };
   const round =
-    'flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#1C1917] transition-[background-color,color,opacity] duration-300 hover:bg-[#1C1917] hover:text-white disabled:cursor-default disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-[#1C1917]';
+    'flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#1C1917] transition-[background-color,color,opacity] duration-300 hover:bg-[#1C1917] hover:text-white aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:bg-white aria-disabled:hover:text-[#1C1917]';
 
   return (
     <TemplateSection sectionKey="programs" className="py-2">
       <div className={PANEL_OUTER}>
         <div className={`${PANEL} ${SECTION_PAD} overflow-hidden`}>
           {/* HP–tablet: judul, rel, tombol bertumpuk. Layar lebar: kiri judul + tombol, kanan rel yang menjorok ke tepi panel */}
-          <div className={`${CONTAINER} grid gap-8 @3xl:gap-10 @5xl:grid-cols-12 @5xl:grid-rows-[auto_1fr] @5xl:gap-x-10 @5xl:gap-y-8`}>
-            <div className="min-w-0 @5xl:col-span-4 @5xl:row-start-1">
-              <SectionHead
-                layout="stack"
-                eyebrow={text(programs, 'eyebrow')}
-                number={m.number('programs')}
-                title={title}
-                highlight={text(programs, 'highlight')}
-                subtitle={text(programs, 'subtitle')}
-              />
-            </div>
+          <div className={`${CONTAINER} grid gap-8 @3xl:gap-10 ${hasHead ? '@5xl:grid-cols-12 @5xl:grid-rows-[auto_1fr] @5xl:gap-x-10 @5xl:gap-y-8' : ''}`}>
+            {hasHead && (
+              <div className="min-w-0 @5xl:col-span-4 @5xl:row-start-1">
+                <SectionHead
+                  layout="stack"
+                  eyebrow={eyebrow}
+                  number={m.number('programs')}
+                  title={title}
+                  highlight={text(programs, 'highlight')}
+                  subtitle={subtitle}
+                />
+              </div>
+            )}
 
             <Reveal
               variant="fade"
               delay={120}
-              className="-mx-5 min-w-0 @2xl:-mx-8 @5xl:col-span-8 @5xl:col-start-5 @5xl:row-span-2 @5xl:row-start-1 @5xl:ml-0 @5xl:-mr-12 @5xl:self-center @min-[96rem]:-mr-16"
+              className={`-mx-5 min-w-0 @2xl:-mx-8 @5xl:ml-0 @5xl:-mr-12 @min-[96rem]:-mr-16 ${
+                hasHead ? '@5xl:col-span-8 @5xl:col-start-5 @5xl:row-span-2 @5xl:row-start-1 @5xl:self-center' : ''
+              }`}
             >
               {/* Rel geser: bisa difokus & digulir dengan panah keyboard, berlabel untuk pembaca layar */}
               <div
@@ -144,7 +155,7 @@ export function Programs({ m }: { m: BestariModel }) {
                         </div>
                         <div>
                           {label && (
-                            <span className={`inline-flex h-7 items-center rounded-full bg-[rgb(24_16_12/0.6)] px-3 ${EYEBROW} text-[11px] text-white ring-1 ring-inset ring-white/25 backdrop-blur-md`}>
+                            <span className={`inline-flex min-h-7 items-center rounded-full bg-[rgb(24_16_12/0.6)] px-3 py-1 ${EYEBROW} leading-[1.35] text-white ring-1 ring-inset ring-white/25 backdrop-blur-md`}>
                               {label}
                             </span>
                           )}
@@ -158,13 +169,21 @@ export function Programs({ m }: { m: BestariModel }) {
               </div>
             </Reveal>
 
-            {/* Tombol geser: hanya bila ada kartu yang tidak muat; nonaktif di ujung rel */}
+            {/* Tombol geser: hanya bila ada kartu yang tidak muat. Di ujung rel aria-disabled (bukan disabled) agar fokus
+                keyboard tetap di tombol, tidak jatuh ke <body> */}
             {scrollable && (
-              <div role="group" aria-label="Geser daftar program" className="flex items-center gap-2 @5xl:col-span-4 @5xl:row-start-2 @5xl:self-end">
-                <button type="button" onClick={() => move(-1)} disabled={atStart} aria-controls={railId} aria-label="Program sebelumnya" className={round}>
+              <div role="group" aria-label="Geser daftar program" className={`flex items-center gap-2 ${hasHead ? '@5xl:col-span-4 @5xl:row-start-2 @5xl:self-end' : ''}`}>
+                <button
+                  type="button"
+                  onClick={() => !atStart && move(-1)}
+                  aria-disabled={atStart}
+                  aria-controls={railId}
+                  aria-label="Program sebelumnya"
+                  className={round}
+                >
                   <ArrowLeft aria-hidden className="h-[18px] w-[18px]" />
                 </button>
-                <button type="button" onClick={() => move(1)} disabled={atEnd} aria-controls={railId} aria-label="Program berikutnya" className={round}>
+                <button type="button" onClick={() => !atEnd && move(1)} aria-disabled={atEnd} aria-controls={railId} aria-label="Program berikutnya" className={round}>
                   <ArrowRight aria-hidden className="h-[18px] w-[18px]" />
                 </button>
               </div>

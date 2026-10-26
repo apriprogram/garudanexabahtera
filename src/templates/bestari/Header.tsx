@@ -55,9 +55,11 @@ function InfoBar({ m, hidden }: { m: BestariModel; hidden: boolean }) {
       className={`overflow-hidden transition-[max-height,opacity] duration-300 ${hidden ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'} ${message ? '' : 'hidden @3xl:block'}`}
     >
       <div className={`${CONTAINER} flex min-h-11 items-center justify-between gap-6 border-b border-white/15 py-1 text-[13px]`}>
-        <div className="hidden min-w-0 items-center gap-5 @3xl:flex">
+        {/* Kontak paling lebar separuh baris bila ada pengumuman (email panjang terpotong "…"), agar pengumuman tidak
+            turun menjadi banyak baris yang terpotong tinggi bilah */}
+        <div className={`hidden min-w-0 items-center gap-5 @3xl:flex ${message ? 'max-w-[50%]' : ''}`}>
           {mail && (
-            <ActionLink action={{ kind: 'external', href: mail }} className={link}>
+            <ActionLink action={{ kind: 'external', href: mail }} className={`${link} min-w-0`}>
               <Mail aria-hidden className="h-4 w-4 shrink-0" strokeWidth={1.8} />
               <span className="truncate">{email}</span>
             </ActionLink>
@@ -114,6 +116,19 @@ export function Header({ m, overlay }: { m: BestariModel; overlay: boolean }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  // Menu HP terbuka lalu bingkai melebar melewati @6xl (tablet diputar, jendela dilebarkan): tombol & panel menu jadi
+  // display:none → tutup menu agar navbar kembali transparan dan bilah info tidak tertinggal terlipat/inert
+  useEffect(() => {
+    const root = sentinel.current?.closest<HTMLElement>('[data-tpl-root]');
+    if (!open || !root || typeof ResizeObserver !== 'function') return;
+    const observer = new ResizeObserver(() => {
+      const button = menuButton.current;
+      if (button && getComputedStyle(button).display === 'none') setOpen(false);
+    });
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [open]);
+
   return (
     <>
       {/* Penanda gulir: 16px di bawah tepi atas halaman (begitu digulir sedikit, navbar jadi putih) */}
@@ -130,7 +145,7 @@ export function Header({ m, overlay }: { m: BestariModel; overlay: boolean }) {
               <ActionLink
                 action={{ kind: 'section', target: 'hero' }}
                 onNavigate={close}
-                className="flex min-w-0 items-center self-center justify-self-start rounded-full"
+                className="flex min-w-0 max-w-full items-center self-center justify-self-start rounded-full"
                 aria-label={`${m.companyName}, ke awal halaman`}
               >
                 <Logo m={m} tone={solid ? 'dark' : 'light'} />
@@ -147,7 +162,7 @@ export function Header({ m, overlay }: { m: BestariModel; overlay: boolean }) {
                           : 'text-[#57534E] hover:bg-[#F5F2ED] hover:text-[#1C1917]'
                         : isCurrent
                           ? 'bg-white/[0.16] text-white'
-                          : 'text-white/[0.86] hover:bg-white/[0.12] hover:text-white';
+                          : 'text-white hover:bg-white/[0.12]';
                       return (
                         <li key={item.key}>
                           <ActionLink
@@ -164,8 +179,10 @@ export function Header({ m, overlay }: { m: BestariModel; overlay: boolean }) {
                 </nav>
               )}
 
-              <div className="flex shrink-0 items-center self-center justify-self-end gap-2">
-                <span className="hidden items-center @xl:flex">
+              {/* min-w-0 + max-w-full: di grid layar lebar nama sekolah & label tombol yang panjang terpotong "…", tidak
+                  menimpa menu di tengah */}
+              <div className="flex min-w-0 max-w-full shrink-0 items-center self-center justify-self-end gap-2">
+                <span className="hidden min-w-0 items-center @xl:flex">
                   <PillLink action={m.headerAction} label={m.headerLabel} variant="primary" />
                 </span>
                 {m.nav.length > 0 && (
@@ -188,7 +205,7 @@ export function Header({ m, overlay }: { m: BestariModel; overlay: boolean }) {
           </div>
 
           {open && (
-            <nav id={menuId} aria-label="Menu utama" className="max-h-[calc(100svh-68px)] overflow-y-auto border-t border-[#1C1917]/[0.08] @6xl:hidden">
+            <nav id={menuId} aria-label="Menu utama" className="max-h-[calc(100svh-var(--tpl-sticky-top,0px)-68px)] overflow-y-auto border-t @5xl:max-h-[calc(100svh-var(--tpl-sticky-top,0px)-76px)] border-[#1C1917]/[0.08] @6xl:hidden">
               <div className={`${CONTAINER} pb-4 pt-2`}>
                 <ul>
                   {m.nav.map((item) => (

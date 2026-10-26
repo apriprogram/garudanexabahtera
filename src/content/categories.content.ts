@@ -398,7 +398,7 @@ export const CATEGORY_CONTENT: Readonly<Record<CategorySlug, CategoryPageContent
   },
   'sekolah-pendidikan': {
     intro:
-      'Template di kategori ini dibuat untuk sekolah dasar dan menengah, dari SD, SMA, dan SMK sampai sekolah islam dan madrasah. Slider foto sekolah, statistik, sambutan kepala sekolah, berita, pengumuman, informasi PPDB, alumni, peta lokasi, dan kontak sudah tersusun, dan semuanya bisa Anda ubah sendiri lewat CMS. Template ini adalah website profil sekolah, bukan sistem akademik atau aplikasi PPDB dengan database.',
+      'Template di kategori ini dibuat untuk sekolah menengah, dari SMA dan SMK sampai sekolah islam dan madrasah. Slider foto sekolah, statistik, sambutan kepala sekolah, berita, pengumuman, informasi PPDB, alumni, peta lokasi, dan kontak sudah tersusun, dan semuanya bisa Anda ubah sendiri lewat CMS. Template ini adalah website profil sekolah, bukan sistem akademik atau aplikasi PPDB dengan database.',
     guideIntro:
       'Orang tua dan calon siswa membuka website sekolah untuk mencari kepastian: sekolah seperti apa ini, bagaimana cara mendaftar, dan apakah informasinya masih berlaku. Siapkan isi berikut agar website sekolah Anda menjawab pertanyaan itu tanpa harus menelepon tata usaha, sekaligus membantu sekolah muncul saat orang mencari sekolah di daerah Anda.',
     checklist: [

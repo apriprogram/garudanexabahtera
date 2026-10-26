@@ -1,6 +1,7 @@
-// Registry foto demo Bestari (SD swasta fiktif). Semua foto asli dari Unsplash (Unsplash License, bukan Unsplash+),
-// WebP teroptimasi, kredit di public/assets/templates/photos/CREDITS.md (section "Bestari"). Murid & guru Indonesia di
-// sekolah nyata; potongan tanpa logo merek yang terbaca. Foto TIDAK diubah ke SVG: foto sebagai SVG menjadi berkas
+// Registry foto demo Bestari (SMA swasta fiktif). Semua foto asli dari Unsplash (Unsplash License, bukan Unsplash+),
+// WebP teroptimasi, kredit di public/assets/templates/photos/CREDITS.md (section "Bestari"). Siswa & guru Indonesia di
+// sekolah nyata; nama sekolah asal di dasi & jersey dipotong atau disamarkan, beberapa foto masih menampilkan merek kecil
+// (bola basket, drum, kaus, tali kartu). Foto TIDAK diubah ke SVG: foto sebagai SVG menjadi berkas
 // megabyte yang tampak seperti lukisan (skill design-system pemilik), jadi disimpan WebP + srcset.
 //
 // Konvensi file (kit/photos.ts):
@@ -14,39 +15,39 @@ import { definePhotos, type KitPhotoSpec, type PhotoSet } from '../kit/photos';
 const DIR = '/assets/templates/photos';
 
 const HERO: readonly KitPhotoSpec[] = [
-  ['bestari-hero-1', 1920, 1080, 'Murid SD berseragam merah putih mengacungkan tangan dengan gembira di dalam kelas'],
-  ['bestari-hero-2', 1920, 1080, 'Puluhan murid SD bertopi merah putih melompat bersama di halaman sekolah'],
-  ['bestari-hero-3', 1920, 1080, 'Murid berseragam pramuka cokelat berlatih gerakan tari bersama di halaman'],
-  ['bestari-hero-4', 1920, 1080, 'Murid laki-laki berseragam merah putih tertawa bersandar di pagar bambu gazebo sekolah'],
+  ['bestari-hero-1', 1920, 1080, 'Siswa dan siswi SMA berseragam putih abu-abu duduk di ruang kelas memperhatikan guru'],
+  ['bestari-hero-2', 1920, 1080, 'Siswa berseragam batik biru mengerjakan ujian tertulis di ruang kelas'],
+  ['bestari-hero-3', 1920, 1080, 'Siswi marching band berseragam biru emas memegang simbal saat tampil di jalan'],
+  ['bestari-hero-4', 1920, 1080, 'Siswi petugas upacara berpeci hitam dan berselempang merah putih bersiap bersama pembina'],
 ];
 
 const BASE = definePhotos({
   scenes: [
-    ['bestari-tentang-1', 960, 1200, 'Murid perempuan berkerudung merah membaca buku di tengah rumput hijau yang tinggi'],
-    ['bestari-tentang-2', 1200, 900, 'Murid kelas rendah berbaju batik tersenyum sambil menulis di meja kelas'],
+    ['bestari-tentang-1', 960, 1200, 'Tiga siswi berkerudung putih dengan rok kotak-kotak berdiskusi sambil membaca di selasar sekolah'],
+    ['bestari-tentang-2', 1200, 900, 'Siswa dan siswi membaca buku dan majalah bersama di gazebo sekolah'],
     ['bestari-kepsek', 960, 1200, 'Kepala sekolah berkerudung merah tersenyum sambil bertopang dagu di ruang kerjanya'],
-    ['bestari-alasan', 960, 1200, 'Murid laki-laki tersenyum lebar ke arah kamera di ruang kelas'],
-    ['bestari-program-literasi', 960, 1200, 'Guru berkemeja putih membacakan buku untuk murid berbaju batik di sudut baca kelas'],
+    ['bestari-alasan', 960, 1200, 'Siswi berkemeja putih dan berdasi abu-abu tersenyum di halaman sekolah'],
+    ['bestari-program-kuliah', 960, 1200, 'Siswi berkerudung merah muda membaca buku pelajaran sambil menunjuk teks di meja kantin'],
     ['bestari-program-sains', 960, 1200, 'Tangan meletakkan robot pengikut garis rakitan di atas lintasan hitam putih'],
-    ['bestari-program-seni', 960, 1200, 'Murid berkostum tari merah putih dan bermahkota menari bersama di halaman'],
-    ['bestari-program-pramuka', 960, 1200, 'Dua murid berseragam pramuka berlari riang di selasar sekolah'],
-    ['bestari-ppdb', 1200, 900, 'Dua anak perempuan tersenyum di depan gedung sekolah, salah satunya mengacungkan jempol'],
-    ['bestari-berita-1', 1200, 800, 'Murid berikat kepala merah putih membaca naskah puisi'],
-    ['bestari-berita-2', 1200, 800, 'Guru berpeci memberi hormat bersama murid bertopi merah saat upacara'],
-    ['bestari-berita-3', 1200, 800, 'Murid berkaus merah berkumpul di lapangan sekolah saat pekan olahraga'],
+    ['bestari-program-seni', 960, 1200, 'Siswi marching band berseragam biru memegang simbal di depan drum besar'],
+    ['bestari-program-olahraga', 960, 1200, 'Tim basket putri berpose; siswi berkerudung hitam berjersey biru muda memegang bola di depan rekan-rekannya'],
+    ['bestari-ppdb', 1200, 900, 'Siswi berkerudung putih dengan tali kartu tanda peserta tersenyum ke arah kamera'],
+    ['bestari-berita-1', 1200, 800, 'Siswa bertanding futsal di lapangan sekolah yang dikelilingi pepohonan'],
+    ['bestari-berita-2', 1200, 800, 'Tangan siswa berseragam kotak-kotak memilah sayur dan buah untuk proyek kompos'],
+    ['bestari-berita-3', 1200, 800, 'Ratusan siswa SMA bersorak riang saat acara pekan olahraga dan seni'],
     ['bestari-guru-1', 960, 1200, 'Guru perempuan berkerudung memegang map merah dan tersenyum'],
-    ['bestari-guru-2', 960, 1200, 'Guru laki-laki berkemeja putih tersenyum di ruang pertemuan'],
+    ['bestari-guru-2', 960, 1200, 'Guru laki-laki berkacamata dan bersweter putih tersenyum di ruang perpustakaan'],
     ['bestari-guru-3', 960, 1200, 'Guru perempuan berkerudung merah muda dan blazer duduk tersenyum di ruang guru'],
-    ['bestari-galeri-1', 1200, 800, 'Upacara pengibaran bendera merah putih di lapangan rumput yang luas'],
-    ['bestari-galeri-2', 960, 1200, 'Murid pramuka siaga duduk di teras sekolah sambil mencatat, salah satunya membuat tanda hati'],
-    ['bestari-galeri-3', 1200, 800, 'Murid kelas rendah berbaju batik menulis di buku latihan'],
-    ['bestari-galeri-4', 960, 1200, 'Dua murid berbaju koko dan berpeci putih tertawa di selasar sekolah'],
-    ['bestari-galeri-5', 1200, 800, 'Anak perempuan tertawa sambil menunjuk pipinya di halaman berumput'],
+    ['bestari-galeri-1', 1200, 800, 'Siswa dan siswi berseragam putih abu-abu mendengarkan guru di ruang kelas'],
+    ['bestari-galeri-2', 960, 1200, 'Siswi berkerudung hitam dan bermasker membaca buku dengan saksama'],
+    ['bestari-galeri-3', 1200, 800, 'Siswa berseragam putih belajar di meja kayu ruang kelas'],
+    ['bestari-galeri-4', 960, 1200, 'Siswa berkemeja putih dan berompi merah melambaikan bendera merah putih di tribun upacara kemerdekaan'],
+    ['bestari-galeri-5', 1200, 800, 'Tiga siswa berfoto di depan Candi Borobudur saat kunjungan belajar'],
   ],
   portraits: [
     ['bestari-ortu-1', 480, 480, 'Potret ibu berambut hitam panjang tersenyum lebar'],
     ['bestari-ortu-2', 480, 480, 'Potret bapak berkacamata dan berkemeja kotak-kotak tersenyum'],
-    ['bestari-alumni-1', 480, 480, 'Potret remaja perempuan berkerudung abu-abu dan berkacamata tersenyum'],
+    ['bestari-alumni-1', 480, 480, 'Potret perempuan muda berkerudung abu-abu dan berkacamata tersenyum'],
   ],
 });
 

@@ -1,9 +1,9 @@
-// Template "Bestari" — "Warm canvas": website sekolah dasar (bisa juga SMP) yang tenang, editorial, dan hangat
+// Template "Bestari" — "Warm canvas": website SMA (bisa juga MA) yang tenang, editorial, dan hangat
 // (referensi pemilik 2026-10-26: Lifestyle, Eduker, Bienes, Finovate). Hero SLIDER foto selebar layar sampai tepi atas
 // dengan bilah info kontak dan menu pil putih melayang di atasnya, tiga angka di hero, kartu sorotan yang menumpang di
 // tepi bawah hero (kartu tengah berwarna tema), deret lencana bergaris tipis, lalu label section berpenomor "(01)":
 // profil dengan judul dua warna + kolase + daftar "+", angka besar, sambutan kepala sekolah, alasan bernomor + kutipan
-// guru, program berfoto, prestasi, guru, PPDB (tab + formulir SD yang menyusun pesan WhatsApp), berita berfilter,
+// guru, program berfoto, prestasi, guru, PPDB (tab + formulir SMA yang menyusun pesan WhatsApp), berita berfilter,
 // pengumuman & agenda, testimoni, galeri bento, tanya jawab, lokasi & kontak dengan Google Maps, dan footer cokelat
 // malam selebar layar. Satu warna tema dari CMS (terakota bawaan) menurunkan semua warna. Judul Instrument Sans,
 // datar tanpa bayangan, gerak tenang (muncul saat digulir, slider pudar, hover pelan) yang mati pada

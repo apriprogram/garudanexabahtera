@@ -381,43 +381,45 @@ kuliner; nama dan logo sekolahnya tidak tampil di potongan foto).
 | `cakrawala-alumni-2-*` | Perempuan berhijab abu-abu menoleh ke samping | https://unsplash.com/photos/qNPU-BkUrOY | Nada |
 | `cakrawala-alumni-3-*` | Pria muda berkacamata merapikan rambut | https://unsplash.com/photos/3sZo3h7SDiI | Rajudin Hax |
 
-## Bestari (SD Bestari Cendekia, sekolah dasar fiktif)
+## Bestari (SMA Bestari Cendekia, SMA swasta fiktif)
 
 Slide hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; foto tegak 4:5 `-960.webp` + `-800.webp` (profil, kepala
 sekolah, alasan, program, guru, galeri tegak); mendatar 4:3 / 3:2 `-1200.webp` + `-800.webp`; potret testimoni 1:1
-`-480.webp` + `-240.webp`. Dicek lisensinya di halaman foto ("Free to use under the Unsplash License", bukan Unsplash+)
+`-480.webp` + `-240.webp`. Dicek lisensinya di halaman foto (foto gratis di bawah Unsplash License, bukan Unsplash+)
 2026-10-26, lalu dipotong dan dikompres ke WebP. Foto TIDAK diubah ke SVG: foto sebagai SVG menjadi berkas megabyte yang
-tampak seperti lukisan (skill design-system pemilik), jadi disimpan WebP + srcset; logo & ikon tetap SVG. Potongan dipilih
-tanpa logo merek yang terbaca (`bestari-program-seni-*` dipotong agar papan nama toko di kanan atas tidak ikut). Nama
-sekolah, kepala sekolah, guru, murid, orang tua, dan alumni di demo fiktif dan tidak berhubungan dengan orang atau
-sekolah di foto.
+tampak seperti lukisan (skill design-system pemilik), jadi disimpan WebP + srcset; logo & ikon tetap SVG. Semua foto siswa
+diambil di Indonesia (foto yang lokasinya di luar Indonesia tidak dipakai). Nama sekolah asal pada dasi dan jersey
+dipotong atau disamarkan (inpaint); beberapa foto masih menampilkan merek kecil seperti bola basket, drum, kaus, dan
+tali kartu. Nama sekolah, kepala sekolah, guru, siswa,
+orang tua, dan alumni di demo fiktif dan tidak berhubungan dengan orang atau sekolah di foto. Versi SD sebelumnya
+(2026-10-26) diganti karena pemilik meminta template SMA; foto kepala sekolah, dua guru, robot, orang tua, dan alumni tetap.
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
-| `bestari-hero-1-*` | Murid SD berseragam merah putih mengacungkan tangan di kelas | https://unsplash.com/photos/cloQlpJ2RBU | Husniati Salma |
-| `bestari-hero-2-*` | Murid SD bertopi merah putih melompat di halaman sekolah | https://unsplash.com/photos/cGjGtaRu_14 | Husniati Salma |
-| `bestari-hero-3-*` | Murid berseragam pramuka berlatih tari di halaman | https://unsplash.com/photos/HSqyDFE1StI | Fajar Herlambang STUDIO |
-| `bestari-hero-4-*` | Murid laki-laki berseragam merah putih di gazebo bambu | https://unsplash.com/photos/-sTHlFBd4VU | Bayu Syaits |
-| `bestari-tentang-1-*` | Murid berkerudung merah membaca buku di rerumputan | https://unsplash.com/photos/2q119zNNVyI | herhy Ad |
-| `bestari-tentang-2-*` | Murid kelas rendah berbaju batik menulis di kelas | https://unsplash.com/photos/1tq5bahX8wg | Fiqih Alfarish |
+| `bestari-hero-1-*` | Siswa dan siswi SMA berseragam putih abu-abu di ruang kelas | https://unsplash.com/photos/HZNE6wuwoTU | Ed Us |
+| `bestari-hero-2-*` | Siswa berseragam batik mengerjakan ujian di kelas | https://unsplash.com/photos/TmdrCRVDOnQ | Fajar Herlambang STUDIO |
+| `bestari-hero-3-*` | Siswi marching band memegang simbal saat tampil | https://unsplash.com/photos/J3MneBzmcBw | Fajar Herlambang STUDIO |
+| `bestari-hero-4-*` | Siswi petugas upacara berpeci hitam bersama pembina (Sorong) | https://unsplash.com/photos/zMVMTeX-T1w | Syahrul Alamsyah Wahid |
+| `bestari-tentang-1-*` | Tiga siswi berkerudung putih dan rok kotak-kotak berdiskusi | https://unsplash.com/photos/JvS_AaDbzzw | Ed Us |
+| `bestari-tentang-2-*` | Siswa dan siswi membaca bersama di gazebo sekolah | https://unsplash.com/photos/_y4FqRhxkR8 | Ed Us |
 | `bestari-kepsek-*` | Perempuan berkerudung merah tersenyum di ruang kerja | https://unsplash.com/photos/RgQnC0qaEz4 | Fajar Herlambang STUDIO |
-| `bestari-alasan-*` | Anak laki-laki tersenyum di ruang kelas (dipotong dari foto dua anak) | https://unsplash.com/photos/EatyRIAs3-Y | Daniel Fam |
-| `bestari-program-literasi-*` | Guru membacakan buku untuk murid di sudut baca kelas | https://unsplash.com/photos/gc6MB1U0zgg | Fiqih Alfarish |
+| `bestari-alasan-*` | Siswi berkemeja putih dan berdasi abu-abu di halaman sekolah (dipotong di atas tulisan sekolah pada dasi dan tanpa emblem lengan) | https://unsplash.com/photos/cJc4eQjGapY | Fajar Herlambang STUDIO |
+| `bestari-program-kuliah-*` | Siswi berkerudung membaca buku pelajaran di meja kantin (dipotong dari foto dua siswi) | https://unsplash.com/photos/djARveDetkM | Bianca Naira |
 | `bestari-program-sains-*` | Tangan meletakkan robot pengikut garis di lintasan | https://unsplash.com/photos/9BkycB5U9iQ | Nandito F. Anggara |
-| `bestari-program-seni-*` | Murid berkostum tari merah putih menari (dipotong, papan nama toko dibuang) | https://unsplash.com/photos/QXWWFCj7SaA | Fajar Herlambang STUDIO |
-| `bestari-program-pramuka-*` | Dua murid berseragam pramuka berlari di selasar | https://unsplash.com/photos/xDD1eaFQ600 | Husniati Salma |
-| `bestari-ppdb-*` | Dua anak perempuan tersenyum di depan gedung | https://unsplash.com/photos/y0Mvyl6f96U | Yusuf Adiyanto |
-| `bestari-berita-1-*` | Murid berikat kepala merah putih membaca naskah | https://unsplash.com/photos/CdSNG04vclA | Husniati Salma |
-| `bestari-berita-2-*` | Guru berpeci memberi hormat bersama murid saat upacara | https://unsplash.com/photos/h0KrcWloXsE | Syahrul Alamsyah Wahid |
-| `bestari-berita-3-*` | Murid berkaus merah berkumpul di lapangan sekolah | https://unsplash.com/photos/CCXLjSSK1gE | Rafael Atantya |
+| `bestari-program-seni-*` | Siswi marching band memegang simbal di depan drum | https://unsplash.com/photos/LzoEX4YGMwU | Fajar Herlambang STUDIO |
+| `bestari-program-olahraga-*` | Tim basket putri berpose, siswi berjersey biru muda memegang bola (dipotong; nama sekolah di jersey disamarkan) | https://unsplash.com/photos/kDnBBCcFXqA | Davin Naziel |
+| `bestari-ppdb-*` | Siswi berkerudung putih dengan tali kartu peserta tersenyum | https://unsplash.com/photos/J6kMThsc41M | Mufid Majnun |
+| `bestari-berita-1-*` | Siswa bertanding futsal di lapangan sekolah | https://unsplash.com/photos/Voughotgxd4 | Davin Naziel |
+| `bestari-berita-2-*` | Tangan siswa berseragam kotak-kotak memilah sayur untuk kompos | https://unsplash.com/photos/voWim7HERBs | Ed Us |
+| `bestari-berita-3-*` | Ratusan siswa SMA bersorak saat acara sekolah | https://unsplash.com/photos/u6nlbYOa2zI | Davin Naziel |
 | `bestari-guru-1-*` | Perempuan berkerudung memegang map merah | https://unsplash.com/photos/TsJR6I2TDZc | Sewupari Studio |
-| `bestari-guru-2-*` | Pria muda berkemeja putih tersenyum (dipotong dari foto ruang pertemuan) | https://unsplash.com/photos/nxXBUhe17L4 | Herlambang Tinasih Gusti |
+| `bestari-guru-2-*` | Guru laki-laki berkacamata dan bersweter putih di perpustakaan (dipotong dari foto guru dan murid) | https://unsplash.com/photos/gc6MB1U0zgg | Fiqih Alfarish |
 | `bestari-guru-3-*` | Perempuan berkerudung merah muda dan blazer duduk tersenyum | https://unsplash.com/photos/obVb3GNAtWY | Fajar Herlambang STUDIO |
-| `bestari-galeri-1-*` | Upacara pengibaran bendera di lapangan rumput | https://unsplash.com/photos/La3MwNrgEDc | Mufid Majnun |
-| `bestari-galeri-2-*` | Murid pramuka siaga mencatat di teras sekolah | https://unsplash.com/photos/nFT8h2rILpg | Fajar Herlambang STUDIO |
-| `bestari-galeri-3-*` | Murid kelas rendah berbaju batik menulis | https://unsplash.com/photos/AezqjHX7BiQ | Fiqih Alfarish |
-| `bestari-galeri-4-*` | Dua anak laki-laki berbaju koko dan berpeci tertawa | https://unsplash.com/photos/1uwwWqTjsR4 | sam sul |
-| `bestari-galeri-5-*` | Anak perempuan tertawa di halaman berumput | https://unsplash.com/photos/aptAfYNLpuU | Vera Aurima |
+| `bestari-galeri-1-*` | Siswa dan siswi berseragam putih abu-abu mendengarkan guru di kelas | https://unsplash.com/photos/jOQ1cG8JWKc | Ed Us |
+| `bestari-galeri-2-*` | Siswi berkerudung hitam dan bermasker membaca buku (Jakarta) | https://unsplash.com/photos/tMRNymk8iNY | Syaiful Lil M |
+| `bestari-galeri-3-*` | Siswa berseragam putih belajar di ruang kelas | https://unsplash.com/photos/SZW4OQA_lME | Fajar Herlambang STUDIO |
+| `bestari-galeri-4-*` | Siswa berompi merah melambaikan bendera merah putih di tribun upacara 17 Agustus (Surabaya) | https://unsplash.com/photos/7tXqXcVcLDM | Hobi industri |
+| `bestari-galeri-5-*` | Tiga remaja berfoto di depan Candi Borobudur | https://unsplash.com/photos/_JhBzgTEoYM | Pradheep Rajendirane |
 | `bestari-ortu-1-*` | Ibu berambut panjang tersenyum (dipotong dari foto keluarga) | https://unsplash.com/photos/GVnag1XQ_4U | Fery Abdurrahman |
 | `bestari-ortu-2-*` | Bapak berkacamata tersenyum (dipotong dari foto dua orang) | https://unsplash.com/photos/Ay3P0TQnzzs | Soya__ bear |
-| `bestari-alumni-1-*` | Remaja perempuan berkerudung abu-abu berkacamata | https://unsplash.com/photos/Rjy1a_VmF-U | Ilmi Amali Q.A |
+| `bestari-alumni-1-*` | Perempuan muda berkerudung abu-abu berkacamata | https://unsplash.com/photos/Rjy1a_VmF-U | Ilmi Amali Q.A |

@@ -122,7 +122,7 @@ export function About({ m }: { m: BestariModel }) {
               </svg>
               <KitPhoto
                 src={image}
-                alt={BESTARI_PHOTOS.alt(image, `Murid ${m.companyName}`)}
+                alt={BESTARI_PHOTOS.alt(image, `Siswa ${m.companyName}`)}
                 sizes="(min-width: 1280px) 560px, (min-width: 1024px) 44vw, 86vw"
                 className="aspect-[4/5] rounded-[28px]"
               />
@@ -280,7 +280,7 @@ export function Why({ m, padTop }: { m: BestariModel; padTop: boolean }) {
               <Reveal variant="fade" delay={80} className={`relative ${subtitle ? 'mt-8' : ''}`}>
                 <KitPhoto
                   src={image}
-                  alt={BESTARI_PHOTOS.alt(image, `Murid ${m.companyName}`)}
+                  alt={BESTARI_PHOTOS.alt(image, `Siswa ${m.companyName}`)}
                   sizes="(min-width: 1280px) 520px, (min-width: 1024px) 40vw, 92vw"
                   className="aspect-[4/5] rounded-[28px] @3xl:aspect-[5/4] @5xl:aspect-[4/5]"
                 />

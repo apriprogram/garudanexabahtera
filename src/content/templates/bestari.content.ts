@@ -1,36 +1,36 @@
 // Isi halaman /template/bestari. Sumber fakta: src/templates/bestari (schema.ts, Bestari.tsx, Header.tsx, Hero.tsx,
 // Intro.tsx, About.tsx, Programs.tsx, Ppdb.tsx, News.tsx, Community.tsx, Closing.tsx, Footer.tsx). Kata kunci:
-// "template website SD" di paragraf pembuka; "website sekolah dasar", "website SD swasta", "website PPDB SD", dan
+// "template website SMA" di paragraf pembuka; "website SMA swasta", "website PPDB SMA", "website SMA negeri", dan
 // "website sekolah" di isi. Klaim wajib jujur: formulir PPDB hanya menyusun pesan WhatsApp untuk panitia (tanpa
 // penyimpanan data pendaftar dan tanpa pembayaran online); tidak ada e-rapor, absensi, atau sistem informasi akademik.
-// Demo: SD Bestari Cendekia, Yogyakarta (fiktif).
+// Demo: SMA Bestari Cendekia, Yogyakarta (fiktif).
 import type { TemplatePageContent } from './page.types';
 
 export const content: TemplatePageContent = {
   lead:
-    '{nama} adalah template website SD untuk sekolah dasar yang ingin tampil hangat, tenang, dan mudah dipercaya orang tua sejak layar pertama. Slider foto besar, menu berbentuk pil, sambutan kepala sekolah, program unggulan, guru, berita, pengumuman, dan halaman PPDB sudah tersusun; Anda tinggal mengganti foto dan teks dengan milik sekolah sendiri.',
+    '{nama} adalah template website SMA yang tampil modern, tenang, dan meyakinkan bagi calon siswa maupun orang tua sejak layar pertama. Slider foto besar, navbar yang menempel di atas, sambutan kepala sekolah, program, guru, berita, pengumuman, dan halaman PPDB sudah tersusun; Anda tinggal mengganti foto dan teksnya.',
   suitableFor: {
     intro:
-      'Pilih {nama} bila sekolah Anda butuh website sekolah dasar yang lengkap tetapi tetap sederhana dikelola: orang tua melihat program dan guru, membaca jadwal serta syarat pendaftaran, lalu mengirim formulir singkat ke panitia lewat WhatsApp. Satu warna tema bisa diganti, misalnya terakota bawaan, hijau, atau biru.',
+      'Pilih {nama} bila sekolah Anda butuh website sekolah yang lengkap tetapi tetap sederhana dikelola: calon siswa dan orang tua melihat program, prestasi, dan guru, membaca jadwal serta syarat pendaftaran, lalu mengirim formulir singkat ke panitia lewat WhatsApp.',
     items: [
-      'Sekolah yang membutuhkan website SD swasta untuk menonjolkan kelas kecil, program literasi, sains, seni, dan pramuka.',
-      'Yayasan yang membutuhkan website PPDB SD untuk promosi penerimaan murid baru setiap tahun ajaran.',
-      'SD negeri yang ingin punya website sekolah resmi berisi berita, pengumuman, dan agenda untuk orang tua.',
-      'SMP yang ingin tampilan serupa dengan mengganti isi program dan menyembunyikan bagian yang tidak dipakai.',
+      'Sekolah yang membutuhkan website SMA swasta untuk menonjolkan kelas kecil, bimbingan kuliah, klub sains, seni, dan olahraga.',
+      'Yayasan yang membutuhkan website PPDB SMA untuk promosi penerimaan siswa baru setiap tahun ajaran.',
+      'Sekolah yang ingin punya website SMA negeri resmi berisi berita, pengumuman, dan agenda untuk siswa dan orang tua.',
+      'MA yang ingin tampilan serupa dengan mengganti isi program dan menyembunyikan bagian yang tidak dipakai.',
     ],
   },
   parts: [
     {
-      name: 'Menu & bilah info',
-      text: 'Bilah tipis di paling atas berisi email, telepon, dan pengumuman PPDB, lalu menu putih berbentuk pil yang melayang di atas foto dengan tombol daftar; di HP menu dilipat.',
+      name: 'Navbar & bilah info',
+      text: 'Bilah tipis berisi email, telepon, dan pengumuman PPDB, lalu navbar selebar layar yang transparan di atas foto dan putih saat digulir, dengan tombol daftar; di HP menu dilipat.',
     },
     {
       name: 'Hero slider',
-      text: 'Hingga 4 foto latar selebar layar yang berganti otomatis dan berhenti saat disorot, lengkap dengan nomor slide, tombol sebelumnya/berikutnya/jeda, geser di HP, judul, dua tombol, dan tiga angka sekolah.',
+      text: 'Hingga 4 foto latar selebar layar yang berganti otomatis dan berhenti saat disorot, dengan tombol slide dan jeda, geser di HP, judul, dua tombol, dan tiga angka yang menghitung naik.',
     },
     {
       name: 'Kartu sorotan & lencana',
-      text: 'Tiga kartu yang menumpang di tepi bawah hero (kartu tengah berwarna tema) dan hingga 6 lencana, misalnya akreditasi, sekolah Adiwiyata, atau sekolah ramah anak.',
+      text: 'Tiga kartu yang menumpang di tepi bawah hero (kartu tengah berwarna tema) dan hingga 6 lencana, misalnya akreditasi, sekolah Adiwiyata, atau bebas perundungan.',
     },
     {
       name: 'Profil & angka sekolah',
@@ -40,16 +40,19 @@ export const content: TemplatePageContent = {
       name: 'Sambutan & alasan memilih',
       text: 'Foto dan kutipan kepala sekolah, lalu hingga 5 alasan bernomor yang dibuka satu per satu, foto dengan kartu angka, dan kutipan seorang guru.',
     },
-    { name: 'Program, prestasi & guru', text: 'Hingga 6 kartu program berfoto dengan ikon otomatis, 8 baris prestasi lomba, dan 6 kartu foto guru beserta jabatannya.' },
+    {
+      name: 'Program, prestasi & guru',
+      text: 'Hingga 6 kartu program berfoto dalam carousel yang bisa digeser dengan ikon otomatis, 8 baris prestasi lomba, dan 6 kartu foto guru beserta jabatannya.',
+    },
     {
       name: 'PPDB',
-      text: 'Fakta singkat, tab jalur, jadwal berbentuk linimasa, syarat, alur, dan rincian biaya, serta formulir untuk nama, tanggal lahir, orang tua, kelas, jalur, asal TK, dan nomor WhatsApp.',
+      text: 'Fakta singkat, tab jalur, jadwal berbentuk linimasa, syarat, alur, dan rincian biaya, serta formulir untuk nama, tanggal lahir, orang tua, kelas, jalur, asal sekolah, dan nomor WhatsApp.',
     },
     { name: 'Berita, pengumuman & agenda', text: 'Hingga 9 berita dengan filter kategori dan tanggal, pengumuman dengan label "Penting", serta agenda kegiatan dengan waktu dan tempat.' },
     { name: 'Testimoni, galeri & kontak', text: 'Kutipan orang tua dan alumni, galeri foto, tanya jawab buka-tutup, lalu alamat, telepon, email, jam layanan, media sosial, dan peta Google Maps.' },
   ],
   partsNote:
-    'Setiap bagian bisa disembunyikan dari CMS. Formulir PPDB menghitung usia calon murid pada tanggal acuan yang Anda tentukan, lalu menyusun pesan berisi data pendaftar dan membukanya di WhatsApp panitia; data tidak disimpan di website dan tidak ada pembayaran online.',
+    'Setiap bagian bisa disembunyikan dari CMS. Formulir PPDB menghitung usia calon siswa pada tanggal acuan, lalu membuka pesan berisi data pendaftar di WhatsApp panitia; data tidak disimpan di website dan tidak ada pembayaran online.',
   cms: [
     'Nama sekolah, tagline, logo, dan satu warna tema dengan pilihan cepat atau kode warna sendiri.',
     'Foto dan teks setiap slide hero, pengumuman di bilah atas, tiga angka di hero, dan kartu sorotan.',
@@ -61,27 +64,27 @@ export const content: TemplatePageContent = {
   cmsNote:
     'Tanggal berita, pengumuman, dan agenda ditulis dengan format tahun-bulan-tanggal agar tampil rapi, misalnya 7 Nov 2026. Ikon program, lencana, dan angka dipilih otomatis dari teks yang Anda tulis.',
   demo: [
-    'Demo {nama} memakai SD Bestari Cendekia, sekolah dasar fiktif di Yogyakarta dengan program literasi bilingual, sains dan robotika, seni budaya, serta pramuka. Di dalamnya ada contoh jadwal PPDB, berita lomba baca puisi, pengumuman pembagian rapor, dan agenda open house yang bisa langsung Anda ganti.',
-    'Nama kepala sekolah, guru, murid, orang tua, angka sekolah, dan biaya di demo hanyalah contoh. Tulis data sekolah Anda apa adanya, termasuk akreditasi dan kuota setiap kelas. Foto murid di demo berasal dari Unsplash, jadi sebaiknya diganti dengan foto kegiatan sekolah Anda sendiri.',
+    'Demo {nama} memakai SMA Bestari Cendekia, SMA swasta fiktif di Yogyakarta dengan bimbingan masuk PTN, robotika, marching band, serta basket dan futsal. Ada contoh jadwal PPDB, berita juara futsal, pengumuman try out, dan agenda open house yang bisa langsung Anda ganti.',
+    'Nama kepala sekolah, guru, siswa, orang tua, angka sekolah, dan biaya di demo hanyalah contoh. Tulis data sekolah Anda apa adanya, termasuk akreditasi dan kuota setiap kelas. Foto siswa di demo berasal dari Unsplash, jadi sebaiknya diganti dengan foto kegiatan sekolah Anda sendiri.',
   ],
   custom:
     '{nama} adalah website profil dan informasi sekolah. Bila sekolah Anda membutuhkan PPDB online yang menyimpan data pendaftar, unggah berkas, pembayaran formulir, e-rapor, absensi, atau aplikasi komunikasi guru dan orang tua, fitur itu termasuk website atau aplikasi custom. Ceritakan alur pendaftaran dan administrasi di sekolah Anda, lalu kami kirim penawaran setelah konsultasi gratis.',
   mobileLink: true,
   faq: [
     {
-      question: 'Apakah orang tua bisa mendaftar PPDB langsung di website?',
+      question: 'Apakah calon siswa bisa mendaftar PPDB langsung di website?',
       answer:
-        'Orang tua mengisi formulir singkat berisi nama dan tanggal lahir anak, nama orang tua, kelas, dan jalur. {nama} tidak menyimpan data: setelah diperiksa, isian disusun menjadi pesan dan dibuka di WhatsApp panitia. Penyerahan berkas dan pembayaran tetap diurus langsung dengan panitia.',
+        'Calon siswa atau orang tua mengisi formulir singkat: nama, tanggal lahir, orang tua, kelas, jalur, dan asal sekolah. {nama} tidak menyimpan data: isian disusun menjadi pesan dan dibuka di WhatsApp panitia. Berkas dan pembayaran tetap diurus langsung dengan panitia.',
     },
     {
-      question: 'Bagaimana formulir menghitung usia calon murid?',
+      question: 'Bagaimana formulir memeriksa usia calon siswa?',
       answer:
-        'Isi tanggal acuan usia di CMS, misalnya 1 Juli tahun ajaran baru. Saat orang tua memilih tanggal lahir, formulir menampilkan usia anak pada tanggal itu dan menuliskannya di pesan WhatsApp untuk panitia.',
+        'Isi tanggal acuan usia di CMS, misalnya 1 Juli tahun ajaran baru. Formulir menampilkan usia pada tanggal itu, menolak tahun lahir yang tidak wajar untuk SMA, dan menuliskan usianya di pesan WhatsApp.',
     },
     {
-      question: 'Apakah template ini cocok untuk SMP?',
+      question: 'Apakah template ini cocok untuk MA?',
       answer:
-        'Cocok. Ganti isi program, pilihan kelas, dan teks PPDB sesuai jenjang Anda, lalu sembunyikan bagian yang tidak dipakai. Ikon program dan lencana ikut menyesuaikan teks yang Anda tulis.',
+        'Cocok. Ganti isi program, pilihan kelas, dan teks PPDB sesuai kebutuhan madrasah Anda, lalu sembunyikan bagian yang tidak dipakai. Ikon program dan lencana ikut menyesuaikan teks yang Anda tulis.',
     },
     {
       question: 'Bisakah warna websitenya diganti?',
@@ -95,8 +98,8 @@ export const content: TemplatePageContent = {
     },
   ],
   imageAlts: {
-    'bestari-preview.webp': 'Tampilan beranda template website SD {nama} di desktop dan HP dengan slider foto murid dan menu putih berbentuk pil',
-    'bestari-1.webp': 'Bagian program unggulan template {nama} dengan kartu foto literasi, sains, seni, dan pramuka',
+    'bestari-preview.webp': 'Tampilan beranda template website SMA {nama} di desktop dan HP dengan slider foto siswa dan navbar transparan',
+    'bestari-1.webp': 'Bagian program unggulan template {nama} dengan carousel kartu foto bimbingan masuk PTN, sains, dan marching band',
     'bestari-2.webp': 'Bagian PPDB template {nama} dengan fakta pendaftaran, tab jalur, dan formulir pendaftaran singkat',
   },
   guides: ['template-vs-jasa-website-custom', 'biaya-website-company-profile'],

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 2026-10-26_028 — katalog: template baru Bestari (website sekolah dasar)
+-- Migration 2026-10-26_028 — katalog: template baru Bestari (website SMA)
 -- ============================================================================
 -- Data saja, tanpa perubahan skema. Target: db_garudanexabahtera yang SUDAH punya tabel
 -- `templates` (migrasi 004). Kompatibel MySQL 8.0 (produksi) dan MariaDB 10.4 (XAMPP lokal).
@@ -17,7 +17,7 @@
 -- Kategori "Sekolah & Pendidikan" sudah ada (migrasi 024; halaman kategori di src/content/categories.ts). Gambar
 -- pratinjau = tangkapan layar asli demo (WebP 1600x1000): bestari-preview.webp (hero desktop dalam bingkai peramban +
 -- hero HP), galeri bestari-1.webp & bestari-2.webp. Foto di dalam template dari Unsplash
--- (public/assets/templates/photos/CREDITS.md, section "Bestari"). Demo: SD Bestari Cendekia, sekolah FIKTIF di
+-- (public/assets/templates/photos/CREDITS.md, section "Bestari"). Demo: SMA Bestari Cendekia, sekolah FIKTIF di
 -- Yogyakarta.
 --
 -- Harga contoh Rp1.690.000 (termasuk setup + hosting + SSL tahun pertama), sama dengan Madani & Cakrawala. Domain
@@ -39,11 +39,11 @@ VALUES
 UPDATE templates SET
   name              = 'Bestari',
   category          = 'Sekolah & Pendidikan',
-  short_description = 'Template website SD yang hangat dan modern: hero slider foto, PPDB dengan formulir ke WhatsApp, berita, pengumuman, guru, dan testimoni orang tua.',
-  description       = 'Bestari membuat website sekolah dasar terasa tenang dan meyakinkan sejak layar pertama: slider foto besar selebar layar dengan menu pil putih yang melayang, bilah info kontak dan pengumuman PPDB, tiga angka sekolah, dan kartu sorotan. Di bawahnya tersusun lencana sekolah, profil dengan visi dan misi, angka sekolah, sambutan kepala sekolah, alasan memilih sekolah, program unggulan, prestasi, guru, PPDB (jalur, jadwal, syarat, alur, biaya, dan formulir singkat yang menghitung usia calon murid), berita dengan filter kategori, pengumuman, agenda, testimoni orang tua dan alumni, galeri, tanya jawab, serta lokasi dengan Google Maps.
+  short_description = 'Template website SMA yang modern dan meyakinkan: hero slider foto, navbar transparan, PPDB dengan formulir ke WhatsApp, berita, program, dan guru.',
+  description       = 'Bestari membuat website SMA terasa modern dan meyakinkan sejak layar pertama: slider foto besar selebar layar dengan navbar yang transparan di atas foto lalu putih saat digulir, bilah info kontak dan pengumuman PPDB, tiga angka sekolah yang menghitung naik, dan kartu sorotan. Di bawahnya tersusun lencana sekolah, profil dengan visi dan misi, angka sekolah, sambutan kepala sekolah, alasan memilih sekolah, carousel program unggulan, prestasi, guru, PPDB (jalur, jadwal, syarat, alur, biaya, dan formulir singkat yang memeriksa usia calon siswa), berita dengan filter kategori, pengumuman, agenda, testimoni orang tua dan alumni, galeri, tanya jawab, serta lokasi dengan Google Maps.
 
-Cocok untuk SD swasta maupun negeri, dan bisa dipakai SMP dengan mengganti isi program. Formulir PPDB menyusun pesan WhatsApp untuk panitia; tidak ada penyimpanan data pendaftar atau pembayaran online. Semua teks, foto, jadwal, dan satu warna tema (misalnya terakota, hijau, atau biru) bisa Anda ubah sendiri lewat CMS tanpa coding.',
-  features          = '["Hero slider foto selebar layar dengan menu pil putih dan pengumuman PPDB","PPDB bertab: jalur, jadwal, syarat, alur, dan biaya","Formulir pendaftaran SD yang menghitung usia calon murid dan menyusun pesan WhatsApp untuk panitia","Berita dengan filter kategori, pengumuman bertanggal, dan agenda kegiatan","Profil, sambutan kepala sekolah, program unggulan, prestasi, dan guru","Testimoni orang tua & alumni, galeri, dan tanya jawab","Satu warna tema yang bisa diganti, misalnya terakota, hijau, atau biru","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+Cocok untuk SMA swasta maupun negeri, dan bisa dipakai MA dengan mengganti isi program. Formulir PPDB menyusun pesan WhatsApp untuk panitia; tidak ada penyimpanan data pendaftar atau pembayaran online. Semua teks, foto, jadwal, dan satu warna tema (misalnya terakota, hijau, atau biru) bisa Anda ubah sendiri lewat CMS tanpa coding.',
+  features          = '["Hero slider foto selebar layar dengan navbar transparan dan pengumuman PPDB","PPDB bertab: jalur, jadwal, syarat, alur, dan biaya","Formulir pendaftaran SMA yang memeriksa usia calon siswa dan menyusun pesan WhatsApp untuk panitia","Berita dengan filter kategori, pengumuman bertanggal, dan agenda kegiatan","Profil, sambutan kepala sekolah, carousel program unggulan, prestasi, dan guru","Testimoni orang tua & alumni, galeri, dan tanya jawab","Satu warna tema yang bisa diganti, misalnya terakota, hijau, atau biru","Domain sendiri dan sertifikat SSL (HTTPS)"]',
   price             = 1690000.00,
   preview_image     = '/assets/templates/bestari-preview.webp',
   gallery           = '["/assets/templates/bestari-1.webp","/assets/templates/bestari-2.webp"]',

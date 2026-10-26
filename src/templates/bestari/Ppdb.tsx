@@ -1,7 +1,7 @@
 // PPDB (kunci `ppdb`). Atas: label bernomor, H2, deskripsi, fakta singkat (gelombang, kuota, usia, biaya formulir),
 // tautan brosur, dan foto membulat. Bawah kiri: tab Jalur · Jadwal (linimasa) · Syarat · Alur · Biaya (tablist dengan
 // panah kiri/kanan, Home/End; panel tidak aktif `hidden` tetapi tetap di HTML untuk perayap). Bawah kanan: formulir
-// pendaftaran SD (nama, tanggal lahir → usia per tanggal acuan, orang tua/wali, kelas, jalur, asal TK/PAUD, WhatsApp).
+// pendaftaran SMA (nama, tanggal lahir → usia per tanggal acuan, orang tua/wali, kelas, jalur, asal sekolah, WhatsApp).
 // JUJUR: formulir hanya MENYUSUN pesan WhatsApp untuk panitia — tidak ada data yang dikirim ke server atau disimpan,
 // tidak ada pembayaran. Setelah lolos validasi, pesan ditampilkan apa adanya beserta tombol "Buka WhatsApp" (pratinjau:
 // tautan tidak dibuka). Tanpa nomor WhatsApp → tombol ke Kontak.
@@ -353,7 +353,7 @@ function RegistrationForm({ m }: { m: BestariModel }) {
       )}
       {intro && <p className={`mt-2 ${TYPE_B.small} ${C.muted}`}>{intro}</p>}
       <div className="mt-5 grid gap-4">
-        <Field id={id('name')} label="Nama lengkap calon murid" error={errors.name}>
+        <Field id={id('name')} label="Nama lengkap calon siswa" error={errors.name}>
           <input
             ref={(el) => {
               refs.current.name = el;
@@ -368,7 +368,7 @@ function RegistrationForm({ m }: { m: BestariModel }) {
             {...invalid('name')}
           />
         </Field>
-        <Field id={id('birth')} label="Tanggal lahir calon murid" error={errors.birth} hint={birthHint}>
+        <Field id={id('birth')} label="Tanggal lahir calon siswa" error={errors.birth} hint={birthHint}>
           <input
             ref={(el) => {
               refs.current.birth = el;
@@ -401,7 +401,7 @@ function RegistrationForm({ m }: { m: BestariModel }) {
           {select('grade', 'Kelas yang dituju', 'Pilih kelas', grades)}
           {select('path', 'Jalur pendaftaran', 'Pilih jalur', paths)}
         </div>
-        <Field id={id('origin')} label="Asal TK/PAUD" optional>
+        <Field id={id('origin')} label="Asal sekolah" optional>
           <input
             ref={(el) => {
               refs.current.origin = el;
@@ -410,6 +410,7 @@ function RegistrationForm({ m }: { m: BestariModel }) {
             type="text"
             autoComplete="off"
             maxLength={80}
+            placeholder="SMP/MTs, atau SMA/MA bagi siswa pindahan"
             value={form.origin}
             onChange={(e) => set('origin')(e.target.value)}
             className={`${INPUT} h-12`}
@@ -492,7 +493,7 @@ export function Ppdb({ m }: { m: BestariModel }) {
             <Reveal variant="fade" className="@4xl:col-span-5">
               <KitPhoto
                 src={image}
-                alt={BESTARI_PHOTOS.alt(image, `Calon murid baru ${m.companyName}`)}
+                alt={BESTARI_PHOTOS.alt(image, `Calon siswa baru ${m.companyName}`)}
                 sizes="(min-width: 1280px) 560px, (min-width: 896px) 40vw, 92vw"
                 className="aspect-[4/3] rounded-[28px]"
               />

@@ -1,6 +1,6 @@
 // Turunan konten Bestari (fungsi murni, diuji di __tests__/bestari.test.tsx): warna tema (pita gelap hangat, tinta di
 // latar terang, warna terang di pita gelap), menu, nomor section "(01)", slide hero, tujuan tombol, tanggal Indonesia,
-// filter berita, formulir PPDB SD (tanggal lahir → usia per tanggal acuan) → pesan WhatsApp, peta lokasi. Semua tahan
+// filter berita, formulir PPDB SMA (tanggal lahir → usia per tanggal acuan) → pesan WhatsApp, peta lokasi. Semua tahan
 // konten mentah (null, angka, list rusak). Formulir PPDB hanya menyusun pesan WhatsApp: tidak ada data yang dikirim ke
 // server atau disimpan.
 import type { CSSProperties } from 'react';
@@ -81,7 +81,7 @@ export interface BestariNavItem {
   label: string;
 }
 
-/** Urutan menu atas: bagian yang paling dicari orang tua calon murid. */
+/** Urutan menu atas: bagian yang paling dicari calon siswa dan orang tuanya. */
 const NAV: { key: string; label: string; fixed?: boolean }[] = [
   { key: 'about', label: 'Profil' },
   { key: 'programs', label: 'Program' },
@@ -148,10 +148,10 @@ export const wrapIndex = (i: number, count: number): number => (count > 0 ? ((Ma
 // ─── Tujuan kartu sorotan ─────────────────────────────────────────────────────
 
 const TARGETS: [RegExp, string][] = [
-  [/ppdb|spmb|pendaftaran|daftar|penerimaan|murid baru/i, 'ppdb'],
+  [/ppdb|spmb|pendaftaran|daftar|penerimaan|murid baru|siswa baru/i, 'ppdb'],
   [/open house|kunjungan|agenda|jadwal|kegiatan/i, 'agenda'],
   [/guru|pengajar|wali kelas/i, 'teachers'],
-  [/program|bilingual|literasi|ekstrakurikuler|ekskul|kelas/i, 'programs'],
+  [/program|bilingual|literasi|ekstrakurikuler|ekskul|bimbingan|ptn|kuliah|robotika|marching band|kelas/i, 'programs'],
   [/prestasi|lomba|juara/i, 'achievements'],
   [/berita|kabar/i, 'news'],
   [/pengumuman|info/i, 'announcements'],
@@ -159,7 +159,7 @@ const TARGETS: [RegExp, string][] = [
   [/profil|tentang|visi|misi/i, 'about'],
 ];
 
-/** Section tujuan dari judul (mis. "Pendaftaran murid baru" → ppdb); hanya bila section itu tampil, selain itu null. */
+/** Section tujuan dari judul (mis. "Pendaftaran siswa baru" → ppdb); hanya bila section itu tampil, selain itu null. */
 export function titleTarget(title: string, shown: (key: string) => boolean): string | null {
   const match = TARGETS.find(([pattern, key]) => pattern.test(title || '') && shown(key));
   return match ? match[1] : null;
@@ -238,19 +238,19 @@ export const paragraphsOf = (raw: string): string[] =>
 /** Label pengumuman yang ditonjolkan merah lembut ("Penting", "Wajib", "Segera", "Mendesak"). */
 export const isUrgent = (badge: string): boolean => /penting|wajib|segera|mendesak|urgent/i.test(badge || '');
 
-// ─── PPDB (SD) ────────────────────────────────────────────────────────────────
+// ─── PPDB (SMA) ───────────────────────────────────────────────────────────────
 
 export interface PpdbForm {
-  /** Nama lengkap calon murid */
+  /** Nama lengkap calon siswa */
   name: string;
   /** Tanggal lahir "YYYY-MM-DD" (input type=date) */
   birth: string;
   /** Nama orang tua/wali */
   parent: string;
-  /** Pilihan kelas (mis. "Kelas 1 bilingual") */
+  /** Pilihan kelas (mis. "Kelas 10", "Pindahan kelas 11") */
   grade: string;
   path: string;
-  /** Asal TK/PAUD (opsional) */
+  /** Asal sekolah: SMP/MTs, atau SMA/MA untuk siswa pindahan (opsional) */
   origin: string;
   phone: string;
   note: string;
@@ -291,9 +291,12 @@ export const ageLabel = (age: Age): string => `${age.years} tahun${age.months ? 
 export const todayIso = (now = new Date()): string =>
   `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-/** Batas usia wajar calon murid SD (kelas 1 sampai pindahan kelas atas) pada tanggal acuan. */
-const MIN_AGE = 4;
-const MAX_AGE = 13;
+/**
+ * Batas usia wajar calon siswa SMA pada tanggal acuan: paling muda 13 tahun (lulusan SMP percepatan), paling tinggi
+ * 21 tahun (ketentuan umum PPDB SMA, usia 21 tahun lebih beberapa bulan masih boleh).
+ */
+const MIN_AGE = 13;
+const MAX_AGE = 21;
 
 /**
  * Pesan galat per isian (kosong = valid). `grades`/`paths` = pilihan yang tersedia (wajib dipilih bila ada).
@@ -303,12 +306,12 @@ export function validatePpdb(form: PpdbForm, options: { grades: string[]; paths:
   const errors: PpdbErrors = {};
   const today = options.today ?? todayIso();
   const reference = parseSchoolDate(options.reference)?.iso ?? today;
-  if (form.name.trim().length < 3) errors.name = 'Tulis nama lengkap calon murid.';
+  if (form.name.trim().length < 3) errors.name = 'Tulis nama lengkap calon siswa.';
   const birth = parseSchoolDate(form.birth);
   const age = birth ? ageAt(birth.iso, reference) : null;
-  if (!birth) errors.birth = 'Pilih tanggal lahir calon murid.';
+  if (!birth) errors.birth = 'Pilih tanggal lahir calon siswa.';
   else if (birth.iso > today) errors.birth = 'Tanggal lahir tidak boleh setelah hari ini.';
-  else if (!age || age.years < MIN_AGE || age.years >= MAX_AGE) errors.birth = 'Periksa kembali tahun lahir calon murid.';
+  else if (!age || age.years < MIN_AGE || age.years > MAX_AGE) errors.birth = 'Periksa kembali tahun lahir calon siswa.';
   if (form.parent.trim().length < 3) errors.parent = 'Tulis nama orang tua atau wali.';
   if (options.grades.length > 0 && !options.grades.includes(form.grade)) errors.grade = 'Pilih kelas yang dituju.';
   if (options.paths.length > 0 && !options.paths.includes(form.path)) errors.path = 'Pilih jalur pendaftaran.';
@@ -323,16 +326,16 @@ export function ppdbMessage(school: string, form: PpdbForm, reference = ''): str
   const age = birth && ref ? ageAt(birth.iso, ref.iso) : null;
   const birthText = birth ? `${birth.label}${age && ref ? ` (usia per ${ref.label}: ${ageLabel(age)})` : ''}` : form.birth.trim();
   const rows = [
-    `Nama calon murid: ${form.name.trim()}`,
+    `Nama calon siswa: ${form.name.trim()}`,
     `Tanggal lahir: ${birthText}`,
     `Nama orang tua/wali: ${form.parent.trim()}`,
     form.grade && `Pilihan kelas: ${form.grade}`,
     form.path && `Jalur: ${form.path}`,
-    form.origin.trim() && `Asal TK/PAUD: ${form.origin.trim()}`,
+    form.origin.trim() && `Asal sekolah: ${form.origin.trim()}`,
     `No. WhatsApp: ${form.phone.trim()}`,
     form.note.trim() && `Catatan: ${form.note.trim().replace(/\s+/g, ' ')}`,
   ].filter(Boolean);
-  return `Halo Panitia PPDB ${school}, saya ingin mendaftarkan anak saya.\n${rows.join('\n')}\nMohon info langkah selanjutnya. Terima kasih.`;
+  return `Halo Panitia PPDB ${school}, saya ingin mendaftarkan calon siswa berikut.\n${rows.join('\n')}\nMohon info langkah selanjutnya. Terima kasih.`;
 }
 
 // ─── Galeri ───────────────────────────────────────────────────────────────────
