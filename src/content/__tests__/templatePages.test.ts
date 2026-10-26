@@ -47,7 +47,7 @@ const SKYNUSA: Template = { ...FIXTURE_TEMPLATES[4], id: 41, slug: 'skynusa', na
 const MADANI: Template = { ...FIXTURE_TEMPLATES[4], id: 66, slug: 'madani', name: 'Madani', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'madani', sort_order: 12 };
 // Cakrawala (2026-10-25, migrasi 025) juga belum ada di fixture prerender bersama
 const CAKRAWALA: Template = { ...FIXTURE_TEMPLATES[4], id: 67, slug: 'cakrawala', name: 'Cakrawala', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'cakrawala', sort_order: 13 };
-// Bestari (2026-10-26, migrasi 028, website SD) juga belum ada di fixture prerender bersama
+// Bestari (2026-10-26, migrasi 028, website SMA) juga belum ada di fixture prerender bersama
 const BESTARI: Template = { ...FIXTURE_TEMPLATES[4], id: 83, slug: 'bestari', name: 'Bestari', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'bestari', sort_order: 14 };
 const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI].find((t) => t.slug === slug) as Template;
 
@@ -77,7 +77,7 @@ describe('src/content/templates', () => {
       skynusa: 'SkyNusa: Template Website Toko Drone & Sewa Drone',
       madani: 'Madani: Template Website Sekolah Islam & PPDB Online',
       cakrawala: 'Cakrawala: Template Website SMK & SMA dengan Halaman PPDB',
-      bestari: 'Bestari: Template Website SD dengan Halaman PPDB',
+      bestari: 'Bestari: Template Website SMA dengan Halaman PPDB',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -94,7 +94,7 @@ describe('src/content/templates', () => {
       skynusa: 'SkyNusa: Template Website Toko Drone – Rp1,59 jt',
       madani: 'Madani: Template Website Sekolah Islam – Rp1,69 jt',
       cakrawala: 'Cakrawala: Template Website SMK & SMA – Rp1,69 jt',
-      bestari: 'Bestari: Template Website SD & Sekolah Dasar – Rp1,69 jt',
+      bestari: 'Bestari: Template Website SMA & PPDB Online – Rp1,69 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -192,6 +192,8 @@ describe('src/content/templates', () => {
     expect(bestari).toMatch(/tidak ada pembayaran online/);
     expect(bestari).toMatch(/fiktif/);
     expect(bestari).not.toMatch(/e-rapor tersedia|sistem informasi akademik lengkap|data pendaftar tersimpan|pembayaran online tersedia|tes calistung/i);
+    // Bestari kini template SMA (2026-10-26): tidak ada sisa salinan sekolah dasar
+    expect(bestari).not.toMatch(/\bSD\b|sekolah dasar|TK\/PAUD/);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -305,21 +307,21 @@ describe('src/content/templates', () => {
     expect(TEMPLATE_COPY.cakrawala?.updated).toBe('2026-10-25');
   });
 
-  it('Bestari: kata kunci "template website SD" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
+  it('Bestari: kata kunci "template website SMA" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
     const t = bySlug('bestari');
-    const keyword = /template website SD/i;
+    const keyword = /template website SMA/i;
     expect(templateTitle(t)).toMatch(keyword);
-    expect(templateDescription(t)).toMatch(/^Template website SD /);
+    expect(templateDescription(t)).toMatch(/^Template website SMA /);
     expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
     expect(templateH1(t)).toMatch(keyword);
     const c = templateContent('bestari') as TemplatePageContent;
-    expect(fillName(c.lead, t)).toMatch(/^Bestari adalah template website SD /);
+    expect(fillName(c.lead, t)).toMatch(/^Bestari adalah template website SMA /);
     const text = visibleText(c);
-    for (const phrase of ['website sekolah dasar', 'website SD swasta', 'website PPDB SD', 'website sekolah']) expect(text, phrase).toContain(phrase);
+    for (const phrase of ['website SMA swasta', 'website PPDB SMA', 'website SMA negeri', 'website sekolah']) expect(text, phrase).toContain(phrase);
     // Wajar, bukan ditumpuk
-    expect(text.toLowerCase().split('template website sd').length - 1).toBeLessThanOrEqual(3);
-    expect(TEMPLATE_COPY.bestari?.niche).toBe('Sekolah Dasar (SD)');
-    expect(TEMPLATE_PAGES.bestari?.niche).toBe('sekolah dasar');
+    expect(text.toLowerCase().split('template website sma').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.bestari?.niche).toBe('Sekolah Menengah Atas (SMA)');
+    expect(TEMPLATE_PAGES.bestari?.niche).toBe('sekolah menengah atas');
     expect(TEMPLATE_COPY.bestari?.updated).toBe('2026-10-26');
   });
 

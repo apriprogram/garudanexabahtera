@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run src/templates/__tests__/bestari.test.tsx
-// Bestari (template website SD 2026-10-26): skema CMS & konten demo, helper model (warna tema, menu, nomor section,
-// slide hero, tanggal, filter berita, formulir PPDB SD dengan tanggal lahir → usia → pesan WhatsApp, ikon otomatis),
+// Bestari (template website SMA 2026-10-26): skema CMS & konten demo, helper model (warna tema, menu, nomor section,
+// slide hero, tanggal, filter berita, formulir PPDB SMA dengan tanggal lahir → usia → pesan WhatsApp, ikon otomatis),
 // demo (urutan section, hero slider + gerak masuk hanya setelah pergantian, kartu sorotan, profil "+", alasan bernomor,
 // program, guru, PPDB bertab + formulir, berita berfilter, pengumuman & agenda, testimoni, galeri, FAQ, kontak + peta,
 // footer), kustomisasi warna, SEO situs pembeli, konten opsional kosong, pratinjau CMS diam, editor CMS, data katalog
@@ -175,11 +175,14 @@ describe('Bestari: skema & konten bawaan', () => {
     expect(total).toBeLessThanOrEqual(3000);
   });
 
-  it('salinan demo jujur: formulir PPDB hanya lewat WhatsApp, tanpa tes calistung, tanpa klaim sistem akademik', () => {
+  it('salinan demo jujur: formulir PPDB hanya lewat WhatsApp, tes masuk dijelaskan apa adanya, tanpa klaim sistem akademik', () => {
     const text = JSON.stringify(def.defaultContent);
-    expect(text).not.toMatch(/dijamin|pasti diterima|e-rapor|absensi online|pembayaran online|terbaik nomor|tes calistung/i);
+    expect(text).not.toMatch(/dijamin|pasti diterima|pasti lolos|e-rapor|absensi online|pembayaran online|terbaik nomor|tes calistung/i);
     expect(text).toMatch(/data tidak disimpan di website/);
-    expect(text).toMatch(/bukan tes membaca dan berhitung/);
+    expect(text).toMatch(/Tes potensi skolastik singkat dan wawancara minat/);
+    // SMA, bukan SD: tidak ada sisa salinan sekolah dasar
+    expect(text).not.toMatch(/\bSD\b|sekolah dasar|TK\/PAUD|kelas [1-6]\b/i);
+    expect(JSON.stringify(def.sections)).not.toMatch(/\bSD\b|sekolah dasar|TK\/PAUD|kelas [1-6]\b|observasi kesiapan|senang belajar/i);
   });
 });
 
@@ -295,7 +298,7 @@ describe('Bestari: helper model', () => {
     expect([isUrgent('Penting'), isUrgent('WAJIB'), isUrgent('Info'), isUrgent('')]).toEqual([true, true, false, false]);
   });
 
-  it('PPDB SD: usia per tanggal acuan, validasi tanggal lahir & pilihan, pesan WhatsApp per baris', () => {
+  it('PPDB SMA: usia per tanggal acuan (13–21 tahun), validasi tanggal lahir & pilihan, pesan WhatsApp per baris', () => {
     expect(ageAt('2021-03-14', '2027-07-01')).toEqual({ years: 6, months: 3 });
     expect(ageAt('2021-07-01', '2027-07-01')).toEqual({ years: 6, months: 0 });
     expect(ageAt('2021-07-02', '2027-07-01')).toEqual({ years: 5, months: 11 });
@@ -304,22 +307,25 @@ describe('Bestari: helper model', () => {
     expect(['081234567890', '+62 812-3456-7890', '6281234567890', '8123456789'].map(validPhone)).toEqual([true, true, true, true]);
     expect(['12345', '0812abc34567', '', '9912345678'].map(validPhone)).toEqual([false, false, false, false]);
 
-    const options = { grades: ['Kelas 1 reguler'], paths: ['Jalur reguler'], reference: '2027-07-01', today: '2026-10-26' };
+    const options = { grades: ['Kelas 10'], paths: ['Jalur reguler'], reference: '2027-07-01', today: '2026-10-26' };
     expect(Object.keys(validatePpdb(EMPTY_PPDB, options))).toEqual(['name', 'birth', 'parent', 'grade', 'path', 'phone']);
-    const filled = { ...EMPTY_PPDB, name: 'Alya Putri', birth: '2021-03-14', parent: 'Ibu Sari', grade: 'Kelas 1 reguler', path: 'Jalur reguler', phone: '081234567890' };
+    const filled = { ...EMPTY_PPDB, name: 'Alya Putri', birth: '2012-03-14', parent: 'Ibu Sari', grade: 'Kelas 10', path: 'Jalur reguler', phone: '081234567890' };
     expect(validatePpdb(filled, options)).toEqual({});
     expect(validatePpdb({ ...filled, birth: '2027-01-01' }, options).birth).toBe('Tanggal lahir tidak boleh setelah hari ini.');
-    expect(validatePpdb({ ...filled, birth: '2025-01-01' }, options).birth).toBe('Periksa kembali tahun lahir calon murid.');
-    expect(validatePpdb({ ...filled, birth: '2010-01-01' }, options).birth).toBe('Periksa kembali tahun lahir calon murid.');
+    // Usia SMA wajar: 13 sampai 21 tahun (21 tahun lebih beberapa bulan masih boleh) pada tanggal acuan
+    expect(validatePpdb({ ...filled, birth: '2015-01-01' }, options).birth).toBe('Periksa kembali tahun lahir calon siswa.');
+    expect(validatePpdb({ ...filled, birth: '2004-01-01' }, options).birth).toBe('Periksa kembali tahun lahir calon siswa.');
+    expect(validatePpdb({ ...filled, birth: '2014-07-01' }, options)).toEqual({});
+    expect(validatePpdb({ ...filled, birth: '2006-03-01' }, options)).toEqual({});
     expect(validatePpdb({ ...filled, grade: 'Kelas 7' }, options)).toEqual({ grade: 'Pilih kelas yang dituju.' });
     // Tanpa pilihan kelas/jalur (bagian kosong) → pilihan tidak wajib; acuan kosong → hari ini
     expect(validatePpdb({ ...filled, grade: '', path: '' }, { grades: [], paths: [], today: '2026-10-26' })).toEqual({});
 
-    expect(ppdbMessage('SD Bestari Cendekia', { ...filled, name: ' Alya Putri ', origin: 'TK Pelita', note: 'Mohon\ninfo   antar-jemput' }, '2027-07-01')).toBe(
-      'Halo Panitia PPDB SD Bestari Cendekia, saya ingin mendaftarkan anak saya.\nNama calon murid: Alya Putri\nTanggal lahir: 14 Mar 2021 (usia per 1 Jul 2027: 6 tahun 3 bulan)\nNama orang tua/wali: Ibu Sari\nPilihan kelas: Kelas 1 reguler\nJalur: Jalur reguler\nAsal TK/PAUD: TK Pelita\nNo. WhatsApp: 081234567890\nCatatan: Mohon info antar-jemput\nMohon info langkah selanjutnya. Terima kasih.',
+    expect(ppdbMessage('SMA Bestari Cendekia', { ...filled, name: ' Alya Putri ', origin: 'SMP Negeri 5 Yogyakarta', note: 'Mohon\ninfo   beasiswa' }, '2027-07-01')).toBe(
+      'Halo Panitia PPDB SMA Bestari Cendekia, saya ingin mendaftarkan calon siswa berikut.\nNama calon siswa: Alya Putri\nTanggal lahir: 14 Mar 2012 (usia per 1 Jul 2027: 15 tahun 3 bulan)\nNama orang tua/wali: Ibu Sari\nPilihan kelas: Kelas 10\nJalur: Jalur reguler\nAsal sekolah: SMP Negeri 5 Yogyakarta\nNo. WhatsApp: 081234567890\nCatatan: Mohon info beasiswa\nMohon info langkah selanjutnya. Terima kasih.',
     );
     // Tanpa tanggal acuan: tanggal lahir saja
-    expect(ppdbMessage('SD X', filled)).toContain('Tanggal lahir: 14 Mar 2021\n');
+    expect(ppdbMessage('SMA X', filled)).toContain('Tanggal lahir: 14 Mar 2012\n');
   });
 
   it('galeri bento tanpa sel kosong untuk 1–8 foto (4 kolom layar lebar, 2 kolom HP)', () => {
@@ -353,7 +359,7 @@ describe('Bestari: helper model', () => {
 
   it('tujuan kartu sorotan & ikon otomatis dari teks', () => {
     const all = () => true;
-    expect(['Pendaftaran murid baru', 'Kelas bilingual & literasi', 'Open house 7 November', 'Guru kami', 'Prestasi lomba'].map((t) => titleTarget(t, all))).toEqual([
+    expect(['Pendaftaran siswa baru', 'Bimbingan masuk PTN', 'Open house 7 November', 'Guru kami', 'Prestasi lomba'].map((t) => titleTarget(t, all))).toEqual([
       'ppdb',
       'programs',
       'agenda',
@@ -364,11 +370,13 @@ describe('Bestari: helper model', () => {
     // "wali kelas" / "Guru kelas" → Guru, bukan Program (aturan guru di atas aturan "kelas")
     expect([titleTarget('Kenali wali kelas', all), titleTarget('Guru kelas berpengalaman', all), titleTarget('Kelas bilingual', all)]).toEqual(['teachers', 'teachers', 'programs']);
     expect(
-      ['Terakreditasi A', 'Sekolah Adiwiyata', 'Sekolah ramah anak', 'Kurikulum Merdeka', 'Kelas bilingual', 'Sains & robotika', 'Seni & budaya', 'Pramuka & olahraga'].map((t) =>
+      ['Terakreditasi A', 'Sekolah Adiwiyata', 'Bebas perundungan', 'Kurikulum Merdeka', 'Bimbingan kuliah', 'Sains & robotika', 'Marching band & seni', 'Basket & futsal'].map((t) =>
         iconKey(t),
       ),
-    ).toEqual(['certificate', 'leaf', 'shield', 'book', 'language', 'robot', 'art', 'scout']);
-    expect(['Murid per kelas', 'Ekstrakurikuler', 'Prestasi lomba', 'Alumni'].map((t) => iconKey(t))).toEqual(['students', 'sparkles', 'trophy', 'alumni']);
+    ).toEqual(['certificate', 'leaf', 'shield', 'book', 'alumni', 'robot', 'music', 'sport']);
+    expect(['Siswa per kelas', 'Ekstrakurikuler', 'Prestasi lomba', 'Lulusan kuliah'].map((t) => iconKey(t))).toEqual(['students', 'sparkles', 'trophy', 'alumni']);
+    // Kata kunci SD/SMP lama tetap dikenali (template bisa dipakai jenjang lain)
+    expect(['Kelas bilingual', 'Seni & budaya', 'Pramuka & olahraga', 'Debat bahasa Inggris'].map((t) => iconKey(t))).toEqual(['language', 'art', 'scout', 'news']);
     expect(iconKey('Sesuatu yang lain', 2)).toBe('award');
   });
 
@@ -409,10 +417,10 @@ describe('Bestari: demo', () => {
     const hero = section(container, 'hero');
     expect(hero.getAttribute('data-hero-layout')).toBe('canvas');
     expect(hero.getAttribute('data-tpl-tone')).toBe('inverse');
-    expect(hero.querySelector('h1')!.textContent).toBe('Tempat anak tumbuh percaya diri dan senang belajar');
+    expect(hero.querySelector('h1')!.textContent).toBe('Tempat remaja tumbuh percaya diri dan siap kuliah');
     // Bagian sorotan judul di atas foto: miring dan tetap putih (kontras tidak bergantung foto)
     const mark = hero.querySelector('h1 span')!;
-    expect(mark.textContent).toBe('senang belajar');
+    expect(mark.textContent).toBe('siap kuliah');
     expect(mark.className).toContain('italic');
     expect(mark.className).toContain('text-white');
     // Foto hero selebar layar: bukan di dalam CONTAINER / bingkai membulat
@@ -425,14 +433,21 @@ describe('Bestari: demo', () => {
     expect(img.getAttribute('loading')).toBe('eager');
     expect(Number(img.getAttribute('width'))).toBe(1920);
     expect(Number(img.getAttribute('height'))).toBe(1080);
-    expect(img.getAttribute('alt')).toMatch(/murid/i);
+    expect(img.getAttribute('alt')).toMatch(/SMA berseragam putih abu-abu/i);
     expect(container.querySelectorAll('img[fetchpriority="high"]')).toHaveLength(1);
     expect(within(hero).getByRole('link', { name: 'Daftar PPDB' })).toHaveAttribute('href', '#ppdb');
     expect(within(hero).getByRole('link', { name: 'Kenali sekolah' })).toHaveAttribute('href', '#tentang');
     // Tiga angka besar di hero; teks akhir selalu di DOM (hitung naik hanya lapisan aria-hidden)
-    expect(Array.from(hero.querySelectorAll('dt')).map((d) => d.textContent)).toEqual(['Murid aktif', 'Guru & staf', 'Akreditasi']);
-    expect(Array.from(hero.querySelectorAll('dd')).map((d) => d.textContent)).toEqual(['640+', '52', 'A']);
+    expect(Array.from(hero.querySelectorAll('dt')).map((d) => d.textContent)).toEqual(['Siswa aktif', 'Guru & staf', 'Akreditasi']);
+    expect(Array.from(hero.querySelectorAll('dd')).map((d) => d.textContent)).toEqual(['700+', '58', 'A']);
     expect(hero.querySelector('dd')!.className).toContain('@6xl:text-[length:clamp(46px,3.9cqw,68px)]');
+    // Angka panjang mengecil sebatas lebar kolomnya (dd = container, cqi), angka pendek tetap ukuran penuh
+    const fit = (el: Element) => (el.querySelector('dd > span') as HTMLElement).style.getPropertyValue('--bs-fit');
+    expect(hero.querySelector('dd > span')!.className).toContain('text-[length:min(1em,var(--bs-fit))]');
+    expect(fit(hero)).toBe('45.5cqi');
+    const long = section(demo({ hero: { stats: [{ value: '12.500+', label: 'Alumni' }, { value: '58', label: 'Guru' }, { value: 'A', label: 'Akreditasi' }] } }), 'hero');
+    expect(Array.from(long.querySelectorAll('dd')).map((d) => d.textContent)).toEqual(['12.500+', '58', 'A']);
+    expect(fit(long)).toBe('26.0cqi');
 
     // Navbar biasa: selebar layar, menempel di atas; di atas foto (belum digulir) transparan & bertema gelap (teks
     // putih), tanpa pil berbingkai
@@ -491,10 +506,10 @@ describe('Bestari: demo', () => {
     expect(dots).toHaveLength(4);
     // Nama aksesibel memuat label yang tampil di layar lebar (Label in Name)
     expect(dots.map((d) => d.getAttribute('aria-label'))).toEqual([
-      'Slide 1 dari 4: Sekolah dasar swasta · Yogyakarta',
-      'Slide 2 dari 4: Kurikulum Merdeka · Kelas 1–6',
-      'Slide 3 dari 4: Seni & pramuka',
-      'Slide 4 dari 4: Karakter & persahabatan',
+      'Slide 1 dari 4: SMA swasta · Yogyakarta',
+      'Slide 2 dari 4: Kurikulum Merdeka · Kelas 10–12',
+      'Slide 3 dari 4: Seni & ekstrakurikuler',
+      'Slide 4 dari 4: Karakter & kepemimpinan',
     ]);
     // HP: hanya slide aktif yang tampil (+ "/ 04"), slide lain disembunyikan lewat kelas container query
     expect(dots.map((d) => d.parentElement!.className.includes('hidden @3xl:block'))).toEqual([false, true, true, true]);
@@ -507,7 +522,7 @@ describe('Bestari: demo', () => {
 
     fireEvent.click(within(controls).getByRole('button', { name: 'Slide berikutnya' }));
     expect(dots[1]).toHaveAttribute('aria-current', 'true');
-    expect(hero.querySelector('h1')!.textContent).toBe('Belajar aktif di kelas, di lapangan, dan di alam');
+    expect(hero.querySelector('h1')!.textContent).toBe('Pilih mapel sesuai rencana kuliahmu');
     const imgs = Array.from(hero.querySelectorAll<HTMLImageElement>('.bs-slide img'));
     expect(imgs.map((i) => i.getAttribute('fetchpriority'))).toEqual(['high', null, null, null]);
     expect(imgs.slice(1).every((i) => i.getAttribute('loading') === 'lazy')).toBe(true);
@@ -573,7 +588,7 @@ describe('Bestari: demo', () => {
     expect(live).toHaveAttribute('aria-live', 'polite');
     fireEvent.click(next);
     expect(status()).toBe(live);
-    expect(live).toHaveTextContent('Slide 2 dari 4: Belajar aktif di kelas, di lapangan, dan di alam');
+    expect(live).toHaveTextContent('Slide 2 dari 4: Pilih mapel sesuai rencana kuliahmu');
   });
 
   it('kartu sorotan (tengah berwarna tema) menuju section dari judul; lencana; profil dua warna + daftar "+"; angka', () => {
@@ -586,12 +601,12 @@ describe('Bestari: demo', () => {
     expect(cards[0].className).not.toContain('bg-(--tpl-accent)');
 
     const badges = section(container, 'badges');
-    expect(Array.from(badges.querySelectorAll('li')).map((l) => l.textContent)).toEqual(['Terakreditasi A', 'Sekolah Adiwiyata', 'Sekolah ramah anak', 'Kurikulum Merdeka', 'Kelas bilingual']);
+    expect(Array.from(badges.querySelectorAll('li')).map((l) => l.textContent)).toEqual(['Terakreditasi A', 'Sekolah Adiwiyata', 'Bebas perundungan', 'Kurikulum Merdeka', 'Bimbingan kuliah']);
     expect(badges.querySelectorAll('li svg')).toHaveLength(5);
 
     const about = section(container, 'about');
     const h2 = about.querySelector('h2')!;
-    expect(h2.textContent).toMatch(/^Di SD Bestari Cendekia, anak belajar karena penasaran/);
+    expect(h2.textContent).toMatch(/^Di SMA Bestari Cendekia, siswa belajar karena ingin tahu/);
     expect(h2.querySelector('span')!.className).toContain('text-[#857D75]');
     expect(about.textContent).toContain('Berdiri sejak2008');
     expect(within(about).getByText('Profil sekolah')).toBeInTheDocument();
@@ -606,14 +621,14 @@ describe('Bestari: demo', () => {
     expect(within(about).getByRole('link', { name: 'Jadwalkan kunjungan' }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/6281234567890/);
 
     const stats = section(container, 'stats');
-    expect(Array.from(stats.querySelectorAll('dt')).map((d) => d.textContent)).toEqual(['Murid per kelas', 'Ekstrakurikuler', 'Prestasi lomba', 'Alumni']);
+    expect(Array.from(stats.querySelectorAll('dt')).map((d) => d.textContent)).toEqual(['Siswa per kelas', 'Ekstrakurikuler', 'Prestasi lomba', 'Lulusan kuliah']);
     expect(stats.querySelectorAll('dd svg')).toHaveLength(4);
   });
 
   it('sambutan, alasan bernomor (satu terbuka) + kutipan guru, program berfoto, prestasi, guru', () => {
     const container = demo();
     const welcome = section(container, 'welcome');
-    expect(welcome.querySelector('blockquote')?.textContent).toMatch(/^Setiap anak membawa cara belajarnya sendiri/);
+    expect(welcome.querySelector('blockquote')?.textContent).toMatch(/^Setiap siswa membawa mimpinya sendiri/);
     expect(welcome.textContent).toContain('Dra. Siti Rahmawati, M.Pd.');
     expect(within(welcome).getByRole('link', { name: 'Kenali guru kami' })).toHaveAttribute('href', '#teachers');
 
@@ -624,29 +639,29 @@ describe('Bestari: demo', () => {
     fireEvent.click(reasons[2]);
     expect(reasons.map((b) => b.getAttribute('aria-expanded'))).toEqual(['false', 'false', 'true', 'false']);
     expect(why.querySelector('figure')?.textContent).toContain('Ratna Sari, M.Pd.');
-    expect(why.textContent).toContain('1 : 14');
+    expect(why.textContent).toContain('1 : 13');
 
     const programs = section(container, 'programs');
     expect(within(programs).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
-      'Literasi & kelas bilingual',
+      'Bimbingan masuk PTN',
       'Sains & robotika',
-      'Seni & budaya',
-      'Pramuka & olahraga',
+      'Marching band & seni',
+      'Basket & futsal',
     ]);
     expect(wa(within(programs).getByRole('link', { name: 'Tanya tentang program Sains & robotika' }))).toContain(
-      'Halo SD Bestari Cendekia, saya ingin bertanya tentang program Sains & robotika.',
+      'Halo SMA Bestari Cendekia, saya ingin bertanya tentang program Sains & robotika.',
     );
     // Carousel: rel berlabel yang bisa difokus, kartu lebar tetap (tidak ikut melebar di desktop), slide bernomor
-    const rail = within(programs).getByRole('region', { name: 'Daftar program: Belajar lewat buku, percobaan, dan panggung' });
+    const rail = within(programs).getByRole('region', { name: 'Daftar program: Belajar lewat riset, lomba, dan panggung' });
     expect(rail).toHaveAttribute('tabindex', '0');
     expect(rail).toHaveAttribute('aria-roledescription', 'carousel');
     expect(rail.className).toContain('snap-x');
     const slides = Array.from(rail.querySelectorAll('li'));
     expect(slides.map((li) => li.getAttribute('aria-label'))).toEqual([
-      '1 dari 4: Literasi & kelas bilingual',
+      '1 dari 4: Bimbingan masuk PTN',
       '2 dari 4: Sains & robotika',
-      '3 dari 4: Seni & budaya',
-      '4 dari 4: Pramuka & olahraga',
+      '3 dari 4: Marching band & seni',
+      '4 dari 4: Basket & futsal',
     ]);
     expect(slides[0].className).toContain('@xl:w-[300px]');
     // Tombol geser hanya tampil bila rel bisa digulir (jsdom tidak punya tata letak → tidak tampil)
@@ -665,8 +680,8 @@ describe('Bestari: demo', () => {
     const ppdb = section(demo(), 'ppdb');
     expect(Array.from(ppdb.querySelectorAll('dl')[0].querySelectorAll('dd')).map((d) => d.textContent)).toEqual([
       '3 Nov 2026 – 30 Jan 2027',
-      '84 kursi',
-      'Minimal 6 tahun',
+      '216 kursi',
+      'Paling tinggi 21 tahun',
       'Gratis',
     ]);
     const tablist = within(ppdb).getByRole('tablist', { name: 'Informasi PPDB' });
@@ -681,18 +696,18 @@ describe('Bestari: demo', () => {
     expect(tabs[1]).toHaveFocus();
     expect(Array.from(panel(tabs[1]).querySelectorAll('h3')).map((h) => h.textContent)).toEqual([
       'Pendaftaran gelombang 1',
-      'Observasi kesiapan sekolah',
+      'Tes potensi & wawancara',
       'Pengumuman hasil',
       'Daftar ulang',
-      'Masa pengenalan sekolah',
+      'Masa pengenalan lingkungan sekolah',
     ]);
     fireEvent.keyDown(tabs[1], { key: 'End' });
-    expect(panel(tabs[4]).textContent).toContain('Rp6.000.000');
+    expect(panel(tabs[4]).textContent).toContain('Rp9.500.000');
     fireEvent.keyDown(tabs[4], { key: 'ArrowRight' });
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('formulir PPDB SD: galat per isian + fokus ke isian pertama, usia per tanggal acuan, lalu pesan WhatsApp apa adanya; tidak ada data yang dikirim', () => {
+  it('formulir PPDB SMA: galat per isian + fokus ke isian pertama, usia per tanggal acuan, lalu pesan WhatsApp apa adanya; tidak ada data yang dikirim', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const ppdb = section(demo(), 'ppdb');
     const form = within(ppdb).getByRole('form', { name: 'Formulir pendaftaran singkat' });
@@ -700,33 +715,33 @@ describe('Bestari: demo', () => {
     const submit = within(form).getByRole('button', { name: /Kirim lewat WhatsApp/ });
     expect(submit).toHaveAttribute('type', 'submit');
     fireEvent.click(submit);
-    const name = within(form).getByLabelText('Nama lengkap calon murid');
+    const name = within(form).getByLabelText('Nama lengkap calon siswa');
     expect(name).toHaveAttribute('aria-invalid', 'true');
     expect(name).toHaveFocus();
     expect(INPUT).toContain('focus:ring-(--tpl-accent-ink)');
     expect(INPUT).not.toMatch(/ring-\(--tpl-accent\)/);
-    const birth = within(form).getByLabelText('Tanggal lahir calon murid');
+    const birth = within(form).getByLabelText('Tanggal lahir calon siswa');
     expect(birth).toHaveAttribute('type', 'date');
     expect(birth).toHaveAttribute('aria-invalid', 'true');
-    expect(form.textContent).toContain('Pilih tanggal lahir calon murid.');
+    expect(form.textContent).toContain('Pilih tanggal lahir calon siswa.');
 
     fireEvent.change(name, { target: { value: 'Alya Putri' } });
-    fireEvent.change(birth, { target: { value: '2021-03-14' } });
+    fireEvent.change(birth, { target: { value: '2012-03-14' } });
     expect(birth).not.toHaveAttribute('aria-invalid');
-    expect(document.getElementById(birth.getAttribute('aria-describedby')!)).toHaveTextContent('Usia per 1 Jul 2027: 6 tahun 3 bulan');
+    expect(document.getElementById(birth.getAttribute('aria-describedby')!)).toHaveTextContent('Usia per 1 Jul 2027: 15 tahun 3 bulan');
     fireEvent.change(within(form).getByLabelText('Nama orang tua/wali'), { target: { value: 'Ibu Sari Wulandari' } });
     const grade = within(form).getByLabelText('Kelas yang dituju') as HTMLSelectElement;
-    expect(Array.from(grade.options).map((o) => o.value)).toEqual(['', 'Kelas 1 reguler', 'Kelas 1 bilingual', 'Pindahan kelas 2–5']);
-    fireEvent.change(grade, { target: { value: 'Kelas 1 bilingual' } });
-    fireEvent.change(within(form).getByLabelText('Jalur pendaftaran'), { target: { value: 'Jalur saudara kandung' } });
-    fireEvent.change(within(form).getByLabelText(/Asal TK\/PAUD/), { target: { value: 'TK Pelita Hati' } });
+    expect(Array.from(grade.options).map((o) => o.value)).toEqual(['', 'Kelas 10', 'Pindahan kelas 10', 'Pindahan kelas 11']);
+    fireEvent.change(grade, { target: { value: 'Kelas 10' } });
+    fireEvent.change(within(form).getByLabelText('Jalur pendaftaran'), { target: { value: 'Jalur prestasi' } });
+    fireEvent.change(within(form).getByLabelText(/Asal sekolah/), { target: { value: 'SMP Negeri 5 Yogyakarta' } });
     fireEvent.change(within(form).getByLabelText('Nomor WhatsApp orang tua'), { target: { value: '0812-3456-7890' } });
     fireEvent.click(submit);
 
     expect(within(ppdb).queryByRole('form')).toBeNull();
     expect(within(ppdb).getByRole('heading', { name: /Pesan siap dikirim/ })).toBeInTheDocument();
     const message =
-      'Halo Panitia PPDB SD Bestari Cendekia, saya ingin mendaftarkan anak saya.\nNama calon murid: Alya Putri\nTanggal lahir: 14 Mar 2021 (usia per 1 Jul 2027: 6 tahun 3 bulan)\nNama orang tua/wali: Ibu Sari Wulandari\nPilihan kelas: Kelas 1 bilingual\nJalur: Jalur saudara kandung\nAsal TK/PAUD: TK Pelita Hati\nNo. WhatsApp: 0812-3456-7890\nMohon info langkah selanjutnya. Terima kasih.';
+      'Halo Panitia PPDB SMA Bestari Cendekia, saya ingin mendaftarkan calon siswa berikut.\nNama calon siswa: Alya Putri\nTanggal lahir: 14 Mar 2012 (usia per 1 Jul 2027: 15 tahun 3 bulan)\nNama orang tua/wali: Ibu Sari Wulandari\nPilihan kelas: Kelas 10\nJalur: Jalur prestasi\nAsal sekolah: SMP Negeri 5 Yogyakarta\nNo. WhatsApp: 0812-3456-7890\nMohon info langkah selanjutnya. Terima kasih.';
     expect(ppdb.querySelector('pre')?.textContent).toBe(message);
     expect(within(ppdb).getByRole('link', { name: 'Buka WhatsApp' }).getAttribute('href')).toBe(`https://wa.me/6281234567890?text=${encodeURIComponent(message)}`);
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -744,14 +759,14 @@ describe('Bestari: demo', () => {
     expect(news.querySelector('article time')).toHaveAttribute('datetime', '2026-10-16');
     fireEvent.click(within(filters).getByRole('button', { name: 'Kegiatan' }));
     expect(within(filters).getByRole('button', { name: 'Kegiatan' })).toHaveAttribute('aria-pressed', 'true');
-    expect(Array.from(news.querySelectorAll('article h3')).map((h) => h.textContent)).toEqual(['Upacara Hari Kesaktian Pancasila dipimpin murid kelas 6']);
+    expect(Array.from(news.querySelectorAll('article h3')).map((h) => h.textContent)).toEqual(['Kokurikuler: siswa kelas 10 mengolah sisa makanan menjadi kompos']);
     expect(within(news).getByRole('status')).toHaveTextContent('1 berita kategori Kegiatan');
     const more = within(news).getByRole('button', { name: /Baca selengkapnya/ });
     expect(more).toHaveAttribute('aria-expanded', 'false');
     expect(document.getElementById(more.getAttribute('aria-controls')!)).toHaveAttribute('inert');
     fireEvent.click(more);
     expect(more).toHaveAttribute('aria-expanded', 'true');
-    expect(within(news).getByRole('link', { name: /Berita lainnya di Instagram/ })).toHaveAttribute('href', 'https://instagram.com/sdbestaricendekia');
+    expect(within(news).getByRole('link', { name: /Berita lainnya di Instagram/ })).toHaveAttribute('href', 'https://instagram.com/smabestaricendekia');
 
     const announcements = section(container, 'announcements');
     expect(within(announcements).getAllByText('Penting')).toHaveLength(2);
@@ -765,7 +780,7 @@ describe('Bestari: demo', () => {
     const container = demo();
     const testimonials = section(container, 'testimonials');
     expect(testimonials.querySelectorAll('blockquote')).toHaveLength(3);
-    expect(testimonials.textContent).toContain('1.800+');
+    expect(testimonials.textContent).toContain('2.100+');
     for (const img of testimonials.querySelectorAll('img')) expect(img.getAttribute('srcset')).toContain('-240.webp 240w');
 
     const gallery = section(container, 'gallery');
@@ -783,11 +798,11 @@ describe('Bestari: demo', () => {
     fireEvent.click(questions[3]);
     expect(questions[0]).toHaveAttribute('aria-expanded', 'false');
     expect(questions[3]).toHaveAttribute('aria-expanded', 'true');
-    expect(wa(within(faq).getByRole('link', { name: /Tanya panitia PPDB/ }))).toContain('Halo Panitia PPDB SD Bestari Cendekia, saya ingin bertanya.');
+    expect(wa(within(faq).getByRole('link', { name: /Tanya panitia PPDB/ }))).toContain('Halo Panitia PPDB SMA Bestari Cendekia, saya ingin bertanya.');
 
     const contact = section(container, 'contact');
     const iframe = contact.querySelector('iframe')!;
-    expect(iframe).toHaveAttribute('title', 'Peta lokasi SD Bestari Cendekia');
+    expect(iframe).toHaveAttribute('title', 'Peta lokasi SMA Bestari Cendekia');
     expect(iframe).toHaveAttribute('loading', 'lazy');
     expect(within(contact).getByRole('link', { name: /Buka di Google Maps/ })).toHaveAttribute(
       'href',
@@ -795,7 +810,7 @@ describe('Bestari: demo', () => {
     );
     expect(within(contact).getByRole('link', { name: /Telepon/ })).toHaveAttribute('href', 'tel:+622745550182');
     expect(within(contact).getByRole('link', { name: /Email/ })).toHaveAttribute('href', 'mailto:info@bestaricendekia.sch.id');
-    expect(within(contact).getByRole('link', { name: 'Instagram' })).toHaveAttribute('href', 'https://instagram.com/sdbestaricendekia');
+    expect(within(contact).getByRole('link', { name: 'Instagram' })).toHaveAttribute('href', 'https://instagram.com/smabestaricendekia');
     expect(contact.textContent).toContain('Senin–Jumat 07.00–15.00 WIB');
 
     const footer = container.querySelector('footer')!;
@@ -804,8 +819,8 @@ describe('Bestari: demo', () => {
     expect(footer.firstElementChild!.className).toContain('max-w-[1680px]');
     expect(within(footer).getByRole('navigation', { name: 'Tautan footer' }).querySelectorAll('a')).toHaveLength(6);
     expect(within(footer).getByRole('link', { name: 'Daftar PPDB' })).toHaveAttribute('href', '#ppdb');
-    expect(footer.textContent).toContain(`© ${new Date().getFullYear()} SD Bestari Cendekia. Semua hak dilindungi.`);
-    expect(footer.textContent).toContain('Pramuka & olahraga');
+    expect(footer.textContent).toContain(`© ${new Date().getFullYear()} SMA Bestari Cendekia. Semua hak dilindungi.`);
+    expect(footer.textContent).toContain('Basket & futsal');
   });
 
   it('datar: tidak ada kelas shadow di template (kecuali tombol melayang Shell)', () => {
@@ -844,12 +859,12 @@ describe('Bestari: warna tema bisa diganti', () => {
 });
 
 describe('Bestari: SEO situs pembeli', () => {
-  it('judul tab & meta description terbaca sebagai website sekolah dasar', () => {
-    expect(siteTitle('bestari', null)).toBe('SD Bestari Cendekia — Sekolah Dasar Swasta di Yogyakarta');
+  it('judul tab & meta description terbaca sebagai website SMA', () => {
+    expect(siteTitle('bestari', null)).toBe('SMA Bestari Cendekia — SMA Swasta di Yogyakarta');
     const restore = applySiteHead('bestari', null);
-    expect(document.title).toBe('SD Bestari Cendekia — Sekolah Dasar Swasta di Yogyakarta');
+    expect(document.title).toBe('SMA Bestari Cendekia — SMA Swasta di Yogyakarta');
     const description = document.head.querySelector('meta[name="description"]')?.getAttribute('content') ?? '';
-    expect(description).toMatch(/^SD swasta di Kota Yogyakarta dengan kelas kecil/);
+    expect(description).toMatch(/^SMA swasta di Kota Yogyakarta dengan kelas kecil/);
     expect(description.length).toBeGreaterThanOrEqual(120);
     expect(description.length).toBeLessThanOrEqual(200);
     expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#C2410C');
@@ -950,8 +965,8 @@ describe('Bestari: konten opsional kosong', () => {
   it('tanggal acuan usia kosong → usia dihitung per hari ini (petunjuk & pesan WhatsApp)', () => {
     const ppdb = section(demo({ ppdb: { age_reference: '' } }), 'ppdb');
     const form = within(ppdb).getByRole('form');
-    const birth = within(form).getByLabelText('Tanggal lahir calon murid');
-    fireEvent.change(birth, { target: { value: '2020-01-15' } });
+    const birth = within(form).getByLabelText('Tanggal lahir calon siswa');
+    fireEvent.change(birth, { target: { value: '2011-01-15' } });
     const hint = document.getElementById(birth.getAttribute('aria-describedby')!)!;
     const today = parseSchoolDate(todayIso())!;
     expect(hint.textContent?.startsWith(`Usia per ${today.label}: `), hint.textContent ?? '').toBe(true);
@@ -963,8 +978,8 @@ describe('Bestari: konten opsional kosong', () => {
     const form = within(ppdb).getByRole('form');
     expect(within(form).queryByLabelText('Kelas yang dituju')).toBeNull();
     expect(within(form).queryByLabelText('Jalur pendaftaran')).toBeNull();
-    fireEvent.change(within(form).getByLabelText('Nama lengkap calon murid'), { target: { value: 'Bima Sakti' } });
-    fireEvent.change(within(form).getByLabelText('Tanggal lahir calon murid'), { target: { value: '2020-12-01' } });
+    fireEvent.change(within(form).getByLabelText('Nama lengkap calon siswa'), { target: { value: 'Bima Sakti' } });
+    fireEvent.change(within(form).getByLabelText('Tanggal lahir calon siswa'), { target: { value: '2011-12-01' } });
     fireEvent.change(within(form).getByLabelText('Nama orang tua/wali'), { target: { value: 'Pak Sakti' } });
     fireEvent.change(within(form).getByLabelText('Nomor WhatsApp orang tua'), { target: { value: '081298765432' } });
     act(() => {
@@ -983,7 +998,7 @@ describe('Bestari: pratinjau CMS', () => {
     expect(container.querySelector('a[href^="https://wa.me"]')).toBeNull();
     expect(container.querySelector('a[href^="https://www.google.com/maps"]')).toBeNull();
     fireEvent.click(within(container).getByRole('button', { name: /^Slide 3 dari 4/ }));
-    expect(container.querySelector('h1')!.textContent).toBe('Panggung kecil untuk keberanian yang besar');
+    expect(container.querySelector('h1')!.textContent).toBe('Panggung dan lapangan untuk berani tampil');
   });
 });
 
@@ -1113,6 +1128,6 @@ describe('Bestari: konten aneh', () => {
     expect(container.querySelector('a[href^="javascript:"]')).toBeNull();
     expect(container.querySelector('img[src^="javascript:"]')).toBeNull();
     expect(section(container, 'agenda').textContent).toContain('besok');
-    expect(container.querySelector('h1')!.textContent).toBe('Tempat anak tumbuh percaya diri dan senang belajar');
+    expect(container.querySelector('h1')!.textContent).toBe('Tempat remaja tumbuh percaya diri dan siap kuliah');
   });
 });

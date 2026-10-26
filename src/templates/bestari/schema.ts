@@ -51,9 +51,9 @@ export const bestariSections: TemplateSection[] = [
     label: 'Identitas & warna tema',
     description: 'Nama sekolah, logo, dan warna tema. Satu warna mengatur tombol, ikon, label, kartu sorotan, dan nuansa footer.',
     fields: [
-      t('company_name', 'Nama sekolah', { placeholder: 'mis. SD Bestari Cendekia', maxLength: 80 }),
+      t('company_name', 'Nama sekolah', { placeholder: 'mis. SMA Bestari Cendekia', maxLength: 80 }),
       t('tagline', 'Tagline', {
-        placeholder: 'mis. Sekolah Dasar Swasta di Yogyakarta',
+        placeholder: 'mis. SMA Swasta di Yogyakarta',
         maxLength: 90,
         help: 'Tampil di judul tab browser (judul di Google) setelah nama sekolah: sebut jenjang dan kotanya.',
       }),
@@ -80,9 +80,9 @@ export const bestariSections: TemplateSection[] = [
       }),
       t('topbar_label', 'Teks tautan pengumuman', { placeholder: 'mis. Daftar', maxLength: 20 }),
       url('topbar_url', 'Tautan pengumuman', { help: 'Kosongkan untuk menuju bagian PPDB.' }),
-      t('eyebrow', 'Label kecil di atas judul', { placeholder: 'mis. Sekolah dasar swasta · Yogyakarta', maxLength: 50 }),
-      t('title', 'Judul utama (slide 1)', { placeholder: 'mis. Tempat anak tumbuh percaya diri dan senang belajar', maxLength: 80, help: 'Paling bagus 2–3 baris (± 35–55 karakter).' }),
-      highlight('mis. senang belajar'),
+      t('eyebrow', 'Label kecil di atas judul', { placeholder: 'mis. SMA swasta · Yogyakarta', maxLength: 50 }),
+      t('title', 'Judul utama (slide 1)', { placeholder: 'mis. Tempat remaja tumbuh percaya diri dan siap kuliah', maxLength: 80, help: 'Paling bagus 2–3 baris (± 35–55 karakter).' }),
+      highlight('mis. siap kuliah'),
       ta('subtitle', 'Deskripsi', {
         placeholder: 'Jelaskan sekolah Anda dalam 1–2 kalimat.',
         maxLength: 240,
@@ -112,7 +112,7 @@ export const bestariSections: TemplateSection[] = [
         'stats',
         'Angka singkat di hero',
         'Angka',
-        [t('value', 'Angka', { placeholder: 'mis. 640+', maxLength: 10 }), t('label', 'Keterangan', { placeholder: 'mis. Murid aktif', maxLength: 28 })],
+        [t('value', 'Angka', { placeholder: 'mis. 700+', maxLength: 10 }), t('label', 'Keterangan', { placeholder: 'mis. Siswa aktif', maxLength: 28 })],
         3,
       ),
     ],
@@ -131,7 +131,7 @@ export const bestariSections: TemplateSection[] = [
         'Kartu',
         [
           t('label', 'Label pil', { placeholder: 'mis. PPDB 2027/2028', maxLength: 24 }),
-          t('title', 'Judul', { placeholder: 'mis. Pendaftaran murid baru', maxLength: 36 }),
+          t('title', 'Judul', { placeholder: 'mis. Pendaftaran siswa baru', maxLength: 36 }),
           ta('text', 'Teks', { placeholder: 'Jelaskan dalam 1 kalimat.', maxLength: 120 }),
           t('link_label', 'Teks tautan', { placeholder: 'mis. Mulai daftar', maxLength: 24 }),
           url('url', 'Tautan', { help: `Kosongkan untuk tujuan otomatis dari judul. ${SECTION_LINK_HELP}` }),
@@ -143,7 +143,7 @@ export const bestariSections: TemplateSection[] = [
   {
     key: 'badges',
     label: 'Lencana kepercayaan',
-    description: 'Deret singkat bergaris tipis di bawah hero (akreditasi, sekolah Adiwiyata, ramah anak, dll.). Ikon dipilih otomatis dari teks.',
+    description: 'Deret singkat bergaris tipis di bawah hero (akreditasi, sekolah Adiwiyata, bebas perundungan, dll.). Ikon dipilih otomatis dari teks.',
     toggleable: true,
     fields: [
       t('title', 'Judul untuk pembaca layar', { placeholder: 'mis. Pengakuan sekolah', maxLength: 40, help: 'Tidak tampil, dibacakan pembaca layar.' }),
@@ -188,7 +188,7 @@ export const bestariSections: TemplateSection[] = [
     toggleable: true,
     fields: [
       eyebrow('mis. Dalam angka'),
-      title('mis. Sekolah kecil yang dekat dengan setiap anak', 90),
+      title('mis. Sekolah kecil yang dekat dengan setiap siswa', 90),
       subtitle(),
       listField(
         'items',
@@ -196,7 +196,7 @@ export const bestariSections: TemplateSection[] = [
         'Angka',
         [
           t('value', 'Angka', { placeholder: 'mis. 28', maxLength: 10 }),
-          t('label', 'Keterangan', { placeholder: 'mis. Murid per kelas', maxLength: 30, help: 'Ikon dipilih otomatis dari keterangan.' }),
+          t('label', 'Keterangan', { placeholder: 'mis. Siswa per kelas', maxLength: 30, help: 'Ikon dipilih otomatis dari keterangan.' }),
           ta('text', 'Penjelasan singkat', { maxLength: 90 }),
         ],
         4,
@@ -209,11 +209,11 @@ export const bestariSections: TemplateSection[] = [
     toggleable: true,
     fields: [
       eyebrow('mis. Sambutan'),
-      title('mis. Selamat datang di SD Bestari Cendekia'),
+      title('mis. Selamat datang di SMA Bestari Cendekia'),
       ta('quote', 'Kutipan', { placeholder: 'Satu kalimat pesan utama kepala sekolah.', maxLength: 220 }),
       ta('body', 'Isi sambutan', { placeholder: 'Pisahkan paragraf dengan baris kosong.', maxLength: 900 }),
       t('name', 'Nama kepala sekolah', { placeholder: 'mis. Dra. Siti Rahmawati, M.Pd.', maxLength: 60 }),
-      t('role', 'Jabatan', { placeholder: 'mis. Kepala SD Bestari Cendekia', maxLength: 60 }),
+      t('role', 'Jabatan', { placeholder: 'mis. Kepala SMA Bestari Cendekia', maxLength: 60 }),
       img('photo', 'Foto kepala sekolah', 'Foto tegak 4:5, disarankan 960×1200 px.'),
       t('button_label', 'Teks tombol', { placeholder: 'mis. Kenali guru kami', maxLength: 30 }),
       url('button_url', 'Tautan tombol', { help: `Kosongkan untuk menuju bagian Guru. ${SECTION_LINK_HELP}` }),
@@ -226,12 +226,12 @@ export const bestariSections: TemplateSection[] = [
     toggleable: true,
     fields: [
       eyebrow('mis. Mengapa Bestari'),
-      title('mis. Sekolah yang menyesuaikan diri dengan anak, bukan sebaliknya'),
-      highlight('mis. dengan anak'),
+      title('mis. Sekolah yang menyiapkan siswa untuk langkah berikutnya'),
+      highlight('mis. langkah berikutnya'),
       subtitle(),
       img('image', 'Foto', 'Foto tegak 4:5, disarankan 960×1200 px.'),
       t('image_value', 'Kartu di foto: angka', { placeholder: 'mis. 1 : 14', maxLength: 12 }),
-      t('image_label', 'Kartu di foto: keterangan', { placeholder: 'mis. Rasio guru dan murid', maxLength: 40 }),
+      t('image_label', 'Kartu di foto: keterangan', { placeholder: 'mis. Rasio guru dan siswa', maxLength: 40 }),
       listField(
         'items',
         'Alasan',
@@ -252,7 +252,7 @@ export const bestariSections: TemplateSection[] = [
     toggleable: true,
     fields: [
       eyebrow('mis. Program', 'menu'),
-      title('mis. Belajar lewat buku, percobaan, dan panggung'),
+      title('mis. Belajar lewat riset, lomba, dan panggung'),
       highlight('mis. panggung'),
       subtitle(),
       listField(
@@ -260,8 +260,8 @@ export const bestariSections: TemplateSection[] = [
         'Program',
         'Program',
         [
-          t('name', 'Nama program', { placeholder: 'mis. Literasi & kelas bilingual', maxLength: 50, help: 'Ikon dipilih otomatis dari nama.' }),
-          t('label', 'Label pil', { placeholder: 'mis. Kelas 1–6', maxLength: 24 }),
+          t('name', 'Nama program', { placeholder: 'mis. Bimbingan masuk PTN', maxLength: 50, help: 'Ikon dipilih otomatis dari nama.' }),
+          t('label', 'Label pil', { placeholder: 'mis. Kelas 10–12', maxLength: 24 }),
           ta('description', 'Deskripsi', { placeholder: 'Jelaskan dalam 1–2 kalimat.', maxLength: 180 }),
           img('image', 'Foto', 'Foto tegak 4:5, disarankan 960×1200 px.'),
         ],
@@ -275,7 +275,7 @@ export const bestariSections: TemplateSection[] = [
     toggleable: true,
     fields: [
       eyebrow('mis. Prestasi'),
-      title('mis. Prestasi murid tahun ini'),
+      title('mis. Prestasi siswa tahun ini'),
       subtitle(),
       listField(
         'items',
@@ -286,7 +286,7 @@ export const bestariSections: TemplateSection[] = [
           t('event', 'Lomba', { placeholder: 'mis. Lomba baca puisi tingkat kota', maxLength: 90 }),
           t('level', 'Tingkat', { placeholder: 'mis. Kota', maxLength: 20 }),
           t('year', 'Tahun', { placeholder: 'mis. 2026', maxLength: 10 }),
-          t('name', 'Nama murid / tim', { placeholder: 'mis. Raka Aditya, kelas 5', maxLength: 60 }),
+          t('name', 'Nama siswa / tim', { placeholder: 'mis. Alya Nur Fitri, kelas 12', maxLength: 60 }),
         ],
         8,
       ),
@@ -299,8 +299,8 @@ export const bestariSections: TemplateSection[] = [
     toggleable: true,
     fields: [
       eyebrow('mis. Guru kami', 'menu'),
-      title('mis. Guru yang mengenal setiap anak'),
-      highlight('mis. setiap anak'),
+      title('mis. Guru yang mengenal setiap siswa'),
+      highlight('mis. setiap siswa'),
       subtitle(),
       t('button_label', 'Teks tombol', { placeholder: 'mis. Tanya wali kelas', maxLength: 30 }),
       url('button_url', 'Tautan tombol', { help: WA_HELP }),
@@ -310,7 +310,7 @@ export const bestariSections: TemplateSection[] = [
         'Guru',
         [
           t('name', 'Nama', { placeholder: 'mis. Dewi Lestari, S.Pd.', maxLength: 60 }),
-          t('role', 'Jabatan / mata pelajaran', { placeholder: 'mis. Wali kelas 1', maxLength: 60 }),
+          t('role', 'Jabatan / mata pelajaran', { placeholder: 'mis. Guru Matematika & wali kelas 10', maxLength: 60 }),
           img('photo', 'Foto', 'Foto tegak 4:5, disarankan 960×1200 px. Kosongkan untuk inisial.'),
         ],
         6,
@@ -319,13 +319,13 @@ export const bestariSections: TemplateSection[] = [
   },
   {
     key: 'ppdb',
-    label: 'PPDB (penerimaan murid baru)',
+    label: 'PPDB (penerimaan siswa baru)',
     description:
       'Fakta singkat, tab Jalur · Jadwal · Syarat · Alur · Biaya, dan formulir singkat (tanggal lahir → usia per tanggal acuan) yang menyusun pesan WhatsApp untuk panitia, tanpa penyimpanan data dan tanpa pembayaran online.',
     toggleable: true,
     fields: [
       eyebrow('mis. PPDB 2027/2028'),
-      title('mis. Penerimaan murid baru tahun ajaran 2027/2028'),
+      title('mis. Penerimaan siswa baru tahun ajaran 2027/2028'),
       subtitle(),
       img('image', 'Foto', 'Foto mendatar 4:3, disarankan 1200×900 px. Kosongkan untuk menyembunyikan.'),
       listField(
@@ -352,7 +352,7 @@ export const bestariSections: TemplateSection[] = [
         'Jadwal',
         [
           t('date', 'Tanggal', { placeholder: 'mis. 6 Feb 2027', maxLength: 40, help: DATE_HELP }),
-          t('title', 'Kegiatan', { placeholder: 'mis. Observasi kesiapan sekolah', maxLength: 50 }),
+          t('title', 'Kegiatan', { placeholder: 'mis. Tes potensi & wawancara', maxLength: 50 }),
           ta('text', 'Keterangan', { maxLength: 140 }),
         ],
         8,
@@ -377,11 +377,11 @@ export const bestariSections: TemplateSection[] = [
         8,
       ),
       ta('fees_note', 'Catatan biaya', { maxLength: 200 }),
-      listField('grades', 'Pilihan kelas di formulir', 'Pilihan', [t('name', 'Pilihan', { placeholder: 'mis. Kelas 1 bilingual', maxLength: 40 })], 6),
+      listField('grades', 'Pilihan kelas di formulir', 'Pilihan', [t('name', 'Pilihan', { placeholder: 'mis. Kelas 10', maxLength: 40 })], 6),
       t('age_reference', 'Tanggal acuan usia', {
         placeholder: 'mis. 2027-07-01',
         maxLength: 10,
-        help: 'Tulis YYYY-MM-DD. Formulir menghitung usia calon murid pada tanggal ini dan menuliskannya di pesan. Kosongkan untuk memakai tanggal hari ini.',
+        help: 'Tulis YYYY-MM-DD. Formulir menghitung usia calon siswa pada tanggal ini dan menuliskannya di pesan. Kosongkan untuk memakai tanggal hari ini.',
       }),
       t('form_title', 'Formulir: judul', { placeholder: 'mis. Formulir pendaftaran singkat', maxLength: 50 }),
       ta('form_text', 'Formulir: keterangan', { maxLength: 200 }),
@@ -488,7 +488,7 @@ export const bestariSections: TemplateSection[] = [
         'Testimoni',
         [
           t('name', 'Nama', { maxLength: 60 }),
-          t('role', 'Keterangan', { placeholder: 'mis. Orang tua murid kelas 3', maxLength: 60 }),
+          t('role', 'Keterangan', { placeholder: 'mis. Orang tua siswa kelas 11', maxLength: 60 }),
           ta('quote', 'Kutipan', { maxLength: 300 }),
           img('photo', 'Foto', 'Foto persegi wajah, disarankan 480×480 px. Kosongkan untuk inisial.'),
         ],
@@ -548,7 +548,7 @@ export const bestariSections: TemplateSection[] = [
       subtitle(),
       ta('address', 'Alamat', { placeholder: 'Jl. Contoh No. 1, Kota, Provinsi', maxLength: 200 }),
       t('maps_query', 'Kata kunci peta', {
-        placeholder: 'mis. SD Bestari Cendekia Yogyakarta',
+        placeholder: 'mis. SMA Bestari Cendekia Yogyakarta',
         maxLength: 120,
         help: 'Nama sekolah + kota seperti di Google Maps, atau alamat lengkap. Kosongkan untuk memakai alamat.',
       }),

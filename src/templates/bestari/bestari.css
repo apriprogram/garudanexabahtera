@@ -8,12 +8,13 @@
 
 @layer components {
   /*
-   * Lapisan gelap foto hero: atas (bilah info + menu pil), kiri-bawah (judul & tombol), bawah (angka & kontrol).
-   * Teks putih tetap ≥ 4,5:1 di atas foto terang. Wadah sempit (HP, CMS): rata atas-bawah, makin gelap ke bawah.
+   * Lapisan gelap foto hero: atas (bilah info + navbar transparan, pita tetap 120 px agar menu putih ≥ 4,5:1 di foto
+   * terang apa pun tinggi hero-nya), kiri-bawah (judul & tombol), bawah (angka & kontrol). Wadah sempit (HP, CMS): rata
+   * atas-bawah, makin gelap ke bawah.
    */
   .bs-hero-scrim {
     background:
-      linear-gradient(180deg, color-mix(in srgb, var(--bs-deep) 74%, transparent) 0%, color-mix(in srgb, var(--bs-deep) 40%, transparent) 12%, transparent 28%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bs-deep) 76%, transparent) 0, color-mix(in srgb, var(--bs-deep) 72%, transparent) 120px, transparent 320px),
       linear-gradient(90deg, color-mix(in srgb, var(--bs-deep) 72%, transparent) 0%, color-mix(in srgb, var(--bs-deep) 36%, transparent) 46%, transparent 72%),
       linear-gradient(0deg, color-mix(in srgb, var(--bs-deep) 90%, transparent) 0%, color-mix(in srgb, var(--bs-deep) 66%, transparent) 30%, transparent 62%);
   }

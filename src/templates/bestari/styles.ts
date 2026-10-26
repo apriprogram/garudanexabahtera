@@ -1,4 +1,4 @@
-// Gaya Bestari "Warm canvas": website sekolah dasar yang tenang dan editorial (referensi pemilik 2026-10-26: Lifestyle,
+// Gaya Bestari "Warm canvas": website SMA yang tenang dan editorial (referensi pemilik 2026-10-26: Lifestyle,
 // Eduker, Bienes, Finovate). Halaman putih + panel pasir hangat, hero SLIDER foto selebar layar dengan menu pil putih
 // melayang, label section berpenomor "(01)" bergaris tipis, judul besar berbobot sedang dengan bagian miring berwarna,
 // tombol pil + bulatan panah di sampingnya, dan pita gelap hangat untuk footer. DATAR: tanpa bayangan; garis tipis
