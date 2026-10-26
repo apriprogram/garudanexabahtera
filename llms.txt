@@ -26,6 +26,7 @@ Diperbarui 27 Oktober 2026.
 - [GlowStory](https://garudanexa.com/template/glowstory): template Toko Online, Rp1.590.000. Template website toko skincare & kosmetik online untuk brand lokal: kuis jenis kulit, pesanan lewat WhatsApp, dan kalkulator langganan isi ulang.
 - [Madani](https://garudanexa.com/template/madani): template Sekolah & Pendidikan, Rp1.690.000. Template website sekolah Islam untuk SMA IT, madrasah aliyah, dan sekolah berasrama: slider foto, profil, berita, agenda, dan PPDB lewat WhatsApp.
 - [Cakrawala](https://garudanexa.com/template/cakrawala): template Sekolah & Pendidikan, Rp1.690.000. Template website SMK dan SMA yang modern: hero slider foto, PPDB dengan formulir ke WhatsApp, berita, pengumuman, alumni, dan BKK.
+- [Bestari](https://garudanexa.com/template/bestari): template Sekolah & Pendidikan, Rp1.690.000. Template website SMA yang modern dan meyakinkan: hero slider foto, navbar transparan, PPDB dengan formulir ke WhatsApp, berita, program, dan guru.
 
 ## Jasa custom
 - [Jasa Pembuatan Website Company Profile](https://garudanexa.com/jasa-pembuatan-website): Jasa pembuatan website custom untuk perusahaan, sekolah, instansi & UMKM. Konsultasi gratis, penawaran jelas sebelum mulai, didampingi sampai rilis.

@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-10-26T17:16:42.265Z",
+  "builtAt": "2026-10-26T17:53:22.110Z",
   "origin": "https://garudanexa.com",
   "brandName": "Garuda Nexa",
   "organizationId": "https://garudanexa.com/#organization",
@@ -56,7 +56,7 @@
       }
     }
   ],
-  "defaultOgImage": "https://garudanexa.com/og/default.jpg?v=c2ca86bb",
+  "defaultOgImage": "https://garudanexa.com/og/default.jpg?v=99ba1596",
   "categorySlugs": [
     "company-profile",
     "kecantikan-klinik",
@@ -94,17 +94,17 @@
   },
   "assetVersions": {
     "/og/catalog.jpg": "3c486d23",
-    "/og/default.jpg": "c2ca86bb",
-    "/og/harga.jpg": "cadd9693",
+    "/og/default.jpg": "99ba1596",
+    "/og/harga.jpg": "2b07037e",
     "/og/jasa-aplikasi.jpg": "ebad69cf",
     "/og/jasa-website.jpg": "f7d37e78",
-    "/og/kategori-company-profile.jpg": "366a7d98",
-    "/og/kategori-fintech-startup.jpg": "9725b557",
-    "/og/kategori-kecantikan-klinik.jpg": "b6a299a6",
-    "/og/kategori-olahraga-komunitas.jpg": "642990f0",
-    "/og/kategori-sekolah-pendidikan.jpg": "ee394f04",
-    "/og/kategori-toko-online.jpg": "87c5eb96",
-    "/og/kategori-yoga-wellness.jpg": "d4a40bc4",
+    "/og/kategori-company-profile.jpg": "696c1e03",
+    "/og/kategori-fintech-startup.jpg": "ce359de9",
+    "/og/kategori-kecantikan-klinik.jpg": "db9813bb",
+    "/og/kategori-olahraga-komunitas.jpg": "1a996f46",
+    "/og/kategori-sekolah-pendidikan.jpg": "cfe9439f",
+    "/og/kategori-toko-online.jpg": "52dfdc0b",
+    "/og/kategori-yoga-wellness.jpg": "e27ee6cb",
     "/og/kontak.jpg": "5880eb8f",
     "/og/panduan.jpg": "a05fe2d7",
     "/og/template-arena-club.jpg": "b01803d7",

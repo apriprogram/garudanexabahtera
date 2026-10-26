@@ -23,7 +23,7 @@ Diperbarui 27 Oktober 2026.
   3. Jasa pembuatan aplikasi mobile Android & iOS: Aplikasi Android dan iOS sesuai alur bisnis, dengan penawaran setelah konsultasi gratis. https://garudanexa.com/jasa-pembuatan-aplikasi-mobile
 
 ## Template website
-Diperbarui 26 Oktober 2026.
+Diperbarui 27 Oktober 2026.
 
 ### Corporate Nexa
 - Halaman: https://garudanexa.com/template/corporate-nexa
@@ -189,6 +189,19 @@ Cocok untuk SMA Islam terpadu, madrasah aliyah, dan sekolah berasrama. Bagian PP
 Cakrawala membuat website sekolah tampil rapi dan meyakinkan sejak layar pertama: slider foto besar selebar layar dengan logo sekolah dan menu pil, pengumuman PPDB di bagian paling atas, dan tiga kartu info. Di bawahnya tersusun statistik sekolah, sambutan kepala sekolah, profil dengan visi dan misi, program keahlian, teaching factory dan mitra industri, prestasi, PPDB (jalur, jadwal, syarat, alur, biaya, dan formulir singkat), berita dengan filter kategori, pengumuman, agenda, cerita alumni, Bursa Kerja Khusus, fasilitas, galeri, tanya jawab, serta lokasi dengan Google Maps.
 
 Cocok untuk SMK negeri maupun swasta, dan bisa dipakai SMA dengan mengganti program keahlian menjadi peminatan. Formulir PPDB menyusun pesan WhatsApp untuk panitia; tidak ada penyimpanan data pendaftar atau pembayaran online. Semua teks, foto, jadwal, dan satu warna tema (misalnya biru atau hijau) bisa Anda ubah sendiri lewat CMS tanpa coding.
+
+### Bestari
+- Halaman: https://garudanexa.com/template/bestari
+- Kategori: Sekolah & Pendidikan
+- Harga: Rp1.690.000 (per 27 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Ringkasan: Template website SMA yang modern dan meyakinkan: hero slider foto, navbar transparan, PPDB dengan formulir ke WhatsApp, berita, program, dan guru.
+- Fitur: Hero slider foto selebar layar dengan navbar transparan dan pengumuman PPDB; PPDB bertab: jalur, jadwal, syarat, alur, dan biaya; Formulir pendaftaran SMA yang memeriksa usia calon siswa dan menyusun pesan WhatsApp untuk panitia; Berita dengan filter kategori, pengumuman bertanggal, dan agenda kegiatan; Profil, sambutan kepala sekolah, carousel program unggulan, prestasi, dan guru; Testimoni orang tua & alumni, galeri, dan tanya jawab; Satu warna tema yang bisa diganti, misalnya terakota, hijau, atau biru; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/bestari (konten demo fiktif)
+
+Bestari membuat website SMA terasa modern dan meyakinkan sejak layar pertama: slider foto besar selebar layar dengan navbar yang transparan di atas foto lalu putih saat digulir, bilah info kontak dan pengumuman PPDB, tiga angka sekolah yang menghitung naik, dan kartu sorotan. Di bawahnya tersusun lencana sekolah, profil dengan visi dan misi, angka sekolah, sambutan kepala sekolah, alasan memilih sekolah, carousel program unggulan, prestasi, guru, PPDB (jalur, jadwal, syarat, alur, biaya, dan formulir singkat yang memeriksa usia calon siswa), berita dengan filter kategori, pengumuman, agenda, testimoni orang tua dan alumni, galeri, tanya jawab, serta lokasi dengan Google Maps.
+
+Cocok untuk SMA swasta maupun negeri, dan bisa dipakai MA dengan mengganti isi program. Formulir PPDB menyusun pesan WhatsApp untuk panitia; tidak ada penyimpanan data pendaftar atau pembayaran online. Semua teks, foto, jadwal, dan satu warna tema (misalnya terakota, hijau, atau biru) bisa Anda ubah sendiri lewat CMS tanpa coding.
 
 ## Jasa custom
 Diperbarui 27 Oktober 2026.
