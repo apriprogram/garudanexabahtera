@@ -1,3 +1,4 @@
 # Modul Node dengan shebang (#!) yang juga diimpor Vitest: CRLF di baris shebang membuat Vite gagal mengurainya
-# ("SyntaxError: Invalid or unexpected token" di __tests__/seo/assets.test.ts)
-scripts/seo/og-images.mjs text eol=lf
+# ("SyntaxError: Invalid or unexpected token" di __tests__/seo/*.test.ts). Worktree baru di Windows (core.autocrlf=true)
+# mengambil skrip ini dengan CRLF, jadi semua modul .mjs di scripts/ dipaksa LF.
+scripts/**/*.mjs text eol=lf
