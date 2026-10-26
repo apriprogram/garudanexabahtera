@@ -10,6 +10,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ARENA_PHOTOS } from '../arena-club/photos';
 import { AURA_PHOTOS } from '../aura-studio/photos';
+import { BESTARI_PHOTOS } from '../bestari/photos';
 import { CAKRAWALA_PHOTOS } from '../cakrawala/photos';
 import { FINOVA_PHOTOS } from '../finova/photos';
 import { GADGETKU_PHOTOS } from '../gadgetku/photos';
@@ -35,7 +36,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas';
   photos: PhotoSet;
 }
 
@@ -52,6 +53,7 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'skynusa', component: 'SkyNusa.tsx', heroLayout: 'specsheet', photos: SKYNUSA_PHOTOS },
   { code: 'madani', component: 'Madani.tsx', heroLayout: 'framed-slider', photos: MADANI_PHOTOS },
   { code: 'cakrawala', component: 'Cakrawala.tsx', heroLayout: 'horizon', photos: CAKRAWALA_PHOTOS },
+  { code: 'bestari', component: 'Bestari.tsx', heroLayout: 'canvas', photos: BESTARI_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */

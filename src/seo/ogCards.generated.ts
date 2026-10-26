@@ -17,6 +17,7 @@ export const OG_CARDS: readonly string[] = [
   'panduan',
   'template-arena-club',
   'template-aura-studio',
+  'template-bestari',
   'template-cakrawala',
   'template-corporate-nexa',
   'template-finova',

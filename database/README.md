@@ -25,7 +25,8 @@ database/
 │   ├── 2026-10-23_011_seo_navbar.sql               # data: navbar Template, Jasa ▾, Harga, Panduan (halaman nyata)
 │   ├── …                                           # 012–025: lihat catatan per migrasi di bawah
 │   ├── 2026-10-25_026_domain_renewal_profile.sql   # domain berbayar, masa aktif, template_renewals, profil pembeli
-│   └── 2026-10-25_027_google_sign_in.sql           # users.google_sub: masuk & daftar pembeli dengan Google
+│   ├── 2026-10-25_027_google_sign_in.sql           # users.google_sub: masuk & daftar pembeli dengan Google
+│   └── 2026-10-26_028_bestari_template.sql         # data: katalog Bestari (SD), jalankan SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -171,6 +172,11 @@ perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `templat
 `2026-10-25_025` (data saja) membuat/menyamakan baris katalog `cakrawala` (website SMK/SMA, kategori "Sekolah &
 Pendidikan", sort_order 13) berdasarkan slug, pola sama dengan 018: menjalankan ulang MENIMPA perubahan admin pada baris
 itu. Jalankan setelah kode yang mendaftarkan `template_code` `cakrawala` ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-26_028` (data saja) membuat/menyamakan baris katalog `bestari` (website sekolah dasar, kategori "Sekolah &
+Pendidikan", Rp1.690.000, sort_order 14) berdasarkan slug, pola sama dengan 025: menjalankan ulang MENIMPA perubahan admin
+pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code` `bestari` ter-deploy. DB baru cukup
+`seed.templates.sql`.
 
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
