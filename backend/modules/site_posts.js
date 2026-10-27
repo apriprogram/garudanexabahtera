@@ -31,7 +31,7 @@ import { addonActive, postsEnabled } from './site_addons.js';
 
 // Template yang punya fitur tulisan: sama dengan SP_POST_TEMPLATE_CODES (site_posts.php) dan features.posts di registri
 // src/templates (dijaga tes paritas). Template sekolah baru cukup ditambahkan di ketiga tempat itu.
-export const POST_TEMPLATE_CODES = Object.freeze(['madani', 'cakrawala', 'bestari']);
+export const POST_TEMPLATE_CODES = Object.freeze(['madani', 'cakrawala', 'bestari', 'jumantara', 'nawasena', 'pradipta']);
 const KINDS = ['berita', 'pengumuman'];
 const STATUSES = ['draft', 'published'];
 const INDEX_MODES = ['auto', 'index', 'noindex'];

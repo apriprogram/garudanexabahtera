@@ -14,6 +14,9 @@ describe('POST_TEMPLATE_CODES', () => {
   it('templateHasPosts menolak kode kosong dan template tanpa fitur', () => {
     expect(templateHasPosts('madani')).toBe(true);
     expect(templateHasPosts('bestari')).toBe(true);
+    expect(templateHasPosts('jumantara')).toBe(true);
+    expect(templateHasPosts('nawasena')).toBe(true);
+    expect(templateHasPosts('pradipta')).toBe(true);
     expect(templateHasPosts('corporate-nexa')).toBe(false);
     expect(templateHasPosts('')).toBe(false);
     expect(templateHasPosts(null)).toBe(false);

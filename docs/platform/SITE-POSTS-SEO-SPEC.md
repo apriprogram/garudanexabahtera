@@ -24,7 +24,7 @@ Foto unggahan disimpan sebagai **WebP/JPEG teroptimasi**, bukan SVG. Skill desig
 | Situs (klien) | Rute `/`, `/berita`, `/berita/{slug}`, `/pengumuman`, `/pengumuman/{slug}`. Template sekolah membaca tulisan lewat konteks. Kepala halaman dari `src/templates/siteSeo.ts`, dengan aturan yang sama seperti PHP. |
 | Akun | `/akun/situs/:siteId/berita` (daftar), `/akun/situs/:siteId/berita/:postId` (`baru` = tulisan baru), `/akun/situs/:siteId/seo`. Navigasi pil di editor konten. |
 
-Template dengan fitur tulisan: `madani`, `cakrawala`, dan `bestari`.
+Template dengan fitur tulisan: `madani`, `cakrawala`, `bestari`, `jumantara`, `nawasena`, dan `pradipta`.
 - Klien: `TemplateDefinition.features.posts` (`src/templates/types.ts`).
 - PHP: `SP_POST_TEMPLATE_CODES` di `site_posts.php`. Node: `POST_TEMPLATE_CODES` di `site_posts.js`.
 - Ketiga daftar dijaga oleh tes paritas. Template sekolah baru nanti cukup ditambahkan di ketiga tempat itu.
@@ -172,6 +172,8 @@ Tipe ada di `src/types/sitePosts.ts`.
 - `suspended`: `template_sites.status = 'suspended'`;
 - `manual_noindex`: `index_mode = 'noindex'`;
 - `default_content`: `index_mode = 'auto'` dan (content NULL **atau** `brand.company_name` kosong / sama dengan bawaan template).
+  - Hanya nama yang dicocokkan. Pembeli yang nama aslinya sama dengan nama contoh template harus memilih `index_mode = 'index'` ("Ya, tampilkan"). Contohnya Jumantara, Nawasena dan Pradipta, yang memakai nama sekolah nyata "SMA Negeri 1 Purbolinggo" sebagai demo. Kartu status di `/akun/situs/{id}/seo` menyebutkan pilihan ini dan punya tombol "Ubah pilihan".
+  - Catatan untuk pemilik/admin: bila SMA Negeri 1 Purbolinggo membeli salah satu dari ketiga template itu, atur "Tampil di Google" ke "Ya, tampilkan" saat onboarding. Kalau tidak, situsnya `noindex` dan sitemap-nya kosong.
 
 `indexable` = tidak ada alasan. Nama bawaan per template dibaca dari `backend/modules/site_defaults.json` (§6), di PHP maupun Node.
 
@@ -338,7 +340,7 @@ Aturan teks:
   - Foto memakai `width`/`height` + `loading="lazy"`, kecuali foto utama artikel.
 - **Tautan di dalam situs** (`SiteLink`): hanya path yang dikenali `parseSiteRoute` (`/`, `/berita`, `/pengumuman`, `/berita/{slug}`, `/#anchor`) yang diberi awalan `basePath` dan dibuka tanpa muat ulang, baik dari tautan tambahan tulisan maupun URL tombol/menu CMS (`resolveAction`). Path lain di situs yang sama (mis. lampiran `/assets/…/brosur.pdf`) tetap `<a href>` biasa.
 - **Setelah pindah halaman** (`useSiteNavigate`): lewat tautan tanpa hash → langsung ke atas (`behavior: 'instant'`, layout effect) dan fokus ke H1 halaman baru (`tabIndex=-1`); hash → digulir TemplateShell, fokus tidak dipindah; tombol kembali/maju → posisi gulir terakhir entri riwayat itu dipulihkan (TemplateShell tidak menggulir ulang ke hash-nya).
-- **Header** Madani/Cakrawala/Bestari tetap terpasang saat pindah halaman; penanda section aktif mengamati ulang section setiap halaman berganti.
+- **Header** Madani/Cakrawala/Bestari/Jumantara/Nawasena/Pradipta tetap terpasang saat pindah halaman; penanda section aktif mengamati ulang section setiap halaman berganti.
 - **Foto utama artikel** di bingkai berasio tetap (4:3 → 16:10, maks. 80% tinggi layar, `object-contain`), supaya isi di bawahnya tidak bergeser saat foto dimuat.
 - **Tautan section** di halaman selain beranda harus menuju `basePath + '/#anchor'`.
   - Tambahkan `news: 'berita'`, `announcements: 'pengumuman'`, `agenda: 'agenda'` ke `SECTION_ANCHOR`.

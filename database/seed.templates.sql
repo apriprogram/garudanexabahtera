@@ -352,4 +352,58 @@ Cocok untuk importir bahan baku, supplier mesin industri, agen sourcing, dan dis
    '["/assets/templates/nusaniaga-1.webp","/assets/templates/nusaniaga-2.webp"]',
    'nusaniaga', NULL, 'published', 20);
 
+-- Jumantara (2026-10-27, Sekolah & Pendidikan; DB lama: migrasi 2026-10-27_038). Demo: nama "SMA Negeri 1 Purbolinggo" (Lampung Timur) sebagai contoh, data demo lain fiktif.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('jumantara',
+   'Jumantara',
+   'Sekolah & Pendidikan',
+   'Template website sekolah negeri untuk SMA yang rapi dan elegan: slider foto dengan bilah progres, angka sekolah, berita, pengumuman, agenda, dan informasi SPMB.',
+   'Jumantara menampilkan website SMA negeri yang profesional dan tenang: bilah utilitas berisi kontak dan tautan PPID atau E-Learning, slider foto selebar layar dengan bilah progres per slide, dan pita angka sekolah di bagian bawah foto. Di bawahnya tersusun layanan cepat, sambutan kepala sekolah, profil dengan tab visi dan misi, kelompok mata pelajaran pilihan, berita, pengumuman, agenda, prestasi, ekstrakurikuler, fasilitas, guru, SPMB, alumni, galeri, tanya jawab, dan peta.
+
+Cocok untuk SMA negeri maupun swasta. Bagian SPMB menautkan portal provinsi dan menyediakan formulir tanya panitia yang menyusun pesan WhatsApp; tidak ada penyimpanan data pendaftar atau pembayaran online. Judul, deskripsi, tombol, isi setiap bagian, foto, dan satu warna tema bisa Anda ubah sendiri lewat CMS tanpa coding; label dan tombol formulir, label kontak, dan tautan lampiran pengumuman tetap berbahasa Indonesia.',
+   '["Hero slider foto selebar layar dengan bilah progres per slide, tombol jeda, dan pita angka sekolah","Bilah utilitas berisi kontak, jam layanan, dan tautan cepat seperti PPID dan E-Learning","Berita utama berfoto, pengumuman bertanda Penting, dan agenda dengan ubin tanggal","Bagian SPMB bertab (jalur, jadwal, syarat) dengan tautan ke portal provinsi","Formulir tanya panitia yang menyusun pesan WhatsApp, tanpa penyimpanan data","Sambutan kepala sekolah, visi-misi bertab, mapel pilihan, ekstrakurikuler berfilter, fasilitas, guru, alumni, galeri, FAQ, dan peta"]',
+   1690000.00,
+   '/assets/templates/jumantara-preview.webp',
+   '["/assets/templates/jumantara-1.webp","/assets/templates/jumantara-2.webp"]',
+   'jumantara', NULL, 'published', 21);
+
+-- Nawasena (2026-10-27, Sekolah & Pendidikan; DB lama: migrasi 2026-10-27_039). Demo: nama "SMA Negeri 1 Purbolinggo" (Lampung Timur) sebagai contoh, data demo lain fiktif.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('nawasena',
+   'Nawasena',
+   'Sekolah & Pendidikan',
+   'Template website profil sekolah untuk SMA negeri yang elegan: slider foto latar, strip pengumuman, statistik, berita, agenda, dan informasi SPMB.',
+   'Nawasena membuat website profil sekolah terasa resmi dan tenang: slider foto latar selebar layar dengan nomor slide vertikal dan tombol jeda, strip pengumuman berjalan, pita statistik sekolah, sambutan kepala sekolah, profil dengan visi, misi, dan sejarah singkat, tab paket mata pelajaran pilihan, prestasi, berita, pita pengumuman dan agenda, ekstrakurikuler, fasilitas, guru, informasi SPMB, galeri, cerita alumni, tanya jawab, serta lokasi dengan Google Maps.
+
+Cocok untuk SMA negeri maupun swasta. Formulir tanya SPMB hanya menyusun pesan WhatsApp untuk panitia; tidak ada penyimpanan data pendaftar atau pembayaran online, dan pendaftaran tetap di portal provinsi. Judul, isi setiap bagian, foto, jadwal, dan satu warna tema (bawaan biru dengan nuansa navy) bisa Anda ubah sendiri lewat CMS tanpa coding; label formulir, label kontak, judul kolom footer, dan beberapa label kecil tetap berbahasa Indonesia.',
+   '["Hero slider foto latar dengan nomor slide vertikal, tombol jeda, dan strip pengumuman","Pita statistik sekolah dengan angka yang menghitung naik","Sambutan kepala sekolah, profil, visi, misi, dan sejarah singkat","Tab paket mata pelajaran pilihan kelas XI–XII dan kokurikuler","Berita, pengumuman bertanggal, dan linimasa agenda","Informasi SPMB: jalur, jadwal, syarat, tautan portal provinsi, dan formulir tanya ke WhatsApp","Ekstrakurikuler, fasilitas, guru, galeri, alumni, dan tanya jawab","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/nawasena-preview.webp',
+   '["/assets/templates/nawasena-1.webp","/assets/templates/nawasena-2.webp"]',
+   'nawasena', NULL, 'published', 22);
+
+-- Pradipta (2026-10-27, Sekolah & Pendidikan; DB lama: migrasi 2026-10-27_040). Demo: nama "SMA Negeri 1 Purbolinggo" (Lampung Timur) sebagai contoh, data demo lain fiktif.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('pradipta',
+   'Pradipta',
+   'Sekolah & Pendidikan',
+   'Template landing page SMA negeri yang terang dan rapi: hero slider foto dengan thumbnail, statistik, berita, pengumuman, agenda, info SPMB, dan formulir tanya panitia ke WhatsApp.',
+   'Pradipta membuat SMA negeri tampil terang, rapi, dan tenang sejak layar pertama: header putih dengan menu yang penunjuknya bergeser mengikuti bagian yang sedang dibaca, slider foto selebar layar dengan judul di kartu putih, dan deret thumbnail foto berbilah progres sebagai tombol slide. Di bawahnya tersusun akses cepat, statistik dalam gelembung angka, profil dengan visi, misi, dan nilai sekolah, sambutan kepala sekolah, kelompok mata pelajaran pilihan dengan foto yang berganti, ekstrakurikuler bersaring, linimasa prestasi per tahun, kartu fasilitas sekolah, berita berfilter kategori, pengumuman, agenda berbentuk ubin kalender, guru, informasi SPMB (tab jalur, jadwal, dan syarat), testimoni, galeri, tanya jawab, serta kontak dengan Google Maps.
+
+Cocok untuk SMA negeri yang membutuhkan landing page SPMB setiap tahun ajaran dan tempat rutin menerbitkan berita, pengumuman, dan agenda. Pendaftaran tetap lewat portal SPMB provinsi; formulir tanya panitia hanya menyusun pesan WhatsApp, data tidak disimpan di website, tidak ada unggah berkas, dan tidak ada pembayaran online. Judul, foto, isi setiap bagian, dan satu warna tema bisa Anda ubah sendiri lewat CMS tanpa coding; label formulir dan tombol kontrol slider tetap berbahasa Indonesia.',
+   '["Header putih dengan penunjuk menu yang bergeser mengikuti bagian yang dibaca dan tombol Info SPMB","Hero slider foto selebar layar: judul di kartu putih, thumbnail berbilah progres, jeda, dan geser di HP","Akses cepat ke SPMB, pengumuman, e-learning, dan PPID, statistik dalam gelembung angka, profil, visi, misi, dan nilai sekolah","Kelompok mata pelajaran pilihan, ekstrakurikuler bersaring, linimasa prestasi per tahun, dan kartu fasilitas","Berita berfilter kategori, pengumuman berlabel Penting, dan agenda berbentuk ubin kalender","Info SPMB (tab jalur, jadwal, syarat), tautan portal provinsi, dan formulir tanya tiga langkah yang menyusun pesan WhatsApp","Guru, testimoni orang tua & alumni, galeri, tanya jawab, dan peta lokasi","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/pradipta-preview.webp',
+   '["/assets/templates/pradipta-1.webp","/assets/templates/pradipta-2.webp"]',
+   'pradipta', NULL, 'published', 23);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

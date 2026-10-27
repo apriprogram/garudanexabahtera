@@ -10,9 +10,12 @@ import { dermaga } from './dermaga';
 import { finova } from './finova';
 import { gadgetku } from './gadgetku';
 import { glowstory } from './glowstory';
+import { jumantara } from './jumantara';
 import { madani } from './madani';
+import { nawasena } from './nawasena';
 import { nusaniaga } from './nusaniaga';
 import { portline } from './portline';
+import { pradipta } from './pradipta';
 import { puncakgear } from './puncakgear';
 import { saudagar } from './saudagar';
 import { serenity } from './serenity';
@@ -41,6 +44,9 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // Dermaga (2026-10-27): ekspor-impor & freight forwarding, hero rute di atas foto terminal + pita pasar + formulir penawaran ke WhatsApp (src/templates/dermaga/Dermaga.tsx).
 // Saudagar (2026-10-27): eksportir kopi, kakao & rempah, hero tiga foto lengkung + tab spesifikasi + kalender panen (src/templates/saudagar/Saudagar.tsx).
 // NusaNiaga (2026-10-27): importir & distributor bahan baku & mesin, hero foto berbilah + garis alur proses + formulir penawaran ke WhatsApp (src/templates/nusaniaga/NusaNiaga.tsx).
+// Jumantara (2026-10-27): landing page SMA negeri "Clean institutional", bilah utilitas + hero slider foto berbilah progres + pita angka sekolah + SPMB lewat WhatsApp (src/templates/jumantara/Jumantara.tsx).
+// Nawasena (2026-10-27): landing page SMA negeri "Elegant navy", hero slider foto latar Ken Burns + rel nomor slide + strip pengumuman + SPMB lewat WhatsApp (src/templates/nawasena/Nawasena.tsx).
+// Pradipta (2026-10-27): landing page SMA negeri "Simple sky", header putih dengan penunjuk menu bergeser + hero slider foto berthumbnail + SPMB lewat WhatsApp (src/templates/pradipta/Pradipta.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -62,6 +68,9 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [dermaga.code]: dermaga,
   [saudagar.code]: saudagar,
   [nusaniaga.code]: nusaniaga,
+  [jumantara.code]: jumantara,
+  [nawasena.code]: nawasena,
+  [pradipta.code]: pradipta,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */

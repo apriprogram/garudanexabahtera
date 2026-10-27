@@ -26,7 +26,8 @@ export const addonRowId = (siteId: number) => `situs-${siteId}`;
 
 /**
  * Demo template dengan tampilan berita profesional (SITE-ADDONS-SPEC §6). /demo/:slug memakai slug katalog; untuk
- * template sekolah (madani, cakrawala, bestari) slug = kode templatenya (migrasi 024/025/028).
+ * template sekolah (madani, cakrawala, bestari, jumantara, nawasena, pradipta) slug = kode templatenya (migrasi
+ * 024/025/028/038/039/040).
  */
 export const addonDemoPath = (templateCode: string) => `${demoPath(encodeURIComponent(templateCode))}?fitur=berita`;
 

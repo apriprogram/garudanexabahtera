@@ -23,8 +23,18 @@ import { ANNOUNCEMENTS, NEWS, POST } from './fixtures/sitePosts';
 
 vi.setConfig({ testTimeout: 60_000 });
 
-type Code = 'madani' | 'cakrawala' | 'bestari';
-const CODES: Code[] = ['madani', 'cakrawala', 'bestari'];
+type Code = 'madani' | 'cakrawala' | 'bestari' | 'jumantara' | 'nawasena' | 'pradipta';
+const CODES: Code[] = ['madani', 'cakrawala', 'bestari', 'jumantara', 'nawasena', 'pradipta'];
+/** Chip tema (POST_THEME.chip) untuk label pengumuman selain "Penting"/"Wajib"; papan Nawasena ada di pita navy. */
+const THEME_CHIP: Record<Code, RegExp> = {
+  madani: /--md-tint/,
+  cakrawala: /--ck-tint/,
+  bestari: /--bs-tint/,
+  // Papan Jumantara di pita tint: label biasa putih bergaris rambut (POST_THEME_BAND), bukan tint di atas tint
+  jumantara: /bg-white text-\(--jm-ink\)/,
+  nawasena: /bg-white\/10/,
+  pradipta: /--pd-sky2/,
+};
 const ORIGIN = 'https://smkharapan.sch.id';
 
 const site = (code: Code, data: Partial<SiteData> = {}, content: unknown = null) =>
@@ -229,7 +239,7 @@ describe.each(CODES)('%s: berita biasa vs profesional', (code) => {
     expect(tones).toHaveLength(3);
     expect(tones[0]).toMatch(/#(9B1C1C|B42318)/);
     expect(tones[1]).toContain('#93370D');
-    expect(tones[2]).toMatch(/--(md|ck|bs)-tint/);
+    expect(tones[2]).toMatch(THEME_CHIP[code]);
   });
 
   it('rute tulisan saat fitur tidak aktif → "Halaman tidak ditemukan" (sama dengan site.php), bukan daftar/tulisan', () => {

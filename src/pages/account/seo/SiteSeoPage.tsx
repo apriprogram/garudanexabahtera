@@ -537,13 +537,20 @@ function IndexStatus({
         </button>
       ),
     },
+    // Nama hanya dicocokkan dengan nama contoh template; pembeli yang nama aslinya memang sama (mis. nama sekolah nyata
+    // yang dipakai sebagai demo) memilih "Ya, tampilkan" alih-alih mengganti nama.
     default_content: {
-      title: `Nama ${name} masih nama contoh dari template`,
-      text: `Ubah nama ${name} di Kelola konten, lalu simpan. Setelah itu situs otomatis boleh tampil di Google.`,
+      title: `Nama ${name} masih sama dengan nama contoh template`,
+      text: `Ubah nama ${name} di Kelola konten, lalu simpan. Setelah itu situs otomatis boleh tampil di Google. Bila nama itu memang nama ${name} Anda, pilih “Ya, tampilkan” di Tampil di Google, lalu simpan.`,
       action: (
-        <Link to={siteLinks(site.id).content} className="btn btn-outline btn-sm">
-          Buka Kelola konten
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link to={siteLinks(site.id).content} className="btn btn-outline btn-sm">
+            Buka Kelola konten
+          </Link>
+          <button type="button" onClick={onChangeMode} className="btn btn-outline btn-sm">
+            Ubah pilihan
+          </button>
+        </div>
       ),
     },
   };

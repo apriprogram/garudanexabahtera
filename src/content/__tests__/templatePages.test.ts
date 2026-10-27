@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline', 'velora', 'dermaga', 'saudagar', 'nusaniaga'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline', 'velora', 'dermaga', 'saudagar', 'nusaniaga', 'jumantara', 'nawasena', 'pradipta'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -61,7 +61,13 @@ const DERMAGA: Template = { ...FIXTURE_TEMPLATES[4], id: 90, slug: 'dermaga', na
 const SAUDAGAR: Template = { ...FIXTURE_TEMPLATES[4], id: 91, slug: 'saudagar', name: 'Saudagar', category: 'Company Profile', price: 1690000, template_code: 'saudagar', sort_order: 19 };
 // NusaNiaga (2026-10-27, migrasi 037, importir & distributor bahan baku dan mesin) juga belum ada di fixture prerender bersama
 const NUSANIAGA: Template = { ...FIXTURE_TEMPLATES[4], id: 92, slug: 'nusaniaga', name: 'NusaNiaga', category: 'Company Profile', price: 1590000, template_code: 'nusaniaga', sort_order: 20 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA, DERMAGA, SAUDAGAR, NUSANIAGA].find((t) => t.slug === slug) as Template;
+// Jumantara (2026-10-27, migrasi 038, landing page SMA negeri "Clean institutional") juga belum ada di fixture prerender bersama
+const JUMANTARA: Template = { ...FIXTURE_TEMPLATES[4], id: 93, slug: 'jumantara', name: 'Jumantara', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'jumantara', sort_order: 21 };
+// Nawasena (2026-10-27, migrasi 039, landing page SMA negeri "Elegant navy") juga belum ada di fixture prerender bersama
+const NAWASENA: Template = { ...FIXTURE_TEMPLATES[4], id: 94, slug: 'nawasena', name: 'Nawasena', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'nawasena', sort_order: 22 };
+// Pradipta (2026-10-27, migrasi 040, landing page SMA negeri) juga belum ada di fixture prerender bersama
+const PRADIPTA: Template = { ...FIXTURE_TEMPLATES[4], id: 95, slug: 'pradipta', name: 'Pradipta', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'pradipta', sort_order: 23 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA, DERMAGA, SAUDAGAR, NUSANIAGA, JUMANTARA, NAWASENA, PRADIPTA].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -96,6 +102,9 @@ describe('src/content/templates', () => {
       dermaga: 'Dermaga: Template Website Perusahaan Ekspor Impor',
       saudagar: 'Saudagar: Template Website Eksportir Kopi, Kakao & Rempah',
       nusaniaga: 'NusaNiaga: Template Website Importir & Distributor',
+      jumantara: 'Jumantara: Template Website Sekolah Negeri untuk SMA',
+      nawasena: 'Nawasena: Template Website Profil Sekolah untuk SMA',
+      pradipta: 'Pradipta: Template Landing Page SMA dengan SPMB',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -119,6 +128,9 @@ describe('src/content/templates', () => {
       dermaga: 'Dermaga: Template Website Ekspor Impor – Rp1,59 jt',
       saudagar: 'Saudagar: Template Website Eksportir Komoditas – Rp1,69 jt',
       nusaniaga: 'NusaNiaga: Template Website Importir & Trading – Rp1,59 jt',
+      jumantara: 'Jumantara: Template Website Sekolah Negeri – Rp1,69 jt',
+      nawasena: 'Nawasena: Template Website Profil Sekolah SMA – Rp1,69 jt',
+      pradipta: 'Pradipta: Template Landing Page SMA & SPMB – Rp1,69 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -263,6 +275,33 @@ describe('src/content/templates', () => {
     expect(nusaniaga).toMatch(/tidak diperbarui otomatis/);
     expect(nusaniaga).toMatch(/fiktif/);
     expect(nusaniaga).not.toMatch(/terdaftar di Bea Cukai|importir terdaftar|bersertifikat|\bISO\b|\bNIB\b|\bAPI-U\b|izin resmi|\bAEO\b|katalog produk/i);
+    // Jumantara (2026-10-27): formulir tanya panitia SPMB hanya menyusun pesan WhatsApp, pendaftaran di portal resmi
+    // provinsi, tanpa sistem akademik; nama sekolah demo hanya contoh, isi fiktif
+    const jumantara = visibleText(templateContent('jumantara') as TemplatePageContent);
+    expect(jumantara).toMatch(/tidak menyimpan data/);
+    expect(jumantara).toMatch(/tidak ada pembayaran online/);
+    expect(jumantara).toMatch(/portal resmi SPMB provinsi/);
+    expect(jumantara).toMatch(/Tidak ada e-rapor, absensi, atau sistem informasi akademik/);
+    expect(jumantara).toMatch(/tidak diperbarui otomatis/);
+    expect(jumantara).toMatch(/fiktif/);
+    expect(jumantara).not.toMatch(/e-rapor tersedia|sistem informasi akademik lengkap|data pendaftar tersimpan|pembayaran online tersedia|pasti diterima|terakreditasi|\bNPSN\b|\bPPDB online\b/i);
+    // Nawasena (2026-10-27): formulir tanya SPMB hanya menyusun pesan WhatsApp, pendaftaran tetap di portal provinsi, demo fiktif
+    const nawasena = visibleText(templateContent('nawasena') as TemplatePageContent);
+    expect(nawasena).toMatch(/tidak menyimpan data/);
+    expect(nawasena).toMatch(/tidak ada pembayaran online/);
+    expect(nawasena).toMatch(/data tidak disimpan di website/);
+    expect(nawasena).toMatch(/bukan sistem pendaftaran/);
+    expect(nawasena).toMatch(/Tidak ada e-rapor, absensi, atau sistem informasi akademik/);
+    expect(nawasena).toMatch(/fiktif/);
+    expect(nawasena).not.toMatch(/e-rapor tersedia|sistem informasi akademik lengkap|data pendaftar tersimpan|pembayaran online tersedia|pasti diterima|terakreditasi|\bNPSN\b|\bPPDB online\b/i);
+    // Pradipta (2026-10-27): formulir tanya SPMB hanya menyusun pesan WhatsApp, pendaftaran tetap di portal provinsi, demo fiktif
+    const pradipta = visibleText(templateContent('pradipta') as TemplatePageContent);
+    expect(pradipta).toMatch(/tidak menyimpan data/);
+    expect(pradipta).toMatch(/tidak ada pembayaran online/);
+    expect(pradipta).toMatch(/fiktif/);
+    expect(pradipta).toMatch(/portal SPMB provinsi/);
+    expect(pradipta).toMatch(/tanpa e-rapor, absensi, atau sistem informasi akademik/);
+    expect(pradipta).not.toMatch(/e-rapor tersedia|sistem informasi akademik lengkap|data pendaftar tersimpan|pembayaran online tersedia|pasti diterima|terakreditasi|\bNPSN\b/i);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -504,6 +543,67 @@ describe('src/content/templates', () => {
     expect(TEMPLATE_COPY.nusaniaga?.niche).toBe('Importir & Distributor Bahan Baku Industri');
     expect(TEMPLATE_PAGES.nusaniaga?.niche).toBe('importir & distributor bahan baku');
     expect(TEMPLATE_COPY.nusaniaga?.updated).toBe('2026-10-27');
+  });
+
+  it('Jumantara: kata kunci "template website sekolah negeri" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi; tidak merebut kata kunci Bestari', () => {
+    const t = bySlug('jumantara');
+    const keyword = /template website sekolah negeri/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateTitle(t).length).toBeLessThanOrEqual(60);
+    expect(templateDescription(t)).toMatch(/^Template website sekolah negeri untuk SMA: /);
+    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toBe('Jumantara: Template Website Sekolah Negeri untuk SMA');
+    // "template website SMA" & "PPDB online" milik Bestari, "SMK & SMA" milik Cakrawala, "landing page SMA" milik Pradipta, "profil sekolah" milik Nawasena
+    expect(`${templateTitle(t)} ${templateH1(t)} ${templateDescription(t)}`).not.toMatch(/template website SMA|PPDB|SMK & SMA|landing page SMA|profil sekolah/i);
+    const c = templateContent('jumantara') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Jumantara adalah template website sekolah negeri /);
+    const text = visibleText(c);
+    for (const phrase of ['website sekolah negeri', 'website SMA profesional', 'SPMB']) expect(text, phrase).toContain(phrase);
+    // Wajar, bukan ditumpuk; frasa utama Bestari tidak dipakai di isi halaman
+    expect(text.toLowerCase().split('template website sekolah negeri').length - 1).toBeLessThanOrEqual(3);
+    expect(text).not.toMatch(/template website SMA/i);
+    expect(TEMPLATE_COPY.jumantara?.niche).toBe('SMA Negeri');
+    expect(TEMPLATE_PAGES.jumantara?.niche).toBe('sekolah SMA negeri');
+    expect(TEMPLATE_COPY.jumantara?.updated).toBe('2026-10-27');
+  });
+
+  it('Nawasena: kata kunci "template website profil sekolah" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi; tidak merebut kata kunci Bestari', () => {
+    const t = bySlug('nawasena');
+    const keyword = /template website profil sekolah/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website profil sekolah SMA negeri/);
+    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toMatch(keyword);
+    // "template website SMA" & "PPDB online" milik Bestari, "SMK & SMA" milik Cakrawala, "landing page SMA" milik Pradipta
+    expect(`${templateTitle(t)} ${templateH1(t)}`).not.toMatch(/template website SMA|PPDB online|SMK & SMA|landing page SMA/i);
+    const c = templateContent('nawasena') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Nawasena adalah template website profil sekolah /);
+    const text = visibleText(c);
+    for (const phrase of ['website profil SMA', 'website sekolah negeri']) expect(text, phrase).toContain(phrase);
+    expect(text.toLowerCase().split('template website profil sekolah').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.nawasena?.niche).toBe('Profil Sekolah SMA');
+    expect(TEMPLATE_PAGES.nawasena?.niche).toBe('profil sekolah SMA');
+    expect(TEMPLATE_COPY.nawasena?.updated).toBe('2026-10-27');
+  });
+
+  it('Pradipta: kata kunci "template landing page SMA" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi; tidak merebut kata kunci Bestari', () => {
+    const t = bySlug('pradipta');
+    const keyword = /template landing page SMA/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template landing page SMA /);
+    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toMatch(keyword);
+    // "template website SMA" milik Bestari, "SMK & SMA" milik Cakrawala
+    expect(`${templateTitle(t)} ${templateH1(t)}`).not.toMatch(/template website SMA|SMK & SMA/i);
+    const c = templateContent('pradipta') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Pradipta adalah template landing page SMA /);
+    const text = visibleText(c);
+    for (const phrase of ['landing page SPMB', 'website SPMB SMA', 'SMA negeri']) expect(text, phrase).toContain(phrase);
+    // Wajar, bukan ditumpuk
+    expect(text.toLowerCase().split('template landing page sma').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.pradipta?.niche).toBe('Landing Page SMA');
+    expect(TEMPLATE_PAGES.pradipta?.niche).toBe('landing page SMA');
+    expect(TEMPLATE_COPY.pradipta?.updated).toBe('2026-10-27');
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

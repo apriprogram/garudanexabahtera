@@ -69,10 +69,24 @@
     "logo": "",
     "posts": false
   },
+  "jumantara": {
+    "company_name": "SMA Negeri 1 Purbolinggo",
+    "tagline": "Sekolah negeri di Lampung Timur",
+    "description": "Sekolah negeri untuk warga Purbolinggo dan sekitarnya: pembelajaran yang mendalam, kegiatan murid yang beragam, dan layanan yang mudah dijangkau orang tua.",
+    "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
+    "posts": true
+  },
   "madani": {
     "company_name": "SMA IT Nurul Azka",
     "tagline": "Sekolah Islam Terpadu & Asrama di Bogor",
     "description": "SMA Islam Terpadu di Bogor dengan program tahfidz, kelas sains, dan bilingual Arab–Inggris. Pendaftaran peserta didik baru tahun ajaran 2027/2028 sudah dibuka.",
+    "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
+    "posts": true
+  },
+  "nawasena": {
+    "company_name": "SMA Negeri 1 Purbolinggo",
+    "tagline": "SMA Negeri di Lampung Timur",
+    "description": "Sekolah menengah atas negeri di Purbolinggo, Lampung Timur. Kebiasaan baik dijaga, rasa ingin tahu dipupuk, dan setiap murid didampingi menuju studi lanjut.",
     "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
     "posts": true
   },
@@ -89,6 +103,13 @@
     "description": "Quaymoor Group moves containers, energy and project cargo for customers in more than 90 countries, through one network of ships, terminals and inland logistics.",
     "logo": "",
     "posts": false
+  },
+  "pradipta": {
+    "company_name": "SMA Negeri 1 Purbolinggo",
+    "tagline": "SMA Negeri di Lampung Timur",
+    "description": "SMA negeri di Purbolinggo, Lampung Timur, yang menyiapkan murid untuk studi lanjut dan bermasyarakat lewat pembelajaran mendalam.",
+    "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
+    "posts": true
   },
   "puncakgear": {
     "company_name": "Tapak Rimba Outdoor",

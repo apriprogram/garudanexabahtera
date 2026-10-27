@@ -157,7 +157,8 @@ describe('halaman SEO situs', () => {
     expect(within(nav).getByRole('link', { name: 'Berita & Pengumuman' })).toBeInTheDocument();
 
     expect(screen.getByRole('heading', { name: 'Situs Anda belum bisa muncul di Google' })).toBeInTheDocument();
-    expect(screen.getByText('Nama sekolah masih nama contoh dari template')).toBeInTheDocument();
+    expect(screen.getByText('Nama sekolah masih sama dengan nama contoh template')).toBeInTheDocument();
+    expect(screen.getByText(/Bila nama itu memang nama sekolah Anda, pilih “Ya, tampilkan”/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Buka Kelola konten' })).toHaveAttribute('href', '/akun/situs/1');
 
     const sitemap = screen.getByRole('link', { name: /Sitemap/ });
@@ -306,11 +307,20 @@ describe('halaman SEO situs', () => {
     await waitFor(() => expect(screen.getByLabelText(/Tidak, sembunyikan/)).toHaveFocus());
   });
 
+  it('nama masih nama contoh → "Ubah pilihan" juga tersedia (nama asli pembeli bisa sama dengan nama demo)', async () => {
+    mockApi();
+    renderPage();
+    const item = (await screen.findByText('Nama sekolah masih sama dengan nama contoh template')).closest('li')!;
+    expect(within(item).getByRole('link', { name: 'Buka Kelola konten' })).toBeInTheDocument();
+    fireEvent.click(within(item).getByRole('button', { name: 'Ubah pilihan' }));
+    await waitFor(() => expect(screen.getByLabelText(/Otomatis \(disarankan\)/)).toHaveFocus());
+  });
+
   it('template bukan sekolah: teks "perusahaan", tanpa menu Berita', async () => {
     site.template_code = 'corporate-nexa';
     mockApi();
     renderPage();
-    expect(await screen.findByText('Nama perusahaan masih nama contoh dari template')).toBeInTheDocument();
+    expect(await screen.findByText('Nama perusahaan masih sama dengan nama contoh template')).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Menu situs' });
     expect(within(nav).queryByRole('link', { name: 'Berita & Pengumuman' })).not.toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Otomatis (Organisasi atau perusahaan)' })).toBeInTheDocument();

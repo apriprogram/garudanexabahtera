@@ -655,3 +655,114 @@ tidak berhubungan dengan orang atau perusahaan di foto.
 | `nusaniaga-portrait-1-*` | Pria berkaus hitam tersenyum (dipotong dari foto setengah badan) | https://unsplash.com/photos/9dGkDtsXHi8 | Hazwan Hashim |
 | `nusaniaga-portrait-2-*` | Perempuan berkerudung hitam dan berblazer merah muda tersenyum (dipotong dari foto setengah badan) | https://unsplash.com/photos/wG5RIXH52Xc | Sewupari Studio |
 | `nusaniaga-portrait-3-*` | Pria muda berkacamata dan berkemeja kotak-kotak tersenyum (dipotong) | https://unsplash.com/photos/iQLqpFqzwnc | Divyank Sachdeva |
+
+## Jumantara (SMA Negeri 1 Purbolinggo, contoh; data demo fiktif)
+
+Slide hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; foto tegak 4:5 `-960.webp` + `-800.webp` (profil,
+fasilitas, galeri); mendatar 3:2 `-1200.webp` + `-800.webp` (berita). Dicek lisensinya di halaman foto (foto
+gratis di bawah Unsplash License, bukan Unsplash+, gambar di images.unsplash.com) 2026-10-27, dipotong lewat CDN
+Unsplash, lalu dikompres ke WebP. Suntingan (blur lokal bertepi lembut, tanpa inpaint): papan nama di seragam, lencana
+OSIS, dan logo penerbit pada sampul buku di `jumantara-hero-2-*`, papan nama di seragam pada `jumantara-galeri-2-*`, serta
+lambang kecil di kaus pada `jumantara-berita-1-*` dikaburkan, dan `jumantara-galeri-3-*`
+dipotong agar tanda air fotografer tidak ikut. Sebagian besar foto diberi penghalusan ringan (blur sekitar 1 px) agar
+tiap varian muat dalam anggaran ukuran. Foto laboratorium, perpustakaan, ruang komputer, dan masjid tidak semuanya
+diambil di Indonesia, dan demo tidak menyebut lokasi foto. Nama SMA Negeri 1 Purbolinggo dipakai sebagai contoh atas
+permintaan pemilik; kepala sekolah, guru, murid, dan alumni di demo fiktif dan tidak berhubungan dengan orang atau
+sekolah di foto. Karena itu sambutan kepala sekolah di demo tidak memakai foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `jumantara-hero-1-*` | Dua siswi dengan rok abu-abu berjalan di depan gedung sekolah berhias umbul-umbul merah putih (dipotong 16:9 dari foto tegak; penghalusan ringan) | https://unsplash.com/photos/jj5D-jjGjPs | Rafael Atantya |
+| `jumantara-hero-2-*` | Tiga siswi berkemeja putih membaca buku bersama di teras sekolah (papan nama, lencana OSIS, dan logo penerbit dikaburkan) | https://unsplash.com/photos/RwZzAcRmbbI | Ed Us |
+| `jumantara-hero-3-*` | Penari remaja berkostum hijau kuning dengan mahkota dan busur menari di lapangan (penghalusan ringan) | https://unsplash.com/photos/dtLCXpoFIRw | Yazid N |
+| `jumantara-hero-4-*` | Barisan petugas upacara berseragam putih memberi hormat di lapangan (dipotong 16:9; penghalusan ringan) | https://unsplash.com/photos/rMccM3sgmD0 | Mufid Majnun |
+| `jumantara-profil-*` | Gedung sekolah tiga lantai beratap genteng di bawah langit biru (dipotong 4:5; penghalusan ringan) | https://unsplash.com/photos/gUPnzDIgcZw | Rafael Atantya |
+| `jumantara-berita-1-*` | Murid berdiskusi mengelompokkan kertas catatan warna-warni bersama guru pendamping (dipotong 3:2; lambang kecil di kaus dikaburkan) | https://unsplash.com/photos/QiIxg_q2vh0 | Zainul Yasni |
+| `jumantara-berita-2-*` | Siswi berkerudung putih mengerjakan soal di laboratorium komputer (dipotong 3:2) | https://unsplash.com/photos/6NL4Q3UYxFk | Royhan Firdaus |
+| `jumantara-berita-3-*` | Lima penari remaja berkebaya dan berkain batik dengan caping (penghalusan ringan) | https://unsplash.com/photos/5-ljdbvW-z0 | heru ragilsaputro |
+| `jumantara-berita-4-*` | Petugas upacara mengibarkan bendera merah putih di lapangan | https://unsplash.com/photos/yv6ThE76y_M | Mufid Majnun |
+| `jumantara-fasilitas-lab-*` | Labu ukur berisi larutan berwarna di meja laboratorium kimia (dipotong 4:5) | https://unsplash.com/photos/Q7ngZ0oKIfc | Pawan Parihar |
+| `jumantara-fasilitas-perpustakaan-*` | Rak perpustakaan putih penuh buku (dipotong 4:5; penghalusan ringan) | https://unsplash.com/photos/55btQzyDiO8 | Zaini Izzuddin |
+| `jumantara-fasilitas-komputer-*` | Ruang komputer terang dengan deretan monitor dan layar proyektor (dipotong 4:5) | https://unsplash.com/photos/eWnSMfxvpF4 | RUT MIIT |
+| `jumantara-fasilitas-lapangan-*` | Lapangan olahraga beratap dengan tribun saat matahari sore (dipotong 4:5; penghalusan ringan) | https://unsplash.com/photos/p9l4ZJVZi40 | Bayu Syaits |
+| `jumantara-fasilitas-ibadah-*` | Ruang salat masjid dengan mihrab kayu berukir kaligrafi (dipotong 4:5; penghalusan ringan) | https://unsplash.com/photos/sMB8l9j1PQ8 | Rumman Amin |
+| `jumantara-fasilitas-sanggar-*` | Bilah bambu alat musik tradisional dan pemukulnya (dipotong 4:5) | https://unsplash.com/photos/TglukalIyRE | Mufid Majnun |
+| `jumantara-galeri-1-*` | Dua siswi berkerudung dan berseragam olahraga dengan tangan bertepung tersenyum saat praktik membuat adonan (dipotong 4:5 dari foto mendatar; lisensi dicek 2026-10-28) | https://unsplash.com/photos/tgKOuF9u5OE | Fajar Herlambang STUDIO |
+| `jumantara-galeri-2-*` | Siswi berkerudung putih tersenyum bersama teman di ruang kelas (dipotong 4:5; papan nama di seragam dikaburkan) | https://unsplash.com/photos/poDp3h2KlX0 | Herlambang Tinasih Gusti |
+| `jumantara-galeri-3-*` | Tiga anggota pramuka berkerudung membaca map biru di luar ruangan (dipotong 4:5 tanpa tanda air fotografer) | https://unsplash.com/photos/gx2uYy3xfow | Mochammad Hafidz |
+| `jumantara-galeri-4-*` | Remaja berpeci dan berbaju koko hijau membaca buku (dipotong 4:5; penghalusan ringan pada varian 800) | https://unsplash.com/photos/A5ZS7v1dSTs | herhy Ad |
+
+## Nawasena (SMA Negeri 1 Purbolinggo, demo; isi fiktif)
+
+Slide hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; foto tegak 4:5 `-960.webp` + `-800.webp` (galeri
+tegak); mendatar 4:3 / 3:2 `-1200.webp` + `-800.webp` (profil, program, berita, fasilitas, galeri). Dicek
+lisensinya di halaman foto (foto gratis di bawah Unsplash License, bukan Unsplash+, gambar di images.unsplash.com)
+2026-10-27, dipotong lewat CDN Unsplash, lalu dikompres ke WebP. Suntingan (blur lokal bertepi lembut, tanpa inpaint):
+label nama dan lencana sekolah di lengan pada `nawasena-hero-2-*` dan `nawasena-berita-2-*`, tulisan pada kaus dan jaket penonton di
+`nawasena-hero-3-*`, serta spanduk bernama sekolah di `nawasena-galeri-2-*` dikaburkan. Delapan foto bertekstur padat diberi penghalusan
+ringan (blur sekitar 1 px) agar tiap varian muat dalam anggaran ukuran. Foto laboratorium, perpustakaan, lapangan, dan
+gajah tidak diambil di Indonesia atau tidak diketahui lokasinya, dan demo tidak menyebut lokasi foto. Sebagian foto
+berasal dari akun publikasi sekolah nyata; nama sekolahnya tidak tampil di potongan foto. Nama SMA Negeri 1 Purbolinggo
+dipakai sebagai contoh atas permintaan pemilik; kepala sekolah, guru, murid, dan alumni di demo fiktif dan tidak
+berhubungan dengan orang atau sekolah di foto. Karena itu sambutan kepala sekolah di demo tidak memakai foto wajah (papan
+monogram), dan kartu guru serta alumni memakai inisial.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `nawasena-hero-1-*` | Murid berseragam putih abu-abu menyalami guru berbatik di depan gedung sekolah (dipotong 16:9; penghalusan ringan) | https://unsplash.com/photos/BEmotv-m8uM | SMKN 1 Gantar |
+| `nawasena-hero-2-*` | Murid berseragam putih mengerjakan tugas lewat ponsel di bangku kelas (dipotong 16:9; lencana dan label nama sekolah di lengan dikaburkan) | https://unsplash.com/photos/C0ntobAcyzY | Fajar Herlambang STUDIO |
+| `nawasena-hero-3-*` | Dua penari berkain batik dan berselendang merah tampil di depan murid pada acara sekolah (dipotong 16:9; tulisan kaus dan jaket penonton dikaburkan; penghalusan ringan) | https://unsplash.com/photos/8Rj4qxZcTqA | wisata lebakmuncang |
+| `nawasena-hero-4-*` | Barisan pelajar berseragam pramuka dengan setangan leher merah putih berlatih di halaman (dipotong 16:9; penghalusan ringan) | https://unsplash.com/photos/7FFRe4xfRrg | Mufid Majnun |
+| `nawasena-profil-*` | Gedung sekolah bertingkat tiga dan lapangan serbaguna di halaman sekolah (dipotong 3:2; papan kecil di pagar tidak terbaca) | https://unsplash.com/photos/mH62-1oLuzA | Haidan |
+| `nawasena-program-sains-*` | Deretan mikroskop di meja laboratorium (dipotong 4:3) | https://unsplash.com/photos/gKUC4TMhOiY | Ousa Chea |
+| `nawasena-program-sosial-*` | Pemuda berkacamata berdiskusi dengan temannya sambil duduk di halaman | https://unsplash.com/photos/boC7bLQWXW4 | Herlambang Tinasih Gusti |
+| `nawasena-program-bahasa-*` | Lima siswi berkerudung biru muda membaca buku bersama (Blitar; dipotong 4:3; penghalusan ringan) | https://unsplash.com/photos/eZrwVUHa-HI | Ismail Hasan |
+| `nawasena-berita-1-*` | Murid berkemeja putih berswafoto bersama di lapangan | https://unsplash.com/photos/x9W8ZGollk8 | Rijki Budiman |
+| `nawasena-berita-2-*` | Murid berseragam putih mengerjakan tugas lewat ponsel di kelas (label nama dan lencana sekolah dikaburkan) | https://unsplash.com/photos/7ebCN7FwH3g | Fajar Herlambang STUDIO |
+| `nawasena-berita-3-*` | Lima pelajar SMA berkostum tari merah berpose di depan latar panggung bergambar laut (dipotong 3:2; penghalusan ringan) | https://unsplash.com/photos/K6db6Wf8G4M | Fajar Herlambang STUDIO |
+| `nawasena-berita-4-*` | Induk gajah dan anaknya di hutan (penghalusan ringan) | https://unsplash.com/photos/XWTNFVCTS8E | paweldotio |
+| `nawasena-fasilitas-lab-*` | Labu kaca berisi larutan berwarna di meja laboratorium (dipotong 4:3) | https://unsplash.com/photos/hLyHQx-q__g | Ivona Rož |
+| `nawasena-fasilitas-perpustakaan-*` | Rak buku bertingkat dan meja baca di perpustakaan (Shanghai; dipotong 4:3) | https://unsplash.com/photos/W9lQvjUi56M | Declan Sun |
+| `nawasena-fasilitas-lapangan-*` | Lapangan bola voli dilihat dari atas (Italia) | https://unsplash.com/photos/-t40mnV3vAU | Michele Feola |
+| `nawasena-galeri-1-*` | Petugas pengibar bendera memegang bendera merah putih (dipotong 4:5 dari foto mendatar) | https://unsplash.com/photos/YxYc19SqZJg | Royhan Firdaus |
+| `nawasena-galeri-2-*` | Murid berseragam batik biru dan bawahan abu-abu tersenyum bersama pembina yang memegang bingkisan saat kegiatan OSIS (lisensi dicek 2026-10-28; dipotong 3:2; spanduk bernama sekolah dikaburkan; penghalusan ringan) | https://unsplash.com/photos/U7U2TvmPZYM | Herlambang Tinasih Gusti |
+| `nawasena-galeri-3-*` | Guru dan tenaga kependidikan duduk di kursi kayu merah di halaman sekolah (dipotong 4:3; penghalusan ringan) | https://unsplash.com/photos/zJkMJooI3cQ | Fajar Herlambang STUDIO |
+| `nawasena-galeri-4-*` | Murid memasang tali di atas bedengan bermulsa saat praktik berkebun (dipotong 4:3) | https://unsplash.com/photos/QocB54tebTI | Publikasi SMKN 1 Cibadak |
+
+## Pradipta (SMA Negeri 1 Purbolinggo, contoh; data demo fiktif)
+
+Slide hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; foto tegak 4:5 `-960.webp` + `-800.webp` (profil);
+mendatar 4:3 / 3:2 `-1200.webp` + `-800.webp` (program, berita, galeri); kartu ekstrakurikuler 4:3 `-800.webp` saja.
+Dicek lisensinya (foto gratis di bawah Unsplash License, bukan Unsplash+, gambar di images.unsplash.com) 2026-10-27
+(voli pasir, profil, tari, dan futsal: 2026-10-28, dari data halaman pencarian Unsplash yang tersimpan), lalu dipotong
+dan dikompres ke WebP. Suntingan (blur lokal bertepi lembut, tanpa inpaint): papan nama, badge bertulisan, dan lencana
+pada seragam Pramuka, nama yang tercoret di meja kelas, lencana sekolah di lengan baju, lencana kecil di saku seorang
+siswa, serta tulisan nama sekolah, jurusan, dan sponsor pada kaus olahraga dikaburkan. Beberapa foto bertekstur padat
+diberi penghalusan ringan (blur sekitar 1 px, atau latar daun yang dilembutkan) agar tiap varian muat di bawah 140 KB.
+Sebagian foto berasal dari akun publikasi sekolah atau berlokasi di sekolah dan kampus nyata; nama sekolahnya tidak
+tampil di potongan foto. Nama SMA Negeri 1 Purbolinggo dipakai sebagai contoh atas permintaan pemilik; kepala sekolah,
+guru, murid, orang tua, dan alumni di demo fiktif dan tidak berhubungan dengan orang atau sekolah di foto. Karena itu
+sambutan kepala sekolah di demo tidak memakai foto wajah, dan kartu guru memakai inisial.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `pradipta-hero-1-*` | Guru berkerudung di antara murid berseragam putih abu-abu yang duduk di halaman sekolah (dipotong ke kiri agar guru & murid di luar kartu judul; penghalusan ringan; lencana kecil di saku dan bordir di lengan seorang siswa dikaburkan) | https://unsplash.com/photos/fGVI4L100lI | Fajar Herlambang STUDIO |
+| `pradipta-hero-2-*` | Upacara bendera di lapangan sekolah di bawah langit biru (Banyumas) | https://unsplash.com/photos/La3MwNrgEDc | Mufid Majnun |
+| `pradipta-hero-3-*` | Tiga siswi berkostum tari tradisional berselendang kuning (dipotong; papan jalan di latar tidak ikut) | https://unsplash.com/photos/nelfOId8ObU | Yazid N |
+| `pradipta-hero-4-*` | Murid berkaus hijau tosca bermain voli pasir: smes dan bendungan di net (dipotong 16:9 ke kiri agar pemain di luar kartu judul; penghalusan ringan; tulisan di kaus seorang pemain dikaburkan) | https://unsplash.com/photos/oa34CgTS9WY | Aldrin Rachman Pradana |
+| `pradipta-profil-*` | Empat murid berseragam olahraga bercengkerama di bawah pohon mangga di tepi sawah (dipotong 4:5; latar daun dilembutkan; tulisan nama sekolah & jurusan di kaus dan celana serta lencana dada dikaburkan) | https://unsplash.com/photos/7QqKN3svFUU | SMKN 1 Gantar |
+| `pradipta-sains-*` | Murid menimbang sampel sayuran dengan timbangan digital lalu memotretnya (dipotong 4:3; lencana sekolah di lengan baju dikaburkan) | https://unsplash.com/photos/Cn8rwHyk7eU | Ed Us |
+| `pradipta-ekskul-pramuka-*` | Tiga anggota Pramuka putri berseragam cokelat dan bertopi hitam dalam barisan (dipotong 4:3; tanda wilayah, nomor gugus depan, dan papan nama dikaburkan) | https://unsplash.com/photos/qL0VuSq7hNM | Budi Gustaman |
+| `pradipta-ekskul-paskibra-*` | Bendera Merah Putih berkibar dengan latar langit biru berawan (dipotong 4:3) | https://unsplash.com/photos/W9EJYyCZ5HI | Bisma Mahendra |
+| `pradipta-ekskul-tari-*` | Siswi berbusana adat dan bermahkota emas membawa cerana dalam tari persembahan di teras sekolah (dipotong 4:3 dari foto tegak; papan nama gedung tidak ikut) | https://unsplash.com/photos/PCWBfAdUGQo | fikri aikal |
+| `pradipta-ekskul-voli-*` | Dua murid berkaus tim biru bermain futsal di lapangan semen yang teduh (dipotong 4:3 dari foto tegak; tulisan sponsor di kaus dikaburkan) | https://unsplash.com/photos/BcgT7LnEx-k | SMKN 1 Gantar |
+| `pradipta-sosial-*` | Murid laki-laki berseragam batik tertawa dan berdiskusi di ruang kelas (dipotong 4:3) | https://unsplash.com/photos/Q9XrF0n3Cjo | Herlambang Tinasih Gusti |
+| `pradipta-bahasa-*` | Pemateri berbatik berbicara di depan murid berseragam putih di aula (dipotong 4:3) | https://unsplash.com/photos/amRNVLYOJTo | Iqbal Tarigan |
+| `pradipta-berita-1-*` | Pemuda berbatik berbicara dengan mikrofon di depan peserta (dipotong 3:2) | https://unsplash.com/photos/0Fqdyo0-70M | Herlambang Tinasih Gusti |
+| `pradipta-berita-2-*` | Murid berseragam mengerjakan tugas lewat ponsel di kelas (nama yang tercoret di meja dikaburkan) | https://unsplash.com/photos/hlfh_7qQQYs | Fajar Herlambang STUDIO |
+| `pradipta-berita-3-*` | Murid berseragam batik belajar menganyam (penghalusan ringan) | https://unsplash.com/photos/YjeG8Gz5lLo | Fajar Herlambang STUDIO |
+| `pradipta-berita-4-*` | Pemuda berkemeja putih berkalung tanda peserta tersenyum saat pelatihan (dipotong 3:2) | https://unsplash.com/photos/nxXBUhe17L4 | Herlambang Tinasih Gusti |
+| `pradipta-galeri-1-*` | Paduan suara murid berseragam putih abu-abu berlatih di taman sekolah (penghalusan ringan) | https://unsplash.com/photos/PwZTMucSges | SMKN 1 Gantar |
+| `pradipta-galeri-2-*` | Dua orang belajar di perpustakaan terang dilihat dari lantai atas (Sleman) | https://unsplash.com/photos/FWXvxnfOdJ0 | Yazid N |
+| `pradipta-galeri-3-*` | Pramuka putri bertopi cokelat memegang tongkat merah (dipotong; papan nama, badge, dan lencana bertulisan dikaburkan) | https://unsplash.com/photos/a5mX--9qrx8 | Fajar Herlambang STUDIO |
+| `pradipta-galeri-4-*` | Siswi berkebaya memainkan gamelan di panggung (dipotong 4:3 dari foto tegak) | https://unsplash.com/photos/8iHsYdQLHyY | Shannia Christanty |

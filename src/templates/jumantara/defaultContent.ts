@@ -1,0 +1,501 @@
+// Konten demo Jumantara. "SMA Negeri 1 Purbolinggo" (Purbolinggo, Lampung Timur) dipakai sebagai NAMA CONTOH atas
+// permintaan pemilik; kepala sekolah, guru, alumni, angka, berita, pengumuman, agenda, alamat jalan, telepon, dan email
+// adalah FIKTIF/ilustrasi, bukan data sekolah itu (tanpa NPSN, akreditasi, peringkat, atau tahun berdiri). Tautan media
+// sosial memakai alamat platform tanpa nama akun. Semua salinan berbahasa Indonesia.
+// Istilah SPMB (Sistem Penerimaan Murid Baru, pengganti PPDB): pendaftaran SMA negeri lewat portal SPMB provinsi;
+// formulir di halaman ini hanya menyusun pesan WhatsApp untuk bertanya (tanpa penyimpanan data, tanpa pembayaran).
+// Tanggal ISO (YYYY-MM-DD) di berita, pengumuman, dan agenda ditampilkan sebagai "25 Nov 2026"; hari di agenda sudah
+// dicek (Rab 25 Nov 2026, Jum 18 Des 2026, Sab 16 Jan 2027, Sab 24 Apr 2027, Sen 12 Jul 2027).
+import type { SiteContent } from '../types';
+import { jumantaraPhoto } from './photos';
+
+/** Warna tema bawaan: biru kobalt (putih di atasnya 5,5:1; tinta di putih 5,5:1). */
+export const JUMANTARA_ACCENT = '#2F5BEA';
+
+const SCHOOL = 'SMA Negeri 1 Purbolinggo';
+
+export const jumantaraContent: SiteContent = {
+  brand: {
+    company_name: SCHOOL,
+    tagline: 'Sekolah negeri di Lampung Timur',
+    // Logo demo: lambang Tut Wuri Handayani (SVG, sama dengan Bestari, Madani & Cakrawala); sekolah menggantinya di CMS
+    logo: '/assets/templates/logos/tut-wuri-handayani.svg',
+    accent_color: JUMANTARA_ACCENT,
+  },
+  hero: {
+    enabled: true,
+    topbar_links: [
+      { label: 'PPID', url: '' },
+      { label: 'E-Learning', url: '' },
+      { label: 'Pengaduan', url: '#kontak' },
+    ],
+    eyebrow: 'SMA Negeri · Lampung Timur',
+    slide_label: 'Profil',
+    title: 'Belajar bermakna, tumbuh berkarakter',
+    subtitle:
+      'Sekolah negeri untuk warga Purbolinggo dan sekitarnya: pembelajaran yang mendalam, kegiatan murid yang beragam, dan layanan yang mudah dijangkau orang tua.',
+    primary_label: 'Informasi SPMB',
+    primary_url: '',
+    secondary_label: 'Profil sekolah',
+    secondary_url: '',
+    header_label: 'Info SPMB',
+    header_url: '',
+    image: jumantaraPhoto('hero-1'),
+    slides: [
+      {
+        image: jumantaraPhoto('hero-2'),
+        label: 'Pembelajaran',
+        eyebrow: 'Pembelajaran mendalam',
+        title: 'Kelas yang hidup, pikiran yang kritis',
+        subtitle: 'Murid diajak bertanya, mencoba, dan berdiskusi di setiap mata pelajaran, bukan sekadar menghafal.',
+      },
+      {
+        image: jumantaraPhoto('hero-3'),
+        label: 'Seni & budaya',
+        eyebrow: 'Seni & budaya',
+        title: 'Bangga merawat seni dan budaya daerah',
+        subtitle: 'Sanggar tari, musik tradisional, dan bahasa daerah tumbuh bersama kegiatan akademik.',
+      },
+      {
+        image: jumantaraPhoto('hero-4'),
+        label: 'Kesiswaan',
+        eyebrow: 'Kesiswaan',
+        title: 'Kepemimpinan tumbuh dari kebiasaan baik',
+        subtitle: 'Paskibra, Pramuka, OSIS, dan puluhan kegiatan lain untuk menyalurkan minat dan bakat murid.',
+      },
+    ],
+    stats: [
+      { value: '1.048', label: 'Peserta didik' },
+      { value: '62', label: 'Guru' },
+      { value: '30', label: 'Rombongan belajar' },
+      { value: '20', label: 'Ekstrakurikuler' },
+    ],
+    stats_note: 'Data Tahun Ajaran 2026/2027 · angka ilustrasi',
+  },
+  services: {
+    enabled: true,
+    title: 'Layanan sekolah',
+    pending_note:
+      'Tautan layanan ini diisi sekolah di CMS, misalnya alamat e-learning atau laman PPID. Untuk sementara, hubungi tata usaha lewat bagian Kontak.',
+    items: [
+      { label: 'E-Learning', text: 'Materi dan tugas kelas', url: '' },
+      { label: 'Perpustakaan Digital', text: 'Katalog dan e-book', url: '' },
+      { label: 'PPID', text: 'Informasi publik sekolah', url: '' },
+      { label: 'Legalisir Ijazah', text: 'Jadwal dan syarat legalisir', url: '#pengumuman' },
+      { label: 'Tracer Study', text: 'Data kelanjutan studi alumni', url: '' },
+      { label: 'Pengaduan', text: 'Layanan Sekolah Aman & Nyaman', url: '#kontak' },
+    ],
+  },
+  welcome: {
+    enabled: true,
+    eyebrow: 'Sambutan',
+    title: `Selamat datang di ${SCHOOL}`,
+    quote: 'Kami ingin setiap murid merasa aman, dihargai, dan tertantang untuk berkembang.',
+    body:
+      "Assalamu'alaikum warahmatullahi wabarakatuh, salam sejahtera bagi kita semua. Laman ini kami hadirkan agar orang tua, alumni, dan masyarakat dapat mengikuti kegiatan sekolah secara terbuka, dari kabar kelas hingga informasi penerimaan murid baru.\n\nBelajar tidak hanya terjadi di kelas, tetapi juga di lapangan, di sanggar, dan di tengah masyarakat. Mari bersama-sama menjadikan sekolah ini rumah belajar yang hangat bagi generasi Lampung Timur.",
+    name: 'Drs. Ahmad Fauzan Hakim, M.Pd.',
+    role: `Kepala ${SCHOOL}`,
+    // Sengaja tanpa foto: nama kepala sekolah fiktif tidak ditempel pada wajah foto stok (nama sekolah contoh bisa milik
+    // sekolah nyata); sambutan tampil sebagai teks selebar 10 kolom
+    photo: '',
+    button_label: 'Baca profil sekolah',
+    button_url: '#tentang',
+  },
+  about: {
+    enabled: true,
+    eyebrow: 'Profil',
+    title: 'Sekolah negeri yang tumbuh bersama warga Purbolinggo',
+    body: `${SCHOOL} melayani kebutuhan pendidikan menengah bagi masyarakat Purbolinggo dan desa-desa di sekitarnya. Seiring waktu, sekolah tumbuh bersama warganya: ruang belajar bertambah, kegiatan murid makin beragam, dan lulusannya melanjutkan studi serta berkarya di berbagai bidang.`,
+    image: jumantaraPhoto('profil'),
+    facts: [
+      { label: 'Status', value: 'Sekolah negeri' },
+      { label: 'Jenjang', value: 'SMA, kelas X–XII' },
+      { label: 'Lokasi', value: 'Purbolinggo, Lampung Timur' },
+      { label: 'Hari belajar', value: 'Senin–Jumat' },
+    ],
+    tabs: [
+      {
+        title: 'Visi',
+        text: 'Menjadi sekolah yang menumbuhkan murid beriman, bernalar kritis, berbudaya, dan siap berkontribusi bagi masyarakat.',
+        points: '',
+      },
+      {
+        title: 'Misi',
+        text: '',
+        points: [
+          'Menyelenggarakan pembelajaran mendalam yang berpusat pada murid.',
+          'Menumbuhkan kebiasaan baik, kepedulian, dan budaya sekolah yang aman serta nyaman.',
+          'Mengembangkan minat dan bakat melalui ekstrakurikuler dan kokurikuler.',
+          'Melestarikan seni, bahasa, dan kearifan lokal Lampung.',
+          'Membangun kemitraan dengan orang tua, alumni, dan masyarakat sekitar.',
+        ].join('\n'),
+      },
+      {
+        title: 'Profil lulusan',
+        text: 'Delapan dimensi profil lulusan yang dibiasakan dalam kegiatan belajar sehari-hari.',
+        points: ['Keimanan & ketakwaan', 'Kewargaan', 'Penalaran kritis', 'Kreativitas', 'Kolaborasi', 'Kemandirian', 'Kesehatan', 'Komunikasi'].join('\n'),
+      },
+    ],
+    button_label: 'Lihat fasilitas sekolah',
+    button_url: '#fasilitas',
+  },
+  programs: {
+    enabled: true,
+    eyebrow: 'Akademik',
+    title: 'Kelompok mata pelajaran pilihan',
+    subtitle: 'Kelas X mempelajari mata pelajaran umum; di kelas XI–XII murid memilih paket mata pelajaran sesuai minat dan rencana studi lanjut.',
+    items: [
+      {
+        name: 'Sains & Teknologi',
+        label: 'Kelas XI–XII',
+        description: 'Untuk murid yang tertarik pada kesehatan, teknik, pertanian, dan ilmu komputer.',
+        subjects: ['Biologi', 'Kimia', 'Fisika', 'Matematika Tingkat Lanjut', 'Informatika'].join('\n'),
+      },
+      {
+        name: 'Sosial & Humaniora',
+        label: 'Kelas XI–XII',
+        description: 'Untuk murid yang tertarik pada ekonomi, hukum, pendidikan, dan ilmu sosial.',
+        subjects: ['Ekonomi', 'Geografi', 'Sosiologi', 'Sejarah Tingkat Lanjut', 'Antropologi'].join('\n'),
+      },
+      {
+        name: 'Bahasa & Budaya',
+        label: 'Kelas XI–XII',
+        description: 'Untuk murid yang tertarik pada bahasa, sastra, komunikasi, dan seni.',
+        subjects: ['Bahasa Indonesia Tingkat Lanjut', 'Bahasa Inggris Tingkat Lanjut', 'Bahasa Asing (pilihan)', 'Bahasa dan Sastra Lampung', 'Seni Budaya'].join('\n'),
+      },
+      {
+        name: 'Kokurikuler',
+        label: 'Semua kelas',
+        description: 'Projek lintas mata pelajaran setiap semester. Tema tahun ini: Pangan Lokal Lampung Timur, dari ubi jalar hingga kacang tanah.',
+        subjects: '',
+      },
+    ],
+    note: 'Komposisi paket mengikuti ketentuan kurikulum yang berlaku dan ketersediaan guru.',
+  },
+  news: {
+    enabled: true,
+    eyebrow: 'Berita',
+    title: 'Kabar terbaru dari sekolah',
+    subtitle: 'Kegiatan murid dan guru, ditulis oleh tim humas sekolah.',
+    read_label: 'Baca selengkapnya',
+    all_label: 'Semua',
+    button_label: 'Berita lainnya di Instagram',
+    button_url: 'https://instagram.com/',
+    items: [
+      {
+        title: 'Projek kokurikuler kelas X: memetakan pangan lokal Lampung Timur',
+        date: '2026-10-24',
+        category: 'Kokurikuler',
+        excerpt: 'Murid kelas X berdiskusi dalam kelompok untuk memetakan bahan pangan lokal, lalu merancang olahan beserta hitungan sederhana biayanya.',
+        body: 'Projek lintas mata pelajaran ini berlangsung enam pekan. Setiap kelompok memilih bahan pangan yang banyak ditanam di sekitar Purbolinggo, mencatat temuannya, lalu merancang olahan yang bisa dijual.\n\nDi akhir projek, setiap kelompok mempresentasikan proses dan hitungan biayanya di depan guru dan orang tua.',
+        image: jumantaraPhoto('berita-1'),
+        url: '',
+      },
+      {
+        title: 'Kelas XII mengikuti simulasi Tes Kemampuan Akademik',
+        date: '2026-10-20',
+        category: 'Akademik',
+        excerpt: 'Simulasi berlangsung di laboratorium komputer agar murid terbiasa dengan format soal dan alur ujian.',
+        body: 'Panitia membagi murid ke dalam beberapa sesi. Setelah simulasi, wali kelas dan guru BK membahas hasilnya bersama murid untuk menyusun rencana belajar.',
+        image: jumantaraPhoto('berita-2'),
+        url: '',
+      },
+      {
+        title: 'Sanggar tari tampil membawakan tari kreasi pada pentas seni sekolah',
+        date: '2026-10-15',
+        category: 'Budaya',
+        excerpt: 'Penampilan diiringi musik tradisional. Murid kelas X ikut tampil untuk pertama kalinya.',
+        body: 'Latihan dilakukan dua kali sepekan bersama pembina sanggar. Kostum dan properti disiapkan bersama orang tua murid.',
+        image: jumantaraPhoto('berita-3'),
+        url: '',
+      },
+      {
+        title: 'Pengurus OSIS dan MPK masa bakti 2026/2027 resmi dilantik',
+        date: '2026-10-08',
+        category: 'Kesiswaan',
+        excerpt: 'Pengurus baru menyampaikan program kerja yang berfokus pada literasi dan kebersihan sekolah.',
+        body: 'Pelantikan berlangsung saat upacara bendera. Program pertama pengurus baru adalah pojok baca di setiap lantai dan jadwal piket kebersihan bersama.',
+        image: jumantaraPhoto('berita-4'),
+        url: '',
+      },
+    ],
+  },
+  announcements: {
+    enabled: true,
+    eyebrow: 'Pengumuman',
+    title: 'Pengumuman sekolah',
+    items: [
+      {
+        title: 'Jadwal asesmen sumatif akhir semester ganjil 2026/2027',
+        date: '2026-10-23',
+        text: 'Untuk semua kelas. Asesmen berlangsung 30 November–5 Desember 2026; jadwal per mata pelajaran dibagikan wali kelas.',
+        badge: 'Penting',
+        url: '',
+      },
+      {
+        title: 'Pemeringkatan murid eligible dan persiapan akun SNPMB 2027',
+        date: '2026-10-21',
+        text: 'Untuk kelas XII. Periksa data nilai rapor di ruang BK dan siapkan email aktif untuk pendaftaran akun.',
+        badge: '',
+        url: '',
+      },
+      {
+        title: 'Undangan pertemuan orang tua/wali murid kelas XII',
+        date: '2026-10-19',
+        text: 'Untuk orang tua/wali. Pertemuan membahas persiapan studi lanjut, Sabtu 31 Oktober 2026 pukul 09.00 WIB di aula.',
+        badge: '',
+        url: '',
+      },
+      {
+        title: 'Jadwal layanan legalisir ijazah semester ganjil',
+        date: '2026-10-14',
+        text: 'Untuk alumni. Layanan dibuka Senin–Kamis pukul 08.00–14.00 WIB di ruang tata usaha; bawa ijazah asli.',
+        badge: '',
+        url: '',
+      },
+      {
+        title: 'Mohon partisipasi mengisi survei kepuasan masyarakat semester I',
+        date: '2026-10-12',
+        text: 'Untuk umum. Survei singkat ini membantu sekolah memperbaiki layanan.',
+        badge: '',
+        url: '',
+      },
+    ],
+  },
+  agenda: {
+    enabled: true,
+    eyebrow: 'Agenda',
+    title: 'Agenda sekolah',
+    items: [
+      { date: '2026-11-25', title: 'Peringatan Hari Guru Nasional', time: '07.00 WIB', place: 'Lapangan upacara' },
+      { date: '2026-12-18', title: 'Pembagian rapor semester ganjil', time: '08.00 WIB', place: 'Ruang kelas' },
+      { date: '2027-01-16', title: 'Sosialisasi SNBP untuk orang tua kelas XII', time: '09.00 WIB', place: 'Aula' },
+      { date: '2027-04-24', title: 'Gelar budaya Lampung: tari, tapis, dan kuliner', time: '08.00 WIB', place: 'Halaman sekolah' },
+      { date: '2027-07-12', title: 'MPLS murid baru 2027/2028 (perkiraan, 12–14 Juli)', time: '07.00 WIB', place: 'Sekolah' },
+    ],
+  },
+  achievements: {
+    enabled: true,
+    eyebrow: 'Prestasi',
+    title: 'Prestasi murid',
+    subtitle: 'Capaian murid di lomba tingkat kabupaten dan provinsi. Data di bawah adalah contoh untuk demo.',
+    items: [
+      { title: 'Juara II', event: 'Lomba Debat Bahasa Inggris', level: 'Kabupaten', year: '2026', name: 'Tim debat kelas XI' },
+      { title: 'Juara I', event: 'Lomba Tari Kreasi Daerah', level: 'Kabupaten', year: '2026', name: 'Sanggar Tari' },
+      { title: 'Finalis', event: 'Lomba Karya Tulis Ilmiah Remaja', level: 'Provinsi', year: '2026', name: 'Tim KIR kelas XI' },
+      { title: 'Juara III', event: 'Turnamen Bola Voli Putri antar-SMA', level: 'Kabupaten', year: '2025', name: 'Tim voli putri' },
+      { title: 'Juara II', event: 'Lomba Poster Lingkungan Hidup', level: 'Provinsi', year: '2025', name: 'Duta Lingkungan' },
+      { title: 'Juara I', event: 'Lomba Cerdas Cermat Sejarah', level: 'Kabupaten', year: '2025', name: 'Tim kelas XII' },
+    ],
+  },
+  clubs: {
+    enabled: true,
+    eyebrow: 'Kesiswaan',
+    title: 'Ekstrakurikuler',
+    subtitle: 'Pilih kategori untuk melihat kegiatan yang sesuai minat. Setiap kegiatan didampingi guru pembina.',
+    all_label: 'Semua',
+    footnote:
+      'Masih ada kegiatan lain, antara lain Jurnalistik, Pecinta Alam, Paduan Suara, Pencak Silat, Basket, Robotik & Coding, dan Kriya Tapis. Jadwal dapat berubah setiap semester.',
+    items: [
+      { name: 'Pramuka', category: 'Kepemimpinan', schedule: 'Jumat, 14.00–16.00', text: 'Wajib bagi kelas X: perkemahan, tali-temali, dan kerja tim.' },
+      { name: 'Paskibra', category: 'Kepemimpinan', schedule: 'Selasa & Kamis, 15.00', text: 'Latihan baris-berbaris dan petugas upacara sekolah.' },
+      { name: 'PMR', category: 'Kepemimpinan', schedule: 'Rabu, 14.30', text: 'Pertolongan pertama dan pendampingan Unit Kesehatan Sekolah.' },
+      { name: 'Sanggar Tari Lampung', category: 'Seni & Budaya', schedule: 'Senin & Kamis, 15.00', text: 'Tari Sigeh Pengunten, Bedana, dan tari kreasi.' },
+      { name: 'Karya Ilmiah Remaja', category: 'Sains & Bahasa', schedule: 'Rabu, 14.30', text: 'Penelitian sederhana dan persiapan lomba karya tulis.' },
+      { name: 'English & Debate Club', category: 'Sains & Bahasa', schedule: 'Rabu, 15.00', text: 'Debat, berbicara di depan umum, dan bercerita.' },
+      { name: 'Bola Voli & Futsal', category: 'Olahraga', schedule: 'Selasa & Sabtu, 15.30', text: 'Latihan rutin dan liga antarsekolah.' },
+      { name: 'Rohis & Kerohanian', category: 'Keagamaan', schedule: 'Jumat, 13.00', text: 'Kajian dan kegiatan keagamaan sesuai agama masing-masing.' },
+    ],
+  },
+  facilities: {
+    enabled: true,
+    eyebrow: 'Fasilitas',
+    title: 'Ruang belajar dan berkegiatan',
+    subtitle: 'Fasilitas yang dipakai murid setiap hari, di dalam maupun di luar jam pelajaran.',
+    items: [
+      { name: 'Laboratorium IPA', text: 'Ruang praktikum fisika, kimia, dan biologi.', image: jumantaraPhoto('fasilitas-lab') },
+      { name: 'Perpustakaan & pojok baca', text: 'Koleksi cetak dan katalog digital.', image: jumantaraPhoto('fasilitas-perpustakaan') },
+      { name: 'Laboratorium komputer', text: 'Dipakai untuk Informatika dan asesmen berbasis komputer.', image: jumantaraPhoto('fasilitas-komputer') },
+      { name: 'Lapangan olahraga', text: 'Lapangan beratap untuk voli, futsal, dan kegiatan olahraga lain.', image: jumantaraPhoto('fasilitas-lapangan') },
+      { name: 'Masjid & ruang ibadah', text: 'Kegiatan ibadah harian dan kerohanian.', image: jumantaraPhoto('fasilitas-ibadah') },
+      { name: 'Sanggar seni', text: 'Ruang latihan tari dan musik tradisional.', image: jumantaraPhoto('fasilitas-sanggar') },
+    ],
+  },
+  teachers: {
+    enabled: true,
+    eyebrow: 'Guru',
+    title: 'Guru dan tenaga kependidikan',
+    subtitle: 'Guru mengajar sesuai bidangnya dan mendampingi kegiatan murid di luar kelas.',
+    button_label: '',
+    button_url: '',
+    items: [
+      { name: 'Sri Wahyuni, S.Pd.', role: 'Wakil kepala sekolah bidang kurikulum', photo: '' },
+      { name: 'Bambang Setiadi, S.Pd.', role: 'Wakil kepala sekolah bidang kesiswaan', photo: '' },
+      { name: 'Dewi Anggraini, S.Si.', role: 'Guru Biologi', photo: '' },
+      { name: 'Hendra Gunawan, S.Pd.', role: 'Guru Matematika', photo: '' },
+      { name: 'Rina Marlina, S.Pd.', role: 'Guru Bahasa Inggris & pembina debat', photo: '' },
+      { name: 'Yusuf Maulana, S.Kom.', role: 'Guru Informatika', photo: '' },
+      { name: 'Nur Aini, S.Pd.', role: 'Guru Bahasa dan Sastra Lampung', photo: '' },
+      { name: 'Agus Riyanto, S.Pd.', role: 'Guru PJOK & pembina voli', photo: '' },
+    ],
+  },
+  spmb: {
+    enabled: true,
+    eyebrow: 'SPMB 2027/2028',
+    title: 'Penerimaan murid baru tahun ajaran 2027/2028',
+    subtitle:
+      'Pendaftaran SMA negeri di Lampung dilakukan daring melalui portal SPMB Provinsi Lampung. Pelajari jalur, perkiraan jadwal, dan dokumen yang perlu disiapkan.',
+    badges: [{ text: 'Tanpa biaya pendaftaran' }, { text: 'Pendaftaran melalui portal provinsi' }],
+    portal_label: 'Buka Portal SPMB Provinsi',
+    portal_url: 'https://lampung.spmb.id/',
+    paths_label: 'Jalur',
+    schedule_label: 'Jadwal',
+    requirements_label: 'Syarat',
+    paths: [
+      { name: 'Domisili', quota: 'min. 30%', text: 'Untuk calon murid yang berdomisili di wilayah penerimaan sekolah.' },
+      { name: 'Afirmasi', quota: 'min. 30%', text: 'Untuk calon murid dari keluarga kurang mampu dan calon murid penyandang disabilitas.' },
+      { name: 'Prestasi', quota: 'min. 30%', text: 'Untuk prestasi akademik (rapor atau tes), nonakademik (lomba), dan kepemimpinan.' },
+      { name: 'Mutasi', quota: 'maks. 5%', text: 'Untuk perpindahan tugas orang tua/wali, termasuk anak guru.' },
+    ],
+    paths_note: 'Persentase kuota mengikuti juknis Dinas Pendidikan dan Kebudayaan Provinsi Lampung tahun berjalan.',
+    schedule_note: 'Perkiraan jadwal — mengikuti juknis dinas',
+    schedule: [
+      { date: 'April–Mei 2027', title: 'Sosialisasi & juknis', text: 'Dinas menerbitkan petunjuk teknis; sekolah mengadakan sosialisasi untuk calon murid dan orang tua.' },
+      { date: 'Juni 2027', title: 'Pendaftaran & verifikasi daring', text: 'Calon murid mendaftar di portal SPMB provinsi dan mengunggah dokumen sesuai jalur.' },
+      { date: 'Akhir Juni 2027', title: 'Pengumuman hasil seleksi', text: 'Hasil seleksi diumumkan di portal SPMB provinsi.' },
+      { date: 'Akhir Juni–awal Juli 2027', title: 'Daftar ulang', text: 'Lapor diri daring, lalu verifikasi dokumen di sekolah.' },
+      { date: 'Pertengahan Juli 2027', title: 'MPLS & hari pertama sekolah', text: 'Masa pengenalan lingkungan sekolah bagi murid baru.' },
+    ],
+    requirements_note: 'Siapkan dokumen berikut — cek juknis terbaru',
+    requirements: [
+      { text: 'Usia paling tinggi 21 tahun pada 1 Juli 2027' },
+      { text: 'Ijazah atau surat keterangan lulus SMP/MTs/sederajat' },
+      { text: 'Akta kelahiran atau surat keterangan lahir' },
+      { text: 'Kartu Keluarga (ketentuan masa berlaku sesuai juknis)' },
+      { text: 'KTP orang tua/wali' },
+      { text: 'Jalur afirmasi: bukti keikutsertaan program bantuan pemerintah atau keterangan disabilitas' },
+      { text: 'Jalur prestasi: sertifikat atau piagam dan rapor' },
+      { text: 'Jalur mutasi: surat penugasan orang tua/wali' },
+    ],
+    form_title: 'Tanya panitia SPMB lewat WhatsApp',
+    form_text: 'Formulir ini hanya untuk bertanya, bukan pendaftaran. Data tidak disimpan di website dan tidak ada pembayaran daring.',
+    form_button: 'Kirim lewat WhatsApp',
+    whatsapp: '',
+  },
+  testimonials: {
+    enabled: true,
+    eyebrow: 'Alumni',
+    title: 'Cerita alumni',
+    subtitle: 'Pengalaman alumni yang kini melanjutkan studi di berbagai perguruan tinggi.',
+    link_label: 'Alumni? Lihat layanan Tracer Study',
+    link_url: '#layanan',
+    items: [
+      {
+        name: 'Nadia Putri Rahmawati',
+        role: 'Lulusan 2025 · Pendidikan Biologi, PTN di Lampung (SNBP)',
+        quote: 'Guru-guru membiasakan kami bertanya dan mencoba. Itu bekal terbesar saya di kampus.',
+        photo: '',
+      },
+      {
+        name: 'Rizky Aditya Pratama',
+        role: 'Lulusan 2024 · Teknik Sipil, PTN di Jawa (SNBT)',
+        quote: 'Latihan soal bersama teman dan bimbingan BK membuat saya percaya diri menghadapi UTBK.',
+        photo: '',
+      },
+      {
+        name: 'Ayu Lestari',
+        role: 'Lulusan 2025 · Agribisnis, PTN di Lampung (SNBT)',
+        quote: 'Projek pangan lokal di sekolah membuat saya yakin memilih jurusan pertanian.',
+        photo: '',
+      },
+      {
+        name: 'Muhammad Fajar Ramadhan',
+        role: 'Lulusan 2023 · Pendidikan Matematika, PTN di Jawa (SNBP, KIP Kuliah)',
+        quote: 'Informasi beasiswa dari sekolah sangat membantu keluarga kami.',
+        photo: '',
+      },
+    ],
+  },
+  gallery: {
+    enabled: true,
+    eyebrow: 'Galeri',
+    title: 'Kegiatan di sekolah',
+    button_label: 'Galeri lengkap di Instagram',
+    button_url: 'https://instagram.com/',
+    items: [
+      { image: jumantaraPhoto('galeri-1'), caption: 'Praktik membuat adonan di projek kokurikuler' },
+      { image: jumantaraPhoto('galeri-2'), caption: 'Kebersamaan di ruang kelas' },
+      { image: jumantaraPhoto('galeri-3'), caption: 'Latihan Pramuka sepulang sekolah' },
+      { image: jumantaraPhoto('galeri-4'), caption: 'Kegiatan Rohis sepulang sekolah' },
+    ],
+  },
+  faq: {
+    enabled: true,
+    eyebrow: 'Tanya jawab',
+    title: 'Pertanyaan yang sering diajukan',
+    help_title: 'Belum menemukan jawaban?',
+    help_text: 'Hubungi tata usaha lewat WhatsApp pada jam layanan sekolah.',
+    button_label: 'Tanya lewat WhatsApp',
+    button_url: '',
+    items: [
+      {
+        question: 'Bagaimana cara mendaftar sebagai murid baru?',
+        answer:
+          'Pendaftaran murid baru SMA negeri di Lampung dilakukan daring melalui portal resmi SPMB Provinsi Lampung. Formulir di laman ini hanya untuk bertanya kepada panitia sekolah.',
+      },
+      {
+        question: 'Apakah ada biaya pendaftaran?',
+        answer: 'Tidak. Pendaftaran SPMB tidak dipungut biaya. Laporkan kepada sekolah bila ada pihak yang meminta pembayaran.',
+      },
+      {
+        question: 'Jalur apa saja yang tersedia?',
+        answer: 'Domisili, afirmasi, prestasi, dan mutasi. Kuota dan ketentuannya mengikuti juknis Dinas Pendidikan dan Kebudayaan Provinsi Lampung tahun berjalan.',
+      },
+      {
+        question: 'Apakah masih ada penjurusan IPA dan IPS?',
+        answer:
+          'Kelas X mempelajari mata pelajaran umum. Di kelas XI–XII murid memilih paket mata pelajaran sesuai ketentuan kurikulum yang berlaku dan ketersediaan guru.',
+      },
+      {
+        question: 'Kapan kegiatan ekstrakurikuler berlangsung?',
+        answer: 'Sepulang sekolah sesuai jadwal setiap kegiatan. Pramuka wajib diikuti murid kelas X.',
+      },
+      {
+        question: 'Bagaimana orang tua memantau perkembangan anak?',
+        answer: 'Melalui wali kelas, pembagian rapor, pertemuan orang tua, dan layanan Bimbingan dan Konseling.',
+      },
+    ],
+  },
+  contact: {
+    enabled: true,
+    eyebrow: 'Kontak',
+    title: 'Hubungi dan kunjungi sekolah',
+    subtitle: 'Tata usaha melayani tamu pada jam layanan. Kabari kami lewat WhatsApp sebelum berkunjung.',
+    address: 'Jl. Pendidikan No. 1 (alamat contoh), Kecamatan Purbolinggo, Kabupaten Lampung Timur, Lampung',
+    // Peta kecamatan, bukan titik sekolah sungguhan
+    maps_query: 'Purbolinggo, Lampung Timur, Lampung',
+    maps_url: '',
+    phone: '0812-3456-7890',
+    email: 'info@sman1purbolinggo.example',
+    whatsapp: '081234567890',
+    whatsapp_message: `Halo ${SCHOOL}, saya ingin bertanya tentang sekolah.`,
+    hours: 'Senin–Jumat 07.00–16.00 WIB',
+    whatsapp_label: 'Chat WhatsApp sekolah',
+    maps_label: 'Buka di Google Maps',
+  },
+  footer: {
+    enabled: true,
+    description:
+      'Sekolah negeri di Purbolinggo, Lampung Timur. Laman ini memuat profil, berita, pengumuman, agenda, dan informasi SPMB untuk murid, orang tua, alumni, dan masyarakat.',
+    links_title: 'Tautan cepat',
+    services_title: 'Layanan',
+    contact_title: 'Kontak',
+    note: 'Situs demo template. Nama sekolah dipakai sebagai contoh; seluruh nama, berita, angka, dan foto adalah ilustrasi, bukan informasi resmi sekolah.',
+    copyright: '',
+    instagram: 'https://instagram.com/',
+    facebook: 'https://facebook.com/',
+    linkedin: '',
+    youtube: 'https://youtube.com/',
+    tiktok: '',
+  },
+};

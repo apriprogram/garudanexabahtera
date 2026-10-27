@@ -15,7 +15,7 @@ dan **tampilan profesional**. SEO situs (`/akun/situs/:id/seo`) tetap gratis unt
 
 | Istilah | Arti |
 |---|---|
-| Template mampu | Template dengan fitur tulisan: `madani`, `cakrawala`, `bestari` (`SP_POST_TEMPLATE_CODES` / `POST_TEMPLATE_CODES` / `features.posts`). |
+| Template mampu | Template dengan fitur tulisan: `madani`, `cakrawala`, `bestari`, `jumantara`, `nawasena`, `pradipta` (`SP_POST_TEMPLATE_CODES` / `POST_TEMPLATE_CODES` / `features.posts`). |
 | Fitur aktif | Situs punya baris `site_addon_orders` dengan `addon_code='posts'`, `status='lunas'`, `revoked_at IS NULL`. |
 | Tulisan aktif | Template mampu **dan** fitur aktif. Hanya dalam keadaan ini tulisan dibaca/ditulis/ditampilkan. |
 

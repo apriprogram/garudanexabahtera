@@ -35,7 +35,10 @@ database/
 │   ├── 2026-10-27_034_velora_template.sql          # data: katalog Velora (company profile otomotif, Inggris), SETELAH deploy kodenya
 │   ├── 2026-10-27_035_dermaga_template.sql         # data: katalog Dermaga (company profile ekspor-impor), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-27_036_saudagar_template.sql        # data: katalog Saudagar (company profile ekspor-impor), jalankan SETELAH deploy kodenya
-│   └── 2026-10-27_037_nusaniaga_template.sql       # data: katalog NusaNiaga (company profile importir & distributor), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-27_037_nusaniaga_template.sql       # data: katalog NusaNiaga (company profile importir & distributor), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-27_038_jumantara_template.sql       # data: katalog Jumantara (website SMA negeri), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-27_039_nawasena_template.sql        # data: katalog Nawasena (website profil sekolah SMA negeri), jalankan SETELAH deploy kodenya
+│   └── 2026-10-27_040_pradipta_template.sql        # data: katalog Pradipta (landing page SMA negeri), jalankan SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -143,12 +146,12 @@ Jalankan SEBELUM deploy kode yang memakainya (`customer_google_auth` membaca kol
 migrasi: diisi pemilik lewat setting `google_client_id` atau env `GOOGLE_CLIENT_ID` (GOOGLE-LOGIN.md §3).
 
 `2026-10-26_029` (skema saja, docs/platform/SITE-POSTS-SEO-SPEC.md): tiga tabel baru tanpa ALTER, jadi aman diimpor utuh
-lewat phpMyAdmin dan aman diulang. `site_posts` (berita & pengumuman template sekolah `madani`/`cakrawala`/`bestari`,
-slug unik per situs, foto di `assets/sites/{site}/posts/`), `site_post_views` (jumlah dilihat per tulisan, terpisah
-supaya tayangan tidak mengubah `updated_at`/lastmod sitemap) dan `site_seo` (pengaturan SEO per situs pembeli, semua
-template; tidak ada baris = bawaan, gambar di `assets/sites/{site}/seo/`). Jalankan SEBELUM deploy kode yang memakainya
-(`backend/modules/site_posts.php` dan `backend/site.php`). Folder foto ikut `assets/sites/`, jadi tidak ikut git maupun
-deploy.
+lewat phpMyAdmin dan aman diulang. `site_posts` (berita & pengumuman template sekolah `madani`/`cakrawala`/`bestari`/
+`jumantara`/`nawasena`/`pradipta`, slug unik per situs, foto di `assets/sites/{site}/posts/`), `site_post_views` (jumlah
+dilihat per tulisan, terpisah supaya tayangan tidak mengubah `updated_at`/lastmod sitemap) dan `site_seo` (pengaturan SEO
+per situs pembeli, semua template; tidak ada baris = bawaan, gambar di `assets/sites/{site}/seo/`). Jalankan SEBELUM
+deploy kode yang memakainya (`backend/modules/site_posts.php` dan `backend/site.php`). Folder foto ikut `assets/sites/`,
+jadi tidak ikut git maupun deploy.
 
 `2026-10-27_030` (skema + data pewarisan, docs/platform/SITE-ADDONS-SPEC.md): berita & pengumuman template sekolah menjadi
 fitur tambahan berbayar. Tabel baru `site_addon_orders` (satu baris per tagihan/aktivasi fitur, nomor `GNF-YYYYMMDD-XXXXXX`,
@@ -234,6 +237,21 @@ cukup `seed.templates.sql`.
 baku dan mesin, kategori "Company Profile", Rp1.590.000, sort_order 20) berdasarkan slug, pola sama dengan 028:
 menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code`
 `nusaniaga` ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-27_038` (data saja) membuat/menyamakan baris katalog `jumantara` (website SMA negeri dengan slider foto berbilah
+progres, angka sekolah, berita, pengumuman, agenda, dan SPMB, kategori "Sekolah & Pendidikan", Rp1.690.000, sort_order 21)
+berdasarkan slug, pola sama dengan 028: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode
+yang mendaftarkan `template_code` `jumantara` ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-27_039` (data saja) membuat/menyamakan baris katalog `nawasena` (website profil sekolah SMA negeri dengan slider
+foto latar, strip pengumuman, statistik, berita, agenda, dan SPMB, kategori "Sekolah & Pendidikan", Rp1.690.000,
+sort_order 22) berdasarkan slug, pola sama dengan 028: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan
+setelah kode yang mendaftarkan `template_code` `nawasena` ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-27_040` (data saja) membuat/menyamakan baris katalog `pradipta` (landing page SMA negeri dengan slider foto,
+berita, pengumuman, agenda, dan SPMB, kategori "Sekolah & Pendidikan", Rp1.690.000, sort_order 23) berdasarkan slug, pola
+sama dengan 028: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan
+`template_code` `pradipta` ter-deploy. DB baru cukup `seed.templates.sql`.
 
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
@@ -414,3 +432,6 @@ kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin per
 | 2026-10-27_035 | Data saja: baris katalog `dermaga` (company profile ekspor-impor & freight forwarding, kategori "Company Profile", Rp1.590.000, sort_order 18), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `dermaga` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-27_036 | Data saja: baris katalog `saudagar` (company profile eksportir kopi, kakao & rempah, kategori "Company Profile", Rp1.690.000, sort_order 19), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `saudagar` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-27_037 | Data saja: baris katalog `nusaniaga` (company profile importir & distributor bahan baku dan mesin, kategori "Company Profile", Rp1.590.000, sort_order 20), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `nusaniaga` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-27_038 | Data saja: baris katalog `jumantara` (website SMA negeri, kategori "Sekolah & Pendidikan", Rp1.690.000, sort_order 21), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `jumantara` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-27_039 | Data saja: baris katalog `nawasena` (website profil sekolah SMA negeri, kategori "Sekolah & Pendidikan", Rp1.690.000, sort_order 22), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `nawasena` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-27_040 | Data saja: baris katalog `pradipta` (landing page SMA negeri, kategori "Sekolah & Pendidikan", Rp1.690.000, sort_order 23), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `pradipta` ter-deploy. DB baru cukup `seed.templates.sql`. |

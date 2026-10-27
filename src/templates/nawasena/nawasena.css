@@ -1,0 +1,276 @@
+/*
+ * CSS lokal Nawasena (diimpor ./Nawasena.tsx): lapisan navy foto hero (dari warna tema), latar cadangan tanpa foto,
+ * pergantian slide (pudar + zoom Ken Burns 1 → 1,06 HANYA setelah slide berganti, jadi foto pertama tidak dianimasikan
+ * masuk dan LCP tidak tertunda), garis progres nomor slide (tegak di layar lebar, mendatar di HP), teks slide yang naik
+ * pelan, garis bawah menu aktif, penunjuk tab yang bergeser, foto tab yang berganti pudar, buka-tutup, garis linimasa
+ * agenda yang tergambar sekali, garis bawah tautan yang memanjang, dan rel geser tanpa scrollbar. Semua gerak hanya bila
+ * root template ber-data-tpl-motion="on" (demo & situs live); pratinjau CMS, prefers-reduced-motion, dan cetak →
+ * statis. Tanpa bayangan: kedalaman dari nada warna dan garis tipis.
+ */
+
+@layer components {
+  /*
+   * Lapisan navy di atas foto hero (brief §2.3, kontras dihitung untuk piksel foto putih terburuk): atas ≥ 0,80 di
+   * bawah header, tengah ≥ 0,66 di bawah judul & deskripsi, tepi kanan: lapisan 270° (0,55 → 0,40 di 120px → 0 di
+   * 260px) agar nomor slide putih 90% yang berjarak 56–92px dari tepi tetap ≥ 4,5:1 di atas foto terang, bawah memudar
+   * ke navy pekat agar hero menyatu dengan strip pengumuman dan pita angka tanpa sambungan.
+   */
+  .nw-hero-scrim {
+    background:
+      radial-gradient(72% 46% at 50% 56%, color-mix(in srgb, var(--nw-navy) 34%, transparent), transparent 74%),
+      linear-gradient(
+        270deg,
+        color-mix(in srgb, var(--nw-navy) 55%, transparent) 0,
+        color-mix(in srgb, var(--nw-navy) 40%, transparent) 120px,
+        transparent 260px
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--nw-navy) 86%, transparent) 0,
+        color-mix(in srgb, var(--nw-navy) 60%, transparent) 150px,
+        color-mix(in srgb, var(--nw-navy) 55%, transparent) 38%,
+        color-mix(in srgb, var(--nw-navy) 52%, transparent) 62%,
+        color-mix(in srgb, var(--nw-navy) 84%, transparent) 86%,
+        var(--nw-navy) 100%
+      );
+  }
+
+  /* HP & panel sempit: blok teks lebih tinggi → lapisan tengah lebih luas dan sedikit lebih pekat (deskripsi 16,5px
+     ≥ 4,5:1 di atas seragam terang), tanpa lapisan tepi kanan (nomor di bawah) */
+  @container (max-width: 767px) {
+    .nw-hero-scrim {
+      background:
+        radial-gradient(96% 56% at 50% 52%, color-mix(in srgb, var(--nw-navy) 36%, transparent), transparent 74%),
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--nw-navy) 86%, transparent) 0,
+          color-mix(in srgb, var(--nw-navy) 60%, transparent) 130px,
+          color-mix(in srgb, var(--nw-navy) 56%, transparent) 36%,
+          color-mix(in srgb, var(--nw-navy) 60%, transparent) 64%,
+          color-mix(in srgb, var(--nw-navy) 88%, transparent) 86%,
+          var(--nw-navy) 100%
+        );
+    }
+  }
+
+  /* Hero tanpa foto: navy + cahaya lembut warna tema di kanan atas */
+  .nw-hero-fallback {
+    background:
+      radial-gradient(60% 50% at 80% 20%, color-mix(in srgb, var(--tpl-accent) 35%, transparent), transparent 70%),
+      var(--nw-navy);
+  }
+
+  /* Foto slide: pudar antar-slide (pratinjau CMS & gerak mati: langsung berganti) */
+  [data-tpl-motion='on'] .nw-slide {
+    transition: opacity 1s var(--tpl-ease, ease);
+  }
+
+  /* Ken Burns 1 → 1,06 hanya untuk slide yang tampil SETELAH pergantian (data-zoom), bukan foto pertama saat dimuat.
+     Dua nama animasi bergantian ("a"/"b") agar zoom diputar ulang setiap slide itu tampil lagi; slide yang memudar
+     keluar mempertahankan posisinya sehingga tidak meloncat. */
+  [data-tpl-motion='on'] .nw-slide[data-zoom='a'] img {
+    animation: nw-kb-a 8s ease-out both;
+  }
+
+  [data-tpl-motion='on'] .nw-slide[data-zoom='b'] img {
+    animation: nw-kb-b 8s ease-out both;
+  }
+
+  /* Tombol jeda, slider berhenti sendiri setelah dua putaran, hero disorot, difokus, atau di luar layar → zoom yang
+     sedang berjalan ikut berhenti (semua gerak hero berhenti) */
+  [data-tpl-motion='on'] .nw-slide[data-hold='true'] img {
+    animation-play-state: paused;
+  }
+
+  /* Garis progres nomor slide: penuh bila tidak berganti otomatis; saat berjalan mengisi lalu memicu slide berikutnya
+     (onAnimationEnd). HP: mendatar di bawah nomor; layar lebar: tegak di kiri nomor (rel kanan). Berhenti saat hero
+     disorot / difokus / di luar layar (animation-play-state) dan di tab latar; dijeda atau berhenti sendiri setelah dua
+     putaran (kembali ke slide 1) → penuh tanpa animasi. */
+  .nw-progress {
+    transform-origin: left center;
+  }
+
+  [data-tpl-motion='on'] .nw-progress[data-run='true'] {
+    animation: nw-progress-x var(--nw-autoplay, 7000ms) linear both;
+  }
+
+  [data-tpl-motion='on'] .nw-progress[data-run='true'][data-hold='true'] {
+    animation-play-state: paused;
+  }
+
+  @container (min-width: 48rem) {
+    .nw-progress {
+      transform-origin: center top;
+    }
+
+    [data-tpl-motion='on'] .nw-progress[data-run='true'] {
+      animation-name: nw-progress-y;
+    }
+  }
+
+  /* Teks slide naik 12px + memudar, hanya setelah pergantian (slide pertama saat dimuat langsung tampil) */
+  [data-tpl-motion='on'] [data-enter='true'] .nw-rise {
+    animation: nw-rise 0.6s var(--tpl-ease, ease) both;
+    animation-delay: var(--nw-delay, 0ms);
+  }
+
+  /* Garis bawah menu aktif di header (2px warna terang tema) */
+  .nw-nav-line {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  .nw-nav-line[data-on='true'] {
+    transform: scaleX(1);
+  }
+
+  [data-tpl-motion='on'] .nw-nav-line {
+    transition: transform 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Penunjuk tab akademik: satu garis yang bergeser ke tab aktif (posisi & lebar dari --nw-tab-x / --nw-tab-w) */
+  .nw-tab-indicator {
+    width: var(--nw-tab-w, 0px);
+    transform: translateX(var(--nw-tab-x, 0px));
+  }
+
+  [data-tpl-motion='on'] .nw-tab-indicator {
+    transition:
+      transform 0.3s var(--tpl-ease, ease),
+      width 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Foto tab akademik berganti pudar (≤ 300 ms) */
+  [data-tpl-motion='on'] .nw-fade {
+    transition: opacity 0.28s var(--tpl-ease, ease);
+  }
+
+  /* Buka-tutup (profil, tanya jawab, isi berita): 0fr → 1fr, transisi hanya bila gerak menyala */
+  .nw-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .nw-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .nw-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Linimasa agenda: garis tegak tergambar sekali dari atas saat bloknya muncul (<Reveal> data-reveal) */
+  .nw-timeline-line {
+    transform-origin: center top;
+  }
+
+  [data-tpl-motion='on'] .nw-timeline .nw-timeline-line {
+    transition: transform 1.2s var(--tpl-ease, ease);
+  }
+
+  [data-tpl-motion='on'] .nw-timeline[data-reveal='pending'] .nw-timeline-line {
+    transform: scaleY(0);
+  }
+
+  /* Tautan teks: garis bawah 28px yang memanjang penuh saat disorot / difokus */
+  .nw-underline {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 28px 1px;
+    padding-bottom: 2px;
+  }
+
+  .nw-link:hover .nw-underline,
+  .nw-link:focus-visible .nw-underline {
+    background-size: 100% 1px;
+  }
+
+  [data-tpl-motion='on'] .nw-underline {
+    transition: background-size 0.35s var(--tpl-ease, ease);
+  }
+
+  /* Rel geser horizontal (tab akademik di HP, kartu prestasi) tanpa scrollbar */
+  .nw-rail {
+    scrollbar-width: none;
+  }
+
+  .nw-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .nw-progress[data-run='true'],
+    [data-tpl-motion='on'] .nw-slide[data-zoom] img,
+    [data-tpl-motion='on'] [data-enter='true'] .nw-rise {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .nw-slide,
+    [data-tpl-motion='on'] .nw-nav-line,
+    [data-tpl-motion='on'] .nw-tab-indicator,
+    [data-tpl-motion='on'] .nw-fade,
+    [data-tpl-motion='on'] .nw-collapse,
+    [data-tpl-motion='on'] .nw-timeline .nw-timeline-line,
+    [data-tpl-motion='on'] .nw-underline {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .nw-timeline[data-reveal='pending'] .nw-timeline-line {
+      transform: none;
+    }
+  }
+
+  @media print {
+    .nw-hero-scrim {
+      display: none;
+    }
+  }
+}
+
+@keyframes nw-progress-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes nw-progress-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes nw-kb-a {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes nw-kb-b {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes nw-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

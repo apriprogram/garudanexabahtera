@@ -124,8 +124,8 @@ export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
     hasGuide: true,
     guides: ['template-vs-jasa-website-custom'],
   },
-  // Sekolah (2026-10-25): Madani (SMA Islam, hijau), Cakrawala (SMK, biru), dan Bestari (SMA umum, terakota,
-  // 2026-10-26), kategori DB "Sekolah & Pendidikan"
+  // Sekolah (2026-10-25): Madani (SMA Islam, hijau), Cakrawala (SMK, biru), Bestari (SMA umum, terakota, 2026-10-26),
+  // serta Jumantara, Nawasena, dan Pradipta (SMA negeri, biru, 2026-10-27), kategori DB "Sekolah & Pendidikan"
   'sekolah-pendidikan': {
     slug: 'sekolah-pendidikan',
     name: 'Sekolah & pendidikan',

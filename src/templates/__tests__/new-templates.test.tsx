@@ -17,9 +17,12 @@ import { DERMAGA_PHOTOS } from '../dermaga/photos';
 import { FINOVA_PHOTOS } from '../finova/photos';
 import { GADGETKU_PHOTOS } from '../gadgetku/photos';
 import { GLOWSTORY_PHOTOS } from '../glowstory/photos';
+import { JUMANTARA_PHOTOS } from '../jumantara/photos';
 import { MADANI_PHOTOS } from '../madani/photos';
-import { PORTLINE_PHOTOS } from '../portline/photos';
+import { NAWASENA_PHOTOS } from '../nawasena/photos';
 import { NUSANIAGA_PHOTOS } from '../nusaniaga/photos';
+import { PORTLINE_PHOTOS } from '../portline/photos';
+import { PRADIPTA_PHOTOS } from '../pradipta/photos';
 import { SAUDAGAR_PHOTOS } from '../saudagar/photos';
 import { SERENITY_PHOTOS } from '../serenity/photos';
 import { TANI_PHOTOS } from '../tanimakmur/photos';
@@ -42,7 +45,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'diptych' | 'harbor' | 'showroom' | 'triptych' | 'route' | 'slatted';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'diptych' | 'harbor' | 'showroom' | 'triptych' | 'route' | 'slatted' | 'stories' | 'kenburns' | 'thumbs';
   photos: PhotoSet;
 }
 
@@ -67,6 +70,12 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'dermaga', component: 'Dermaga.tsx', heroLayout: 'route', photos: DERMAGA_PHOTOS },
   { code: 'saudagar', component: 'Saudagar.tsx', heroLayout: 'triptych', photos: SAUDAGAR_PHOTOS },
   { code: 'nusaniaga', component: 'NusaNiaga.tsx', heroLayout: 'slatted', photos: NUSANIAGA_PHOTOS },
+  // Jumantara (2026-10-27): landing page SMA negeri "Clean institutional", slider foto latar + bilah progres bersegmen "stories"
+  { code: 'jumantara', component: 'Jumantara.tsx', heroLayout: 'stories', photos: JUMANTARA_PHOTOS },
+  // Nawasena (2026-10-27): landing page SMA negeri "Elegant navy", slider foto latar Ken Burns + rel nomor slide "kenburns"
+  { code: 'nawasena', component: 'Nawasena.tsx', heroLayout: 'kenburns', photos: NAWASENA_PHOTOS },
+  // Pradipta (2026-10-27): landing page SMA negeri, slider foto latar dengan kartu judul putih + thumbnail "thumbs"
+  { code: 'pradipta', component: 'Pradipta.tsx', heroLayout: 'thumbs', photos: PRADIPTA_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */

@@ -60,7 +60,14 @@ describe('backend/modules/site_defaults.json', () => {
       expect(entry.company_name, code).not.toBe('');
       expect(Object.keys(entry)).toEqual(['company_name', 'tagline', 'description', 'logo', 'posts']);
     }
-    expect(Object.entries(defaults).filter(([, entry]) => entry.posts).map(([code]) => code).sort()).toEqual(['bestari', 'cakrawala', 'madani']);
+    expect(Object.entries(defaults).filter(([, entry]) => entry.posts).map(([code]) => code).sort()).toEqual([
+      'bestari',
+      'cakrawala',
+      'jumantara',
+      'madani',
+      'nawasena',
+      'pradipta',
+    ]);
   });
 
   it('nilai yang dipakai head klien (siteDefaultsOf di siteSeo.ts) = isi berkas yang dibaca site.php', () => {

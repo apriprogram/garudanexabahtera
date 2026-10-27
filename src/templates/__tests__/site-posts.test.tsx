@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run src/templates/__tests__/site-posts.test.tsx
 // Berita & pengumuman template sekolah (docs/platform/SITE-POSTS-SEO-SPEC.md §7): helper bersama (shared/posts/model,
-// siteHref), beranda Madani, Cakrawala & Bestari memakai tulisan dari SiteDataContext atau kembali ke konten CMS PERSIS seperti
-// sebelumnya, halaman daftar & tulisan (satu H1, remah roti, tautan <a href> yang bisa dirayapi, foto lazy + ukuran),
+// siteHref), beranda Madani, Cakrawala, Bestari, Jumantara, Nawasena & Pradipta memakai tulisan dari SiteDataContext atau
+// kembali ke konten CMS PERSIS seperti sebelumnya, halaman daftar & tulisan (satu H1, remah roti, tautan <a href> yang bisa dirayapi, foto lazy + ukuran),
 // tidak ditemukan / memuat / gagal, tautan section di halaman selain beranda, navigasi tanpa muat ulang, anchor #berita,
 // tautan "/path" (halaman situs vs file nyata), penanda section aktif setelah pindah halaman, bingkai foto artikel.
 // Fitur berbayar (docs/platform/SITE-ADDONS-SPEC.md §6): tes di sini memakai situs dengan fitur Berita & Pengumuman AKTIF
@@ -21,9 +21,9 @@ import { ANNOUNCEMENTS, NEWS, POST } from './fixtures/sitePosts';
 
 vi.setConfig({ testTimeout: 60_000 });
 
-type Code = 'madani' | 'cakrawala' | 'bestari';
+type Code = 'madani' | 'cakrawala' | 'bestari' | 'jumantara' | 'nawasena' | 'pradipta';
 /** Template berfitur tulisan (POST_TEMPLATE_CODES): semua tes tampilan dijalankan untuk masing-masing. */
-const CODES: Code[] = ['madani', 'cakrawala', 'bestari'];
+const CODES: Code[] = ['madani', 'cakrawala', 'bestari', 'jumantara', 'nawasena', 'pradipta'];
 
 /** Situs live dengan fitur Berita & Pengumuman aktif (bawaan); `postsEnabled: false` = berita biasa. */
 const site = (code: Code, data: Partial<SiteData> = {}, content: unknown = null) =>
