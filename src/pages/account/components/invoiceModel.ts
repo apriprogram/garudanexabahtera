@@ -1,17 +1,21 @@
-// Nota resmi pembelian template dan perpanjangan masa aktif (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md §6): data
-// customer_get_invoice → DocModel mesin dokumen proyek, jadi pratinjau A4, cetak, dan PDF memakai kop, tipografi, dan
-// "Halaman x dari y" yang sama dengan dokumen proyek. Murni: tanpa DOM dan tanpa I/O.
+// Nota resmi pembelian template, perpanjangan masa aktif (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md §6), dan fitur
+// tambahan (SITE-ADDONS-SPEC.md §4.3): data customer_get_invoice → DocModel mesin dokumen proyek, jadi pratinjau A4,
+// cetak, dan PDF memakai kop, tipografi, dan "Halaman x dari y" yang sama dengan dokumen proyek. Murni: tanpa DOM dan
+// tanpa I/O.
 import { formatRupiahDoc, tanggalPanjang, terbilang, type Block, type DocModel, type TextRun } from '../../../features/project-docs/engine';
 import type { CompanySettings } from '../../../features/project-docs/types';
 import { invoiceNumberFor } from '../../../lib/domainPricing';
 import { RENEWAL_STATUS_LABEL, type Order, type Renewal } from '../../../types/platform';
+import { SITE_ADDON_NAME, SITE_ADDON_STATUS_LABEL, type SiteAddonOrder } from '../../../types/siteAddons';
 import { invoiceStatus, isRefunded, paymentStatusLabel, paymentTypeLabel, type PaymentTone } from './paymentStatus';
 
 /** Respons customer_get_invoice. */
 export interface InvoiceData {
   order: Order;
-  /** null = nota pembelian; terisi = nota perpanjangan */
-  renewal: Renewal | null;
+  /** null = nota pembelian; terisi = nota perpanjangan. Tidak ada di respons nota fitur tambahan. */
+  renewal?: Renewal | null;
+  /** Terisi = nota fitur tambahan (permintaan dengan addon_number GNF-…) */
+  addon?: SiteAddonOrder | null;
   /** Identitas perusahaan untuk kop (pd_settings.company) */
   company: CompanySettings;
 }
@@ -63,9 +67,13 @@ export function tambahTahun(value: string, years: number): string {
   return `${year}-${m[2]}-${String(Math.min(Number(m[3]), lastDay)).padStart(2, '0')}`;
 }
 
-/** Nomor nota: dari server bila ada, selain itu "INV-" + nomor pesanan/perpanjangan (aturan yang sama). */
-export const invoiceNumberOf = (order: Order, renewal: Renewal | null): string =>
-  renewal ? renewal.invoice_number || invoiceNumberFor(renewal.renewal_number) : order.invoice_number || invoiceNumberFor(order.order_number);
+/** Nomor nota: dari server bila ada, selain itu "INV-" + nomor pesanan/perpanjangan/tagihan fitur (aturan yang sama). */
+export const invoiceNumberOf = (order: Order, renewal: Renewal | null | undefined, addon?: SiteAddonOrder | null): string =>
+  addon
+    ? addon.invoice_number || invoiceNumberFor(addon.addon_number)
+    : renewal
+      ? renewal.invoice_number || invoiceNumberFor(renewal.renewal_number)
+      : order.invoice_number || invoiceNumberFor(order.order_number);
 
 /** Nama file unduhan: "Nota-INV-GN-20261023-DCZ03O.pdf". */
 export const invoiceFileName = (number: string) => `Nota-${number}.pdf`;
@@ -79,13 +87,32 @@ function renewalPaymentStatus(renewal: Renewal): { label: string; tone: PaymentT
   return { label: renewal.status_label || RENEWAL_STATUS_LABEL[renewal.status] || renewal.status, tone: 'warning' };
 }
 
-/** Status pembayaran yang dinotakan (label + nada pill), untuk halaman nota. */
-export const invoiceStatusView = (order: Order, renewal: Renewal | null): { label: string; tone: PaymentTone } =>
-  renewal ? renewalPaymentStatus(renewal) : invoiceStatus(order);
+/** Status pembayaran tagihan fitur tambahan, sama seperti perpanjangan ("Lunas", "Lunas (simulasi)", "Dikembalikan"). */
+function addonPaymentStatus(addon: SiteAddonOrder): { label: string; tone: PaymentTone } {
+  if (isRefunded(addon)) return { label: paymentStatusLabel(addon.payment_status), tone: 'neutral' };
+  if (addon.status === 'lunas') {
+    return { label: paymentStatusLabel(addon.payment_status === 'simulated' ? 'simulated' : 'settlement'), tone: 'success' };
+  }
+  return { label: addon.status_label || SITE_ADDON_STATUS_LABEL[addon.status] || addon.status, tone: 'warning' };
+}
+
+/**
+ * Status yang dinotakan (label + nada pill), untuk halaman nota. Fitur tambahan yang dinonaktifkan admin (revoked_at)
+ * tetap punya nota, dengan status "Dinonaktifkan".
+ */
+export function invoiceStatusView(
+  order: Order,
+  renewal: Renewal | null | undefined,
+  addon?: SiteAddonOrder | null,
+): { label: string; tone: PaymentTone } {
+  if (addon) return addon.revoked_at ? { label: 'Dinonaktifkan', tone: 'neutral' } : addonPaymentStatus(addon);
+  return renewal ? renewalPaymentStatus(renewal) : invoiceStatus(order);
+}
 
 /** Status di nota: lunas biasa ditulis kapital seperti cap nota ("LUNAS"), selebihnya label pembeli apa adanya. */
-export function invoicePaymentStatus(order: Order, renewal: Renewal | null): string {
-  const { label } = invoiceStatusView(order, renewal);
+export function invoicePaymentStatus(order: Order, renewal: Renewal | null | undefined, addon?: SiteAddonOrder | null): string {
+  // Fitur yang dinonaktifkan tetap sudah dibayar: status pembayaran dari tagihannya, status fitur di baris sendiri
+  const { label } = addon ? addonPaymentStatus(addon) : invoiceStatusView(order, renewal);
   return label === 'Lunas' ? 'LUNAS' : label;
 }
 
@@ -102,6 +129,19 @@ function purchaseItems(order: Order, domain: string): { items: Item[]; note: str
   if (domainPrice > 0) items.push([`Domain ${domain} (1 tahun)`, domainPrice]);
   return { items, note: domainPrice > 0 ? null : 'Domain tahun pertama termasuk harga template.' };
 }
+
+/** Rincian fitur tambahan: satu baris "Fitur Berita & Pengumuman (domain)", sekali bayar. */
+const addonItems = (addon: SiteAddonOrder, domain: string): Item[] => [
+  [`Fitur ${SITE_ADDON_NAME[addon.addon_code] ?? addon.addon_code} (${domain})`, num(addon.price)],
+];
+
+/** Fitur tambahan: nama, masa berlaku (selama situs aktif), dan status (aktif / dinonaktifkan admin). */
+const addonRows = (addon: SiteAddonOrder, domain: string): KeyValueRow[] => [
+  row('Situs', domain),
+  row('Fitur', SITE_ADDON_NAME[addon.addon_code] ?? addon.addon_code),
+  row('Masa berlaku', 'Selama situs aktif (sekali bayar)'),
+  row('Status fitur', addon.revoked_at ? `Dinonaktifkan sejak ${tanggal(addon.revoked_at)}` : 'Aktif'),
+];
 
 /** Rincian perpanjangan: hosting & jasa dan domain, masing-masing harga per tahun × jumlah tahun. */
 function renewalItems(renewal: Renewal): Item[] {
@@ -154,24 +194,35 @@ function billedTo(order: Order): TextRun[] {
   return [{ text: order.customer_name?.trim() || '-', bold: true }, ...(rest.length ? [{ text: `\n${rest.join('\n')}` }] : [])];
 }
 
-/** Nota pembelian (renewal null) atau nota perpanjangan sebagai DocModel. */
-export function buildInvoiceModel({ order, renewal, company }: InvoiceData): DocModel {
+/** Judul halaman nota per jenis. */
+export const invoiceTitleOf = (data: Pick<InvoiceData, 'renewal' | 'addon'>): string =>
+  data.addon ? 'Nota fitur tambahan' : data.renewal ? 'Nota perpanjangan' : 'Nota pembelian';
+
+/** Nota pembelian (renewal & addon kosong), nota perpanjangan, atau nota fitur tambahan sebagai DocModel. */
+export function buildInvoiceModel({ order, renewal: renewalIn, addon: addonIn, company }: InvoiceData): DocModel {
+  const addon = addonIn ?? null;
+  const renewal = addon ? null : (renewalIn ?? null);
   const kop: CompanySettings = { ...EMPTY_COMPANY, ...(company ?? {}) };
-  const number = invoiceNumberOf(order, renewal);
-  const title = renewal ? 'NOTA PERPANJANGAN' : 'NOTA PEMBELIAN';
-  const paidAt = (renewal ? renewal.paid_at : order.paid_at) ?? '';
-  const paymentType = renewal ? renewal.payment_type : order.payment_type;
+  const number = invoiceNumberOf(order, renewal, addon);
+  const title = invoiceTitleOf({ renewal, addon }).toUpperCase();
+  const paidAt = (addon ? addon.paid_at : renewal ? renewal.paid_at : order.paid_at) ?? '';
+  const paymentType = addon ? addon.payment_type : renewal ? renewal.payment_type : order.payment_type;
   const domain = (renewal ? renewal.domain : order.domain || order.domain_primary) || '-';
-  const { items, note } = renewal ? { items: renewalItems(renewal), note: null } : purchaseItems(order, domain);
-  const total = num(renewal ? renewal.price : order.price);
+  const { items, note } = addon
+    ? { items: addonItems(addon, domain), note: null }
+    : renewal
+      ? { items: renewalItems(renewal), note: null }
+      : purchaseItems(order, domain);
+  const total = num(addon ? addon.price : renewal ? renewal.price : order.price);
   const issuer = kop.name.trim() || 'Garuda Nexa';
 
   const info: KeyValueRow[] = [
     row('No. nota', number),
     row('No. pesanan', order.order_number),
     ...(renewal ? [row('No. perpanjangan', renewal.renewal_number)] : []),
+    ...(addon ? [row('No. tagihan fitur', addon.addon_number)] : []),
     row('Tanggal nota', tanggal(paidAt)),
-    row('Status pembayaran', [{ text: invoicePaymentStatus(order, renewal), bold: true }]),
+    row('Status pembayaran', [{ text: invoicePaymentStatus(order, renewal, addon), bold: true }]),
   ];
 
   const blocks: Block[] = [
@@ -196,8 +247,8 @@ export function buildInvoiceModel({ order, renewal, company }: InvoiceData): Doc
     { type: 'paragraph', runs: [{ text: 'Terbilang: ' }, { text: terbilang(total), italic: true }] },
     heading('Pembayaran'),
     { type: 'keyValue', rows: [row('Metode', paymentTypeLabel(paymentType)), row('Dibayar pada', waktuBayar(paidAt))] },
-    heading('Domain & masa aktif'),
-    { type: 'keyValue', rows: periodRows(order, renewal, domain) },
+    heading(addon ? 'Fitur tambahan' : 'Domain & masa aktif'),
+    { type: 'keyValue', rows: addon ? addonRows(addon, domain) : periodRows(order, renewal, domain) },
     { type: 'spacer', size: 14 },
     {
       type: 'paragraph',

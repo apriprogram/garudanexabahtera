@@ -42,6 +42,7 @@ export const PUBLIC_ACTIONS = new Set([
   'get_guides', 'get_guide', 'guide_view', 'get_domain_prices',
   'google_auth_config', 'customer_google_auth',
   'get_site_seo', 'get_site_posts', 'get_site_post', 'site_post_view',
+  'site_visit',
 ]);
 export const ANY_ROLE_ACTIONS = new Set([
   'pd_notifications_list', 'pd_notifications_read', 'pd_file',
@@ -53,6 +54,9 @@ export const CUSTOMER_ACTIONS = new Set([
   'customer_get_invoice', 'customer_get_invoices', 'customer_get_profile', 'customer_update_profile',
   'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
   'customer_get_site_posts', 'customer_save_site_post', 'customer_delete_site_post', 'customer_get_site_seo', 'customer_save_site_seo',
+  'customer_get_site_addons', 'customer_buy_site_addon', 'customer_pay_site_addon', 'customer_cancel_site_addon',
+  'dev_simulate_site_addon_payment',
+  'customer_get_site_stats',
 ]);
 export const ADMIN_ACTIONS = new Set([
   'add_user', 'delete_user',
@@ -67,6 +71,7 @@ export const ADMIN_ACTIONS = new Set([
   'pd_settings_save',
   'nexa_get_config', 'nexa_save_config',
   'admin_get_guides', 'admin_save_guide', 'admin_delete_guide',
+  'admin_set_site_addon',
 ]);
 
 const STAFF_ROLES = new Set(['admin', 'user']);

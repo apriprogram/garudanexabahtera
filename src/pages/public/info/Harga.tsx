@@ -4,9 +4,10 @@
 // tanpa nama pesaing), Midtrans, jaminan pengembalian dana, FAQ.
 // Angka harga template HANYA dari data template (get_templates). Domain tidak termasuk harga template (pemilik
 // 2026-10-25): harganya dari get_domain_prices (render awal = tabel bawaan domainPricing.ts, sama dengan halaman pesan),
-// hosting & jasa tahun ke-2 dari setting template_hosting_renewal_price (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md).
+// hosting & jasa tahun ke-2 dari setting template_hosting_renewal_price (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md),
+// fitur tambahan Berita & Pengumuman (template sekolah) dari setting addon_posts_price (docs/platform/SITE-ADDONS-SPEC.md).
 import React from 'react';
-import { Check, ChevronDown, MessageCircle, ShieldCheck } from 'lucide-react';
+import { Check, ChevronDown, MessageCircle, Newspaper, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { FaqAccordion } from '../../../components/sections/faq/FaqAccordion';
 import { COMPANY_FACTS } from '../../../lib/companyFacts';
@@ -22,7 +23,7 @@ import {
   shortPriceRange,
   templateVsCustomTable,
 } from '../../../content/pricing';
-import { getTemplatePricing, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../../hooks/useSiteSettings';
+import { addonPostsPrice, getTemplatePricing, getWhatsappNumber, useSiteSettings, whatsappUrl } from '../../../hooks/useSiteSettings';
 import { useGuides } from '../../../hooks/useGuides';
 import { usePriceDate, usePublishedTemplates } from '../../../hooks/usePublishedTemplates';
 import { formatDateId, formatPriceFull, formatPriceRange, isPrice } from '../../../seo/format';
@@ -203,6 +204,7 @@ export default function Harga() {
   const dateText = formatDateId(priceDate);
   const pricing = getTemplatePricing(settings);
   const hosting = hostingRenewalPrice(settings);
+  const addonPrice = addonPostsPrice(settings);
   const domainFrom = rupiahCompact(domainPriceFrom(domains));
   const range = formatPriceRange(templates.map((t) => t.price));
   const pkg = COMPANY_FACTS.templatePackage;
@@ -382,6 +384,22 @@ export default function Harga() {
             Harga berlaku per <time dateTime={priceDate}>{dateText}</time>, dalam rupiah, untuk satu website pada satu domain. Harga domain
             terpisah, lihat <AnchorLink href="#harga-domain">harga domain</AnchorLink>.
           </p>
+        </div>
+        {/* Fitur tambahan berbayar template sekolah (docs/platform/SITE-ADDONS-SPEC.md §7), harga dari setting */}
+        <div id="fitur-tambahan" className="mt-4 flex items-start gap-3 rounded-[20px] bg-surface p-4 ring-1 ring-inset ring-line sm:gap-4 sm:p-5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-primary sm:h-10 sm:w-10">
+            <Newspaper className="h-[18px] w-[18px]" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-fg sm:text-[15px]">
+              Fitur tambahan template sekolah: Berita & Pengumuman,{' '}
+              <span className="whitespace-nowrap tabular-nums">{rupiahCompact(addonPrice)} sekali bayar</span>
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-muted sm:text-[15px]">
+              Situs sekolah mendapat halaman berita & pengumuman sendiri dengan tampilan yang lebih profesional; tanpa fitur ini, berita tampil
+              sebagai daftar biasa.
+            </p>
+          </div>
         </div>
       </InfoSection>
 

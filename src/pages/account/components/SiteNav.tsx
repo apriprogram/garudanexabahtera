@@ -1,17 +1,22 @@
-// Navigasi pil per situs di panel akun (docs/platform/SITE-POSTS-SEO-SPEC.md §8): Konten · Berita & Pengumuman · SEO.
-// "Berita & Pengumuman" hanya untuk template berfitur tulisan (TemplateDefinition.features.posts). Tampil di SiteEditor
-// (di bawah kartu Situs Anda) dan di bagian atas halaman Berita & Pengumuman / SEO. Tautannya biasa (<Link>), jadi ikut
-// dicegat useLeaveGuard bila ada perubahan yang belum disimpan. Di HP ikon disembunyikan supaya ketiga pil muat di layar
-// 390 px; layar yang lebih sempit bisa menggeser baris pil ke samping.
+// Navigasi pil per situs di panel akun (docs/platform/SITE-POSTS-SEO-SPEC.md §8): Konten · Berita & Pengumuman · SEO ·
+// Statistik (docs/platform/SITE-STATS-SPEC.md §4, semua template). "Berita & Pengumuman" hanya untuk template berfitur
+// tulisan (TemplateDefinition.features.posts). Tampil di SiteEditor (di bawah kartu Situs Anda) dan di bagian atas halaman
+// Berita & Pengumuman / SEO / Statistik. Tautannya biasa (<Link>), jadi ikut dicegat useLeaveGuard bila ada perubahan
+// yang belum disimpan. Di HP ikon disembunyikan supaya pil lebih ringkas; baris pil yang tidak muat bisa digeser ke
+// samping. Fitur Berita & Pengumuman yang belum aktif (docs/platform/SITE-ADDONS-SPEC.md §5) tetap tampil sebagai pil
+// bergembok (ikon tetap terlihat di HP) + teks sr "(terkunci)"; halamannya menampilkan panel terkunci.
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutTemplate, Newspaper, Search } from 'lucide-react';
+import { ChartNoAxesColumn, LayoutTemplate, Lock, Newspaper, Search } from 'lucide-react';
 import { siteLinks } from '../posts/siteLinks';
+import { siteStatsPath } from '../stats/links';
 
 interface SiteNavProps {
   siteId: number;
   /** Tampilkan pil Berita & Pengumuman (hasPostsFeature di posts/siteLinks.ts) */
   posts: boolean;
+  /** Fitur Berita & Pengumuman belum aktif (postsLocked di components/addons.ts): pil bergembok */
+  postsLocked?: boolean;
   /**
    * Baris pil keluar sampai tepi layar HP (margin negatif seukuran gutter halaman, px-5), supaya pil terakhir tidak
    * terpotong padding saat digeser. Matikan bila wadahnya berpadding lain (mis. panel kiri SiteEditor).
@@ -20,13 +25,24 @@ interface SiteNavProps {
   className?: string;
 }
 
-export function SiteNav({ siteId, posts, bleed = false, className = '' }: SiteNavProps) {
+export function SiteNav({ siteId, posts, postsLocked = false, bleed = false, className = '' }: SiteNavProps) {
   const { pathname } = useLocation();
   const links = siteLinks(siteId);
-  const items: { to: string; label: string; icon: ReactNode; exact: boolean }[] = [
+  const items: { to: string; label: string; icon: ReactNode; exact: boolean; locked?: boolean }[] = [
     { to: links.content, label: 'Konten', icon: <LayoutTemplate className="h-4 w-4 max-sm:hidden" aria-hidden />, exact: true },
-    ...(posts ? [{ to: links.posts, label: 'Berita & Pengumuman', icon: <Newspaper className="h-4 w-4 max-sm:hidden" aria-hidden />, exact: false }] : []),
+    ...(posts
+      ? [
+          {
+            to: links.posts,
+            label: 'Berita & Pengumuman',
+            icon: <Newspaper className="h-4 w-4 max-sm:hidden" aria-hidden />,
+            exact: false,
+            locked: postsLocked,
+          },
+        ]
+      : []),
     { to: links.seo, label: 'SEO', icon: <Search className="h-4 w-4 max-sm:hidden" aria-hidden />, exact: false },
+    { to: siteStatsPath(siteId), label: 'Statistik', icon: <ChartNoAxesColumn className="h-4 w-4 max-sm:hidden" aria-hidden />, exact: false },
   ];
 
   return (
@@ -46,6 +62,12 @@ export function SiteNav({ siteId, posts, bleed = false, className = '' }: SiteNa
               >
                 {item.icon}
                 {item.label}
+                {item.locked && (
+                  <>
+                    <Lock className={`h-3.5 w-3.5 ${current ? 'text-white/80' : 'text-subtle'}`} aria-hidden />{' '}
+                    <span className="sr-only">(terkunci)</span>
+                  </>
+                )}
               </Link>
             </li>
           );

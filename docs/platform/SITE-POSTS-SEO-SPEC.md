@@ -6,6 +6,12 @@ Permintaan pemilik (2026-10-26):
 - Ada **SEO opsional per tulisan**: kalau diisi, tulisan berpeluang muncul di Google.
 - **Semua template yang dipesan dan sudah online** punya fitur SEO di admin klien (`/akun`) per situs, supaya situsnya bisa muncul di Google.
 
+**Sejak 2026-10-27 tulisan adalah fitur tambahan berbayar** (docs/platform/SITE-ADDONS-SPEC.md): semua aturan di bawah
+yang menyebut "template berfitur tulisan" kini berarti template mampu **dan** fitur Berita & Pengumuman aktif untuk situs
+itu (`site_addon_orders`, migrasi 030). Mampu tapi belum aktif: aksi tulisan pembeli 403 `POSTS_LOCKED`, `get_site_posts`
+kosong, `get_site_post`/`site_post_view` 404, dan `site.php` menjawab 404 untuk `/berita…` tanpa daftar di preload maupun
+sitemap. Jenis organisasi JSON-LD `School` dan SEO situs tetap mengikuti template, bukan fitur.
+
 Foto unggahan disimpan sebagai **WebP/JPEG teroptimasi**, bukan SVG. Skill design-system pemilik melarang foto diubah ke SVG, karena hasilnya file berukuran megabyte yang tampak seperti lukisan. SVG hanya untuk logo dan ikon.
 
 ## 1. Ringkasan teknis

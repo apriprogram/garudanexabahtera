@@ -88,10 +88,17 @@ const urls = (src: string) => {
 };
 const wa = (el: Element | null) => decodeURIComponent(el?.getAttribute('href') ?? '');
 const linkList = (root: Element) => Array.from(root.querySelectorAll('a')).map((a) => `${a.textContent}|${a.getAttribute('href')}`);
-/** Situs live dengan tulisan dari SiteDataContext (CustomerSite / SitePreview); `data` menimpa rute dsb. */
+/**
+ * Situs live dengan fitur Berita & Pengumuman aktif dan tulisan dari SiteDataContext (CustomerSite / SitePreview); `data`
+ * menimpa rute dsb.
+ */
 const withPosts = (data: Partial<SiteData> = {}, content: unknown = null) =>
   render(
-    <SiteRenderer templateCode="bestari" content={content} data={{ ...SITE_DATA_DEFAULT, posts: { berita: NEWS, pengumuman: ANNOUNCEMENTS }, ...data }} />,
+    <SiteRenderer
+      templateCode="bestari"
+      content={content}
+      data={{ ...SITE_DATA_DEFAULT, postsEnabled: true, posts: { berita: NEWS, pengumuman: ANNOUNCEMENTS }, ...data }}
+    />,
   ).container;
 
 let scrolled: (string | null)[] = [];
@@ -845,17 +852,21 @@ describe('Bestari: demo', () => {
 });
 
 describe('Bestari: berita & pengumuman dari tulisan (site_posts)', () => {
-  it('beranda: kartu berita bertautan selebar kartu + filter kategori, tombol "Lihat semua" di samping tombol CMS, pengumuman', () => {
+  it('beranda (fitur aktif): newsroom bertautan selebar kartu + filter kategori, "Lihat semua" di samping tombol CMS, papan pengumuman', () => {
     const container = withPosts();
     expect(def.features?.posts).toBe(true);
     const news = section(container, 'news');
+    expect(news).toHaveAttribute('data-pro-section', 'news');
+    // Label bernomor & judul Bestari tetap: satu H2
+    expect(news.querySelectorAll('h2')).toHaveLength(1);
     const title = within(news).getByRole('link', { name: NEWS[0].title });
     expect(title).toHaveAttribute('href', '/berita/juara-olimpiade-sains');
     expect(title.className).toContain('after:absolute');
     expect(title.closest('article')!.className).toContain('relative');
     const img = within(news).getByAltText(NEWS[0].image_alt);
-    expect(img).toHaveAttribute('width', '1200');
-    expect(img).toHaveAttribute('height', '800');
+    expect(img).toHaveAttribute('width', '1600');
+    expect(img).toHaveAttribute('height', '1000');
+    expect(img).toHaveAttribute('loading', 'lazy');
     const filters = within(news).getByRole('group', { name: 'Saring berita menurut kategori' });
     expect(within(filters).getAllByRole('button').map((b) => b.textContent)).toEqual(['Semua', 'Prestasi', 'Kegiatan']);
     fireEvent.click(within(filters).getByRole('button', { name: 'Kegiatan' }));
@@ -864,9 +875,11 @@ describe('Bestari: berita & pengumuman dari tulisan (site_posts)', () => {
     expect(within(news).getByRole('link', { name: /Berita lainnya di Instagram/ })).toHaveAttribute('href', 'https://instagram.com/smabestaricendekia');
 
     const announcements = section(container, 'announcements');
-    expect(within(announcements).getByRole('link', { name: ANNOUNCEMENTS[0].title }).closest('li')!.className).toContain('relative');
-    expect(announcements.textContent).toContain('Baca selengkapnya');
+    expect(announcements).toHaveAttribute('data-pro-section', 'announcements');
+    expect(within(announcements).getByRole('link', { name: ANNOUNCEMENTS[0].title }).closest('article')!.className).toContain('relative');
+    expect(announcements.textContent).toContain('Lihat detail');
     expect(announcements.textContent).not.toContain('Lihat lampiran');
+    expect(within(announcements).getByText('Penting').closest('[data-pro-badge]')!.className).toContain('text-[#B42318]');
     // Agenda tetap dari konten CMS
     expect(section(container, 'agenda').querySelectorAll('time')).toHaveLength(4);
   });

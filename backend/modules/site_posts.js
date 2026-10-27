@@ -14,6 +14,10 @@
 // (customerSite, the same query rows as customerSite() in templates.js / pf_customer_site()).
 // Situs pembeli di produksi dirender backend/site.php (PHP): Node tidak punya padanannya (kepala halaman, robots.txt,
 // sitemap.xml per domain), hanya aksi API ini yang setara.
+// Tulisan berbayar (docs/platform/SITE-ADDONS-SPEC.md §3): tulisan hanya dibaca/ditulis bila template mampu DAN fitur
+// Berita & Pengumuman aktif (addonActive / postsEnabled, site_addons.js). Mampu tapi belum aktif → aksi pembeli 403
+// POSTS_LOCKED, publik daftar kosong / 404. Tulisan yang ada tidak dihapus, hanya disembunyikan. SEO situs tidak
+// terpengaruh.
 //
 // Panjang dihitung dalam karakter ([...s].length = code point, sama dengan mb_strlen di site_posts.php). Waktu keluar
 // sebagai ISO 8601 WIB (2026-10-26T09:30:00+07:00) dari UNIX_TIMESTAMP(), jadi tidak bergantung zona waktu sesi MySQL.
@@ -21,6 +25,9 @@
 import { readFileSync } from 'node:fs';
 import { createLimiter } from '../security.js';
 import { deleteFromS3, parseUpload, S3_PUBLIC_URL, uploadBase64ToS3 } from '../s3-client.js';
+import { nexaIpBucket } from './nexa.js';
+// Gerbang fitur berbayar Berita & Pengumuman (impor melingkar site_addons.js → site_posts.js aman: hanya dipakai di dalam fungsi)
+import { addonActive, postsEnabled } from './site_addons.js';
 
 // Template yang punya fitur tulisan: sama dengan SP_POST_TEMPLATE_CODES (site_posts.php) dan features.posts di registri
 // src/templates (dijaga tes paritas). Template sekolah baru cukup ditambahkan di ketiga tempat itu.
@@ -85,6 +92,7 @@ const POST_NOT_FOUND = 'Tulisan tidak ditemukan.';
 const SITE_INACTIVE = 'Situs tidak ditemukan atau sedang tidak aktif.';
 const SITE_SUSPENDED = 'Situs sedang dinonaktifkan sehingga isinya tidak bisa diubah. Hubungi kami.';
 const POSTS_UNAVAILABLE = 'Template situs ini belum mendukung berita & pengumuman.';
+const POSTS_LOCKED = 'Fitur Berita & Pengumuman belum aktif untuk situs ini. Aktifkan di menu Fitur tambahan.';
 const SLUG_TAKEN = 'Slug sudah dipakai tulisan lain di situs ini.';
 const POST_LIMIT = 'Situs ini sudah punya 500 tulisan, jumlah maksimal. Hapus tulisan lama sebelum menulis yang baru.';
 const POST_CHANGED = 'Tulisan baru saja diubah di tab lain. Muat ulang lalu coba lagi.';
@@ -188,7 +196,7 @@ async function getSiteSeo(ctx) {
 }
 
 // Tulisan terbit satu jenis, terbaru dulu: { posts: SitePostSummary[], total }. total = semua tulisan terbit jenis itu
-// (tanpa batas limit). Template tanpa fitur tulisan → daftar kosong.
+// (tanpa batas limit). Template tanpa fitur tulisan atau fitur Berita & Pengumuman belum aktif → daftar kosong.
 async function getSitePosts(ctx) {
   const { pool, input } = ctx;
   const site = await activeSite(ctx, false);
@@ -196,7 +204,7 @@ async function getSitePosts(ctx) {
   if (!KINDS.includes(kind)) {
     throw new SitePostError('Jenis tulisan harus berita atau pengumuman.', 400, 'VALIDATION', { kind: 'Jenis tulisan harus berita atau pengumuman.' });
   }
-  if (!hasPosts(String(site.template_code))) return { posts: [], total: 0 };
+  if (!(await postsEnabled(pool, site))) return { posts: [], total: 0 };
   const siteId = Number(site.id);
   const rows = await dbAll(pool, `SELECT ${SUMMARY_COLUMNS} FROM site_posts p WHERE p.site_id = ? AND p.kind = ? AND p.status = 'published'
                            ORDER BY p.published_at DESC, p.id DESC LIMIT ?`, [siteId, kind, listLimit(inInt(ctx, 'limit'))]);
@@ -212,11 +220,12 @@ async function getSitePost(ctx) {
   return { post: publicOut(row) };
 }
 
-// Halaman tulisan dibuka (sekali per sesi browser): +1, dibatasi per IP seperti guide_view; perayap tidak dihitung.
+// Halaman tulisan dibuka (sekali per sesi browser): +1, dibatasi per IP (IPv6 per /64, sama dengan ip_limit_key di PHP;
+// batas laju Node ada di memori, jadi tanpa HMAC) seperti guide_view; perayap tidak dihitung.
 // { views: jumlah dilihat tulisan itu }
 async function sitePostView(ctx) {
   const { pool, req } = ctx;
-  const limit = `sp-view|${clientIp(req)}`;
+  const limit = `sp-view|${nexaIpBucket(clientIp(req))}`;
   const wait = viewLimiter.retryAfter(limit);
   if (wait) tooManyAttempts(wait);
   const site = await activeSite(ctx, false);
@@ -243,9 +252,9 @@ async function activeSite(ctx, withContent) {
   return site;
 }
 
-/** Tulisan terbit situs ini dengan slug itu; template tanpa fitur tulisan atau slug tidak sah → null. */
+/** Tulisan terbit situs ini dengan slug itu; slug tidak sah, template tanpa fitur tulisan atau fitur belum aktif → null. */
 async function publishedPost(pool, site, slug) {
-  if (!hasPosts(String(site.template_code)) || !isSlug(slug)) return null;
+  if (!isSlug(slug) || !(await postsEnabled(pool, site))) return null;
   return dbOne(pool, `SELECT ${POST_COLUMNS} FROM site_posts p WHERE p.site_id = ? AND p.slug = ? AND p.status = 'published' LIMIT 1`,
     [Number(site.id), slug]);
 }
@@ -417,11 +426,13 @@ async function customerSaveSiteSeo(ctx) {
 
 /**
  * Situs milik pembeli (404 bila bukan miliknya). write: situs nonaktif → 409 SITE_SUSPENDED.
- * posts: template tanpa fitur tulisan → 403 POSTS_UNAVAILABLE (SEO berlaku untuk semua template).
+ * posts: template tanpa fitur tulisan → 403 POSTS_UNAVAILABLE, fitur Berita & Pengumuman belum dibeli / dicabut → 403
+ * POSTS_LOCKED (SEO berlaku untuk semua template).
  */
 async function ownedSite(ctx, user, write, posts) {
   const site = await customerSite(ctx, user);
   if (posts && !hasPosts(String(site.template_code))) throw new SitePostError(POSTS_UNAVAILABLE, 403, 'POSTS_UNAVAILABLE');
+  if (posts && !(await addonActive(ctx.pool, Number(site.id), 'posts'))) throw new SitePostError(POSTS_LOCKED, 403, 'POSTS_LOCKED');
   if (write && site.status !== 'active') throw new SitePostError(SITE_SUSPENDED, 409, 'SITE_SUSPENDED');
   return site;
 }
@@ -742,7 +753,8 @@ export const isBot = (userAgent) => BOT_PATTERN.test(userAgent);
 
 export const hasPosts = (templateCode) => POST_TEMPLATE_CODES.includes(templateCode);
 
-const isSlug = (value) => typeof value === 'string' && value !== '' && value.length <= SITE_POST_LIMITS.slug && SLUG_PATTERN.test(value);
+/** Slug tulisan yang sah (= sp_is_slug); dipakai juga site_stats.js untuk path tulisan. */
+export const isSlug = (value) => typeof value === 'string' && value !== '' && value.length <= SITE_POST_LIMITS.slug && SLUG_PATTERN.test(value);
 
 /** YYYY-MM-DD yang benar-benar ada di kalender, tahun 1000–9999 (rentang kolom DATE); sama dengan sp_is_date(). */
 function isDate(value) {

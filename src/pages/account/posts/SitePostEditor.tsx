@@ -7,13 +7,14 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { FileQuestion } from 'lucide-react';
 import type { SitePostAdmin } from '../../../types/sitePosts';
 import { EditorLoadError, EditorNotFound } from '../cms/EditorStates';
+import { postsLocked } from '../components/addons';
 import { useDocumentTitle } from '../components/payment';
 import { EmptyState, Skeleton } from '../components/States';
 import { KIND_COPY, kindFromQuery, upsertPost } from './postModel';
 import { PostForm } from './PostForm';
-import { fetchEditorData } from './postsApi';
+import { POSTS_LOCKED, fetchEditorData } from './postsApi';
 import { editPostPath, hasPostsFeature, postsListPath } from './siteLinks';
-import { PageContainer, PostsUnavailable, SitePageHeader } from './SitePage';
+import { PageContainer, PostsLocked, PostsUnavailable, SitePageHeader } from './SitePage';
 import { parseSiteId, useSiteLoader } from './useSiteLoader';
 
 const LOAD_ERROR = 'Tulisan gagal dimuat. Silakan coba lagi.';
@@ -30,7 +31,7 @@ export default function SitePostEditor() {
   // Tulisan baru yang baru tersimpan: id barunya memakai kunci form yang sama, jadi form tidak dipasang ulang
   const [created, setCreated] = useState<{ id: number; formKey: string } | null>(null);
 
-  const posts = load.status === 'ready' ? load.data.posts : null;
+  const posts = load.status === 'ready' && load.data.posts !== POSTS_LOCKED ? load.data.posts : null;
   const post = posts && postId ? (posts.posts.find((item) => item.id === postId) ?? null) : null;
   const kind = post?.kind ?? kindFromQuery(searchParams.get('jenis'));
   const copy = KIND_COPY[kind];
@@ -43,6 +44,18 @@ export default function SitePostEditor() {
   const { site, data } = load;
   const listPath = postsListPath(site.id, kind);
   const back = { to: listPath, label: copy.all };
+
+  // Fitur Berita & Pengumuman belum aktif (SITE-ADDONS-SPEC §5): panel terkunci, tanpa form
+  if (data.posts === POSTS_LOCKED || postsLocked(site)) {
+    return (
+      <PageContainer>
+        <SitePageHeader site={site} back={{ to: `/akun/situs/${site.id}`, label: 'Kelola konten' }} title="Berita & Pengumuman" postsLocked />
+        <div className="mt-6">
+          <PostsLocked site={site} />
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (!data.posts || !hasPostsFeature(site.template_code)) {
     return (
@@ -78,7 +91,11 @@ export default function SitePostEditor() {
   const formKey = created && post?.id === created.id ? created.formKey : isNew ? `baru:${location.key}` : `post:${postId}`;
 
   const onSaved = (saved: SitePostAdmin, isCreated: boolean) => {
-    updateData((current) => (current.posts ? { ...current, posts: { ...current.posts, posts: upsertPost(current.posts.posts, saved) } } : current));
+    updateData((current) =>
+      current.posts && current.posts !== POSTS_LOCKED
+        ? { ...current, posts: { ...current.posts, posts: upsertPost(current.posts.posts, saved) } }
+        : current,
+    );
     if (isCreated) {
       setCreated({ id: saved.id, formKey });
       navigate(editPostPath(site.id, saved.id, saved.kind), { replace: true });

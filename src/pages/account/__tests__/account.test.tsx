@@ -227,6 +227,8 @@ describe('Beranda /akun', { timeout: 20_000 }, () => {
     const sites = screen.getByRole('heading', { name: 'Situs Anda' }).closest('section')!;
     expect(within(sites).getByRole('link', { name: /Kelola Situs/ })).toHaveAttribute('href', '/akun/situs/7');
     expect(within(sites).getByRole('link', { name: /Semua situs/ })).toHaveAttribute('href', '/akun/situs');
+    // Statistik kunjungan (SITE-STATS-SPEC §4)
+    expect(within(sites).getByRole('link', { name: 'Statistik kunjungan aktif-budi.com' })).toHaveAttribute('href', '/akun/situs/7/statistik');
   });
 
   it('tanpa pesanan berlebih: tidak ada tautan "Lihat semua pesanan"', async () => {
@@ -249,6 +251,7 @@ describe('Situs saya /akun/situs', { timeout: 20_000 }, () => {
     renderHome('sites');
     expect(screen.getByRole('heading', { level: 1, name: 'Situs saya' })).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /Kelola Situs/ }, { timeout: 5000 })).toHaveAttribute('href', '/akun/situs/9');
+    expect(screen.getByRole('link', { name: 'Statistik kunjungan aktif-budi.com' })).toHaveAttribute('href', '/akun/situs/9/statistik');
     expect(screen.queryByText('Belum Bayar')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Total pesanan/ })).not.toBeInTheDocument();
     cleanup();
@@ -399,6 +402,7 @@ describe('kerangka akun', () => {
       ['Pesanan saya', '/akun/pesanan'],
       ['Situs saya', '/akun/situs'],
       ['Proyek saya', '/akun/proyek'],
+      ['Fitur tambahan', '/akun/fitur'],
       ['Nota', '/akun/nota'],
       ['Profil', '/akun/profil'],
       ['Lihat Template', '/#templates'],
@@ -414,6 +418,20 @@ describe('kerangka akun', () => {
     expect(within(sidebarNav()).getByRole('link', { name: 'Nota' })).toHaveAttribute('aria-current', 'page');
     expect(within(sidebarNav()).getByRole('link', { name: 'Pesanan saya' })).not.toHaveAttribute('aria-current');
     expect(within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText('Nota GNR-2')).toHaveAttribute('aria-current', 'page');
+    cleanup();
+
+    // Fitur tambahan (SITE-ADDONS-SPEC §5): grup Layanan, breadcrumb "Fitur tambahan"
+    renderLayout('/akun/fitur?situs=33');
+    expect(within(sidebarNav()).getByRole('link', { name: 'Fitur tambahan' })).toHaveAttribute('aria-current', 'page');
+    expect(within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText('Fitur tambahan')).toHaveAttribute('aria-current', 'page');
+    cleanup();
+
+    // Statistik kunjungan (SITE-STATS-SPEC §4): Situs saya › Kelola situs › Statistik
+    renderLayout('/akun/situs/3/statistik?rentang=7');
+    expect(within(sidebarNav()).getByRole('link', { name: 'Situs saya' })).toHaveAttribute('aria-current', 'page');
+    const statsCrumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(statsCrumbs).getByRole('link', { name: 'Kelola situs' })).toHaveAttribute('href', '/akun/situs/3');
+    expect(within(statsCrumbs).getByText('Statistik')).toHaveAttribute('aria-current', 'page');
   });
 
   it('ciutkan sidebar: label jadi sr-only, tersimpan di localStorage', () => {

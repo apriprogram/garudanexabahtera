@@ -56,11 +56,13 @@ import {
   panelClass,
 } from '../../components/admin/ui';
 import {
+  addonPostsPrice,
   DEFAULT_CONTACT_EMAIL,
   getHiddenSections,
   TEMPLATE_PRICE_INCLUDES_DEFAULT,
   TEMPLATE_PRICE_NOTE_DEFAULT,
 } from '../../hooks/useSiteSettings';
+import { ADDON_POSTS_PRICE_DEFAULT, ADDON_POSTS_PRICE_SETTING } from '../../types/siteAddons';
 import { GUIDES_INTRO_DEFAULT } from '../public/panduan/PanduanIndex.seo';
 import { GuidesManager } from './guides/GuidesManager';
 import type { PortfolioItem } from '../../components/sections/projects/portfolio';
@@ -72,8 +74,8 @@ import { addImportedProject } from './portfolio/portfolioImport';
 const CTA_TITLE_DEFAULT = 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!';
 
 /**
- * Nilai isian rupiah untuk disimpan: hanya angka (dibulatkan); kosong/tidak valid → '' (= bawaan
- * HOSTING_RENEWAL_DEFAULT di website & backend, sama dengan pf_hosting_renewal_price).
+ * Nilai isian rupiah untuk disimpan: hanya angka (dibulatkan); kosong/tidak valid → '' (= harga bawaan di website &
+ * backend, mis. pf_hosting_renewal_price / sa_price).
  */
 const rupiahDigits = (value: string): string => {
   const text = value.trim();
@@ -82,28 +84,35 @@ const rupiahDigits = (value: string): string => {
 };
 
 /*
- * Hosting & jasa per tahun mulai tahun ke-2 (setting template_hosting_renewal_price). Tidak terkontrol seperti isian
- * lain di tab ini (dibaca lewat id saat simpan); state hanya untuk petunjuk nilai yang akan dibayar pembeli.
+ * Isian harga rupiah satu setting (hosting & jasa tahun ke-2, harga fitur tambahan). Tidak terkontrol seperti isian
+ * lain di tab ini (dibaca lewat id saat simpan, lalu rupiahDigits); state hanya untuk petunjuk harga yang akan dibayar
+ * pembeli. Setting yang belum pernah disimpan tampil dengan harga bawaannya.
  */
-function HostingRenewalField({ stored }: { stored: string | undefined }) {
-  const initial = stored ?? String(HOSTING_RENEWAL_DEFAULT);
+function RupiahSettingField({
+  setting,
+  label,
+  stored,
+  fallback,
+  priceOf,
+  hint,
+}: {
+  setting: string;
+  label: string;
+  stored: string | undefined;
+  fallback: number;
+  /** Harga yang berlaku untuk nilai isian (sama dengan backend: kosong/0/tidak valid → bawaan) */
+  priceOf: (settings: SettingsMap) => number;
+  hint: (price: number) => React.ReactNode;
+}) {
+  const initial = stored ?? String(fallback);
   const [draft, setDraft] = useState(initial);
-  const price = hostingRenewalPrice({ [HOSTING_RENEWAL_SETTING]: rupiahDigits(draft) });
-  const hintId = `${HOSTING_RENEWAL_SETTING}_hint`;
+  const price = priceOf({ [setting]: rupiahDigits(draft) });
+  const hintId = `${setting}_hint`;
   return (
-    <Field
-      label="Hosting & jasa per tahun (mulai tahun ke-2)"
-      htmlFor={HOSTING_RENEWAL_SETTING}
-      hint={
-        <span id={hintId}>
-          Pembeli membayar {rupiahCompact(price)}/tahun ditambah perpanjangan domain sesuai daftar harga ekstensi di bawah. Kosong atau 0
-          = bawaan {rupiahCompact(HOSTING_RENEWAL_DEFAULT)}.
-        </span>
-      }
-    >
+    <Field label={label} htmlFor={setting} hint={<span id={hintId}>{hint(price)}</span>}>
       <Input
-        id={HOSTING_RENEWAL_SETTING}
-        name={HOSTING_RENEWAL_SETTING}
+        id={setting}
+        name={setting}
         type="number"
         inputMode="numeric"
         min={0}
@@ -550,6 +559,7 @@ const SiteSettings: React.FC = () => {
     const priceIncludesEl = document.getElementById('template_price_includes') as HTMLTextAreaElement | null;
     const priceNoteEl = document.getElementById('template_price_note') as HTMLTextAreaElement | null;
     const hostingRenewalEl = document.getElementById(HOSTING_RENEWAL_SETTING) as HTMLInputElement | null;
+    const addonPostsPriceEl = document.getElementById(ADDON_POSTS_PRICE_SETTING) as HTMLInputElement | null;
     // Markup DewaBiz: hanya bila isiannya tampil (tab Harga terbuka dan nilainya sudah dimuat)
     const domainMarkupEl = document.getElementById(DOMAIN_MARKUP_SETTING) as HTMLInputElement | null;
     // Teks pembuka /panduan (hanya bila tab Panduan terbuka; kosong = teks bawaan)
@@ -580,6 +590,8 @@ const SiteSettings: React.FC = () => {
       ...(priceNoteEl ? { template_price_note: priceNoteEl.value.trim() } : {}),
       // Hosting & jasa per tahun mulai tahun ke-2: angka saja (kosong = bawaan Rp500.000)
       ...(hostingRenewalEl ? { [HOSTING_RENEWAL_SETTING]: rupiahDigits(hostingRenewalEl.value) } : {}),
+      // Fitur Berita & Pengumuman, sekali bayar: angka saja (kosong = bawaan Rp350.000)
+      ...(addonPostsPriceEl ? { [ADDON_POSTS_PRICE_SETTING]: rupiahDigits(addonPostsPriceEl.value) } : {}),
       // Markup harga domain DewaBiz: bilangan bulat 0–500 (kosong = bawaan 25%)
       ...(domainMarkupEl ? { [DOMAIN_MARKUP_SETTING]: percentDigits(domainMarkupEl.value) } : {}),
 
@@ -884,9 +896,37 @@ const SiteSettings: React.FC = () => {
                 titleAs="h4"
                 subtitle="Mulai tahun ke-2 pembeli memperpanjang 1, 2, atau 3 tahun sekaligus dari Akun Saya: hosting & jasa ditambah domain per tahun. Tampil di halaman Harga dan saat perpanjangan."
               />
-              <HostingRenewalField stored={settings[HOSTING_RENEWAL_SETTING]} />
+              <RupiahSettingField
+                setting={HOSTING_RENEWAL_SETTING}
+                label="Hosting & jasa per tahun (mulai tahun ke-2)"
+                stored={settings[HOSTING_RENEWAL_SETTING]}
+                fallback={HOSTING_RENEWAL_DEFAULT}
+                priceOf={hostingRenewalPrice}
+                hint={(price) =>
+                  `Pembeli membayar ${rupiahCompact(price)}/tahun ditambah perpanjangan domain sesuai daftar harga ekstensi di bawah. Kosong atau 0 = bawaan ${rupiahCompact(HOSTING_RENEWAL_DEFAULT)}.`
+                }
+              />
               <DomainMarkupField />
               <DomainPriceList />
+            </Panel>
+
+            {/* Fitur tambahan berbayar (docs/platform/SITE-ADDONS-SPEC.md §7); harga dicatat di tagihan saat dibuat */}
+            <Panel className="space-y-4">
+              <PanelHeader
+                title="Fitur tambahan"
+                titleAs="h4"
+                subtitle="Fitur berbayar untuk template sekolah. Pembeli membelinya dari Akun Saya > Fitur tambahan; harganya juga tampil di halaman Harga."
+              />
+              <RupiahSettingField
+                setting={ADDON_POSTS_PRICE_SETTING}
+                label="Fitur Berita & Pengumuman (sekali bayar)"
+                stored={settings[ADDON_POSTS_PRICE_SETTING]}
+                fallback={ADDON_POSTS_PRICE_DEFAULT}
+                priceOf={addonPostsPrice}
+                hint={(price) =>
+                  `Pembeli membayar ${rupiahCompact(price)} sekali, aktif selama situsnya aktif. Tagihan yang sudah dibuat tetap memakai harga lamanya. Kosong atau 0 = bawaan ${rupiahCompact(ADDON_POSTS_PRICE_DEFAULT)}.`
+                }
+              />
             </Panel>
           </div>
         );

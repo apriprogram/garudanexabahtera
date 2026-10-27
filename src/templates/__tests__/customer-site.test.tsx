@@ -5,6 +5,10 @@
 // API; kepala halaman (siteSeo.ts); tulisan tidak ada / path tak dikenal = noindex; jumlah dilihat sekali per sesi;
 // gagal → Coba lagi; refresh gagal/tidak sah tidak menimpa preload; situs tidak ada & template tanpa fitur berita;
 // garis miring di akhir; daftar beranda kedua jenis di setiap rute; gulir, fokus H1, dan posisi gulir saat kembali.
+// Fitur berbayar Berita & Pengumuman (docs/platform/SITE-ADDONS-SPEC.md §6): tidak aktif (`addons.posts` false/tidak ada)
+// = berita biasa tanpa permintaan tulisan dan /berita… tidak ditemukan; aktif = section profesional.
+// Statistik kunjungan (docs/platform/SITE-STATS-SPEC.md §2): site_visit sekali per rute yang tampil (setelah datanya
+// siap), `first` dari penanda sesi gn-site-visit, utm_source halaman pertama, tidak untuk halaman tidak ditemukan.
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { useEffect } from 'react';
@@ -20,7 +24,8 @@ import { ANNOUNCEMENTS, NEWS, POST } from './fixtures/sitePosts';
 vi.setConfig({ testTimeout: 60_000 });
 
 const DOMAIN = 'smkharapan.sch.id';
-const SITE = { id: 7, template_code: 'cakrawala', domain: DOMAIN, content: { brand: { company_name: 'SMK Harapan Bangsa' } } };
+/** Situs dengan fitur Berita & Pengumuman aktif (get_site_public `addons.posts`, SITE-ADDONS-SPEC §3). */
+const SITE = { id: 7, template_code: 'cakrawala', domain: DOMAIN, content: { brand: { company_name: 'SMK Harapan Bangsa' } }, addons: { posts: true } };
 const SEO: SiteSeoPublic = { title: '', description: '', og_image: null, schema_type: '', indexable: true };
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -48,12 +53,20 @@ const defaultHandlers = (): Record<string, Handler> => ({
     return found ? json(200, { post: found }) : json(404, { error: 'Tulisan tidak ditemukan.', code: 'POST_NOT_FOUND' });
   },
   site_post_view: () => json(200, { views: 5 }),
+  site_visit: () => json(200, { success: true }),
 });
 
 /** URL GET yang diminta (urutan permintaan). */
 const gets = () => fetchMock.mock.calls.filter(([, init]) => !init || init.method !== 'POST').map(([input]) => String(input));
-const views = () =>
-  fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST').map(([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>);
+/** Body POST untuk aksi ini (urutan permintaan). */
+const posts = (action: string) =>
+  fetchMock.mock.calls
+    .filter(([input, init]) => init?.method === 'POST' && new URL(String(input), 'http://localhost').searchParams.get('action') === action)
+    .map(([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>);
+/** Jumlah dilihat tulisan (site_post_view) */
+const views = () => posts('site_post_view');
+/** Statistik kunjungan (site_visit, docs/platform/SITE-STATS-SPEC.md §2) */
+const visits = () => posts('site_visit');
 
 /**
  * Template lengkap = DOM besar: kueri role di jsdom lambat (ratusan ms per panggilan), jadi tunggu data lewat selektor
@@ -377,5 +390,154 @@ describe('CustomerSite: tanpa preload', () => {
     release();
     await appear(container, '[data-tpl-section="announcements"] a[href="/pengumuman/jadwal-ujian-akhir-semester"]');
     expect(container.textContent).not.toContain('Jadwal asesmen sumatif');
+  });
+});
+
+describe('CustomerSite: fitur Berita & Pengumuman tidak aktif', () => {
+  it.each([
+    ['addons.posts false', { ...SITE, addons: { posts: false } }],
+    ['tanpa field addons (backend/preload lama)', { ...SITE, addons: undefined }],
+  ])('%s: beranda berita biasa dari item CMS, tanpa get_site_posts', async (_, site) => {
+    handlers.get_site_public = () => json(200, { site });
+    const { container } = open('/');
+    await appear(container, '[data-tpl-section="news"]');
+    await settle();
+    expect(container.querySelectorAll('[data-pro-section]')).toHaveLength(0);
+    expect(container.querySelector('a[href^="/berita"], a[href^="/pengumuman"]')).toBeNull();
+    expect(container.textContent).not.toContain(NEWS[0].title);
+    expect(gets().some((url) => url.includes('get_site_post'))).toBe(false);
+    expect(gets()).toContain(apiUrl('get_site_seo', { site_id: 7 }));
+    expect(meta('canonical')).toBe(`https://${DOMAIN}/`);
+  });
+
+  it('/berita dan tulisan → "Halaman tidak ditemukan" (head notfound, noindex), tanpa permintaan tulisan & tanpa hitung dilihat', async () => {
+    handlers.get_site_public = () => json(200, { site: { ...SITE, addons: { posts: false } } });
+    for (const path of ['/berita', '/pengumuman/jadwal-ujian-akhir-semester']) {
+      open(path);
+      expect(await screen.findByRole('heading', { level: 1, name: 'Halaman tidak ditemukan' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Ke beranda' })).toHaveAttribute('href', '/');
+      await waitFor(() => expect(meta('robots')).toBe('noindex,follow'));
+      expect(document.title).toMatch(/^Halaman tidak ditemukan/);
+      expect(meta('canonical')).toBeNull();
+      cleanup();
+    }
+    await settle();
+    expect(gets().some((url) => url.includes('get_site_post'))).toBe(false);
+    expect(views()).toHaveLength(0);
+  });
+
+  it('fitur aktif: beranda memakai section profesional bersama', async () => {
+    const { container } = open('/');
+    await appear(container, '[data-pro-section="news"] a[href="/berita/juara-olimpiade-sains"]');
+    expect(container.querySelector('[data-pro-section="announcements"] a[href="/pengumuman/jadwal-ujian-akhir-semester"]')).not.toBeNull();
+  });
+});
+
+describe('CustomerSite: statistik kunjungan (site_visit, docs/platform/SITE-STATS-SPEC.md §2)', () => {
+  it('sekali per rute yang tampil: beranda (first, utm halaman pertama, referrer, keepalive), tulisan, daftar; hash di beranda tidak dihitung', async () => {
+    Object.defineProperty(document, 'referrer', { configurable: true, get: () => 'https://www.google.com/' });
+    try {
+      const { container } = open('/?utm_source=instagram');
+      await appear(container, '[data-tpl-section="news"] a[href="/berita/juara-olimpiade-sains"]');
+      await waitFor(() => expect(visits()).toHaveLength(1));
+      expect(visits()[0]).toEqual({ action: 'site_visit', site_id: 7, path: '/', referrer: 'https://www.google.com/', utm_source: 'instagram', first: true });
+      const [url, init] = fetchMock.mock.calls.find(([input]) => String(input).includes('action=site_visit'))!;
+      expect(String(url)).toBe('/api.php?action=site_visit');
+      expect(init).toMatchObject({ method: 'POST', keepalive: true });
+      expect(window.sessionStorage.getItem('gn-site-visit')).toBe('1');
+
+      // Tulisan: dihitung setelah tulisannya tampil, bukan halaman pertama lagi, utm tetap dari halaman pertama
+      fireEvent.click(within(container.querySelector<HTMLElement>('[data-tpl-section="news"]')!).getByRole('link', { name: NEWS[0].title }));
+      await until(() => expect(container.querySelector('h1')).toHaveTextContent(POST.title));
+      await waitFor(() => expect(visits()).toHaveLength(2));
+      expect(visits()[1]).toEqual({ action: 'site_visit', site_id: 7, path: '/berita/juara-olimpiade-sains', referrer: 'https://www.google.com/', utm_source: 'instagram', first: false });
+
+      // Daftar berita lewat remah roti
+      fireEvent.click(within(container.querySelector('main')!).getByRole('navigation', { name: 'Breadcrumb' }).querySelector('a[href="/berita"]')!);
+      await appear(container, '[data-site-page="list"]');
+      await waitFor(() => expect(visits()).toHaveLength(3));
+      expect(visits()[2]).toMatchObject({ path: '/berita', first: false });
+
+      // Menu "Profil" → beranda "/#tentang" = rute beranda lagi (dihitung); menu yang sama di beranda = tetap satu
+      fireEvent.click(within(container.querySelector('header')!).getAllByRole('link', { name: 'Profil' })[0]);
+      await appear(container, '[data-tpl-section="news"]');
+      await waitFor(() => expect(visits()).toHaveLength(4));
+      expect(visits()[3]).toMatchObject({ path: '/', first: false });
+      fireEvent.click(within(container.querySelector('header')!).getAllByRole('link', { name: 'Profil' })[0]);
+      await settle();
+      expect(visits()).toHaveLength(4);
+    } finally {
+      delete (document as { referrer?: string }).referrer;
+    }
+  });
+
+  it('tulisan: dikirim setelah tulisannya dimuat; tidak dihitung: path tak dikenal, tulisan tidak ada, fitur tidak aktif', async () => {
+    let release: () => void = () => undefined;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    handlers.get_site_post = async () => {
+      await pending;
+      return json(200, { post: POST });
+    };
+    const { container } = open('/berita/juara-olimpiade-sains');
+    await appear(container, 'header');
+    await settle();
+    expect(visits()).toHaveLength(0);
+    release();
+    await until(() => expect(container.querySelector('h1')).toHaveTextContent(POST.title));
+    await waitFor(() => expect(visits()).toHaveLength(1));
+    expect(visits()[0]).toMatchObject({ path: '/berita/juara-olimpiade-sains', first: true, utm_source: '', referrer: '' });
+    cleanup();
+    fetchMock.mockClear();
+    handlers = defaultHandlers();
+
+    // Path tak dikenal
+    const unknown = open('/tentang-kami');
+    await until(() => expect(unknown.container.querySelector('h1')).toHaveTextContent('Halaman tidak ditemukan'));
+    await settle();
+    cleanup();
+    // Tulisan tidak ada: server sudah menjawab 404 (preload path null) / API 404
+    preload(null, {});
+    const missing = open('/berita/sudah-dihapus');
+    expect(missing.container.querySelector('h1')).toHaveTextContent('Berita tidak ditemukan');
+    await settle();
+    cleanup();
+    resetPreload();
+    const gone = open('/pengumuman/tidak-ada');
+    await until(() => expect(gone.container.querySelector('h1')).toHaveTextContent('Pengumuman tidak ditemukan'));
+    await settle();
+    cleanup();
+    // Fitur Berita & Pengumuman tidak aktif: /berita = tidak ditemukan
+    handlers.get_site_public = () => json(200, { site: { ...SITE, addons: { posts: false } } });
+    open('/berita');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Halaman tidak ditemukan' })).toBeInTheDocument();
+    await settle();
+    expect(visits()).toHaveLength(0);
+  });
+
+  it('garis miring di akhir dihitung sekali (path tujuan); penanda sesi ada → first false; refresh & galat kirim tidak mengulang', async () => {
+    const { container } = open('/pengumuman/');
+    await until(() => expect(router.pathname).toBe('/pengumuman'));
+    await appear(container, '[data-site-page="list"] a[href="/pengumuman/jadwal-ujian-akhir-semester"]');
+    await settle();
+    expect(visits()).toEqual([{ action: 'site_visit', site_id: 7, path: '/pengumuman', referrer: '', utm_source: '', first: true }]);
+    cleanup();
+    fetchMock.mockClear();
+
+    // Sesi yang sama (penanda ada), data preload lalu data terbaru, kirim gagal: tetap satu, tanpa galat di halaman
+    handlers.site_visit = () => Promise.reject(new TypeError('Failed to fetch'));
+    preload('/', {
+      [apiUrl('get_site_posts', { site_id: 7, kind: 'berita', limit: 12 })]: { posts: NEWS, total: 2 },
+      [apiUrl('get_site_posts', { site_id: 7, kind: 'pengumuman', limit: 12 })]: { posts: ANNOUNCEMENTS, total: 1 },
+    });
+    const home = open('/');
+    await waitFor(() => expect(visits()).toHaveLength(1));
+    expect(visits()[0]).toMatchObject({ path: '/', first: false });
+    await waitFor(() => expect(gets()).toContain(apiUrl('get_site_seo', { site_id: 7 })));
+    await settle();
+    await settle();
+    expect(visits()).toHaveLength(1);
+    expect(home.container.querySelector('[data-tpl-section="news"]')).not.toBeNull();
   });
 });

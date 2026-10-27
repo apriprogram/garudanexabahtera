@@ -1,16 +1,18 @@
 // Situs aktif pembeli di domain utama (/situs/:siteId/*): konten dari get_site_public {site_id}, dengan bar pratinjau tipis.
 // Halaman di dalamnya sama dengan domain pembeli (/situs/12/berita, /situs/12/berita/{slug}; basePath "/situs/12"), tetapi
-// tanpa canonical & selalu noindex (domain null di applySiteSeoHead) dan tanpa menghitung jumlah dilihat.
+// tanpa canonical & selalu noindex (domain null di applySiteSeoHead) dan tanpa menghitung jumlah dilihat. Fitur Berita &
+// Pengumuman tidak aktif (`site.addons.posts`) = berita biasa: hanya beranda, tulisan tidak diminta (SITE-ADDONS-SPEC §6).
+// Tombol bagikan tulisan memakai URL di domain pembeli, bukan alamat pratinjau.
 import { ExternalLink, Eye, Home as HomeIcon, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getTemplate, type SiteContent } from '../../templates';
+import type { SiteContent } from '../../templates';
 import { SiteRenderer } from '../../templates/SiteRenderer';
 import { SiteStatus } from '../../templates/SiteStatus';
 import type { SiteData } from '../../templates/shared/siteData';
 import { parseSiteRoute, servedRoute, sitePath } from '../../templates/siteRoutes';
 import { applySiteSeoHead, removeSiteSeoHead } from '../../templates/siteSeo';
-import { useSiteNavigate, useSitePages, useSitePublic } from '../../templates/useSitePublic';
+import { siteOriginOf, sitePostsEnabled, useSiteNavigate, useSitePages, useSitePublic } from '../../templates/useSitePublic';
 
 const DOMAIN_PATTERN = /^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/i;
 
@@ -24,11 +26,15 @@ export default function SitePreview() {
   const route = useMemo(() => parseSiteRoute(path), [path]);
   const { state, retry } = useSitePublic(valid ? { site_id: id } : null);
   const site = state.status === 'ready' ? state.site : null;
-  const hasPosts = getTemplate(site?.template_code)?.features?.posts === true;
+  const hasPosts = sitePostsEnabled(site);
   const pages = useSitePages(site ? site.id : null, route, { posts: hasPosts });
   const { navigate, historyPop } = useSiteNavigate(basePath);
-  const data = useMemo<SiteData>(() => ({ ...pages.data, basePath, navigate, historyPop }), [pages.data, basePath, navigate, historyPop]);
-  // Rute untuk kepala halaman: template tanpa fitur tulisan → /berita dsb. = tidak ditemukan (sama dengan domain pembeli)
+  const siteOrigin = siteOriginOf(site?.domain);
+  const data = useMemo<SiteData>(
+    () => ({ ...pages.data, basePath, siteOrigin, navigate, historyPop }),
+    [pages.data, basePath, siteOrigin, navigate, historyPop],
+  );
+  // Rute untuk kepala halaman: tanpa fitur aktif → /berita dsb. = tidak ditemukan (sama dengan domain pembeli)
   const headRoute = useMemo(() => servedRoute(route, hasPosts), [route, hasPosts]);
   const post = headRoute.kind === 'post' ? pages.data.post : undefined;
   const [bannerOpen, setBannerOpen] = useState(true);

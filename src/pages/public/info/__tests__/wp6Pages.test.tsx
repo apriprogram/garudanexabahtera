@@ -3,7 +3,8 @@
 // Halaman WP6 (docs/platform/SEO-PLAN.md §5.6) dirender seperti prerender (StaticRouter + data preload), lalu dihidrasi:
 // tanpa hydration mismatch, tepat satu H1, isi cukup panjang, harga hanya dari data, jasa custom tanpa angka, fakta null
 // tidak dirender, dan FAQPage di head sama persis dengan FAQ yang terlihat. /harga juga memuat harga domain per ekstensi,
-// biaya tahun ke-2 (hosting & jasa dari setting + domain) dan cara memperpanjang (pemilik 2026-10-25).
+// biaya tahun ke-2 (hosting & jasa dari setting + domain) dan cara memperpanjang (pemilik 2026-10-25), serta harga fitur
+// tambahan Berita & Pengumuman untuk template sekolah dari setting (SITE-ADDONS-SPEC.md §7).
 import { StrictMode } from 'react';
 import { act } from '@testing-library/react';
 import { hydrateRoot, type Root } from 'react-dom/client';
@@ -12,6 +13,7 @@ import * as Router from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../../../../App';
 import { faqItems, MOBILE_SERVICE_FAQ_IDS, WEB_SERVICE_FAQ_IDS } from '../../../../content/faq';
+import { addonPostsPrice } from '../../../../hooks/useSiteSettings';
 import { DOMAIN_TLDS } from '../../../../lib/domainPricing';
 import { FIXTURE_BUILT_AT, FIXTURE_SETTINGS, FIXTURE_TEMPLATES, fixtureFetch, fixturePreload } from '../../../../lib/__tests__/preloadFixture';
 import { PRELOAD_URLS, primePreload, resetPreload, seoDataFromApi, type PreloadData } from '../../../../lib/preload';
@@ -272,6 +274,12 @@ describe('halaman WP6: prerender + hidrasi', () => {
     // Perbandingan versi lengkap: baris tahun berikutnya memakai angka hosting yang sama
     expect(textOf('#perbandingan')).toContain('Hosting & jasa Rp500.000/tahun + domain sesuai ekstensi');
 
+    // Fitur tambahan template sekolah (SITE-ADDONS-SPEC.md §7): harga bawaan Rp350.000 sekali bayar + penjelasan
+    const addon = textOf('#daftar-harga #fitur-tambahan');
+    expect(addon).toContain('Fitur tambahan template sekolah: Berita & Pengumuman, Rp350.000 sekali bayar');
+    expect(addon).toContain('halaman berita & pengumuman sendiri dengan tampilan yang lebih profesional');
+    expect(addon).toContain('tanpa fitur ini, berita tampil sebagai daftar biasa');
+
     // Meta description: domain terpisah & biaya perpanjangan, tanpa "termasuk domain"
     const description = getHead('/harga', DATA).description;
     expect(description).toContain('termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
@@ -289,6 +297,27 @@ describe('halaman WP6: prerender + hidrasi', () => {
       'Rp800.000',
     ]);
     expect(el.querySelector('#perpanjangan')?.textContent).toContain('hosting & jasa Rp750.000/tahun');
+  });
+
+  it('/harga: harga fitur Berita & Pengumuman dari Pengaturan website > Harga (addon_posts_price)', async () => {
+    const { problems, el } = await hydrate('/harga', { addon_posts_price: '400000' });
+    expect(problems).toEqual([]);
+    expect((el.querySelector('#fitur-tambahan')?.textContent ?? '').replace(/\s+/g, ' ')).toContain(
+      'Fitur tambahan template sekolah: Berita & Pengumuman, Rp400.000 sekali bayar',
+    );
+    // Kosong, 0, atau tidak valid = bawaan Rp350.000 (sama dengan sa_price di backend); desimal dibulatkan
+    expect(addonPostsPrice({})).toBe(350_000);
+    expect(addonPostsPrice({ addon_posts_price: '' })).toBe(350_000);
+    expect(addonPostsPrice({ addon_posts_price: '0' })).toBe(350_000);
+    expect(addonPostsPrice({ addon_posts_price: '-5' })).toBe(350_000);
+    expect(addonPostsPrice({ addon_posts_price: 'abc' })).toBe(350_000);
+    expect(addonPostsPrice({ addon_posts_price: ' 299999.5 ' })).toBe(300_000);
+    // = priceCases di __tests__/backend/site-addons.test.ts (sa_price PHP = Node): trim ala PHP (NBSP tidak dibuang),
+    // dibulatkan dari teksnya tanpa float, maksimal 1e12
+    const PRICE_CASES: [string, number][] = [['1e5', 350_000], ['350000.4999999999', 350_000], ['0.49999999999999994', 350_000],
+      ['0.5', 1], ['0001000', 1000], ['1000000000000', 1e12], ['1000000000001', 350_000], ['99999999999999999999', 350_000],
+      [' 250000', 350_000], ['250000\t', 250_000], ['  250000 ', 250_000]];
+    for (const [value, price] of PRICE_CASES) expect(addonPostsPrice({ addon_posts_price: value }), JSON.stringify(value)).toBe(price);
   });
 
   it('/tentang: fakta yang diketahui saja + direksi, kontak & peta (tanpa alamat tertulis, NIB, produk sendiri)', async () => {

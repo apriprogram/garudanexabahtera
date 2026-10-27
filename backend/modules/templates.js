@@ -37,6 +37,11 @@ import {
 } from './domains.js';
 // Identitas perusahaan (kop nota) = pd_settings.company dokumen proyek
 import { pdSettings } from './project_docs/core.js';
+// Fitur tambahan berbayar (docs/platform/SITE-ADDONS-SPEC.md): flag get_site_public / customer_get_site, notifikasi
+// Midtrans GNF-…, nota, laci pesanan admin. site_addons.js mengimpor helper di bawah dari modul ini (impor melingkar
+// aman: keduanya hanya memakai impor di dalam fungsi, tidak saat modul dievaluasi).
+import { addonInvoiceItems, addonNotification, customerAddonInvoice, orderAddons, siteAddonFlags } from './site_addons.js';
+import { hasPosts } from './site_posts.js';
 
 const STATUS_LABEL = {
   menunggu_pembayaran: 'Menunggu Pembayaran',
@@ -59,7 +64,7 @@ const SITE_IMAGE_EXTS = ['png', 'jpg', 'webp', 'gif']; // customer CMS images: r
 const MAX_PENDING_ORDERS = 5; // unpaid orders one customer may have at the same time
 const FIRST_ORDER_DISCOUNT_PERCENT = 20; // automatic discount on an account's first template order (owner 2026-10-23)
 const FIRST_ORDER_DISCOUNT_CODE = 'PERTAMA20';
-const SNAP_REUSE_HOURS = 23; // a Snap token lives 24 hours
+export const SNAP_REUSE_HOURS = 23; // a Snap token lives 24 hours
 // Masa aktif & perpanjangan (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md §5). Same values in templates.php and
 // src/lib/domainPricing.ts.
 const RENEWAL_STATUS_LABEL = {
@@ -68,8 +73,10 @@ const RENEWAL_STATUS_LABEL = {
   dibatalkan: 'Dibatalkan',
 };
 const RENEWAL_YEARS = [1, 2, 3];
-// Log events whose note the customer sees (orderLogs); renewal notes are written by the server only
-const CUSTOMER_NOTE_EVENTS = ['rejected', 'renewal_created', 'renewal_paid', 'renewal_cancelled'];
+// Log events whose note the customer sees (orderLogs); renewal and add-on notes are written by the server only (add-on:
+// docs/platform/SITE-ADDONS-SPEC.md §4.1; addon_granted / addon_revoked may carry a staff note, so they stay internal)
+const CUSTOMER_NOTE_EVENTS = ['rejected', 'renewal_created', 'renewal_paid', 'renewal_cancelled', 'addon_created', 'addon_paid',
+  'addon_cancelled'];
 const RENEWAL_MAX_YEARS_AHEAD = 10; // a period never ends more than 10 years from now (registry limit)
 const HOSTING_RENEWAL_DEFAULT = 500000; // hosting & jasa per year when setting template_hosting_renewal_price is unset
 const AVATAR_MAX_BYTES = 2097152; // profile photo (2 MB), raster only
@@ -78,7 +85,7 @@ const MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli
 const RENEWAL_NOT_ACTIVE_MESSAGE = 'Perpanjangan hanya untuk pesanan yang situsnya sudah aktif.';
 const RENEWAL_NO_PRICE_MESSAGE = 'Perpanjangan online untuk domain ini belum tersedia. Hubungi kami via WhatsApp.';
 const RENEWAL_TOO_LONG_MESSAGE = 'Masa aktif paling lama 10 tahun ke depan. Pilih masa perpanjangan yang lebih pendek.';
-const INVOICE_NOT_AVAILABLE_MESSAGE = 'Nota tersedia setelah pembayaran lunas.';
+export const INVOICE_NOT_AVAILABLE_MESSAGE = 'Nota tersedia setelah pembayaran lunas.';
 // Current end of the hosting / domain period; an active order without one (activated between migration 026 and the
 // deploy of this code) ends 1 year after activation. Same expressions in templates.php.
 const SERVICE_END_SQL = 'COALESCE(service_expires_at, DATE_ADD(activated_at, INTERVAL 1 YEAR), NOW())';
@@ -433,7 +440,9 @@ async function showcaseView({ pool, input, req }) {
   return { view_count: Number((await dbOne(pool, 'SELECT view_count FROM showcase_stats WHERE item_key = ?', [key])).view_count) };
 }
 
-// A live customer site, by id (/situs/:siteId) or by host name (SiteHostGate). Only status active.
+// A live customer site, by id (/situs/:siteId) or by host name (SiteHostGate). Only status active. addons.posts = news &
+// announcements switched on (post-capable template + paid add-on, backend/modules/site_addons.js); backend/site.php
+// preloads the same shape.
 async function getSitePublic(ctx) {
   const { pool, input } = ctx;
   const siteId = inInt(ctx, 'site_id');
@@ -456,6 +465,7 @@ async function getSitePublic(ctx) {
       template_code: row.template_code,
       domain: row.domain,
       content: contentOut(row.content),
+      addons: await siteAddonFlags(pool, row),
     },
   };
 }
@@ -587,9 +597,13 @@ async function midtransNotification({ pool, input }) {
   if (orderId === '' || signature === '' || !safeEqual(expected, signature)) {
     throw new ApiError('Signature tidak valid.', 403, 'INVALID_SIGNATURE');
   }
-  // Tagihan perpanjangan (GNR-…): signature sama, jalur pembayaran sendiri
+  // Tagihan perpanjangan (GNR-…) dan fitur tambahan (GNF-…, site_addons.js): signature sama, jalur pembayaran sendiri
   if (orderId.startsWith('GNR-')) {
     await renewalNotification(pool, cfg, input, orderId, gross);
+    return {};
+  }
+  if (orderId.startsWith('GNF-')) {
+    await addonNotification(pool, cfg, input, orderId, gross);
     return {};
   }
 
@@ -810,7 +824,7 @@ async function customerCancelOrder(ctx) {
 
 async function customerGetSite(ctx) {
   const user = requireCustomer(ctx.user);
-  return { site: siteOut(await customerSite(ctx, user, inInt(ctx, 'site_id')), false) };
+  return { site: await customerSiteOut(ctx.pool, await customerSite(ctx, user, inInt(ctx, 'site_id'))) };
 }
 
 // Saves the CMS content. data: URIs (images) become uploaded files under assets/sites/<site_id>/.
@@ -857,7 +871,7 @@ async function customerSaveSiteContent(ctx) {
   }
   await dbRun(pool, 'UPDATE template_sites SET content = ? WHERE id = ? AND user_id = ?', [json, siteId, user.id]);
   await cleanupSiteAssets(siteId, site.content, json);
-  return { site: siteOut(await customerSite(ctx, user, siteId), false) };
+  return { site: await customerSiteOut(pool, await customerSite(ctx, user, siteId)) };
 }
 
 // Runs the same payment transition as a Midtrans settlement (local testing without Midtrans)
@@ -1001,28 +1015,35 @@ function profileOut(r) {
   };
 }
 
-// Data nota pembelian (pesanan lunas) atau nota perpanjangan (tagihan lunas) + identitas perusahaan untuk kop
+// Data nota pembelian (pesanan lunas), nota perpanjangan (tagihan lunas, renewal_number) atau nota fitur tambahan (tagihan
+// GNF- lunas dan berbayar, addon_number; site_addons.js) + identitas perusahaan untuk kop
 async function customerGetInvoice(ctx) {
   const { pool } = ctx;
   const user = requireCustomer(ctx.user);
   const order = await customerOrder(ctx, user);
   const number = phpTrim(inStr(ctx.input, 'renewal_number')).toUpperCase();
+  const addonNumber = phpTrim(inStr(ctx.input, 'addon_number')).toUpperCase();
   let renewal = null;
+  let addon = null;
   if (number !== '') {
     renewal = await dbOne(pool, `${renewalSelect()} WHERE r.renewal_number = ? AND r.order_id = ? LIMIT 1`, [number, Number(order.id)]);
     if (!renewal) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
     if (renewal.status !== 'lunas') throw new ApiError(INVOICE_NOT_AVAILABLE_MESSAGE, 409, 'INVOICE_NOT_AVAILABLE');
+  } else if (addonNumber !== '') {
+    addon = await customerAddonInvoice(pool, order, addonNumber);
   } else if (order.paid_at === null) {
     throw new ApiError(INVOICE_NOT_AVAILABLE_MESSAGE, 409, 'INVOICE_NOT_AVAILABLE');
   }
   return {
     order: orderOut(order, false),
     renewal: renewal ? renewalOut(renewal, false) : null,
+    addon,
     company: (await pdSettings({ db: pool })).company,
   };
 }
 
-// Daftar nota pembeli (menu Nota): pesanan yang sudah dibayar + perpanjangan lunas, terbaru dulu
+// Daftar nota pembeli (menu Nota): pesanan yang sudah dibayar + perpanjangan lunas + fitur tambahan lunas berbayar
+// (type fitur, site_addons.js), terbaru dulu
 async function customerGetInvoices(ctx) {
   const { pool } = ctx;
   const user = requireCustomer(ctx.user);
@@ -1033,6 +1054,7 @@ async function customerGetInvoices(ctx) {
       invoice_number: `INV-${o.order_number}`,
       order_number: o.order_number,
       renewal_number: null,
+      addon_number: null,
       title: o.template_name,
       domain: o.domain || o.domain_primary,
       years: null,
@@ -1049,6 +1071,7 @@ async function customerGetInvoices(ctx) {
       invoice_number: `INV-${r.renewal_number}`,
       order_number: r.order_number,
       renewal_number: r.renewal_number,
+      addon_number: null,
       title: r.template_name,
       domain: r.domain,
       years: Number(r.years),
@@ -1059,6 +1082,7 @@ async function customerGetInvoices(ctx) {
       order_status: null,
     });
   }
+  items.push(...(await addonInvoiceItems(pool, user.id)));
   // strcmp() like PHP: plain code-unit order of 'YYYY-MM-DD HH:MM:SS' and the invoice numbers
   const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
   items.sort((a, b) => cmp(String(b.paid_at), String(a.paid_at)) || cmp(b.invoice_number, a.invoice_number));
@@ -1535,11 +1559,15 @@ async function adminGetTemplateOrder(ctx) {
   requireStaff(ctx.user);
   const order = await staffOrder(ctx);
   const site = await dbOne(pool, `${siteSelect()} WHERE s.order_id = ? LIMIT 1`, [Number(order.id)]);
+  // Fitur tambahan situs pesanan ini (addons: keadaan per fitur, kosong tanpa situs; addon_orders: semua tagihannya)
+  const addons = await orderAddons(pool, site, Number(order.id));
   return {
     order: orderOut(order, true),
     logs: await orderLogs(pool, Number(order.id), true),
     site: site ? siteOut(site, true) : null,
     renewals: await orderRenewals(pool, Number(order.id), true),
+    addons: addons.addons,
+    addon_orders: addons.addon_orders,
   };
 }
 
@@ -1922,29 +1950,41 @@ async function createSnap(pool, order) {
 }
 
 // Best effort: a cancelled/rejected order's open Midtrans transaction is expired so it cannot be paid anymore
-async function midtransExpire(order) {
+export async function midtransExpire(order) {
   const cfg = midtransConfig();
   if (cfg.serverKey === '' || !order.midtrans_order_id || order.payment_status !== 'pending') return;
   const result = await midtransRequest('POST', `${cfg.apiBase}/v2/${encodeURIComponent(order.midtrans_order_id)}/expire`, cfg.serverKey, null, 5);
   if (result.code !== 200) console.error(`[midtrans] expire ${order.midtrans_order_id}: HTTP ${result.code} ${result.error}`);
 }
 
-function midtransConfig() {
+export function midtransConfig() {
   const flag = (key) => ['1', 'true', 'yes'].includes(envValue(key, '0').toLowerCase());
   const production = flag('MIDTRANS_IS_PRODUCTION');
   const clientKey = envValue('MIDTRANS_CLIENT_KEY');
+  const test = midtransTestUrl();
   return {
     serverKey: envValue('MIDTRANS_SERVER_KEY'),
     clientKey: clientKey !== '' ? clientKey : null,
     isProduction: production,
     simulator: !production && flag('MIDTRANS_SIMULATOR'),
-    snapUrl: production ? 'https://app.midtrans.com/snap/v1/transactions' : 'https://app.sandbox.midtrans.com/snap/v1/transactions',
-    apiBase: production ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com',
+    snapUrl: test !== '' ? `${test}/snap/v1/transactions`
+      : production ? 'https://app.midtrans.com/snap/v1/transactions' : 'https://app.sandbox.midtrans.com/snap/v1/transactions',
+    apiBase: test !== '' ? test : production ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com',
   };
 }
 
-// HTTPS JSON request to Midtrans with Basic auth (server key). Never throws.
-async function midtransRequest(method, url, serverKey, body, timeoutSeconds) {
+// Tes saja: MIDTRANS_TEST_URL (http://127.0.0.1:<port> atau http://localhost:<port>) menggantikan Snap dan API Midtrans
+// dengan server palsu (__tests__/backend/site-addons.test.ts). Diabaikan bila MIDTRANS_IS_PRODUCTION aktif atau hostnya
+// lain, jadi server key tidak pernah terkirim ke luar mesin ini. Same rule in templates.php (pf_midtrans_test_url).
+function midtransTestUrl() {
+  if (['1', 'true', 'yes'].includes(envValue('MIDTRANS_IS_PRODUCTION', '0').toLowerCase())) return '';
+  const url = envValue('MIDTRANS_TEST_URL').replace(/\/+$/, '');
+  return /^http:\/\/(127\.0\.0\.1|localhost)(:[0-9]{1,5})?$/.test(url) ? url : '';
+}
+
+// HTTPS JSON request to Midtrans with Basic auth (server key). Never throws. Plain http only to the fake server of
+// MIDTRANS_TEST_URL (tests): midtransConfig() never builds another http URL.
+export async function midtransRequest(method, url, serverKey, body, timeoutSeconds) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutSeconds * 1000);
   try {
@@ -1985,7 +2025,7 @@ async function orderByMidtransId(pool, midtransOrderId) {
 }
 
 // Notification fields kept in the log: no signature, no card data
-function paymentPayload(data) {
+export function paymentPayload(data) {
   const keep = ['order_id', 'transaction_id', 'transaction_status', 'fraud_status', 'payment_type', 'status_code', 'status_message',
     'gross_amount', 'currency', 'transaction_time', 'settlement_time', 'expiry_time', 'bank', 'store', 'issuer', 'acquirer'];
   const out = {};
@@ -2001,12 +2041,12 @@ function paymentPayload(data) {
   return out;
 }
 
-function sameAmount(gross, price) {
+export function sameAmount(gross, price) {
   return isNumeric(gross) && Math.round(Number(gross)) === Math.round(Number(price));
 }
 
 // GN-YYYYMMDD-XXXXXX (pesanan) or GNR-YYYYMMDD-XXXXXX (perpanjangan)
-function newOrderNumber(prefix = 'GN') {
+export function newOrderNumber(prefix = 'GN') {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let suffix = '';
   for (let i = 0; i < 6; i++) suffix += chars[crypto.randomInt(0, 36)];
@@ -2015,7 +2055,7 @@ function newOrderNumber(prefix = 'GN') {
   return `${prefix}-${ymd}-${suffix}`;
 }
 
-async function addLog(db, orderId, event, from, to, actorType, actorId, note = null, payload = null) {
+export async function addLog(db, orderId, event, from, to, actorType, actorId, note = null, payload = null) {
   await dbRun(db, `INSERT INTO template_order_logs (order_id, event, from_status, to_status, actor_type, actor_id, note, payload)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
     orderId, event, from, to, actorType, actorId,
@@ -2114,7 +2154,7 @@ async function orderLogs(pool, orderId, staff) {
   return rows.map((r) => {
     let actorName = names[r.actor_type] ?? r.user_name;
     if (r.actor_type === 'staff' && !staff) actorName = 'Tim Garuda Nexa';
-    // Customers only get the rejection reason and the server-written renewal notes; other notes are internal
+    // Customers only get the rejection reason and the server-written renewal / add-on notes; other notes are internal
     // (admin notes, Midtrans/test-mode details)
     const note = staff || CUSTOMER_NOTE_EVENTS.includes(r.event) ? r.note : null;
     const log = {
@@ -2132,7 +2172,7 @@ async function orderLogs(pool, orderId, staff) {
   });
 }
 
-function siteSelect(withContent = true) {
+export function siteSelect(withContent = true) {
   return `SELECT s.id, s.order_id, s.user_id, s.template_id, s.template_code, s.domain, s.status, s.activated_at, s.updated_at, ${
     withContent ? 's.content' : 'NULL AS content'
   }, o.order_number, o.template_name, o.service_expires_at, o.domain_expires_at, u.name AS owner_name, u.email AS owner_email
@@ -2169,6 +2209,16 @@ function siteOut(r, staff) {
     out.owner_name = r.owner_name;
     out.owner_email = r.owner_email;
   }
+  return out;
+}
+
+// Site for its owner (customer_get_site, customer_save_site_content): siteOut + addons (SiteAddonFlags: posts = news &
+// announcements switched on) + posts_capable (the template has news & announcements; the add-on unlocks them). Same as
+// pf_customer_site_out()
+async function customerSiteOut(pool, r) {
+  const out = siteOut(r, false);
+  out.addons = await siteAddonFlags(pool, r);
+  out.posts_capable = hasPosts(String(r.template_code));
   return out;
 }
 
@@ -2300,7 +2350,7 @@ async function deleteGenerated(path, section) {
 // ════════════════════════════════════════════════════════════════════════════
 
 // Every value is bound; dates come back as 'YYYY-MM-DD HH:MM:SS' strings like mysqli
-async function dbRun(db, sql, params = []) {
+export async function dbRun(db, sql, params = []) {
   try {
     const [result] = await db.query({ sql, values: params, dateStrings: true });
     return result;
@@ -2310,40 +2360,40 @@ async function dbRun(db, sql, params = []) {
   }
 }
 
-async function dbAll(db, sql, params = []) {
+export async function dbAll(db, sql, params = []) {
   return dbRun(db, sql, params);
 }
 
-async function dbOne(db, sql, params = []) {
+export async function dbOne(db, sql, params = []) {
   const rows = await dbRun(db, sql, params);
   return rows[0] || null;
 }
 
-function requireCustomer(user) {
+export function requireCustomer(user) {
   if (!user) throw new ApiError('Silakan masuk terlebih dahulu.', 401, 'UNAUTHORIZED');
   if (user.role !== 'customer') throw new ApiError('Akses ditolak: aksi ini khusus akun pembeli.', 403, 'FORBIDDEN');
   return { ...user, id: Number(user.id) };
 }
 
-function requireStaff(user) {
+export function requireStaff(user) {
   if (!user) throw new ApiError('Sesi tidak valid atau sudah berakhir. Silakan login kembali.', 401, 'UNAUTHORIZED');
   if (user.role !== 'admin' && user.role !== 'user') throw new ApiError('Akses ditolak.', 403, 'FORBIDDEN');
   return { ...user, id: Number(user.id) };
 }
 
 // Throws one VALIDATION error carrying every field message ({error, code, errors: {field: message}})
-function validate(errors) {
+export function validate(errors) {
   const keys = Object.keys(errors);
   if (keys.length) throw new ApiError(errors[keys[0]], 400, 'VALIDATION', errors);
 }
 
-function tooManyAttempts(seconds) {
+export function tooManyAttempts(seconds) {
   throw new ApiError(`Terlalu banyak percobaan. Coba lagi dalam ${Math.max(1, Math.ceil(seconds / 60))} menit.`, 429, null, null,
     { 'Retry-After': String(seconds) });
 }
 
 // Trimmed text field; null when empty (and optional) or invalid (message in errors[key])
-function vStr(input, key, label, max, required, errors, min = 0) {
+export function vStr(input, key, label, max, required, errors, min = 0) {
   const raw = input[key] ?? null;
   if (raw !== null && (typeof raw === 'object' || typeof raw === 'boolean')) {
     errors[key] = `${label} tidak valid.`;
@@ -2443,22 +2493,22 @@ function jsonList(value) {
 }
 
 // Rupiah as a JSON number: '1500000.00' -> 1500000
-function num(value) {
+export function num(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
 // Raw scalar as a string, untrimmed (Midtrans signs the exact values); '' for booleans/arrays/objects/missing like pf_scalar
-function rawScalar(input, key) {
+export function rawScalar(input, key) {
   const value = input[key] ?? '';
   return isScalar(value) && typeof value !== 'boolean' ? String(value) : '';
 }
 
 const isScalar = (v) => typeof v === 'string' || typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v));
 const scalarString = (v) => (v === true ? '1' : v === false ? '' : String(v));
-const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+export const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
-function inStr(input, key, fallback = '') {
+export function inStr(input, key, fallback = '') {
   const v = input[key];
   if (v === null || v === undefined) return String(fallback);
   if (typeof v === 'object') return JSON.stringify(v);
@@ -2467,7 +2517,7 @@ function inStr(input, key, fallback = '') {
 }
 
 // Integer input; like api.php's in_int it falls back to the query string
-function inInt(ctx, key, fallback = 0) {
+export function inInt(ctx, key, fallback = 0) {
   const v = ctx.input[key] ?? ctx.query[key] ?? null;
   return isNumeric(v) ? Math.trunc(Number(v)) : fallback;
 }
@@ -2478,9 +2528,9 @@ function isNumeric(v) {
 }
 
 // PHP trim(): only ASCII whitespace and NUL
-const phpTrim = (s) => String(s).replace(/^[ \t\n\r\0\x0B]+|[ \t\n\r\0\x0B]+$/g, '');
+export const phpTrim = (s) => String(s).replace(/^[ \t\n\r\0\x0B]+|[ \t\n\r\0\x0B]+$/g, '');
 
-const mbSubstr = (s, start, length) => [...String(s)].slice(start, start + length).join('');
+export const mbSubstr = (s, start, length) => [...String(s)].slice(start, start + length).join('');
 
 function parseJson(text) {
   try {
@@ -2583,7 +2633,7 @@ function safeEqual(a, b) {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
 
-function envValue(key, fallback = '') {
+export function envValue(key, fallback = '') {
   const v = process.env[key];
   return v === undefined || v === '' ? fallback : v;
 }

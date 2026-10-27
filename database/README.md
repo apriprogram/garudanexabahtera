@@ -26,7 +26,10 @@ database/
 │   ├── …                                           # 012–025: lihat catatan per migrasi di bawah
 │   ├── 2026-10-25_026_domain_renewal_profile.sql   # domain berbayar, masa aktif, template_renewals, profil pembeli
 │   ├── 2026-10-25_027_google_sign_in.sql           # users.google_sub: masuk & daftar pembeli dengan Google
-│   └── 2026-10-26_028_bestari_template.sql         # data: katalog Bestari (SMA), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-26_028_bestari_template.sql         # data: katalog Bestari (SMA), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-26_029_site_posts_seo.sql           # berita & pengumuman template sekolah + SEO situs pembeli
+│   ├── 2026-10-27_030_site_addons.sql              # fitur tambahan berbayar (Berita & Pengumuman), jalankan SEBELUM deploy
+│   └── 2026-10-27_031_site_stats.sql               # statistik kunjungan situs pembeli (agregat harian, tanpa IP)
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -140,6 +143,24 @@ supaya tayangan tidak mengubah `updated_at`/lastmod sitemap) dan `site_seo` (pen
 template; tidak ada baris = bawaan, gambar di `assets/sites/{site}/seo/`). Jalankan SEBELUM deploy kode yang memakainya
 (`backend/modules/site_posts.php` dan `backend/site.php`). Folder foto ikut `assets/sites/`, jadi tidak ikut git maupun
 deploy.
+
+`2026-10-27_030` (skema + data pewarisan, docs/platform/SITE-ADDONS-SPEC.md): berita & pengumuman template sekolah menjadi
+fitur tambahan berbayar. Tabel baru `site_addon_orders` (satu baris per tagihan/aktivasi fitur, nomor `GNF-YYYYMMDD-XXXXXX`,
+dibayar lewat Midtrans; fitur aktif = baris `lunas` dengan `revoked_at` NULL; `pending_key` UNIQUE = satu tagihan terbuka
+per situs per fitur). Situs yang sudah punya tulisan saat migrasi mendapat baris `lunas` source `migrasi` (harga 0,
+`GNF-MIGRASI-{site_id}`), jadi beritanya tetap tampil. Tanpa ALTER dan tanpa prosedur (`CREATE TABLE IF NOT EXISTS` +
+`INSERT IGNORE`), aman diimpor lewat phpMyAdmin dan aman diulang; butuh 029 (`site_posts`). Jalankan SEBELUM deploy kode
+yang memakainya (`backend/modules/site_addons.php`, `site_posts.php`, `templates.php`, `backend/site.php`). Kode baru
+tanpa tabel ini tidak rusak (semua fitur dianggap belum aktif, beli menjawab 503 `ADDONS_NOT_READY`), tetapi berita semua
+situs sekolah terkunci. Harga = setting `addon_posts_price` (kosong/0 = Rp350.000), diubah admin di Pengaturan website.
+
+`2026-10-27_031` (skema saja, docs/platform/SITE-STATS-SPEC.md): statistik kunjungan situs pembeli untuk CMS
+`/akun/situs/:id/statistik`. Dua tabel baru tanpa ALTER: `site_visit_stats` (angka agregat per situs per hari WIB per
+metrik: total, halaman, jam, sumber, perujuk, perangkat, browser) dan `site_visitors` (penanda pengunjung unik per hari
+berupa hash, bukan IP; baris lebih dari 2 hari dihapus berkala oleh kode). `CREATE TABLE IF NOT EXISTS` + `INSERT IGNORE`,
+aman diimpor lewat phpMyAdmin dan aman diulang; tidak bergantung pada 029/030. Jalankan SEBELUM deploy kode yang
+memakainya (`backend/modules/site_stats.php`). Kode baru tanpa tabel ini tidak rusak: kunjungan tidak dicatat dan
+dasbor menjawab 503 `STATS_NOT_READY`.
 
 `2026-10-25_018` (data saja) membuat/menyamakan baris katalog `serenity` (template wellness) berdasarkan slug, pola sama
 dengan 008: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan
@@ -349,3 +370,5 @@ kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin per
 | 2026-10-19_005 | **Belum dijalankan / menunggu persetujuan.** `DROP TABLE IF EXISTS` 25 tabel `monitor_*` / `monitoring_*`. |
 | 2026-10-20_006 | Data saja, lewat aksi admin `encrypt_list_products` (bukan file SQL, tidak tercatat di `schema_migrations`): `list_products.users` dienkripsi AES-256-GCM dengan `LIST_PRODUCTS_KEY`. Lihat "Migrasi 006" di atas. |
 | 2026-10-26_029 | Skema saja: tabel `site_posts` (berita & pengumuman template sekolah), `site_post_views` (jumlah dilihat per tulisan) dan `site_seo` (SEO per situs pembeli). Lihat catatan 029 di atas dan docs/platform/SITE-POSTS-SEO-SPEC.md. |
+| 2026-10-27_030 | Tabel `site_addon_orders` (fitur tambahan berbayar per situs: Berita & Pengumuman template sekolah) + baris pewarisan `lunas`/`migrasi` untuk situs yang sudah punya tulisan. Lihat catatan 030 di atas dan docs/platform/SITE-ADDONS-SPEC.md. |
+| 2026-10-27_031 | Skema saja: tabel `site_visit_stats` (statistik kunjungan situs pembeli, agregat harian per metrik) dan `site_visitors` (penanda pengunjung unik harian berupa hash, tanpa IP). Lihat catatan 031 di atas dan docs/platform/SITE-STATS-SPEC.md. |

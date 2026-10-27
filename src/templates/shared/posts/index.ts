@@ -25,17 +25,37 @@
 //    buka di tempat atau tautan keluar). Tanpa kunci itu = item CMS, perilaku lama. Tombol "Lihat semua berita":
 //    `useSitePosts('berita') ? { kind: 'site', path: '/berita' } : null` ke tombol template (LinkAction 'site').
 // 5. Kunci section `news` / `announcements` / `agenda` sudah ber-anchor "#berita" / "#pengumuman" / "#agenda".
+// 6. Fitur berbayar (docs/platform/SITE-ADDONS-SPEC.md §6): `usePostsEnabled()` false = berita biasa (hook di atas
+//    mengabaikan tulisan, section template dari item CMS); true = section profesional dari ./pro (ProNewsSection,
+//    ProAnnouncementsSection) menggantikan section berita & bagian pengumuman template.
 // Template TIDAK boleh memakai useLocation/useParams (tes merender tanpa Router): rute & navigasi hanya dari konteks.
-export { POST_KIND_LABEL, POST_PATH_KEY, POST_SECTIONS, isUrgentBadge, postDate, postImageAlt, postItem, postLinkTarget, postParagraphs, relatedPosts, usablePosts, withPostItems } from './model';
+export {
+  POST_KIND_LABEL,
+  POST_PATH_KEY,
+  POST_SECTIONS,
+  isUrgentBadge,
+  postCanonicalUrl,
+  postDate,
+  postImageAlt,
+  postItem,
+  postLinkTarget,
+  postParagraphs,
+  postReadingMinutes,
+  postShareLinks,
+  relatedPosts,
+  usablePosts,
+  withPostItems,
+} from './model';
 export type { PostDate, PostLinkTarget } from './model';
 export { DEFAULT_POST_THEME, postTheme } from './theme';
 export type { PostTheme } from './theme';
 export { AnnouncementCard, NewsCard, PostCard } from './PostCard';
-export { PostList } from './PostList';
+export { POST_LIST_STEP, PostList } from './PostList';
 export { PostArticle, PostArticleSkeleton } from './PostArticle';
+export { PostShare } from './PostShare';
 export { PostNotFound } from './PostNotFound';
 export { PostPage } from './PostPage';
-export { useContentWithPosts, useSitePosts, useSubPage } from './hooks';
+export { useContentWithPosts, usePostsEnabled, useSitePosts, useSubPage } from './hooks';
 export { Breadcrumb, PostChip, PostDateText, PostImage } from './parts';
 export { SiteLink } from '../SiteLink';
 export { SITE_DATA_DEFAULT, SiteDataContext, siteHref, useSiteData } from '../siteData';

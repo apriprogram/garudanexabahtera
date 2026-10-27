@@ -3,7 +3,8 @@
 // Pratinjau situs pembeli di host utama (/situs/:siteId/*, docs/platform/SITE-POSTS-SEO-SPEC.md §3, §7): rute di
 // dalamnya sama dengan domain pembeli dengan basePath "/situs/{id}", head selalu noindex tanpa canonical, tidak
 // menghitung jumlah dilihat, dan semua tag situs pembeli dilepas (ikon shell kembali) saat pratinjau ditutup. URL CMS ke
-// halaman situs ("/pengumuman", "/#kontak") ikut diberi awalan pratinjau dan dibuka tanpa muat ulang.
+// halaman situs ("/pengumuman", "/#kontak") ikut diberi awalan pratinjau dan dibuka tanpa muat ulang. Fitur Berita &
+// Pengumuman tidak aktif (`addons.posts`) = berita biasa: hanya beranda, tanpa permintaan tulisan (SITE-ADDONS-SPEC §6).
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -20,12 +21,16 @@ const SITE = {
   template_code: 'madani',
   domain: 'smkharapan.sch.id',
   content: { brand: { company_name: 'SMA Harapan Bangsa', logo: '/assets/sites/7/logo_0123456789ab.png' } },
+  /** Fitur Berita & Pengumuman aktif (SITE-ADDONS-SPEC §3) */
+  addons: { posts: true },
 };
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 /** Konten situs pengganti untuk satu tes (null = SITE.content). */
 let contentOverride: Record<string, unknown> | null = null;
+/** Fitur tambahan pengganti untuk satu tes (undefined = SITE.addons). */
+let addonsOverride: Record<string, unknown> | null | undefined;
 
 const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
   void init; // dibaca lewat fetchMock.mock.calls (posts())
@@ -34,7 +39,9 @@ const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => 
   switch (q.get('action')) {
     case 'get_site_public':
       return q.get('site_id') === '7'
-        ? json(200, { site: contentOverride ? { ...SITE, content: contentOverride } : SITE })
+        ? json(200, {
+            site: { ...SITE, ...(contentOverride ? { content: contentOverride } : {}), ...(addonsOverride !== undefined ? { addons: addonsOverride } : {}) },
+          })
         : json(404, { error: 'Situs tidak ditemukan.', code: 'SITE_NOT_FOUND' });
     case 'get_site_seo':
       return json(200, { seo: { title: '', description: '', og_image: null, schema_type: '', indexable: true } });
@@ -79,6 +86,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   contentOverride = null;
+  addonsOverride = undefined;
   cleanup();
   removeSiteSeoHead();
   shellIcon.remove();
@@ -144,6 +152,21 @@ describe('SitePreview: /situs/:siteId/*', () => {
     fireEvent.click(toList);
     await until(() => expect(container.querySelector('h1')).toHaveTextContent('Pengumuman'));
     expect(container.querySelector('[data-site-page="list"]')).not.toBeNull();
+  });
+
+  it('fitur Berita & Pengumuman tidak aktif: beranda berita biasa, /situs/7/berita → tidak ditemukan, tanpa get_site_posts', async () => {
+    addonsOverride = { posts: false };
+    const { container } = open('/situs/7');
+    await appear(container, '[data-tpl-section="news"]');
+    expect(container.querySelectorAll('[data-pro-section]')).toHaveLength(0);
+    expect(container.querySelector('a[href^="/situs/7/berita"], a[href^="/situs/7/pengumuman"]')).toBeNull();
+    cleanup();
+
+    const list = open('/situs/7/berita').container;
+    await until(() => expect(list.querySelector('h1')).toHaveTextContent('Halaman tidak ditemukan'));
+    expect(within(list).getByRole('link', { name: /Ke beranda situs/ })).toHaveAttribute('href', '/situs/7');
+    await waitFor(() => expect(tag('robots')).toHaveAttribute('content', 'noindex,follow'));
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('get_site_post'))).toBe(false);
   });
 
   it('ditutup → tag situs pembeli dilepas dan favicon shell kembali', async () => {

@@ -1,6 +1,8 @@
 // Data situs di luar konten CMS (docs/platform/SITE-POSTS-SEO-SPEC.md §7): rute halaman (beranda, daftar, tulisan),
 // awalan path situs, dan tulisan berita/pengumuman dari tabel site_posts. Disediakan SiteRenderer (CustomerSite di domain
 // pembeli, SitePreview di /situs/:id); demo dan pratinjau CMS memakai nilai bawaan: beranda, tanpa tulisan.
+// `postsEnabled` = fitur berbayar Berita & Pengumuman aktif (docs/platform/SITE-ADDONS-SPEC.md §6): tidak aktif = berita
+// biasa dari konten CMS (tulisan tidak dipakai); aktif = section berita & pengumuman profesional (shared/posts/pro).
 //
 // Template TIDAK boleh membaca useLocation/useParams (tes dan pratinjau CMS merender tanpa Router): rute, path, dan
 // navigasi hanya lewat konteks ini.
@@ -17,6 +19,16 @@ export type SitePostsByKind = Record<SitePostKind, SitePostSummary[] | null | un
 
 export interface SiteData {
   route: SiteRoute;
+  /**
+   * Fitur Berita & Pengumuman aktif untuk situs ini (template mampu + `site.addons.posts`; demo `?fitur=berita`).
+   * false = berita biasa: tulisan tidak diminta/dipakai, section dari item CMS, halaman /berita… tidak ada.
+   */
+  postsEnabled: boolean;
+  /**
+   * Alamat situs pembeli tanpa garis miring di akhir ("https://sekolah.sch.id"), dasar URL kanonis untuk tombol bagikan
+   * tulisan. Tidak ada (demo, domain tidak sah) = tanpa tombol bagikan.
+   */
+  siteOrigin?: string | null;
   /** Awalan path situs: '' di domain pembeli, '/situs/12' di pratinjau host utama */
   basePath: string;
   posts: SitePostsByKind;
@@ -40,6 +52,7 @@ export interface SiteData {
 
 export const SITE_DATA_DEFAULT: SiteData = {
   route: { kind: 'home' },
+  postsEnabled: false,
   basePath: '',
   posts: { berita: null, pengumuman: null },
   post: undefined,

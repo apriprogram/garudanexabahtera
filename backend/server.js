@@ -45,6 +45,11 @@ import { handleGoogleAuthAction } from './modules/google_auth.js';
 // Berita & pengumuman situs pembeli (site_posts, site_post_views) + SEO situs (site_seo), docs/platform/SITE-POSTS-SEO-SPEC.md.
 // Kepala halaman, robots.txt dan sitemap.xml domain pembeli hanya ada di backend/site.php (PHP); Node tidak punya padanannya
 import { handleSitePostAction } from './modules/site_posts.js';
+// Fitur tambahan berbayar per situs pembeli (Berita & Pengumuman template sekolah), docs/platform/SITE-ADDONS-SPEC.md
+import { handleSiteAddonAction } from './modules/site_addons.js';
+// Statistik kunjungan situs pembeli (site_visit_stats, site_visitors): pencatatan publik site_visit + dasbor CMS
+// customer_get_site_stats, docs/platform/SITE-STATS-SPEC.md
+import { handleSiteStatsAction } from './modules/site_stats.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -172,6 +177,8 @@ app.get('/api.php', async (req, res) => {
   if (await handleGuideAction(action, req.query, req, res, pool)) return;
   if (await handleGoogleAuthAction(action, req.query, req, res, pool)) return;
   if (await handleSitePostAction(action, req.query, req, res, pool)) return;
+  if (await handleSiteAddonAction(action, req.query, req, res, pool)) return;
+  if (await handleSiteStatsAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -388,6 +395,8 @@ app.post('/api.php', async (req, res) => {
   if (await handleGuideAction(action, req.body, req, res, pool)) return;
   if (await handleGoogleAuthAction(action, req.body, req, res, pool)) return;
   if (await handleSitePostAction(action, req.body, req, res, pool)) return;
+  if (await handleSiteAddonAction(action, req.body, req, res, pool)) return;
+  if (await handleSiteStatsAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {

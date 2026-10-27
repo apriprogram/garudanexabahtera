@@ -6,12 +6,13 @@
 // dipulihkan saat editor dibuka lagi (mis. sesi habis di tengah mengedit, tab tertutup, atau keluar akun).
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CalendarClock, ExternalLink, Globe, MessageCircle } from 'lucide-react';
+import { CalendarClock, ExternalLink, Globe, MessageCircle, Sparkles } from 'lucide-react';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { ApiError, apiGet, apiPost, errorMessage } from '../../lib/api';
 import { formatTanggal, type Site } from '../../types/platform';
 import { getTemplate, resolveContent } from '../../templates';
 import type { ListItem, SiteContent } from '../../templates/types';
+import { addonsPath, postsLocked } from './components/addons';
 import { helpWhatsappUrl, siteHelpMessage } from './components/orderCopy';
 import { SiteNav } from './components/SiteNav';
 import { postsListPath } from './posts/siteLinks';
@@ -358,6 +359,8 @@ export default function SiteEditor() {
   const sitePath = `/situs/${site.id}`;
   const domainHref = `https://${site.domain}`;
   const hasPosts = definition.features?.posts === true;
+  // Fitur Berita & Pengumuman belum dibeli: berita dari konten tampil sebagai berita biasa (SITE-ADDONS-SPEC §5)
+  const postsIsLocked = hasPosts && postsLocked(site);
   const saveState: SaveState = readOnly ? 'readonly' : saving ? 'saving' : dirty ? 'dirty' : 'saved';
   const layoutVars = {
     '--cms-sticky-top': `calc(4rem + env(safe-area-inset-top) + ${toolbarHeight}px)`,
@@ -443,7 +446,7 @@ export default function SiteEditor() {
             )}
 
             <SiteInfo site={site} domainHref={domainHref} sitePath={sitePath} />
-            <SiteNav siteId={site.id} posts={hasPosts} />
+            <SiteNav siteId={site.id} posts={hasPosts} postsLocked={postsIsLocked} />
 
             {definition.sections.map((section) => (
               <SectionEditor
@@ -465,7 +468,7 @@ export default function SiteEditor() {
                 errors={visibleErrors}
                 onBlurPath={markTouched}
                 readOnly={readOnly || saving}
-                notice={hasPosts ? <PostsNotice siteId={site.id} sectionKey={section.key} /> : undefined}
+                notice={hasPosts ? <PostsNotice siteId={site.id} sectionKey={section.key} locked={postsIsLocked} /> : undefined}
               />
             ))}
 
@@ -489,6 +492,7 @@ export default function SiteEditor() {
             device={device}
             onDeviceChange={setDevice}
             activeSection={activeSection}
+            postsEnabled={hasPosts && site.addons?.posts === true}
             className={`h-[max(420px,calc(100dvh_-_var(--cms-sticky-top)_-_2rem))] lg:sticky lg:top-[calc(var(--cms-sticky-top)_+_1.5rem)] lg:h-[max(480px,calc(100dvh_-_var(--cms-sticky-top)_-_3rem))] ${
               tab === 'edit' ? 'max-lg:hidden' : ''
             }`}
@@ -501,10 +505,31 @@ export default function SiteEditor() {
   );
 }
 
-/** Section berita/pengumuman template sekolah: tulisan lengkap dikelola di menu Berita & Pengumuman. Section lain: kosong. */
-function PostsNotice({ siteId, sectionKey }: { siteId: number; sectionKey: string }) {
+/**
+ * Section berita/pengumuman template sekolah: tulisan lengkap dikelola di menu Berita & Pengumuman. Fitur belum aktif
+ * (`locked`): ajakan mengaktifkannya di menu Fitur tambahan, karena daftar di section ini tampil sebagai berita biasa.
+ * Section lain: kosong.
+ */
+function PostsNotice({ siteId, sectionKey, locked }: { siteId: number; sectionKey: string; locked: boolean }) {
   const kind = postKindOfSection(sectionKey);
   if (!kind) return null;
+  if (locked) {
+    const label = kind === 'berita' ? 'Berita' : 'Pengumuman';
+    return (
+      <Notice
+        tone="info"
+        action={
+          <Link to={addonsPath(siteId)} className="btn btn-outline btn-sm">
+            <Sparkles className="h-4 w-4" aria-hidden />
+            Aktifkan fitur Berita &amp; Pengumuman
+          </Link>
+        }
+      >
+        {label} di bawah ini tampil sebagai {kind} biasa. Aktifkan fitur Berita &amp; Pengumuman untuk halaman {kind} sendiri dan
+        tampilan profesional.
+      </Notice>
+    );
+  }
   return (
     <Notice
       tone="info"

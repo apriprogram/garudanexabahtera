@@ -2,6 +2,8 @@
 // - site_handle() dijalankan di PHP CLI dengan database tiruan (fungsi kueri yang disuntikkan): head beranda/daftar/
 //   tulisan, preload dengan kunci = apiUrl() klien, robots.txt, sitemap.xml, 301 www/apex & garis miring, 404 path/host
 //   tidak dikenal, situs nonaktif, host utama apa adanya, tabel baru belum ada, database mati, dan teks berbahaya.
+//   Tulisan berbayar (docs/platform/SITE-ADDONS-SPEC.md §3): template mampu tanpa fitur Berita & Pengumuman aktif
+//   (site_addon_orders) = /berita… 404, preload & <main> tanpa daftar, sitemap tanpa tulisan, JSON-LD tetap School.
 //   Head di HTML server dibandingkan dengan buildSiteHead (siteSeo.ts) dari data preload yang sama: itulah yang
 //   dihitung klien setelah React dimuat.
 // - Struktur aturan domain pembeli di deploy/cpanel/htaccess.
@@ -16,9 +18,9 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { apiUrl } from '../../src/lib/api';
-import { getTemplate } from '../../src/templates';
 import { parseSiteRoute, servedRoute } from '../../src/templates/siteRoutes';
 import { buildSiteHead, type SiteHeadInput } from '../../src/templates/siteSeo';
+import type { SiteAddonFlags } from '../../src/types/siteAddons';
 import type { SitePostPublic, SitePostSummary, SiteSeoPublic } from '../../src/types/sitePosts';
 
 const ROOT = resolve(__dirname, '..', '..');
@@ -50,7 +52,11 @@ const SITES = [
   { id: 9, template_code: 'madani', domain: 'nonaktif.test', status: 'suspended', content: JSON.stringify(CONTENT), updated_ts: T('2026-10-01T10:00:00Z') },
   { id: 10, template_code: 'finova', domain: 'keuangan.test', status: 'active', content: JSON.stringify({ brand: { company_name: 'Koperasi Maju' } }), updated_ts: T('2026-10-02T10:00:00Z') },
   { id: 11, template_code: 'madani', domain: 'bahaya.test', status: 'active', content: JSON.stringify(HOSTILE), updated_ts: T('2026-10-03T10:00:00Z') },
+  // Template sekolah yang punya tulisan tetapi fitur Berita & Pengumuman belum aktif (tidak ada di ADDONS)
+  { id: 12, template_code: 'madani', domain: 'terkunci.test', status: 'active', content: JSON.stringify({ brand: { company_name: 'SMA Terkunci' } }), updated_ts: T('2026-10-04T10:00:00Z') },
 ];
+/** Situs dengan fitur Berita & Pengumuman aktif (baris site_addon_orders lunas yang tidak dicabut). */
+const ADDONS = [7, 8, 11];
 
 const SEO_ROWS = [
   {
@@ -131,6 +137,7 @@ const POSTS = [
     published_at: '2026-10-20',
     updated_ts: T('2026-10-20T03:00:00Z'),
   }),
+  post({ id: 6, site_id: 12, kind: 'berita', slug: 'tersembunyi', title: 'Berita Tersembunyi', body: 'Isi', published_at: '2026-10-22', updated_ts: T('2026-10-22T03:00:00Z') }),
 ];
 
 /** lastmod beranda sekolah.test: terbaru dari situs, site_seo, dan tulisan terbitnya. */
@@ -193,6 +200,11 @@ $query = function (string $sql, array $params) use ($db, &$log) {
         usort($rows, fn($a, $b) => ($b['domain'] === $params[2]) <=> ($a['domain'] === $params[2]));
         return array_slice($rows, 0, 1);
     }
+    if (strpos($sql, 'FROM site_addon_orders') !== false) {
+        $missing('site_addon_orders');
+        if (strpos($sql, "status = 'lunas'") === false || strpos($sql, 'revoked_at IS NULL') === false) throw new RuntimeException('gerbang fitur tanpa syarat lunas/dicabut');
+        return in_array($params[0], $db['addons'], true) ? [['active' => 1]] : [];
+    }
     if (strpos($sql, 'FROM site_seo') !== false) {
         $missing('site_seo');
         return array_values(array_filter($db['seo'], fn($r) => $r['site_id'] === $params[0]));
@@ -229,7 +241,7 @@ let dir = '';
 
 function runHandle(requests: { host: string; uri: string; query?: Record<string, string> }[], db: Record<string, unknown> = {}): PhpResponse[] {
   const input = {
-    db: { sites: SITES, seo: SEO_ROWS, posts: POSTS, ...db },
+    db: { sites: SITES, seo: SEO_ROWS, posts: POSTS, addons: ADDONS, ...db },
     requests: requests.map((r) => ({ host: r.host, uri: r.uri, query: r.query ?? rewrite(r.host, r.uri) })),
     shell: SHELL,
     docroot: dir,
@@ -274,12 +286,15 @@ function serverHead(html: string) {
   };
 }
 
-/** Head yang dihitung klien (buildSiteHead) dari data preload halaman yang sama, dengan rute seperti CustomerSite. */
+/**
+ * Head yang dihitung klien (buildSiteHead) dari data preload halaman yang sama, dengan rute seperti CustomerSite: halaman
+ * tulisan hanya ada bila tulisan aktif (site.addons.posts = template mampu dan fitur Berita & Pengumuman aktif).
+ */
 function clientHead(html: string, domain: string, path: string) {
   const { api } = preloadOf(html);
-  const site = (api[apiUrl('get_site_public', { domain })] as { site: { id: number; template_code: string; content: SiteHeadInput['content'] } }).site;
+  const site = (api[apiUrl('get_site_public', { domain })] as { site: { id: number; template_code: string; content: SiteHeadInput['content']; addons: SiteAddonFlags } }).site;
   const seo = (api[apiUrl('get_site_seo', { site_id: site.id })] as { seo: SiteSeoPublic }).seo;
-  const route = servedRoute(parseSiteRoute(path), getTemplate(site.template_code)?.features?.posts === true);
+  const route = servedRoute(parseSiteRoute(path), site.addons.posts === true);
   const input: SiteHeadInput = { domain, templateCode: site.template_code, content: site.content, seo, route };
   if (route.kind === 'post') {
     const body = api[apiUrl('get_site_post', { site_id: site.id, slug: route.slug })] as { post: SitePostPublic } | undefined;
@@ -340,7 +355,7 @@ describe.skipIf(!PHP_AVAILABLE)('backend/site.php: site_handle dengan database t
       apiUrl('get_site_posts', { site_id: 7, kind: 'pengumuman', limit: 12 }),
     ]);
     expect(preload.api[apiUrl('get_site_public', { domain: 'sekolah.test' })]).toEqual({
-      site: { id: 7, template_code: 'madani', domain: 'sekolah.test', content: CONTENT },
+      site: { id: 7, template_code: 'madani', domain: 'sekolah.test', content: CONTENT, addons: { posts: true } },
     });
     expect(preload.api[apiUrl('get_site_seo', { site_id: 7 })]).toEqual({
       seo: { title: '', description: '', og_image: '/assets/sites/7/seo/seo_aa11bb22cc33.jpg', schema_type: 'HighSchool', indexable: true },
@@ -635,8 +650,67 @@ describe.skipIf(!PHP_AVAILABLE)('backend/site.php: site_handle dengan database t
     expect(header(slash, 'Location')).toBe('https://keuangan.test/berita');
     expect(serverHead(homePage.body)).toEqual(clientHead(homePage.body, 'keuangan.test', '/'));
     expect(serverHead(homePage.body).jsonLd['@graph'][0]['@type']).toBe('Organization');
-    expect(preloadOf(homePage.body).api[apiUrl('get_site_posts', { site_id: 10, kind: 'berita', limit: 12 })]).toEqual({ posts: [], total: 0 });
-    for (const res of [list, announcements, item, homePage]) expect(res.queries.some(([sql]) => sql.includes('site_posts'))).toBe(false);
+    // Klien tidak meminta get_site_posts tanpa tulisan aktif: preload hanya situs (addons.posts false) dan SEO
+    const api = preloadOf(homePage.body).api;
+    expect(Object.keys(api)).toEqual([apiUrl('get_site_public', { domain: 'keuangan.test' }), apiUrl('get_site_seo', { site_id: 10 })]);
+    expect((api[apiUrl('get_site_public', { domain: 'keuangan.test' })] as { site: { addons: SiteAddonFlags } }).site.addons).toEqual({ posts: false });
+    // Template tanpa fitur tulisan tidak membaca site_posts maupun site_addon_orders
+    for (const res of [list, announcements, item, homePage]) expect(res.queries.some(([sql]) => /site_posts|site_addon_orders/.test(sql))).toBe(false);
+  });
+
+  it('template sekolah tanpa fitur Berita & Pengumuman: /berita… 404, beranda tanpa daftar, sitemap tanpa tulisan, JSON-LD tetap School', () => {
+    const [homePage, list, announcements, item, sitemap] = runHandle([
+      { host: 'terkunci.test', uri: '/' },
+      { host: 'terkunci.test', uri: '/berita' },
+      { host: 'terkunci.test', uri: '/pengumuman' },
+      { host: 'terkunci.test', uri: '/berita/tersembunyi' },
+      { host: 'terkunci.test', uri: '/sitemap.xml' },
+    ]);
+    expect(homePage.status).toBe(200);
+    expect(serverHead(homePage.body)).toEqual(clientHead(homePage.body, 'terkunci.test', '/'));
+    // Jenis organisasi mengikuti kemampuan template (site_defaults.json), bukan fitur
+    expect(serverHead(homePage.body).jsonLd['@graph'][0]['@type']).toBe('School');
+    expect(homePage.body).toContain('<main id="konten"><h1>SMA Terkunci</h1>');
+    expect(homePage.body).not.toMatch(/href="\/(berita|pengumuman)/);
+    const api = preloadOf(homePage.body).api;
+    expect(Object.keys(api)).toEqual([apiUrl('get_site_public', { domain: 'terkunci.test' }), apiUrl('get_site_seo', { site_id: 12 })]);
+    expect((api[apiUrl('get_site_public', { domain: 'terkunci.test' })] as { site: { addons: SiteAddonFlags } }).site.addons).toEqual({ posts: false });
+    const paths = ['/berita', '/pengumuman', '/berita/tersembunyi'];
+    [list, announcements, item].forEach((res, i) => {
+      expect(res.status, paths[i]).toBe(404);
+      expect(header(res, 'X-Robots-Tag'), paths[i]).toBe('noindex');
+      expect(serverHead(res.body), paths[i]).toMatchObject({ title: 'Halaman tidak ditemukan · SMA Terkunci', robots: 'noindex,follow', canonical: null });
+      expect(serverHead(res.body), paths[i]).toEqual(clientHead(res.body, 'terkunci.test', paths[i]));
+      expect(res.body, paths[i]).not.toContain('Berita Tersembunyi');
+    });
+    expect(sitemap.status).toBe(200);
+    expect([...sitemap.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])).toEqual(['https://terkunci.test/']);
+    // Gerbang dibaca, tulisan tidak pernah
+    for (const res of [homePage, list, announcements, item, sitemap]) {
+      expect(res.queries.some(([sql]) => sql.includes('site_addon_orders'))).toBe(true);
+      expect(res.queries.some(([sql]) => sql.includes('site_posts'))).toBe(false);
+    }
+    // Fitur aktif lagi (dibeli / diaktifkan admin): tulisan yang ada tampil kembali
+    const unlocked = one('terkunci.test', '/berita/tersembunyi', { addons: [...ADDONS, 12] });
+    expect(unlocked.status).toBe(200);
+    expect(serverHead(unlocked.body)).toEqual(clientHead(unlocked.body, 'terkunci.test', '/berita/tersembunyi'));
+  });
+
+  it('tabel site_addon_orders belum ada (migrasi 030 belum dijalankan): semua situs tanpa tulisan, bukan 503', () => {
+    const missing = { missingTables: ['site_addon_orders'] };
+    const [homePage, list, sitemap] = runHandle([
+      { host: 'sekolah.test', uri: '/' },
+      { host: 'sekolah.test', uri: '/berita' },
+      { host: 'sekolah.test', uri: '/sitemap.xml' },
+    ], missing);
+    expect(homePage.status).toBe(200);
+    expect(serverHead(homePage.body)).toEqual(clientHead(homePage.body, 'sekolah.test', '/'));
+    expect(serverHead(homePage.body).jsonLd['@graph'][0]['@type']).toBe('HighSchool');
+    expect(Object.keys(preloadOf(homePage.body).api)).toHaveLength(2);
+    expect(list.status).toBe(404);
+    expect(serverHead(list.body)).toEqual(clientHead(list.body, 'sekolah.test', '/berita'));
+    expect([...sitemap.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])).toEqual(['https://sekolah.test/']);
+    for (const res of [homePage, list, sitemap]) expect(res.queries.some(([sql]) => sql.includes('site_posts'))).toBe(false);
   });
 
   it('tabel baru belum ada (migrasi 029 belum dijalankan): halaman tetap 200 dengan bawaan; database mati: 503', () => {
@@ -765,7 +839,7 @@ const mysqlEnv = { ...process.env, H: MYSQL.host, U: MYSQL.user, P: MYSQL.pass }
 const MYSQL_AVAILABLE =
   PHP_AVAILABLE && spawnSync('php', ['-r', `try { ${MYSQL_PHP} echo 'ok'; } catch (Throwable $e) {}`], { encoding: 'utf8', env: mysqlEnv }).stdout === 'ok';
 
-/** Skema tabel sesuai database/schema.sql (template_sites) dan spec §2 (site_posts, site_seo). */
+/** Skema tabel sesuai database/schema.sql (template_sites, site_addon_orders apa adanya) dan spec §2 (site_posts, site_seo). */
 const DDL = `
 CREATE TABLE template_sites (
   id INT NOT NULL AUTO_INCREMENT, order_id INT NOT NULL, user_id INT NOT NULL, template_id INT DEFAULT NULL,
@@ -790,6 +864,7 @@ CREATE TABLE site_seo (
   index_mode VARCHAR(10) NOT NULL DEFAULT 'auto', schema_type VARCHAR(40) NOT NULL DEFAULT '',
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (site_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+${readFileSync(join(ROOT, 'database', 'schema.sql'), 'utf8').match(/CREATE TABLE IF NOT EXISTS site_addon_orders \([\s\S]*?\) ENGINE=InnoDB[^;]*;/)![0]}
 `;
 
 const sql = (value: unknown) =>
@@ -807,6 +882,14 @@ function seedSql(): string {
       `INSERT INTO site_seo (site_id, title, description, og_image, google_verification, bing_verification, index_mode, schema_type, updated_at) VALUES (${r.site_id}, ${sql(r.title)}, ${sql(r.description)}, ${sql(r.og_image)}, ${sql(r.google_verification)}, ${sql(r.bing_verification)}, ${sql(r.index_mode)}, ${sql(r.schema_type)}, FROM_UNIXTIME(${r.updated_ts}));`,
     );
   }
+  // Fitur aktif = lunas dan tidak dicabut; situs 12 hanya punya baris yang dicabut admin dan tagihan yang belum dibayar
+  for (const siteId of ADDONS) {
+    rows.push(`INSERT INTO site_addon_orders (addon_number, site_id, order_id, user_id, addon_code, price, status, source, payment_status, paid_at) VALUES ('GNF-MIGRASI-${siteId}', ${siteId}, ${siteId}, 1, 'posts', 0, 'lunas', 'migrasi', 'settlement', NOW());`);
+  }
+  rows.push(
+    "INSERT INTO site_addon_orders (addon_number, site_id, order_id, user_id, addon_code, price, status, source, payment_status, paid_at, revoked_at) VALUES ('GNF-20261020-AAAAAA', 12, 12, 1, 'posts', 0, 'lunas', 'admin', 'settlement', NOW(), NOW());",
+    "INSERT INTO site_addon_orders (addon_number, site_id, order_id, user_id, addon_code, price, pending_key) VALUES ('GNF-20261021-BBBBBB', 12, 12, 1, 'posts', 350000, '12:posts');",
+  );
   for (const p of POSTS) {
     const cols = ['id', 'site_id', 'kind', 'slug', 'title', 'excerpt', 'body', 'category', 'badge', 'image', 'image_alt', 'link_url', 'status', 'published_at', 'seo_title', 'seo_description', 'noindex'] as const;
     rows.push(
@@ -929,6 +1012,9 @@ describe.skipIf(!MYSQL_AVAILABLE)('backend/site.php ujung ke ujung (php -S + rou
     for (const [host, path] of [
       ['sekolah.test', '/tidak-ada'],
       ['sekolah.test', '/berita/draf-rahasia'],
+      // Fitur Berita & Pengumuman dicabut / belum dibayar: halaman tulisan tidak ada
+      ['terkunci.test', '/berita'],
+      ['terkunci.test', '/berita/tersembunyi'],
       ['sekolah.test', '/site.php'],
       ['sekolah.test', '/llms.txt'],
       ['tidak-dikenal.test', '/'],
@@ -953,6 +1039,11 @@ describe.skipIf(!MYSQL_AVAILABLE)('backend/site.php ujung ke ujung (php -S + rou
     ]);
     expect(sitemap.body).toContain(`<loc>https://sekolah.test/</loc>
     <lastmod>${wibDate(HOME_LASTMOD_SECONDS)}</lastmod>`);
+    const locked = await httpGet(port, 'terkunci.test', '/sitemap.xml');
+    expect([...locked.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])).toEqual(['https://terkunci.test/']);
+    const lockedHome = await httpGet(port, 'terkunci.test', '/');
+    expect(lockedHome.status).toBe(200);
+    expect(serverHead(lockedHome.body)).toEqual(clientHead(lockedHome.body, 'terkunci.test', '/'));
 
     // MAIN_HOSTS kosong di env = daftar bawaan: localhost tetap aplikasi utama
     const main = await httpGet(port, 'localhost', '/');

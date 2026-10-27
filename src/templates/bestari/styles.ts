@@ -108,6 +108,8 @@ export const POST_THEME = postTheme({
   accent: 'text-(--bs-ink)',
   chip: 'bg-(--bs-tint) text-(--bs-ink)',
   urgent: 'bg-[#FEECEB] text-[#B42318]',
+  filterOn: 'bg-[#1C1917] text-white',
+  filterOff: 'bg-[#F5F2ED] text-[#1C1917] hover:bg-[#ECE7DF]',
   soft: C.panel,
   card: 'bg-white ring-1 ring-inset ring-[#1C1917]/[0.08]',
   line: 'border-[#1C1917]/[0.1]',

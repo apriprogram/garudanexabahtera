@@ -6,13 +6,16 @@
 // ubin tanggal, waktu, dan tempat.
 // Berita/pengumuman dari tulisan (site_posts, kunci POST_PATH_KEY): kartu menaut ke halaman tulisan lewat judulnya
 // ("Baca selengkapnya", bukan isi di tempat atau "Lihat lampiran"), plus "Lihat semua berita/pengumuman".
+// Fitur Berita & Pengumuman aktif (usePostsEnabled) → Berita dan bagian Pengumuman diganti section profesional bersama
+// (shared/posts/pro) dengan judul section Cakrawala; Agenda tetap. Tidak aktif = tampilan di atas dari item CMS.
 import { ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Clock, MapPin, Paperclip } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
-import { useSitePosts } from '../shared/posts/hooks';
+import { usePostsEnabled, useSitePosts } from '../shared/posts/hooks';
 import { POST_PATH_KEY } from '../shared/posts/model';
+import { ProAnnouncementsSection, ProNewsSection } from '../shared/posts/pro';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { SiteLink } from '../shared/SiteLink';
 import { field, hasImage, list, safeUrl, text } from '../shared/utils';
@@ -20,7 +23,7 @@ import type { ListItem } from '../types';
 import { KitPhoto } from '../kit/Photo';
 import { displayDate, filterNews, isUrgent, newsCategories, newsItems, paragraphsOf, parseSchoolDate, type CakrawalaModel } from './model';
 import { CAKRAWALA_PHOTOS } from './photos';
-import { BTN, C, CARD, DISPLAY, SECTION_PAD, TYPE_C } from './styles';
+import { BTN, C, CARD, DISPLAY, POST_THEME, SECTION_PAD, TYPE_C } from './styles';
 import { Eyebrow, PillLink, SectionHead, TextLink } from './ui';
 
 /** Judul tulisan sebagai tautan selebar kartu (kartu `relative`); cincin fokus mengelilingi kartu. */
@@ -167,14 +170,30 @@ function NewsCard({ item, featured }: { item: ListItem; featured: boolean }) {
 export function News({ m }: { m: CakrawalaModel }) {
   const { news } = m;
   const items = newsItems(news);
+  const pro = usePostsEnabled();
   const posts = useSitePosts('berita');
   const [category, setCategory] = useState<string | null>(null);
+  const buttonLabel = text(news, 'button_label');
+  const buttonUrl = safeUrl(text(news, 'button_url'));
+  const cmsButton =
+    buttonLabel && buttonUrl ? <PillLink action={{ kind: 'external', href: buttonUrl }} label={buttonLabel} dot="ink" className={`${BTN.outline} ${BTN.md}`} /> : null;
+  if (pro) {
+    return (
+      <ProNewsSection
+        section={news}
+        theme={POST_THEME}
+        className={SECTION_PAD}
+        extra={cmsButton}
+        head={(filters) => (
+          <SectionHead eyebrow={text(news, 'eyebrow')} title={text(news, 'title') || 'Berita terbaru'} subtitle={text(news, 'subtitle')} aside={filters} />
+        )}
+      />
+    );
+  }
   if (items.length === 0) return null;
   const categories = newsCategories(items);
   const shown = filterNews(items, category);
   const allLabel = text(news, 'all_label') || 'Semua';
-  const buttonLabel = text(news, 'button_label');
-  const buttonUrl = safeUrl(text(news, 'button_url'));
   const [first, ...rest] = shown;
 
   const filters =
@@ -222,12 +241,10 @@ export function News({ m }: { m: CakrawalaModel }) {
             </ul>
           )}
         </div>
-        {(posts || (buttonLabel && buttonUrl)) && (
+        {(posts || cmsButton) && (
           <div className="mt-10 flex flex-col items-center justify-center gap-3 @xl:flex-row @3xl:mt-12">
             {posts && <PillLink action={{ kind: 'site', path: '/berita' }} label="Lihat semua berita" dot="white" className={`${BTN.ink} ${BTN.md}`} />}
-            {buttonLabel && buttonUrl && (
-              <PillLink action={{ kind: 'external', href: buttonUrl }} label={buttonLabel} dot="ink" className={`${BTN.outline} ${BTN.md}`} />
-            )}
+            {cmsButton}
           </div>
         )}
       </div>
@@ -239,10 +256,27 @@ const SMALL_H2 = `${DISPLAY} text-balance text-[24px] font-semibold leading-tigh
 
 function Announcements({ m }: { m: CakrawalaModel }) {
   const { announcements } = m;
+  const pro = usePostsEnabled();
   const posts = useSitePosts('pengumuman');
   const items = list(announcements, 'items', 8).filter((item) => field(item, 'title'));
   const eyebrow = text(announcements, 'eyebrow');
   const title = text(announcements, 'title');
+  if (pro) {
+    // Papan putih (blok tanggal abu terlihat), sejajar kartu Agenda
+    return (
+      <ProAnnouncementsSection
+        section={announcements}
+        theme={POST_THEME}
+        className={`p-5 @3xl:p-8 ${CARD.white}`}
+        head={
+          <>
+            {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+            <h2 className={`${eyebrow ? 'mt-3' : ''} ${SMALL_H2} ${C.ink}`}>{title || 'Pengumuman'}</h2>
+          </>
+        }
+      />
+    );
+  }
   return (
     <TemplateSection sectionKey="announcements" className={`min-w-0 p-5 @3xl:p-8 ${CARD.panel}`}>
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}

@@ -1,13 +1,24 @@
-// Halaman satu tulisan /berita/{slug} atau /pengumuman/{slug}: remah roti, chip kategori/label + tanggal (<time>), H1,
-// ringkasan, foto utama (dimuat segera), isi (teks biasa, paragraf dipisah baris kosong, TIDAK pernah HTML), tautan
-// tambahan, tombol kembali, lalu maks. 3 tulisan lain jenis yang sama (bila daftarnya sudah dimuat).
-import { ArrowLeft, ArrowUpRight, Home } from 'lucide-react';
+// Halaman satu tulisan /berita/{slug} atau /pengumuman/{slug}: remah roti, chip kategori/label + tanggal (<time>) +
+// waktu baca, H1, ringkasan, foto utama (dimuat segera), isi (teks biasa, paragraf dipisah baris kosong, TIDAK pernah
+// HTML), tautan tambahan, tombol bagikan (URL kanonis di domain pembeli; tanpa domain = tidak tampil), tombol kembali,
+// lalu "Berita/Pengumuman lainnya": maks. 3 tulisan terbaru lain jenis yang sama (bila daftarnya sudah dimuat).
+import { ArrowLeft, ArrowUpRight, Clock, Home } from 'lucide-react';
 import { useId } from 'react';
 import { SiteLink } from '../SiteLink';
 import { useSiteData } from '../siteData';
 import type { SitePostPublic } from '../../../types/sitePosts';
-import { POST_KIND_LABEL, postImageAlt, postLinkTarget, postParagraphs, relatedPosts, type PostLinkTarget } from './model';
+import {
+  POST_KIND_LABEL,
+  postCanonicalUrl,
+  postImageAlt,
+  postLinkTarget,
+  postParagraphs,
+  postReadingMinutes,
+  relatedPosts,
+  type PostLinkTarget,
+} from './model';
 import { PostCard } from './PostCard';
+import { PostShare } from './PostShare';
 import { Breadcrumb, PAGE_H1, POST_IMAGE_FRAME, PostChip, PostDateText, PostImage, Skeleton } from './parts';
 import type { PostTheme } from './theme';
 
@@ -45,7 +56,7 @@ export function PostArticleSkeleton({ theme }: { theme: PostTheme }) {
 }
 
 export function PostArticle({ post, theme }: { post: SitePostPublic; theme: PostTheme }) {
-  const { posts } = useSiteData();
+  const { posts, siteOrigin } = useSiteData();
   const relatedId = useId();
   const kind = post.kind;
   const label = POST_KIND_LABEL[kind];
@@ -54,6 +65,8 @@ export function PostArticle({ post, theme }: { post: SitePostPublic; theme: Post
   const extra = postLinkTarget(post.link_url);
   const tag = kind === 'pengumuman' ? post.badge : post.category;
   const related = relatedPosts(posts[kind], post.slug);
+  const minutes = postReadingMinutes(post.body);
+  const shareUrl = postCanonicalUrl(siteOrigin, kind, post.slug);
 
   return (
     <div data-site-page="post">
@@ -67,12 +80,14 @@ export function PostArticle({ post, theme }: { post: SitePostPublic; theme: Post
           ]}
         />
         <header className="mt-6 max-w-[860px] @3xl:mt-8">
-          {(tag || post.published_at) && (
-            <p className={`flex flex-wrap items-center gap-x-3 gap-y-2 text-[14px] font-medium ${theme.muted}`}>
-              <PostChip label={tag} badge={kind === 'pengumuman'} theme={theme} />
-              <PostDateText value={post.published_at} long />
-            </p>
-          )}
+          <p className={`flex flex-wrap items-center gap-x-3 gap-y-2 text-[14px] font-medium ${theme.muted}`}>
+            <PostChip label={tag} badge={kind === 'pengumuman'} theme={theme} />
+            <PostDateText value={post.published_at} long />
+            <span data-reading-time="" className="inline-flex items-center gap-1.5">
+              <Clock aria-hidden className="h-3.5 w-3.5" />
+              {minutes} menit baca
+            </span>
+          </p>
           <h1 className={`mt-4 ${PAGE_H1} ${theme.display} ${theme.heading}`}>{post.title}</h1>
           {post.excerpt && <p className={`mt-4 max-w-[64ch] text-pretty text-[16.5px] leading-relaxed @3xl:text-[18.5px] ${theme.muted}`}>{post.excerpt}</p>}
         </header>
@@ -98,7 +113,13 @@ export function PostArticle({ post, theme }: { post: SitePostPublic; theme: Post
           </div>
         )}
 
-        <footer className={`mt-10 flex flex-col gap-2.5 border-t pt-6 @xl:flex-row @xl:flex-wrap @3xl:mt-12 ${theme.line}`}>
+        {shareUrl && (
+          <div className={`mt-10 border-t pt-6 @3xl:mt-12 ${theme.line}`}>
+            <PostShare url={shareUrl} title={post.title} theme={theme} />
+          </div>
+        )}
+
+        <footer className={`flex flex-col gap-2.5 border-t pt-6 @xl:flex-row @xl:flex-wrap ${shareUrl ? 'mt-6' : 'mt-10 @3xl:mt-12'} ${theme.line}`}>
           <SiteLink path={listPath} className={theme.buttonGhost}>
             <ArrowLeft aria-hidden className="h-4 w-4" />
             Semua {kind}

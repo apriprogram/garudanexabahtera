@@ -1,5 +1,6 @@
 // Order Masuk (/admin/pesanan-template): daftar pesanan template + detail, Approve & Tolak. SPEC §4, §6, §9.
-// Detail juga memuat rincian domain berbayar, masa aktif, dan riwayat perpanjangan (ACCOUNT-DOMAIN-RENEWAL-SPEC.md §3–§5).
+// Detail juga memuat rincian domain berbayar, masa aktif, dan riwayat perpanjangan (ACCOUNT-DOMAIN-RENEWAL-SPEC.md §3–§5),
+// serta fitur tambahan situs: status, riwayat tagihan, Aktifkan gratis / Nonaktifkan (SITE-ADDONS-SPEC.md §7).
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check, ExternalLink, Eye, Inbox, Mail, Phone, RotateCw, ShoppingBag, X, XCircle } from 'lucide-react';
@@ -39,7 +40,9 @@ import {
 } from '../../../components/admin/ui';
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
 import { formatRupiah, formatTanggal, type Order, type OrderStatus, type Renewal, type Site } from '../../../types/platform';
+import type { SiteAddonOrder, SiteAddonState } from '../../../types/siteAddons';
 import { useApiQuery, useDebounced, useToast, type ToastTone } from './shared/hooks';
+import { SiteAddonsSection } from './shared/SiteAddonsSection';
 import {
   ActivePeriodRows,
   DetailList,
@@ -54,6 +57,7 @@ import {
 import {
   ORDER_STATUSES,
   ORDER_STATUS_SHORT,
+  capableAddons,
   domainPeriod,
   hasActivePeriod,
   isOrderStatus,
@@ -68,8 +72,18 @@ import {
 } from './shared/orderUtils';
 
 type OrdersResponse = { orders: Order[]; counts: Partial<Record<OrderStatus | 'all', number>> };
-/** `renewals` (terbaru dulu) tidak ada di backend sebelum migrasi 026. */
-type OrderDetailResponse = { order: Order; logs: StaffOrderLog[]; site: Site | null; renewals?: Renewal[] };
+/**
+ * `renewals` (terbaru dulu) tidak ada di backend sebelum migrasi 026; `addons` (keadaan fitur situs pesanan ini, kosong
+ * tanpa situs) dan `addon_orders` (terbaru dulu) tidak ada sebelum fitur tambahan (SITE-ADDONS-SPEC.md §4.2).
+ */
+type OrderDetailResponse = {
+  order: Order;
+  logs: StaffOrderLog[];
+  site: Site | null;
+  renewals?: Renewal[];
+  addons?: SiteAddonState[];
+  addon_orders?: SiteAddonOrder[];
+};
 type StatusFilter = OrderStatus | 'all';
 
 const REJECTABLE: OrderStatus[] = ['menunggu_pembayaran', 'menunggu_approval'];
@@ -325,6 +339,9 @@ function OrderDetail({
   const logs = loaded?.logs ?? [];
   const site = loaded?.site ?? null;
   const renewals = loaded?.renewals ?? [];
+  // Fitur tambahan: hanya fitur yang didukung template situsnya; backend tanpa `addons` = bagian disembunyikan
+  const addons = capableAddons(loaded?.addons);
+  const addonOrders = loaded?.addon_orders ?? [];
   // Acuan sisa masa aktif (hitungannya per hari, cukup sekali per buka detail)
   const [now] = useState(() => new Date());
 
@@ -339,6 +356,12 @@ function OrderDetail({
   const afterChange = () => {
     detail.reload();
     onChanged();
+  };
+
+  /** Keadaan fitur dari respons admin_set_site_addon langsung tampil; riwayat tagihan & log dimuat ulang. */
+  const handleAddonsUpdated = (next: SiteAddonState[]) => {
+    detail.mutate((d) => ({ ...d, addons: (d.addons ?? []).map((a) => next.find((n) => n.code === a.code) ?? a) }));
+    detail.reload();
   };
 
   /** Status order sudah berubah di tempat lain (409 INVALID_STATUS): tutup dialog dan muat ulang. */
@@ -434,6 +457,7 @@ function OrderDetail({
   const canReject = REJECTABLE.includes(order.status);
   const showPeriod = hasActivePeriod(order);
   const expiryNotice = orderExpiryNotice(order, now);
+  const addonSiteId = site?.id ?? order.site_id ?? null;
 
   return (
     <>
@@ -599,6 +623,19 @@ function OrderDetail({
             ) : (
               <LoadingState label="Memuat perpanjangan..." className="py-8" />
             )}
+          </DrawerSection>
+        )}
+
+        {addons.length > 0 && addonSiteId != null && (
+          <DrawerSection title="Fitur tambahan">
+            <SiteAddonsSection
+              siteId={addonSiteId}
+              domain={site?.domain ?? order.domain ?? order.domain_primary}
+              addons={addons}
+              orders={addonOrders}
+              onUpdated={handleAddonsUpdated}
+              notify={notify}
+            />
           </DrawerSection>
         )}
 

@@ -5,6 +5,8 @@
 // sebelumnya, halaman daftar & tulisan (satu H1, remah roti, tautan <a href> yang bisa dirayapi, foto lazy + ukuran),
 // tidak ditemukan / memuat / gagal, tautan section di halaman selain beranda, navigasi tanpa muat ulang, anchor #berita,
 // tautan "/path" (halaman situs vs file nyata), penanda section aktif setelah pindah halaman, bingkai foto artikel.
+// Fitur berbayar (docs/platform/SITE-ADDONS-SPEC.md §6): tes di sini memakai situs dengan fitur Berita & Pengumuman AKTIF
+// (postsEnabled true) kecuali disebut lain; tampilan basic vs profesional diuji lengkap di site-addons-render.test.tsx.
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,8 +25,9 @@ type Code = 'madani' | 'cakrawala' | 'bestari';
 /** Template berfitur tulisan (POST_TEMPLATE_CODES): semua tes tampilan dijalankan untuk masing-masing. */
 const CODES: Code[] = ['madani', 'cakrawala', 'bestari'];
 
+/** Situs live dengan fitur Berita & Pengumuman aktif (bawaan); `postsEnabled: false` = berita biasa. */
 const site = (code: Code, data: Partial<SiteData> = {}, content: unknown = null) =>
-  render(<SiteRenderer templateCode={code} content={content} data={{ ...SITE_DATA_DEFAULT, ...data }} />).container;
+  render(<SiteRenderer templateCode={code} content={content} data={{ ...SITE_DATA_DEFAULT, postsEnabled: true, ...data }} />).container;
 const section = (root: HTMLElement, key: string) => root.querySelector<HTMLElement>(`[data-tpl-section="${key}"]`)!;
 const hrefs = (root: HTMLElement) => Array.from(root.querySelectorAll('a')).map((a) => a.getAttribute('href'));
 const WITH_POSTS: Partial<SiteData> = { posts: { berita: NEWS, pengumuman: ANNOUNCEMENTS } };
@@ -127,11 +130,14 @@ const snapshot = (root: HTMLElement) => ({
 });
 
 describe.each(CODES)('%s: beranda', (code) => {
-  it('tanpa tulisan (null atau []) → beranda sama persis dengan demo/konten CMS', () => {
+  it('fitur tidak aktif (tulisan null, [], atau ada) → beranda sama persis dengan demo/konten CMS', () => {
     const demo = snapshot(render(<SiteRenderer templateCode={code} content={null} />).container);
     cleanup();
-    const empty = snapshot(site(code, { posts: { berita: [], pengumuman: null } }));
+    const empty = snapshot(site(code, { postsEnabled: false, posts: { berita: [], pengumuman: null } }));
     expect(empty).toEqual(demo);
+    cleanup();
+    // Tulisan di konteks diabaikan selama fitur tidak aktif (berita biasa)
+    expect(snapshot(site(code, { ...WITH_POSTS, postsEnabled: false }))).toEqual(demo);
     // Section id berbahasa Indonesia (tautan "/#berita" dari halaman tulisan)
     expect(demo.sections).toEqual(expect.arrayContaining(['news#berita', 'announcements#pengumuman', 'agenda#agenda']));
     expect(demo.hrefs.some((h) => h === '/berita' || h === '/pengumuman')).toBe(false);
@@ -141,6 +147,7 @@ describe.each(CODES)('%s: beranda', (code) => {
     const root = site(code, { ...WITH_POSTS, basePath: '/situs/7' });
     expect(root.querySelectorAll('h1')).toHaveLength(1);
     const news = section(root, 'news');
+    expect(news).toHaveAttribute('data-pro-section', 'news');
     expect(news.querySelectorAll('article')).toHaveLength(2);
     const title = within(news).getByRole('link', { name: NEWS[0].title });
     expect(title).toHaveAttribute('href', '/situs/7/berita/juara-olimpiade-sains');
@@ -164,15 +171,19 @@ describe.each(CODES)('%s: beranda', (code) => {
     expect(within(ann).getByRole('link', { name: /Lihat semua pengumuman/ })).toHaveAttribute('href', '/situs/7/pengumuman');
     expect(ann.textContent).toContain('Penting');
     expect(ann.textContent).not.toContain('Lihat lampiran');
-    expect(ann.textContent).not.toContain('Lihat detail');
+    // Papan pengumuman profesional: petunjuk "Lihat detail" (tautannya judul baris)
+    expect(ann.textContent).toContain('Lihat detail');
+    expect(within(ann).queryByRole('link', { name: /Lihat detail/ })).toBeNull();
     // Menu "Berita" tetap ke section di beranda
     expect(within(root.querySelector('header')!).getAllByRole('link', { name: 'Berita' })[0]).toHaveAttribute('href', '#berita');
   });
 
-  it('hanya pengumuman dari tulisan: berita tetap dari konten CMS (fallback per jenis)', () => {
+  it('hanya pengumuman dari tulisan: berita tetap dari konten CMS (fallback per jenis) tanpa tautan detail', () => {
     const root = site(code, { posts: { berita: null, pengumuman: ANNOUNCEMENTS } });
     const news = section(root, 'news');
-    expect(within(news).getAllByRole('button', { name: /Baca selengkapnya/ }).length).toBeGreaterThan(0);
+    expect(news).toHaveAttribute('data-pro-section', 'news');
+    expect(news.querySelectorAll('article').length).toBeGreaterThan(1);
+    expect(hrefs(news).filter((h) => h?.startsWith('/berita'))).toEqual([]);
     expect(within(news).queryByRole('link', { name: /Lihat semua berita/ })).toBeNull();
     expect(within(section(root, 'announcements')).getByRole('link', { name: /Lihat semua pengumuman/ })).toHaveAttribute('href', '/pengumuman');
   });
@@ -374,7 +385,7 @@ describe('navigasi di dalam situs', () => {
     const original = window.IntersectionObserver;
     window.IntersectionObserver = RecordingObserver as unknown as typeof IntersectionObserver;
     try {
-      const home = { ...SITE_DATA_DEFAULT, ...WITH_POSTS };
+      const home = { ...SITE_DATA_DEFAULT, postsEnabled: true, ...WITH_POSTS };
       const view = render(<SiteRenderer templateCode={code} content={null} data={home} />);
       view.rerender(<SiteRenderer templateCode={code} content={null} data={{ ...home, route: { kind: 'post', postKind: 'berita', slug: POST.slug }, post: POST }} />);
       view.rerender(<SiteRenderer templateCode={code} content={null} data={{ ...home }} />);

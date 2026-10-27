@@ -46,6 +46,10 @@ Peran `users.role`: `admin`, `user` (staf), **`customer`** (baru, pembeli templa
   - Berita & pengumuman + SEO situs pembeli (§6, docs/platform/SITE-POSTS-SEO-SPEC.md): publik `get_site_seo`,
     `get_site_posts`, `get_site_post`, `site_post_view`; pembeli `customer_get_site_posts`, `customer_save_site_post`,
     `customer_delete_site_post`, `customer_get_site_seo`, `customer_save_site_seo`.
+  - Fitur tambahan berbayar per situs (Berita & Pengumuman template sekolah, docs/platform/SITE-ADDONS-SPEC.md): pembeli
+    `customer_get_site_addons`, `customer_buy_site_addon`, `customer_pay_site_addon`, `customer_cancel_site_addon`,
+    `dev_simulate_site_addon_payment`; admin saja `admin_set_site_addon`; `midtrans_notification` dengan order id `GNF-…`.
+  - Statistik kunjungan situs pembeli (migrasi 031, docs/platform/SITE-STATS-SPEC.md): publik `site_visit` (POST, selalu `{ success: true }`), pembeli `customer_get_site_stats` (GET).
   - Selain itu = **aksi staf**: token role `admin` atau `user`. Token `customer` → 403.
   - `ADMIN_ACTIONS` (admin saja): yang lama + `admin_delete_template`.
   - **Nilai kontrak** (`project_client.price`, "Nilai kontrak" dokumen proyek) hanya diisi/diubah admin (keputusan
@@ -357,6 +361,22 @@ Halaman situs pembeli di domainnya sendiri (kepala halaman SEO, `robots.txt`, `s
 `backend/site.php`, yang me-require `site_posts.php` untuk konstanta dan fungsi murninya. **Node tidak punya padanan
 `site.php`**: produksi adalah cPanel/PHP, jadi di Node/docker hanya aksi API di atas yang setara, sedangkan domain
 pembeli tetap dilayani `index.html` tanpa kepala SEO server (SITE-POSTS-SEO-SPEC.md §6 dan §10).
+
+**Fitur tambahan berbayar per situs** (`backend/modules/site_addons.php` / `site_addons.js`, kontrak lengkap
+docs/platform/SITE-ADDONS-SPEC.md, tipe `src/types/siteAddons.ts`). Tabel migrasi `2026-10-27_030`: `site_addon_orders`
+(satu baris per tagihan/aktivasi; nomor `GNF-YYYYMMDD-XXXXXX`, order id Midtrans `{nomor}-{percobaan}` seperti
+perpanjangan; aktif = `lunas` dan `revoked_at` NULL). Saat ini satu fitur: `posts` = Berita & Pengumuman untuk template
+mampu di atas. Tulisan hanya dibaca/ditulis/ditampilkan bila template mampu **dan** fitur aktif: aksi tulisan pembeli
+mampu-tapi-terkunci → 403 `POSTS_LOCKED`, `get_site_posts` kosong, `get_site_post`/`site_post_view` 404, `site.php`
+404 untuk `/berita…` tanpa daftar di preload maupun sitemap. `get_site_public` dan `customer_get_site` membawa
+`site.addons: { posts }` (+ `site.posts_capable` untuk pemilik). Pembeli: `customer_get_site_addons` (GET),
+`customer_buy_site_addon`, `customer_pay_site_addon`, `customer_cancel_site_addon`, `dev_simulate_site_addon_payment`
+(maks 20 beli/bayar/batal per jam per pengguna); admin: `admin_set_site_addon` (aktifkan gratis / cabut);
+`admin_get_template_order` menambah `addons` + `addon_orders`; nota `type: 'fitur'` dan `customer_get_invoice` dengan
+`addon_number`. Harga sekali bayar = setting publik `addon_posts_price` (kosong/0 = Rp350.000). Error tambahan:
+`ADDON_UNAVAILABLE` (403), `ADDON_ACTIVE` / `ADDON_PENDING` / `SITE_SUSPENDED` / `INVALID_STATUS` /
+`PAYMENT_UNDER_REVIEW` (409), `ADDON_NOT_FOUND` (404), `ADDONS_NOT_READY` (503, tabel belum ada; bacaan tetap jalan
+dengan semua fitur terkunci, tidak pernah 500).
 
 ### Struktur kode backend
 - PHP: `backend/modules/templates.php` berisi fungsi `handle_platform_action(mysqli $conn, string $action, array $input, ?array $user): bool`

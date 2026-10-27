@@ -1,7 +1,8 @@
 // Render satu situs (template + konten) dengan pengaman: kode template tidak dikenal atau konten yang membuat
 // komponen error tidak merusak halaman lain, tetapi menampilkan layar "tampilan belum tersedia".
-// `data` (rute, basePath, tulisan berita/pengumuman) diteruskan ke template lewat SiteDataContext (shared/siteData.ts);
-// tanpa `data` = beranda tanpa tulisan (demo, katalog).
+// `data` (rute, basePath, tulisan berita/pengumuman, fitur Berita & Pengumuman) diteruskan ke template lewat
+// SiteDataContext (shared/siteData.ts); tanpa `data` = beranda tanpa tulisan, berita biasa (demo, katalog).
+// `postsEnabled` hanya berlaku untuk template mampu (features.posts); pemanggil mengisinya dari `site.addons.posts`.
 import { Component, useMemo, type ErrorInfo, type ReactNode } from 'react';
 import { getTemplate, parseSiteContent, resolveContent } from './index';
 import { SiteStatus } from './SiteStatus';
@@ -43,7 +44,7 @@ interface SiteRendererProps {
   motion?: boolean;
   /** Layar bila template tidak tersedia / error (default: SiteStatus "unavailable" layar penuh) */
   fallback?: ReactNode;
-  /** Rute & tulisan situs (CustomerSite, SitePreview); bawaan: beranda tanpa tulisan */
+  /** Rute, tulisan & fitur situs (CustomerSite, SitePreview, demo ?fitur=berita); bawaan: beranda tanpa tulisan */
   data?: SiteData;
 }
 
@@ -52,12 +53,19 @@ export function SiteRenderer({ templateCode, content, preview = false, motion = 
   const resolved = useMemo(() => (def ? resolveContent(def, parseSiteContent(content)) : null), [def, content]);
   // Konten ATAU halaman/data berubah (mis. pindah ke tulisan lain) → coba render lagi setelah error
   const resetKey = useMemo(() => [resolved, data], [resolved, data]);
+  const capable = def?.features?.posts === true;
+  const value = useMemo<SiteData>(() => {
+    const base = data ?? SITE_DATA_DEFAULT;
+    // Template tidak mampu tidak pernah memakai section/halaman tulisan (nilai lama tanpa field = false)
+    const postsEnabled = capable && base.postsEnabled === true;
+    return base.postsEnabled === postsEnabled ? base : { ...base, postsEnabled };
+  }, [data, capable]);
   const unavailable = fallback ?? <SiteStatus kind="unavailable" />;
   if (!def || !resolved) return <>{unavailable}</>;
   const Template = def.Component;
   return (
     <TemplateErrorBoundary fallback={unavailable} resetKey={resetKey}>
-      <SiteDataContext.Provider value={data ?? SITE_DATA_DEFAULT}>
+      <SiteDataContext.Provider value={value}>
         <Template content={resolved} preview={preview} motion={motion} />
       </SiteDataContext.Provider>
     </TemplateErrorBoundary>

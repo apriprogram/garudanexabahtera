@@ -17,6 +17,12 @@ export interface PostTheme {
   chip: string;
   /** Label pengumuman mendesak ("Penting", "Wajib") */
   urgent: string;
+  /** Label pengumuman kewajiban ("Wajib", "Batas waktu") di section profesional: kuning tanah, beda dari "Penting" */
+  warn: string;
+  /** Tombol filter kategori/label yang dipilih (aria-pressed) */
+  filterOn: string;
+  /** Tombol filter yang tidak dipilih (lengkap dengan hover) */
+  filterOff: string;
   /** Bidang lembut: ubin tanggal, kartu tanpa foto, kerangka memuat, bingkai foto artikel */
   soft: string;
   /** Kartu putih bergaris tipis (baris pengumuman) */
@@ -42,6 +48,9 @@ export const DEFAULT_POST_THEME: PostTheme = {
   accent: 'text-(--tpl-accent-ink)',
   chip: 'bg-(--tpl-accent-50) text-(--tpl-accent-ink)',
   urgent: 'bg-[#FEECEB] text-[#B42318]',
+  warn: 'bg-[#FEF3E2] text-[#93370D]',
+  filterOn: 'bg-(--tpl-accent) text-(--tpl-on-accent)',
+  filterOff: 'bg-[#F4F5F7] text-fg hover:bg-[#E9EBEF]',
   soft: 'bg-[#F4F5F7]',
   card: 'bg-white ring-1 ring-inset ring-black/[0.07]',
   line: 'border-black/[0.08]',

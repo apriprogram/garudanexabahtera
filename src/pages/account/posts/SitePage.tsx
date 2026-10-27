@@ -1,14 +1,16 @@
 // Kerangka bersama halaman per situs di panel akun (Berita & Pengumuman, editor tulisan, SEO): wadah halaman, kepala
 // halaman (kembali, nama situs, H1, navigasi pil situs), kerangka memuat, pemberitahuan situs nonaktif, dan pill status
-// tulisan. Tata letak AccountLayout tidak memberi padding, jadi setiap halaman memakai PageContainer.
+// tulisan. Tata letak AccountLayout tidak memberi padding, jadi setiap halaman memakai PageContainer. Panel terkunci =
+// fitur Berita & Pengumuman belum aktif (docs/platform/SITE-ADDONS-SPEC.md §5).
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Globe, MessageCircle, Newspaper } from 'lucide-react';
-import { useSiteSettings } from '../../../hooks/useSiteSettings';
+import { ArrowLeft, Globe, Lock, MessageCircle, Newspaper, Sparkles } from 'lucide-react';
+import { addonPostsPrice, useSiteSettings } from '../../../hooks/useSiteSettings';
 import { TEMPLATE_LIST } from '../../../templates';
-import type { Site } from '../../../types/platform';
+import { formatRupiah, type Site } from '../../../types/platform';
 import type { SitePostStatus } from '../../../types/sitePosts';
 import { Notice } from '../cms/ui';
+import { addonsPath, postsLocked } from '../components/addons';
 import { helpWhatsappUrl, siteHelpMessage } from '../components/orderCopy';
 import { SiteNav } from '../components/SiteNav';
 import { EmptyState, Skeleton } from '../components/States';
@@ -29,10 +31,12 @@ interface SitePageHeaderProps {
   description?: ReactNode;
   /** Tombol di kanan judul (HP: di bawah judul) */
   actions?: ReactNode;
+  /** Pil Berita & Pengumuman bergembok; bawaan dari site.addons (server menjawab POSTS_LOCKED → halaman mengisinya) */
+  postsLocked?: boolean;
 }
 
 /** Tombol kembali, situs (template · domain), H1 halaman, lalu navigasi pil situs. */
-export function SitePageHeader({ site, back, title, description, actions }: SitePageHeaderProps) {
+export function SitePageHeader({ site, back, title, description, actions, postsLocked: locked }: SitePageHeaderProps) {
   return (
     <>
       <Link to={back.to} className="btn btn-ghost btn-sm -ml-3">
@@ -53,7 +57,13 @@ export function SitePageHeader({ site, back, title, description, actions }: Site
         </div>
         {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
       </header>
-      <SiteNav siteId={site.id} posts={hasPostsFeature(site.template_code)} bleed className="mt-5" />
+      <SiteNav
+        siteId={site.id}
+        posts={hasPostsFeature(site.template_code)}
+        postsLocked={locked ?? postsLocked(site)}
+        bleed
+        className="mt-5"
+      />
     </>
   );
 }
@@ -130,6 +140,47 @@ export function PostsUnavailable({ site }: { site: Site }) {
           </Link>
           <Link to={links.seo} className="btn btn-outline">
             Atur SEO
+          </Link>
+        </>
+      }
+    />
+  );
+}
+
+/**
+ * Template mampu tetapi fitur Berita & Pengumuman belum aktif (403 POSTS_LOCKED / site.addons.posts false): penjelasan,
+ * harga dari setting publik (hanya bila berhasil dimuat), dan ajakan ke menu Fitur tambahan dengan baris situs ini. Tanpa daftar/form.
+ */
+export function PostsLocked({ site }: { site: Site }) {
+  const { settings, loaded } = useSiteSettings();
+  // get_settings gagal → objek kosong; harga bawaan bisa beda dengan setting, jadi kalimat harga tidak ditampilkan
+  const priceKnown = loaded && Object.keys(settings).length > 0;
+  const links = siteLinks(site.id);
+  return (
+    <EmptyState
+      icon={<Lock className="h-7 w-7" aria-hidden />}
+      title="Fitur Berita & Pengumuman belum aktif"
+      description={
+        <>
+          Situs ini masih menampilkan berita biasa dari isian konten. Aktifkan fitur ini untuk halaman berita &amp; pengumuman
+          sendiri, foto, kategori, label Penting, SEO per tulisan, jumlah dilihat, dan tampilan beranda yang lebih profesional.
+          {priceKnown && (
+            <>
+              {' '}
+              Harga <span className="font-semibold tabular-nums text-fg">{formatRupiah(addonPostsPrice(settings))}</span>, sekali bayar
+              dan aktif selama situs aktif.
+            </>
+          )}
+        </>
+      }
+      action={
+        <>
+          <Link to={addonsPath(site.id)} className="btn btn-primary">
+            <Sparkles className="h-4 w-4" aria-hidden />
+            Aktifkan sekarang
+          </Link>
+          <Link to={links.content} className="btn btn-outline">
+            Kelola konten
           </Link>
         </>
       }

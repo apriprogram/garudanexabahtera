@@ -1575,6 +1575,55 @@ describe('SiteSettings: tab Harga template (domain terpisah & perpanjangan, pemi
     expect(posts[2].settings.template_hosting_renewal_price).toBe('');
   });
 
+  it('fitur Berita & Pengumuman (sekali bayar): bawaan Rp350.000, petunjuk ikut nilai, tersimpan sebagai angka (SITE-ADDONS-SPEC §7)', async () => {
+    const { posts } = mockSiteApi({ stored: {} });
+    renderSite();
+    await readySave();
+    await openPricing();
+    const field = screen.getByLabelText('Fitur Berita & Pengumuman (sekali bayar)') as HTMLInputElement;
+    expect(field).toHaveAttribute('type', 'number');
+    expect(field).toHaveAttribute('min', '0');
+    expect(field).toHaveAttribute('step', '1000');
+    expect(field.value).toBe('350000');
+    expect(field).toHaveAccessibleDescription(/Pembeli membayar Rp350\.000 sekali, aktif selama situsnya aktif\..*Kosong atau 0 = bawaan Rp350\.000\./);
+
+    fireEvent.change(field, { target: { value: '400000' } });
+    expect(field).toHaveAccessibleDescription(/Pembeli membayar Rp400\.000 sekali/);
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0].settings).toMatchObject({ addon_posts_price: '400000', template_hosting_renewal_price: '500000' });
+
+    // 0 atau kosong = bawaan (petunjuk menyebut harga efektif); desimal dibulatkan
+    fireEvent.change(field, { target: { value: '0' } });
+    expect(field).toHaveAccessibleDescription(/Pembeli membayar Rp350\.000 sekali/);
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(2));
+    expect(posts[1].settings.addon_posts_price).toBe('0');
+
+    fireEvent.change(field, { target: { value: '' } });
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(3));
+    expect(posts[2].settings.addon_posts_price).toBe('');
+
+    fireEvent.change(field, { target: { value: '299999.5' } });
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(4));
+    expect(posts[3].settings.addon_posts_price).toBe('300000');
+  });
+
+  it('harga fitur tersimpan dimuat; tab Harga belum dibuka = diteruskan apa adanya', async () => {
+    const { posts } = mockSiteApi({ stored: { addon_posts_price: '425000' } });
+    renderSite();
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0].settings.addon_posts_price).toBe('425000');
+
+    await openPricing();
+    const field = screen.getByLabelText('Fitur Berita & Pengumuman (sekali bayar)') as HTMLInputElement;
+    expect(field.value).toBe('425000');
+    expect(field).toHaveAccessibleDescription(/Pembeli membayar Rp425\.000 sekali/);
+  });
+
   it('markup DewaBiz: dimuat dari admin_get_domain_pricing, bilangan bulat 0–500, di luar itu dikirim kosong (bawaan)', async () => {
     const { posts } = mockSiteApi({ stored: { domain_markup_percent: '30' } });
     renderSite();

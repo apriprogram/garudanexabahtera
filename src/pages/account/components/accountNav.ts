@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   LayoutTemplate,
   ReceiptText,
+  Sparkles,
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
@@ -21,7 +22,7 @@ export interface AccountNavItem {
 }
 
 const clean = (p: string) => p.replace(/\/+$/, '') || '/';
-/** Halaman nota (/akun/pesanan/:no/nota[/:renewal]) masuk menu Nota, bukan Pesanan saya. */
+/** Halaman nota (/akun/pesanan/:no/nota[/:GNR-… atau GNF-…]) masuk menu Nota, bukan Pesanan saya. */
 const isInvoicePage = (p: string) => /^\/akun\/pesanan\/[^/]+\/nota(\/|$)/.test(p);
 
 export const ACCOUNT_NAV: AccountNavItem[] = [
@@ -36,6 +37,8 @@ export const ACCOUNT_NAV: AccountNavItem[] = [
   { label: 'Situs saya', to: '/akun/situs', icon: Globe, group: 'Layanan', match: (p) => clean(p).startsWith('/akun/situs') },
   // Dokumen proyek custom (PROJECT-DOCS-SPEC §7)
   { label: 'Proyek saya', to: '/akun/proyek', icon: FolderKanban, group: 'Layanan', match: (p) => clean(p).startsWith('/akun/proyek') },
+  // Fitur tambahan berbayar per situs (SITE-ADDONS-SPEC §5)
+  { label: 'Fitur tambahan', to: '/akun/fitur', icon: Sparkles, group: 'Layanan', match: (p) => clean(p) === '/akun/fitur' },
   { label: 'Nota', to: '/akun/nota', icon: FileText, group: 'Akun', match: (p) => clean(p) === '/akun/nota' || isInvoicePage(clean(p)) },
   { label: 'Profil', to: '/akun/profil', icon: UserRound, group: 'Akun', match: (p) => clean(p) === '/akun/profil' },
   { label: 'Lihat Template', to: '/#templates', icon: LayoutTemplate, group: 'Lainnya', match: () => false },
@@ -105,6 +108,14 @@ export function accountCrumbs(pathname: string, search = ''): Crumb[] {
           { label: 'SEO situs', to: null },
         ];
       }
+      // Statistik kunjungan (docs/platform/SITE-STATS-SPEC.md §4)
+      if (sub === 'statistik') {
+        return [
+          { label: 'Situs saya', to: '/akun/situs' },
+          { label: 'Kelola situs', to: siteTo },
+          { label: 'Statistik', to: null },
+        ];
+      }
       return [{ label: 'Situs saya', to: '/akun/situs' }, { label: 'Kelola situs', to: null }];
     }
     case 'proyek':
@@ -117,6 +128,8 @@ export function accountCrumbs(pathname: string, search = ''): Crumb[] {
         ];
       }
       return [{ label: 'Proyek saya', to: '/akun/proyek' }, { label: 'Detail proyek', to: null }];
+    case 'fitur':
+      return [{ label: 'Fitur tambahan', to: null }];
     case 'nota':
       return [{ label: 'Nota', to: null }];
     case 'profil':

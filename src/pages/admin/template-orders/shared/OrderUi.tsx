@@ -4,8 +4,12 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Ban, CheckCircle2, CircleHelp, Clock, CreditCard, Globe, Hourglass, Info, RefreshCw, X, XCircle } from 'lucide-react';
 import { Badge, IconBox, IconButton, Notice, cn, type Tone } from '../../../../components/admin/ui';
 import { formatRupiah, formatTanggal, type OrderStatus, type Renewal } from '../../../../types/platform';
+import { SITE_ADDON_NAME, type SiteAddonOrder } from '../../../../types/siteAddons';
 import {
   EXPIRY_TONE,
+  addonOrderBadge,
+  addonPriceText,
+  addonSourceLabel,
   domainCheckInfo,
   expiryLabel,
   expiryOf,
@@ -233,6 +237,64 @@ export function RenewalHistory({ renewals }: { renewals: Renewal[] }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+/** Pill status tagihan fitur tambahan (lunas yang dicabut tim = "Dinonaktifkan"). */
+export function AddonOrderStatusBadge({ order, size }: { order: Pick<SiteAddonOrder, 'status' | 'status_label' | 'revoked_at'>; size?: 'sm' | 'md' }) {
+  const badge = addonOrderBadge(order);
+  return (
+    <Badge tone={badge.tone} size={size}>
+      {badge.label}
+    </Badge>
+  );
+}
+
+/** Status pembayaran tagihan fitur yang masih berjalan; `capture` = sedang ditinjau bank (belum aktif, tanpa bayar ulang). */
+export function AddonPaymentBadge({ status, size }: { status: string | null | undefined; size?: 'sm' | 'md' }) {
+  if (status !== 'capture') return <PaymentStatusBadge status={status} size={size} />;
+  return (
+    <Badge tone="warning" icon={<CreditCard />} size={size} variant="soft">
+      Ditinjau bank
+    </Badge>
+  );
+}
+
+/** Riwayat tagihan fitur tambahan pesanan ini (terbaru dulu, addon_orders dari admin_get_template_order). */
+export function AddonOrderHistory({ orders }: { orders: SiteAddonOrder[] }) {
+  if (orders.length === 0) return <p className="text-sm text-adm-muted">Belum ada tagihan fitur tambahan.</p>;
+  return (
+    <ul className="space-y-3">
+      {orders.map((o) => (
+        <li key={o.addon_number} className="rounded-xl px-4 py-3 ring-1 ring-inset ring-adm-line">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-mono text-[13px] font-semibold tabular-nums text-adm-fg">{o.addon_number}</p>
+            <AddonOrderStatusBadge order={o} size="sm" />
+          </div>
+          <p className="mt-1.5 text-sm text-adm-fg">
+            <span className="font-semibold tabular-nums">{addonPriceText(o.price)}</span> · {SITE_ADDON_NAME[o.addon_code] ?? o.addon_code}
+          </p>
+          <p className="mt-0.5 text-xs text-adm-muted">{addonSourceLabel(o.source)}</p>
+          <DetailList
+            className="mt-3"
+            items={[
+              { label: 'Dibuat', value: formatTanggal(o.created_at, true) },
+              ...(o.status === 'lunas'
+                ? [
+                    o.source === 'beli'
+                      ? { label: 'Dibayar', value: `${formatTanggal(o.paid_at, true)} · ${paymentTypeLabel(o.payment_type)}` }
+                      : { label: 'Aktif sejak', value: formatTanggal(o.paid_at, true) },
+                    ...(o.invoice_number ? [{ label: 'No. nota', value: <span className="font-mono text-[13px] tabular-nums">{o.invoice_number}</span> }] : []),
+                    ...(o.revoked_at ? [{ label: 'Dinonaktifkan', value: formatTanggal(o.revoked_at, true) }] : []),
+                  ]
+                : o.status === 'dibatalkan'
+                  ? [{ label: 'Dibatalkan', value: formatTanggal(o.cancelled_at, true) }]
+                  : [{ label: 'Pembayaran', value: <AddonPaymentBadge status={o.payment_status} size="sm" /> }]),
+            ]}
+          />
+        </li>
+      ))}
+    </ul>
   );
 }
 

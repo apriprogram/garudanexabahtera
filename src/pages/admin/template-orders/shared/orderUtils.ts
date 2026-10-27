@@ -7,12 +7,20 @@ import {
   ORDER_STATUS_TONE,
   PAYMENT_STATUS_LABEL,
   RENEWAL_STATUS_LABEL,
+  formatRupiah,
   type Order,
   type OrderLog,
   type OrderStatus,
   type RenewalStatus,
   type Site,
 } from '../../../../types/platform';
+import {
+  SITE_ADDON_STATUS_LABEL,
+  type SiteAddonOrder,
+  type SiteAddonSource,
+  type SiteAddonState,
+  type SiteAddonStatus,
+} from '../../../../types/siteAddons';
 
 /** Urutan tab status di Order Masuk. */
 export const ORDER_STATUSES: OrderStatus[] = ['menunggu_pembayaran', 'menunggu_approval', 'proses_domain', 'aktif', 'ditolak', 'dibatalkan'];
@@ -88,14 +96,26 @@ const LOG_EVENT_LABEL: Record<string, string> = {
   renewal_payment_update: 'Status pembayaran perpanjangan diperbarui',
   renewal_paid: 'Perpanjangan lunas',
   renewal_cancelled: 'Perpanjangan dibatalkan',
+  // Fitur tambahan (docs/platform/SITE-ADDONS-SPEC.md §4); granted/revoked = tindakan staf
+  addon_created: 'Tagihan fitur tambahan dibuat',
+  addon_payment_created: 'Tagihan pembayaran fitur dibuat',
+  addon_payment_update: 'Status pembayaran fitur diperbarui',
+  addon_paid: 'Fitur tambahan lunas',
+  addon_cancelled: 'Tagihan fitur tambahan dibatalkan',
+  addon_granted: 'Fitur tambahan diaktifkan gratis',
+  addon_revoked: 'Fitur tambahan dinonaktifkan',
 };
 export const logEventLabel = (event: string) => LOG_EVENT_LABEL[event] ?? event.replace(/_/g, ' ');
 
+const MINT_EVENTS: ReadonlySet<string> = new Set(['approved', 'activated', 'domain_set', 'renewal_paid', 'addon_paid', 'addon_granted']);
+const MIST_EVENTS: ReadonlySet<string> = new Set(['cancelled', 'renewal_cancelled', 'addon_cancelled']);
+
 export const logTone = (event: string): Tone => {
-  if (event === 'approved' || event === 'activated' || event === 'domain_set' || event === 'renewal_paid') return 'mint';
+  if (MINT_EVENTS.has(event)) return 'mint';
   if (event === 'rejected') return 'danger';
-  if (event === 'cancelled' || event === 'renewal_cancelled') return 'mist';
-  if (event.startsWith('payment') || event.startsWith('renewal_payment')) return 'warning';
+  if (event === 'addon_revoked') return 'warning';
+  if (MIST_EVENTS.has(event)) return 'mist';
+  if (event.startsWith('payment') || event.startsWith('renewal_payment') || event.startsWith('addon_payment')) return 'warning';
   return 'cobalt';
 };
 
@@ -334,3 +354,57 @@ export const renewalTone = (status: string | null | undefined): Tone => (isRenew
 
 export const renewalLabel = (status: string | null | undefined, fallback?: string | null) =>
   isRenewalStatus(status) ? RENEWAL_STATUS_LABEL[status] : fallback || status || '-';
+
+/* ------------------------------------------------------------------ */
+/* Fitur tambahan situs (docs/platform/SITE-ADDONS-SPEC.md §4.2, §7)    */
+/* ------------------------------------------------------------------ */
+
+const ADDON_SOURCE_LABEL: Record<SiteAddonSource, string> = {
+  beli: 'Dibeli pembeli',
+  admin: 'Diaktifkan gratis oleh tim',
+  migrasi: 'Migrasi (sudah memakai berita sebelum fitur berbayar)',
+};
+
+export const addonSourceLabel = (source: string | null | undefined) =>
+  source ? (ADDON_SOURCE_LABEL as Record<string, string | undefined>)[source] ?? source : '-';
+
+/** Harga tagihan fitur; 0 = hadiah tim / migrasi. */
+export const addonPriceText = (price: number) => (Number(price) > 0 ? formatRupiah(Number(price)) : 'Gratis');
+
+/** Bagian "Fitur tambahan" hanya untuk fitur yang didukung template situsnya; backend lama tanpa `addons` = kosong. */
+export const capableAddons = (addons: readonly SiteAddonState[] | null | undefined): SiteAddonState[] =>
+  Array.isArray(addons) ? addons.filter((a) => a.capable) : [];
+
+export type AddonStatus = 'active' | 'pending' | 'revoked' | 'locked';
+
+export interface AddonStatusInfo {
+  status: AddonStatus;
+  label: string;
+  tone: Tone;
+  /** Tagihan lunas terbaru yang dicabut tim (status revoked) */
+  revoked: SiteAddonOrder | null;
+}
+
+/**
+ * Keadaan satu fitur untuk staf: Aktif; Menunggu pembayaran (ada tagihan berjalan); Dinonaktifkan (pernah aktif lalu
+ * dicabut tim); Terkunci (belum pernah aktif). `orders` = addon_orders pesanan itu, terbaru dulu.
+ */
+export function addonStatus(state: SiteAddonState, orders: readonly SiteAddonOrder[]): AddonStatusInfo {
+  if (state.active) return { status: 'active', label: 'Aktif', tone: 'mint', revoked: null };
+  if (state.pending) return { status: 'pending', label: 'Menunggu pembayaran', tone: 'warning', revoked: null };
+  const revoked = orders.find((o) => o.addon_code === state.code && o.status === 'lunas' && o.revoked_at) ?? null;
+  if (revoked) return { status: 'revoked', label: 'Dinonaktifkan', tone: 'warning', revoked };
+  return { status: 'locked', label: 'Terkunci', tone: 'mist', revoked: null };
+}
+
+const ADDON_ORDER_TONE: Record<SiteAddonStatus, Tone> = { menunggu_pembayaran: 'warning', lunas: 'mint', dibatalkan: 'mist' };
+
+/** Pill status tagihan fitur: tagihan lunas yang dicabut tim tampil "Dinonaktifkan" (barisnya tetap ada untuk nota). */
+export function addonOrderBadge(order: Pick<SiteAddonOrder, 'status' | 'status_label' | 'revoked_at'>): { label: string; tone: Tone } {
+  if (order.status === 'lunas' && order.revoked_at) return { label: 'Dinonaktifkan', tone: 'warning' };
+  const known = Object.prototype.hasOwnProperty.call(SITE_ADDON_STATUS_LABEL, order.status);
+  return {
+    label: known ? SITE_ADDON_STATUS_LABEL[order.status] : order.status_label || order.status || '-',
+    tone: known ? ADDON_ORDER_TONE[order.status] : 'mist',
+  };
+}

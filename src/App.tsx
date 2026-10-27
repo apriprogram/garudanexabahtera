@@ -35,6 +35,7 @@ const AccountOrderDetail = lazy(() => import('./pages/account/AccountOrderDetail
 const AccountInvoice = lazy(() => import('./pages/account/AccountInvoice'));
 const AccountInvoices = lazy(() => import('./pages/account/AccountInvoices'));
 const AccountProfile = lazy(() => import('./pages/account/AccountProfile'));
+const AccountAddons = lazy(() => import('./pages/account/AccountAddons'));
 const SiteEditor = lazy(() => import('./pages/account/SiteEditor'));
 const SyaratKetentuan = lazy(() => import('./pages/public/legal/SyaratKetentuan'));
 const KebijakanPrivasi = lazy(() => import('./pages/public/legal/KebijakanPrivasi'));
@@ -45,6 +46,8 @@ const MyProjectDocument = lazy(() => import('./pages/account/projects/MyProjectD
 const SitePostsPage = lazy(() => import('./pages/account/posts/SitePostsPage'));
 const SitePostEditor = lazy(() => import('./pages/account/posts/SitePostEditor'));
 const SiteSeoPage = lazy(() => import('./pages/account/seo/SiteSeoPage'));
+// Statistik kunjungan (recharts ikut di potongan kode halaman ini saja)
+const SiteStatsPage = lazy(() => import('./pages/account/stats/SiteStatsPage'));
 
 /**
  * Website hanya berbahasa Indonesia (sakelar ID/EN & Google Translate dihapus): bersihkan sisa pilihan bahasa lama
@@ -150,19 +153,24 @@ function App() {
             <Route caseSensitive path="situs" element={lazyPage(<AccountHome view="sites" />)} />
             <Route caseSensitive path="nota" element={lazyPage(<AccountInvoices />)} />
             <Route caseSensitive path="pesanan/:orderNumber" element={lazyPage(<AccountOrderDetail />)} />
-            {/* Nota pembelian & perpanjangan, profil pembeli (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md §4, §6) */}
+            {/* Nota pembelian, perpanjangan (GNR-…) & fitur tambahan (GNF-…), profil pembeli
+                (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md §4, §6; SITE-ADDONS-SPEC.md §4.3) */}
             <Route caseSensitive path="pesanan/:orderNumber/nota" element={lazyPage(<AccountInvoice />)} />
-            <Route caseSensitive path="pesanan/:orderNumber/nota/:renewalNumber" element={lazyPage(<AccountInvoice />)} />
+            <Route caseSensitive path="pesanan/:orderNumber/nota/:docNumber" element={lazyPage(<AccountInvoice />)} />
             <Route caseSensitive path="profil" element={lazyPage(<AccountProfile />)} />
             <Route caseSensitive path="situs/:siteId" element={lazyPage(<SiteEditor />)} />
             {/* Dokumen proyek custom (docs/platform/PROJECT-DOCS-SPEC.md §7) */}
             <Route caseSensitive path="proyek" element={lazyPage(<MyProjects />)} />
             <Route caseSensitive path="proyek/:id" element={lazyPage(<MyProjectDetail />)} />
             <Route caseSensitive path="proyek/:id/dokumen/:docId" element={lazyPage(<MyProjectDocument />)} />
+            {/* Fitur tambahan berbayar per situs: Berita & Pengumuman template sekolah (docs/platform/SITE-ADDONS-SPEC.md §5) */}
+            <Route caseSensitive path="fitur" element={lazyPage(<AccountAddons />)} />
             {/* Berita & pengumuman (template sekolah) dan SEO situs (docs/platform/SITE-POSTS-SEO-SPEC.md §8) */}
             <Route caseSensitive path="situs/:siteId/berita" element={lazyPage(<SitePostsPage />)} />
             <Route caseSensitive path="situs/:siteId/berita/:postId" element={lazyPage(<SitePostEditor />)} />
             <Route caseSensitive path="situs/:siteId/seo" element={lazyPage(<SiteSeoPage />)} />
+            {/* Statistik kunjungan situs, semua template (docs/platform/SITE-STATS-SPEC.md §4) */}
+            <Route caseSensitive path="situs/:siteId/statistik" element={lazyPage(<SiteStatsPage />)} />
           </Route>
 
           {/* Login staf & panel admin */}

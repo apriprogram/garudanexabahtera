@@ -12,12 +12,17 @@
 // api.php calls handle_site_post_action() after the access check (authorize_request): get_site_seo, get_site_posts,
 // get_site_post and site_post_view are in PUBLIC_ACTIONS, the customer_* actions in CUSTOMER_ACTIONS; the handlers
 // re-check the role (pf_require_customer) and the owner of the site (pf_customer_site, templates.php).
+// Tulisan berbayar (docs/platform/SITE-ADDONS-SPEC.md §3): tulisan hanya dibaca/ditulis bila template mampu DAN fitur
+// Berita & Pengumuman aktif (sa_addon_active / sa_posts_enabled, site_addons.php). Mampu tapi belum aktif → aksi
+// pembeli 403 POSTS_LOCKED, publik daftar kosong / 404. Tulisan yang ada tidak dihapus, hanya disembunyikan. SEO situs
+// tidak terpengaruh.
 // backend/site.php (kepala halaman, robots.txt dan sitemap.xml domain pembeli) juga me-require file ini untuk konstanta
 // dan fungsi murni (sp_*_out, sp_index_reasons, sp_default_name, kolom SP_*_COLUMNS), jadi file ini tidak boleh punya
 // efek samping saat di-include: hanya konstanta dan fungsi.
-// Uses from api.php: ApiError, db_run/db_all/db_one/db_affected_rows, in_str/in_int, client_ip,
+// Uses from api.php: ApiError, db_run/db_all/db_one/db_affected_rows, in_str/in_int, client_ip, ip_limit_key,
 // rate_limit_wait/rate_limit_hit, too_many_attempts, parse_upload, save_base64_asset, delete_local_asset; from
-// templates.php: pf_require_customer, pf_customer_site, pf_delete_generated.
+// templates.php: pf_require_customer, pf_customer_site, pf_delete_generated; from site_addons.php: sa_addon_active,
+// sa_posts_enabled.
 //
 // Panjang dihitung dalam karakter (mb_strlen = code point, sama dengan [...s].length di site_posts.js). Waktu keluar
 // sebagai ISO 8601 WIB (2026-10-26T09:30:00+07:00) dari UNIX_TIMESTAMP(), jadi tidak bergantung zona waktu sesi MySQL.
@@ -81,6 +86,7 @@ const SP_POST_NOT_FOUND = 'Tulisan tidak ditemukan.';
 const SP_SITE_INACTIVE = 'Situs tidak ditemukan atau sedang tidak aktif.';
 const SP_SITE_SUSPENDED = 'Situs sedang dinonaktifkan sehingga isinya tidak bisa diubah. Hubungi kami.';
 const SP_POSTS_UNAVAILABLE = 'Template situs ini belum mendukung berita & pengumuman.';
+const SP_POSTS_LOCKED = 'Fitur Berita & Pengumuman belum aktif untuk situs ini. Aktifkan di menu Fitur tambahan.';
 const SP_SLUG_TAKEN = 'Slug sudah dipakai tulisan lain di situs ini.';
 const SP_POST_LIMIT = 'Situs ini sudah punya 500 tulisan, jumlah maksimal. Hapus tulisan lama sebelum menulis yang baru.';
 const SP_POST_CHANGED = 'Tulisan baru saja diubah di tab lain. Muat ulang lalu coba lagi.';
@@ -168,14 +174,14 @@ function sp_get_site_seo(mysqli $conn, array $input, ?array $user): array {
 }
 
 // Tulisan terbit satu jenis, terbaru dulu: { posts: SitePostSummary[], total }. total = semua tulisan terbit jenis itu
-// (tanpa batas limit). Template tanpa fitur tulisan → daftar kosong.
+// (tanpa batas limit). Template tanpa fitur tulisan atau fitur Berita & Pengumuman belum aktif → daftar kosong.
 function sp_get_site_posts(mysqli $conn, array $input, ?array $user): array {
     $site = sp_active_site($conn, $input, false);
     $kind = trim(in_str($input, 'kind'));
     if (!in_array($kind, SP_KINDS, true)) {
         throw new ApiError('Jenis tulisan harus berita atau pengumuman.', 400, 'VALIDATION', ['kind' => 'Jenis tulisan harus berita atau pengumuman.']);
     }
-    if (!sp_has_posts((string)$site['template_code'])) return ['posts' => [], 'total' => 0];
+    if (!sa_posts_enabled($conn, $site)) return ['posts' => [], 'total' => 0];
     $siteId = (int)$site['id'];
     $rows = db_all($conn, "SELECT " . SP_SUMMARY_COLUMNS . " FROM site_posts p WHERE p.site_id = ? AND p.kind = ? AND p.status = 'published'
                            ORDER BY p.published_at DESC, p.id DESC LIMIT ?", [$siteId, $kind, sp_list_limit(in_int($input, 'limit'))]);
@@ -191,10 +197,10 @@ function sp_get_site_post(mysqli $conn, array $input, ?array $user): array {
     return ['post' => sp_public_out($row)];
 }
 
-// Halaman tulisan dibuka (sekali per sesi browser): +1, dibatasi per IP seperti guide_view; perayap tidak dihitung.
-// { views: jumlah dilihat tulisan itu }
+// Halaman tulisan dibuka (sekali per sesi browser): +1, dibatasi per IP (IPv6 per /64; kunci ip_limit_key, tanpa IP di
+// nama berkas) seperti guide_view; perayap tidak dihitung. { views: jumlah dilihat tulisan itu }
 function sp_site_post_view(mysqli $conn, array $input, ?array $user): array {
-    $limit = 'sp-view|' . client_ip();
+    $limit = ip_limit_key('sp-view', client_ip());
     $wait = rate_limit_wait($limit, SP_VIEWS_PER_HOUR);
     if ($wait) too_many_attempts($wait);
     $site = sp_active_site($conn, $input, false);
@@ -221,9 +227,9 @@ function sp_active_site(mysqli $conn, array $input, bool $withContent): array {
     return $site;
 }
 
-/** Tulisan terbit situs ini dengan slug itu; template tanpa fitur tulisan atau slug tidak sah → null. */
+/** Tulisan terbit situs ini dengan slug itu; slug tidak sah, template tanpa fitur tulisan atau fitur belum aktif → null. */
 function sp_published_post(mysqli $conn, array $site, string $slug): ?array {
-    if (!sp_has_posts((string)$site['template_code']) || !sp_is_slug($slug)) return null;
+    if (!sp_is_slug($slug) || !sa_posts_enabled($conn, $site)) return null;
     return db_one($conn, "SELECT " . SP_POST_COLUMNS . " FROM site_posts p WHERE p.site_id = ? AND p.slug = ? AND p.status = 'published' LIMIT 1",
         [(int)$site['id'], $slug]);
 }
@@ -391,11 +397,13 @@ function sp_customer_save_site_seo(mysqli $conn, array $input, ?array $user): ar
 
 /**
  * Situs milik pembeli (pf_customer_site: 404 bila bukan miliknya). $write: situs nonaktif → 409 SITE_SUSPENDED.
- * $posts: template tanpa fitur tulisan → 403 POSTS_UNAVAILABLE (SEO berlaku untuk semua template).
+ * $posts: template tanpa fitur tulisan → 403 POSTS_UNAVAILABLE, fitur Berita & Pengumuman belum dibeli / dicabut → 403
+ * POSTS_LOCKED (SEO berlaku untuk semua template).
  */
 function sp_owned_site(mysqli $conn, array $input, array $user, bool $write, bool $posts): array {
     $site = pf_customer_site($conn, $input, $user);
     if ($posts && !sp_has_posts((string)$site['template_code'])) throw new ApiError(SP_POSTS_UNAVAILABLE, 403, 'POSTS_UNAVAILABLE');
+    if ($posts && !sa_addon_active($conn, (int)$site['id'], 'posts')) throw new ApiError(SP_POSTS_LOCKED, 403, 'POSTS_LOCKED');
     if ($write && $site['status'] !== 'active') throw new ApiError(SP_SITE_SUSPENDED, 409, 'SITE_SUSPENDED');
     return $site;
 }
