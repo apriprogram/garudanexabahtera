@@ -359,9 +359,9 @@ describe('Velora: demo', () => {
     expect(h1.textContent).toBe('Seven decades of driving what comes next');
     const pill = within(h1).getByText('driving');
     expect(pill.className).toMatch(/rounded-\[0\.62em\]/);
-    // HP: sorotan panjang boleh terbagi dua baris di dalam pil (tidak terpotong); layar lebar: satu baris
-    expect(pill.parentElement!.className).toContain('@2xl:whitespace-nowrap');
-    expect(pill.parentElement!.className.split(' ')).not.toContain('whitespace-nowrap');
+    // Sorotan yang lebih panjang dari judul terbagi dua baris DI DALAM pil (tidak terpotong / keluar dari garis pil)
+    expect(pill.parentElement!.className).not.toMatch(/whitespace-nowrap/);
+    expect(pill.className).toMatch(/\bmin-w-0\b/);
     expect(h1.querySelector('.vl-chip')).toHaveAttribute('aria-hidden', 'true');
     expect(within(hero).getByText('Drive the future today')).toBeInTheDocument();
     const explore = within(hero).getByRole('link', { name: 'Explore models' });

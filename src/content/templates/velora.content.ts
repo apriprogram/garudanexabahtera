@@ -4,7 +4,7 @@
 // bahasa Inggris", dan "website perusahaan multinasional" di isi. Klaim wajib jujur: formulir test drive & newsletter
 // hanya menyusun pesan WhatsApp/email (tanpa penyimpanan data), tidak ada sistem booking, stok, atau pembayaran online;
 // nama & angka di demo fiktif; SEMUA teks yang tampil (termasuk label & pesan galat formulir, label kontak, judul kolom
-// footer) adalah field CMS, jadi bisa diganti lewat CMS, termasuk ke bahasa Indonesia.
+// footer, nama bulan pada tanggal) adalah field CMS, jadi bisa diganti lewat CMS, termasuk ke bahasa Indonesia.
 // Demo: Velora Motor Group, grup otomotif fiktif ber-HQ di Zurich.
 import type { TemplatePageContent } from './page.types';
 
@@ -67,7 +67,7 @@ export const content: TemplatePageContent = {
     'Prinsip perusahaan, kartu bento, dan baris berpanah beserta tujuan tautannya.',
     'Daftar model lengkap dengan kategori untuk filter, harga, spesifikasi, foto, dan tautan.',
     'Langkah kepemilikan, kartu teknologi, angka perusahaan, testimoni, dan berita.',
-    'Semua teks formulir test drive (label, pilihan, pesan galat, tombol, kalimat pesan), WhatsApp dan email penerima, kantor pusat, studio, peta, newsletter, judul kolom footer, dan media sosial.',
+    'Semua teks formulir test drive (label, pilihan, pesan galat, tombol, kalimat pesan), WhatsApp dan email penerima, kantor pusat, studio, peta, newsletter, judul kolom footer, nama bulan pada tanggal, dan media sosial.',
   ],
   cmsNote:
     'Salinan demo berbahasa Inggris, tetapi semua teks yang tampil bisa Anda tulis ulang lewat CMS dalam bahasa apa pun, termasuk bahasa Indonesia, dari menu sampai label dan pesan galat formulir. Ikon kartu dan langkah dipilih otomatis dari judul yang Anda tulis.',

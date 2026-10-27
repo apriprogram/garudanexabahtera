@@ -24,8 +24,9 @@ function PillTitle({ title, highlight }: { title: string; highlight: string }) {
   return (
     <>
       {before}
-      {/* HP: sorotan panjang (> ±16 huruf) boleh terbagi dua baris di dalam pil, tidak terpotong tepi kartu */}
-      <span className="inline-flex max-w-full items-center gap-[0.16em] align-[-0.06em] @2xl:whitespace-nowrap">
+      {/* Pil selebar isinya, maks. selebar judul: sorotan yang lebih panjang dari judul terbagi dua baris DI DALAM pil
+          (tidak terpotong tepi kartu atau keluar dari garis pil); satu kata tidak pernah terbagi */}
+      <span className="inline-flex max-w-full items-center gap-[0.16em] align-[-0.06em]">
         <span className="min-w-0 rounded-[0.62em] px-[0.42em] pb-[0.06em] leading-[1.18] ring-[0.045em] ring-inset ring-white/80 [overflow-wrap:anywhere]">{mark}</span>
         <span aria-hidden className="vl-chip flex h-[0.86em] w-[0.86em] shrink-0 items-center justify-center rounded-full bg-(--vl-red) text-(--vl-on-red)">
           <ArrowDownRight className="h-[0.52em] w-[0.52em]" strokeWidth={2.4} />
