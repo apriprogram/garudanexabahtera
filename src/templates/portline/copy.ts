@@ -1,6 +1,6 @@
-// Teks antarmuka bawaan Portline (tombol, label formulir, pesan galat, label menu cadangan) dalam dua bahasa. Konten
-// demo berbahasa Inggris; pembeli Indonesia bisa mengganti `brand.language` ke "id" di CMS sehingga teks bawaan ini
-// (dan atribut lang situs) ikut berbahasa Indonesia. Teks lain (judul, isi, tombol bernama) selalu dari CMS.
+// Teks antarmuka bawaan Portline dalam dua bahasa: label aria (pembaca layar) dan teks CADANGAN untuk label yang
+// dikosongkan pembeli di CMS. Semua teks yang tampil punya field CMS sendiri berbawaan Inggris (lihat readUi di
+// ./model); `brand.language` ("en"/"id") mengatur atribut lang situs, label aria, dan cadangan ini.
 
 export type Lang = 'en' | 'id';
 
@@ -79,12 +79,12 @@ const EN = {
     edit: 'Edit details',
     noChannel: 'Contact our team by phone or visit one of our offices.',
     greeting: (company: string) => `Hello ${company}, I would like to make an enquiry.`,
-    rows: { name: 'Name', company: 'Company', email: 'Email', phone: 'Phone', type: 'Enquiry', unit: 'Business unit', message: 'Message' },
     thanks: 'Thank you.',
     subject: (type: string, company: string) => `${type || 'Enquiry'} – ${company}`,
   },
   // Footer
   footerCompany: 'Company',
+  footerCareers: 'Careers',
   footerMedia: 'Media',
   footerContact: 'Contact',
   footerLinks: 'Footer links',
@@ -159,11 +159,11 @@ const ID: UiCopy = {
     edit: 'Ubah data',
     noChannel: 'Hubungi tim kami lewat telepon atau kunjungi salah satu kantor kami.',
     greeting: (company) => `Halo ${company}, saya ingin bertanya.`,
-    rows: { name: 'Nama', company: 'Perusahaan', email: 'Email', phone: 'Telepon', type: 'Pertanyaan', unit: 'Unit bisnis', message: 'Pesan' },
     thanks: 'Terima kasih.',
     subject: (type, company) => `${type || 'Pertanyaan'} – ${company}`,
   },
   footerCompany: 'Perusahaan',
+  footerCareers: 'Karier',
   footerMedia: 'Media',
   footerContact: 'Kontak',
   footerLinks: 'Tautan footer',

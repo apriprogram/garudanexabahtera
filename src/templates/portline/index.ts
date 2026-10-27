@@ -3,7 +3,7 @@ import Portline from './Portline';
 import { portlineContent } from './defaultContent';
 import { portlineSections } from './schema';
 
-/** Portline — company profile berbahasa Inggris untuk grup pelayaran & logistik (demo: Portline Group, Rotterdam, fiktif). */
+/** Portline — company profile berbahasa Inggris untuk grup pelayaran & logistik (demo: Quaymoor Group, Rotterdam, fiktif). */
 export const portline: TemplateDefinition = {
   code: 'portline',
   name: 'Portline',

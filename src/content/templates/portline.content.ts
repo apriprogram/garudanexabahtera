@@ -2,8 +2,9 @@
 // Newsroom.tsx, Group.tsx, Fleet.tsx, World.tsx, People.tsx, Contact.tsx, Footer.tsx, copy.ts). Kata kunci: "template
 // website perusahaan pelayaran" di paragraf pembuka; "website perusahaan logistik" dan "template company profile bahasa
 // Inggris" di isi. Klaim wajib jujur: formulir hanya menyusun pesan WhatsApp/email (tanpa penyimpanan data), tombol
-// "Track a shipment" hanya tautan (bukan pelacak kiriman), tidak ada booking atau transaksi. Demo: Portline Group,
-// Rotterdam (fiktif), konten berbahasa Inggris.
+// utilitas ("Shipment enquiry" di demo) hanya tautan atau formulir (bukan pelacak kiriman), tidak ada booking atau
+// transaksi, semua teks yang tampil (termasuk menu, label formulir, pesan galat, judul kolom footer) bisa diganti di CMS.
+// Demo: Quaymoor Group, Rotterdam (fiktif; "Portline" hanya nama template), konten berbahasa Inggris.
 import type { TemplatePageContent } from './page.types';
 
 export const content: TemplatePageContent = {
@@ -16,13 +17,13 @@ export const content: TemplatePageContent = {
       'Perusahaan pelayaran, agen kapal, operator terminal, dan galangan yang melayani pemilik kapal atau pencharter dari luar negeri.',
       'Perusahaan freight forwarder dan ekspedisi yang butuh website perusahaan logistik dengan daftar layanan, jaringan kota, dan formulir permintaan penawaran.',
       'Eksportir, perusahaan energi, dan grup usaha dengan beberapa anak perusahaan yang ingin tampil rapi di depan pembeli dan mitra internasional.',
-      'Anak perusahaan asing di Indonesia yang memerlukan website berbahasa Inggris, dengan pilihan teks bawaan berbahasa Indonesia bila dibutuhkan.',
+      'Anak perusahaan asing di Indonesia yang memerlukan website berbahasa Inggris yang tetap bisa ditulis ulang dalam bahasa Indonesia.',
     ],
   },
   parts: [
     {
       name: 'Header dua lapis',
-      text: 'Bilah atas dengan dua tombol biru berikon dan pilihan bahasa EN | ID, lalu menu huruf kapital yang menandai bagian yang sedang dibaca; transparan di atas foto, putih saat digulir.',
+      text: 'Bilah atas dengan dua tombol biru berikon, lalu menu huruf kapital yang menandai bagian yang sedang dibaca; transparan di atas foto, putih saat digulir.',
     },
     {
       name: 'Hero slider berindeks',
@@ -38,24 +39,25 @@ export const content: TemplatePageContent = {
       text: 'Hingga 6 kartu unit bisnis berfoto dengan lencana ikon bulat dan tombol yang membuka formulir dengan unit bisnis itu terpilih, ditambah kartu ajakan opsional.',
     },
     { name: 'Armada', text: 'Hingga 6 kelas kapal atau unit armada dalam carousel kartu yang melebar, lengkap dengan jenis, kapasitas, deskripsi, dan empat baris data utama.' },
-    { name: 'Jaringan global', text: 'Hingga 6 kawasan yang dibuka satu per satu berisi kota hub dan angka singkat, serta foto dengan kartu kantor pusat.' },
+    { name: 'Jaringan global', text: 'Hingga 6 kawasan yang dibuka satu per satu berisi kota hub dan angka singkat, serta foto dengan kartu keterangan.' },
     { name: 'Keberlanjutan, karier & pimpinan', text: 'Pita biru dengan pernyataan besar dan hingga 4 komitmen, banner karier dengan poin dan email rekrutmen, serta hingga 6 profil pimpinan dengan tautan LinkedIn.' },
     { name: 'Kontak & footer', text: 'Kantor pusat, jam kantor, hingga 6 kantor regional, formulir enquiry, dan footer navy multi-kolom dengan kolom merek, telepon, email, dan media sosial.' },
   ],
   partsNote:
-    'Setiap bagian bisa disembunyikan dari CMS. Formulir enquiry memeriksa nama, email, dan pesan, lalu menyusun pesan yang dikirim pengunjung sendiri lewat WhatsApp atau email; data tidak disimpan di website. Tombol seperti "Track a shipment" hanyalah tautan ke halaman pilihan Anda atau ke formulir, bukan sistem pelacakan.',
+    'Setiap bagian bisa disembunyikan dari CMS. Formulir enquiry memeriksa nama, email, dan pesan, lalu menyusun pesan yang dikirim pengunjung sendiri lewat WhatsApp atau email; data tidak disimpan di website. Tombol utilitas seperti "Shipment enquiry" hanyalah tautan ke halaman pilihan Anda atau ke formulir, bukan sistem pelacakan.',
   cms: [
-    'Nama perusahaan, tagline, logo, satu warna tema, dan bahasa teks bawaan (Inggris atau Indonesia) untuk tombol serta label formulir.',
+    'Nama perusahaan, tagline, logo, satu warna tema, dan bahasa situs (Inggris atau Indonesia).',
     'Foto dan teks setiap slide hero, label indeks, tombol utilitas, pilihan bahasa, dan logo perusahaan grup.',
     'Berita lengkap dengan tanggal, tagar, foto, dan isi, serta daftar liputan media.',
     'Angka perusahaan, kartu perusahaan grup, kelas armada, kawasan jaringan, komitmen keberlanjutan, dan poin karier.',
     'Profil pimpinan, alamat kantor pusat, kantor regional, jenis pertanyaan di formulir, WhatsApp, dan email penerima.',
+    'Nama menu, label kontak, judul kolom footer, serta label, tombol, pesan galat, dan isi pesan formulir enquiry.',
   ],
   cmsNote:
-    'Semua teks bisa Anda tulis ulang, termasuk ke bahasa Indonesia. Pilihan bahasa EN | ID di header hanya menautkan ke versi bahasa lain yang Anda sediakan; tanpa tautan, tampilannya dekoratif. Ikon angka dan lencana dipilih otomatis dari teks.',
+    'Semua teks yang tampil bisa Anda tulis ulang, termasuk ke bahasa Indonesia. Pilihan bahasa EN | ID di header hanya tampil bila Anda mengisi tautan ke versi bahasa lain. Ikon angka dan lencana dipilih otomatis dari teks.',
   demo: [
-    'Demo {nama} memakai Portline Group, grup pelayaran dan logistik fiktif yang berkantor pusat di Rotterdam dengan lima anak perusahaan: container lines, terminal, kapal energi, darat dan udara, serta galangan. Ada contoh berita kapal baru, liputan media, kelas kapal, dan kantor regional di Singapura, Dubai, Houston, dan Jakarta.',
-    'Nama perusahaan, pimpinan, kapal, media, angka, alamat, dan nomor telepon di demo hanyalah contoh. Tulis data perusahaan Anda apa adanya, termasuk izin dan sertifikasi yang benar-benar dimiliki. Foto dari Unsplash sudah dibersihkan dari tulisan merek nyata; sebaiknya ganti dengan foto armada atau kantor Anda sendiri.',
+    'Demo {nama} memakai Quaymoor Group, grup pelayaran dan logistik fiktif yang berkantor pusat di Rotterdam dengan lima anak perusahaan: container lines, terminal, kapal energi, darat dan udara, serta galangan. Ada contoh berita kapal baru, liputan media, kelas kapal, dan kantor regional di Singapura, Dubai, Houston, dan Jakarta.',
+    'Nama perusahaan, pimpinan, kapal, media, angka, alamat, dan nomor telepon di demo hanyalah contoh. Tulis data perusahaan Anda apa adanya, termasuk izin dan sertifikasi yang benar-benar dimiliki. Foto dari Unsplash sudah dipotong atau dibersihkan dari tulisan merek yang terbaca; sebaiknya ganti dengan foto armada atau kantor Anda sendiri.',
   ],
   custom:
     '{nama} adalah website profil perusahaan. Bila Anda membutuhkan pelacakan kiriman dari sistem Anda, portal pelanggan, pemesanan ruang muat, atau website dengan dua versi bahasa penuh, fitur itu termasuk website atau aplikasi custom. Ceritakan alur kerja tim Anda, lalu kami kirim penawaran setelah konsultasi gratis.',
@@ -64,12 +66,12 @@ export const content: TemplatePageContent = {
     {
       question: 'Apakah website ini harus berbahasa Inggris?',
       answer:
-        'Tidak. Konten demo berbahasa Inggris, tetapi semua judul, isi, dan tombol bernama bisa Anda tulis ulang di CMS. Ganti bahasa teks bawaan ke Indonesia agar label formulir, pesan galat, dan nama menu cadangan ikut berbahasa Indonesia.',
+        'Tidak. Konten demo berbahasa Inggris, tetapi semua teks yang tampil, termasuk nama menu, label formulir, dan pesan galat, bisa Anda tulis ulang dalam bahasa Indonesia lewat CMS.',
     },
     {
       question: 'Apakah pengunjung bisa melacak kiriman di website ini?',
       answer:
-        'Tidak ada sistem pelacakan di template ini. Tombol "Track a shipment" bisa Anda arahkan ke halaman pelacakan milik sistem Anda sendiri; bila dikosongkan, tombol membuka formulir kontak dengan topik status pengiriman.',
+        'Tidak ada sistem pelacakan di template ini. Tombol utilitas di header (di demo "Shipment enquiry") bisa Anda arahkan ke halaman pelacakan milik sistem Anda sendiri; bila tautannya dikosongkan, tombol membuka formulir kontak dengan topik status pengiriman.',
     },
     {
       question: 'Bagaimana formulir enquiry bekerja?',

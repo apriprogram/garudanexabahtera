@@ -11,6 +11,7 @@ import {
   GraduationCap,
   Leaf,
   MapPin,
+  MessageSquareText,
   Package,
   Plane,
   Route,
@@ -44,6 +45,7 @@ export const ICONS = {
   route: Route,
   pin: MapPin,
   search: Search,
+  message: MessageSquareText,
   package: Package,
   leaf: Leaf,
   power: Zap,
@@ -57,6 +59,7 @@ export type IconKey = keyof typeof ICONS;
 // Urutan penting: aturan yang lebih khusus di atas.
 const RULES: [RegExp, IconKey][] = [
   [/track|lacak|status|search|cari/i, 'search'],
+  [/enquir|inquir|contact|kontak|tanya|message|pesan/i, 'message'],
   [/\bair\b|udara|plane|pesawat|flight|charter/i, 'air'],
   [/\broad\b|truck|darat|\brail\b|kereta|inland/i, 'road'],
   [/energy|energi|tanker|\blpg\b|\boil\b|minyak|\bgas\b/i, 'energy'],
@@ -66,7 +69,7 @@ const RULES: [RegExp, IconKey][] = [
   [/employ|karyawan|staff|people|\bcrews?\b|awak|pegawai|seafarer/i, 'people'],
   [/countr|negara|global|world|dunia|continent/i, 'globe'],
   [/office|kantor|branch|cabang/i, 'office'],
-  [/vessel|\bships?\b|kapal|fleet|armada|\blines?\b|liner|container|kontainer|ocean|laut|bulk|carrier|feeder|short-sea|ro-ro|ferry/i, 'ship'],
+  [/vessel|\bships?\b|kapal|fleet|armada|\blines?\b|liner|container|kontainer|ocean|laut|bulk|carrier|feeder|short-sea|ro-ro|ferry|dredg|keruk/i, 'ship'],
   [/route|rute|\blanes?\b|service|layanan/i, 'route'],
   [/cadet|training|pelatihan|graduate/i, 'cadet'],
   [/fuel|clean|green|hijau|emisi|emission/i, 'leaf'],

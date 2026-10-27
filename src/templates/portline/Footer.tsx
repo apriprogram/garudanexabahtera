@@ -1,7 +1,7 @@
-// Footer Portline: pita navy selebar layar. Kiri (9 kolom): kolom tautan Company (menu), Group companies, Fleet, Media,
-// Contact — diisi otomatis dari section yang tampil. Kanan: KOLOM MEREK sedikit lebih terang (--pl-deep-2) berisi logo,
-// deskripsi, telepon, email, dan media sosial. Bawah: hak cipta otomatis dari nama perusahaan dan tagline. HP: kolom
-// merek selebar layar di atas, kolom tautan 2 kolom.
+// Footer Portline: pita navy selebar layar. Kiri: kolom tautan Company (menu), Group companies, Fleet, Careers, Media,
+// Contact — diisi otomatis dari section yang tampil, judul kolom dari CMS. Kanan: KOLOM MEREK sedikit lebih terang
+// (--pl-deep-2) sampai tepi kanan layar, berisi logo, deskripsi, telepon, email, dan media sosial. Bawah: hak cipta
+// otomatis dari nama perusahaan dan tagline. HP: kolom merek selebar layar di atas, kolom tautan 2 kolom.
 import { Mail, Phone } from 'lucide-react';
 import { CONTAINER } from '../shared/layout';
 import { ActionLink } from '../shared/Shell';
@@ -43,6 +43,16 @@ export function Footer({ m }: { m: PortlineModel }) {
       links: m.items('fleet').map((item) => ({ label: field(item, 'name'), action: to('fleet') })),
     },
     {
+      title: m.ui.footerCareers,
+      links: m.shown('careers')
+        ? list(m.careers, 'points', 6)
+            .map((item) => field(item, 'text'))
+            .filter(Boolean)
+            .slice(0, 4)
+            .map((label) => ({ label, action: to('careers') }))
+        : [],
+    },
+    {
       title: m.ui.footerMedia,
       links: [
         { label: text(m.newsroom, 'title') || m.ui.nav.newsroom, action: to('newsroom') },
@@ -65,12 +75,13 @@ export function Footer({ m }: { m: PortlineModel }) {
       data-tpl-section="footer"
       id={preview ? undefined : SECTION_ANCHOR.footer}
       data-tpl-tone="inverse"
-      className="scroll-mt-[calc(var(--tpl-sticky-top,0px)+72px)] bg-(--pl-deep) text-white"
+      className="relative isolate scroll-mt-[calc(var(--tpl-sticky-top,0px)+72px)] overflow-hidden bg-(--pl-deep) text-white"
     >
       <div className={CONTAINER}>
         <div className="grid @5xl:grid-cols-12">
-          {/* Kolom merek: di HP tampil pertama selebar layar, di layar lebar di kanan */}
-          <div className="-mx-5 bg-(--pl-deep-2) px-5 py-12 @2xl:-mx-8 @2xl:px-8 @5xl:order-last @5xl:col-span-4 @5xl:mx-0 @5xl:px-9 @5xl:py-16 @7xl:col-span-3">
+          {/* Kolom merek: di HP tampil pertama selebar layar, di layar lebar di kanan; latarnya diteruskan sampai tepi kanan
+              layar (::after selebar 50vw) agar tidak tampak terpotong oleh gutter */}
+          <div className="-mx-5 bg-(--pl-deep-2) px-5 py-12 @2xl:-mx-8 @2xl:px-8 @5xl:relative @5xl:order-last @5xl:col-span-4 @5xl:mx-0 @5xl:px-9 @5xl:py-16 @5xl:after:absolute @5xl:after:inset-y-0 @5xl:after:left-full @5xl:after:-z-10 @5xl:after:w-[50vw] @5xl:after:bg-(--pl-deep-2) @5xl:after:content-[''] @7xl:col-span-3">
             <ActionLink action={{ kind: 'section', target: 'hero' }} className="inline-flex" aria-label={`${m.companyName}, ${m.ui.toHome}`}>
               <Logo m={m} tone="light" />
             </ActionLink>
@@ -124,9 +135,12 @@ export function Footer({ m }: { m: PortlineModel }) {
           </div>
 
           {columns.length > 0 && (
-            <nav aria-label={m.ui.footerLinks} className="grid grid-cols-2 gap-x-6 gap-y-10 py-12 @3xl:grid-cols-3 @5xl:col-span-8 @5xl:py-16 @5xl:pr-10 @7xl:col-span-9 @7xl:grid-cols-5">
-              {columns.map((col) => (
-                <div key={col.title} className="min-w-0">
+            <nav
+              aria-label={m.ui.footerLinks}
+              className="grid grid-cols-2 gap-x-6 gap-y-10 py-12 @3xl:grid-cols-3 @5xl:col-span-8 @5xl:py-16 @5xl:pr-10 @7xl:col-span-9 @min-[96rem]:grid-cols-6"
+            >
+              {columns.map((col, ci) => (
+                <div key={`${col.title}-${ci}`} className="min-w-0">
                   <p className={COL_TITLE}>{col.title}</p>
                   <ul className="mt-4 grid gap-0.5">
                     {col.links.map((link, i) => (

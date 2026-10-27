@@ -1,10 +1,11 @@
 // Armada (referensi Hugo): carousel KARTU MELEBAR di pita es. Layar lebar: satu kartu aktif lebar berfoto dengan
 // jenis, nama KAPITAL, kapasitas, deskripsi, dan kartu kaca "data utama" di kanan bawah; kartu lain sempit (nama +
 // jenis) dan bisa diklik untuk melebar; tombol ← → di kepala section berputar. Lebar berubah halus (flex-grow), mati
-// pada gerak mati. Teks semua kartu tetap ada di HTML (kartu sempit menyembunyikannya secara visual). HP & tablet:
-// rel geser snap berisi kartu foto + teks lengkap.
+// pada gerak mati. Teks semua kartu tetap ada di HTML (kartu sempit menyembunyikannya secara visual). Keyboard: setelah
+// kartu sempit dipilih fokus pindah ke judul kartu aktif (tombolnya hilang), dan kelas kapal aktif diumumkan lewat
+// aria-live. HP & tablet: rel geser snap (scroll-padding = gutter) berisi kartu foto + teks lengkap.
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { TemplateSection } from '../shared/Shell';
@@ -35,9 +36,28 @@ function Specs({ item, m, tone }: { item: ListItem; m: PortlineModel; tone: 'gla
   );
 }
 
-function Wide({ m, items, active, onSelect }: { m: PortlineModel; items: ListItem[]; active: number; onSelect: (i: number) => void }) {
+function Wide({
+  m,
+  items,
+  active,
+  onSelect,
+  headingRef,
+}: {
+  m: PortlineModel;
+  items: ListItem[];
+  active: number;
+  /** `focus`: dipilih dari kartu sempit → fokus ke judul kartu aktif */
+  onSelect: (i: number, focus?: boolean) => void;
+  headingRef: (el: HTMLHeadingElement | null) => void;
+}) {
+  const current = items[active];
   return (
     <div className="hidden h-[500px] gap-3 @4xl:flex @6xl:h-[540px]">
+      {current && (
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {[field(current, 'name'), field(current, 'type')].filter(Boolean).join(', ')}
+        </p>
+      )}
       {items.map((item, i) => {
         const name = field(item, 'name');
         const type = field(item, 'type');
@@ -64,7 +84,7 @@ function Wide({ m, items, active, onSelect }: { m: PortlineModel; items: ListIte
             {!isActive && (
               <button
                 type="button"
-                onClick={() => onSelect(i)}
+                onClick={() => onSelect(i, true)}
                 aria-expanded={false}
                 aria-label={m.ui.showVessel(name)}
                 className="absolute inset-0 flex flex-col justify-end p-4 text-left focus-visible:outline-offset-[-4px]"
@@ -84,7 +104,13 @@ function Wide({ m, items, active, onSelect }: { m: PortlineModel; items: ListIte
                   <AutoIcon text={type || name} index={i} className="h-4 w-4" strokeWidth={1.8} />
                   {type}
                 </p>
-                <h3 className={`mt-3 ${DISPLAY} text-[30px] font-bold uppercase leading-none tracking-[0.01em] @6xl:text-[38px]`}>{name}</h3>
+                <h3
+                  ref={isActive ? headingRef : undefined}
+                  tabIndex={isActive ? -1 : undefined}
+                  className={`mt-3 ${DISPLAY} text-[30px] font-bold uppercase leading-none tracking-[0.01em] focus:outline-none @6xl:text-[38px]`}
+                >
+                  {name}
+                </h3>
                 {field(item, 'capacity') && (
                   <p className="mt-3 inline-flex rounded-[3px] bg-(--tpl-accent) px-2.5 py-1 text-[12.5px] font-semibold tabular-nums text-(--tpl-on-accent)">
                     {field(item, 'capacity')}
@@ -105,7 +131,12 @@ function Wide({ m, items, active, onSelect }: { m: PortlineModel; items: ListIte
 
 function Rail({ m, items }: { m: PortlineModel; items: ListItem[] }) {
   return (
-    <ul aria-label={text(m.fleet, 'title') || m.ui.nav.fleet} tabIndex={0} className="pl-rail -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 @2xl:-mx-8 @2xl:px-8 @4xl:hidden">
+    <ul
+      aria-label={text(m.fleet, 'title') || m.ui.nav.fleet}
+      tabIndex={0}
+      // scroll-padding = gutter: kartu pertama berhenti sejajar judul, tidak menempel ke tepi layar
+      className="pl-rail -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto px-5 pb-2 @2xl:-mx-8 @2xl:scroll-px-8 @2xl:px-8 @4xl:hidden"
+    >
       {items.map((item, i) => {
         const name = field(item, 'name');
         const image = field(item, 'image');
@@ -140,7 +171,18 @@ export function Fleet({ m }: { m: PortlineModel }) {
   const items = m.items('fleet');
   const [active, setActive] = useState(0);
   const current = Math.min(active, items.length - 1);
-  const select = (i: number) => setActive(wrapIndex(i, items.length));
+  const heading = useRef<HTMLHeadingElement | null>(null);
+  const focusNext = useRef(false);
+  const select = (i: number, focus = false) => {
+    focusNext.current = focus;
+    setActive(wrapIndex(i, items.length));
+  };
+  // Kartu sempit yang diklik/di-Enter hilang dari DOM saat melebar: fokus pindah ke judul kartu aktif
+  useEffect(() => {
+    if (!focusNext.current) return;
+    focusNext.current = false;
+    heading.current?.focus();
+  }, [current]);
   const arrow =
     'flex h-12 w-12 items-center justify-center rounded-[4px] bg-white text-(--pl-deep) ring-1 ring-inset ring-(--pl-deep)/15 transition-colors duration-300 hover:bg-(--tpl-accent) hover:text-(--tpl-on-accent)';
   const arrows = items.length > 1 && (
@@ -158,7 +200,15 @@ export function Fleet({ m }: { m: PortlineModel }) {
       <div className={CONTAINER}>
         <SectionHead eyebrow={text(fleet, 'eyebrow')} title={text(fleet, 'title')} subtitle={text(fleet, 'subtitle')} aside={arrows || undefined} />
         <Reveal variant="fade" className="mt-10 @3xl:mt-12">
-          <Wide m={m} items={items} active={current} onSelect={select} />
+          <Wide
+            m={m}
+            items={items}
+            active={current}
+            onSelect={select}
+            headingRef={(el) => {
+              heading.current = el;
+            }}
+          />
           <Rail m={m} items={items} />
         </Reveal>
       </div>

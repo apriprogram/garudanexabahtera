@@ -1,9 +1,9 @@
 // Hero Portline — "Harbor" (data-hero-layout="harbor"): SLIDER foto selebar layar sampai tepi atas, header dua lapis
 // transparan di atasnya (./Header). Lapisan navy dari kiri; kiri: judul KAPITAL 2–3 baris, deskripsi, tautan
-// "About Portline >"; kanan: INDEKS VERTIKAL bernomor 01 / 02 / 03 dengan garis yang berjalan (klik untuk ganti slide,
-// berganti otomatis pelan, berhenti saat disorot/difokus/dijeda dan bila gerak mati); lingkaran radar konsentris tipis
-// di sekitar objek foto. Di bawah, masih di dalam hero dan dipisah garis tipis: deret logo perusahaan grup putih satu
-// warna + label layanan di kanan. HP: foto 4:5 dengan judul di atasnya, indeks jadi angka mendatar, logo jadi Marquee.
+// "About Quaymoor >"; kanan: INDEKS VERTIKAL bernomor 01 / 02 / 03 dengan garis yang berjalan (klik untuk ganti slide,
+// berganti otomatis pelan di semua lebar, berhenti saat disorot/difokus/dijeda dan bila gerak mati); lingkaran radar
+// konsentris tipis di sekitar objek foto. Di bawah, masih di dalam hero dan dipisah garis tipis: deret logo perusahaan
+// grup putih satu warna + label layanan di kanan. HP: foto 4:5 dengan judul di atasnya, indeks jadi angka mendatar, logo jadi Marquee.
 // Foto slide 1 = LCP (eager + fetchpriority high) dan TIDAK dianimasikan masuk; zoom & teks naik hanya setelah
 // pergantian. Foto slide lain lazy dan baru dipasang sesudah halaman tampil.
 import { ArrowRight, Pause, Play } from 'lucide-react';
@@ -24,11 +24,11 @@ import { TextLink } from './ui';
 const AUTOPLAY_MS = 7000;
 const pad = (n: number) => String(n).padStart(2, '0');
 /** Posisi fokus foto per slide demo (wadah HP tegak memotong kiri-kanan): objek utama di kanan-tengah */
-const POSITIONS = ['62% 50%', '70% 45%', '62% 45%', '60% 50%'];
+const POSITIONS = ['62% 50%', '72% 40%', '62% 45%', '60% 50%'];
 /** Pusat lingkaran radar (persen lebar/tinggi hero) per slide: di sekitar kapal / derek pada foto demo */
 const RADAR = [
   [63, 50],
-  [70, 44],
+  [72, 34],
   [66, 44],
   [66, 48],
 ] as const;
@@ -76,25 +76,28 @@ function Radar({ at }: { at: readonly [number, number] }) {
 function Companies({ m, motion }: { m: PortlineModel; motion: boolean }) {
   const items = list(m.hero, 'companies', 6).filter((item) => field(item, 'name') || hasImage(field(item, 'logo')));
   if (items.length === 0) return null;
-  const logos = items.map((item, i) => {
-    const name = field(item, 'name');
-    const logo = safeImage(field(item, 'logo'));
-    // Simbol + nama sebagai lockup dua baris: kata pertama kecil di atas (mis. "PORTLINE"), sisanya di bawah
-    const [first, ...rest] = name.split(/\s+/);
-    return logo ? (
-      <img key={`${name}-${i}`} src={logo} alt={name} loading="lazy" decoding="async" className="h-8 w-auto max-w-[160px] object-contain brightness-0 invert" />
-    ) : (
-      <span key={`${name}-${i}`} className="inline-flex items-center gap-2.5 text-white">
-        <CompanyGlyph index={glyphIndex(name, i)} className="h-7 w-7 shrink-0" />
-        <span className="flex flex-col whitespace-nowrap uppercase leading-none">
-          {rest.length > 0 && <span className="text-[10px] font-semibold tracking-[0.24em] text-white/80">{first}</span>}
-          <span className={`${rest.length > 0 ? 'mt-1' : ''} font-[family-name:var(--tpl-font-display)] text-[15px] font-bold tracking-[0.06em]`}>
-            {rest.length > 0 ? rest.join(' ') : first}
+  /** `wrap`: daftar statis (gerak mati, pratinjau CMS) boleh membungkus nama panjang; Marquee tetap satu baris. */
+  const lockups = (wrap: boolean) =>
+    items.map((item, i) => {
+      const name = field(item, 'name');
+      const logo = safeImage(field(item, 'logo'));
+      // Simbol + nama sebagai lockup dua baris: kata pertama kecil di atas (mis. "QUAYMOOR"), sisanya di bawah
+      const [first, ...rest] = name.split(/\s+/);
+      return logo ? (
+        <img key={`${name}-${i}`} src={logo} alt={name} loading="lazy" decoding="async" className="h-8 w-auto max-w-[160px] object-contain brightness-0 invert" />
+      ) : (
+        <span key={`${name}-${i}`} className={`inline-flex items-center gap-2.5 text-white ${wrap ? 'min-w-0 max-w-full' : ''}`}>
+          <CompanyGlyph index={glyphIndex(name, i)} className="h-7 w-7 shrink-0" />
+          <span className={`flex min-w-0 flex-col uppercase leading-none ${wrap ? '[overflow-wrap:anywhere]' : 'whitespace-nowrap'}`}>
+            {rest.length > 0 && <span className="text-[10px] font-semibold tracking-[0.24em] text-white/80">{first}</span>}
+            <span className={`${rest.length > 0 ? 'mt-1' : ''} font-[family-name:var(--tpl-font-display)] text-[15px] font-bold tracking-[0.06em] ${wrap ? 'leading-[1.1]' : ''}`}>
+              {rest.length > 0 ? rest.join(' ') : first}
+            </span>
           </span>
         </span>
-      </span>
-    );
-  });
+      );
+    });
+  const logos = lockups(false);
   return (
     <div className="min-w-0 flex-1">
       {/* HP & tablet: strip berjalan (gerak mati → daftar statis yang membungkus) */}
@@ -104,9 +107,12 @@ function Companies({ m, motion }: { m: PortlineModel; motion: boolean }) {
             {logos}
           </Marquee>
         ) : (
-          <ul aria-label={m.ui.groupCompanies} className="grid grid-cols-2 items-center gap-x-6 gap-y-5 @xl:flex @xl:flex-wrap @xl:gap-x-10">
-            {logos.map((logo, i) => (
-              <li key={i}>{logo}</li>
+          // HP sempit: satu kolom (nama panjang tidak menabrak kolom sebelah); @md: dua kolom; @xl: membungkus mendatar
+          <ul aria-label={m.ui.groupCompanies} className="grid grid-cols-1 items-center gap-x-6 gap-y-4 @md:grid-cols-2 @md:gap-y-5 @xl:flex @xl:flex-wrap @xl:gap-x-10">
+            {lockups(true).map((logo, i) => (
+              <li key={i} className="min-w-0">
+                {logo}
+              </li>
             ))}
           </ul>
         )}
@@ -157,7 +163,11 @@ function SlideIndex({
       key={`${index}-${vertical ? 'y' : 'x'}`}
       data-run={autoplay ? 'true' : 'false'}
       data-hold={holding ? 'true' : 'false'}
-      onAnimationEnd={vertical ? () => onSelect(index + 1) : undefined}
+      // Hanya garis yang tampil yang beranimasi (yang lain display:none), jadi tepat satu garis memicu slide berikutnya:
+      // mendatar di bawah @6xl (HP, tablet, laptop kecil), tegak di layar lebar
+      onAnimationEnd={(e) => {
+        if (e.target === e.currentTarget) onSelect(index + 1);
+      }}
       className={`absolute inset-0 bg-white ${vertical ? 'pl-progress-y' : 'pl-progress-x'}`}
     />
   );
@@ -179,7 +189,7 @@ function SlideIndex({
                 onClick={() => onSelect(i)}
                 aria-label={s.label ? `${m.ui.slide(i + 1, count)}: ${s.label}` : m.ui.slide(i + 1, count)}
                 aria-current={current ? 'true' : undefined}
-                className={`group flex min-h-11 min-w-11 items-center gap-3 px-1 transition-colors duration-300 @6xl:flex-row-reverse @6xl:gap-4 ${current ? 'text-white' : 'text-white/60 hover:text-white'}`}
+                className={`group flex min-h-11 min-w-11 items-center gap-3 px-1 transition-colors duration-300 @6xl:flex-row-reverse @6xl:gap-4 ${current ? 'text-white' : 'text-white/80 hover:text-white'}`}
               >
                 {/* Garis indeks: mendatar di HP, tegak di layar lebar (berjalan pada slide aktif) */}
                 <span aria-hidden className={`relative block overflow-hidden bg-white/30 @6xl:hidden ${current ? 'h-[2px] w-10' : 'h-px w-5'}`}>
@@ -192,7 +202,7 @@ function SlideIndex({
                   {pad(i + 1)}
                 </span>
                 {current && s.label && (
-                  <span aria-hidden className="hidden max-w-[150px] truncate text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white/85 @6xl:block">
+                  <span aria-hidden className="hidden max-w-[150px] truncate text-[11.5px] font-semibold uppercase tracking-[0.14em] text-white @6xl:block">
                     {s.label}
                   </span>
                 )}
@@ -252,27 +262,33 @@ export function Hero({ m }: { m: PortlineModel }) {
   };
 
   /** Teks semua slide ditumpuk di satu sel grid: tinggi = teks terpanjang, jadi isi di bawahnya tidak bergeser saat
-   *  slide berganti. Teks slide lain tersembunyi dari pembaca layar (dan judulnya bukan <h1>). */
-  const stack = (render: (s: HeroSlide, live: boolean) => ReactNode, className = '') => (
+   *  slide berganti. Teks slide lain tersembunyi dari pembaca layar, kecuali H1 (`keepFirst`). */
+  const stack = (render: (s: HeroSlide, live: boolean, i: number) => ReactNode, className = '', keepFirst = false) => (
     <div className={`grid ${className}`}>
       {slides.map((s, i) =>
         i === index ? (
           <div key={`aktif-${i}`} data-enter={changed ? 'true' : 'false'} className="col-start-1 row-start-1">
-            {render(s, true)}
+            {render(s, true, i)}
+          </div>
+        ) : keepFirst && i === 0 ? (
+          // H1 halaman TETAP judul slide 1 (tidak berganti tiap slide): saat slide lain tampil, H1 hanya disembunyikan
+          // secara visual dan tetap terbaca pembaca layar & mesin pencari
+          <div key={`bayangan-${i}`} className="pointer-events-none col-start-1 row-start-1 opacity-0">
+            {render(s, false, i)}
           </div>
         ) : (
           <div key={`bayangan-${i}`} aria-hidden className="invisible col-start-1 row-start-1">
-            {render(s, false)}
+            {render(s, false, i)}
           </div>
         ),
       )}
     </div>
   );
-  const titleOf = (s: HeroSlide, live: boolean) =>
-    live ? (
-      <h1 className={`pl-rise max-w-[15ch] text-balance text-white @6xl:max-w-[16ch] ${TYPE_P.h1}`}>{s.title}</h1>
+  const titleOf = (s: HeroSlide, live: boolean, i: number) =>
+    i === 0 ? (
+      <h1 className={`${live ? 'pl-rise' : ''} max-w-[15ch] text-balance text-white @6xl:max-w-[16ch] ${TYPE_P.h1}`}>{s.title}</h1>
     ) : (
-      <p className={`max-w-[15ch] text-balance @6xl:max-w-[16ch] ${TYPE_P.h1}`}>{s.title}</p>
+      <p className={`${live ? 'pl-rise text-white' : ''} max-w-[15ch] text-balance @6xl:max-w-[16ch] ${TYPE_P.h1}`}>{s.title}</p>
     );
   const leadOf = (s: HeroSlide) =>
     s.subtitle ? (
@@ -347,7 +363,7 @@ export function Hero({ m }: { m: PortlineModel }) {
         >
           <div className="grid gap-6 @3xl:gap-8 @6xl:grid-cols-12 @6xl:items-center">
             <div className="min-w-0 @6xl:col-span-8 @7xl:col-span-7">
-              {stack(titleOf)}
+              {stack(titleOf, '', true)}
               {hasLead && stack(leadOf, 'mt-6 hidden @3xl:grid')}
               {count > 1 && (
                 <p className="sr-only" aria-live={autoplay && !holding ? 'off' : 'polite'} aria-atomic="true">

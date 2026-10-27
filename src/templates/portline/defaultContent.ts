@@ -1,15 +1,19 @@
-// Konten demo Portline: Portline Group, grup pelayaran & logistik terpadu FIKTIF berkantor pusat di Rotterdam (berdiri
-// 1968). Semua nama orang, perusahaan anak, kelas kapal, angka, media, dan berita adalah contoh; kota/negara nyata hanya
-// dipakai sebagai lokasi kantor fiktif. Salinan demo berbahasa Inggris (en-US korporat); label CMS berbahasa Indonesia
-// (./schema). Tanpa klaim izin/regulator/sertifikasi nyata, tanpa janji emisi atau keselamatan yang bisa menyesatkan:
-// keberlanjutan ditulis sebagai program yang sedang berjalan. Formulir hanya menyusun pesan WhatsApp/email.
+// Konten demo Portline: Quaymoor Group, grup pelayaran & logistik terpadu FIKTIF berkantor pusat di Rotterdam (berdiri
+// 1968). Nama perusahaan & media demo sengaja gabungan kata yang tidak lazim (dicek 2026-10-27: tidak dipakai perusahaan
+// pelayaran atau media nyata); "Portline" hanya nama template, karena ada perusahaan pelayaran nyata bernama Portline.
+// Semua nama orang, perusahaan anak, kelas kapal, angka, media, dan berita adalah contoh; kota/negara nyata hanya
+// dipakai sebagai lokasi kantor fiktif. Telepon & WhatsApp memakai blok 555, email domain .example, media sosial
+// berakhiran -demo. Salinan demo berbahasa Inggris (en-US korporat); label CMS berbahasa Indonesia (./schema). Tanpa
+// klaim izin/regulator/sertifikasi nyata, tanpa janji emisi atau keselamatan yang bisa menyesatkan: keberlanjutan
+// ditulis sebagai program yang sedang berjalan. Formulir hanya menyusun pesan WhatsApp/email; semua label & pesannya
+// ada di section `enquiry`.
 import type { SiteContent } from '../types';
 import { portlinePhoto } from './photos';
 
 /** Warna tema bawaan: biru laut #1565C0 (5,8:1 di putih). Navy judul & footer diturunkan otomatis. */
 export const PORTLINE_ACCENT = '#1565C0';
 
-const COMPANY = 'Portline Group';
+const COMPANY = 'Quaymoor Group';
 
 export const portlineContent: SiteContent = {
   brand: {
@@ -23,7 +27,7 @@ export const portlineContent: SiteContent = {
     enabled: true,
     utility_1_label: 'Container Lines',
     utility_1_url: '',
-    utility_2_label: 'Track a shipment',
+    utility_2_label: 'Shipment enquiry',
     utility_2_url: '',
     lang_current: 'EN',
     lang_other: 'ID',
@@ -31,8 +35,8 @@ export const portlineContent: SiteContent = {
     slide_label: 'Ocean freight',
     title: 'Connecting world trade, port by port',
     subtitle:
-      'Portline Group moves containers, energy and project cargo for customers in more than 90 countries, through one network of ships, terminals and inland logistics.',
-    link_label: 'About Portline',
+      'Quaymoor Group moves containers, energy and project cargo for customers in more than 90 countries, through one network of ships, terminals and inland logistics.',
+    link_label: 'About Quaymoor',
     link_url: '',
     image: portlinePhoto('hero-1'),
     slides: [
@@ -46,34 +50,36 @@ export const portlineContent: SiteContent = {
         image: portlinePhoto('hero-3'),
         label: 'Logistics',
         title: 'Day and night, from quay to door',
-        subtitle: 'Feeder, rail, road and air services link every Portline terminal to the inland markets our customers serve.',
+        subtitle: 'Feeder, rail, road and air services link every Quaymoor terminal to the inland markets our customers serve.',
       },
     ],
-    service_label: 'Ro-Ro & feeder services',
+    service_label: 'Liner, bulk & tanker services',
     service_url: '',
     companies: [
-      { name: 'Portline Container Lines', logo: '' },
-      { name: 'Portline Terminals', logo: '' },
-      { name: 'Portline Energy Shipping', logo: '' },
-      { name: 'Portline Air & Road', logo: '' },
-      { name: 'Portline Shipyards', logo: '' },
+      { name: 'Quaymoor Container Lines', logo: '' },
+      { name: 'Quaymoor Terminals', logo: '' },
+      { name: 'Quaymoor Energy Shipping', logo: '' },
+      { name: 'Quaymoor Air & Road', logo: '' },
+      { name: 'Quaymoor Shipyards', logo: '' },
     ],
   },
   newsroom: {
     enabled: true,
     eyebrow: 'Newsroom',
-    title: 'Portline newsroom',
+    menu_label: 'Newsroom',
+    title: 'Quaymoor newsroom',
     all_label: 'All',
+    read_label: 'Read story',
     button_label: 'Media enquiries',
     button_url: '',
     items: [
       {
-        title: 'Portline Meridian joins the Asia–Europe loop',
+        title: 'Quaymoor Meridian joins the Asia–Europe loop',
         date: '2026-10-14',
         tags: 'Lines',
         excerpt: 'The fourth Meridian-class container ship enters weekly service between Singapore, Colombo and Rotterdam.',
         body:
-          'Portline Meridian, the fourth ship in the 15,000 TEU Meridian class, sailed from Singapore on her first Asia–Europe rotation this week. She replaces an older chartered vessel and completes the weekly loop.\n\nThe Meridian series was designed with Portline Terminals so that loading plans, berth windows and hinterland connections are planned as one schedule.',
+          'Quaymoor Meridian, the fourth ship in the 15,000 TEU Meridian class, sailed from Singapore on her first Asia–Europe rotation this week. She replaces an older chartered vessel and completes the weekly loop.\n\nThe Meridian series was designed with Quaymoor Terminals so that loading plans, berth windows and hinterland connections are planned as one schedule.',
         image: portlinePhoto('news-1'),
         url: '',
       },
@@ -81,29 +87,29 @@ export const portlineContent: SiteContent = {
         title: 'Fleet operations centre opens in Rotterdam',
         date: '2026-10-02',
         tags: 'Lines',
-        excerpt: 'One room now follows every Portline ship, with weather routing and port-call planning side by side.',
+        excerpt: 'One room now follows every Quaymoor ship, with weather routing and port-call planning side by side.',
         body:
           'The new fleet operations centre brings voyage planning, weather routing and port-call coordination into one room at our Rotterdam headquarters.\n\nCaptains can reach a duty planner at any hour, and customers receive one updated arrival time instead of several.',
         image: portlinePhoto('news-2'),
         url: '',
       },
       {
-        title: 'Two product tankers delivered to Portline Energy Shipping',
+        title: 'Two product tankers delivered to Quaymoor Energy Shipping',
         date: '2026-09-18',
         tags: 'Energy',
         excerpt: 'The Halcyon-class sisters join long-term charters in the Middle East and Southeast Asia.',
         body:
-          'Portline Energy Shipping took delivery of two Halcyon-class product tankers in September. Both ships start long-term charters for regional energy traders.\n\nThe deliveries complete the current renewal programme of the tanker fleet.',
+          'Quaymoor Energy Shipping took delivery of two Halcyon-class product tankers in September. Both ships start long-term charters for regional energy traders.\n\nThe deliveries complete the current renewal programme of the tanker fleet.',
         image: portlinePhoto('news-3'),
         url: '',
       },
       {
-        title: 'Lisbon terminal adds night towage and berthing',
+        title: 'Durban terminal adds night towage and berthing',
         date: '2026-09-03',
         tags: 'Terminals',
         excerpt: 'Feeder ships can now berth around the clock, shortening waiting times at anchor.',
         body:
-          'Our Lisbon terminal now offers towage and berthing through the night. Feeder services connecting to the main Atlantic loop can arrive and depart outside daytime hours.\n\nThe change was planned together with local pilots and harbour crews.',
+          'Our Durban terminal now offers towage and berthing through the night. Feeder services connecting to the Indian Ocean loop can arrive and depart outside daytime hours.\n\nThe change was planned together with local pilots and harbour crews.',
         image: portlinePhoto('news-4'),
         url: '',
       },
@@ -111,9 +117,9 @@ export const portlineContent: SiteContent = {
         title: 'Weekly air charter links Amsterdam and Nairobi',
         date: '2026-08-21',
         tags: 'Logistics',
-        excerpt: 'Portline Air & Road adds a weekly freighter rotation for perishables and spare parts.',
+        excerpt: 'Quaymoor Air & Road adds a weekly charter rotation for perishables and spare parts.',
         body:
-          'Portline Air & Road has started a weekly freighter charter between Amsterdam and Nairobi. Northbound flights carry fresh produce; southbound flights carry machinery parts for regional customers.\n\nBookings are handled by the same customer desk as our ocean services.',
+          'Quaymoor Air & Road has started a weekly charter flight between Amsterdam and Nairobi. Northbound flights carry fresh produce; southbound flights carry machinery parts for regional customers.\n\nBookings are handled by the same customer desk as our ocean services.',
         image: portlinePhoto('news-5'),
         url: '',
       },
@@ -124,15 +130,15 @@ export const portlineContent: SiteContent = {
     eyebrow: 'In the press',
     title: 'In the press',
     items: [
-      { outlet: 'Harbour Ledger', date: '2026-10-16', headline: 'Portline adds Asia–Europe capacity as the Meridian series completes', url: '' },
-      { outlet: 'Quayside Weekly', date: '2026-10-05', headline: 'Inside the new fleet operations centre in Rotterdam', url: '' },
-      { outlet: 'Northwind Trade Journal', date: '2026-09-22', headline: 'Tanker deliveries round off a fleet renewal at Portline Energy Shipping', url: '' },
-      { outlet: 'Tidewater Business Review', date: '2026-09-08', headline: 'How a shipping group founded in 1968 is planning its next decade', url: '' },
+      { outlet: 'Harbour Ledger', date: '2026-10-16', headline: 'Quaymoor adds Asia–Europe capacity as the Meridian series completes', url: '' },
+      { outlet: 'Hawserford Weekly', date: '2026-10-05', headline: 'Inside the new fleet operations centre in Rotterdam', url: '' },
+      { outlet: 'Fathomgate Trade Journal', date: '2026-09-22', headline: 'Tanker deliveries round off a fleet renewal at Quaymoor Energy Shipping', url: '' },
+      { outlet: 'Bollardline Business Review', date: '2026-09-08', headline: 'How a shipping group founded in 1968 is planning its next decade', url: '' },
     ],
   },
   stats: {
     enabled: true,
-    eyebrow: 'Portline in numbers',
+    eyebrow: 'Quaymoor in numbers',
     title: 'One group since 1968',
     items: [
       { value: '140+', label: 'Vessels in operation' },
@@ -144,60 +150,63 @@ export const portlineContent: SiteContent = {
   divisions: {
     enabled: true,
     eyebrow: 'Group companies',
+    menu_label: 'Group',
     title: 'Five companies, one connected chain',
-    subtitle: 'Each Portline company runs its own trade. All of them share one network, one safety standard and one customer desk.',
+    subtitle: 'Each Quaymoor company runs its own trade. All of them share one network, one safety standard and one customer desk.',
     items: [
       {
-        name: 'Portline Container Lines',
+        name: 'Quaymoor Container Lines',
         label: 'Ocean',
         description: 'Weekly liner services between Asia, Europe, Africa and the Americas, with feeder links to regional ports.',
         image: portlinePhoto('lines'),
-        link_label: 'View detail',
+        link_label: 'Talk to this team',
         url: '',
       },
       {
-        name: 'Portline Terminals',
+        name: 'Quaymoor Terminals',
         label: 'Ports',
         description: 'Container and bulk terminals with on-dock rail, reefer yards and bonded warehousing.',
         image: portlinePhoto('terminals'),
-        link_label: 'View detail',
+        link_label: 'Talk to this team',
         url: '',
       },
       {
-        name: 'Portline Energy Shipping',
+        name: 'Quaymoor Energy Shipping',
         label: 'Energy',
         description: 'Product, chemical and LPG tankers on long-term charters for energy producers and traders.',
         image: portlinePhoto('energy'),
-        link_label: 'View detail',
+        link_label: 'Talk to this team',
         url: '',
       },
       {
-        name: 'Portline Air & Road',
+        name: 'Quaymoor Air & Road',
         label: 'Inland',
         description: 'Trucking, rail and air charters that carry cargo from the quay to the customer’s door.',
         image: portlinePhoto('airroad'),
-        link_label: 'View detail',
+        link_label: 'Talk to this team',
         url: '',
       },
       {
-        name: 'Portline Shipyards',
+        name: 'Quaymoor Shipyards',
         label: 'Marine',
         description: 'Repair, dry-docking and heavy-lift services for our own fleet and for third-party owners.',
         image: portlinePhoto('shipyards'),
-        link_label: 'View detail',
+        link_label: 'Talk to this team',
         url: '',
       },
     ],
     cta_title: 'One partner for the whole route?',
-    cta_text: 'Tell us about the cargo and the lanes. Our group desk brings the right Portline companies together in one proposal.',
+    cta_text: 'Tell us about the cargo and the lanes. Our group desk brings the right Quaymoor companies together in one proposal.',
     cta_label: 'Contact the group desk',
     cta_url: '',
   },
   fleet: {
     enabled: true,
     eyebrow: 'Our fleet',
+    menu_label: 'Fleet',
     title: 'Purpose-built ships for every trade',
-    subtitle: 'Owned and chartered vessel classes, planned together with our terminals and maintained by Portline Shipyards.',
+    subtitle: 'Owned and chartered vessel classes, planned together with our terminals and maintained by Quaymoor Shipyards.',
+    specs_label: 'Key figures',
     items: [
       {
         name: 'Meridian class',
@@ -219,16 +228,16 @@ export const portlineContent: SiteContent = {
         name: 'Halcyon class',
         type: 'Product & LPG tanker',
         capacity: '50,000 DWT',
-        description: 'Coated tankers for refined products and pressurised LPG, operated by Portline Energy Shipping.',
+        description: 'Coated tankers for refined products and pressurised LPG, operated by Quaymoor Energy Shipping.',
         specs: 'Length overall: 183 m\nCargo tanks: 12\nShips in class: 9',
         image: portlinePhoto('fleet-3'),
       },
       {
         name: 'Coastline class',
-        type: 'Short-sea feeder',
-        capacity: '2,800 TEU',
-        description: 'Shallow-draught feeders that connect regional ports to our main-line hubs.',
-        specs: 'Length overall: 196 m\nService speed: 18 knots\nShips in class: 24',
+        type: 'Hopper dredger',
+        capacity: '12,000 m³',
+        description: 'Trailing suction hopper dredgers that keep our berths and approach channels at their working depth.',
+        specs: 'Length overall: 152 m\nDredging depth: 45 m\nShips in class: 4',
         image: portlinePhoto('fleet-4'),
       },
     ],
@@ -236,17 +245,18 @@ export const portlineContent: SiteContent = {
   network: {
     enabled: true,
     eyebrow: 'Global network',
+    menu_label: 'Network',
     title: 'Where we operate',
     subtitle: 'Hubs on every major trade lane, connected by our own ships, terminals and inland services.',
     image: portlinePhoto('network'),
-    image_label: 'Headquarters',
-    image_value: 'Rotterdam, the Netherlands',
-    image_caption: '51.92° N · 4.48° E',
+    image_label: 'Our network',
+    image_value: 'Terminals on five continents',
+    image_caption: '38 terminals · 90+ countries',
     items: [
       {
         region: 'Europe',
         value: '14 terminals',
-        hubs: 'Rotterdam, Hamburg, Antwerp, Lisbon, Gdańsk',
+        hubs: 'Rotterdam, Hamburg, Antwerp, Valencia, Gdańsk',
         text: 'Group headquarters, fleet operations and our largest terminal cluster.',
       },
       {
@@ -272,6 +282,7 @@ export const portlineContent: SiteContent = {
   sustainability: {
     enabled: true,
     eyebrow: 'Sustainability',
+    menu_label: 'Sustainability',
     title: 'Every voyage should leave the sea, the ports and our people better off.',
     text: 'We are working on cleaner fuels, safer ships and fairer work across the group, and we publish our progress once a year, including what did not go to plan.',
     image: portlinePhoto('sustainability'),
@@ -286,8 +297,9 @@ export const portlineContent: SiteContent = {
   careers: {
     enabled: true,
     eyebrow: 'Careers',
+    menu_label: 'Careers',
     title: 'Build a career at sea and ashore',
-    text: 'From officer cadets to terminal engineers and data analysts, Portline people work in more than 30 countries. We train, promote and rotate from within.',
+    text: 'From officer cadets to terminal engineers and data analysts, Quaymoor people work in more than 30 countries. We train, promote and rotate from within.',
     image: portlinePhoto('careers'),
     points: [
       { text: 'Officer cadet programme' },
@@ -297,7 +309,7 @@ export const portlineContent: SiteContent = {
     ],
     button_label: 'Talk to recruitment',
     button_url: '',
-    email: 'careers@portline.example',
+    email: 'careers@quaymoor.example',
   },
   leadership: {
     enabled: true,
@@ -308,7 +320,7 @@ export const portlineContent: SiteContent = {
       {
         name: 'Maarten de Vries',
         role: 'Chief Executive Officer',
-        bio: 'Joined Portline as a deck officer in 1998 and led Portline Terminals before becoming CEO in 2021.',
+        bio: 'Joined Quaymoor as a deck officer in 2008 and led Quaymoor Terminals before becoming CEO in 2024.',
         photo: portlinePhoto('exec-1'),
         linkedin: '',
       },
@@ -338,19 +350,26 @@ export const portlineContent: SiteContent = {
   contact: {
     enabled: true,
     eyebrow: 'Contact',
+    menu_label: 'Contact',
     title: 'Talk to the right team',
-    subtitle: 'Tell us what you need to move. A specialist from the right Portline company will get back to you.',
-    address: 'Portline House, Harbour Quay 1, Rotterdam, the Netherlands',
+    subtitle: 'Tell us what you need to move. A specialist from the right Quaymoor company will get back to you.',
+    address: 'Quaymoor House, Harbour Quay 1, Rotterdam, the Netherlands',
     maps_query: 'Rotterdam, the Netherlands',
     maps_url: '',
     phone: '+31 10 555 0140',
-    email: 'enquiries@portline.example',
-    whatsapp: '+31 6 1234 5678',
-    whatsapp_message: 'Hello Portline, I have a question about shipping with you.',
+    email: 'enquiries@quaymoor.example',
+    whatsapp: '+31 6 5550 0140',
+    whatsapp_message: 'Hello Quaymoor, I have a question about shipping with you.',
     hours: 'Monday–Friday, 08:00–18:00 CET',
     form_title: 'Send an enquiry',
     form_text: 'Fields marked * are required. You choose whether to send the message by WhatsApp or email.',
     form_button: 'Prepare message',
+    headquarters_label: 'Headquarters',
+    phone_label: 'Call',
+    email_label: 'Email',
+    hours_label: 'Office hours',
+    map_label: 'View on map',
+    offices_title: 'Regional offices',
     enquiry_types: [
       { name: 'Freight quote' },
       { name: 'Terminal services' },
@@ -366,14 +385,48 @@ export const portlineContent: SiteContent = {
       { city: 'Jakarta', address: 'Indonesia office, Sudirman', phone: '+62 21 555 0140' },
     ],
   },
+  // Teks formulir enquiry (bagian Kontak; bukan section halaman sendiri, jadi tanpa `enabled`). {company} di salam
+  // pembuka diganti nama perusahaan.
+  enquiry: {
+    label_name: 'Full name',
+    label_company: 'Company',
+    label_email: 'Work email',
+    label_phone: 'Phone',
+    label_type: 'Enquiry type',
+    prompt_type: 'Choose a topic',
+    label_unit: 'Business unit',
+    prompt_unit: 'Any / not sure',
+    label_message: 'Message',
+    placeholder_message: 'Cargo, route, volumes, timing…',
+    optional_label: 'optional',
+    note: 'Nothing is stored on this website: the form only prepares a WhatsApp message or an email for you to send.',
+    error_name: 'Please enter your full name.',
+    error_email: 'Please enter a valid email address, e.g. name@company.com.',
+    error_phone: 'Please enter a valid phone number or leave it empty.',
+    error_type: 'Please choose an enquiry type.',
+    error_message: 'Please write a short message (at least 10 characters).',
+    ready_title: 'Your message is ready',
+    ready_text: 'Check the text, then send it by WhatsApp or email.',
+    whatsapp_label: 'Open WhatsApp',
+    email_label: 'Send by email',
+    edit_label: 'Edit details',
+    no_channel_text: 'Contact our team by phone or visit one of our offices.',
+    greeting: 'Hello {company}, I would like to make an enquiry.',
+    closing: 'Thank you.',
+    subject: 'Enquiry',
+  },
   footer: {
     enabled: true,
-    description: 'Portline Group is an integrated shipping, terminal and logistics group, headquartered in Rotterdam since 1968.',
+    description: 'Quaymoor Group is an integrated shipping, terminal and logistics group, headquartered in Rotterdam since 1968.',
     copyright: '',
+    col_company: 'Company',
+    col_careers: 'Careers',
+    col_media: 'Media',
+    col_contact: 'Contact',
     instagram: '',
     facebook: '',
-    linkedin: 'https://www.linkedin.com/company/portline-group-demo',
-    youtube: 'https://www.youtube.com/@portline-group-demo',
+    linkedin: 'https://www.linkedin.com/company/quaymoor-group-demo',
+    youtube: 'https://www.youtube.com/@quaymoor-group-demo',
     tiktok: '',
   },
 };

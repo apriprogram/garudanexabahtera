@@ -9,11 +9,13 @@
 @layer components {
   /*
    * Lapisan foto hero: pita atas tetap 150 px (bilah utilitas + menu putih ≥ 4,5:1 di foto terang), navy dari kiri
-   * (judul & deskripsi), dan bawah (deret logo anak usaha). Wadah sempit (HP, CMS): rata atas-bawah.
+   * (judul & deskripsi), navy tipis dari kanan (indeks slide 01/02/03 tetap terbaca di atas kontainer putih), dan bawah
+   * (deret logo anak usaha). Wadah sempit (HP, CMS): rata atas-bawah.
    */
   .pl-hero-scrim {
     background:
       linear-gradient(180deg, color-mix(in srgb, var(--pl-deep) 78%, transparent) 0, color-mix(in srgb, var(--pl-deep) 62%, transparent) 150px, transparent 340px),
+      linear-gradient(270deg, color-mix(in srgb, var(--pl-deep) 78%, transparent) 0%, color-mix(in srgb, var(--pl-deep) 62%, transparent) 19%, transparent 38%),
       linear-gradient(90deg, color-mix(in srgb, var(--pl-deep) 90%, transparent) 0%, color-mix(in srgb, var(--pl-deep) 74%, transparent) 36%, color-mix(in srgb, var(--pl-deep) 28%, transparent) 58%, transparent 82%),
       linear-gradient(0deg, color-mix(in srgb, var(--pl-deep) 92%, transparent) 0%, color-mix(in srgb, var(--pl-deep) 55%, transparent) 22%, transparent 45%);
   }

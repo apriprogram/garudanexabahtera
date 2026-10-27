@@ -204,6 +204,9 @@ describe('src/content/templates', () => {
     expect(portline).toMatch(/bukan sistem pelacakan/);
     expect(portline).toMatch(/fiktif/);
     expect(portline).not.toMatch(/pelacakan kiriman real-?time tersedia|booking online tersedia|ISO 9001|IMO approved|terdaftar di bursa|\bMaersk\b|\bMSC\b|\bCOSCO\b/i);
+    // Perusahaan demo = Quaymoor Group (fiktif); nama perusahaan/media nyata tidak dipakai, termasuk "Portline Group"
+    expect(portline).not.toMatch(/Portline Group|\bHanjin\b|\bK ?Line\b|\bTidewater\b|\bNorthwind\b|Track a shipment/i);
+    expect(portline).toMatch(/Quaymoor Group/);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {

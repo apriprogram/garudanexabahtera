@@ -1,8 +1,8 @@
 // Turunan konten Portline (fungsi murni, diuji di __tests__/portline.test.tsx): warna tema (navy judul & footer, es,
 // pita biru pejal, versi terang di latar gelap, tinta di latar terang), bahasa teks bawaan, menu, slide hero, tanggal,
 // tagar & filter berita, tata letak mosaik, formulir enquiry (validasi → pesan WhatsApp / email), tujuan tautan "#…",
-// dan section yang tampil. Semua tahan konten mentah (null, angka, list rusak). Formulir hanya MENYUSUN pesan: tidak
-// ada data yang dikirim ke server atau disimpan.
+// section yang tampil, lebar mulai menu lengkap, dan teks antarmuka dari CMS (readUi). Semua tahan konten mentah (null,
+// angka, list rusak). Formulir hanya MENYUSUN pesan: tidak ada data yang dikirim ke server atau disimpan.
 import type { CSSProperties } from 'react';
 import type { ListItem, SectionContent, SiteContent } from '../types';
 import { SOCIAL_FIELDS } from '../shared/social';
@@ -23,7 +23,7 @@ import {
   whatsappHref,
   type LinkAction,
 } from '../shared/utils';
-import { langOf, MONTHS, uiCopy, type Lang } from './copy';
+import { langOf, MONTHS, uiCopy, type Lang, type UiCopy } from './copy';
 import { PORTLINE_ACCENT } from './defaultContent';
 
 // ─── Warna ────────────────────────────────────────────────────────────────────
@@ -179,14 +179,42 @@ export interface PortlineNavItem {
 
 const NAV_KEYS = ['newsroom', 'divisions', 'fleet', 'network', 'sustainability', 'careers', 'contact'];
 
-/** Label menu dari label kecil section bila singkat (≤ 14 huruf, ≤ 2 kata), selain itu label bawaan bahasa situs. */
+/**
+ * Label menu: "Nama di menu" (menu_label) bila diisi, kalau tidak label kecil section bila singkat (≤ 14 huruf, ≤ 2
+ * kata), selain itu nama bawaan bahasa situs.
+ */
 export function navItems(content: SiteContent, lang: Lang = langOf(text(getSection(content, 'brand'), 'language'))): PortlineNavItem[] {
   const ui = uiCopy(lang);
   return NAV_KEYS.filter((key) => sectionShown(content, key)).map((key) => {
-    const eyebrow = text(getSection(content, key), 'eyebrow');
+    const section = getSection(content, key);
+    const menu = text(section, 'menu_label');
+    const eyebrow = text(section, 'eyebrow');
     const short = eyebrow && eyebrow.length <= 14 && eyebrow.split(/\s+/).length <= 2;
-    return { key, label: short ? eyebrow : ui.nav[key] };
+    return { key, label: menu || (short ? eyebrow : ui.nav[key]) };
   });
+}
+
+/**
+ * Lebar wadah tempat menu atas lengkap (bilah utilitas + menu KAPITAL) mulai tampil; di bawahnya header memakai tombol
+ * menu. Dihitung dari panjang label menu & nama perusahaan agar menu tidak menimpa / memotong nama perusahaan:
+ * "6xl" (≥ 1152px), "7xl" (≥ 1280px), "96rem" (≥ 1536px), atau "none" (selalu tombol menu).
+ */
+export type NavTier = '6xl' | '7xl' | '96rem' | 'none';
+
+/** Lebar huruf rata-rata (px) menu KAPITAL 13px semibold + tracking 0.08em, dan nama perusahaan 19px Barlow KAPITAL. */
+const NAV_CHAR = 10.2;
+const NAME_CHAR = 12.4;
+
+export function navTier(nav: PortlineNavItem[], companyName: string, hasLogo = false): NavTier {
+  if (nav.length === 0) return '6xl';
+  const chars = nav.reduce((sum, item) => sum + item.label.length, 0);
+  // Logo = simbol 40px + jarak 10px + nama; nama sangat panjang boleh terpotong setelah ± 320px
+  const logo = hasLogo ? 200 : Math.min(320, 50 + (companyName || '').length * NAME_CHAR);
+  const fits = (inner: number, perItem: number) => logo + 24 + chars * NAV_CHAR + nav.length * perItem <= inner;
+  if (fits(1152 - 96, 24)) return '6xl';
+  if (fits(1280 - 96, 32)) return '7xl';
+  if (fits(1536 - 128, 32)) return '96rem';
+  return 'none';
 }
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
@@ -352,9 +380,11 @@ export function validPhone(raw: string): boolean {
   return digits.length >= 7 && digits.length <= 15;
 }
 
-/** Pesan galat per isian (kosong = valid). `types` = pilihan jenis pertanyaan (wajib dipilih bila ada). */
-export function validateEnquiry(form: EnquiryForm, types: string[], lang: Lang = 'en'): EnquiryErrors {
-  const e = uiCopy(lang).form.errors;
+/**
+ * Pesan galat per isian (kosong = valid). `types` = pilihan jenis pertanyaan (wajib dipilih bila ada). `e` = teks galat
+ * (CMS lewat readUi, bawaan: Inggris).
+ */
+export function validateEnquiry(form: EnquiryForm, types: string[], e: UiCopy['form']['errors'] = uiCopy('en').form.errors): EnquiryErrors {
   const errors: EnquiryErrors = {};
   if (form.name.trim().length < 2) errors.name = e.name;
   if (!validEmail(form.email)) errors.email = e.email;
@@ -364,17 +394,19 @@ export function validateEnquiry(form: EnquiryForm, types: string[], lang: Lang =
   return errors;
 }
 
-/** Isi pesan enquiry (baris per isian; isian opsional yang kosong tidak ikut). */
-export function enquiryMessage(company: string, form: EnquiryForm, lang: Lang = 'en'): string {
-  const f = uiCopy(lang).form;
+/**
+ * Isi pesan enquiry: salam pembuka, satu baris per isian dengan label isian formulir (isian opsional yang kosong tidak
+ * ikut), lalu penutup. `f` = teks formulir (CMS lewat readUi, bawaan: Inggris).
+ */
+export function enquiryMessage(company: string, form: EnquiryForm, f: UiCopy['form'] = uiCopy('en').form): string {
   const rows = [
-    `${f.rows.name}: ${form.name.trim()}`,
-    form.company.trim() && `${f.rows.company}: ${form.company.trim()}`,
-    `${f.rows.email}: ${form.email.trim()}`,
-    form.phone.trim() && `${f.rows.phone}: ${form.phone.trim()}`,
-    form.type && `${f.rows.type}: ${form.type}`,
-    form.unit && `${f.rows.unit}: ${form.unit}`,
-    `${f.rows.message}: ${form.message.trim().replace(/\s+/g, ' ')}`,
+    `${f.name}: ${form.name.trim()}`,
+    form.company.trim() && `${f.company}: ${form.company.trim()}`,
+    `${f.email}: ${form.email.trim()}`,
+    form.phone.trim() && `${f.phone}: ${form.phone.trim()}`,
+    form.type && `${f.type}: ${form.type}`,
+    form.unit && `${f.unit}: ${form.unit}`,
+    `${f.message}: ${form.message.trim().replace(/\s+/g, ' ')}`,
   ].filter(Boolean);
   return `${f.greeting(company)}\n${rows.join('\n')}\n${f.thanks}`;
 }
@@ -433,6 +465,70 @@ export function matchType(types: string[], pattern: RegExp): string {
   return types.find((t) => pattern.test(t)) ?? '';
 }
 
+// ─── Teks antarmuka ───────────────────────────────────────────────────────────
+
+/**
+ * Teks antarmuka situs: label & pesan yang TAMPIL diambil dari CMS (label baris kontak, judul kolom footer, "Read
+ * story", "Key figures", seluruh label/pesan formulir di section `enquiry`); field kosong → teks bawaan bahasa situs
+ * (./copy). Label aria tetap dari ./copy sesuai bahasa situs. `{company}` di salam pembuka diganti nama perusahaan.
+ */
+export function readUi(content: SiteContent, lang: Lang = langOf(text(getSection(content, 'brand'), 'language'))): UiCopy {
+  const base = uiCopy(lang);
+  const pick = (key: string, name: string, fallback: string) => text(getSection(content, key), name) || fallback;
+  const e = (name: string, fallback: string) => pick('enquiry', name, fallback);
+  const greeting = text(getSection(content, 'enquiry'), 'greeting');
+  const subject = text(getSection(content, 'enquiry'), 'subject');
+  const f = base.form;
+  return {
+    ...base,
+    readStory: pick('newsroom', 'read_label', base.readStory),
+    specs: pick('fleet', 'specs_label', base.specs),
+    headquarters: pick('contact', 'headquarters_label', base.headquarters),
+    call: pick('contact', 'phone_label', base.call),
+    email: pick('contact', 'email_label', base.email),
+    hours: pick('contact', 'hours_label', base.hours),
+    viewMap: pick('contact', 'map_label', base.viewMap),
+    offices: pick('contact', 'offices_title', base.offices),
+    footerCompany: pick('footer', 'col_company', base.footerCompany),
+    footerCareers: pick('footer', 'col_careers', base.footerCareers),
+    footerMedia: pick('footer', 'col_media', base.footerMedia),
+    footerContact: pick('footer', 'col_contact', base.footerContact),
+    form: {
+      ...f,
+      title: pick('contact', 'form_title', f.title),
+      submit: pick('contact', 'form_button', f.submit),
+      name: e('label_name', f.name),
+      company: e('label_company', f.company),
+      email: e('label_email', f.email),
+      phone: e('label_phone', f.phone),
+      type: e('label_type', f.type),
+      typePlaceholder: e('prompt_type', f.typePlaceholder),
+      unit: e('label_unit', f.unit),
+      unitPlaceholder: e('prompt_unit', f.unitPlaceholder),
+      message: e('label_message', f.message),
+      messagePlaceholder: e('placeholder_message', f.messagePlaceholder),
+      optional: e('optional_label', f.optional),
+      privacy: e('note', f.privacy),
+      readyTitle: e('ready_title', f.readyTitle),
+      readyText: e('ready_text', f.readyText),
+      openWhatsapp: e('whatsapp_label', f.openWhatsapp),
+      sendEmail: e('email_label', f.sendEmail),
+      edit: e('edit_label', f.edit),
+      noChannel: e('no_channel_text', f.noChannel),
+      errors: {
+        name: e('error_name', f.errors.name),
+        email: e('error_email', f.errors.email),
+        phone: e('error_phone', f.errors.phone),
+        type: e('error_type', f.errors.type),
+        message: e('error_message', f.errors.message),
+      },
+      greeting: greeting ? (company: string) => greeting.replace(/\{company\}/gi, company) : f.greeting,
+      thanks: e('closing', f.thanks),
+      subject: (type: string, company: string) => f.subject(type || subject, company),
+    },
+  };
+}
+
 // ─── Model ────────────────────────────────────────────────────────────────────
 
 export function readPortline(content: SiteContent) {
@@ -442,9 +538,10 @@ export function readPortline(content: SiteContent) {
   const contact = section('contact');
   const footer = section('footer');
   const lang = langOf(text(brand, 'language'));
-  const ui = uiCopy(lang);
+  const ui = readUi(content, lang);
 
   const companyName = text(brand, 'company_name') || 'Company name';
+  const nav = navItems(content, lang);
   const whatsapp = text(contact, 'whatsapp');
   const waLink = whatsappHref(whatsapp, text(contact, 'whatsapp_message'));
   const waAction: LinkAction | null = waLink ? { kind: 'external', href: waLink } : null;
@@ -506,14 +603,16 @@ export function readPortline(content: SiteContent) {
     units,
     email: text(contact, 'email'),
     phone: text(contact, 'phone'),
-    /** Tautan teks hero ("About Portline >"): tautan sendiri, kalau kosong ke Grup, kalau tidak ke Armada */
+    /** Tautan teks hero ("About Quaymoor >"): tautan sendiri, kalau kosong ke Grup, kalau tidak ke Armada */
     heroLink: linkOr(text(hero, 'link_url'), sectionAction('divisions') ?? sectionAction('fleet')),
     /** Label layanan di strip anak usaha: tautan sendiri, kalau kosong ke Armada */
     serviceAction: linkOr(text(hero, 'service_url'), sectionAction('fleet')),
     utility1: linkOr(text(hero, 'utility_1_url'), sectionAction('divisions') ?? startAction),
     utility2: linkOr(text(hero, 'utility_2_url'), startAction),
-    langAction: linkOr(text(hero, 'lang_other_url'), null),
-    nav: navItems(content, lang),
+    /** Pilihan bahasa hanya bila bahasa lain punya tautan (kontrol yang tampak seperti tombol harus berfungsi) */
+    langAction: text(hero, 'lang_current') && text(hero, 'lang_other') ? linkOr(text(hero, 'lang_other_url'), null) : null,
+    nav,
+    navTier: navTier(nav, companyName, hasImage(text(brand, 'logo'))),
     socials: socialLinks(footer),
     map: mapsInfo(text(contact, 'maps_url'), text(contact, 'maps_query') || text(contact, 'address')),
     year: new Date().getFullYear(),

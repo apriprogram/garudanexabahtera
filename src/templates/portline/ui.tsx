@@ -91,7 +91,7 @@ export function SectionHead({
   );
 }
 
-/** Tautan teks kapital bergaris bawah + chevron ("About Portline >"). Tanpa label/aksi → tidak dirender. */
+/** Tautan teks kapital bergaris bawah + chevron ("About Quaymoor >"). Tanpa label/aksi → tidak dirender. */
 export function TextLink({
   action,
   label,

@@ -311,7 +311,7 @@ export function Press({ m }: { m: PortlineModel }) {
             )}
           </div>
           <Reveal variant="fade" className="min-w-0 @5xl:col-span-9">
-            <ul ref={rail} aria-label={m.ui.pressList} tabIndex={0} className="pl-rail -mx-1 flex snap-x snap-mandatory gap-6 overflow-x-auto px-1 py-1">
+            <ul ref={rail} aria-label={m.ui.pressList} tabIndex={0} className="pl-rail -mx-1 flex snap-x snap-mandatory scroll-px-1 gap-6 overflow-x-auto px-1 py-1">
               {items.map((item, i) => {
                 const link = m.linkOr(field(item, 'url'), null);
                 const headline = field(item, 'headline');

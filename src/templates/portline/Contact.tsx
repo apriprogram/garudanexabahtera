@@ -1,8 +1,9 @@
 // Kontak & formulir enquiry Portline. Kiri: kepala section, kantor pusat (alamat + "View on map", telepon, email, jam
-// kantor) dan daftar kantor regional bergaris tipis. Kanan: formulir berbahasa situs (nama, perusahaan, email, telepon,
-// jenis pertanyaan, unit bisnis, pesan). JUJUR: formulir hanya MENYUSUN pesan — setelah lolos validasi, pesan tampil apa
+// kantor) dan daftar kantor regional bergaris tipis. Kanan: formulir (nama, perusahaan, email, telepon, jenis pertanyaan,
+// unit bisnis, pesan). Semua label baris, label isian, pesan galat, dan teks hasil berasal dari CMS (m.ui, lihat readUi;
+// label formulir di section `enquiry`). JUJUR: formulir hanya MENYUSUN pesan — setelah lolos validasi, pesan tampil apa
 // adanya beserta tombol "Open WhatsApp" dan "Send by email" (mailto dengan subjek & isi). Tidak ada data yang dikirim ke
-// server atau disimpan. Tombol lain di halaman (kartu perusahaan grup, "Track a shipment", media, karier) bisa mengisi
+// server atau disimpan. Tombol lain di halaman (kartu perusahaan grup, "Shipment enquiry", media, karier) bisa mengisi
 // awal jenis pertanyaan / unit bisnis lewat EnquiryContext.
 import { Check, ChevronDown, CircleAlert, Clock, Lock, Mail, MapPin, PencilLine, Phone } from 'lucide-react';
 import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
@@ -69,9 +70,9 @@ function EnquiryFormCard({ m }: { m: PortlineModel }) {
 
   const wa = whatsappHref(m.whatsapp);
   const mail = mailHref(m.email);
-  const title = text(contact, 'form_title') || f.title;
+  const title = f.title;
   const intro = text(contact, 'form_text');
-  const button = text(contact, 'form_button') || f.submit;
+  const button = f.submit;
   const id = (key: keyof EnquiryForm) => `${baseId}-${key}`;
   const set = (key: keyof EnquiryForm) => (value: string) => {
     setForm((cur) => ({ ...cur, [key]: value }));
@@ -92,14 +93,14 @@ function EnquiryFormCard({ m }: { m: PortlineModel }) {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const found = validateEnquiry(form, m.types, m.lang);
+    const found = validateEnquiry(form, m.types, f.errors);
     setErrors(found);
     const first = REQUIRED.find((key) => found[key]);
     if (first) {
       refs.current[first]?.focus();
       return;
     }
-    setSent(enquiryMessage(m.companyName, form, m.lang));
+    setSent(enquiryMessage(m.companyName, form, f));
     window.setTimeout(() => resultHeading.current?.focus(), 0);
   };
 
@@ -326,7 +327,10 @@ export function Contact({ m }: { m: PortlineModel }) {
             )}
           </div>
           <Reveal variant="fade" className="min-w-0 @5xl:col-span-7 @5xl:sticky @5xl:top-[calc(var(--tpl-sticky-top,0px)+88px)] @5xl:self-start">
-            <EnquiryFormCard m={m} />
+            {/* data-tpl-section="enquiry": panel CMS menggulir pratinjau ke formulir saat bagian "Formulir enquiry" diedit */}
+            <div data-tpl-section="enquiry" className="min-w-0">
+              <EnquiryFormCard m={m} />
+            </div>
           </Reveal>
         </div>
       </div>
