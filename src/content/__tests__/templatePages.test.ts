@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline', 'velora'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -53,7 +53,9 @@ const BESTARI: Template = { ...FIXTURE_TEMPLATES[4], id: 83, slug: 'bestari', na
 const ALTURA: Template = { ...FIXTURE_TEMPLATES[4], id: 86, slug: 'altura', name: 'Altura', category: 'Company Profile', price: 1890000, template_code: 'altura', sort_order: 15 };
 // Portline (2026-10-27, migrasi 032, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
 const PORTLINE: Template = { ...FIXTURE_TEMPLATES[4], id: 87, slug: 'portline', name: 'Portline', category: 'Company Profile', price: 1890000, template_code: 'portline', sort_order: 16 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE].find((t) => t.slug === slug) as Template;
+// Velora (2026-10-27, migrasi 033, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
+const VELORA: Template = { ...FIXTURE_TEMPLATES[4], id: 88, slug: 'velora', name: 'Velora', category: 'Company Profile', price: 1890000, template_code: 'velora', sort_order: 17 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -84,6 +86,7 @@ describe('src/content/templates', () => {
       bestari: 'Bestari: Template Website SMA dengan Halaman PPDB',
       altura: 'Altura: Template Website Perusahaan Properti Berbahasa Inggris',
       portline: 'Portline: Template Website Perusahaan Pelayaran & Logistik',
+      velora: 'Velora: Template Website Perusahaan Otomotif Berbahasa Inggris',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -103,6 +106,7 @@ describe('src/content/templates', () => {
       bestari: 'Bestari: Template Website SMA & PPDB Online – Rp1,69 jt',
       altura: 'Altura: Template Website Perusahaan Properti – Rp1,89 jt',
       portline: 'Portline: Template Website Perusahaan Pelayaran – Rp1,89 jt',
+      velora: 'Velora: Template Website Perusahaan Otomotif – Rp1,89 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -217,6 +221,16 @@ describe('src/content/templates', () => {
     // Perusahaan demo = Quaymoor Group (fiktif); nama perusahaan/media nyata tidak dipakai, termasuk "Portline Group"
     expect(portline).not.toMatch(/Portline Group|\bHanjin\b|\bK ?Line\b|\bTidewater\b|\bNorthwind\b|Track a shipment/i);
     expect(portline).toMatch(/Quaymoor Group/);
+    const velora = visibleText(templateContent('velora') as TemplatePageContent);
+    expect(velora).toMatch(/tidak menyimpan data/);
+    expect(velora).toMatch(/tidak punya sistem booking/);
+    expect(velora).toMatch(/fiktif/);
+    expect(velora).toMatch(/bahasa Indonesia/);
+    expect(velora).not.toMatch(/booking online tersedia|pembayaran online tersedia|stok real-?time|ISO 9001|terdaftar di bursa/i);
+    // Semua teks yang tampil (termasuk label & pesan galat formulir) adalah field CMS: salinan katalog tidak boleh menyebut
+    // teks tertanam, dan memang menjanjikan label formulir bisa diganti
+    expect(velora).toMatch(/label dan pesan galat formulir/);
+    expect(velora).not.toMatch(/tertanam di template|tetap berbahasa Inggris/);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -382,6 +396,24 @@ describe('src/content/templates', () => {
     expect(TEMPLATE_COPY.portline?.niche).toBe('Perusahaan Pelayaran & Logistik');
     expect(TEMPLATE_PAGES.portline?.niche).toBe('perusahaan pelayaran & logistik');
     expect(TEMPLATE_COPY.portline?.updated).toBe('2026-10-27');
+  });
+
+  it('Velora: kata kunci "template website perusahaan otomotif" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('velora');
+    const keyword = /template website perusahaan otomotif/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website perusahaan otomotif /);
+    expect(templateDescription(t)).toContain('Rp1.890.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toMatch(keyword);
+    const c = templateContent('velora') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Velora adalah template website perusahaan otomotif /);
+    const text = visibleText(c);
+    for (const phrase of ['website dealer mobil', 'template company profile bahasa Inggris', 'website perusahaan multinasional']) expect(text, phrase).toContain(phrase);
+    // Wajar, bukan ditumpuk
+    expect(text.toLowerCase().split('template website perusahaan otomotif').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.velora?.niche).toBe('Perusahaan Otomotif');
+    expect(TEMPLATE_PAGES.velora?.niche).toBe('perusahaan otomotif');
+    expect(TEMPLATE_COPY.velora?.updated).toBe('2026-10-27');
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

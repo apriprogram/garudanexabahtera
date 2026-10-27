@@ -16,6 +16,7 @@ import { serenity } from './serenity';
 import { skynusa } from './skynusa';
 import { startupClean } from './startup-clean';
 import { tanimakmur } from './tanimakmur';
+import { velora } from './velora';
 import { applyIntroduced } from './shared/compat';
 import { isPlainObject, toListItem } from './shared/utils';
 import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from './types';
@@ -33,6 +34,7 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // Bestari (2026-10-26): website SMA, hero slider foto + navbar transparan + PPDB lewat WhatsApp (src/templates/bestari/Bestari.tsx).
 // Altura (2026-10-27): company profile developer properti global berbahasa Inggris, hero dua panel (src/templates/altura/Altura.tsx).
 // Portline (2026-10-27): company profile berbahasa Inggris grup pelayaran & logistik, hero slider + indeks 01/02/03 (src/templates/portline/Portline.tsx).
+// Velora (2026-10-27): company profile Inggris grup otomotif, hero kartu foto + model berfilter + test drive (src/templates/velora/Velora.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -50,6 +52,7 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [bestari.code]: bestari,
   [altura.code]: altura,
   [portline.code]: portline,
+  [velora.code]: velora,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */
