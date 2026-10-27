@@ -29,7 +29,7 @@
 
 // Template yang punya fitur tulisan: sama dengan POST_TEMPLATE_CODES (site_posts.js) dan features.posts di registri
 // src/templates (dijaga tes paritas). Template sekolah baru cukup ditambahkan di ketiga tempat itu.
-const SP_POST_TEMPLATE_CODES = ['madani', 'cakrawala', 'bestari'];
+const SP_POST_TEMPLATE_CODES = ['madani', 'cakrawala', 'bestari', 'jumantara', 'nawasena', 'pradipta'];
 const SP_KINDS = ['berita', 'pengumuman'];
 const SP_STATUSES = ['draft', 'published'];
 const SP_INDEX_MODES = ['auto', 'index', 'noindex'];

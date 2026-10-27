@@ -1,0 +1,1 @@
+var e=[`madani`,`cakrawala`,`bestari`,`jumantara`,`nawasena`,`pradipta`],t=t=>!!t&&e.includes(t);export{t as n,e as t};

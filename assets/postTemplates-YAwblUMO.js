@@ -1,1 +1,0 @@
-var e=[`madani`,`cakrawala`,`bestari`],t=t=>!!t&&e.includes(t);export{t as n,e as t};

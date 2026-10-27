@@ -1,0 +1,1 @@
+var e=e=>`/akun/situs/${e}/statistik`;export{e as t};

@@ -1,9 +1,9 @@
 # Garuda Nexa
 > Garuda Nexa (PT Garuda Nexa Bahtera, Indonesia) menjual template website siap pakai yang sudah termasuk setup awal, hosting, dan SSL tahun pertama (domain dipilih saat memesan, mulai Rp50.000/tahun), serta menerima jasa pembuatan website dan aplikasi mobile Android/iOS custom.
 
-Diperbarui 27 Oktober 2026.
+Diperbarui 28 Oktober 2026.
 
-- Harga template: Rp990.000–Rp1.890.000 (per 27 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
+- Harga template: Rp990.000–Rp1.890.000 (per 28 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
 - Sudah termasuk: template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
 - Domain (tidak termasuk harga template; dipilih dan dicek ketersediaannya saat memesan), harga per tahun, sama untuk perpanjangan: .com Rp250.000, .id Rp250.000, .co.id Rp350.000, .my.id Rp50.000, .web.id Rp50.000, .biz.id Rp100.000, .net Rp250.000, .org Rp250.000, .or.id Rp100.000, .sch.id Rp75.000, .ac.id Rp75.000
 - Bayar online via Midtrans; isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
