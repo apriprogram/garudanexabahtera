@@ -430,8 +430,8 @@ Hero menara 3:4 `-1200.webp` + `-800.webp`; tegak 4:5 `-960.webp` + `-800.webp` 
 testimoni); persegi `-1200.webp` + `-800.webp` (kartu proyek); mendatar 4:3 / 3:2 `-1200.webp` + `-800.webp`; pita angka &
 ajakan 16:9 `-1600.webp` + `-800.webp`. Diambil dari daftar kandidat foto GRATIS (Unsplash License, bukan Unsplash+) yang
 dikumpulkan sesi integrasi 2026-10-27, lalu dipotong dan dikompres ke WebP. Nama fotografer sudah diverifikasi sesi
-integrasi di halaman foto (2026-10-27), kecuali dua foto pengganti dari putaran review (`altura-skyline`, `altura-com-1`,
-tanda "(verifikasi)"). Logo kecil pengembang asli di foto hero, nama toko di dinding podium, sisa huruf papan nama di
+integrasi di halaman foto (2026-10-27), termasuk dua foto pengganti dari putaran review (`altura-skyline`,
+`altura-com-1`). Logo kecil pengembang asli di foto hero, nama toko di dinding podium, sisa huruf papan nama di
 fasad mix-2, logo di punggung monitor lobi, logo kecil di pintu oven, dan nama perusahaan di pemberat derek disamarkan
 (inpaint/clone); foto keluarga dengan wajah anak tidak dipakai. Beberapa foto adalah render arsitektur. Nama
 perusahaan, proyek, pimpinan, penghuni, dan alamat di demo fiktif dan tidak berhubungan dengan orang atau gedung di foto.
@@ -441,7 +441,7 @@ perusahaan, proyek, pimpinan, penghuni, dan alamat di demo fiktif dan tidak berh
 | `altura-hero-*` | Menara hunian putih berbalkon bertanaman saat senja (render arsitektur; logo kecil di tiang lobi & dinding gerbang disamarkan) | https://unsplash.com/photos/z72tjb_3tss | Aalo Lens |
 | `altura-impact-*` | Menara apartemen ramping berbalkon bertingkat | https://unsplash.com/photos/vfosqiRPSNo | Allen Y |
 | `altura-values-*` | Maket arsitektur karton dengan pohon miniatur | https://unsplash.com/photos/Mb32AJpqd-g | Zhouxing Lu |
-| `altura-skyline-*` | Derek menara di atas proyek konstruksi dengan menara hunian dan bukit berkabut, hitam-putih (nama perusahaan di pemberat derek disamarkan) | https://unsplash.com/photos/hbe2OSnR4vU | Zulfugar Karimov (verifikasi) |
+| `altura-skyline-*` | Derek menara di atas proyek konstruksi dengan menara hunian dan bukit berkabut, hitam-putih (nama perusahaan di pemberat derek disamarkan) | https://unsplash.com/photos/hbe2OSnR4vU | Raymond Yeung |
 | `altura-team-*` | Tim arsitek berdiskusi di atas denah, dilihat dari atas | https://unsplash.com/photos/PZilVx5rWF4 | Vitaly Gariev |
 | `altura-dev-1-*` | Menara hunian berbalkon melengkung penuh tanaman | https://unsplash.com/photos/--_TSh-lvHI | Alhasan Husni |
 | `altura-dev-2-*` | Menara kaca biru bermahkota kaca | https://unsplash.com/photos/9DOnZn0Ywm0 | Daniel Romero |
@@ -450,7 +450,7 @@ perusahaan, proyek, pimpinan, penghuni, dan alamat di demo fiktif dan tidak berh
 | `altura-dev-5-*` | Gedung bertingkat dengan teras tanaman menjuntai | https://unsplash.com/photos/pxqzxAYtQwY | Jz Lim |
 | `altura-res-1-*` | Vila modern berkolam renang dengan payung dan halaman rumput (render) | https://unsplash.com/photos/WaC-JFfF21M | Salman Saqib |
 | `altura-res-2-*` | Rumah modern putih berkolam memanjang | https://unsplash.com/photos/e5b1RBCHP2w | Salvo Media LLC |
-| `altura-com-1-*` | Lobi kantor dua lantai dengan meja resepsionis marmer melengkung dan panel tembaga (render; logo di punggung monitor disamarkan) | https://unsplash.com/photos/6OKmxpQfgwk | Aalo Lens (verifikasi) |
+| `altura-com-1-*` | Lobi kantor dua lantai dengan meja resepsionis marmer melengkung dan panel tembaga (render; logo di punggung monitor disamarkan) | https://unsplash.com/photos/6OKmxpQfgwk | Haris Illahi |
 | `altura-com-2-*` | Lounge kantor terbuka dengan sofa melengkung (render) | https://unsplash.com/photos/QVVHV24DA_o | Aalo Lens |
 | `altura-hos-1-*` | Dek kolam resor dengan kursi berjemur kayu (render) | https://unsplash.com/photos/yEEKtvDuRuU | Nusrat Ali |
 | `altura-hos-2-*` | Vila resor berkolam renang dan pohon palem (render) | https://unsplash.com/photos/F1q1V0TOuYE | Salman Saqib |
@@ -524,10 +524,9 @@ dipotong ulang tanpa bidang hitam tambahan. Putaran ketiga (2026-10-27): tulisan
 `velora-factory` diisi warna lengan dengan tepi halus, dan `velora-design` dipotong di bagian tengah patung (lapisan
 tembaga, sirip perak, velg) agar kartu sempit tidak gelap di atas. Nama perusahaan, model (Aster, Kestrel GT,
 Skarvane, Lumen, Vanta R), dan orang di testimoni fiktif dan tidak berhubungan dengan orang, mobil, atau perusahaan di
-foto. Fotografer diverifikasi sesi integrasi lewat halaman foto Unsplash (lisensi Unsplash, foto gratis); tiga foto
-baru putaran perbaikan (`velora-lumen` mfqj3ZSs_h0, `velora-how` 8tTFtljZKsQ, `velora-battery` 8gr6bObQLOI) masih
-`(verifikasi)`: nama fotografer dan bahwa akun pengunggahnya bukan akun merek atau pabrikan wajib dicek sesi integrasi
-sebelum deploy.
+foto. Fotografer diverifikasi sesi integrasi lewat halaman foto Unsplash (lisensi Unsplash, foto gratis), termasuk tiga
+foto baru putaran perbaikan (`velora-lumen` mfqj3ZSs_h0, `velora-how` 8tTFtljZKsQ, `velora-battery` 8gr6bObQLOI): ketiganya
+diunggah fotografer perorangan, bukan akun merek atau pabrikan.
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
@@ -539,12 +538,12 @@ sebelum deploy.
 | `velora-aster-*` | Sedan listrik putih menikung di jalan melengkung | https://unsplash.com/photos/fX2Ok_75gbY | Benjamin Brunner |
 | `velora-kestrel-*` | Coupe grand tourer putih di jembatan batu berkabut | https://unsplash.com/photos/LvKGWsrCUgI | ewan bullock |
 | `velora-skarvane-*` | SUV biru gelap di jalan hutan yang tersinari matahari | https://unsplash.com/photos/2Mg29ahUawo | Michail Dementiev |
-| `velora-lumen-*` | Crossover listrik kompak putih mengisi daya dari wallbox di garasi parkir | https://unsplash.com/photos/mfqj3ZSs_h0 | (verifikasi) |
+| `velora-lumen-*` | Crossover listrik kompak putih mengisi daya dari wallbox di garasi parkir | https://unsplash.com/photos/mfqj3ZSs_h0 | Eren Goldman |
 | `velora-vanta-*` | Coupe performa putih bersayap belakang di lantai gelap mengilap | https://unsplash.com/photos/BQwtmVs2K0o | Puscas Adryan |
-| `velora-how-*` | Kursi pengemudi: setir dan dasbor di hari cerah | https://unsplash.com/photos/8tTFtljZKsQ | (verifikasi) |
+| `velora-how-*` | Kursi pengemudi: setir dan dasbor di hari cerah | https://unsplash.com/photos/8tTFtljZKsQ | Damian Kamp |
 | `velora-research-*` | Tiga insinyur memeriksa data di laptop di samping rig uji | https://unsplash.com/photos/bIltCMXIwRE | ThisisEngineering |
 | `velora-factory-*` | Lengan robot mengelas bodi mobil di jalur perakitan pabrik bata | https://unsplash.com/photos/jHZ70nRk7Ns | Lenny Kuhne |
-| `velora-battery-*` | Lengan robot oranye memindahkan baki modul di jalur produksi otomatis | https://unsplash.com/photos/8gr6bObQLOI | (verifikasi) |
+| `velora-battery-*` | Lengan robot oranye memindahkan baki modul di jalur produksi otomatis | https://unsplash.com/photos/8gr6bObQLOI | Simon Kadula |
 | `velora-design-*` | Patung mobil dari lapisan berwarna tembaga dan sirip perak di latar hitam | https://unsplash.com/photos/chBJuExPzu0 | Pieter Olievier |
 | `velora-safety-*` | Close-up lampu depan mobil dengan lensa proyektor | https://unsplash.com/photos/O-9ZolZHZvw | Tristan Beischel @Autoily.com |
 | `velora-news-1-*` | Coupe sport biru memimpin dua mobil di tikungan sirkuit | https://unsplash.com/photos/WGZudkq0-rI | Luca Hooijer |

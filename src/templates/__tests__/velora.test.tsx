@@ -6,7 +6,7 @@
 // kata berpil + chip, menu pil + panel menu, filter model, carousel teknologi, dinding testimoni, newsroom, formulir test
 // drive, dealer + peta, footer + newsletter), kejujuran CMS (SEMUA teks yang tampil berasal dari field CMS; data kontak
 // demo jelas fiktif; tombol putar hanya untuk tautan video), konten opsional kosong, pratinjau CMS diam, editor CMS, data
-// katalog (migrasi 033 + seed + gambar pratinjau), dan konten aneh.
+// katalog (migrasi 034 + seed + gambar pratinjau), dan konten aneh.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { cleanup, fireEvent, render, within } from '@testing-library/react';
@@ -835,7 +835,7 @@ describe('Velora: editor CMS', () => {
 describe('Velora: data katalog', () => {
   const sql = (file: string) => readFileSync(resolve(ROOT, file), 'utf8');
 
-  it.each(['database/seed.templates.sql', 'database/migrations/2026-10-27_033_velora_template.sql'])(
+  it.each(['database/seed.templates.sql', 'database/migrations/2026-10-27_034_velora_template.sql'])(
     '%s: baris velora dengan template_code, kategori Company Profile, harga, dan pratinjau tangkapan layar .webp',
     (file) => {
       const text = sql(file);
@@ -852,14 +852,14 @@ describe('Velora: data katalog', () => {
     },
   );
 
-  it('migrasi 033 aman diulang (INSERT IGNORE + UPDATE berdasarkan slug, tanpa DELETE) dan tercatat di schema_migrations', () => {
-    const text = sql('database/migrations/2026-10-27_033_velora_template.sql').replace(/^--.*$/gm, '');
+  it('migrasi 034 aman diulang (INSERT IGNORE + UPDATE berdasarkan slug, tanpa DELETE) dan tercatat di schema_migrations', () => {
+    const text = sql('database/migrations/2026-10-27_034_velora_template.sql').replace(/^--.*$/gm, '');
     expect(text).toMatch(/INSERT IGNORE INTO templates/);
     expect(text).toMatch(/WHERE slug = 'velora';/);
     expect(text).toMatch(/sort_order\s+= 17/);
     expect(text).toMatch(/status\s+= 'published'/);
     expect(text).not.toMatch(/\bDELETE\b/);
-    expect(text).toContain("VALUES ('2026-10-27_033', 'templates: katalog Velora')");
+    expect(text).toContain("VALUES ('2026-10-27_034', 'templates: katalog Velora')");
   });
 
   it('gambar pratinjau katalog ada di public/, 1600×1000, dan ringan', () => {

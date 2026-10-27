@@ -452,7 +452,7 @@ export const alturaSections: TemplateSection[] = [
       t('label_office', 'Label isian: kantor tujuan', { placeholder: 'mis. Preferred office', maxLength: 30, help: REQUIRED_TEXT_HELP }),
       t('label_message', 'Label isian: pesan', { placeholder: 'mis. Message', maxLength: 30, help: `${REQUIRED_TEXT_HELP} Label isian juga dipakai di isi pesan yang tersusun.` }),
       t('optional_text', 'Penanda isian opsional', { placeholder: 'mis. (optional)', maxLength: 20, help: HIDE_HELP }),
-      t('placeholder_email', 'Contoh di isian email', { placeholder: 'mis. name@company.com', maxLength: 40, help: HIDE_HELP }),
+      t('placeholder_email', 'Contoh di isian email', { placeholder: 'mis. name@example.com', maxLength: 40, help: HIDE_HELP }),
       t('placeholder_phone', 'Contoh di isian telepon', { placeholder: 'mis. +65 8555 0123', maxLength: 30, help: HIDE_HELP }),
       t('placeholder_message', 'Contoh di isian pesan', { maxLength: 90, help: HIDE_HELP }),
       t('prompt_interest', 'Pilihan kosong: keperluan', { placeholder: 'mis. Select a topic', maxLength: 30, help: REQUIRED_TEXT_HELP }),

@@ -1,12 +1,12 @@
 -- ============================================================================
--- Migration 2026-10-27_031 — katalog: template baru Altura (company profile developer properti global, bahasa Inggris)
+-- Migration 2026-10-27_032 — katalog: template baru Altura (company profile developer properti global, bahasa Inggris)
 -- ============================================================================
 -- Data saja, tanpa perubahan skema. Target: db_garudanexabahtera yang SUDAH punya tabel
 -- `templates` (migrasi 004). Kompatibel MySQL 8.0 (produksi) dan MariaDB 10.4 (XAMPP lokal).
 --
 -- Jalankan (BACKUP dulu, lihat database/README.md), SETELAH kode yang mendaftarkan
 -- template_code altura (src/templates/index.ts) ter-deploy:
---   mysql -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-27_031_altura_template.sql
+--   mysql -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-27_032_altura_template.sql
 --
 -- Insert-or-update berdasarkan slug, aman diulang (pola sama dengan migrasi 028):
 --   1. INSERT IGNORE  → baris dibuat bila slug belum ada (uq_templates_slug).
@@ -56,6 +56,6 @@ Konten demo berbahasa Inggris sehingga cocok untuk perusahaan besar, multinasion
 WHERE slug = 'altura';
 
 INSERT IGNORE INTO schema_migrations (version, description)
-VALUES ('2026-10-27_031', 'templates: katalog Altura');
+VALUES ('2026-10-27_032', 'templates: katalog Altura');
 
 SELECT id, slug, name, category, price, status, sort_order FROM templates ORDER BY sort_order, id;

@@ -49,11 +49,11 @@ const MADANI: Template = { ...FIXTURE_TEMPLATES[4], id: 66, slug: 'madani', name
 const CAKRAWALA: Template = { ...FIXTURE_TEMPLATES[4], id: 67, slug: 'cakrawala', name: 'Cakrawala', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'cakrawala', sort_order: 13 };
 // Bestari (2026-10-26, migrasi 028, website SMA) juga belum ada di fixture prerender bersama
 const BESTARI: Template = { ...FIXTURE_TEMPLATES[4], id: 83, slug: 'bestari', name: 'Bestari', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'bestari', sort_order: 14 };
-// Altura (2026-10-27, migrasi 031, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
+// Altura (2026-10-27, migrasi 032, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
 const ALTURA: Template = { ...FIXTURE_TEMPLATES[4], id: 86, slug: 'altura', name: 'Altura', category: 'Company Profile', price: 1890000, template_code: 'altura', sort_order: 15 };
-// Portline (2026-10-27, migrasi 032, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
+// Portline (2026-10-27, migrasi 033, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
 const PORTLINE: Template = { ...FIXTURE_TEMPLATES[4], id: 87, slug: 'portline', name: 'Portline', category: 'Company Profile', price: 1890000, template_code: 'portline', sort_order: 16 };
-// Velora (2026-10-27, migrasi 033, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
+// Velora (2026-10-27, migrasi 034, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
 const VELORA: Template = { ...FIXTURE_TEMPLATES[4], id: 88, slug: 'velora', name: 'Velora', category: 'Company Profile', price: 1890000, template_code: 'velora', sort_order: 17 };
 const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA].find((t) => t.slug === slug) as Template;
 

@@ -244,7 +244,7 @@ Cocok untuk SMA swasta maupun negeri, dan bisa dipakai MA dengan mengganti isi p
    '["/assets/templates/bestari-1.webp","/assets/templates/bestari-2.webp"]',
    'bestari', NULL, 'published', 14);
 
--- Altura (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_031). Demo: Altura Developments (fiktif, konten berbahasa Inggris).
+-- Altura (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_032). Demo: Altura Developments (fiktif, konten berbahasa Inggris).
 INSERT IGNORE INTO templates
   (slug, name, category, short_description, description, features, price,
    preview_image, gallery, template_code, demo_url, status, sort_order)
@@ -262,7 +262,7 @@ Konten demo berbahasa Inggris sehingga cocok untuk perusahaan besar, multinasion
    '["/assets/templates/altura-1.webp","/assets/templates/altura-2.webp"]',
    'altura', NULL, 'published', 15);
 
--- Portline (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_032). Demo: Quaymoor Group, Rotterdam (fiktif), konten berbahasa Inggris.
+-- Portline (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_033). Demo: Quaymoor Group, Rotterdam (fiktif), konten berbahasa Inggris.
 INSERT IGNORE INTO templates
   (slug, name, category, short_description, description, features, price,
    preview_image, gallery, template_code, demo_url, status, sort_order)
@@ -280,7 +280,7 @@ Konten demo berbahasa Inggris (Quaymoor Group, fiktif) dan bisa diganti seluruhn
    '["/assets/templates/portline-1.webp","/assets/templates/portline-2.webp"]',
    'portline', NULL, 'published', 16);
 
--- Velora (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_033). Demo: Velora Motor Group (grup otomotif fiktif, Zurich), salinan demo berbahasa Inggris.
+-- Velora (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_034). Demo: Velora Motor Group (grup otomotif fiktif, Zurich), salinan demo berbahasa Inggris.
 INSERT IGNORE INTO templates
   (slug, name, category, short_description, description, features, price,
    preview_image, gallery, template_code, demo_url, status, sort_order)

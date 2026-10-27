@@ -5,7 +5,7 @@
 // tujuan tautan, ikon & simbol otomatis), demo (urutan section, lang="en", header dua lapis, hero slider berindeks,
 // newsroom bertagar + panel baca, liputan, angka, perusahaan grup → formulir dengan unit terpilih, armada melebar,
 // jaringan, keberlanjutan, karier, pimpinan, kontak + formulir, footer), bahasa Indonesia, konten opsional kosong,
-// pratinjau CMS diam, editor CMS, data katalog (migrasi 032 + seed + gambar pratinjau), dan konten aneh.
+// pratinjau CMS diam, editor CMS, data katalog (migrasi 033 + seed + gambar pratinjau), dan konten aneh.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
@@ -884,7 +884,7 @@ describe('Portline: editor CMS', () => {
 describe('Portline: data katalog', () => {
   const sql = (file: string) => readFileSync(resolve(ROOT, file), 'utf8');
 
-  it.each(['database/seed.templates.sql', 'database/migrations/2026-10-27_032_portline_template.sql'])(
+  it.each(['database/seed.templates.sql', 'database/migrations/2026-10-27_033_portline_template.sql'])(
     '%s: baris portline dengan template_code, kategori, harga, dan pratinjau tangkapan layar .webp',
     (file) => {
       const text = sql(file);
@@ -902,15 +902,15 @@ describe('Portline: data katalog', () => {
     },
   );
 
-  it('migrasi 032 aman diulang (INSERT IGNORE + UPDATE berdasarkan slug, tanpa DELETE), tercatat di schema_migrations & README', () => {
-    const text = sql('database/migrations/2026-10-27_032_portline_template.sql').replace(/^--.*$/gm, '');
+  it('migrasi 033 aman diulang (INSERT IGNORE + UPDATE berdasarkan slug, tanpa DELETE), tercatat di schema_migrations & README', () => {
+    const text = sql('database/migrations/2026-10-27_033_portline_template.sql').replace(/^--.*$/gm, '');
     expect(text).toMatch(/INSERT IGNORE INTO templates/);
     expect(text).toMatch(/WHERE slug = 'portline';/);
     expect(text).toMatch(/sort_order\s+= 16/);
     expect(text).toMatch(/status\s+= 'published'/);
     expect(text).not.toMatch(/\bDELETE\b/);
-    expect(text).toContain("VALUES ('2026-10-27_032', 'templates: katalog Portline')");
-    expect(sql('database/README.md')).toContain('2026-10-27_032_portline_template.sql');
+    expect(text).toContain("VALUES ('2026-10-27_033', 'templates: katalog Portline')");
+    expect(sql('database/README.md')).toContain('2026-10-27_033_portline_template.sql');
   });
 
   it('gambar pratinjau katalog ada di public/, 1600×1000, dan ringan', () => {

@@ -31,7 +31,8 @@ database/
 │   ├── 2026-10-27_030_site_addons.sql              # fitur tambahan berbayar (Berita & Pengumuman), jalankan SEBELUM deploy
 │   ├── 2026-10-27_031_site_stats.sql               # statistik kunjungan situs pembeli (agregat harian, tanpa IP)
 │   ├── 2026-10-27_032_altura_template.sql          # data: katalog Altura (company profile bahasa Inggris), SETELAH deploy kodenya
-│   └── 2026-10-27_032_portline_template.sql        # data: katalog Portline (company profile pelayaran, Inggris), SETELAH deploy kodenya
+│   ├── 2026-10-27_033_portline_template.sql        # data: katalog Portline (company profile pelayaran, Inggris), SETELAH deploy kodenya
+│   └── 2026-10-27_034_velora_template.sql          # data: katalog Velora (company profile otomotif, Inggris), SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -201,15 +202,20 @@ Pendidikan", Rp1.690.000, sort_order 14) berdasarkan slug, pola sama dengan 025:
 pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code` `bestari` ter-deploy. DB baru cukup
 `seed.templates.sql`.
 
-`2026-10-27_031` (data saja) membuat/menyamakan baris katalog `altura` (company profile berbahasa Inggris untuk developer
+`2026-10-27_032` (data saja) membuat/menyamakan baris katalog `altura` (company profile berbahasa Inggris untuk developer
 properti & perusahaan besar, kategori "Company Profile", Rp1.890.000, sort_order 15) berdasarkan slug, pola sama dengan 028:
 menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code` `altura`
-ter-deploy. DB baru cukup `seed.templates.sql`. (Nomor 030 dipakai pekerjaan lain.)
+ter-deploy. DB baru cukup `seed.templates.sql`.
 
-`2026-10-27_032` (data saja) membuat/menyamakan baris katalog `portline` (company profile berbahasa Inggris untuk grup
+`2026-10-27_033` (data saja) membuat/menyamakan baris katalog `portline` (company profile berbahasa Inggris untuk grup
 pelayaran & logistik, kategori "Company Profile", Rp1.890.000, sort_order 16) berdasarkan slug, pola sama dengan 028:
 menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code`
 `portline` ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-27_034` (data saja) membuat/menyamakan baris katalog `velora` (company profile berbahasa Inggris untuk grup
+otomotif & perusahaan besar, kategori "Company Profile", Rp1.890.000, sort_order 17) berdasarkan slug, pola sama dengan 028:
+menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code`
+`velora` ter-deploy. DB baru cukup `seed.templates.sql`.
 
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
@@ -384,4 +390,6 @@ kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin per
 | 2026-10-26_029 | Skema saja: tabel `site_posts` (berita & pengumuman template sekolah), `site_post_views` (jumlah dilihat per tulisan) dan `site_seo` (SEO per situs pembeli). Lihat catatan 029 di atas dan docs/platform/SITE-POSTS-SEO-SPEC.md. |
 | 2026-10-27_030 | Tabel `site_addon_orders` (fitur tambahan berbayar per situs: Berita & Pengumuman template sekolah) + baris pewarisan `lunas`/`migrasi` untuk situs yang sudah punya tulisan. Lihat catatan 030 di atas dan docs/platform/SITE-ADDONS-SPEC.md. |
 | 2026-10-27_031 | Skema saja: tabel `site_visit_stats` (statistik kunjungan situs pembeli, agregat harian per metrik) dan `site_visitors` (penanda pengunjung unik harian berupa hash, tanpa IP). Lihat catatan 031 di atas dan docs/platform/SITE-STATS-SPEC.md. |
-| 2026-10-27_033 | Data saja: baris katalog `velora` (company profile berbahasa Inggris untuk grup otomotif/perusahaan besar, kategori "Company Profile", Rp1.890.000, sort_order 17), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `velora` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-27_032 | Data saja: baris katalog `altura` (company profile berbahasa Inggris untuk developer properti/perusahaan besar, kategori "Company Profile", Rp1.890.000, sort_order 15), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `altura` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-27_033 | Data saja: baris katalog `portline` (company profile berbahasa Inggris untuk grup pelayaran & logistik, kategori "Company Profile", Rp1.890.000, sort_order 16), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `portline` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-27_034 | Data saja: baris katalog `velora` (company profile berbahasa Inggris untuk grup otomotif/perusahaan besar, kategori "Company Profile", Rp1.890.000, sort_order 17), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `velora` ter-deploy. DB baru cukup `seed.templates.sql`. |

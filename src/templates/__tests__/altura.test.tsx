@@ -177,7 +177,7 @@ describe('Altura: skema & konten bawaan', () => {
     const text = JSON.stringify(c);
     const emails = text.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g) ?? [];
     expect(emails.length).toBeGreaterThan(0);
-    for (const email of emails.filter((e) => !/^name@company\.com$/.test(e))) expect(email, email).toMatch(/@altura\.example$/);
+    for (const email of emails.filter((e) => !/^name@example\.com$/.test(e))) expect(email, email).toMatch(/@altura\.example$/);
     const phones = [c.contact.phone, c.contact.whatsapp, ...(c.contact.offices as Record<string, string>[]).map((o) => o.phone), c.enquiry.placeholder_phone];
     for (const phone of phones) expect(String(phone), String(phone)).toMatch(/555/);
     expect(text).not.toMatch(/6123 4567|8123 4567|7946 0123/);
@@ -848,7 +848,7 @@ describe('Altura: warna tema bisa diganti', () => {
 describe('Altura: data katalog', () => {
   const sql = (file: string) => readFileSync(resolve(ROOT, file), 'utf8');
 
-  it.each(['database/seed.templates.sql', 'database/migrations/2026-10-27_031_altura_template.sql'])(
+  it.each(['database/seed.templates.sql', 'database/migrations/2026-10-27_032_altura_template.sql'])(
     '%s: baris altura dengan template_code, kategori Company Profile, harga, dan pratinjau tangkapan layar .webp',
     (file) => {
       const text = sql(file);
@@ -861,14 +861,14 @@ describe('Altura: data katalog', () => {
     },
   );
 
-  it('migrasi 031 aman diulang (INSERT IGNORE + UPDATE berdasarkan slug, tanpa DELETE) dan tercatat di schema_migrations', () => {
-    const text = sql('database/migrations/2026-10-27_031_altura_template.sql').replace(/^--.*$/gm, '');
+  it('migrasi 032 aman diulang (INSERT IGNORE + UPDATE berdasarkan slug, tanpa DELETE) dan tercatat di schema_migrations', () => {
+    const text = sql('database/migrations/2026-10-27_032_altura_template.sql').replace(/^--.*$/gm, '');
     expect(text).toMatch(/INSERT IGNORE INTO templates/);
     expect(text).toMatch(/WHERE slug = 'altura';/);
     expect(text).toMatch(/sort_order\s+= 15/);
     expect(text).toMatch(/status\s+= 'published'/);
     expect(text).not.toMatch(/\bDELETE\b/);
-    expect(text).toContain("VALUES ('2026-10-27_031', 'templates: katalog Altura')");
+    expect(text).toContain("VALUES ('2026-10-27_032', 'templates: katalog Altura')");
   });
 
   it('gambar pratinjau katalog ada di public/, 1600×1000, dan ringan', () => {
