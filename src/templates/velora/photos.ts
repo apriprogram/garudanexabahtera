@@ -25,7 +25,7 @@ export const VELORA_PHOTOS = definePhotos({
     ['velora-research', 1200, 900, 'Three engineers reviewing data on a laptop next to a test rig'],
     ['velora-factory', 1200, 900, 'Robotic arms welding a car body on an assembly line in a brick factory hall'],
     ['velora-battery', 1200, 900, 'Orange robotic arms handling module trays on an automated production line'],
-    ['velora-design', 1200, 900, 'Front of a car sculpture made of copper-coloured layers on a black background'],
+    ['velora-design', 1200, 900, 'Car sculpture made of copper-coloured layers and silver fins on a black background'],
     ['velora-safety', 1200, 900, 'Close-up of a car headlight with a projector lens'],
     ['velora-news-1', 1200, 800, 'Blue sports coupe leading two cars through a bend on a race track'],
     ['velora-news-2', 1200, 800, 'Home wallbox charging an SUV under a carport with solar panels'],

@@ -440,10 +440,15 @@ Putaran perbaikan (2026-10-27, setelah review): foto resmi pabrikan untuk `velor
 `velora-how`) kini menjadi kartu model `velora-skarvane`; `velora-lumen` (lambang velg, label kabel, tanda di wallbox &
 dinding dihapus), `velora-how` (pelat nama merek di setir dihapus; tulisan model di konsol terpotong), dan `velora-battery`
 memakai foto baru. Plat merek di lengan robot `velora-factory` kini dibuat polos (tanpa noda inpaint), dan `velora-design`
-dipotong ulang tanpa bidang hitam tambahan. Nama perusahaan, model (Aster, Kestrel GT, Skarvane, Lumen, Vanta R), dan
-orang di testimoni fiktif dan tidak berhubungan dengan orang, mobil, atau perusahaan di foto. Fotografer diverifikasi
-sesi integrasi lewat halaman foto Unsplash (lisensi Unsplash, foto gratis); tiga foto baru putaran perbaikan masih
-`(verifikasi)`.
+dipotong ulang tanpa bidang hitam tambahan. Putaran ketiga (2026-10-27): tulisan merek di bawah lampu belakang
+`velora-skarvane` di-inpaint ulang hanya pada huruf terangnya (tanpa pita abu), plat merek lengan robot kanan
+`velora-factory` diisi warna lengan dengan tepi halus, dan `velora-design` dipotong di bagian tengah patung (lapisan
+tembaga, sirip perak, velg) agar kartu sempit tidak gelap di atas. Nama perusahaan, model (Aster, Kestrel GT,
+Skarvane, Lumen, Vanta R), dan orang di testimoni fiktif dan tidak berhubungan dengan orang, mobil, atau perusahaan di
+foto. Fotografer diverifikasi sesi integrasi lewat halaman foto Unsplash (lisensi Unsplash, foto gratis); tiga foto
+baru putaran perbaikan (`velora-lumen` mfqj3ZSs_h0, `velora-how` 8tTFtljZKsQ, `velora-battery` 8gr6bObQLOI) masih
+`(verifikasi)`: nama fotografer dan bahwa akun pengunggahnya bukan akun merek atau pabrikan wajib dicek sesi integrasi
+sebelum deploy.
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
@@ -461,7 +466,7 @@ sesi integrasi lewat halaman foto Unsplash (lisensi Unsplash, foto gratis); tiga
 | `velora-research-*` | Tiga insinyur memeriksa data di laptop di samping rig uji | https://unsplash.com/photos/bIltCMXIwRE | ThisisEngineering |
 | `velora-factory-*` | Lengan robot mengelas bodi mobil di jalur perakitan pabrik bata | https://unsplash.com/photos/jHZ70nRk7Ns | Lenny Kuhne |
 | `velora-battery-*` | Lengan robot oranye memindahkan baki modul di jalur produksi otomatis | https://unsplash.com/photos/8gr6bObQLOI | (verifikasi) |
-| `velora-design-*` | Bagian depan patung mobil dari lapisan berwarna tembaga di latar hitam | https://unsplash.com/photos/chBJuExPzu0 | Pieter Olievier |
+| `velora-design-*` | Patung mobil dari lapisan berwarna tembaga dan sirip perak di latar hitam | https://unsplash.com/photos/chBJuExPzu0 | Pieter Olievier |
 | `velora-safety-*` | Close-up lampu depan mobil dengan lensa proyektor | https://unsplash.com/photos/O-9ZolZHZvw | Tristan Beischel @Autoily.com |
 | `velora-news-1-*` | Coupe sport biru memimpin dua mobil di tikungan sirkuit | https://unsplash.com/photos/WGZudkq0-rI | Luca Hooijer |
 | `velora-news-2-*` | Wallbox rumah mengisi SUV di carport dengan panel surya | https://unsplash.com/photos/EGKP0FpNSzI | Christian Rebero Twahirwa |
