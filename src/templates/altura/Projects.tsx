@@ -1,6 +1,7 @@
 // Proyek Altura: `developments` (pita zaitun gelap membulat: kartu proyek tinggi bertumpuk seperti akordion — kartu
 // aktif melebar berfoto dengan jenis, nama, lokasi, deskripsi, dan tombol; kartu lain sempit dengan label tegak; aktif
-// lewat klik, sorot, fokus keyboard, atau panah kiri/kanan; HP: rel geser horizontal snap dengan semua kartu terbuka)
+// lewat klik, sorot, fokus keyboard, atau panah kiri/kanan; HP: rel geser horizontal snap dengan semua kartu terbuka;
+// kartu HP setinggi isinya (minimal 360px) sehingga nama/deskripsi panjang tidak terpotong)
 // dan `portfolio` (grid kartu properti ala Horizon Estate: tombol filter kategori yang benar-benar menyaring, foto 4:3
 // dengan chip kategori, nama, harga, lokasi, dan hingga 3 spesifikasi berikon otomatis).
 import { MapPin } from 'lucide-react';
@@ -50,7 +51,7 @@ export function Developments({ m }: { m: AlturaModel }) {
             <Reveal className="mt-10 @5xl:mt-14">
               <ul
                 onKeyDown={onKeyDown}
-                className="al-rail -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1 @2xl:-mx-8 @2xl:px-8 @4xl:mx-0 @4xl:h-[540px] @4xl:overflow-visible @4xl:px-0 @4xl:pb-0 @7xl:h-[580px]"
+                className="al-rail -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-1 @2xl:-mx-8 @2xl:scroll-px-8 @2xl:px-8 @4xl:mx-0 @4xl:h-[540px] @4xl:scroll-px-0 @4xl:overflow-visible @4xl:px-0 @4xl:pb-0 @7xl:h-[580px]"
               >
                 {items.map((item, i) => {
                   const on = i === current;
@@ -64,7 +65,7 @@ export function Developments({ m }: { m: AlturaModel }) {
                       key={`${name}-${i}`}
                       data-active={on ? 'true' : 'false'}
                       onMouseEnter={() => setActive(i)}
-                      className={`al-dev relative isolate aspect-[4/5] w-[80%] shrink-0 snap-start overflow-hidden rounded-[22px] bg-(--al-deep-2) @xl:w-[46%] @4xl:aspect-auto @4xl:h-full @4xl:w-auto @4xl:min-w-[76px] @4xl:basis-0 ${
+                      className={`al-dev relative isolate flex min-h-[360px] w-[80%] shrink-0 snap-start flex-col justify-end overflow-hidden rounded-[22px] bg-(--al-deep-2) @xl:w-[46%] @4xl:block @4xl:h-full @4xl:min-h-0 @4xl:w-auto @4xl:min-w-[76px] @4xl:basis-0 ${
                         on ? '@4xl:grow-[6]' : '@4xl:grow'
                       }`}
                     >
@@ -87,7 +88,7 @@ export function Developments({ m }: { m: AlturaModel }) {
                         aria-expanded={on}
                         aria-controls={bodyId}
                         aria-label={name}
-                        className="absolute inset-0 hidden rounded-[22px] text-left @4xl:block"
+                        className="absolute inset-0 hidden rounded-[22px] text-left focus-visible:outline-[3px] focus-visible:-outline-offset-[6px] @4xl:block"
                       >
                         <span
                           aria-hidden
@@ -98,13 +99,13 @@ export function Developments({ m }: { m: AlturaModel }) {
                       </button>
                       <div
                         id={bodyId}
-                        className={`al-dev-body pointer-events-none absolute inset-x-0 bottom-0 p-5 @3xl:p-7 @4xl:min-w-[440px] @5xl:p-9 ${
+                        className={`al-dev-body pointer-events-none relative p-5 pt-10 @3xl:p-7 @3xl:pt-12 @4xl:absolute @4xl:inset-x-0 @4xl:bottom-0 @4xl:min-w-[440px] @5xl:p-9 ${
                           on ? '' : '@4xl:invisible @4xl:opacity-0'
                         }`}
                       >
                         {field(item, 'category') && (
-                          <p className="inline-flex h-7 items-center rounded-full bg-white/[0.14] px-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-white ring-1 ring-inset ring-white/25 backdrop-blur-md">
-                            {field(item, 'category')}
+                          <p className="inline-flex h-7 max-w-full items-center rounded-full bg-(--al-deep)/80 px-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-white ring-1 ring-inset ring-white/25 backdrop-blur-md">
+                            <span className="truncate">{field(item, 'category')}</span>
                           </p>
                         )}
                         <h3 className={`mt-4 max-w-[16ch] text-white ${TYPE_A.h3lg} @5xl:text-[36px]`}>{name}</h3>

@@ -17,14 +17,15 @@ import { SectionHead } from './ui';
 export function Leadership({ m }: { m: AlturaModel }) {
   const { leadership } = m;
   const items = m.items('leadership');
-  const cols = items.length >= 4 ? '@5xl:grid-cols-4' : items.length === 2 ? '@3xl:grid-cols-2 @3xl:max-w-[820px]' : '@3xl:grid-cols-3';
+  // 4 pimpinan: 2×2 di tablet (768–1023px), 4 kolom mulai 1024px; 2 pimpinan: dua kolom sempit; 3 (atau 1): tiga kolom
+  const cols = items.length >= 4 ? '@3xl:grid-cols-2 @3xl:max-w-[820px] @5xl:max-w-[1240px] @5xl:grid-cols-4' : items.length === 2 ? '@3xl:grid-cols-2 @3xl:max-w-[820px]' : '@3xl:grid-cols-3 @3xl:max-w-[1240px]';
   return (
     <TemplateSection sectionKey="leadership" className={SECTION_PAD}>
       <div className={CONTAINER}>
         <SectionHead layout="center" eyebrow={text(leadership, 'eyebrow')} title={text(leadership, 'title')} subtitle={text(leadership, 'subtitle')} />
         <Reveal className="mt-12 @5xl:mt-16">
           <ul
-            className={`al-rail -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-1 @2xl:-mx-8 @2xl:px-8 @3xl:mx-auto @3xl:grid @3xl:max-w-[1240px] @3xl:gap-5 @3xl:overflow-visible @3xl:px-0 @3xl:pb-12 ${cols}`}
+            className={`al-rail -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto px-5 pb-1 @2xl:-mx-8 @2xl:scroll-px-8 @2xl:px-8 @3xl:mx-auto @3xl:grid @3xl:scroll-px-0 @3xl:gap-5 @3xl:overflow-visible @3xl:px-0 @3xl:pb-12 ${cols}`}
           >
             {items.map((item, i) => {
               const name = field(item, 'name');

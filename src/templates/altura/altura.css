@@ -92,17 +92,21 @@
     transition: opacity 0.35s var(--tpl-ease, ease);
   }
 
+  /* Kartu aktif (layar lebar): gelap pekat di bawah, tetap ≥ 55% di tinggi judul agar teks putih ≥ 3:1 (judul besar)
+     dan ≥ 4,5:1 (deskripsi) walau fotonya langit cerah; chip jenis punya latar gelap sendiri. */
   .al-dev-scrim {
-    background: linear-gradient(0deg, color-mix(in srgb, var(--al-deep) 92%, transparent) 0%, color-mix(in srgb, var(--al-deep) 55%, transparent) 42%, color-mix(in srgb, var(--al-deep) 10%, transparent) 75%);
+    background: linear-gradient(0deg, color-mix(in srgb, var(--al-deep) 94%, transparent) 0%, color-mix(in srgb, var(--al-deep) 80%, transparent) 40%, color-mix(in srgb, var(--al-deep) 55%, transparent) 62%, color-mix(in srgb, var(--al-deep) 12%, transparent) 100%);
   }
 
   .al-dev[data-active='false'] .al-dev-scrim {
     background: color-mix(in srgb, var(--al-deep) 62%, transparent);
   }
 
+  /* HP/tablet: semua kartu terbuka dan isinya bisa setinggi hampir seluruh kartu → lapisan gelap lebih tinggi */
   @container (max-width: 895px) {
+    .al-dev .al-dev-scrim,
     .al-dev[data-active='false'] .al-dev-scrim {
-      background: linear-gradient(0deg, color-mix(in srgb, var(--al-deep) 92%, transparent) 0%, color-mix(in srgb, var(--al-deep) 55%, transparent) 42%, color-mix(in srgb, var(--al-deep) 10%, transparent) 75%);
+      background: linear-gradient(0deg, color-mix(in srgb, var(--al-deep) 94%, transparent) 0%, color-mix(in srgb, var(--al-deep) 82%, transparent) 50%, color-mix(in srgb, var(--al-deep) 58%, transparent) 78%, color-mix(in srgb, var(--al-deep) 25%, transparent) 100%);
     }
   }
 

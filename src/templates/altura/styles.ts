@@ -46,8 +46,13 @@ export const TYPE_A = {
   lead: 'text-[15.5px] leading-relaxed @3xl:text-[17px]',
   body: 'text-[15px] leading-relaxed',
   small: 'text-[13.5px] leading-snug',
-  /** Angka raksasa pita angka: 44 → 64 → 84px */
-  stat: `${DISPLAY} font-semibold text-[44px] leading-none tracking-[-0.045em] tabular-nums @3xl:text-[64px] @6xl:text-[84px]`,
+  /**
+   * Angka raksasa pita angka, satu baris (whitespace-nowrap): 44 → 64px (2 kolom) → 56 → 64 → 84px (4 kolom, 1024 /
+   * 1152 / 1280px) agar "$2.3B+" tidak terbelah. `statLong` untuk angka > 6 karakter (mis. "1,200,000"): lebih kecil, dan
+   * baru dipatahkan bila tetap tidak muat (daripada menabrak kolom sebelah).
+   */
+  stat: `${DISPLAY} whitespace-nowrap font-semibold text-[44px] leading-none tracking-[-0.045em] tabular-nums @3xl:text-[64px] @5xl:text-[56px] @6xl:text-[64px] @7xl:text-[84px]`,
+  statLong: `${DISPLAY} font-semibold text-[28px] leading-none tracking-[-0.045em] tabular-nums [overflow-wrap:anywhere] @3xl:text-[48px] @5xl:text-[36px] @6xl:text-[42px] @7xl:text-[50px]`,
 } as const;
 
 /** Tombol pil. */

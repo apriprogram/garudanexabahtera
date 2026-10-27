@@ -1,12 +1,50 @@
 // Konten demo Altura: Altura Developments, developer & pengelola investasi properti global FIKTIF (berdiri 1986, kantor
 // pusat Singapura, kantor di Dubai, London, Sydney). Salinan demo berbahasa Inggris korporat (en-US); semua nama orang,
-// proyek, angka, harga, alamat, dan penghargaan fiktif dan tidak berhubungan dengan orang/gedung di foto. Tidak ada
-// klaim izin/regulator/sertifikasi nyata atau janji imbal hasil investasi.
+// proyek, angka, harga, alamat, penghargaan, dan perusahaan mitra fiktif (nama majemuk yang tidak lazim, bukan merek
+// nyata) dan tidak berhubungan dengan orang/gedung di foto. Kontak demo jelas fiktif: telepon blok 555, email
+// @altura.example, tautan sosial ber-handle "-demo". Tidak ada klaim izin/regulator/sertifikasi nyata atau janji imbal
+// hasil investasi. SEMUA teks yang tampil ada di sini (termasuk nama menu, label formulir, pesan galat, dan judul kolom
+// footer), jadi pembeli bisa mengganti seluruh situs ke bahasa lain lewat CMS.
 import type { SiteContent } from '../types';
 import { alturaPhoto } from './photos';
 
 /** Warna tema bawaan: limau. */
 export const ALTURA_ACCENT = '#D4EC5E';
+
+/**
+ * Teks formulir enquiry bawaan (section `enquiry`): label, contoh isian, tombol, catatan, pesan galat, dan isi pesan yang
+ * tersusun. Juga dipakai model.ts sebagai cadangan bila isian wajib (label, tombol, pesan galat) dikosongkan pembeli.
+ */
+export const ALTURA_ENQUIRY_TEXT = {
+  label_name: 'Full name',
+  label_email: 'Email',
+  label_phone: 'Phone',
+  label_interest: 'Enquiry about',
+  label_office: 'Preferred office',
+  label_message: 'Message',
+  optional_text: '(optional)',
+  placeholder_email: 'name@company.com',
+  placeholder_phone: '+65 8555 0123',
+  placeholder_message: 'Tell us what you are looking for, your budget or timeline.',
+  prompt_interest: 'Select a topic',
+  prompt_office: 'Any office',
+  submit_label: 'Prepare my message',
+  note: 'Nothing is stored on this website. The form only prepares a message that you send yourself.',
+  ready_title: 'Your message is ready',
+  ready_text: 'Check the details, then send the message to our team.',
+  whatsapp_label: 'Open WhatsApp',
+  email_label: 'Send by email',
+  edit_label: 'Edit details',
+  call_text: 'Call our team and we will help you with your enquiry.',
+  error_name: 'Please enter your full name.',
+  error_email: 'Please enter a valid email address, e.g. name@company.com.',
+  error_phone: 'Please enter a valid phone number with country code, e.g. +65 8555 0123.',
+  error_interest: 'Please choose what your enquiry is about.',
+  error_message: 'Please tell us a little more (at least 10 characters).',
+  greeting: 'Hello Altura, I would like to make an enquiry.',
+  closing: 'Thank you.',
+  subject: 'Enquiry',
+} as const;
 
 export const alturaContent: SiteContent = {
   brand: {
@@ -25,7 +63,7 @@ export const alturaContent: SiteContent = {
     image_caption: 'The Verdant Residences, Singapore',
     stat_value: '40',
     stat_label: 'years of experience',
-    watch_label: 'Watch the film',
+    watch_label: 'Explore developments',
     watch_url: '',
     watch_image: alturaPhoto('skyline'),
     header_label: 'Get in touch',
@@ -33,6 +71,7 @@ export const alturaContent: SiteContent = {
     call_label: 'Call us:',
   },
   about: {
+    menu_label: 'About',
     eyebrow: 'Who we are',
     title: 'We develop landmark real estate across four continents',
     body: 'Founded in Singapore in 1986, Altura has grown from a single residential block into a developer and investment manager with 48 completed projects. We plan, build and operate every address with the same long view: places people are proud to live in, work from and return to.',
@@ -98,12 +137,13 @@ export const alturaContent: SiteContent = {
       { title: 'Corporate responsibility', text: 'Every project funds public space and skills programs for local construction trades.' },
       { title: 'Experts with team spirit', text: 'Architects, engineers and asset managers work side by side from feasibility to handover.' },
       { title: 'Security & compliance', text: 'Independent audits, clear contracts and transparent reporting for buyers and partners.' },
-      { title: 'Diversity, equity & inclusion', text: 'Teams in four countries, 31 nationalities and a leadership group that is half women.' },
+      { title: 'Diversity, equity & inclusion', text: 'Teams in four countries, 31 nationalities and an inclusive culture where every voice is heard.' },
       { title: 'Construction & aftercare', text: 'A dedicated aftercare team looks after every home long after the keys are handed over.' },
       { title: 'Easy customization process', text: 'Choose layouts, finishes and fittings with a personal design consultant before you move in.' },
     ],
   },
   developments: {
+    menu_label: 'Developments',
     eyebrow: 'Developments',
     title: 'Discover luxury living at an attainable price',
     button_label: 'View all projects',
@@ -115,7 +155,7 @@ export const alturaContent: SiteContent = {
         location: 'Singapore',
         text: '312 sky-garden residences wrapped in planted balconies, minutes from the waterfront.',
         image: alturaPhoto('dev-1'),
-        link_label: 'View details',
+        link_label: 'Request details',
         url: '',
       },
       {
@@ -124,7 +164,7 @@ export const alturaContent: SiteContent = {
         location: 'Dubai, UAE',
         text: 'A 46-storey glass tower with Grade A offices below and serviced residences above.',
         image: alturaPhoto('dev-2'),
-        link_label: 'View details',
+        link_label: 'Request details',
         url: '',
       },
       {
@@ -133,7 +173,7 @@ export const alturaContent: SiteContent = {
         location: 'Sydney, Australia',
         text: 'Slender harbor-view apartments with wraparound terraces and a private sky lounge.',
         image: alturaPhoto('dev-3'),
-        link_label: 'View details',
+        link_label: 'Request details',
         url: '',
       },
       {
@@ -142,7 +182,7 @@ export const alturaContent: SiteContent = {
         location: 'London, UK',
         text: 'Light-filled riverside homes with shaded balconies and a residents’ garden.',
         image: alturaPhoto('dev-4'),
-        link_label: 'View details',
+        link_label: 'Request details',
         url: '',
       },
       {
@@ -151,12 +191,13 @@ export const alturaContent: SiteContent = {
         location: 'Singapore',
         text: 'Offices, retail and homes stacked around cascading gardens and a public plaza.',
         image: alturaPhoto('dev-5'),
-        link_label: 'View details',
+        link_label: 'Request details',
         url: '',
       },
     ],
   },
   portfolio: {
+    menu_label: 'Portfolio',
     eyebrow: 'Portfolio',
     title: 'Find a place you will call home',
     subtitle: 'Homes, workplaces and resorts we have delivered and still manage today. Filter by type to explore.',
@@ -218,7 +259,7 @@ export const alturaContent: SiteContent = {
         url: '',
       },
       {
-        name: 'Casa Laguna Suites',
+        name: 'Coralwyn Bay Suites',
         category: 'Hospitality',
         location: 'Gold Coast, Australia',
         price: 'From $380,000',
@@ -253,13 +294,14 @@ export const alturaContent: SiteContent = {
     ],
   },
   leadership: {
+    menu_label: 'Leadership',
     eyebrow: 'Leadership',
     title: 'Global executive leadership',
     subtitle: 'A leadership team that has delivered homes, workplaces and hotels on four continents.',
     items: [
-      { name: 'Elena Marquez', role: 'Group Chief Executive Officer', photo: alturaPhoto('leader-1'), linkedin: 'https://linkedin.com/company/altura-developments' },
-      { name: 'Daniel Whitford', role: 'Chief Investment Officer', photo: alturaPhoto('leader-2'), linkedin: 'https://linkedin.com/company/altura-developments' },
-      { name: 'Marcus Lindqvist', role: 'Managing Director, Europe', photo: alturaPhoto('leader-3'), linkedin: 'https://linkedin.com/company/altura-developments' },
+      { name: 'Elena Marquez', role: 'Group Chief Executive Officer', photo: alturaPhoto('leader-1'), linkedin: 'https://linkedin.com/in/elena-marquez-demo' },
+      { name: 'Daniel Whitford', role: 'Chief Investment Officer', photo: alturaPhoto('leader-2'), linkedin: 'https://linkedin.com/in/daniel-whitford-demo' },
+      { name: 'Marcus Lindqvist', role: 'Managing Director, Europe', photo: alturaPhoto('leader-3'), linkedin: 'https://linkedin.com/in/marcus-lindqvist-demo' },
     ],
   },
   awards: {
@@ -267,12 +309,12 @@ export const alturaContent: SiteContent = {
     title: 'Recognitions we have earned',
     subtitle: 'Independent juries have recognized our design, sustainability and service.',
     items: [
-      { title: 'Residential Developer of the Year', issuer: 'Asia Habitat Awards 2025' },
-      { title: 'Best Sustainable Tower', issuer: 'Green Skyline Prize 2025' },
-      { title: 'Excellence in Mixed-Use Design', issuer: 'Urban Futures Forum 2024' },
-      { title: 'Hospitality Project of the Year', issuer: 'Coastline Design Awards 2024' },
-      { title: 'Best Luxury Residence', issuer: 'Pacific Living Awards 2023' },
-      { title: 'Workplace of the Year', issuer: 'Harbour City Design Circle 2023' },
+      { title: 'Residential Developer of the Year', issuer: 'Meridale Habitat Awards 2025' },
+      { title: 'Best Sustainable Tower', issuer: 'Verdanthe Skyline Prize 2025' },
+      { title: 'Excellence in Mixed-Use Design', issuer: 'Orrelstone Urban Forum 2024' },
+      { title: 'Hospitality Project of the Year', issuer: 'Saltmere Design Awards 2024' },
+      { title: 'Best Luxury Residence', issuer: 'Pacivane Living Awards 2023' },
+      { title: 'Workplace of the Year', issuer: 'Calderwyn Design Circle 2023' },
     ],
   },
   testimonials: {
@@ -291,13 +333,13 @@ export const alturaContent: SiteContent = {
       {
         quote: 'Their team understood our investment brief immediately and kept us informed at every milestone.',
         name: 'Rajiv Menon',
-        role: 'Partner, Northgate Capital',
+        role: 'Partner, Quillmere Harbour Capital',
         photo: '',
       },
       {
         quote: 'We leased two floors at Harbourline. The building runs smoothly and the service team answers within the hour.',
         name: 'Sophie Laurent',
-        role: 'COO, Brightwave Studio',
+        role: 'COO, Lumenfold Atelier',
         photo: '',
       },
       {
@@ -309,13 +351,14 @@ export const alturaContent: SiteContent = {
     ],
   },
   insights: {
+    menu_label: 'Insights',
     eyebrow: 'Insights',
     title: 'Discover insight and trends',
     button_label: 'View all insights',
-    button_url: 'https://linkedin.com/company/altura-developments',
+    button_url: 'https://linkedin.com/company/altura-developments-demo',
     items: [
       {
-        title: 'Biophilic design: why greener towers hold their value',
+        title: 'From model to skyline: how we test every tower in miniature',
         category: 'Design',
         date: '2026-10-08',
         image: alturaPhoto('insight-1'),
@@ -339,7 +382,7 @@ export const alturaContent: SiteContent = {
   },
   cta: {
     title: 'Your dream home awaits',
-    subtitle: 'Book a private viewing at one of our sales galleries in Singapore, Dubai, London or Sydney.',
+    subtitle: 'Book a private viewing at the sales gallery nearest to you, in person or by video call.',
     image: alturaPhoto('night'),
     primary_label: 'Book a private viewing',
     primary_url: '',
@@ -347,25 +390,34 @@ export const alturaContent: SiteContent = {
     secondary_url: '',
   },
   contact: {
+    menu_label: 'Contact',
     eyebrow: 'Contact',
     title: 'Let’s talk about your next address',
     subtitle: 'Tell us what you are looking for and the right team will reply within one business day.',
-    phone: '+65 6123 4567',
-    email: 'enquiries@alturadevelopments.com',
-    whatsapp: '+65 8123 4567',
+    phone: '+65 6555 0100',
+    email: 'enquiries@altura.example',
+    whatsapp: '+65 8555 0100',
     whatsapp_message: 'Hello Altura, I would like to know more about your developments.',
     hours: 'Mon–Fri, 9:00–18:00 (SGT)',
     address: '1 Altura Place, Marina South, Singapore 018999',
     offices: [
-      { city: 'Singapore', label: 'Headquarters', address: '1 Altura Place, Marina South, Singapore 018999', phone: '+65 6123 4567' },
-      { city: 'Dubai', label: 'Middle East', address: 'Level 21, Meridian One, Business Bay, Dubai', phone: '+971 4 123 4567' },
-      { city: 'London', label: 'Europe', address: '40 Riverside Walk, London SE1 9PX', phone: '+44 20 7946 0123' },
-      { city: 'Sydney', label: 'Australia', address: 'Level 12, 88 Harbour Street, Sydney NSW 2000', phone: '+61 2 9123 4567' },
+      { city: 'Singapore', label: 'Headquarters', address: '1 Altura Place, Marina South, Singapore 018999', phone: '+65 6555 0100' },
+      { city: 'Dubai', label: 'Middle East', address: 'Level 21, Meridian One, Business Bay, Dubai', phone: '+971 4 555 0100' },
+      { city: 'London', label: 'Europe', address: '40 Riverside Walk, London SE1 9PX', phone: '+44 20 7555 0100' },
+      { city: 'Sydney', label: 'Australia', address: 'Level 12, 88 Harbour Street, Sydney NSW 2000', phone: '+61 2 9555 0100' },
     ],
     maps_query: 'Marina South, Singapore',
     maps_url: '',
-    form_title: 'Send an enquiry',
-    form_text: 'Fill in a few details. We will prepare your message so you can send it by WhatsApp or email.',
+    phone_label: 'Phone',
+    email_label: 'Email',
+    hours_label: 'Office hours',
+    address_label: 'Headquarters',
+    offices_title: 'Our offices',
+    maps_label: 'Open in Google Maps',
+  },
+  enquiry: {
+    title: 'Send an enquiry',
+    text: 'Fill in a few details. We will prepare your message so you can send it by WhatsApp or email.',
     interests: [
       { name: 'Buying a home' },
       { name: 'Investment & partnerships' },
@@ -373,14 +425,19 @@ export const alturaContent: SiteContent = {
       { name: 'Hospitality & resorts' },
       { name: 'Careers & media' },
     ],
+    ...ALTURA_ENQUIRY_TEXT,
   },
   footer: {
     description: 'Altura Developments creates and manages homes, workplaces and hotels built to stay valuable for generations.',
     copyright: '',
-    instagram: 'https://instagram.com/alturadevelopments',
+    menu_title: 'Company',
+    projects_title: 'Developments',
+    offices_title: 'Offices',
+    contact_title: 'Contact',
+    instagram: 'https://instagram.com/altura-developments-demo',
     facebook: '',
-    linkedin: 'https://linkedin.com/company/altura-developments',
-    youtube: 'https://youtube.com/@alturadevelopments',
+    linkedin: 'https://linkedin.com/company/altura-developments-demo',
+    youtube: 'https://youtube.com/@altura-developments-demo',
     tiktok: '',
   },
 };

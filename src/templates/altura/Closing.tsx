@@ -1,9 +1,11 @@
 // Penutup Altura: `insights` (panel krem membulat: judul + tombol, tiga kartu artikel berfoto dengan chip kategori warna
 // tema dan tanggal en-US), `cta` (panel foto malam gelap besar: judul terpusat + dua tombol), dan `contact` (judul,
-// telepon/email/jam layanan, daftar kantor, peta opsional, dan formulir enquiry berbahasa Inggris).
+// telepon/email/jam layanan, daftar kantor, peta opsional, dan formulir enquiry). Semua teks yang tampil dari CMS: label
+// baris kontak & judul kantor di section `contact`, semua teks formulir (label, contoh isian, tombol, catatan, pesan
+// galat, isi pesan) di section `enquiry` (bawaan Inggris).
 // JUJUR: formulir hanya MENYUSUN pesan untuk WhatsApp atau email perusahaan — tidak ada data yang dikirim ke server atau
-// disimpan. Setelah lolos validasi, pesan ditampilkan apa adanya beserta tombol "Open WhatsApp" / "Send by email"
-// (pratinjau: tautan tidak dibuka). Tanpa WhatsApp & email perusahaan → formulir diganti ajakan menelepon.
+// disimpan. Setelah lolos validasi, pesan ditampilkan apa adanya beserta tombol WhatsApp / email (pratinjau: tautan tidak
+// dibuka). Tanpa WhatsApp & email perusahaan → formulir diganti ajakan menelepon.
 import { Check, ChevronDown, CircleAlert, Clock, Lock, Mail, MapPin, PencilLine, Phone } from 'lucide-react';
 import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { WhatsAppIcon } from '../shared/icons';
@@ -19,6 +21,7 @@ import {
   ENQUIRY_ORDER,
   enquiryMailto,
   enquiryMessage,
+  enquirySubject,
   parseIsoDate,
   validateEnquiry,
   type AlturaModel,
@@ -138,12 +141,12 @@ export function Cta({ m }: { m: AlturaModel }) {
 
 // ─── Kontak & formulir enquiry ────────────────────────────────────────────────
 
-function Field({ id, label, error, optional = false, children }: { id: string; label: string; error?: string; optional?: boolean; children: ReactNode }) {
+function Field({ id, label, error, optional = '', children }: { id: string; label: string; error?: string; optional?: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
       <label htmlFor={id} className={`mb-1.5 block text-[14px] font-semibold ${C.ink}`}>
         {label}
-        {optional && <span className={`font-normal ${C.muted}`}> (optional)</span>}
+        {optional && <span className={`font-normal ${C.muted}`}> {optional}</span>}
       </label>
       {children}
       {error && (
@@ -159,19 +162,19 @@ function Field({ id, label, error, optional = false, children }: { id: string; l
 type FieldEl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 function EnquiryCard({ m }: { m: AlturaModel }) {
-  const { contact } = m;
+  const { enquiry, enquiryText: t } = m;
   const baseId = useId();
   const [form, setForm] = useState<EnquiryForm>(EMPTY_ENQUIRY);
   const [errors, setErrors] = useState<EnquiryErrors>({});
   const [sent, setSent] = useState<string | null>(null);
   const refs = useRef<Partial<Record<keyof EnquiryForm, FieldEl | null>>>({});
   const resultHeading = useRef<HTMLHeadingElement>(null);
-  const interests = list(contact, 'interests', 8)
+  const interests = list(enquiry, 'interests', 8)
     .map((item) => field(item, 'name'))
     .filter(Boolean);
   const offices = m.offices.map((o) => o.city).filter(Boolean);
-  const title = text(contact, 'form_title');
-  const intro = text(contact, 'form_text');
+  const title = text(enquiry, 'title');
+  const intro = text(enquiry, 'text');
   const canWhatsApp = !!whatsappHref(m.whatsapp);
   const canEmail = !!mailHref(m.email);
   const id = (key: keyof EnquiryForm) => `${baseId}-${key}`;
@@ -193,14 +196,15 @@ function EnquiryCard({ m }: { m: AlturaModel }) {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const found = validateEnquiry(form, { interests, offices });
+    const found = validateEnquiry(form, { interests }, t);
     setErrors(found);
     const first = ENQUIRY_ORDER.find((key) => found[key]);
     if (first) {
       refs.current[first]?.focus();
       return;
     }
-    setSent(enquiryMessage(m.companyName, form));
+    // Kantor yang tidak ada lagi di daftar (mis. daftar kantor diubah di CMS) tidak ikut ke pesan
+    setSent(enquiryMessage(t, offices.includes(form.office) ? form : { ...form, office: '' }));
     window.setTimeout(() => resultHeading.current?.focus(), 0);
   };
 
@@ -211,7 +215,7 @@ function EnquiryCard({ m }: { m: AlturaModel }) {
     return (
       <div className={card}>
         {title && <h3 className={`${C.ink} ${TYPE_A.h3}`}>{title}</h3>}
-        <p className={`mt-2 ${TYPE_A.body} ${C.muted}`}>Call our team and we will help you with your enquiry.</p>
+        {t.call_text && <p className={`mt-2 ${TYPE_A.body} ${C.muted}`}>{t.call_text}</p>}
         {tel && <PillCta action={{ kind: 'external', href: tel }} label={m.phone} variant="ink" size="md" className="mt-6" />}
       </div>
     );
@@ -219,28 +223,28 @@ function EnquiryCard({ m }: { m: AlturaModel }) {
 
   if (sent) {
     const wa = canWhatsApp ? whatsappHref(m.whatsapp, sent) : '';
-    const mail = canEmail ? enquiryMailto(m.email, form, sent) : '';
+    const mail = canEmail ? enquiryMailto(m.email, enquirySubject(t, form), sent) : '';
     return (
       <div className={card} aria-live="polite">
         <h3 ref={resultHeading} tabIndex={-1} className={`flex items-center gap-2.5 ${C.ink} ${TYPE_A.h3} focus:outline-none`}>
           <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-full bg-(--tpl-accent) text-(--tpl-on-accent)">
             <Check className="h-4 w-4" strokeWidth={3} />
           </span>
-          Your message is ready
+          {t.ready_title}
         </h3>
-        <p className={`mt-2 ${TYPE_A.small} ${C.muted}`}>Check the details, then send it to our team by {wa && mail ? 'WhatsApp or email' : wa ? 'WhatsApp' : 'email'}.</p>
+        {t.ready_text && <p className={`mt-2 ${TYPE_A.small} ${C.muted}`}>{t.ready_text}</p>}
         <pre className={`mt-5 whitespace-pre-wrap rounded-[18px] bg-white p-4 font-sans text-[14px] leading-relaxed ${C.ink} [overflow-wrap:anywhere]`}>{sent}</pre>
         <div className="mt-6 flex flex-col gap-2.5 @xl:flex-row @xl:flex-wrap">
           {wa && (
             <ActionLink action={{ kind: 'external', href: wa }} className={`${BTN.accent} ${BTN.lg}`}>
               <WhatsAppIcon className="h-5 w-5 shrink-0" />
-              Open WhatsApp
+              {t.whatsapp_label}
             </ActionLink>
           )}
           {mail && (
             <ActionLink action={{ kind: 'external', href: mail }} className={`${BTN.ink} ${BTN.lg}`}>
               <Mail aria-hidden className="h-[18px] w-[18px] shrink-0" />
-              Send by email
+              {t.email_label}
             </ActionLink>
           )}
           <button
@@ -252,14 +256,14 @@ function EnquiryCard({ m }: { m: AlturaModel }) {
             className={`${BTN.white} ${BTN.lg}`}
           >
             <PencilLine aria-hidden className="h-4 w-4" />
-            Edit details
+            {t.edit_label}
           </button>
         </div>
       </div>
     );
   }
 
-  const select = (key: 'interest' | 'office', label: string, placeholder: string, options: string[], optional = false) =>
+  const select = (key: 'interest' | 'office', label: string, placeholder: string, options: string[], optional = '') =>
     options.length > 0 && (
       <Field id={id(key)} label={label} error={errors[key]} optional={optional}>
         <div className="relative">
@@ -285,39 +289,57 @@ function EnquiryCard({ m }: { m: AlturaModel }) {
       )}
       {intro && <p className={`mt-2 max-w-[52ch] ${TYPE_A.small} ${C.muted}`}>{intro}</p>}
       <div className="mt-6 grid gap-4 @xl:grid-cols-2">
-        <Field id={id('name')} label="Full name" error={errors.name}>
+        <Field id={id('name')} label={t.label_name} error={errors.name}>
           <input {...bind('name')} type="text" autoComplete="name" maxLength={80} className={`${INPUT} h-12 ${ring('name')}`} />
         </Field>
-        <Field id={id('email')} label="Email" error={errors.email}>
-          <input {...bind('email')} type="email" inputMode="email" autoComplete="email" maxLength={120} placeholder="name@company.com" className={`${INPUT} h-12 ${ring('email')}`} />
+        <Field id={id('email')} label={t.label_email} error={errors.email}>
+          <input
+            {...bind('email')}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            maxLength={120}
+            placeholder={t.placeholder_email || undefined}
+            className={`${INPUT} h-12 ${ring('email')}`}
+          />
         </Field>
-        <Field id={id('phone')} label="Phone" error={errors.phone} optional>
-          <input {...bind('phone')} type="tel" inputMode="tel" autoComplete="tel" maxLength={24} placeholder="+65 8123 4567" className={`${INPUT} h-12 ${ring('phone')}`} />
+        <Field id={id('phone')} label={t.label_phone} error={errors.phone} optional={t.optional_text}>
+          <input
+            {...bind('phone')}
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            maxLength={24}
+            placeholder={t.placeholder_phone || undefined}
+            className={`${INPUT} h-12 ${ring('phone')}`}
+          />
         </Field>
-        {select('interest', 'Your enquiry is about', 'Select a topic', interests)}
-        {select('office', 'Preferred office', 'Any office', offices, true)}
+        {select('interest', t.label_interest, t.prompt_interest, interests)}
+        {select('office', t.label_office, t.prompt_office, offices, t.optional_text)}
         <div className="@xl:col-span-2">
-          <Field id={id('message')} label="Message" error={errors.message}>
+          <Field id={id('message')} label={t.label_message} error={errors.message}>
             <textarea
               {...bind('message')}
               rows={4}
               maxLength={600}
-              placeholder="Tell us what you are looking for, your budget or timeline."
+              placeholder={t.placeholder_message || undefined}
               className={`${INPUT} min-h-28 py-3 ${ring('message')}`}
             />
           </Field>
         </div>
       </div>
       <button type="submit" className={`group mt-6 w-full ${BTN.ink} h-[54px] pl-6 pr-1.5 text-[15px] @xl:w-auto`}>
-        <span>Prepare my message</span>
+        <span className="min-w-0 truncate">{t.submit_label}</span>
         <span aria-hidden className="flex h-11 w-11 items-center justify-center rounded-full bg-(--tpl-accent) text-(--tpl-on-accent)">
           <Check className="h-[18px] w-[18px]" strokeWidth={2.4} />
         </span>
       </button>
-      <p className={`mt-4 flex items-start gap-2 text-[12.5px] leading-snug ${C.muted}`}>
-        <Lock aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        Nothing is stored on this website. The form only prepares a message that you send yourself by {canWhatsApp && canEmail ? 'WhatsApp or email' : canWhatsApp ? 'WhatsApp' : 'email'}.
-      </p>
+      {t.note && (
+        <p className={`mt-4 flex items-start gap-2 text-[12.5px] leading-snug ${C.muted}`}>
+          <Lock aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {t.note}
+        </p>
+      )}
     </form>
   );
 }
@@ -329,11 +351,13 @@ export function Contact({ m }: { m: AlturaModel }) {
   const hours = text(contact, 'hours');
   const address = text(contact, 'address');
   const rows: { key: string; icon: ReactNode; label: string; value: string; href: string }[] = [
-    { key: 'phone', icon: <Phone className="h-[18px] w-[18px]" strokeWidth={1.8} />, label: 'Phone', value: m.phone, href: tel },
-    { key: 'email', icon: <Mail className="h-[18px] w-[18px]" strokeWidth={1.8} />, label: 'Email', value: m.email, href: mail },
-    { key: 'hours', icon: <Clock className="h-[18px] w-[18px]" strokeWidth={1.8} />, label: 'Office hours', value: hours, href: '' },
-    { key: 'address', icon: <MapPin className="h-[18px] w-[18px]" strokeWidth={1.8} />, label: 'Headquarters', value: address, href: '' },
+    { key: 'phone', icon: <Phone className="h-[18px] w-[18px]" strokeWidth={1.8} />, label: text(contact, 'phone_label'), value: m.phone, href: tel },
+    { key: 'email', icon: <Mail className="h-[18px] w-[18px]" strokeWidth={1.8} />, label: text(contact, 'email_label'), value: m.email, href: mail },
+    { key: 'hours', icon: <Clock className="h-[18px] w-[18px]" strokeWidth={1.8} />, label: text(contact, 'hours_label'), value: hours, href: '' },
+    { key: 'address', icon: <MapPin className="h-[18px] w-[18px]" strokeWidth={1.8} />, label: text(contact, 'address_label'), value: address, href: '' },
   ].filter((row) => row.value);
+  const officesTitle = text(contact, 'offices_title');
+  const mapsLabel = text(contact, 'maps_label');
 
   return (
     <TemplateSection sectionKey="contact" className={SECTION_PAD}>
@@ -348,7 +372,7 @@ export function Contact({ m }: { m: AlturaModel }) {
                     {row.icon}
                   </span>
                   <span className="min-w-0 pt-0.5">
-                    <span className={`block text-[12.5px] font-semibold uppercase tracking-[0.12em] ${C.muted}`}>{row.label}</span>
+                    {row.label && <span className={`block text-[12.5px] font-semibold uppercase tracking-[0.12em] ${C.muted}`}>{row.label}</span>}
                     {row.href ? (
                       <ActionLink action={{ kind: 'external', href: row.href }} className={`text-[16px] font-semibold ${C.ink} underline-offset-4 [overflow-wrap:anywhere] hover:underline`}>
                         {row.value}
@@ -363,8 +387,8 @@ export function Contact({ m }: { m: AlturaModel }) {
           )}
           {m.offices.length > 0 && (
             <div className="mt-10">
-              <PillTag>Our offices</PillTag>
-              <ul className="mt-5 grid gap-x-6 gap-y-6 @xl:grid-cols-2">
+              {officesTitle && <PillTag className="mb-5">{officesTitle}</PillTag>}
+              <ul className="grid gap-x-6 gap-y-6 @xl:grid-cols-2">
                 {m.offices.map((office, i) => {
                   const officeTel = telHref(office.phone);
                   return (
@@ -391,16 +415,17 @@ export function Contact({ m }: { m: AlturaModel }) {
           {m.map.embed && (
             <div className="mt-10">
               <MapEmbed embed={m.map.embed} title={`Map: ${m.companyName}`} className="aspect-[16/10] rounded-[24px] ring-1 ring-inset ring-[#141612]/[0.08]" />
-              {m.map.link && (
+              {m.map.link && mapsLabel && (
                 <ActionLink action={{ kind: 'external', href: m.map.link }} className={`mt-3 inline-flex min-h-10 items-center gap-1.5 text-[14px] font-semibold ${C.ink} underline decoration-current/30 underline-offset-4 hover:decoration-current`}>
                   <MapPin aria-hidden className="h-4 w-4" />
-                  Open in Google Maps
+                  {mapsLabel}
                 </ActionLink>
               )}
             </div>
           )}
         </div>
-        <div className="min-w-0 @5xl:sticky @5xl:top-[calc(var(--tpl-sticky-top,0px)+112px)] @5xl:col-span-7 @5xl:self-start">
+        {/* data-tpl-section="enquiry": panel CMS menggulir pratinjau ke formulir saat bagian "Formulir enquiry" diedit */}
+        <div data-tpl-section="enquiry" className="min-w-0 @5xl:sticky @5xl:top-[calc(var(--tpl-sticky-top,0px)+112px)] @5xl:col-span-7 @5xl:self-start">
           <EnquiryCard m={m} />
         </div>
       </div>

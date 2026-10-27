@@ -1,11 +1,12 @@
 // Hero Altura — "Diptych" (data-hero-layout="diptych"): dua panel membulat (radius 28) berdampingan di dalam gutter,
 // tinggi ± min(86svh, 820px). Kiri ± 48%: FOTO menara tegak (KitPhoto priority = LCP) dengan chip lokasi kaca; kanan
 // ± 52%: panel krem dengan H1 sangat besar 3 baris, lead abu, tombol pil putih + bulatan panah limau, lalu di bawah:
-// lingkaran limau besar berisi angka (mis. "40") + "years of experience" dan pil gelap "Watch" berfoto dengan ikon play
-// (tautan video / section dari CMS). Menu pil putih (./Header) menumpang di atas kedua panel. HP: pil menu → foto 4:5
-// → panel krem. Gerak: kedua panel masuk bergeser (transform saja, foto LCP tidak disembunyikan), lead/tombol/baris
-// bawah muncul bertahap, angka berjalan; semua mati di reduced-motion & pratinjau CMS.
-import { MapPin, Play } from 'lucide-react';
+// lingkaran limau besar berisi angka (mis. "40") + "years of experience" dan pil gelap berfoto (tautan dari CMS: ikon
+// play HANYA bila tautannya video, selain itu ikon panah agar tidak menjanjikan film yang tidak ada). Menu pil putih
+// (./Header) menumpang di atas kedua panel. HP: pil menu → foto 4:5 → panel krem. Gerak: kedua panel masuk bergeser
+// (transform saja, foto LCP tidak disembunyikan), lead/tombol/baris bawah muncul bertahap, angka berjalan; semua mati di
+// reduced-motion & pratinjau CMS.
+import { ArrowUpRight, MapPin, Play } from 'lucide-react';
 import { CountUp, Reveal } from '../shared/Animated';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { hasImage, text } from '../shared/utils';
@@ -15,6 +16,16 @@ import { ALTURA_PHOTOS } from './photos';
 import { C, DISPLAY, OUTER, TYPE_A } from './styles';
 import { PillCta } from './ui';
 
+/** Ukuran angka di lingkaran menurut panjangnya (lingkaran 96 → 104 → 116 → 132px); "1,200+" tetap di dalam lingkaran. */
+const STAT_SIZE: Record<number, string> = {
+  0: '',
+  1: 'text-[44px] @3xl:text-[48px] @7xl:text-[54px] @min-[96rem]:text-[62px]',
+  2: 'text-[44px] @3xl:text-[48px] @7xl:text-[54px] @min-[96rem]:text-[62px]',
+  3: 'text-[44px] @3xl:text-[48px] @7xl:text-[54px] @min-[96rem]:text-[62px]',
+  4: 'text-[30px] @7xl:text-[38px] @min-[96rem]:text-[42px]',
+  5: 'text-[22px] @3xl:text-[24px] @7xl:text-[28px] @min-[96rem]:text-[32px]',
+};
+
 function StatCircle({ value, label }: { value: string; label: string }) {
   if (!value && !label) return null;
   return (
@@ -22,9 +33,7 @@ function StatCircle({ value, label }: { value: string; label: string }) {
       {value && (
         <span className="flex h-[96px] w-[96px] shrink-0 items-center justify-center rounded-full bg-(--tpl-accent) @3xl:h-[104px] @3xl:w-[104px] @7xl:h-[116px] @7xl:w-[116px] @min-[96rem]:h-[132px] @min-[96rem]:w-[132px]">
           <span
-            className={`${DISPLAY} max-w-full px-2 text-center text-[44px] font-bold leading-none tracking-[-0.05em] text-(--tpl-on-accent) @3xl:text-[48px] @7xl:text-[54px] @min-[96rem]:text-[62px] ${
-              value.length > 3 ? '!text-[30px] @7xl:!text-[38px]' : ''
-            }`}
+            className={`${DISPLAY} max-w-full px-2 text-center font-bold leading-none tracking-[-0.05em] text-(--tpl-on-accent) ${STAT_SIZE[Math.min(value.length, 5)] ?? STAT_SIZE[3]}`}
           >
             <CountUp value={value} duration={1600} />
           </span>
@@ -37,6 +46,7 @@ function StatCircle({ value, label }: { value: string; label: string }) {
 
 function WatchPill({ m }: { m: AlturaModel }) {
   const label = text(m.hero, 'watch_label');
+  const Icon = m.watchIsVideo ? Play : ArrowUpRight;
   const image = text(m.hero, 'watch_image');
   if (!label || !m.watchAction) return null;
   return (
@@ -58,7 +68,10 @@ function WatchPill({ m }: { m: AlturaModel }) {
       <span aria-hidden className="absolute inset-0 -z-10 bg-(--al-deep)/65" />
       <span className="truncate text-[15px] font-semibold">{label}</span>
       <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-[#141612] @7xl:h-14 @7xl:w-14">
-        <Play className="h-4 w-4 translate-x-px fill-current" />
+        <Icon
+          className={m.watchIsVideo ? 'h-4 w-4 translate-x-px fill-current' : 'h-[18px] w-[18px] transition-transform duration-500 group-hover:rotate-45'}
+          strokeWidth={m.watchIsVideo ? undefined : 2}
+        />
       </span>
     </ActionLink>
   );

@@ -2,10 +2,11 @@
 // Jalankan: npx vitest run src/templates/__tests__/altura.test.tsx
 // Altura (company profile berbahasa Inggris untuk developer properti global, 2026-10-27): skema CMS & konten demo, helper
 // model (warna tema, menu, tujuan tautan, tanggal en-US, filter portofolio, ikon spesifikasi, angka "+", formulir
-// enquiry → pesan WhatsApp/email), demo (urutan section, lang="en", hero dua panel, menu pil, pilar, pita angka, proyek
-// akordion, portofolio berfilter, pimpinan, penghargaan, testimoni, wawasan, ajakan, kontak + formulir, footer), datar
-// tanpa bayangan, SEO situs pembeli, konten opsional kosong, pratinjau CMS diam, editor CMS, warna tema, data katalog,
-// dan konten aneh.
+// enquiry → pesan WhatsApp/email, tautan video), demo (urutan section, lang="en", hero dua panel, menu pil, pilar, pita
+// angka, proyek akordion, portofolio berfilter, pimpinan, penghargaan, testimoni, wawasan, ajakan, kontak + formulir,
+// footer), SEMUA teks yang tampil bisa diganti lewat CMS (nama menu, label kontak, teks formulir, judul kolom footer),
+// kontak demo jelas fiktif, datar tanpa bayangan, SEO situs pembeli, konten opsional kosong, pratinjau CMS diam, editor
+// CMS, warna tema, data katalog, dan konten aneh.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
@@ -18,14 +19,18 @@ import { iconKey } from '../altura/icons';
 import {
   accentIsDark,
   alturaVars,
+  DEFAULT_ENQUIRY_TEXT,
   EMPTY_ENQUIRY,
   enquiryMailto,
   enquiryMessage,
+  enquirySubject,
   filterPortfolio,
+  isVideoUrl,
   navItems,
   PAGE_SECTIONS,
   parseIsoDate,
   portfolioCategories,
+  readEnquiryText,
   sectionTarget,
   specIcon,
   splitStat,
@@ -89,19 +94,25 @@ describe('Altura: skema & konten bawaan', () => {
     expect(def.code).toBe('altura');
     expect(def.name).toBe('Altura');
     expect(def.features).toBeUndefined();
-    expect(def.sections.map((s) => s.key)).toEqual(['brand', ...ORDER, 'footer']);
+    // `enquiry` = teks formulir di dalam section Kontak (bukan section halaman sendiri)
+    expect(def.sections.map((s) => s.key)).toEqual(['brand', ...ORDER, 'enquiry', 'footer']);
     expect([...PAGE_SECTIONS]).toEqual([...ORDER, 'footer']);
     const fields = (key: string) => def.sections.find((s) => s.key === key)!.fields.map((f) => f.key);
     expect(fields('brand')).toEqual(['company_name', 'tagline', 'logo', 'accent_color']);
     expect(fields('hero')).toEqual(expect.arrayContaining(['title', 'subtitle', 'image', 'stat_value', 'stat_label', 'watch_label', 'watch_url', 'header_label', 'call_label']));
-    expect(fields('contact')).toEqual(expect.arrayContaining(['phone', 'email', 'whatsapp', 'offices', 'maps_query', 'maps_url', 'form_title', 'interests']));
+    expect(fields('contact')).toEqual(
+      expect.arrayContaining(['menu_label', 'phone', 'email', 'whatsapp', 'offices', 'maps_query', 'maps_url', 'phone_label', 'email_label', 'hours_label', 'address_label', 'offices_title', 'maps_label']),
+    );
+    expect(fields('enquiry')).toEqual(['title', 'text', 'interests', ...Object.keys(DEFAULT_ENQUIRY_TEXT)]);
+    expect(fields('footer')).toEqual(expect.arrayContaining(['menu_title', 'projects_title', 'offices_title', 'contact_title']));
+    for (const key of ['about', 'developments', 'portfolio', 'leadership', 'insights', 'contact']) expect(fields(key)[0], key).toBe('menu_label');
     for (const s of def.sections) {
       const keys = s.fields.map((f) => f.key);
       expect(new Set(keys).size, s.key).toBe(keys.length);
       for (const f of s.fields) if (isListField(f)) expect(f.max, `${s.key}.${f.key}`).toBeGreaterThan(0);
       expect(def.defaultContent[s.key], s.key).toBeTypeOf('object');
       expect(s.introduced).toBeUndefined();
-      if (s.key !== 'brand') expect(s.toggleable, s.key).toBe(true);
+      if (s.key !== 'brand' && s.key !== 'enquiry') expect(s.toggleable, s.key).toBe(true);
     }
     // Panel CMS dipakai pembeli Indonesia: label berbahasa Indonesia
     const labels = def.sections.flatMap((s) => [s.label, ...s.fields.map((f) => f.label)]).join(' ');
@@ -154,11 +165,26 @@ describe('Altura: skema & konten bawaan', () => {
   it('salinan demo berbahasa Inggris dan jujur: fiktif, tanpa klaim izin/sertifikasi/bursa, janji imbal hasil, atau merek nyata', () => {
     const text = JSON.stringify(def.defaultContent);
     expect(text).not.toMatch(/guaranteed|guarantee|returns? of \d|\bROI\b|\bISO \d|certified|licensed by|\bNYSE\b|\bNASDAQ\b|\bSGX\b|listed on|\bIMO\b|award-winning #1|best in the world/i);
-    expect(text).not.toMatch(/\b(Emaar|CapitaLand|Sobha|Damac|Mapletree|Marriott|Hilton|Hyatt|Ritz|Four Seasons)\b/);
+    expect(text).not.toMatch(/\b(Emaar|CapitaLand|Sobha|Damac|Mapletree|Marriott|Hilton|Hyatt|Ritz|Four Seasons|Northgate|Brightwave|Kerry|Liebherr|ING|Casa Laguna)\b/);
     // Bahasa Inggris (en-US): tanpa kata Indonesia umum
     expect(text).not.toMatch(/\b(dan|yang|untuk|dengan|kami|anda|perusahaan)\b/i);
     expect(text).toMatch(/Altura Developments/);
     expect(text).not.toMatch(/\b(programme|neighbourhood|colour|organise)\b/);
+  });
+
+  it('kontak demo jelas fiktif: email @altura.example, telepon blok 555, sosial ber-handle "-demo", LinkedIn pimpinan bukan halaman perusahaan', () => {
+    const c = def.defaultContent;
+    const text = JSON.stringify(c);
+    const emails = text.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g) ?? [];
+    expect(emails.length).toBeGreaterThan(0);
+    for (const email of emails.filter((e) => !/^name@company\.com$/.test(e))) expect(email, email).toMatch(/@altura\.example$/);
+    const phones = [c.contact.phone, c.contact.whatsapp, ...(c.contact.offices as Record<string, string>[]).map((o) => o.phone), c.enquiry.placeholder_phone];
+    for (const phone of phones) expect(String(phone), String(phone)).toMatch(/555/);
+    expect(text).not.toMatch(/6123 4567|8123 4567|7946 0123/);
+    const links = (text.match(/https:\/\/[^"]+/g) ?? []).filter((u) => !u.startsWith('https://wa.me'));
+    expect(links.length).toBeGreaterThan(0);
+    for (const url of links) expect(url, url).toMatch(/-demo$/);
+    for (const leader of c.leadership.items as Record<string, string>[]) expect(leader.linkedin).toMatch(/^https:\/\/linkedin\.com\/in\/[a-z-]+-demo$/);
   });
 });
 
@@ -189,8 +215,15 @@ describe('Altura: helper model', () => {
       { key: 'insights', label: 'Insights' },
       { key: 'contact', label: 'Contact' },
     ]);
-    const custom = resolveContent(def, { portfolio: { eyebrow: 'Proyek' }, leadership: { items: [] }, insights: { enabled: false } });
-    expect(navItems(custom).map((n) => n.label)).toEqual(['About', 'Developments', 'Proyek', 'Contact']);
+    const custom = resolveContent(def, {
+      about: { menu_label: 'Tentang kami' },
+      portfolio: { menu_label: '', eyebrow: 'Proyek' },
+      developments: { menu_label: '', eyebrow: 'Our flagship developments' },
+      leadership: { items: [] },
+      insights: { enabled: false },
+    });
+    // menu_label → label kecil bila singkat → nama cadangan
+    expect(navItems(custom).map((n) => n.label)).toEqual(['Tentang kami', 'Developments', 'Proyek', 'Contact']);
   });
 
   it('tautan "#…": anchor Inggris/Indonesia ke section yang benar, anchor tak dikenal → null', () => {
@@ -232,14 +265,21 @@ describe('Altura: helper model', () => {
     expect(iconKey('Zzz', 1)).toBe('quality');
   });
 
-  it('formulir enquiry: galat per isian dalam bahasa Inggris, telepon opsional berkode negara, pesan & mailto tersusun rapi', () => {
-    const options = { interests: ['Buying a home', 'Commercial leasing'], offices: ['Singapore', 'Dubai'] };
+  it('formulir enquiry: galat per isian (teks dari CMS, bawaan Inggris), telepon opsional berkode negara, pesan & mailto tersusun rapi', () => {
+    const options = { interests: ['Buying a home', 'Commercial leasing'] };
     const errors = validateEnquiry(EMPTY_ENQUIRY, options);
     expect(Object.keys(errors).sort()).toEqual(['email', 'interest', 'message', 'name']);
     expect(errors.email).toMatch(/^Please enter a valid email address/);
     expect(validateEnquiry({ ...EMPTY_ENQUIRY, phone: '12ab' }, options).phone).toMatch(/country code/);
-    expect(validateEnquiry({ ...EMPTY_ENQUIRY, office: 'Paris' }, options).office).toBeTruthy();
-    expect(validateEnquiry(EMPTY_ENQUIRY, { interests: [], offices: [] }).interest).toBeUndefined();
+    // Kantor tujuan tidak pernah galat (nilai lama dibuang saat pesan disusun)
+    expect(validateEnquiry({ ...EMPTY_ENQUIRY, office: 'Paris' }, options).office).toBeUndefined();
+    expect(validateEnquiry(EMPTY_ENQUIRY, { interests: [] }).interest).toBeUndefined();
+    const id = readEnquiryText({ error_name: 'Isi nama lengkap Anda.', label_name: '', note: '', greeting: '' });
+    expect(validateEnquiry(EMPTY_ENQUIRY, options, id).name).toBe('Isi nama lengkap Anda.');
+    // Teks wajib yang dikosongkan → bawaan Inggris; teks opsional yang dikosongkan → tidak tampil
+    expect(id.label_name).toBe('Full name');
+    expect(id.note).toBe('');
+    expect(id.greeting).toBe('');
     expect(validPhone('+65 8123 4567')).toBe(true);
     expect(validPhone('+44 (20) 7946-0123')).toBe(true);
     expect(validPhone('65+81234567')).toBe(false);
@@ -248,22 +288,35 @@ describe('Altura: helper model', () => {
     expect(validEmail('jo@company')).toBe(false);
     const form = { name: ' Jordan Lee ', email: 'jordan@example.com', phone: '', interest: 'Buying a home', office: '', message: 'Looking for a\n\nthree-bedroom home.' };
     expect(validateEnquiry(form, options)).toEqual({});
-    const message = enquiryMessage('Altura Developments', form);
+    const t = DEFAULT_ENQUIRY_TEXT;
+    const message = enquiryMessage(t, form);
     expect(message).toBe(
-      'Hello Altura Developments, I would like to make an enquiry.\nName: Jordan Lee\nEmail: jordan@example.com\nEnquiry about: Buying a home\nMessage: Looking for a three-bedroom home.\nThank you.',
+      'Hello Altura, I would like to make an enquiry.\nFull name: Jordan Lee\nEmail: jordan@example.com\nEnquiry about: Buying a home\nMessage: Looking for a three-bedroom home.\nThank you.',
     );
-    const mailto = enquiryMailto('enquiries@alturadevelopments.com', form, message);
-    expect(mailto).toMatch(/^mailto:enquiries@alturadevelopments\.com\?subject=/);
+    const mailto = enquiryMailto('enquiries@altura.example', enquirySubject(t, form), message);
+    expect(mailto).toMatch(/^mailto:enquiries@altura\.example\?subject=/);
     expect(decodeURIComponent(mailto)).toContain('subject=Enquiry: Buying a home – Jordan Lee');
-    expect(decodeURIComponent(mailto)).toContain('Name: Jordan Lee');
-    expect(enquiryMailto('bukan email', form, message)).toBe('');
+    expect(decodeURIComponent(mailto)).toContain('Full name: Jordan Lee');
+    expect(enquiryMailto('bukan email', 'x', message)).toBe('');
+    // Label isian ikut ke isi pesan; salam/penutup/subjek kosong dilewati
+    const bare = readEnquiryText({ greeting: '', closing: '', subject: '', label_name: 'Nama', label_message: 'Pesan' });
+    expect(enquiryMessage(bare, form)).toBe('Nama: Jordan Lee\nEmail: jordan@example.com\nEnquiry about: Buying a home\nPesan: Looking for a three-bedroom home.');
+    expect(enquirySubject(bare, form)).toBe('Buying a home – Jordan Lee');
+  });
+
+  it('tautan video: hanya YouTube/Vimeo/file video dsb. yang dianggap video', () => {
+    for (const url of ['https://youtu.be/abc', 'https://www.youtube.com/watch?v=abc', 'https://vimeo.com/123', 'https://cdn.example.com/film.mp4', '/assets/sites/1/film.webm', 'https://www.facebook.com/altura/videos/123'])
+      expect(isVideoUrl(url), url).toBe(true);
+    for (const url of ['', '#developments', 'https://linkedin.com/company/x', 'https://example.com/video-page', 'javascript:alert(1)', '//youtube.com/x'])
+      expect(isVideoUrl(url), url).toBe(false);
   });
 });
 
 describe('Altura: demo', () => {
   it('urutan section, lang="en", satu h1, hero dua panel (data-hero-layout diptych) berfoto prioritas, menu pil', () => {
     const container = demo();
-    expect(sectionKeys(container)).toEqual([...ORDER, 'footer']);
+    // data-tpl-section="enquiry" = formulir di dalam Kontak (panel CMS menggulir ke sana)
+    expect(sectionKeys(container)).toEqual([...ORDER, 'enquiry', 'footer']);
     expect(container.querySelector('[lang="en"]')).not.toBeNull();
     expect(container.querySelectorAll('h1')).toHaveLength(1);
     const hero = section(container, 'hero');
@@ -276,12 +329,16 @@ describe('Altura: demo', () => {
     expect(hero.textContent).toContain('40');
     expect(hero.textContent).toContain('years of experience');
     expect(within(hero).getByRole('link', { name: /View all services/ })).toHaveAttribute('href', '#pillars');
-    expect(within(hero).getByRole('link', { name: /Watch the film/ })).toHaveAttribute('href', '#developments');
+    // Pil berfoto tanpa video → ikon panah (bukan play), menuju bagian Proyek
+    const pill = within(hero).getByRole('link', { name: /Explore developments/ });
+    expect(pill).toHaveAttribute('href', '#developments');
+    expect(pill.querySelector('.lucide-play')).toBeNull();
+    expect(pill.querySelector('.lucide-arrow-up-right')).not.toBeNull();
     const header = container.querySelector('header')!;
     const nav = within(header).getByRole('navigation', { name: 'Menu utama' });
     expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['About', 'Developments', 'Portfolio', 'Leadership', 'Insights', 'Contact']);
     expect(within(header).getByRole('link', { name: /Get in touch/ })).toHaveAttribute('href', '#kontak');
-    expect(within(header).getByRole('link', { name: '+65 6123 4567' })).toHaveAttribute('href', 'tel:+6561234567');
+    expect(within(header).getByRole('link', { name: '+65 6555 0100' })).toHaveAttribute('href', 'tel:+6565550100');
     expect(header.textContent).toContain('Call us:');
   });
 
@@ -293,7 +350,7 @@ describe('Altura: demo', () => {
     expect(button).toHaveAccessibleName('Tutup menu');
     const panels = within(container).getAllByRole('navigation', { name: 'Menu utama' });
     expect(panels).toHaveLength(2);
-    expect(within(panels[1]).getByRole('link', { name: '+65 6123 4567' })).toBeInTheDocument();
+    expect(within(panels[1]).getByRole('link', { name: '+65 6555 0100' })).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(document.activeElement).toBe(button);
@@ -314,6 +371,9 @@ describe('Altura: demo', () => {
     expect(Array.from(cards).map((c) => c.querySelector('h3')!.textContent)).toEqual(['What we do', 'Our impact', 'Core values']);
     expect(within(cards[1] as HTMLElement).getByRole('link', { name: 'See projects' })).toHaveAttribute('href', '#portfolio');
     expect(pillars.querySelectorAll('.al-notch')).toHaveLength(3);
+    // Sudut kanan-bawah ditutup lekuk (tanpa sabit abu), foto kartu 2 tidak menghalangi tautan selebar kartu
+    for (const card of Array.from(cards)) expect(card.className).toContain('rounded-br-none');
+    expect(cards[1].querySelector('img')!.closest('.pointer-events-none')).not.toBeNull();
     const amenities = section(container, 'amenities');
     expect(amenities.querySelector('h2')!.textContent).toBe('What every Altura address includes');
     expect(amenities.textContent).toContain('Comprehensive amenities');
@@ -326,6 +386,8 @@ describe('Altura: demo', () => {
     const dds = Array.from(stats.querySelectorAll('dd'));
     expect(dds.map((dd) => dd.textContent)).toEqual(['48+', '52+', '$2.3B+', '18M+']);
     expect(dds[0].querySelector('sup')!.className).toContain('text-(--al-bright)');
+    // "$2.3B+" tidak boleh terbelah
+    for (const dd of dds) expect(dd.className).toContain('whitespace-nowrap');
     expect(Array.from(stats.querySelectorAll('dt')).map((dt) => dt.textContent)).toEqual([
       'Completed projects',
       'Projects in development',
@@ -338,7 +400,7 @@ describe('Altura: demo', () => {
     expect(difference.querySelectorAll('li svg')).toHaveLength(6);
   });
 
-  it('proyek akordion: satu kartu terbuka, klik/fokus membuka kartu lain, panah kiri/kanan berpindah, tombol "View details"', () => {
+  it('proyek akordion: satu kartu terbuka, klik/fokus membuka kartu lain, panah kiri/kanan berpindah, tombol "Request details" (ke Kontak)', () => {
     const container = demo();
     const dev = section(container, 'developments');
     const cards = Array.from(dev.querySelectorAll('li'));
@@ -358,8 +420,13 @@ describe('Altura: demo', () => {
     expect(cards[0]).toHaveAttribute('data-active', 'true');
     fireEvent.mouseEnter(cards[4]);
     expect(cards[4]).toHaveAttribute('data-active', 'true');
-    expect(within(cards[4]).getByRole('link', { name: /View details/ })).toHaveAttribute('href', '#kontak');
+    expect(within(cards[4]).getByRole('link', { name: /Request details/ })).toHaveAttribute('href', '#kontak');
     expect(within(dev).getByRole('link', { name: /View all projects/ })).toHaveAttribute('href', '#portfolio');
+    // HP: kartu setinggi isinya (tanpa rasio terkunci), rel snap dengan gutter; cincin fokus di dalam kartu (tidak terpotong)
+    expect(cards[0].className).toContain('min-h-[360px]');
+    expect(cards[0].className).not.toContain('aspect-[4/5]');
+    expect(dev.querySelector('ul')!.className).toContain('scroll-px-5');
+    expect(buttons[0].className).toContain('focus-visible:-outline-offset-[6px]');
   });
 
   it('portofolio: tombol filter kategori (aria-pressed) benar-benar menyaring kartu; harga, lokasi, spesifikasi berikon', () => {
@@ -388,11 +455,12 @@ describe('Altura: demo', () => {
     const container = demo();
     const leaders = section(container, 'leadership');
     expect(Array.from(leaders.querySelectorAll('figcaption h3')).map((h) => h.textContent)).toEqual(['Elena Marquez', 'Daniel Whitford', 'Marcus Lindqvist']);
-    expect(within(leaders).getByRole('link', { name: 'Elena Marquez on LinkedIn' })).toHaveAttribute('href', 'https://linkedin.com/company/altura-developments');
+    expect(within(leaders).getByRole('link', { name: 'Elena Marquez on LinkedIn' })).toHaveAttribute('href', 'https://linkedin.com/in/elena-marquez-demo');
+    expect(leaders.querySelector('ul')!.className).toContain('scroll-px-5');
     const awards = section(container, 'awards');
     expect(awards.querySelectorAll('ul[aria-label]')).toHaveLength(2);
     expect(awards.textContent).toContain('Residential Developer of the Year');
-    expect(awards.textContent).toContain('Asia Habitat Awards 2025');
+    expect(awards.textContent).toContain('Meridale Habitat Awards 2025');
     const testimonials = section(container, 'testimonials');
     expect(testimonials.querySelectorAll('blockquote')).toHaveLength(4);
     expect(testimonials.textContent).toContain('4.9');
@@ -404,7 +472,7 @@ describe('Altura: demo', () => {
       ['2026-09-22', 'Sep 22, 2026'],
       ['2026-09-03', 'Sep 3, 2026'],
     ]);
-    expect(within(insights).getByRole('link', { name: /View all insights/ })).toHaveAttribute('href', 'https://linkedin.com/company/altura-developments');
+    expect(within(insights).getByRole('link', { name: /View all insights/ })).toHaveAttribute('href', 'https://linkedin.com/company/altura-developments-demo');
     // Artikel tanpa URL: judul bukan tautan
     expect(insights.querySelector('article h3 a')).toBeNull();
   });
@@ -415,14 +483,16 @@ describe('Altura: demo', () => {
     expect(cta.querySelector('h2')!.textContent).toBe('Your dream home awaits');
     expect(within(cta).getByRole('link', { name: /Book a private viewing/ })).toHaveAttribute('href', '#kontak');
     expect(decoded(within(cta).getByRole('link', { name: /Chat on WhatsApp/ }))).toBe(
-      'https://wa.me/6581234567?text=Hello Altura, I would like to know more about your developments.',
+      'https://wa.me/6585550100?text=Hello Altura, I would like to know more about your developments.',
     );
     const contact = section(container, 'contact');
     expect(contact.textContent).toContain('Singapore');
     expect(contact.textContent).toContain('Headquarters');
-    expect(within(contact).getByRole('link', { name: '+971 4 123 4567' })).toHaveAttribute('href', 'tel:+97141234567');
+    expect(within(contact).getByRole('link', { name: '+971 4 555 0100' })).toHaveAttribute('href', 'tel:+97145550100');
+    expect(contact.textContent).toContain('Our offices');
+    expect(contact.textContent).toContain('Office hours');
     expect(contact.querySelector('iframe')!.getAttribute('src')).toContain(encodeURIComponent('Marina South, Singapore'));
-    expect(within(contact).getByRole('link', { name: 'enquiries@alturadevelopments.com' })).toHaveAttribute('href', 'mailto:enquiries@alturadevelopments.com');
+    expect(within(contact).getByRole('link', { name: 'enquiries@altura.example' })).toHaveAttribute('href', 'mailto:enquiries@altura.example');
   });
 
   it('formulir enquiry: galat per isian + fokus ke isian pertama, lalu pesan apa adanya dengan tautan WhatsApp & email; tidak ada data yang dikirim', () => {
@@ -439,7 +509,7 @@ describe('Altura: demo', () => {
     expect(name).not.toHaveAttribute('aria-invalid');
     fireEvent.change(within(form).getByLabelText('Email'), { target: { value: 'jordan@example.com' } });
     fireEvent.change(within(form).getByLabelText(/^Phone/), { target: { value: '+65 9123 4567' } });
-    fireEvent.change(within(form).getByLabelText('Your enquiry is about'), { target: { value: 'Buying a home' } });
+    fireEvent.change(within(form).getByLabelText('Enquiry about'), { target: { value: 'Buying a home' } });
     fireEvent.change(within(form).getByLabelText(/^Preferred office/), { target: { value: 'Dubai' } });
     fireEvent.change(within(form).getByLabelText('Message'), { target: { value: 'Looking for a three-bedroom home in 2027.' } });
     vi.useFakeTimers();
@@ -450,11 +520,11 @@ describe('Altura: demo', () => {
     vi.useRealTimers();
     const pre = contact.querySelector('pre')!;
     expect(pre.textContent).toBe(
-      'Hello Altura Developments, I would like to make an enquiry.\nName: Jordan Lee\nEmail: jordan@example.com\nPhone: +65 9123 4567\nEnquiry about: Buying a home\nPreferred office: Dubai\nMessage: Looking for a three-bedroom home in 2027.\nThank you.',
+      'Hello Altura, I would like to make an enquiry.\nFull name: Jordan Lee\nEmail: jordan@example.com\nPhone: +65 9123 4567\nEnquiry about: Buying a home\nPreferred office: Dubai\nMessage: Looking for a three-bedroom home in 2027.\nThank you.',
     );
     expect(document.activeElement?.textContent).toContain('Your message is ready');
-    expect(decoded(within(contact).getByRole('link', { name: /Open WhatsApp/ }))).toBe(`https://wa.me/6581234567?text=${pre.textContent}`);
-    expect(within(contact).getByRole('link', { name: /Send by email/ }).getAttribute('href')).toMatch(/^mailto:enquiries@alturadevelopments\.com\?subject=Enquiry%3A%20Buying%20a%20home/);
+    expect(decoded(within(contact).getByRole('link', { name: /Open WhatsApp/ }))).toBe(`https://wa.me/6585550100?text=${pre.textContent}`);
+    expect(within(contact).getByRole('link', { name: /Send by email/ }).getAttribute('href')).toMatch(/^mailto:enquiries@altura\.example\?subject=Enquiry%3A%20Buying%20a%20home/);
     fireEvent.click(within(contact).getByRole('button', { name: /Edit details/ }));
     expect((within(contact).getByLabelText('Full name') as HTMLInputElement).value).toBe('Jordan Lee');
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -468,9 +538,126 @@ describe('Altura: demo', () => {
     expect(within(footer).getByRole('navigation', { name: 'Footer' })).toBeInTheDocument();
     expect(footer.textContent).toContain('The Canopy Residences');
     expect(footer.textContent).toContain(`© ${new Date().getFullYear()} Altura Developments. All rights reserved.`);
-    expect(within(footer).getByRole('link', { name: 'LinkedIn' })).toHaveAttribute('href', 'https://linkedin.com/company/altura-developments');
+    expect(within(footer).getByRole('link', { name: 'LinkedIn' })).toHaveAttribute('href', 'https://linkedin.com/company/altura-developments-demo');
+    for (const title of ['Company', 'Developments', 'Offices', 'Contact']) expect(footer.textContent).toContain(title);
     const wordmark = Array.from(footer.querySelectorAll('[aria-hidden="true"] p')).find((p) => p.textContent === 'Altura');
     expect(wordmark).toBeDefined();
+  });
+
+  it('semua teks yang tampil bisa diganti lewat CMS: situs berbahasa Indonesia tanpa sisa label Inggris di menu, kontak, formulir, dan footer', () => {
+    const id = {
+      about: { menu_label: 'Tentang' },
+      developments: { menu_label: 'Proyek' },
+      portfolio: { menu_label: 'Portofolio' },
+      leadership: { menu_label: 'Pimpinan' },
+      insights: { menu_label: 'Wawasan' },
+      contact: {
+        menu_label: 'Kontak',
+        phone_label: 'Telepon',
+        email_label: 'Surel',
+        hours_label: 'Jam kerja',
+        address_label: 'Kantor pusat',
+        offices_title: 'Kantor kami',
+        maps_label: 'Buka di Google Maps',
+        maps_url: 'https://maps.app.goo.gl/abc',
+      },
+      enquiry: {
+        title: 'Kirim pertanyaan',
+        text: 'Isi data singkat.',
+        interests: [{ name: 'Membeli rumah' }],
+        label_name: 'Nama lengkap',
+        label_email: 'Email Anda',
+        label_phone: 'Nomor HP',
+        label_interest: 'Keperluan',
+        label_office: 'Kantor tujuan',
+        label_message: 'Pesan',
+        optional_text: '(boleh kosong)',
+        placeholder_email: 'nama@perusahaan.co.id',
+        placeholder_phone: '+62 812 555 0100',
+        placeholder_message: 'Ceritakan kebutuhan Anda.',
+        prompt_interest: 'Pilih keperluan',
+        prompt_office: 'Kantor mana saja',
+        submit_label: 'Susun pesan saya',
+        note: 'Data tidak disimpan di situs ini.',
+        ready_title: 'Pesan Anda siap',
+        ready_text: 'Periksa lalu kirim.',
+        whatsapp_label: 'Buka WhatsApp',
+        email_label: 'Kirim lewat email',
+        edit_label: 'Ubah isian',
+        error_name: 'Tulis nama lengkap Anda.',
+        error_email: 'Tulis email yang benar.',
+        error_phone: 'Tulis nomor dengan kode negara.',
+        error_interest: 'Pilih keperluan Anda.',
+        error_message: 'Tulis pesan minimal 10 karakter.',
+        greeting: 'Halo Altura, saya ingin bertanya.',
+        closing: 'Terima kasih.',
+        subject: 'Pertanyaan',
+      },
+      footer: { menu_title: 'Perusahaan', projects_title: 'Proyek kami', offices_title: 'Kantor', contact_title: 'Hubungi kami' },
+    };
+    const container = demo(id);
+    const header = container.querySelector('header')!;
+    expect(within(header).getAllByRole('navigation', { name: 'Menu utama' })[0].textContent).toBe('TentangProyekPortofolioPimpinanWawasanKontak');
+    const contact = section(container, 'contact');
+    const footer = container.querySelector('footer')!;
+    const visible = `${contact.textContent} ${footer.textContent}`;
+    for (const english of ['Full name', 'Enquiry about', 'Preferred office', '(optional)', 'Select a topic', 'Any office', 'Prepare my message', 'Nothing is stored', 'Our offices', 'Office hours', 'Open in Google Maps', 'Company', 'Offices'])
+      expect(visible, english).not.toContain(english);
+    for (const indonesian of ['Nama lengkap', 'Nomor HP', '(boleh kosong)', 'Pilih keperluan', 'Kantor mana saja', 'Susun pesan saya', 'Data tidak disimpan', 'Kantor kami', 'Jam kerja', 'Kantor pusat', 'Buka di Google Maps', 'Perusahaan', 'Proyek kami', 'Hubungi kami'])
+      expect(visible, indonesian).toContain(indonesian);
+    const form = within(contact).getByRole('form', { name: 'Kirim pertanyaan' });
+    expect(within(form).getByLabelText('Email Anda')).toHaveAttribute('placeholder', 'nama@perusahaan.co.id');
+    fireEvent.submit(form);
+    expect(within(form).getByText('Tulis nama lengkap Anda.')).toBeInTheDocument();
+    expect(within(form).getByText('Pilih keperluan Anda.')).toBeInTheDocument();
+    fireEvent.change(within(form).getByLabelText('Nama lengkap'), { target: { value: 'Rina Putri' } });
+    fireEvent.change(within(form).getByLabelText('Email Anda'), { target: { value: 'rina@contoh.co.id' } });
+    fireEvent.change(within(form).getByLabelText('Keperluan'), { target: { value: 'Membeli rumah' } });
+    fireEvent.change(within(form).getByLabelText('Pesan'), { target: { value: 'Saya mencari rumah tiga kamar.' } });
+    vi.useFakeTimers();
+    fireEvent.submit(form);
+    act(() => {
+      vi.runAllTimers();
+    });
+    vi.useRealTimers();
+    expect(contact.querySelector('pre')!.textContent).toBe(
+      'Halo Altura, saya ingin bertanya.\nNama lengkap: Rina Putri\nEmail Anda: rina@contoh.co.id\nKeperluan: Membeli rumah\nPesan: Saya mencari rumah tiga kamar.\nTerima kasih.',
+    );
+    expect(contact.textContent).toContain('Pesan Anda siap');
+    expect(contact.textContent).toContain('Periksa lalu kirim.');
+    expect(within(contact).getByRole('link', { name: /Buka WhatsApp/ })).toBeInTheDocument();
+    expect(within(contact).getByRole('link', { name: /Kirim lewat email/ }).getAttribute('href')).toContain('subject=Pertanyaan%3A%20Membeli%20rumah');
+    expect(within(contact).getByRole('button', { name: /Ubah isian/ })).toBeInTheDocument();
+  });
+
+  it('teks kecil opsional yang dikosongkan disembunyikan; teks wajib yang dikosongkan kembali ke bawaan', () => {
+    const container = demo({
+      contact: { phone_label: '', offices_title: '' },
+      enquiry: { label_name: '', optional_text: '', note: '' },
+      footer: { menu_title: '', offices_title: '' },
+    });
+    const contact = section(container, 'contact');
+    expect(contact.textContent).not.toContain('Our offices');
+    expect(contact.textContent).not.toContain('(optional)');
+    expect(contact.textContent).not.toContain('Nothing is stored');
+    expect(within(contact).getByLabelText('Full name')).toBeInTheDocument();
+    expect(within(contact).getByLabelText('Phone')).toBeInTheDocument();
+    const footer = container.querySelector('footer')!;
+    expect(footer.textContent).not.toContain('Company');
+    expect(footer.textContent).not.toContain('Offices');
+    expect(footer.textContent).toContain('Contact');
+  });
+
+  it('pil berfoto dengan tautan video → ikon play & tautan eksternal; 4 pimpinan → 2 kolom di tablet, 4 di layar lebar', () => {
+    const leaders = [1, 2, 3, 4].map((n) => ({ name: `Leader ${n}`, role: 'Director', photo: '', linkedin: '' }));
+    const container = demo({ hero: { watch_label: 'Watch our story', watch_url: 'https://youtu.be/abc123' }, leadership: { items: leaders } });
+    const pill = within(section(container, 'hero')).getByRole('link', { name: /Watch our story/ });
+    expect(pill).toHaveAttribute('href', 'https://youtu.be/abc123');
+    expect(pill.querySelector('.lucide-play')).not.toBeNull();
+    const list = section(container, 'leadership').querySelector('ul')!;
+    expect(list.className).toContain('@3xl:grid-cols-2');
+    expect(list.className).toContain('@5xl:grid-cols-4');
+    expect(list.querySelectorAll('li')).toHaveLength(4);
   });
 
   it('datar: tidak ada kelas shadow di template (kecuali tombol melayang Shell)', () => {
@@ -570,11 +757,20 @@ describe('Altura: konten opsional kosong', () => {
     const none = demo({ contact: { whatsapp: '', email: '' } });
     const contact = section(none, 'contact');
     expect(contact.querySelector('form')).toBeNull();
-    expect(within(contact).getAllByRole('link', { name: '+65 6123 4567' }).length).toBeGreaterThan(0);
+    expect(within(contact).getAllByRole('link', { name: '+65 6555 0100' }).length).toBeGreaterThan(0);
+    expect(contact.textContent).toContain('Call our team');
     cleanup();
     const emailOnly = demo({ contact: { whatsapp: '' }, insights: { items: [] } });
     const form = section(emailOnly, 'contact').querySelector('form')!;
-    expect(form.textContent).toContain('send yourself by email.');
+    expect(form.textContent).toContain('Nothing is stored on this website.');
+    fireEvent.change(within(form).getByLabelText('Full name'), { target: { value: 'Jordan Lee' } });
+    fireEvent.change(within(form).getByLabelText('Email'), { target: { value: 'jordan@example.com' } });
+    fireEvent.change(within(form).getByLabelText('Enquiry about'), { target: { value: 'Buying a home' } });
+    fireEvent.change(within(form).getByLabelText('Message'), { target: { value: 'Looking for a three-bedroom home.' } });
+    fireEvent.submit(form);
+    const contactEmailOnly = section(emailOnly, 'contact');
+    expect(within(contactEmailOnly).queryByRole('link', { name: /Open WhatsApp/ })).toBeNull();
+    expect(within(contactEmailOnly).getByRole('link', { name: /Send by email/ })).toBeInTheDocument();
     expect(sectionKeys(emailOnly)).not.toContain('insights');
     expect(within(emailOnly.querySelector('header')!).queryByRole('link', { name: 'Insights' })).toBeNull();
   });

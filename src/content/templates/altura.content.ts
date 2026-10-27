@@ -1,7 +1,8 @@
 // Isi halaman /template/altura. Sumber fakta: src/templates/altura (schema.ts, Altura.tsx, Header.tsx, Hero.tsx, Intro.tsx,
 // Proof.tsx, Projects.tsx, People.tsx, Closing.tsx, Footer.tsx). Kata kunci: "template website perusahaan properti" di
 // paragraf pembuka; "website developer properti" dan "template company profile bahasa Inggris" di isi. Klaim wajib jujur:
-// konten demo berbahasa Inggris tetapi semua teks bisa diganti lewat CMS (termasuk ke bahasa Indonesia); formulir enquiry
+// konten demo berbahasa Inggris tetapi semua teks di setiap bagian (termasuk nama menu, label formulir, pesan galat, dan
+// judul kolom footer) bisa diganti lewat CMS, termasuk ke bahasa Indonesia; formulir enquiry
 // hanya menyusun pesan WhatsApp atau email (tanpa penyimpanan data); tidak ada sistem listing, booking, atau transaksi
 // sungguhan; nama, angka, proyek, dan penghargaan di demo fiktif. Demo: Altura Developments, Singapura (fiktif).
 import type { TemplatePageContent } from './page.types';
@@ -22,7 +23,7 @@ export const content: TemplatePageContent = {
   parts: [
     {
       name: 'Menu pil & hero dua panel',
-      text: 'Menu putih membulat yang menumpang di atas hero dan tetap menempel saat digulir, lalu foto menara di kiri dan panel krem berisi judul besar, tombol, lingkaran angka pengalaman, serta pil video.',
+      text: 'Menu putih membulat yang menumpang di atas hero dan tetap menempel saat digulir, lalu foto menara di kiri dan panel krem berisi judul besar, tombol, lingkaran angka pengalaman, serta pil berfoto yang membuka video perusahaan atau bagian proyek.',
     },
     { name: 'Tentang & tiga pilar', text: 'Judul besar dengan paragraf profil, lalu tiga kartu bernomor: gelap, berwarna tema dengan foto gedung, dan berfoto.' },
     { name: 'Deret layanan & pita angka', text: 'Hingga 8 pil layanan yang berjalan pelan, dan hingga 4 angka raksasa di atas foto cakrawala yang menghitung naik.' },
@@ -43,13 +44,14 @@ export const content: TemplatePageContent = {
     'Setiap bagian bisa disembunyikan dari CMS. Formulir enquiry memeriksa nama, email, keperluan, dan pesan, lalu menyusun pesan yang dikirim pengunjung sendiri lewat WhatsApp atau email; data tidak disimpan di website dan tidak dikirim ke server.',
   cms: [
     'Nama perusahaan, tagline, logo, dan satu warna tema; warna teks di atasnya serta nuansa pita gelap menyesuaikan otomatis.',
-    'Judul, deskripsi, foto menara, lingkaran angka, pil video, dan tombol di menu atas.',
+    'Judul, deskripsi, foto menara, lingkaran angka, pil berfoto, dan tombol di menu atas.',
     'Isi tiga pilar, pil layanan, angka, keunggulan, proyek unggulan, dan properti di portofolio beserta kategorinya.',
     'Pimpinan, penghargaan, testimoni, artikel wawasan, dan isi panel ajakan.',
     'Telepon, email, WhatsApp, jam layanan, daftar kantor, kata kunci peta, dan pilihan keperluan di formulir.',
+    'Nama menu, label kecil di kontak, judul kolom footer, dan semua teks formulir: label isian, tombol, catatan, pesan galat, serta isi pesan yang tersusun.',
   ],
   cmsNote:
-    'Konten demo berbahasa Inggris, tetapi semua teks bisa Anda ganti ke bahasa Indonesia atau bahasa lain. Label formulir dan teks kecil bawaan tetap berbahasa Inggris; versi dua bahasa dengan tombol ganti bahasa termasuk pekerjaan custom.',
+    'Konten demo berbahasa Inggris, tetapi semua teks di setiap bagian, termasuk label formulir, pesan galat, dan judul kolom footer, bisa Anda ganti ke bahasa Indonesia atau bahasa lain. Versi dua bahasa dengan tombol ganti bahasa termasuk pekerjaan custom.',
   demo: [
     'Demo {nama} memakai Altura Developments, developer dan pengelola investasi properti fiktif yang berkantor pusat di Singapura dengan kantor di Dubai, London, dan Sydney. Ada contoh menara hunian, kawasan campuran, kantor, dan resor lengkap dengan harga, spesifikasi, pimpinan, serta penghargaan.',
     'Semua nama orang, proyek, angka, harga, alamat, dan penghargaan di demo fiktif dan hanya contoh. Tulis data perusahaan Anda apa adanya, dan ganti foto Unsplash di demo dengan foto proyek serta tim Anda sendiri.',
@@ -61,7 +63,7 @@ export const content: TemplatePageContent = {
     {
       question: 'Apakah {nama} bisa dipakai dengan bahasa Indonesia?',
       answer:
-        'Bisa. Konten demo memang berbahasa Inggris untuk perusahaan yang melayani klien internasional, tetapi judul, deskripsi, menu, tombol, dan isi setiap bagian bisa Anda tulis ulang dalam bahasa Indonesia lewat CMS.',
+        'Bisa. Konten demo memang berbahasa Inggris untuk perusahaan yang melayani klien internasional, tetapi semua teks di setiap bagian, dari menu, judul, dan tombol sampai label formulir, pesan galat, dan judul kolom footer, bisa Anda tulis ulang dalam bahasa Indonesia lewat CMS.',
     },
     {
       question: 'Apakah pengunjung bisa membeli atau memesan unit langsung di website?',

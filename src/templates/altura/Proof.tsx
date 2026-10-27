@@ -63,7 +63,7 @@ export function Stats({ m }: { m: AlturaModel }) {
                     {/* dt lebih dulu di DOM (urutan dl yang benar), tampil di bawah angka */}
                     <dt className="order-last mt-3 max-w-[18ch] text-[14px] font-medium leading-snug text-white/80 @3xl:text-[15px]">{field(item, 'label')}</dt>
                     {main && (
-                      <dd className={`-mt-1 ${TYPE_A.stat}`}>
+                      <dd className={`-mt-1 ${(main + sup).length > 6 ? TYPE_A.statLong : TYPE_A.stat}`}>
                         <CountUp value={main} duration={1800} />
                         {sup && <sup className="ml-0.5 align-super text-[0.42em] font-semibold text-(--al-bright)">{sup}</sup>}
                       </dd>

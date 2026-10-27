@@ -1,7 +1,7 @@
 // Template "Altura" — "Lime landmark": company profile berbahasa Inggris untuk developer & pengelola investasi properti
 // global (referensi pemilik 2026-10-27: Spaciaz, Horizon Estate). Menu pil putih yang menumpang di atas hero DUA PANEL
-// (foto menara / panel krem dengan judul besar, lingkaran angka limau, dan pil "Watch"), lalu tentang, tiga pilar
-// bernomor (gelap / limau / foto), deret layanan berjalan, pita angka raksasa di atas cakrawala, keunggulan berikon,
+// (foto menara / panel krem dengan judul besar, lingkaran angka limau, dan pil berfoto ke video/proyek), lalu tentang,
+// tiga pilar bernomor (gelap / limau / foto), deret layanan berjalan, pita angka raksasa di atas cakrawala, keunggulan berikon,
 // proyek unggulan berbentuk akordion, portofolio berfilter, pimpinan, penghargaan berjalan, testimoni, wawasan, ajakan
 // foto malam, kontak + formulir enquiry (menyusun pesan WhatsApp/email, tanpa menyimpan data), dan footer zaitun gelap
 // dengan nama raksasa samar. Ritme putih ↔ krem ↔ zaitun gelap; satu warna tema dari CMS (limau bawaan) menurunkan semua

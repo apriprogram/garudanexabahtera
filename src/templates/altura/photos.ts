@@ -1,6 +1,8 @@
 // Registry foto demo Altura (developer properti fiktif). Semua foto asli dari Unsplash (Unsplash License, bukan
 // Unsplash+), WebP teroptimasi, kredit di public/assets/templates/photos/CREDITS.md (section "Altura"). Logo kecil
-// pengembang asli di foto hero dan nama toko di foto podium disamarkan (inpaint); foto keluarga dengan anak tidak dipakai.
+// pengembang asli di foto hero, nama toko di foto podium, sisa huruf papan nama di fasad mix-2, logo monitor di foto
+// lobi, logo oven, dan nama perusahaan di pemberat derek (skyline) disamarkan (inpaint); foto keluarga dengan anak tidak
+// dipakai.
 // Foto TIDAK diubah ke SVG (foto sebagai SVG menjadi berkas megabyte yang tampak seperti lukisan), jadi WebP + srcset.
 //
 // Alt bawaan berbahasa Inggris (bahasa konten demo), dipakai bila pembeli belum mengganti foto.
@@ -17,7 +19,7 @@ export const ALTURA_PHOTOS = definePhotos({
     ['altura-hero', 1200, 1600, 'White high-rise residential tower with planted balconies, seen from the street at dusk'],
     ['altura-impact', 960, 1200, 'Slender apartment tower with stacked balconies against a blue sky'],
     ['altura-values', 960, 1200, 'Cardboard architectural model with miniature trees on a table'],
-    ['altura-skyline', 1600, 900, 'City skyline with towers and construction cranes at dusk'],
+    ['altura-skyline', 1600, 900, 'Tower cranes above a construction site with residential high-rises and misty hills behind'],
     ['altura-team', 1200, 900, 'Architects discussing floor plans and a tablet around a table, seen from above'],
     ['altura-dev-1', 1200, 1200, 'Residential tower with curved balconies full of greenery'],
     ['altura-dev-2', 1200, 1200, 'Blue glass tower with a glazed crown at the top'],
@@ -26,7 +28,7 @@ export const ALTURA_PHOTOS = definePhotos({
     ['altura-dev-5', 1200, 1200, 'Terraced building with cascading plants behind trees'],
     ['altura-res-1', 1200, 900, 'Modern stone villa with a swimming pool, parasols and a lawn'],
     ['altura-res-2', 1200, 900, 'White modern house with a long pool and lawn under a blue sky'],
-    ['altura-com-1', 1200, 900, 'Marble office lobby with a reception desk, timber panels and plants'],
+    ['altura-com-1', 1200, 900, 'Double-height office lobby with a curved marble reception desk and copper screens'],
     ['altura-com-2', 1200, 900, 'Open office lounge with a curved sofa and city windows'],
     ['altura-hos-1', 1200, 900, 'Resort pool deck with timber sun loungers and a pavilion'],
     ['altura-hos-2', 1200, 900, 'Resort villa with a blue swimming pool and palm trees'],

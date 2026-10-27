@@ -1,8 +1,8 @@
 // Turunan konten Altura (fungsi murni, diuji di __tests__/altura.test.tsx): warna tema (pita gelap zaitun dari warna tema,
 // versi terang untuk teks di latar gelap), menu, section yang tampil, tujuan tautan "#…", tanggal en-US, filter
-// portofolio, ikon spesifikasi, angka dengan superskrip "+", dan formulir enquiry (validasi → pesan WhatsApp / email).
-// Semua tahan konten mentah (null, angka, list rusak). Formulir hanya MENYUSUN pesan: tidak ada data yang dikirim ke
-// server atau disimpan.
+// portofolio, ikon spesifikasi, angka dengan superskrip "+", tautan video, dan formulir enquiry (teks dari CMS, validasi
+// → pesan WhatsApp / email). Semua tahan konten mentah (null, angka, list rusak). Formulir hanya MENYUSUN pesan: tidak
+// ada data yang dikirim ke server atau disimpan.
 import type { CSSProperties } from 'react';
 import type { ListItem, SectionContent, SiteContent } from '../types';
 import { SOCIAL_FIELDS } from '../shared/social';
@@ -23,7 +23,7 @@ import {
   whatsappHref,
   type LinkAction,
 } from '../shared/utils';
-import { ALTURA_ACCENT } from './defaultContent';
+import { ALTURA_ACCENT, ALTURA_ENQUIRY_TEXT } from './defaultContent';
 
 // ─── Warna ────────────────────────────────────────────────────────────────────
 
@@ -72,7 +72,10 @@ export function accentIsDark(accentRaw: string): boolean {
 
 // ─── Section yang tampil ──────────────────────────────────────────────────────
 
-/** Kunci section yang punya tempat di halaman (urutan halaman; = section skema tanpa `brand`). */
+/**
+ * Kunci section yang punya tempat di halaman (urutan halaman; = section skema tanpa `brand` dan `enquiry`, yang berisi
+ * teks formulir di dalam section Kontak).
+ */
 export const PAGE_SECTIONS = [
   'hero',
   'about',
@@ -133,7 +136,7 @@ export interface AlturaNavItem {
   label: string;
 }
 
-/** Urutan menu atas: yang paling dicari pembeli, investor, dan mitra perusahaan properti. */
+/** Urutan menu atas: yang paling dicari pembeli, investor, dan mitra perusahaan properti. `label` = nama cadangan. */
 const NAV: { key: string; label: string }[] = [
   { key: 'about', label: 'About' },
   { key: 'developments', label: 'Developments' },
@@ -143,8 +146,13 @@ const NAV: { key: string; label: string }[] = [
   { key: 'contact', label: 'Contact' },
 ];
 
-/** Label menu dari label kecil section bila singkat (≤ 14 huruf, ≤ 2 kata), selain itu label bawaan. */
+/**
+ * Nama di menu: field "Nama di menu" (menu_label) dari CMS; kosong → label kecil section bila singkat (≤ 14 huruf,
+ * ≤ 2 kata); selain itu nama cadangan.
+ */
 const shortLabel = (section: SectionContent, fallback: string) => {
+  const own = text(section, 'menu_label');
+  if (own) return own;
   const eyebrow = text(section, 'eyebrow');
   return eyebrow && eyebrow.length <= 14 && eyebrow.split(/\s+/).length <= 2 ? eyebrow : fallback;
 };
@@ -292,6 +300,47 @@ export type EnquiryErrors = Partial<Record<keyof EnquiryForm, string>>;
 
 export const EMPTY_ENQUIRY: EnquiryForm = { name: '', email: '', phone: '', interest: '', office: '', message: '' };
 
+/** Semua teks formulir enquiry (section `enquiry` di CMS). */
+export type EnquiryText = { -readonly [K in keyof typeof ALTURA_ENQUIRY_TEXT]: string };
+
+/** Teks yang wajib ada agar formulir tetap bisa dipakai & terbaca (label isian, pilihan kosong, tombol, pesan galat). */
+const REQUIRED_TEXT: (keyof EnquiryText)[] = [
+  'label_name',
+  'label_email',
+  'label_phone',
+  'label_interest',
+  'label_office',
+  'label_message',
+  'prompt_interest',
+  'prompt_office',
+  'submit_label',
+  'ready_title',
+  'whatsapp_label',
+  'email_label',
+  'edit_label',
+  'error_name',
+  'error_email',
+  'error_phone',
+  'error_interest',
+  'error_message',
+];
+
+/**
+ * Teks formulir dari CMS. Teks wajib yang dikosongkan → teks bawaan (Inggris); teks lain yang dikosongkan (penanda
+ * opsional, contoh isian, catatan, keterangan, salam, penutup, subjek) → tidak ditampilkan.
+ */
+export function readEnquiryText(section: SectionContent): EnquiryText {
+  const result = {} as EnquiryText;
+  for (const key of Object.keys(ALTURA_ENQUIRY_TEXT) as (keyof EnquiryText)[]) {
+    const value = text(section, key);
+    result[key] = value || (REQUIRED_TEXT.includes(key) ? ALTURA_ENQUIRY_TEXT[key] : '');
+  }
+  return result;
+}
+
+/** Teks bawaan (untuk pemanggil tanpa konten CMS, mis. tes). */
+export const DEFAULT_ENQUIRY_TEXT: EnquiryText = { ...ALTURA_ENQUIRY_TEXT };
+
 export const validEmail = (raw: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test((raw || '').trim());
 
 /** Nomor telepon internasional: 7–15 digit setelah tanda baca dibuang, hanya angka, spasi, (), +, ., -. */
@@ -302,41 +351,64 @@ export function validPhone(raw: string): boolean {
   return digits.length >= 7 && digits.length <= 15;
 }
 
-/** Pesan galat per isian (kosong = valid). `interests` = pilihan keperluan yang tersedia (wajib dipilih bila ada). */
-export function validateEnquiry(form: EnquiryForm, options: { interests: string[]; offices: string[] }): EnquiryErrors {
+/**
+ * Pesan galat per isian (kosong = valid), teksnya dari CMS. `interests` = pilihan keperluan yang tersedia (wajib dipilih
+ * bila ada). Kantor tujuan tidak pernah galat: nilai yang tidak ada di daftar kantor dibuang saat pesan disusun.
+ */
+export function validateEnquiry(form: EnquiryForm, options: { interests: string[] }, t: EnquiryText = DEFAULT_ENQUIRY_TEXT): EnquiryErrors {
   const errors: EnquiryErrors = {};
-  if (form.name.trim().length < 2) errors.name = 'Please enter your full name.';
-  if (!validEmail(form.email)) errors.email = 'Please enter a valid email address, e.g. name@company.com.';
-  if (form.phone.trim() && !validPhone(form.phone)) errors.phone = 'Please enter a valid phone number with country code, e.g. +65 8123 4567.';
-  if (options.interests.length > 0 && !options.interests.includes(form.interest)) errors.interest = 'Please choose what your enquiry is about.';
-  if (form.office && !options.offices.includes(form.office)) errors.office = 'Please choose one of our offices.';
-  if (form.message.trim().length < 10) errors.message = 'Please tell us a little more (at least 10 characters).';
+  if (form.name.trim().length < 2) errors.name = t.error_name;
+  if (!validEmail(form.email)) errors.email = t.error_email;
+  if (form.phone.trim() && !validPhone(form.phone)) errors.phone = t.error_phone;
+  if (options.interests.length > 0 && !options.interests.includes(form.interest)) errors.interest = t.error_interest;
+  if (form.message.trim().length < 10) errors.message = t.error_message;
   return errors;
 }
 
 /** Urutan isian untuk fokus ke galat pertama. */
 export const ENQUIRY_ORDER: (keyof EnquiryForm)[] = ['name', 'email', 'phone', 'interest', 'office', 'message'];
 
-/** Isi pesan enquiry (baris per isian; isian opsional yang kosong tidak ikut). */
-export function enquiryMessage(company: string, form: EnquiryForm): string {
-  const rows = [
-    `Name: ${form.name.trim()}`,
-    `Email: ${form.email.trim()}`,
-    form.phone.trim() && `Phone: ${form.phone.trim()}`,
-    form.interest && `Enquiry about: ${form.interest}`,
-    form.office && `Preferred office: ${form.office}`,
-    `Message: ${form.message.trim().replace(/\s+/g, ' ')}`,
-  ].filter(Boolean);
-  return `Hello ${company}, I would like to make an enquiry.\n${rows.join('\n')}\nThank you.`;
+/**
+ * Isi pesan enquiry: salam pembuka, satu baris "Label: isi" per isian (label = label isian di formulir; isian opsional
+ * yang kosong tidak ikut), lalu penutup. Salam/penutup kosong di CMS → baris itu tidak ada.
+ */
+export function enquiryMessage(t: EnquiryText, form: EnquiryForm): string {
+  const row = (label: string, value: string) => (value ? `${label}: ${value}` : '');
+  return [
+    t.greeting,
+    row(t.label_name, form.name.trim()),
+    row(t.label_email, form.email.trim()),
+    row(t.label_phone, form.phone.trim()),
+    row(t.label_interest, form.interest),
+    row(t.label_office, form.office),
+    row(t.label_message, form.message.trim().replace(/\s+/g, ' ')),
+    t.closing,
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
-/** Subjek email enquiry. */
-export const enquirySubject = (form: EnquiryForm): string => `Enquiry${form.interest ? `: ${form.interest}` : ''} – ${form.name.trim()}`;
+/** Subjek email enquiry: "<subjek CMS>: <keperluan> – <nama>" (bagian kosong dilewati). */
+export const enquirySubject = (t: EnquiryText, form: EnquiryForm): string =>
+  [[t.subject, form.interest].filter(Boolean).join(': '), form.name.trim()].filter(Boolean).join(' – ');
 
 /** mailto: dengan subjek & isi; email perusahaan tidak valid → "". */
-export function enquiryMailto(email: string, form: EnquiryForm, body: string): string {
+export function enquiryMailto(email: string, subject: string, body: string): string {
   const base = mailHref(email);
-  return base ? `${base}?subject=${encodeURIComponent(enquirySubject(form))}&body=${encodeURIComponent(body)}` : '';
+  return base ? `${base}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : '';
+}
+
+// ─── Pil berfoto di hero ──────────────────────────────────────────────────────
+
+/** Tautan yang benar-benar video (YouTube, Vimeo, Loom, Wistia, Dailymotion, TikTok, video Facebook, atau file video). */
+export function isVideoUrl(href: string): boolean {
+  const value = (href || '').trim().toLowerCase();
+  const file = /\.(mp4|webm|mov|m4v)([?#]|$)/.test(value);
+  if (value.startsWith('/') && !value.startsWith('//')) return file;
+  if (!/^https?:\/\//.test(value)) return false;
+  if (/^https?:\/\/([a-z0-9-]+\.)*(youtube\.com|youtu\.be|youtube-nocookie\.com|vimeo\.com|loom\.com|wistia\.com|wistia\.net|dailymotion\.com|dai\.ly|tiktok\.com|fb\.watch)\//.test(value)) return true;
+  if (/^https?:\/\/([a-z0-9-]+\.)*facebook\.com\/.*\/videos?\//.test(value)) return true;
+  return file;
 }
 
 // ─── Lain-lain ────────────────────────────────────────────────────────────────
@@ -399,6 +471,8 @@ export function readAltura(content: SiteContent) {
 
   const phone = text(contact, 'phone');
   const email = text(contact, 'email');
+  const enquiry = section('enquiry');
+  const watchAction = linkOr(text(hero, 'watch_url'), sectionAction('developments') ?? sectionAction('portfolio'));
 
   return {
     brand,
@@ -416,6 +490,9 @@ export function readAltura(content: SiteContent) {
     insights: section('insights'),
     cta: section('cta'),
     contact,
+    enquiry,
+    /** Teks formulir enquiry (cadangan Inggris untuk teks wajib yang dikosongkan) */
+    enquiryText: readEnquiryText(enquiry),
     footer,
     companyName,
     tagline: text(brand, 'tagline'),
@@ -438,8 +515,10 @@ export function readAltura(content: SiteContent) {
     headerAction: linkOr(text(hero, 'header_url'), startAction),
     /** Tombol hero: tautan sendiri, kalau kosong ke Pilar, Proyek, atau Kontak */
     primaryAction: linkOr(text(hero, 'primary_url'), sectionAction('pillars') ?? sectionAction('developments') ?? startAction),
-    /** Pil video hero: tautan sendiri (mis. YouTube), kalau kosong ke Proyek atau Portofolio */
-    watchAction: linkOr(text(hero, 'watch_url'), sectionAction('developments') ?? sectionAction('portfolio')),
+    /** Pil berfoto hero: tautan sendiri (mis. YouTube), kalau kosong ke Proyek atau Portofolio */
+    watchAction,
+    /** Ikon play hanya bila pil benar-benar membuka video; selain itu ikon panah (tidak menjanjikan film) */
+    watchIsVideo: watchAction?.kind === 'external' && isVideoUrl(watchAction.href),
     nav: navItems(content),
     socials: socialLinks(footer),
     offices: officesOf(contact),

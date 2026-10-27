@@ -1,5 +1,6 @@
 // Footer Altura: panel zaitun gelap membulat di dalam gutter (sama dengan pita angka & proyek). Atas: logo + deskripsi +
-// media sosial (lingkaran bergaris), lalu kolom tautan: menu, proyek unggulan, kantor, kontak. Bawah: hak cipta otomatis
+// media sosial (lingkaran bergaris), lalu kolom tautan: menu, proyek unggulan, kantor, kontak (judul kolom dari CMS;
+// kosong = tanpa judul). Bawah: hak cipta otomatis
 // dari nama perusahaan + tagline, dan nama perusahaan raksasa yang samar (dekoratif, aria-hidden) terpotong di tepi bawah.
 import type { CSSProperties } from 'react';
 import { Reveal } from '../shared/Animated';
@@ -33,6 +34,11 @@ export function Footer({ m }: { m: AlturaModel }) {
   const wordmark = wordmarkOf(m.companyName);
   // Ukuran wordmark: selebar isi footer (≈ 0,62em per huruf), paling besar 17% lebar template
   const fit = { fontSize: `min(17cqw, calc((100cqw - 40px) / ${(Math.max(4, wordmark.length) * 0.62).toFixed(2)}))` } as CSSProperties;
+  /** Judul kolom dari CMS; kosong → tanpa judul (daftarnya tetap rapat ke atas) */
+  const colTitle = (key: string) => {
+    const title = text(footer, key);
+    return title ? <p className={`mb-4 ${COL_TITLE}`}>{title}</p> : null;
+  };
 
   return (
     <footer
@@ -72,8 +78,8 @@ export function Footer({ m }: { m: AlturaModel }) {
 
               {m.nav.length > 0 && (
                 <nav aria-label="Footer" className="min-w-0 @5xl:col-span-2">
-                  <p className={COL_TITLE}>Company</p>
-                  <ul className="mt-4 grid gap-0.5">
+                  {colTitle('menu_title')}
+                  <ul className="grid gap-0.5">
                     {m.nav.map((item) => (
                       <li key={item.key}>
                         <ActionLink action={{ kind: 'section', target: item.key }} className={COL_LINK}>
@@ -87,8 +93,8 @@ export function Footer({ m }: { m: AlturaModel }) {
 
               {developments.length > 0 && (
                 <div className="min-w-0 @5xl:col-span-2">
-                  <p className={COL_TITLE}>{text(m.developments, 'eyebrow') || 'Developments'}</p>
-                  <ul className="mt-4 grid gap-0.5">
+                  {colTitle('projects_title')}
+                  <ul className="grid gap-0.5">
                     {developments.map((item, i) => (
                       <li key={`${field(item, 'name')}-${i}`}>
                         <ActionLink action={{ kind: 'section', target: 'developments' }} className={COL_LINK}>
@@ -102,8 +108,8 @@ export function Footer({ m }: { m: AlturaModel }) {
 
               {m.offices.length > 0 && (
                 <div className="min-w-0 @5xl:col-span-2">
-                  <p className={COL_TITLE}>Offices</p>
-                  <ul className="mt-4 grid gap-2 text-[14.5px] text-white/75">
+                  {colTitle('offices_title')}
+                  <ul className="grid gap-2 text-[14.5px] text-white/75">
                     {m.offices.map((office, i) => (
                       <li key={`${office.city}-${i}`} className="leading-snug">
                         <span className="block font-semibold text-white">{office.city}</span>
@@ -116,8 +122,8 @@ export function Footer({ m }: { m: AlturaModel }) {
 
               {(tel || mail || hours) && (
                 <div className="min-w-0 @5xl:col-span-3">
-                  <p className={COL_TITLE}>Contact</p>
-                  <ul className="mt-4 grid gap-0.5 text-[14.5px] text-white/75">
+                  {colTitle('contact_title')}
+                  <ul className="grid gap-0.5 text-[14.5px] text-white/75">
                     {tel && (
                       <li>
                         <ActionLink action={{ kind: 'external', href: tel }} className={COL_LINK}>

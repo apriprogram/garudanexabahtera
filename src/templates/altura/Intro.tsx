@@ -4,7 +4,7 @@
 // dan `amenities` (deret pil bergaris berisi teks + pil foto kecil yang berjalan pelan).
 import { Marquee, Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
-import { stagger } from '../shared/motion';
+import { stagger, useMotionEnabled } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, hasImage, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
@@ -55,7 +55,7 @@ export function Pillars({ m }: { m: AlturaModel }) {
               <Reveal as="li" key={`${field(item, 'title')}-${i}`} delay={stagger(i, 100)} className="min-w-0">
                 <article
                   data-tpl-tone={dark || m.accentTone ? 'inverse' : undefined}
-                  className={`group relative isolate flex h-full min-h-[380px] flex-col overflow-hidden rounded-[28px] p-6 [--al-notch-bg:#fff] @3xl:min-h-[440px] @5xl:min-h-[480px] @5xl:p-8 ${
+                  className={`group relative isolate flex h-full min-h-[380px] flex-col overflow-hidden rounded-[28px] rounded-br-none p-6 [--al-notch-bg:#fff] @3xl:min-h-[440px] @5xl:min-h-[480px] @5xl:p-8 ${
                     kind === 'accent' ? 'bg-(--tpl-accent) text-(--tpl-on-accent)' : 'bg-(--al-deep) text-white'
                   }`}
                 >
@@ -94,7 +94,7 @@ export function Pillars({ m }: { m: AlturaModel }) {
                   </div>
                   {kind === 'accent' && hasImage(image) && (
                     // Foto gedung di bagian bawah kartu warna tema, memudar ke atas (tampak "keluar" dari kartu)
-                    <div className="relative -mb-6 mr-[64px] mt-6 min-h-[170px] flex-1 @5xl:-mb-8 @5xl:mr-[68px]">
+                    <div className="pointer-events-none relative -mb-6 mr-[64px] mt-6 min-h-[170px] flex-1 @5xl:-mb-8 @5xl:mr-[68px]">
                       <KitPhoto
                         src={image}
                         alt={ALTURA_PHOTOS.alt(image, field(item, 'title'))}
@@ -125,6 +125,10 @@ export function Pillars({ m }: { m: AlturaModel }) {
 export function Amenities({ m }: { m: AlturaModel }) {
   const items = m.items('amenities');
   const title = text(m.amenities, 'title') || 'Highlights';
+  // Gerak mati (reduced-motion / pratinjau): daftar statis membungkus → pil lebih kecil di HP dan pil foto hanya mulai
+  // tablet, agar tidak menjadi tumpukan pil besar satu per baris
+  const moving = useMotionEnabled();
+  const pillSize = moving ? 'h-16 px-7 text-[19px]' : 'h-12 px-5 text-[16px] @3xl:h-16 @3xl:px-7 @3xl:text-[19px]';
   return (
     <TemplateSection sectionKey="amenities" className={`pb-16 @3xl:pb-24 ${m.shown('pillars') || m.shown('about') ? '' : 'pt-16 @3xl:pt-24'}`}>
       <h2 className="sr-only">{title}</h2>
@@ -132,20 +136,21 @@ export function Amenities({ m }: { m: AlturaModel }) {
         label={title}
         duration={48}
         gap={14}
-        staticClassName={`${CONTAINER} flex flex-wrap items-center justify-center gap-3`}
+        staticClassName={`${CONTAINER} flex flex-wrap items-center justify-center gap-2 @3xl:gap-3`}
+        itemClassName={moving ? '' : 'has-[.al-amenity-photo]:hidden @3xl:has-[.al-amenity-photo]:flex'}
       >
         {items.flatMap((item, i) => {
           const image = field(item, 'image');
           const pill = (
             <span
               key={`t-${i}`}
-              className={`${DISPLAY} flex h-16 max-w-[330px] items-center rounded-full px-7 text-[19px] font-medium tracking-[-0.02em] ring-1 ring-inset ring-[#141612]/[0.14] @5xl:h-[76px] @5xl:max-w-none @5xl:px-9 @5xl:text-[24px] ${C.ink}`}
+              className={`${DISPLAY} flex max-w-[330px] items-center rounded-full font-medium tracking-[-0.02em] ring-1 ring-inset ring-[#141612]/[0.14] ${pillSize} @5xl:h-[76px] @5xl:max-w-none @5xl:px-9 @5xl:text-[24px] ${C.ink}`}
             >
               <span className="truncate">{field(item, 'text')}</span>
             </span>
           );
           return hasImage(image)
-            ? [<KitPhoto key={`p-${i}`} src={image} alt="" fallback="none" sizes="200px" className="h-16 w-[124px] rounded-full @5xl:h-[76px] @5xl:w-[148px]" />, pill]
+            ? [<KitPhoto key={`p-${i}`} src={image} alt="" fallback="none" sizes="200px" className="al-amenity-photo h-16 w-[124px] rounded-full @5xl:h-[76px] @5xl:w-[148px]" />, pill]
             : [pill];
         })}
       </Marquee>

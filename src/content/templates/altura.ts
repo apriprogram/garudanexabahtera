@@ -1,7 +1,8 @@
 // Altura: salinan SEO & H1 (pola Lampiran A). Isi panjang halaman: altura.content.ts.
 // Kata kunci utama "template website perusahaan properti" (judul, meta, H1, paragraf pembuka); pendukung "website
 // developer properti" dan "template company profile bahasa Inggris" (isi halaman). Jujur: konten demo berbahasa Inggris
-// dan semuanya bisa diganti lewat CMS (termasuk ke bahasa Indonesia); formulir enquiry hanya menyusun pesan WhatsApp/email
+// dan semua teks di setiap bagian (termasuk label formulir & pesan galat) bisa diganti lewat CMS, termasuk ke bahasa
+// Indonesia; formulir enquiry hanya menyusun pesan WhatsApp/email
 // (tanpa penyimpanan data); tidak ada sistem listing, booking, atau transaksi sungguhan; nama & angka demo fiktif.
 import type { TemplateSeoCopy } from '../../seo/templateSeo';
 import type { TemplatePageCopy } from './page.types';
