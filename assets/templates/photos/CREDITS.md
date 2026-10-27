@@ -577,6 +577,8 @@ dengan orang atau perusahaan di foto.
 | `saudagar-hero-*` | Tangan petani memetik buah kopi merah dari dahan | https://unsplash.com/photos/imp-b2kcb08 | LIVESTART STIVEN |
 | `saudagar-kakao-*` | Buah kakao kuning di batang pohon berlumut | https://unsplash.com/photos/VqyN9F5f74E | Kawê Rodrigues |
 | `saudagar-rempah-*` | Biji pala berselaput fuli merah di atas daun pisang | https://unsplash.com/photos/b9mELJxNxq0 | Hugh Whyte |
+| `saudagar-buah-kakao-*` | Tangan memegang buah kakao terbelah berisi biji (tab Kakao; gelang di pergelangan buram, tanpa tulisan terbaca) | https://unsplash.com/photos/MjE9prBhLLs | Qdal Studio |
+| `saudagar-cengkeh-*` | Cengkeh kering di sendok kayu dan di atas meja kayu (tab Rempah) | https://unsplash.com/photos/A3T48p42n38 | Maria Kovalets |
 | `saudagar-kopi-*` | Tangan meraup biji kopi hijau | https://unsplash.com/photos/-4hu4CU1T_k | Mariliz López |
 | `saudagar-kelapa-*` | Dua belahan kelapa di atas kain linen | https://unsplash.com/photos/nUApCUJ1M6k | Kateryna Hliznitsova |
 | `saudagar-sortir-*` | Tangan memilah biji kopi di atas keranjang plastik | https://unsplash.com/photos/VHgyzbVvr7I | Nguyen Dang Hoang Nhu |
@@ -598,15 +600,17 @@ Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (dipotong 21:9 di desktop da
 mendatar 3:2 `-1200.webp` + `-800.webp` (tentang, layanan, pasar, galeri); galeri lebar 16:9 `-1600.webp` + `-800.webp`;
 potret testimoni 1:1 `-480.webp` + `-240.webp`. Dicek lisensinya di halaman foto (foto gratis di bawah Unsplash License,
 bukan Unsplash+) 2026-10-27, lalu dipotong dan dikompres ke WebP. Suntingan (blur lokal saat dipotong, tanpa inpaint):
-nama pelayaran pada trailer di hero, logo operator terminal pada crane dan nama pelayaran pada kontainer di foto tentang
-dan FCL, nama kapal/pelayaran di foto terminal galeri, serta merek pada jangka sorong di foto sourcing dikaburkan; foto
-lain hanya dipotong. Foto pelabuhan tidak semuanya diambil di Indonesia dan demo tidak menyebut nama pelabuhan di foto.
+nama pelayaran pada trailer di hero, tulisan merek pada balok crane, papan nama, dan nama pelayaran pada kontainer di
+foto tentang (bidang persegi kecil, blur ringan), logo operator terminal di foto FCL, serta merek pada jangka sorong di
+foto sourcing dikaburkan; foto terminal galeri dipotong di atas kapal yang bersandar sehingga nama kapal/pelayaran tidak
+ikut (tanpa blur); foto lain hanya dipotong. Foto pelabuhan tidak semuanya diambil di Indonesia dan demo tidak menyebut
+nama pelabuhan di foto.
 Nama perusahaan, pembeli, dan orang di testimoni demo fiktif dan tidak berhubungan dengan orang atau perusahaan di foto.
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
 | `dermaga-hero-*` | Deretan crane peti kemas di terminal saat senja (dipotong; nama pelayaran pada trailer dikaburkan) | https://unsplash.com/photos/KGVL9SOaGBI | Griffin Wooldridge |
-| `dermaga-tentang-*` | Dua petugas berhelm memeriksa tablet di lapangan penumpukan kontainer (logo crane, kontainer, helm, dan rompi dikaburkan) | https://unsplash.com/photos/V89PqZteK-k | Haris Illahi |
+| `dermaga-tentang-*` | Dua petugas berhelm memeriksa tablet di lapangan penumpukan kontainer (tulisan merek pada balok crane, papan nama, dan nama pelayaran pada dua kontainer dikaburkan; tanda kecil di helm dan rompi tidak terbaca pada ukuran tampil) | https://unsplash.com/photos/V89PqZteK-k | Haris Illahi |
 | `dermaga-fcl-*` | Crane biru mengangkat satu kontainer di dermaga (logo operator terminal dikaburkan) | https://unsplash.com/photos/pzFY0ZT6eco | Pix Tresa |
 | `dermaga-konsolidasi-*` | Palet kardus terbungkus plastik di gudang | https://unsplash.com/photos/I-_wYj9yOzw | Vida Huang |
 | `dermaga-dokumen-*` | Tangan menandatangani dokumen di meja kerja | https://unsplash.com/photos/EwmBLsCDIgo | Koda Bookkeeping |
@@ -614,7 +618,7 @@ Nama perusahaan, pembeli, dan orang di testimoni demo fiktif dan tidak berhubung
 | `dermaga-inspeksi-*` | Tangan merekatkan lakban pada paket kertas cokelat | https://unsplash.com/photos/mErtCMDgUEM | Compagnons |
 | `dermaga-trucking-*` | Truk kontainer di jalan raya berkabut di antara perbukitan | https://unsplash.com/photos/jBPUR0Xn7O4 | Tuan Nguyen |
 | `dermaga-kapal-*` | Kapal kontainer di laut lepas dilihat dari atas | https://unsplash.com/photos/1cqIcrWFQBI | Venti Views |
-| `dermaga-galeri-terminal-*` | Crane, tangki, dan lapangan penumpukan kontainer di tepi laut (dipotong rapat dari foto 4000 px; nama kapal, pelayaran, dan papan iklan dikaburkan) | https://unsplash.com/photos/gs4PknqHjAU | Alexander Gluschenko |
+| `dermaga-galeri-terminal-*` | Crane, tangki, dan lapangan penumpukan kontainer di tepi laut (dipotong dari foto 4000 px di atas kapal yang bersandar dan di kiri kontainer bertulisan merek, jadi tanpa nama kapal atau pelayaran; tanpa blur) | https://unsplash.com/photos/gs4PknqHjAU | Alexander Gluschenko |
 | `dermaga-galeri-forklift-*` | Forklift oranye di gudang rak palet dan papan | https://unsplash.com/photos/6tAIO3pxde4 | Pickawood |
 | `dermaga-galeri-bolder-*` | Tali tambat kapal pada bolder besi di tepi laut | https://unsplash.com/photos/6sr93DmUWAE | nicola dowie |
 | `dermaga-galeri-kontainer-*` | Dua kontainer merah dan oranye di bawah langit biru | https://unsplash.com/photos/jLVCfnyO3Zc | Abdelhamid Azoui |
@@ -629,17 +633,18 @@ Hero tegak 4:5 `-1440.webp` + `-1200.webp` + `-800.webp` (ditampilkan sebagai bi
 `-800.webp` (jangkauan `-1600.webp` + `-800.webp`); potret 1:1 `-480.webp` + `-240.webp`. Dicek lisensinya di halaman foto
 (foto gratis di bawah Unsplash License, bukan Unsplash+) 2026-10-27, lalu dipotong dan dikompres ke WebP. Suntingan (blur
 lokal bertepi lembut saat dipotong, tanpa inpaint): merek mesin pada foto mesin injeksi, merek pengendali dan cetakan kaus
-pada foto teknisi, logo pada sweter petugas gudang, cetakan ukuran/merek pada seal bearing, tulisan tangan pada satu
-gulungan baja, serta nama kapal, logo cerobong, nama pelayaran pada kontainer, dan label crane pada foto pelabuhan
-dikaburkan. Foto hero diberi penghalusan ringan (blur sekitar 1 px) agar tiap varian muat di bawah 140 KB; foto lain hanya
-dipotong. Foto pelabuhan dan pabrik tidak semuanya diambil di Indonesia dan demo tidak menyebut nama tempat di foto. Nama
-perusahaan, klien, dan orang di testimoni demo fiktif dan tidak berhubungan dengan orang atau perusahaan di foto.
+pada foto teknisi, logo pada sweter petugas gudang, cetakan ukuran/merek pada seal bearing, label produsen pada gulungan
+baja dan tulisan berikut nomor telepon pada kabin di latar foto baja, serta nama kapal, logo cerobong, nama pelayaran pada
+kontainer, dan label crane pada foto pelabuhan dikaburkan. Foto hero diberi penghalusan ringan (blur sekitar 1 px) agar
+tiap varian muat di bawah 140 KB; foto lain hanya dipotong. Foto pelabuhan, pabrik, dan baja tidak semuanya diambil di
+Indonesia dan demo tidak menyebut nama tempat di foto. Nama perusahaan, klien, dan orang di testimoni demo fiktif dan
+tidak berhubungan dengan orang atau perusahaan di foto.
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
 | `nusaniaga-hero-*` | Lorong gudang dengan rak palet tinggi berisi kardus (penghalusan ringan) | https://unsplash.com/photos/DUG-pc65Yj0 | Peaky_82 |
 | `nusaniaga-resin-*` | Tumpukan butiran putih di atas permukaan gelap (dipotong) | https://unsplash.com/photos/OMwXejh6qEA | XRD Chemical |
-| `nusaniaga-baja-*` | Gulungan baja lembaran berjajar di gudang, hitam putih (tulisan tangan pada satu gulungan dikaburkan) | https://unsplash.com/photos/-kWkoUkFyp0 | Morteza Mohammadi |
+| `nusaniaga-baja-*` | Dua gulungan baja lembaran diikat rantai di atas trailer truk pada siang hari (dipotong sehingga kabin truk bermerek tidak ikut; dua label produsen pada gulungan besar serta tulisan dan nomor telepon pada kabin oranye di latar dikaburkan) | https://unsplash.com/photos/oPV8xLBrZrQ | Mohammad Hossein Farahzadi |
 | `nusaniaga-benang-*` | Gulungan benang putih di rak mesin pabrik | https://unsplash.com/photos/0WEX4EEMs6w | Kevin Limbri |
 | `nusaniaga-mesin-injeksi-*` | Deretan mesin injeksi plastik dengan lengan robot (dipotong; merek mesin dikaburkan) | https://unsplash.com/photos/IWJNXtezL2I | RPWORLD |
 | `nusaniaga-cnc-*` | Spindel mesin CNC memotong blok logam dengan cairan pendingin | https://unsplash.com/photos/sxtClAGwRck | aluminum Zheng ji |
