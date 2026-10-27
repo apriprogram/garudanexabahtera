@@ -1,4 +1,11 @@
 {
+  "altura": {
+    "company_name": "Altura Developments",
+    "tagline": "Global real estate developer & investment manager",
+    "description": "Altura Developments creates and manages residential towers, mixed-use districts, hotels and offices across Singapore, Dubai, London and Sydney.",
+    "logo": "",
+    "posts": false
+  },
   "arena-club": {
     "company_name": "Lintang Padel & Tenis Club",
     "tagline": "Main lebih seru, latihan lebih terarah",
@@ -34,6 +41,13 @@
     "logo": "",
     "posts": false
   },
+  "dermaga": {
+    "company_name": "PT Lintas Dermaga Nusantara",
+    "tagline": "Jasa Ekspor Impor Surabaya",
+    "description": "Kami mengurus ekspor dan impor barang umum dari Surabaya: konsolidasi LCL, kontainer FCL, dokumen pengapalan, hingga serah terima di negara tujuan.",
+    "logo": "",
+    "posts": false
+  },
   "finova": {
     "company_name": "Lumbung Arta",
     "tagline": "Kelola uang keluarga dengan lebih tenang",
@@ -62,10 +76,31 @@
     "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
     "posts": true
   },
+  "nusaniaga": {
+    "company_name": "PT Arunika Niaga Internasional",
+    "tagline": "Importir Bahan Baku & Mesin",
+    "description": "Kami mencari pemasok di luar negeri, mengurus impor, menyimpan stok di gudang Cikarang, lalu mengantar bahan baku dan mesin ke pabrik Anda.",
+    "logo": "",
+    "posts": false
+  },
+  "portline": {
+    "company_name": "Quaymoor Group",
+    "tagline": "Integrated shipping & logistics, Rotterdam",
+    "description": "Quaymoor Group moves containers, energy and project cargo for customers in more than 90 countries, through one network of ships, terminals and inland logistics.",
+    "logo": "",
+    "posts": false
+  },
   "puncakgear": {
     "company_name": "Tapak Rimba Outdoor",
     "tagline": "Toko & Sewa Alat Pendakian di Malang",
     "description": "Tenda, carrier, sleeping bag, dan sepatu gunung yang teruji di jalur Indonesia. Beli atau sewa di basecamp kami di Malang.",
+    "logo": "",
+    "posts": false
+  },
+  "saudagar": {
+    "company_name": "PT Saudagar Hasil Bumi",
+    "tagline": "Eksportir Kopi, Kakao & Rempah",
+    "description": "PT Saudagar Hasil Bumi memasok kopi, kakao, cengkeh, pala, dan kopra dari kebun mitra di Sulawesi untuk pembeli luar negeri lewat Pelabuhan Makassar.",
     "logo": "",
     "posts": false
   },
@@ -94,6 +129,13 @@
     "company_name": "TaniMakmur",
     "tagline": "Toko tani online: benih, pupuk & alat tani",
     "description": "Benih, pupuk, pestisida organik, dan alat tani skala kecil, juga dalam paket per jenis tanaman. Bingung mulai? Tanya penyuluh kami lewat WhatsApp, gratis.",
+    "logo": "",
+    "posts": false
+  },
+  "velora": {
+    "company_name": "Velora Motor Group",
+    "tagline": "Premium cars & electric mobility · Zurich",
+    "description": "Velora Motor Group designs, builds and services premium cars and electric mobility for drivers in 64 countries, from our engineering base in Zurich.",
     "logo": "",
     "posts": false
   }

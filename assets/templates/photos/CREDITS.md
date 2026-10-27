@@ -423,3 +423,230 @@ orang tua, dan alumni di demo fiktif dan tidak berhubungan dengan orang atau sek
 | `bestari-ortu-1-*` | Ibu berambut panjang tersenyum (dipotong dari foto keluarga) | https://unsplash.com/photos/GVnag1XQ_4U | Fery Abdurrahman |
 | `bestari-ortu-2-*` | Bapak berkacamata tersenyum (dipotong dari foto dua orang) | https://unsplash.com/photos/Ay3P0TQnzzs | Soya__ bear |
 | `bestari-alumni-1-*` | Perempuan muda berkerudung abu-abu berkacamata | https://unsplash.com/photos/Rjy1a_VmF-U | Ilmi Amali Q.A |
+
+## Altura (Altura Developments, fiktif)
+
+Hero menara 3:4 `-1200.webp` + `-800.webp`; tegak 4:5 `-960.webp` + `-800.webp` (kartu pilar, potret pimpinan, foto
+testimoni); persegi `-1200.webp` + `-800.webp` (kartu proyek); mendatar 4:3 / 3:2 `-1200.webp` + `-800.webp`; pita angka &
+ajakan 16:9 `-1600.webp` + `-800.webp`. Diambil dari daftar kandidat foto GRATIS (Unsplash License, bukan Unsplash+) yang
+dikumpulkan sesi integrasi 2026-10-27, lalu dipotong dan dikompres ke WebP. Nama fotografer sudah diverifikasi sesi
+integrasi di halaman foto (2026-10-27), termasuk dua foto pengganti dari putaran review (`altura-skyline`,
+`altura-com-1`). Logo kecil pengembang asli di foto hero, nama toko di dinding podium, sisa huruf papan nama di
+fasad mix-2, logo di punggung monitor lobi, logo kecil di pintu oven, dan nama perusahaan di pemberat derek disamarkan
+(inpaint/clone); foto keluarga dengan wajah anak tidak dipakai. Beberapa foto adalah render arsitektur. Nama
+perusahaan, proyek, pimpinan, penghuni, dan alamat di demo fiktif dan tidak berhubungan dengan orang atau gedung di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `altura-hero-*` | Menara hunian putih berbalkon bertanaman saat senja (render arsitektur; logo kecil di tiang lobi & dinding gerbang disamarkan) | https://unsplash.com/photos/z72tjb_3tss | Aalo Lens |
+| `altura-impact-*` | Menara apartemen ramping berbalkon bertingkat | https://unsplash.com/photos/vfosqiRPSNo | Allen Y |
+| `altura-values-*` | Maket arsitektur karton dengan pohon miniatur | https://unsplash.com/photos/Mb32AJpqd-g | Zhouxing Lu |
+| `altura-skyline-*` | Derek menara di atas proyek konstruksi dengan menara hunian dan bukit berkabut, hitam-putih (nama perusahaan di pemberat derek disamarkan) | https://unsplash.com/photos/hbe2OSnR4vU | Raymond Yeung |
+| `altura-team-*` | Tim arsitek berdiskusi di atas denah, dilihat dari atas | https://unsplash.com/photos/PZilVx5rWF4 | Vitaly Gariev |
+| `altura-dev-1-*` | Menara hunian berbalkon melengkung penuh tanaman | https://unsplash.com/photos/--_TSh-lvHI | Alhasan Husni |
+| `altura-dev-2-*` | Menara kaca biru bermahkota kaca | https://unsplash.com/photos/9DOnZn0Ywm0 | Daniel Romero |
+| `altura-dev-3-*` | Menara apartemen ramping bergaris putih | https://unsplash.com/photos/slRQloffRdM | 3DVISU |
+| `altura-dev-4-*` | Gedung apartemen putih berbalkon dan berpergola | https://unsplash.com/photos/FIc4d8PsaBg | Thomas K |
+| `altura-dev-5-*` | Gedung bertingkat dengan teras tanaman menjuntai | https://unsplash.com/photos/pxqzxAYtQwY | Jz Lim |
+| `altura-res-1-*` | Vila modern berkolam renang dengan payung dan halaman rumput (render) | https://unsplash.com/photos/WaC-JFfF21M | Salman Saqib |
+| `altura-res-2-*` | Rumah modern putih berkolam memanjang | https://unsplash.com/photos/e5b1RBCHP2w | Salvo Media LLC |
+| `altura-com-1-*` | Lobi kantor dua lantai dengan meja resepsionis marmer melengkung dan panel tembaga (render; logo di punggung monitor disamarkan) | https://unsplash.com/photos/6OKmxpQfgwk | Haris Illahi |
+| `altura-com-2-*` | Lounge kantor terbuka dengan sofa melengkung (render) | https://unsplash.com/photos/QVVHV24DA_o | Aalo Lens |
+| `altura-hos-1-*` | Dek kolam resor dengan kursi berjemur kayu (render) | https://unsplash.com/photos/yEEKtvDuRuU | Nusrat Ali |
+| `altura-hos-2-*` | Vila resor berkolam renang dan pohon palem (render) | https://unsplash.com/photos/F1q1V0TOuYE | Salman Saqib |
+| `altura-mix-1-*` | Kawasan campuran: menara, podium, palem, dan air mancur (nama toko di dinding podium disamarkan) | https://unsplash.com/photos/UFVlfxAbfjU | Dubai Prod |
+| `altura-mix-2-*` | Menara hunian bertingkat tinggi berbalkon (sisa huruf papan nama tegak di fasad lengkung disamarkan) | https://unsplash.com/photos/FPSVXh28BOI | Pavlo Antonio |
+| `altura-leader-1-*` | Potret perempuan berambut pirang berblazer kotak-kotak (dipotong setengah badan) | https://unsplash.com/photos/14sDcYjYl9Q | Md Ishak Rahman |
+| `altura-leader-2-*` | Potret laki-laki berjas biru tua (dipotong setengah badan) | https://unsplash.com/photos/oBvOQWDZBXY | Md Ishak Rahman |
+| `altura-leader-3-*` | Potret laki-laki berjas gelap dan berdasi bergaris (dipotong setengah badan) | https://unsplash.com/photos/ml-pxK0Ovmw | steffen wienberg |
+| `altura-living-*` | Ruang keluarga apartemen mewah (dipotong tanpa layar TV bertulisan) | https://unsplash.com/photos/LqGf5UvHCZ8 | Aalo Lens |
+| `altura-insight-1-*` | Maket arsitektur putih berbentuk lengkung | https://unsplash.com/photos/AdY7-Z-8EF4 | Declan Sun |
+| `altura-insight-2-*` | Kawasan hunian bertingkat di antara pepohonan dari udara | https://unsplash.com/photos/IvDLrpSJzQg | Eugenia Clara @fleetingstill |
+| `altura-insight-3-*` | Ruang tamu apartemen bernuansa krem (dipotong tanpa patung balon; logo kecil di pintu oven disamarkan) | https://unsplash.com/photos/7NvBEeHDY7M | Lumbardh Plluzhina |
+| `altura-night-*` | Siluet cakrawala kota pada malam hari (dipotong tanpa papan reklame menyala) | https://unsplash.com/photos/xYu-SKOQ0Dc | Juliana Malta |
+
+## Portline (Quaymoor Group, fiktif)
+
+Slide hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; berita 3:2 `-1200.webp` + `-800.webp`; perusahaan grup 4:3
+`-1080.webp` + `-800.webp`; armada 16:10 `-1400.webp` + `-800.webp`; jaringan, keberlanjutan, dan karier 16:10
+`-1600.webp` + `-800.webp`; pimpinan 4:5 `-960.webp` + `-800.webp`. Kandidat foto gratis (bukan Unsplash+) dari daftar
+sesi integrasi 2026-10-27, lalu dipotong dan dikompres ke WebP. Tulisan merek nyata (huruf nama perusahaan pelayaran di
+lambung, logo di cerobong, nama kapal, logo jasa bandara di tangga pesawat, logo mesin, nama perusahaan di trailer)
+dihapus dengan OpenCV inpaint atau dipotong; dua foto hero dibalik kiri-kanan agar objek di kanan. Nama fotografer
+sudah dicek di halaman foto Unsplash (sesi integrasi, 2026-10-27). Nama perusahaan, kapal, pimpinan, dan media di demo
+fiktif dan tidak berhubungan dengan orang, kapal, atau perusahaan di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `portline-hero-1-*` | Kapal kontainer melaju di laut biru dari udara (dibalik kiri-kanan; huruf merek di lambung dan nama kapal di haluan dihapus) | https://unsplash.com/photos/ZT3i-6XW8J8 | Haydn |
+| `portline-hero-2-*` | Derek kontainer merah-biru dari udara melayani kapal di dermaga (dibalik kiri-kanan; dipotong ke bagian kiri-atas tanpa deret kontainer bertuliskan merek jalur pelayaran, sisa tulisan kecil di kontainer & lengan derek dihapus) | https://unsplash.com/photos/ARq5msv6XZM | Holger Woizick |
+| `portline-hero-3-*` | Terminal kontainer pada malam hari dengan pantulan lampu di air | https://unsplash.com/photos/gyTEPTvvHXQ | Stepan Konev |
+| `portline-news-1-*` | Kapal kargo melintas di depan perbukitan (aksara nama kapal di haluan dihapus) | https://unsplash.com/photos/tBRpPhRc3k0 | Big Dodzy |
+| `portline-news-2-*` | Konsol navigasi di anjungan kapal pada malam hari | https://unsplash.com/photos/qgJCTooDMns | Tom Donders |
+| `portline-news-3-*` | Kapal tanker merah saat senja (dipotong) | https://unsplash.com/photos/U9_pRASawlc | Fredrick F. |
+| `portline-news-4-*` | Kapal tunda di samping derek dermaga lama saat senja (nama kapal dan tulisan di kabin derek dihapus) | https://unsplash.com/photos/kDVaFjoQf4M | Maksym Kaharlytskyi |
+| `portline-news-5-*` | Pesawat berbadan lebar putih dengan tangga di apron (logo pada tangga dan mesin dihapus) | https://unsplash.com/photos/PEf3deR3l_U | Peaky_82 |
+| `portline-lines-*` | Kapal kontainer dari atas dengan kapal tunda (dipotong) | https://unsplash.com/photos/1cqIcrWFQBI | Venti Views |
+| `portline-terminals-*` | Terminal kontainer dari udara dengan kapal di bawah derek biru (dipotong) | https://unsplash.com/photos/a-E__y8y5Wo | Alex Duffy |
+| `portline-energy-*` | Kapal tanker merah di laut biru gelap dari atas | https://unsplash.com/photos/-subrrYxv8A | Shaah Shahidh |
+| `portline-airroad-*` | Truk trailer di jalan raya pegunungan (tulisan perusahaan di trailer belakang dihapus) | https://unsplash.com/photos/P0bVatS8Jdw | Bhargav Panchal |
+| `portline-shipyards-*` | Kapal derek berat bekerja di laut dari atas (dipotong tanpa helipad bertulisan) | https://unsplash.com/photos/0eqs4wjebyc | J.f Manzanero |
+| `portline-fleet-1-*` | Kapal kontainer besar meninggalkan buih putih, dari atas (dipotong) | https://unsplash.com/photos/FPKnAO-CF6M | Venti Views |
+| `portline-fleet-2-*` | Kapal curah merah di laut tenang saat matahari terbit (nama kapal di buritan dan logo cerobong dihapus) | https://unsplash.com/photos/sfjS-FglvU4 | Chris Pagan |
+| `portline-fleet-3-*` | Kapal tanker produk & LPG berdek hijau dari depan (dipotong) | https://unsplash.com/photos/mISMgFBDc9o | Haydn |
+| `portline-fleet-4-*` | Kapal keruk (hopper dredger) di cakrawala di balik ombak (dipotong) | https://unsplash.com/photos/UZOQtC24tBk | Birgit Steven-Lahno |
+| `portline-network-*` | Dermaga dengan derek pelabuhan di depan kota berbukit | https://unsplash.com/photos/cEocZhPqQrE | Gunnar Ridderström |
+| `portline-sustainability-*` | Dek kapal curah di laut di bawah awan biru saat fajar (dipotong) | https://unsplash.com/photos/ERbSI-9CRvQ | Vladimir Oprisko |
+| `portline-careers-*` | Sayap anjungan kapal dengan perwira jaga di atas pulau hijau (dipotong) | https://unsplash.com/photos/06JBfjNvIEU | Donovan Simpkin |
+| `portline-exec-1-*` | Pria berjas biru tua dan dasi bergaris berlatar abu-abu (dipotong) | https://unsplash.com/photos/qIZNyuZe638 | Jeppe Mønster |
+| `portline-exec-2-*` | Perempuan berkacamata dan bergaun biru tersenyum di kantor berdinding kaca (dipotong) | https://unsplash.com/photos/S3GrMiUhpNU | Christina @ wocintechchat.com M |
+| `portline-exec-3-*` | Pria berjas gelap bersandar pada pilar granit (dipotong setengah badan) | https://unsplash.com/photos/aAN9ocBHbyo | Fortune Vieyra |
+| `portline-exec-4-*` | Perempuan berblazer abu-abu tersenyum di dekat jendela kantor (dipotong) | https://unsplash.com/photos/0Zx1bDv5BNY | Christina @ wocintechchat.com M |
+
+## Velora (Velora Motor Group, fiktif)
+
+Foto suasana 16:9 `-1600.webp` + `-800.webp` (hero, latar test drive); kartu 4:3 / 3:2 / 16:10 `-1200.webp` + `-800.webp`
+(model, teknologi, bento, berita, kartu ulasan); foto tegak 4:5 `-960.webp` + `-800.webp` (bento tinggi, langkah
+kepemilikan); potret testimoni 4:5 `-480.webp` + `-240.webp`. Diambil dari daftar kandidat foto gratis Unsplash (bukan
+Unsplash+) yang dikumpulkan sesi integrasi 2026-10-27, lalu dipotong dan dikompres ke WebP. Emblem, tulisan merek, dan
+plat nomor mobil asli dihapus (OpenCV inpaint) atau dipotong agar tidak ada merek nyata yang terbaca; bentuk mobil tetap
+aslinya. Putaran kedua (2026-10-27) juga menghapus logo di velg (`velora-vanta`), di setir & konsol audio
+(`velora-craft`), di colokan pengisian (`velora-electric`), di tali kartu (`velora-research`), dan tulisan nama sirkuit di
+pintu mobil (`velora-news-1`). `velora-vanta` dan `velora-news-2` tampak sebagai render 3D, bukan foto kamera.
+
+Putaran perbaikan (2026-10-27, setelah review): foto resmi pabrikan untuk `velora-terra` (6nVY4ePU6q0) dan `velora-lumen`
+(jahkKdBXEVo), serta foto akun merek pengisi daya untuk `velora-battery` (WZz3bISfJa8), dibuang. SUV hutan (dulu
+`velora-how`) kini menjadi kartu model `velora-skarvane`; `velora-lumen` (lambang velg, label kabel, tanda di wallbox &
+dinding dihapus), `velora-how` (pelat nama merek di setir dihapus; tulisan model di konsol terpotong), dan `velora-battery`
+memakai foto baru. Plat merek di lengan robot `velora-factory` kini dibuat polos (tanpa noda inpaint), dan `velora-design`
+dipotong ulang tanpa bidang hitam tambahan. Putaran ketiga (2026-10-27): tulisan merek di bawah lampu belakang
+`velora-skarvane` di-inpaint ulang hanya pada huruf terangnya (tanpa pita abu), plat merek lengan robot kanan
+`velora-factory` diisi warna lengan dengan tepi halus, dan `velora-design` dipotong di bagian tengah patung (lapisan
+tembaga, sirip perak, velg) agar kartu sempit tidak gelap di atas. Nama perusahaan, model (Aster, Kestrel GT,
+Skarvane, Lumen, Vanta R), dan orang di testimoni fiktif dan tidak berhubungan dengan orang, mobil, atau perusahaan di
+foto. Fotografer diverifikasi sesi integrasi lewat halaman foto Unsplash (lisensi Unsplash, foto gratis), termasuk tiga
+foto baru putaran perbaikan (`velora-lumen` mfqj3ZSs_h0, `velora-how` 8tTFtljZKsQ, `velora-battery` 8gr6bObQLOI): ketiganya
+diunggah fotografer perorangan, bukan akun merek atau pabrikan.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `velora-hero-*` | Coupe gelap di jalan pegunungan berkelok saat senja | https://unsplash.com/photos/xFgL8xGIGpk | Thyler Voss |
+| `velora-review-*` | Coupe sport hitam di gurun saat matahari terbenam dengan kaktus saguaro | https://unsplash.com/photos/FJ4tgVimLzo | Savannah Bolton |
+| `velora-mobility-*` | Pemandangan udara mobil di jalan pegunungan berkelok | https://unsplash.com/photos/l37vZUyjLhg | Jack White |
+| `velora-craft-*` | Interior mobil gelap dengan setir merah-karbon dan konsol logam | https://unsplash.com/photos/dD9TVgCNvq0 | Taha Hatipoğlu |
+| `velora-electric-*` | Kabel pengisian tersambung ke port mobil listrik abu-abu | https://unsplash.com/photos/xJLsHl0hIik | CHUTTERSNAP |
+| `velora-aster-*` | Sedan listrik putih menikung di jalan melengkung | https://unsplash.com/photos/fX2Ok_75gbY | Benjamin Brunner |
+| `velora-kestrel-*` | Coupe grand tourer putih di jembatan batu berkabut | https://unsplash.com/photos/LvKGWsrCUgI | ewan bullock |
+| `velora-skarvane-*` | SUV biru gelap di jalan hutan yang tersinari matahari | https://unsplash.com/photos/2Mg29ahUawo | Michail Dementiev |
+| `velora-lumen-*` | Crossover listrik kompak putih mengisi daya dari wallbox di garasi parkir | https://unsplash.com/photos/mfqj3ZSs_h0 | Eren Goldman |
+| `velora-vanta-*` | Coupe performa putih bersayap belakang di lantai gelap mengilap | https://unsplash.com/photos/BQwtmVs2K0o | Puscas Adryan |
+| `velora-how-*` | Kursi pengemudi: setir dan dasbor di hari cerah | https://unsplash.com/photos/8tTFtljZKsQ | Damian Kamp |
+| `velora-research-*` | Tiga insinyur memeriksa data di laptop di samping rig uji | https://unsplash.com/photos/bIltCMXIwRE | ThisisEngineering |
+| `velora-factory-*` | Lengan robot mengelas bodi mobil di jalur perakitan pabrik bata | https://unsplash.com/photos/jHZ70nRk7Ns | Lenny Kuhne |
+| `velora-battery-*` | Lengan robot oranye memindahkan baki modul di jalur produksi otomatis | https://unsplash.com/photos/8gr6bObQLOI | Simon Kadula |
+| `velora-design-*` | Patung mobil dari lapisan berwarna tembaga dan sirip perak di latar hitam | https://unsplash.com/photos/chBJuExPzu0 | Pieter Olievier |
+| `velora-safety-*` | Close-up lampu depan mobil dengan lensa proyektor | https://unsplash.com/photos/O-9ZolZHZvw | Tristan Beischel @Autoily.com |
+| `velora-news-1-*` | Coupe sport biru memimpin dua mobil di tikungan sirkuit | https://unsplash.com/photos/WGZudkq0-rI | Luca Hooijer |
+| `velora-news-2-*` | Wallbox rumah mengisi SUV di carport dengan panel surya | https://unsplash.com/photos/EGKP0FpNSzI | Christian Rebero Twahirwa |
+| `velora-news-3-*` | Bagian depan mobil perunggu dengan lampu menyala di studio gelap | https://unsplash.com/photos/zSJ5DiS9e7o | Jonathan Gallegos |
+| `velora-cta-*` | Jalan tol kosong menuju pegunungan saat senja dari balik kaca depan | https://unsplash.com/photos/hDEPW9-zzY0 | Gökhan Topel |
+| `velora-portrait-1-*` | Perempuan berblazer putih tersenyum duduk di kursi kulit | https://unsplash.com/photos/4mUk_DFImbI | Jonathan Borba |
+| `velora-portrait-2-*` | Laki-laki berjanggut bersweter gelap bersedekap | https://unsplash.com/photos/p5BoBF0XJUA | Willian Souza |
+| `velora-portrait-3-*` | Perempuan berkemeja putih tersenyum di latar terang | https://unsplash.com/photos/1l6UeCc9P9o | Joecalih |
+| `velora-portrait-4-*` | Laki-laki berambut gelap bersweter abu-abu tersenyum | https://unsplash.com/photos/7YVZYZeITc8 | Jurica Koletić |
+| `velora-portrait-5-*` | Perempuan berambut ikal berjaket garis tersenyum | https://unsplash.com/photos/SJvDxw0azqw | Christina @ wocintechchat.com M |
+| `velora-portrait-6-*` | Laki-laki berkacamata berjas biru tua tersenyum | https://unsplash.com/photos/BiN3Bcxndj4 | Jadon Johnson |
+| `velora-portrait-7-*` | Perempuan berambut panjang berjas putih tersenyum | https://unsplash.com/photos/SLd8M9knkGc | arthur henrique |
+| `velora-portrait-8-*` | Laki-laki berkacamata berblazer gelap di kantor | https://unsplash.com/photos/pAtA8xe_iVM | LinkedIn Sales Solutions |
+| `velora-portrait-9-*` | Perempuan berblazer hitam tersenyum di jalan kota | https://unsplash.com/photos/2mMhaoBGjCs | PodMatch |
+| `velora-portrait-10-*` | Laki-laki muda berkemeja biru muda di luar ruangan | https://unsplash.com/photos/ksbXoAsU7Bo | Angelo Abear |
+
+## Saudagar (PT Saudagar Hasil Bumi, fiktif)
+
+Lengkung hero 4:5 `-1200.webp` + `-800.webp` + `-480.webp`; foto tegak 4:5 `-960.webp` + `-800.webp` (lengkung hero
+samping, komoditas, tentang, mutu, CTA, galeri); potret testimoni 1:1 `-480.webp` + `-240.webp`. Dicek lisensinya di
+halaman foto (foto gratis di bawah Unsplash License, bukan Unsplash+) 2026-10-27, lalu dipotong ke 4:5 / 1:1 dan dikompres
+ke WebP. Suntingan: foto muat dipotong di atas pelat nomor truk; karung di truk itu hanya menyisakan cetakan kecil yang
+tidak terbaca. Foto lain hanya dipotong, tanpa retus. Foto pelabuhan dan muat diambil di Indonesia (Sunda Kelapa,
+Jakarta); beberapa foto close-up komoditas diambil di luar Indonesia (Brasil, Guatemala, Grenada) dan tidak menampilkan
+tulisan atau merek yang terbaca. Nama perusahaan, pembeli, dan orang di testimoni demo fiktif dan tidak berhubungan
+dengan orang atau perusahaan di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `saudagar-hero-*` | Tangan petani memetik buah kopi merah dari dahan | https://unsplash.com/photos/imp-b2kcb08 | LIVESTART STIVEN |
+| `saudagar-kakao-*` | Buah kakao kuning di batang pohon berlumut | https://unsplash.com/photos/VqyN9F5f74E | Kawê Rodrigues |
+| `saudagar-rempah-*` | Biji pala berselaput fuli merah di atas daun pisang | https://unsplash.com/photos/b9mELJxNxq0 | Hugh Whyte |
+| `saudagar-kopi-*` | Tangan meraup biji kopi hijau | https://unsplash.com/photos/-4hu4CU1T_k | Mariliz López |
+| `saudagar-kelapa-*` | Dua belahan kelapa di atas kain linen | https://unsplash.com/photos/nUApCUJ1M6k | Kateryna Hliznitsova |
+| `saudagar-sortir-*` | Tangan memilah biji kopi di atas keranjang plastik | https://unsplash.com/photos/VHgyzbVvr7I | Nguyen Dang Hoang Nhu |
+| `saudagar-mutu-*` | Cangkir uji cita rasa dan kantong sampel biji kopi | https://unsplash.com/photos/5CDleeyvCxA | Danny Pérez |
+| `saudagar-kapal-*` | Siluet kapal kargo saat matahari terbenam | https://unsplash.com/photos/9zbZ5uZg4MU | Peto Tj |
+| `saudagar-panen-*` | Petani memetik buah kopi ke dalam keranjang | https://unsplash.com/photos/0-SWia-_xjA | Gerson Cifuentes |
+| `saudagar-jemur-*` | Pekerja meratakan biji kopi yang dijemur | https://unsplash.com/photos/s-PiaFydfRU | Trevin Jensen |
+| `saudagar-timbang-*` | Buah kakao di atas timbangan dial tua | https://unsplash.com/photos/EnKXmgPl2xk | Skyler Ewing |
+| `saudagar-gudang-*` | Tumpukan karung goni di rak gudang | https://unsplash.com/photos/7QScg8wbu74 | Caelen Cockrum |
+| `saudagar-pala-*` | Buah pala merekah di pohon | https://unsplash.com/photos/SVfGD1QJ5jA | Tyler Gooding |
+| `saudagar-muat-*` | Pekerja menata karung di truk, Pelabuhan Sunda Kelapa (dipotong di atas pelat nomor truk) | https://unsplash.com/photos/TI0WnA9CB3U | Refhad |
+| `saudagar-pembeli-1-*` | Pria berkemeja denim di meja kerja | https://unsplash.com/photos/WC7KIHo13Fc | Juan Encalada |
+| `saudagar-pembeli-2-*` | Perempuan berambut cokelat sebahu tersenyum | https://unsplash.com/photos/0NDVW4wO1Ms | Davide Aracri |
+| `saudagar-pembeli-3-*` | Perempuan berkerudung krem tersenyum (Bogor) | https://unsplash.com/photos/R8If-1Wxl3w | Rizky Motion |
+
+## Dermaga (PT Lintas Dermaga Nusantara, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (dipotong 21:9 di desktop dan 4:5 di ponsel lewat object-position);
+mendatar 3:2 `-1200.webp` + `-800.webp` (tentang, layanan, pasar, galeri); galeri lebar 16:9 `-1600.webp` + `-800.webp`;
+potret testimoni 1:1 `-480.webp` + `-240.webp`. Dicek lisensinya di halaman foto (foto gratis di bawah Unsplash License,
+bukan Unsplash+) 2026-10-27, lalu dipotong dan dikompres ke WebP. Suntingan (blur lokal saat dipotong, tanpa inpaint):
+nama pelayaran pada trailer di hero, logo operator terminal pada crane dan nama pelayaran pada kontainer di foto tentang
+dan FCL, nama kapal/pelayaran di foto terminal galeri, serta merek pada jangka sorong di foto sourcing dikaburkan; foto
+lain hanya dipotong. Foto pelabuhan tidak semuanya diambil di Indonesia dan demo tidak menyebut nama pelabuhan di foto.
+Nama perusahaan, pembeli, dan orang di testimoni demo fiktif dan tidak berhubungan dengan orang atau perusahaan di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `dermaga-hero-*` | Deretan crane peti kemas di terminal saat senja (dipotong; nama pelayaran pada trailer dikaburkan) | https://unsplash.com/photos/KGVL9SOaGBI | Griffin Wooldridge |
+| `dermaga-tentang-*` | Dua petugas berhelm memeriksa tablet di lapangan penumpukan kontainer (logo crane, kontainer, helm, dan rompi dikaburkan) | https://unsplash.com/photos/V89PqZteK-k | Haris Illahi |
+| `dermaga-fcl-*` | Crane biru mengangkat satu kontainer di dermaga (logo operator terminal dikaburkan) | https://unsplash.com/photos/pzFY0ZT6eco | Pix Tresa |
+| `dermaga-konsolidasi-*` | Palet kardus terbungkus plastik di gudang | https://unsplash.com/photos/I-_wYj9yOzw | Vida Huang |
+| `dermaga-dokumen-*` | Tangan menandatangani dokumen di meja kerja | https://unsplash.com/photos/EwmBLsCDIgo | Koda Bookkeeping |
+| `dermaga-sourcing-*` | Tangan mengukur komponen logam dengan jangka sorong digital (merek alat dikaburkan) | https://unsplash.com/photos/_luiFaaZU6k | Hans Westbeek |
+| `dermaga-inspeksi-*` | Tangan merekatkan lakban pada paket kertas cokelat | https://unsplash.com/photos/mErtCMDgUEM | Compagnons |
+| `dermaga-trucking-*` | Truk kontainer di jalan raya berkabut di antara perbukitan | https://unsplash.com/photos/jBPUR0Xn7O4 | Tuan Nguyen |
+| `dermaga-kapal-*` | Kapal kontainer di laut lepas dilihat dari atas | https://unsplash.com/photos/1cqIcrWFQBI | Venti Views |
+| `dermaga-galeri-terminal-*` | Crane, tangki, dan lapangan penumpukan kontainer di tepi laut (dipotong rapat dari foto 4000 px; nama kapal, pelayaran, dan papan iklan dikaburkan) | https://unsplash.com/photos/gs4PknqHjAU | Alexander Gluschenko |
+| `dermaga-galeri-forklift-*` | Forklift oranye di gudang rak palet dan papan | https://unsplash.com/photos/6tAIO3pxde4 | Pickawood |
+| `dermaga-galeri-bolder-*` | Tali tambat kapal pada bolder besi di tepi laut | https://unsplash.com/photos/6sr93DmUWAE | nicola dowie |
+| `dermaga-galeri-kontainer-*` | Dua kontainer merah dan oranye di bawah langit biru | https://unsplash.com/photos/jLVCfnyO3Zc | Abdelhamid Azoui |
+| `dermaga-galeri-tim-*` | Empat anggota tim berdiskusi di depan laptop | https://unsplash.com/photos/hv2DRoXTKxI | UX Indonesia |
+| `dermaga-portrait-1-*` | Pria muda berkaus abu-abu tersenyum (dipotong dari foto setengah badan) | https://unsplash.com/photos/D1z3dwROc44 | Afif Ramdhasuma |
+| `dermaga-portrait-2-*` | Perempuan berkerudung hitam tersenyum (dipotong dari foto setengah badan) | https://unsplash.com/photos/65v_6djIAFs | Muhammad Ruqi Yaddin |
+| `dermaga-portrait-3-*` | Pria berkacamata dan berjanggut berkemeja abu-abu bermotif | https://unsplash.com/photos/K5m2ePRnjmM | Fadkhera Official |
+
+## NusaNiaga (PT Arunika Niaga Internasional, fiktif)
+
+Hero tegak 4:5 `-1440.webp` + `-1200.webp` + `-800.webp` (ditampilkan sebagai bilah vertikal); foto 16:10 `-1200.webp` +
+`-800.webp` (jangkauan `-1600.webp` + `-800.webp`); potret 1:1 `-480.webp` + `-240.webp`. Dicek lisensinya di halaman foto
+(foto gratis di bawah Unsplash License, bukan Unsplash+) 2026-10-27, lalu dipotong dan dikompres ke WebP. Suntingan (blur
+lokal bertepi lembut saat dipotong, tanpa inpaint): merek mesin pada foto mesin injeksi, merek pengendali dan cetakan kaus
+pada foto teknisi, logo pada sweter petugas gudang, cetakan ukuran/merek pada seal bearing, tulisan tangan pada satu
+gulungan baja, serta nama kapal, logo cerobong, nama pelayaran pada kontainer, dan label crane pada foto pelabuhan
+dikaburkan. Foto hero diberi penghalusan ringan (blur sekitar 1 px) agar tiap varian muat di bawah 140 KB; foto lain hanya
+dipotong. Foto pelabuhan dan pabrik tidak semuanya diambil di Indonesia dan demo tidak menyebut nama tempat di foto. Nama
+perusahaan, klien, dan orang di testimoni demo fiktif dan tidak berhubungan dengan orang atau perusahaan di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `nusaniaga-hero-*` | Lorong gudang dengan rak palet tinggi berisi kardus (penghalusan ringan) | https://unsplash.com/photos/DUG-pc65Yj0 | Peaky_82 |
+| `nusaniaga-resin-*` | Tumpukan butiran putih di atas permukaan gelap (dipotong) | https://unsplash.com/photos/OMwXejh6qEA | XRD Chemical |
+| `nusaniaga-baja-*` | Gulungan baja lembaran berjajar di gudang, hitam putih (tulisan tangan pada satu gulungan dikaburkan) | https://unsplash.com/photos/-kWkoUkFyp0 | Morteza Mohammadi |
+| `nusaniaga-benang-*` | Gulungan benang putih di rak mesin pabrik | https://unsplash.com/photos/0WEX4EEMs6w | Kevin Limbri |
+| `nusaniaga-mesin-injeksi-*` | Deretan mesin injeksi plastik dengan lengan robot (dipotong; merek mesin dikaburkan) | https://unsplash.com/photos/IWJNXtezL2I | RPWORLD |
+| `nusaniaga-cnc-*` | Spindel mesin CNC memotong blok logam dengan cairan pendingin | https://unsplash.com/photos/sxtClAGwRck | aluminum Zheng ji |
+| `nusaniaga-bearing-*` | Tiga bearing bola di atas permukaan putih (dipotong; cetakan pada seal dikaburkan) | https://unsplash.com/photos/PmmbE54C8i4 | Glen Carrie |
+| `nusaniaga-gudang-*` | Petugas mencatat di papan klip (dipotong; logo pada sweter dikaburkan) | https://unsplash.com/photos/8iDaJg7TPz4 | TruckRun |
+| `nusaniaga-pelabuhan-*` | Crane membongkar kontainer dari kapal di dermaga pada siang hari (dipotong; nama kapal, logo cerobong, nama pelayaran, dan label crane dikaburkan) | https://unsplash.com/photos/UoUtSJ-2nco | PortCalls Asia |
+| `nusaniaga-teknisi-*` | Teknisi mengatur panel kontrol mesin CNC (dipotong; merek pengendali dan cetakan kaus dikaburkan) | https://unsplash.com/photos/FplN2F53zJU | Guick |
+| `nusaniaga-portrait-1-*` | Pria berkaus hitam tersenyum (dipotong dari foto setengah badan) | https://unsplash.com/photos/9dGkDtsXHi8 | Hazwan Hashim |
+| `nusaniaga-portrait-2-*` | Perempuan berkerudung hitam dan berblazer merah muda tersenyum (dipotong dari foto setengah badan) | https://unsplash.com/photos/wG5RIXH52Xc | Sewupari Studio |
+| `nusaniaga-portrait-3-*` | Pria muda berkacamata dan berkemeja kotak-kotak tersenyum (dipotong) | https://unsplash.com/photos/iQLqpFqzwnc | Divyank Sachdeva |
