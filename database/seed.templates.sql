@@ -298,4 +298,58 @@ Salinan demo berbahasa Inggris untuk grup otomotif fiktif Velora Motor Group, co
    '["/assets/templates/velora-1.webp","/assets/templates/velora-2.webp"]',
    'velora', NULL, 'published', 17);
 
+-- Dermaga (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_035). Demo: PT Lintas Dermaga Nusantara, general trading & freight forwarding Surabaya (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('dermaga',
+   'Dermaga',
+   'Company Profile',
+   'Template company profile ekspor impor & freight forwarding: hero rute di atas foto terminal, layanan bernomor, pasar & Incoterm, proses kerja, dan formulir penawaran ke WhatsApp.',
+   'Dermaga membuat perusahaan ekspor impor tampil rapi dan meyakinkan di depan pembeli luar negeri: judul besar, foto terminal peti kemas selebar halaman dengan garis rute dan label pelabuhan, serta empat angka ringkas seperti jumlah pengiriman dan negara tujuan. Di bawahnya tersusun daftar klien, profil perusahaan dengan baris fakta, layanan bernomor (freight forwarding, konsolidasi LCL, dokumen, trading, pemeriksaan, trucking), pita pasar berisi kawasan tujuan, pelabuhan, dan Incoterm, proses kerja lima langkah, galeri, testimoni dengan rute pengiriman, tanya jawab, serta kontak dengan Google Maps.
+
+Cocok untuk freight forwarder, perusahaan general trading, eksportir, dan importir. Formulir permintaan penawaran menanyakan produk, volume, Incoterm, dan negara tujuan atau asal, lalu menyusun pesan WhatsApp; data tidak disimpan di website dan tidak ada pelacakan kiriman real-time. Semua teks, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero rute: foto terminal peti kemas dengan garis rute, label pelabuhan, dan angka ringkas","Layanan bernomor: freight forwarding, konsolidasi LCL, dokumen, trading, pemeriksaan, dan trucking","Pita pasar: kawasan tujuan, pelabuhan, dan Incoterm yang dilayani","Proses kerja lima langkah beserta dokumen di setiap langkah","Formulir permintaan penawaran (produk, volume, Incoterm, negara tujuan/asal) yang menyusun pesan WhatsApp","Klien, galeri, testimoni dengan rute pengiriman, dan tanya jawab","Satu warna aksen yang bisa diganti; pita pasar dan footer ikut menyesuaikan","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/dermaga-preview.webp',
+   '["/assets/templates/dermaga-1.webp","/assets/templates/dermaga-2.webp"]',
+   'dermaga', NULL, 'published', 18);
+
+-- Saudagar (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_036). Demo: PT Saudagar Hasil Bumi, eksportir hasil bumi Makassar (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('saudagar',
+   'Saudagar',
+   'Company Profile',
+   'Template website eksportir kopi, kakao & rempah: hero tiga foto lengkung, tab spesifikasi komoditas, kalender panen, dan formulir penawaran ke WhatsApp.',
+   'Saudagar membuat perusahaan ekspor hasil bumi tampil hangat dan berkelas: judul serif besar di atas kertas krem, tiga foto berbingkai lengkung dengan keterangan asal, menu yang terbagi di kiri dan kanan nama perusahaan, dan tombol permintaan penawaran. Di bawahnya tersusun cerita perusahaan dengan angka besar, tab spesifikasi komoditas (grade, asal, kadar air, kemasan, dan minimum pemesanan), langkah mutu dan daftar dokumen, kalender musim panen per bulan, daerah asal dan pasar tujuan dengan Incoterm, galeri, testimoni pembeli, tanya jawab, pita ajakan, serta kontak dengan Google Maps.
+
+Cocok untuk eksportir kopi, kakao, cengkeh, pala, kayu manis, kelapa, dan kopra, juga koperasi atau pengepul yang mulai menjual ke luar negeri. Formulir permintaan penawaran menyusun pesan WhatsApp untuk tim penjualan; data tidak disimpan di website, harga komoditas tidak diperbarui otomatis, dan tidak ada pelacakan kiriman. Semua teks, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero tiga foto berbingkai lengkung dengan judul serif dan keterangan asal komoditas","Tab spesifikasi komoditas: grade, asal, kadar air, kemasan, dan minimum pemesanan","Kalender musim panen per bulan untuk setiap komoditas","Langkah mutu bernomor dan daftar dokumen pengapalan","Daerah asal dan pasar tujuan dengan pelabuhan dan Incoterm","Formulir permintaan penawaran (komoditas, volume, Incoterm, negara tujuan) yang menyusun pesan WhatsApp","Galeri, testimoni pembeli, dan tanya jawab","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/saudagar-preview.webp',
+   '["/assets/templates/saudagar-1.webp","/assets/templates/saudagar-2.webp"]',
+   'saudagar', NULL, 'published', 19);
+
+-- NusaNiaga (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_037). Demo: PT Arunika Niaga Internasional, importir & distributor bahan baku dan mesin Cikarang (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('nusaniaga',
+   'NusaNiaga',
+   'Company Profile',
+   'Template company profile importir & distributor: hero foto berbilah, chip negara asal, layanan, produk bahan baku & mesin, proses impor, jangkauan, dan formulir penawaran ke WhatsApp.',
+   'NusaNiaga membuat perusahaan importir dan distributor tampil rapi dan meyakinkan di depan bagian pengadaan pabrik: judul besar di samping satu foto gudang yang dipotong menjadi bilah-bilah vertikal, chip negara asal yang langsung menuju bagian jangkauan, dan tombol permintaan penawaran di blok warna aksen pada menu atas. Di bawahnya tersusun klien dan strip industri yang berjalan pelan, layanan (sourcing, impor, gudang, distribusi, instalasi mesin, suku cadang), produk bahan baku, mesin, dan suku cadang beserta negara asalnya, proses impor buka-tutup dengan garis alur, negara asal dan area pengantaran, keunggulan dengan angka besar, testimoni bagian pengadaan, tanya jawab, serta kontak dengan Google Maps.
+
+Cocok untuk importir bahan baku, supplier mesin industri, agen sourcing, dan distributor suku cadang. Formulir permintaan penawaran menanyakan kebutuhan, produk, volume, negara asal, Incoterm, dan lokasi pabrik, lalu menyusun pesan WhatsApp; data tidak disimpan di website, tidak ada pelacakan kiriman real-time, dan harga tidak diperbarui otomatis. Semua teks, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero berbilah: satu foto tegak dipotong menjadi bilah vertikal, dengan chip negara asal yang menuju bagian Jangkauan","Menu atas dengan blok warna aksen untuk tombol permintaan penawaran","Klien dan strip industri yang berjalan pelan","Layanan impor serta produk bahan baku, mesin, dan suku cadang beserta negara asalnya","Proses impor buka-tutup dengan garis alur yang terisi saat digulir","Formulir permintaan penawaran (kebutuhan, produk, volume, negara asal, Incoterm, lokasi pabrik) yang menyusun pesan WhatsApp","Keunggulan dengan angka besar bersatuan, testimoni, tanya jawab, dan peta lokasi","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/nusaniaga-preview.webp',
+   '["/assets/templates/nusaniaga-1.webp","/assets/templates/nusaniaga-2.webp"]',
+   'nusaniaga', NULL, 'published', 20);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

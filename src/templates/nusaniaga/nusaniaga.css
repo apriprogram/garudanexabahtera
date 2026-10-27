@@ -1,0 +1,175 @@
+/*
+ * CSS lokal NusaNiaga (diimpor ./NusaNiaga.tsx).
+ * - Bilah foto hero: SATU foto dipotong menjadi bilah vertikal oleh mask statis (3 bilah di HP, 4 di layar lebar), tinggi
+ *   bilah naik ke arah judul. Ini bentuk desain, bukan animasi: tidak ada pudar/klip yang menyembunyikan foto LCP.
+ * - Garis alur proses (gerak khas): segmen garis terisi dari atas dan nomor langkah berganti dari garis ke penuh, satu
+ *   per satu, SEKALI saat daftar masuk layar (selesai 1,4 dtk).
+ * - Buka-tutup akordeon (proses & tanya jawab), panah berputar, rel geser tanpa scrollbar, dan tepi memudar baris chip.
+ * Keadaan AKHIR adalah bawaan: gerak hanya bila root template ber-data-tpl-motion="on" (demo & situs live). Pratinjau
+ * CMS, prefers-reduced-motion, cetak, dan browser tanpa IntersectionObserver → garis penuh, nomor terisi, langkah pertama
+ * terbuka. Datar: tanpa efek bayangan sama sekali.
+ */
+
+@layer components {
+  /* ─── Hero: bilah vertikal (mask statis) ─────────────────────────────────── */
+
+  .nn-slats {
+    --nn-gap: 8px;
+    --nn-w: calc((100% - 2 * var(--nn-gap)) / 3);
+    -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+    mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size:
+      var(--nn-w) 92%,
+      var(--nn-w) 96%,
+      var(--nn-w) 100%;
+    mask-size:
+      var(--nn-w) 92%,
+      var(--nn-w) 96%,
+      var(--nn-w) 100%;
+    -webkit-mask-position:
+      0% 100%,
+      50% 100%,
+      100% 100%;
+    mask-position:
+      0% 100%,
+      50% 100%,
+      100% 100%;
+  }
+
+  @container (min-width: 64rem) {
+    .nn-slats {
+      --nn-gap: 12px;
+      --nn-w: calc((100% - 3 * var(--nn-gap)) / 4);
+      -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+      mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+      -webkit-mask-size:
+        var(--nn-w) 88%,
+        var(--nn-w) 92%,
+        var(--nn-w) 96%,
+        var(--nn-w) 100%;
+      mask-size:
+        var(--nn-w) 88%,
+        var(--nn-w) 92%,
+        var(--nn-w) 96%,
+        var(--nn-w) 100%;
+      -webkit-mask-position:
+        0% 100%,
+        33.333% 100%,
+        66.667% 100%,
+        100% 100%;
+      mask-position:
+        0% 100%,
+        33.333% 100%,
+        66.667% 100%,
+        100% 100%;
+    }
+  }
+
+  /* ─── Proses: garis alur yang terisi (gerak khas) ───────────────────────── */
+
+  .nn-lane-seg {
+    transform-origin: top;
+  }
+
+  /* Nomor langkah: penuh warna aksen (keadaan akhir). Warna di sini, bukan kelas utilitas, agar keadaan "pending"
+     di bawah bisa menimpanya (utilitas Tailwind selalu menang atas layer components). */
+  .nn-node {
+    background-color: var(--tpl-accent);
+    color: var(--tpl-on-accent);
+  }
+
+  [data-tpl-motion='on'] [data-lane='pending'] .nn-lane-seg {
+    transform: scaleY(0);
+  }
+
+  [data-tpl-motion='on'] [data-lane='shown'] .nn-lane-seg {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition-delay: calc(var(--nn-i, 0) * 0.3s);
+  }
+
+  [data-tpl-motion='on'] [data-lane='pending'] .nn-node {
+    background-color: #ffffff;
+    color: #4d5562;
+    outline: 1px solid rgb(20 24 33 / 0.16);
+    outline-offset: -1px;
+  }
+
+  [data-tpl-motion='on'] [data-lane='shown'] .nn-node {
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+    transition-delay: calc(var(--nn-i, 0) * 0.3s);
+  }
+
+  /* ─── Buka-tutup (akordeon proses & tanya jawab) ────────────────────────── */
+
+  .nn-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .nn-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .nn-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  .nn-chevron[data-open='true'] {
+    transform: rotate(180deg);
+  }
+
+  [data-tpl-motion='on'] .nn-chevron {
+    transition: transform 0.3s var(--tpl-ease, ease);
+  }
+
+  /* ─── Rel geser tanpa scrollbar + tepi memudar baris chip hero ──────────── */
+
+  .nn-rail {
+    scrollbar-width: none;
+  }
+
+  .nn-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nn-fade-x {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 20px, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(90deg, transparent 0, #000 20px, #000 calc(100% - 32px), transparent);
+  }
+
+  @container (min-width: 64rem) {
+    .nn-fade-x {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .nn-lane-seg,
+    [data-tpl-motion='on'] .nn-node,
+    [data-tpl-motion='on'] .nn-collapse,
+    [data-tpl-motion='on'] .nn-chevron {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] [data-lane='pending'] .nn-lane-seg {
+      transform: none;
+    }
+
+    [data-tpl-motion='on'] [data-lane='pending'] .nn-node {
+      background-color: var(--tpl-accent);
+      color: var(--tpl-on-accent);
+      outline: none;
+    }
+  }
+
+  @media print {
+    .nn-lane-seg {
+      transform: none !important;
+    }
+  }
+}

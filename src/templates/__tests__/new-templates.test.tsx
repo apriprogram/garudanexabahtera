@@ -13,11 +13,14 @@ import { ARENA_PHOTOS } from '../arena-club/photos';
 import { AURA_PHOTOS } from '../aura-studio/photos';
 import { BESTARI_PHOTOS } from '../bestari/photos';
 import { CAKRAWALA_PHOTOS } from '../cakrawala/photos';
+import { DERMAGA_PHOTOS } from '../dermaga/photos';
 import { FINOVA_PHOTOS } from '../finova/photos';
 import { GADGETKU_PHOTOS } from '../gadgetku/photos';
 import { GLOWSTORY_PHOTOS } from '../glowstory/photos';
 import { MADANI_PHOTOS } from '../madani/photos';
 import { PORTLINE_PHOTOS } from '../portline/photos';
+import { NUSANIAGA_PHOTOS } from '../nusaniaga/photos';
+import { SAUDAGAR_PHOTOS } from '../saudagar/photos';
 import { SERENITY_PHOTOS } from '../serenity/photos';
 import { TANI_PHOTOS } from '../tanimakmur/photos';
 import { PUNCAK_PHOTOS } from '../puncakgear/photos';
@@ -39,7 +42,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'diptych' | 'harbor' | 'showroom';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'diptych' | 'harbor' | 'showroom' | 'triptych' | 'route' | 'slatted';
   photos: PhotoSet;
 }
 
@@ -61,6 +64,9 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'portline', component: 'Portline.tsx', heroLayout: 'harbor', photos: PORTLINE_PHOTOS },
   // Velora (2026-10-27): company profile Inggris grup otomotif, kartu foto hero "showroom"
   { code: 'velora', component: 'Velora.tsx', heroLayout: 'showroom', photos: VELORA_PHOTOS },
+  { code: 'dermaga', component: 'Dermaga.tsx', heroLayout: 'route', photos: DERMAGA_PHOTOS },
+  { code: 'saudagar', component: 'Saudagar.tsx', heroLayout: 'triptych', photos: SAUDAGAR_PHOTOS },
+  { code: 'nusaniaga', component: 'NusaNiaga.tsx', heroLayout: 'slatted', photos: NUSANIAGA_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */

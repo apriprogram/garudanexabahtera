@@ -1,0 +1,120 @@
+/*
+ * CSS lokal Saudagar (diimpor ./Saudagar.tsx), semua kelas berawalan sg-: rel geser tanpa scrollbar, garis tab aktif,
+ * panel tab yang memudar setelah diganti, lengkung samping hero yang naik, batang kalender panen yang tumbuh sekali,
+ * dan buka-tutup tanya jawab. Gerak HANYA bila root template ber-data-tpl-motion="on" (demo & situs live); pratinjau
+ * CMS, prefers-reduced-motion, dan cetak → statis dan semua isi tampil. Foto tengah hero (LCP) tidak pernah
+ * disembunyikan di sini. Tanpa bayangan.
+ */
+
+@layer components {
+  /* Rel geser horizontal (tab komoditas & galeri di HP) tanpa scrollbar */
+  .sg-rail {
+    scrollbar-width: none;
+  }
+
+  .sg-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Garis saffron di bawah tab aktif (keadaan, bukan animasi: tetap benar walau gerak mati) */
+  .sg-tab-line {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  [aria-selected='true'] > .sg-tab-line {
+    transform: scaleX(1);
+  }
+
+  [data-tpl-motion='on'] .sg-tab-line {
+    transition: transform 300ms var(--tpl-ease, ease);
+  }
+
+  /* Panel tab baru: pudar + naik 6px, HANYA setelah pengunjung mengganti tab (data-enter), ≤ 300 ms */
+  [data-tpl-motion='on'] .sg-panel[data-enter='true'] {
+    animation: sg-fade 260ms var(--tpl-ease, ease) both;
+  }
+
+  /* Lengkung samping hero naik 56px bergantian (jeda dari <Reveal delay>: 240 / 360 ms); foto tengah tidak ikut.
+     Turun ke posisi awal TANPA transisi (pending), naik dengan transisi hanya saat tampil (shown). */
+  [data-tpl-motion='on'] .sg-rise[data-reveal='pending'] > .sg-arch {
+    transform: translate3d(0, 56px, 0);
+    transition: none;
+  }
+
+  [data-tpl-motion='on'] .sg-rise[data-reveal='shown'] > .sg-arch {
+    transition: transform 900ms cubic-bezier(0.2, 0.7, 0.2, 1) var(--tpl-delay, 0ms);
+  }
+
+  /* Batang kalender panen tumbuh dari kiri SEKALI saat kalender masuk layar; baris bertahap 90 ms (maks. 5 langkah),
+     batang panen raya menyusul. Total ≤ 1,6 dtk. */
+  .sg-bar {
+    transform-origin: left center;
+  }
+
+  [data-tpl-motion='on'] .sg-cal[data-reveal='pending'] .sg-bar {
+    transform: scaleX(0);
+    transition: none;
+  }
+
+  [data-tpl-motion='on'] .sg-cal[data-reveal='shown'] .sg-bar {
+    transition: transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1) calc(150ms + var(--sg-i, 0) * 90ms);
+  }
+
+  [data-tpl-motion='on'] .sg-cal[data-reveal='shown'] .sg-bar-peak {
+    transition-delay: calc(320ms + var(--sg-i, 0) * 90ms);
+  }
+
+  /* Buka-tutup tanya jawab: 0fr → 1fr, transisi hanya bila gerak menyala */
+  .sg-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .sg-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .sg-collapse {
+    transition: grid-template-rows 300ms var(--tpl-ease, ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .sg-panel[data-enter='true'] {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .sg-rise[data-reveal] > .sg-arch,
+    [data-tpl-motion='on'] .sg-cal[data-reveal] .sg-bar {
+      transform: none !important;
+      transition: none !important;
+    }
+
+    [data-tpl-motion='on'] .sg-tab-line,
+    [data-tpl-motion='on'] .sg-collapse {
+      transition: none;
+    }
+  }
+
+  @media print {
+    .sg-rise > .sg-arch,
+    .sg-cal .sg-bar {
+      transform: none !important;
+    }
+
+    .sg-collapse {
+      grid-template-rows: 1fr;
+    }
+  }
+}
+
+@keyframes sg-fade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

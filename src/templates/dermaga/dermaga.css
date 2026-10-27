@@ -1,0 +1,115 @@
+/*
+ * CSS lokal Dermaga (diimpor ./Dermaga.tsx): posisi chip pelabuhan di foto hero (HP tegak ↔ layar lebar, sinkron dengan
+ * pin SVG lewat variabel --dm-*), gerak khas "rute" (garis tergambar SEKALI lewat stroke-dashoffset, pin & chip muncul
+ * berurutan), dan buka-tutup akordeon FAQ. Keadaan bawaan = keadaan akhir (garis utuh, pin & chip terlihat); animasi
+ * hanya bila root template ber-data-tpl-motion="on" (demo & situs live). Pratinjau CMS, prefers-reduced-motion, dan
+ * cetak → statis. Foto hero tidak pernah dianimasikan. Tanpa bayangan.
+ */
+
+@layer components {
+  /* Chip pelabuhan: posisi = pin di kotak foto (persen), digeser relatif ke pin (translate) agar tidak menutupi pin */
+  .dm-port {
+    position: absolute;
+    left: var(--dm-mx, 0);
+    top: var(--dm-my, 0);
+    translate: var(--dm-mt, 0 0);
+  }
+
+  @container (min-width: 48rem) {
+    .dm-port {
+      left: var(--dm-dx, 0);
+      top: var(--dm-dy, 0);
+      translate: var(--dm-dt, 0 0);
+    }
+  }
+
+  /* Garis rute: pathLength=1 + dasharray 1 → digambar dengan menggeser dashoffset 1 → 0 */
+  .dm-route-path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  .dm-pin {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  [data-tpl-motion='on'] .dm-route-path {
+    animation: dm-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) 0.4s both;
+  }
+
+  [data-tpl-motion='on'] .dm-pin {
+    animation: dm-pin 0.26s var(--tpl-ease, ease) both;
+    animation-delay: var(--dm-at, 0s);
+  }
+
+  [data-tpl-motion='on'] .dm-chip {
+    animation: dm-chip 0.32s var(--tpl-ease, ease) both;
+    animation-delay: calc(var(--dm-at, 0s) + 60ms);
+  }
+
+  /* Buka-tutup akordeon: 0fr → 1fr, transisi hanya bila gerak menyala */
+  .dm-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .dm-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .dm-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .dm-route-path,
+    [data-tpl-motion='on'] .dm-pin,
+    [data-tpl-motion='on'] .dm-chip {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .dm-collapse {
+      transition: none;
+    }
+  }
+
+  @media print {
+    [data-tpl-motion='on'] .dm-route-path,
+    [data-tpl-motion='on'] .dm-pin,
+    [data-tpl-motion='on'] .dm-chip {
+      animation: none;
+    }
+  }
+}
+
+@keyframes dm-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dm-pin {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dm-chip {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -32,7 +32,10 @@ database/
 │   ├── 2026-10-27_031_site_stats.sql               # statistik kunjungan situs pembeli (agregat harian, tanpa IP)
 │   ├── 2026-10-27_032_altura_template.sql          # data: katalog Altura (company profile bahasa Inggris), SETELAH deploy kodenya
 │   ├── 2026-10-27_033_portline_template.sql        # data: katalog Portline (company profile pelayaran, Inggris), SETELAH deploy kodenya
-│   └── 2026-10-27_034_velora_template.sql          # data: katalog Velora (company profile otomotif, Inggris), SETELAH deploy kodenya
+│   ├── 2026-10-27_034_velora_template.sql          # data: katalog Velora (company profile otomotif, Inggris), SETELAH deploy kodenya
+│   ├── 2026-10-27_035_dermaga_template.sql         # data: katalog Dermaga (company profile ekspor-impor), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-27_036_saudagar_template.sql        # data: katalog Saudagar (company profile ekspor-impor), jalankan SETELAH deploy kodenya
+│   └── 2026-10-27_037_nusaniaga_template.sql       # data: katalog NusaNiaga (company profile ekspor-impor), jalankan SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -217,6 +220,21 @@ otomotif & perusahaan besar, kategori "Company Profile", Rp1.890.000, sort_order
 menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code`
 `velora` ter-deploy. DB baru cukup `seed.templates.sql`.
 
+`2026-10-27_035` (data saja) membuat/menyamakan baris katalog `dermaga` (company profile ekspor-impor & freight
+forwarding, kategori "Company Profile", Rp1.590.000, sort_order 18) berdasarkan slug, pola sama dengan 028: menjalankan
+ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code` `dermaga`
+ter-deploy. DB baru cukup `seed.templates.sql`.
+
+`2026-10-27_036` (data saja) membuat/menyamakan baris katalog `saudagar` (company profile eksportir kopi, kakao & rempah,
+kategori "Company Profile", Rp1.690.000, sort_order 19) berdasarkan slug, pola sama dengan 028: menjalankan ulang MENIMPA
+perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code` `saudagar` ter-deploy. DB baru
+cukup `seed.templates.sql`.
+
+`2026-10-27_037` (data saja) membuat/menyamakan baris katalog `nusaniaga` (company profile importir & distributor bahan
+baku dan mesin, kategori "Company Profile", Rp1.590.000, sort_order 20) berdasarkan slug, pola sama dengan 028:
+menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code`
+`nusaniaga` ter-deploy. DB baru cukup `seed.templates.sql`.
+
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
 Koneksi DB lokal di `.env` (root XAMPP tanpa password), dibaca `api.php` di setiap request dan oleh
@@ -393,3 +411,6 @@ kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin per
 | 2026-10-27_032 | Data saja: baris katalog `altura` (company profile berbahasa Inggris untuk developer properti/perusahaan besar, kategori "Company Profile", Rp1.890.000, sort_order 15), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `altura` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-27_033 | Data saja: baris katalog `portline` (company profile berbahasa Inggris untuk grup pelayaran & logistik, kategori "Company Profile", Rp1.890.000, sort_order 16), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `portline` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-27_034 | Data saja: baris katalog `velora` (company profile berbahasa Inggris untuk grup otomotif/perusahaan besar, kategori "Company Profile", Rp1.890.000, sort_order 17), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `velora` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-27_035 | Data saja: baris katalog `dermaga` (company profile ekspor-impor & freight forwarding, kategori "Company Profile", Rp1.590.000, sort_order 18), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `dermaga` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-27_036 | Data saja: baris katalog `saudagar` (company profile eksportir kopi, kakao & rempah, kategori "Company Profile", Rp1.690.000, sort_order 19), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `saudagar` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-27_037 | Data saja: baris katalog `nusaniaga` (company profile importir & distributor bahan baku dan mesin, kategori "Company Profile", Rp1.590.000, sort_order 20), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `nusaniaga` ter-deploy. DB baru cukup `seed.templates.sql`. |

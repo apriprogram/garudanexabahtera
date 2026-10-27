@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline', 'velora'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline', 'velora', 'dermaga', 'saudagar', 'nusaniaga'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -55,7 +55,13 @@ const ALTURA: Template = { ...FIXTURE_TEMPLATES[4], id: 86, slug: 'altura', name
 const PORTLINE: Template = { ...FIXTURE_TEMPLATES[4], id: 87, slug: 'portline', name: 'Portline', category: 'Company Profile', price: 1890000, template_code: 'portline', sort_order: 16 };
 // Velora (2026-10-27, migrasi 034, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
 const VELORA: Template = { ...FIXTURE_TEMPLATES[4], id: 88, slug: 'velora', name: 'Velora', category: 'Company Profile', price: 1890000, template_code: 'velora', sort_order: 17 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA].find((t) => t.slug === slug) as Template;
+// Dermaga (2026-10-27, migrasi 035, ekspor-impor & freight forwarding) juga belum ada di fixture prerender bersama
+const DERMAGA: Template = { ...FIXTURE_TEMPLATES[4], id: 90, slug: 'dermaga', name: 'Dermaga', category: 'Company Profile', price: 1590000, template_code: 'dermaga', sort_order: 18 };
+// Saudagar (2026-10-27, migrasi 036, eksportir kopi, kakao & rempah) juga belum ada di fixture prerender bersama
+const SAUDAGAR: Template = { ...FIXTURE_TEMPLATES[4], id: 91, slug: 'saudagar', name: 'Saudagar', category: 'Company Profile', price: 1690000, template_code: 'saudagar', sort_order: 19 };
+// NusaNiaga (2026-10-27, migrasi 037, importir & distributor bahan baku dan mesin) juga belum ada di fixture prerender bersama
+const NUSANIAGA: Template = { ...FIXTURE_TEMPLATES[4], id: 92, slug: 'nusaniaga', name: 'NusaNiaga', category: 'Company Profile', price: 1590000, template_code: 'nusaniaga', sort_order: 20 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA, DERMAGA, SAUDAGAR, NUSANIAGA].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -87,6 +93,9 @@ describe('src/content/templates', () => {
       altura: 'Altura: Template Website Perusahaan Properti Berbahasa Inggris',
       portline: 'Portline: Template Website Perusahaan Pelayaran & Logistik',
       velora: 'Velora: Template Website Perusahaan Otomotif Berbahasa Inggris',
+      dermaga: 'Dermaga: Template Website Perusahaan Ekspor Impor',
+      saudagar: 'Saudagar: Template Website Eksportir Kopi, Kakao & Rempah',
+      nusaniaga: 'NusaNiaga: Template Website Importir & Distributor',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -107,6 +116,9 @@ describe('src/content/templates', () => {
       altura: 'Altura: Template Website Perusahaan Properti – Rp1,89 jt',
       portline: 'Portline: Template Website Perusahaan Pelayaran – Rp1,89 jt',
       velora: 'Velora: Template Website Perusahaan Otomotif – Rp1,89 jt',
+      dermaga: 'Dermaga: Template Website Ekspor Impor – Rp1,59 jt',
+      saudagar: 'Saudagar: Template Website Eksportir Komoditas – Rp1,69 jt',
+      nusaniaga: 'NusaNiaga: Template Website Importir & Trading – Rp1,59 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -231,6 +243,26 @@ describe('src/content/templates', () => {
     // teks tertanam, dan memang menjanjikan label formulir bisa diganti
     expect(velora).toMatch(/label dan pesan galat formulir/);
     expect(velora).not.toMatch(/tertanam di template|tetap berbahasa Inggris/);
+    const dermaga = visibleText(templateContent('dermaga') as TemplatePageContent);
+    expect(dermaga).toMatch(/data tidak disimpan di website/);
+    expect(dermaga).toMatch(/tidak ada pelacakan kiriman/);
+    expect(dermaga).toMatch(/pembayaran online/);
+    expect(dermaga).toMatch(/ilustrasi, bukan peta pelayaran/);
+    expect(dermaga).toMatch(/fiktif/);
+    expect(dermaga).not.toMatch(/terdaftar di Bea Cukai|eksportir terdaftar|bersertifikat|\bISO\b|\bNIB\b|izin resmi|\bAEO\b/i);
+    const saudagar = visibleText(templateContent('saudagar') as TemplatePageContent);
+    expect(saudagar).toMatch(/data tidak disimpan di website/);
+    expect(saudagar).toMatch(/harga komoditas tidak diperbarui otomatis/i);
+    expect(saudagar).toMatch(/tidak memproses pembayaran/);
+    expect(saudagar).toMatch(/tidak ada pelacakan kiriman/);
+    expect(saudagar).toMatch(/fiktif/);
+    expect(saudagar).not.toMatch(/terdaftar di Bea Cukai|eksportir terdaftar|bersertifikat|\bISO\b|\bNIB\b|izin resmi|\bAEO\b|SVLK|Halal MUI|fair ?trade/i);
+    const nusaniaga = visibleText(templateContent('nusaniaga') as TemplatePageContent);
+    expect(nusaniaga).toMatch(/data tidak disimpan di website/);
+    expect(nusaniaga).toMatch(/tidak ada pelacakan kiriman/i);
+    expect(nusaniaga).toMatch(/tidak diperbarui otomatis/);
+    expect(nusaniaga).toMatch(/fiktif/);
+    expect(nusaniaga).not.toMatch(/terdaftar di Bea Cukai|importir terdaftar|bersertifikat|\bISO\b|\bNIB\b|\bAPI-U\b|izin resmi|\bAEO\b|katalog produk/i);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -414,6 +446,64 @@ describe('src/content/templates', () => {
     expect(TEMPLATE_COPY.velora?.niche).toBe('Perusahaan Otomotif');
     expect(TEMPLATE_PAGES.velora?.niche).toBe('perusahaan otomotif');
     expect(TEMPLATE_COPY.velora?.updated).toBe('2026-10-27');
+  });
+
+  it('Dermaga: kata kunci "template website ekspor impor" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('dermaga');
+    const keyword = /template website (perusahaan )?ekspor impor/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website ekspor impor /);
+    expect(templateDescription(t)).toContain('Rp1.590.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toBe('Dermaga: Template Website Perusahaan Ekspor Impor');
+    const c = templateContent('dermaga') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Dermaga adalah template website ekspor impor /);
+    const text = visibleText(c).toLowerCase();
+    for (const phrase of ['website perusahaan ekspor impor', 'website freight forwarding', 'company profile ekspor impor', 'website perusahaan trading']) {
+      expect(text, phrase).toContain(phrase);
+    }
+    // Wajar, bukan ditumpuk
+    expect(text.split('template website ekspor impor').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.dermaga?.niche).toBe('Perusahaan Ekspor Impor & Freight Forwarding');
+    expect(TEMPLATE_PAGES.dermaga?.niche).toBe('perusahaan ekspor impor');
+    expect(TEMPLATE_COPY.dermaga?.updated).toBe('2026-10-27');
+  });
+
+  it('Saudagar: kata kunci "template website eksportir" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('saudagar');
+    const keyword = /template website eksportir/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website eksportir /);
+    expect(templateDescription(t)).toContain('Rp1.690.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toMatch(keyword);
+    const c = templateContent('saudagar') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Saudagar adalah template website eksportir /);
+    const text = visibleText(c).toLowerCase();
+    for (const phrase of ['website eksportir kopi', 'website perusahaan ekspor hasil bumi']) expect(text, phrase).toContain(phrase);
+    // Wajar, bukan ditumpuk
+    expect(text.split('template website eksportir').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.saudagar?.niche).toBe('Eksportir Kopi, Kakao & Rempah');
+    expect(TEMPLATE_PAGES.saudagar?.niche).toBe('eksportir kopi, kakao & rempah');
+    expect(TEMPLATE_COPY.saudagar?.updated).toBe('2026-10-27');
+  });
+
+  it('NusaNiaga: kata kunci "template website importir" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('nusaniaga');
+    const keyword = /template website importir/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website importir /);
+    expect(templateDescription(t)).toContain('Rp1.590.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toMatch(keyword);
+    const c = templateContent('nusaniaga') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^NusaNiaga adalah template website importir /);
+    const text = visibleText(c).toLowerCase();
+    for (const phrase of ['website importir', 'website distributor bahan baku', 'website supplier mesin industri', 'company profile importir']) {
+      expect(text, phrase).toContain(phrase);
+    }
+    // Wajar, bukan ditumpuk
+    expect(text.split('template website importir').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.nusaniaga?.niche).toBe('Importir & Distributor Bahan Baku Industri');
+    expect(TEMPLATE_PAGES.nusaniaga?.niche).toBe('importir & distributor bahan baku');
+    expect(TEMPLATE_COPY.nusaniaga?.updated).toBe('2026-10-27');
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

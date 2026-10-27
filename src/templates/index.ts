@@ -6,12 +6,15 @@ import { auraStudio } from './aura-studio';
 import { bestari } from './bestari';
 import { cakrawala } from './cakrawala';
 import { corporateNexa } from './corporate-nexa';
+import { dermaga } from './dermaga';
 import { finova } from './finova';
 import { gadgetku } from './gadgetku';
 import { glowstory } from './glowstory';
 import { madani } from './madani';
+import { nusaniaga } from './nusaniaga';
 import { portline } from './portline';
 import { puncakgear } from './puncakgear';
+import { saudagar } from './saudagar';
 import { serenity } from './serenity';
 import { skynusa } from './skynusa';
 import { startupClean } from './startup-clean';
@@ -35,6 +38,9 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // Altura (2026-10-27): company profile developer properti global berbahasa Inggris, hero dua panel (src/templates/altura/Altura.tsx).
 // Portline (2026-10-27): company profile berbahasa Inggris grup pelayaran & logistik, hero slider + indeks 01/02/03 (src/templates/portline/Portline.tsx).
 // Velora (2026-10-27): company profile Inggris grup otomotif, hero kartu foto + model berfilter + test drive (src/templates/velora/Velora.tsx).
+// Dermaga (2026-10-27): ekspor-impor & freight forwarding, hero rute di atas foto terminal + pita pasar + formulir penawaran ke WhatsApp (src/templates/dermaga/Dermaga.tsx).
+// Saudagar (2026-10-27): eksportir kopi, kakao & rempah, hero tiga foto lengkung + tab spesifikasi + kalender panen (src/templates/saudagar/Saudagar.tsx).
+// NusaNiaga (2026-10-27): importir & distributor bahan baku & mesin, hero foto berbilah + garis alur proses + formulir penawaran ke WhatsApp (src/templates/nusaniaga/NusaNiaga.tsx).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -53,6 +59,9 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [altura.code]: altura,
   [portline.code]: portline,
   [velora.code]: velora,
+  [dermaga.code]: dermaga,
+  [saudagar.code]: saudagar,
+  [nusaniaga.code]: nusaniaga,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */
