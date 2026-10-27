@@ -278,6 +278,7 @@ CREATE TABLE IF NOT EXISTS template_order_logs (
   order_id    INT NOT NULL,
   event       VARCHAR(40) NOT NULL,   -- created|payment_created|payment_update|approved|rejected|domain_set|activated|cancelled|note
                                       -- |renewal_created|renewal_payment_created|renewal_payment_update|renewal_paid|renewal_cancelled
+                                      -- |addon_created|addon_payment_created|addon_payment_update|addon_paid|addon_cancelled|addon_granted|addon_revoked
   from_status VARCHAR(30) DEFAULT NULL,
   to_status   VARCHAR(30) DEFAULT NULL,
   actor_type  ENUM('system','customer','staff','midtrans') NOT NULL,
@@ -1051,6 +1052,71 @@ CREATE TABLE IF NOT EXISTS site_seo (
   PRIMARY KEY (site_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Paid add-on features per customer site (migration 030, docs/platform/SITE-ADDONS-SPEC.md): today only 'posts'
+-- (news & announcements on post-capable templates). One row per invoice/activation; addon_number GNF-YYYYMMDD-XXXXXX,
+-- Midtrans order_id = addon_number + '-' + attempt. Active = status 'lunas' AND revoked_at IS NULL. pending_key =
+-- '{site_id}:{addon_code}' while unpaid (UNIQUE: one open invoice per site and feature). source: beli (paid by the
+-- customer) | admin (granted free by staff) | migrasi (sites that already had posts when the feature became paid).
+CREATE TABLE IF NOT EXISTS site_addon_orders (
+  id                     INT NOT NULL AUTO_INCREMENT,
+  addon_number           VARCHAR(40) NOT NULL,          -- 'GNF-YYYYMMDD-XXXXXX' (migration: 'GNF-MIGRASI-{site_id}')
+  site_id                INT NOT NULL,                  -- template_sites.id
+  order_id               INT NOT NULL,                  -- template_orders.id of the site (invoice, order history)
+  user_id                INT NOT NULL,
+  addon_code             VARCHAR(20) NOT NULL,          -- 'posts'
+  price                  DECIMAL(15,2) NOT NULL,        -- Midtrans gross_amount; 0 = staff gift / migration
+  status                 ENUM('menunggu_pembayaran','lunas','dibatalkan') NOT NULL DEFAULT 'menunggu_pembayaran',
+  pending_key            VARCHAR(40) DEFAULT NULL,      -- '{site_id}:{addon_code}' while menunggu_pembayaran, else NULL
+  source                 VARCHAR(12) NOT NULL DEFAULT 'beli',   -- 'beli' | 'admin' | 'migrasi'
+  payment_status         VARCHAR(30) NOT NULL DEFAULT 'pending',
+  payment_type           VARCHAR(40) DEFAULT NULL,
+  midtrans_order_id      VARCHAR(60) DEFAULT NULL,      -- addon_number + '-' + attempt
+  payment_attempt        INT NOT NULL DEFAULT 0,
+  snap_token             VARCHAR(255) DEFAULT NULL,
+  payment_url            VARCHAR(500) DEFAULT NULL,
+  payment_created_at     DATETIME DEFAULT NULL,         -- Snap page of the current attempt (reused for 23 hours)
+  paid_at                DATETIME DEFAULT NULL,         -- also the activation time for source admin/migrasi
+  paid_midtrans_order_id VARCHAR(60) DEFAULT NULL,      -- Midtrans order_id of the attempt that paid (refund / double payment checks)
+  cancelled_at           DATETIME DEFAULT NULL,
+  revoked_at             DATETIME DEFAULT NULL,         -- turned off by staff (refund, mistake); the row stays for the invoice
+  granted_by             INT DEFAULT NULL,              -- users.id of the staff member (source admin)
+  note                   VARCHAR(255) NOT NULL DEFAULT '',
+  created_at             TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at             TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_addon_number (addon_number),
+  UNIQUE KEY uq_addon_midtrans (midtrans_order_id),
+  UNIQUE KEY uq_addon_pending (pending_key),
+  KEY idx_addon_site (site_id, addon_code, status),
+  KEY idx_addon_user (user_id),
+  KEY idx_addon_order (order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Visit statistics per customer site (migration 031, docs/platform/SITE-STATS-SPEC.md, CMS /akun/situs/:id/statistik).
+-- Daily aggregates only, no IP address: one row per site, WIB day, metric and dimension. Written by the public action
+-- site_visit, read by customer_get_site_stats.
+CREATE TABLE IF NOT EXISTS site_visit_stats (
+  site_id   INT NOT NULL,                       -- template_sites.id
+  day       DATE NOT NULL,                      -- tanggal Asia/Jakarta (WIB)
+  metric    VARCHAR(10) NOT NULL,               -- 'total' | 'page' | 'hour' | 'source' | 'referrer' | 'device' | 'browser'
+  dim       VARCHAR(191) NOT NULL DEFAULT '',   -- total: ''; page: path; hour: '00'..'23'; source: kunci grup;
+                                                -- referrer: host atau 'utm:{utm_source}'; device: desktop|mobile|tablet; browser: nama
+  views     INT UNSIGNED NOT NULL DEFAULT 0,    -- tampilan halaman
+  visits    INT UNSIGNED NOT NULL DEFAULT 0,    -- kunjungan (halaman pertama satu sesi browser)
+  visitors  INT UNSIGNED NOT NULL DEFAULT 0,    -- pengunjung unik hari itu (hanya metric total dan device)
+  PRIMARY KEY (site_id, day, metric, dim),
+  KEY idx_site_visit_metric (site_id, metric, day)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Unique visitor markers per site and day (migration 031): a hash, never the IP. Rows older than 2 days are removed by
+-- the code (about 1 in 50 site_visit requests).
+CREATE TABLE IF NOT EXISTS site_visitors (
+  site_id  INT NOT NULL,
+  day      DATE NOT NULL,
+  visitor  CHAR(16) NOT NULL,                   -- 16 hex pertama sha256(AUTH_SECRET|site_id|day|ip|user_agent)
+  PRIMARY KEY (site_id, day, visitor)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- A fresh install already has every migration up to this baseline.
 -- (002, 003, 007 and the navbar/FAQ data steps of 004 only touch existing rows, which a
 --  fresh install does not have; with an empty navbar_menus the frontend uses its
@@ -1072,7 +1138,9 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-24_016', 'baseline: showcase_stats (project card likes and views)'),
   ('2026-10-25_026', 'baseline: domain_price/domain_check, service/domain periods, template_renewals, users company/address/city'),
   ('2026-10-25_027', 'baseline: users.google_sub (Google sign-in)'),
-  ('2026-10-26_029', 'baseline: site_posts, site_post_views, site_seo (school news & announcements, customer site SEO)');
+  ('2026-10-26_029', 'baseline: site_posts, site_post_views, site_seo (school news & announcements, customer site SEO)'),
+  ('2026-10-27_030', 'baseline: site_addon_orders (paid add-on features: news & announcements; no sites to inherit)'),
+  ('2026-10-27_031', 'baseline: site_visit_stats, site_visitors (customer site visit statistics, daily aggregates, no IP)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

@@ -7,13 +7,16 @@
 // bertanggal dengan label "Penting" merah lembut dan tautan lampiran. Agenda: ubin tanggal warna tema, waktu, tempat.
 // Berita/pengumuman dari tulisan (site_posts, kunci POST_PATH_KEY): kartu menaut ke halaman tulisan lewat judulnya
 // ("Baca selengkapnya", bukan isi di tempat atau "Lihat lampiran"), plus "Lihat semua berita/pengumuman".
+// Fitur Berita & Pengumuman aktif (usePostsEnabled) → Berita dan bagian Pengumuman diganti section profesional bersama
+// (shared/posts/pro) dengan label bernomor & judul Bestari; Agenda tetap. Tidak aktif = tampilan di atas dari item CMS.
 import { ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Clock, MapPin, Paperclip } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
-import { useSitePosts } from '../shared/posts/hooks';
+import { usePostsEnabled, useSitePosts } from '../shared/posts/hooks';
 import { POST_PATH_KEY } from '../shared/posts/model';
+import { ProAnnouncementsSection, ProNewsSection } from '../shared/posts/pro';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { SiteLink } from '../shared/SiteLink';
 import { field, hasImage, safeUrl, text } from '../shared/utils';
@@ -21,7 +24,7 @@ import type { ListItem } from '../types';
 import { KitPhoto } from '../kit/Photo';
 import { displayDate, filterNews, isUrgent, newsCategories, newsItems, paragraphsOf, parseSchoolDate, type BestariModel } from './model';
 import { BESTARI_PHOTOS } from './photos';
-import { C, CARD, DISPLAY, SECTION_PAD, TYPE_B } from './styles';
+import { C, CARD, DISPLAY, POST_THEME, SECTION_PAD, TYPE_B } from './styles';
 import { PillLink, SectionHead, SectionLabel, TextLink } from './ui';
 
 /**
@@ -165,14 +168,35 @@ function NewsCard({ item }: { item: ListItem }) {
 export function News({ m }: { m: BestariModel }) {
   const { news } = m;
   const items = newsItems(news);
+  const pro = usePostsEnabled();
   const posts = useSitePosts('berita');
   const [category, setCategory] = useState<string | null>(null);
+  const buttonLabel = text(news, 'button_label');
+  const buttonUrl = safeUrl(text(news, 'button_url'));
+  const cmsButton = buttonLabel && buttonUrl ? <PillLink action={{ kind: 'external', href: buttonUrl }} label={buttonLabel} variant="outline" /> : null;
+  if (pro) {
+    return (
+      <ProNewsSection
+        section={news}
+        theme={POST_THEME}
+        className={SECTION_PAD}
+        extra={cmsButton}
+        head={(filters) => (
+          <SectionHead
+            eyebrow={text(news, 'eyebrow')}
+            number={m.number('news')}
+            title={text(news, 'title') || 'Berita terbaru'}
+            subtitle={text(news, 'subtitle')}
+            aside={filters}
+          />
+        )}
+      />
+    );
+  }
   if (items.length === 0) return null;
   const categories = newsCategories(items);
   const shown = filterNews(items, category);
   const allLabel = text(news, 'all_label') || 'Semua';
-  const buttonLabel = text(news, 'button_label');
-  const buttonUrl = safeUrl(text(news, 'button_url'));
 
   const filters =
     categories.length > 1 ? (
@@ -211,10 +235,10 @@ export function News({ m }: { m: BestariModel }) {
             </Reveal>
           ))}
         </ul>
-        {(posts || (buttonLabel && buttonUrl)) && (
+        {(posts || cmsButton) && (
           <div className="mt-10 flex flex-col items-center justify-center gap-3 @xl:flex-row @3xl:mt-12">
             {posts && <PillLink action={{ kind: 'site', path: '/berita' }} label="Lihat semua berita" variant="ink" />}
-            {buttonLabel && buttonUrl && <PillLink action={{ kind: 'external', href: buttonUrl }} label={buttonLabel} variant="outline" />}
+            {cmsButton}
           </div>
         )}
       </div>
@@ -227,8 +251,24 @@ const SMALL_H2 = `${DISPLAY} text-balance text-[25px] font-medium leading-tight 
 function Announcements({ m }: { m: BestariModel }) {
   const { announcements } = m;
   const items = m.items('announcements');
+  const pro = usePostsEnabled();
   const posts = useSitePosts('pengumuman');
   const title = text(announcements, 'title');
+  if (pro) {
+    return (
+      <ProAnnouncementsSection
+        section={announcements}
+        theme={POST_THEME}
+        className={`p-5 @3xl:p-8 ${CARD.white}`}
+        head={
+          <>
+            <SectionLabel label={text(announcements, 'eyebrow')} className="border-t-0 pt-0" />
+            <h2 className={`mt-3 ${SMALL_H2} ${C.ink}`}>{title || 'Pengumuman'}</h2>
+          </>
+        }
+      />
+    );
+  }
   return (
     <TemplateSection sectionKey="announcements" className={`min-w-0 p-5 @3xl:p-8 ${CARD.white}`}>
       <SectionLabel label={text(announcements, 'eyebrow')} className="border-t-0 pt-0" />

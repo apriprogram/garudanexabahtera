@@ -3,18 +3,21 @@
 // dengan blok tanggal krem, judul H3, lencana (mis. "Penting", merah lembut), isi, dan tautan opsional. Pengumuman dari
 // tulisan (site_posts): baris menaut ke halaman /pengumuman/{slug} lewat judulnya + "Lihat semua pengumuman". Agenda:
 // kartu krem berisi kegiatan dengan pil tanggal, waktu, tempat, dan chip kategori.
+// Fitur Berita & Pengumuman aktif (usePostsEnabled) → bagian pengumuman diganti papan pengumuman profesional bersama
+// (shared/posts/pro) di kolom yang sama; Agenda tetap.
 import { ArrowRight, Clock, MapPin } from 'lucide-react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
-import { useSitePosts } from '../shared/posts/hooks';
+import { usePostsEnabled, useSitePosts } from '../shared/posts/hooks';
 import { POST_PATH_KEY } from '../shared/posts/model';
+import { ProAnnouncementsSection } from '../shared/posts/pro';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { SiteLink } from '../shared/SiteLink';
 import { field, isEnabled, list, resolveAction, text } from '../shared/utils';
 import { parseSchoolDate, type MadaniModel } from './model';
 import { DateText, MoreHint, STRETCHED_LINK } from './News';
-import { C, DISPLAY, SECTION_PAD, TYPE_M } from './styles';
+import { C, DISPLAY, POST_THEME, SECTION_PAD, TYPE_M } from './styles';
 import { Chip, Eyebrow } from './ui';
 
 function Head({ eyebrow, title }: { eyebrow: string; title: string }) {
@@ -36,10 +39,22 @@ function Head({ eyebrow, title }: { eyebrow: string; title: string }) {
 
 function Announcements({ m, wide }: { m: MadaniModel; wide: boolean }) {
   const { announcements: a } = m;
+  const pro = usePostsEnabled();
   const posts = useSitePosts('pengumuman');
   const items = list(a, 'items', 8).filter((item) => field(item, 'title'));
+  const column = wide ? '@5xl:col-span-12' : '@5xl:col-span-7';
+  if (pro) {
+    return (
+      <ProAnnouncementsSection
+        section={a}
+        theme={POST_THEME}
+        className={column}
+        head={<Head eyebrow={text(a, 'eyebrow')} title={text(a, 'title') || 'Pengumuman'} />}
+      />
+    );
+  }
   return (
-    <TemplateSection sectionKey="announcements" className={`min-w-0 ${wide ? '@5xl:col-span-12' : '@5xl:col-span-7'}`}>
+    <TemplateSection sectionKey="announcements" className={`min-w-0 ${column}`}>
       <Head eyebrow={text(a, 'eyebrow')} title={text(a, 'title')} />
       <ul className="mt-8 border-t border-black/[0.08]">
         {items.map((item, i) => {

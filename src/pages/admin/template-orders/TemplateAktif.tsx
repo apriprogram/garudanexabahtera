@@ -1,8 +1,9 @@
 // Template Aktif (/admin/pesanan-template/template-aktif): situs pembeli yang sudah aktif (admin_get_active_sites)
 // + nonaktifkan sementara / aktifkan kembali (admin_set_site_status). SPEC §6, §9. Kolom "Berakhir" = masa aktif
 // hosting & jasa pesanan induk; tab "Segera berakhir" = sisa ≤ 30 hari atau lewat (ACCOUNT-DOMAIN-RENEWAL-SPEC.md §5).
+// "Detail pesanan" membuka drawer Order Masuk (termasuk fitur tambahan situs, SITE-ADDONS-SPEC.md §7).
 import { useState } from 'react';
-import { BadgeCheck, ExternalLink, Globe, PauseCircle, PlayCircle, RotateCw } from 'lucide-react';
+import { BadgeCheck, ExternalLink, Globe, PauseCircle, PlayCircle, ReceiptText, RotateCw } from 'lucide-react';
 import {
   Button,
   ConfirmDialog,
@@ -45,6 +46,9 @@ import {
 } from './shared/orderUtils';
 
 type SitesResponse = { sites: Site[] };
+
+/** Detail pesanan induk (masa aktif, perpanjangan, fitur tambahan) = drawer Order Masuk. */
+const orderHref = (site: Site) => `/admin/pesanan-template?order=${site.order_id}`;
 type StatusFilter = 'all' | SiteStatus | 'expiring';
 /** activated = urutan server (terbaru aktif dulu); expires = paling cepat berakhir dulu. */
 type SortKey = 'activated' | 'expires';
@@ -134,6 +138,9 @@ export default function TemplateAktif() {
     <>
       <Button size="sm" variant="secondary" icon={<Globe />} href={`/situs/${site.id}`} target="_blank" rel="noopener noreferrer">
         Lihat situs
+      </Button>
+      <Button size="sm" variant="secondary" icon={<ReceiptText />} to={orderHref(site)}>
+        Detail pesanan
       </Button>
       {site.status === 'active' ? (
         <Button size="sm" variant="danger-soft" icon={<PauseCircle />} disabled={busyId != null} onClick={() => setSuspendTarget(site)}>
@@ -330,6 +337,7 @@ export default function TemplateAktif() {
                       <Td align="right">
                         <div className="flex justify-end gap-1">
                           <IconButton icon={<Globe />} label={`Lihat situs ${site.domain}`} size="sm" href={`/situs/${site.id}`} target="_blank" rel="noopener noreferrer" />
+                          <IconButton icon={<ReceiptText />} label={`Detail pesanan ${site.order_number}`} size="sm" to={orderHref(site)} />
                           {site.status === 'active' ? (
                             <Button size="sm" variant="danger-soft" icon={<PauseCircle />} disabled={busyId != null} onClick={() => setSuspendTarget(site)}>
                               Nonaktifkan

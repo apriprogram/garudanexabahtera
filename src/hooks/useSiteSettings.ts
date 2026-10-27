@@ -1,4 +1,5 @@
 import { DOMAIN_PRICE_FROM, hostingRenewalPrice, rupiahCompact } from '../lib/domainPricing';
+import { ADDON_POSTS_PRICE_DEFAULT, ADDON_POSTS_PRICE_SETTING } from '../types/siteAddons';
 import { useCachedJson } from './useCachedJson';
 
 /** Isi tabel hero_settings dari /api.php?action=get_settings (semua nilai berupa string). */
@@ -136,4 +137,22 @@ export const useTemplatePricing = (): TemplatePricing & { loaded: boolean } => {
 export const useHostingRenewalPrice = (): { price: number; loaded: boolean } => {
   const { settings, loaded } = useSiteSettings();
   return { price: hostingRenewalPrice(settings), loaded };
+};
+
+// eslint-disable-next-line no-control-regex -- karakter trim() PHP, persis seperti backend
+const PHP_TRIM = /^[ \t\n\r\0\x0B]+|[ \t\n\r\0\x0B]+$/g;
+
+/**
+ * Harga fitur tambahan Berita & Pengumuman (template sekolah, sekali bayar) dari setting `addon_posts_price`: angka rupiah
+ * utuh > 0; kosong, tidak valid, atau 0 → bawaan Rp350.000. Sama dengan sa_price di backend (SITE-ADDONS-SPEC.md §1):
+ * trim ala PHP (hanya spasi, \t, \n, \r, \0, \x0B), lalu dibulatkan dari teksnya (digit desimal pertama ≥ 5 → naik).
+ */
+export const addonPostsPrice = (settings: SiteSettings): number => {
+  const raw = String(settings[ADDON_POSTS_PRICE_SETTING] ?? '').replace(PHP_TRIM, '');
+  const m = /^(\d+)(?:\.(\d)\d*)?$/.exec(raw);
+  if (!m) return ADDON_POSTS_PRICE_DEFAULT;
+  const whole = m[1].replace(/^0+/, '');
+  if (whole.length > 13) return ADDON_POSTS_PRICE_DEFAULT;
+  const value = Number(whole || '0') + (m[2] !== undefined && m[2] >= '5' ? 1 : 0);
+  return value > 0 && value <= 1e12 ? value : ADDON_POSTS_PRICE_DEFAULT;
 };

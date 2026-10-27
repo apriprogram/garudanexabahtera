@@ -155,3 +155,22 @@ export function postLinkTarget(raw: string | null | undefined): PostLinkTarget |
 export function relatedPosts(posts: SitePostSummary[] | null | undefined, slug: string, max = 3): SitePostSummary[] {
   return (posts ?? []).filter((p) => p.slug !== slug).slice(0, max);
 }
+
+/** Perkiraan waktu baca isi tulisan (200 kata per menit), minimal 1 menit. */
+export function postReadingMinutes(body: string | null | undefined): number {
+  const words = (body || '').split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}
+
+/** URL kanonis tulisan di domain pembeli: "https://domain" + "/berita/{slug}"; tanpa origin → null. */
+export const postCanonicalUrl = (origin: string | null | undefined, kind: SitePostKind, slug: string): string | null =>
+  origin ? `${origin.replace(/\/+$/, '')}${postPath(kind, slug)}` : null;
+
+/** Tautan bagikan dari URL kanonis (bukan alamat halaman yang sedang dibuka): semua nilai lewat encodeURIComponent. */
+export function postShareLinks(url: string, title: string): { whatsapp: string; facebook: string; x: string } {
+  return {
+    whatsapp: `https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+    x: `https://x.com/intent/post?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
+  };
+}

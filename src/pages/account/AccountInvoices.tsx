@@ -1,9 +1,10 @@
 // Menu Nota (/akun/nota): semua nota pembeli dari customer_get_invoices — nota pembelian template (pesanan yang sudah
-// dibayar) dan nota perpanjangan (tagihan perpanjangan lunas), terbaru dulu. Tiap baris membuka nota resminya
-// (/akun/pesanan/:no/nota[/:renewal], AccountInvoice) yang bisa dicetak atau diunduh PDF.
+// dibayar), nota perpanjangan (tagihan perpanjangan lunas), dan nota fitur tambahan (tagihan GNF-… lunas berbayar),
+// terbaru dulu. Tiap baris membuka nota resminya (/akun/pesanan/:no/nota[/:dokumen], AccountInvoice) yang bisa dicetak
+// atau diunduh PDF.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarSync, FileText, LayoutTemplate } from 'lucide-react';
+import { ArrowRight, CalendarSync, FileText, LayoutTemplate, Sparkles, type LucideIcon } from 'lucide-react';
 import { ApiError, apiGet, errorMessage } from '../../lib/api';
 import { formatRupiah, formatTanggal, type CustomerInvoiceItem } from '../../types/platform';
 import { useDocumentTitle } from './components/payment';
@@ -47,8 +48,8 @@ export default function AccountInvoices() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight text-fg sm:text-[32px]">Nota</h1>
         <p className="mt-1.5 text-[14px] text-muted sm:text-base">
-          Nota resmi PT Garuda Nexa Bahtera untuk pembelian template dan perpanjangan masa aktif. Buka untuk mencetak atau
-          mengunduh PDF.
+          Nota resmi PT Garuda Nexa Bahtera untuk pembelian template, perpanjangan masa aktif, dan fitur tambahan. Buka untuk
+          mencetak atau mengunduh PDF.
         </p>
       </header>
 
@@ -74,7 +75,7 @@ export default function AccountInvoices() {
           <EmptyState
             icon={<FileText className="h-7 w-7" aria-hidden />}
             title="Belum ada nota"
-            description="Nota terbit otomatis setelah pembayaran pesanan atau perpanjangan lunas."
+            description="Nota terbit otomatis setelah pembayaran pesanan, perpanjangan, atau fitur tambahan lunas."
             action={
               <Link to="/akun/pesanan" className="btn btn-primary">
                 Lihat pesanan saya
@@ -98,24 +99,29 @@ export default function AccountInvoices() {
   );
 }
 
+/** Ikon, warna, dan judul baris per jenis nota. */
+const ROW_KIND: Record<CustomerInvoiceItem['type'], { icon: LucideIcon; tone: string; title: (item: CustomerInvoiceItem) => string }> = {
+  pembelian: { icon: LayoutTemplate, tone: 'bg-brand-50 text-primary', title: (item) => `Pembelian template · ${item.title}` },
+  perpanjangan: { icon: CalendarSync, tone: 'bg-success-50 text-success-700', title: (item) => `Perpanjangan ${item.years ?? 1} tahun · ${item.title}` },
+  // Judul dari server: "Fitur Berita & Pengumuman"
+  fitur: { icon: Sparkles, tone: 'bg-brand-50 text-brand-700', title: (item) => item.title || 'Fitur tambahan' },
+};
+
 function InvoiceRow({ item }: { item: CustomerInvoiceItem }) {
   const status = invoiceItemStatus(item);
-  const renewal = item.type === 'perpanjangan';
-  const Icon = renewal ? CalendarSync : LayoutTemplate;
+  const kind = ROW_KIND[item.type] ?? ROW_KIND.pembelian;
+  const Icon = kind.icon;
   return (
     // Seluruh kartu bisa diketuk (tautan judul direntangkan); tombol "Lihat nota" tetap di atasnya
     <article className="card-site relative flex flex-col gap-3 p-4 transition-shadow duration-200 hover:ring-line-strong sm:flex-row sm:items-center sm:gap-4 sm:p-5">
       <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
-        <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${renewal ? 'bg-success-50 text-success-700' : 'bg-brand-50 text-primary'}`}
-          aria-hidden
-        >
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${kind.tone}`} aria-hidden>
           <Icon className="h-5 w-5" />
         </span>
         <div className="min-w-0">
           <h2 className="text-[15px] font-semibold leading-snug text-fg">
             <Link to={invoicePath(item)} className="rounded-sm after:absolute after:inset-0 after:rounded-[24px] hover:text-primary">
-              {renewal ? `Perpanjangan ${item.years ?? 1} tahun` : 'Pembelian template'} · {item.title}
+              {kind.title(item)}
             </Link>
           </h2>
           <p className="mt-0.5 break-all text-xs text-subtle">

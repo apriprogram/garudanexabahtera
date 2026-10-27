@@ -1,10 +1,14 @@
 // Alamat halaman per situs di panel akun dan kemampuan template (berita & pengumuman). Dipakai SiteNav, SiteEditor,
-// halaman Berita & Pengumuman, dan halaman SEO (docs/platform/SITE-POSTS-SEO-SPEC.md §8).
-import { getTemplate } from '../../../templates';
+// halaman Berita & Pengumuman, halaman SEO (docs/platform/SITE-POSTS-SEO-SPEC.md §8), dan menu Fitur tambahan / nota
+// (SITE-ADDONS-SPEC.md §5). Sengaja tanpa registri TEMPLATES, supaya halaman ringan tidak ikut memuat kode semua template.
+import { templateHasPosts } from '../../../templates/postTemplates';
 import type { SitePostKind } from '../../../types/sitePosts';
 
-/** Template situs ini punya fitur berita & pengumuman (TemplateDefinition.features.posts, tabel site_posts). */
-export const hasPostsFeature = (templateCode: string | null | undefined): boolean => getTemplate(templateCode)?.features?.posts === true;
+/**
+ * Template situs ini punya fitur berita & pengumuman (TemplateDefinition.features.posts, tabel site_posts). Dari
+ * POST_TEMPLATE_CODES, yang dijaga sama dengan registri oleh postTemplates.test.ts.
+ */
+export const hasPostsFeature = (templateCode: string | null | undefined): boolean => templateHasPosts(templateCode);
 
 /** Alamat halaman per situs di panel akun. */
 export const siteLinks = (siteId: number) => ({

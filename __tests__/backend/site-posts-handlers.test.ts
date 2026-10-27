@@ -5,7 +5,10 @@
 // sama dengan parameter yang sama, dan mengunggah/menghapus file yang sama. Kepemilikan situs, situs nonaktif, template
 // tanpa fitur tulisan, slug otomatis, foto lama yang dihapus, perayap yang tidak dihitung, dan file baru yang dibersihkan
 // saat database gagal ikut diuji, begitu juga simpan bersamaan dari tab lain (UPDATE bersyarat foto yang tadi dibaca:
-// tulisan hilang → 404, foto/baris SEO berubah → 409, file baru dihapus lagi). Bagian PHP dilewati bila `php` tidak ada.
+// tulisan hilang → 404, foto/baris SEO berubah → 409, file baru dihapus lagi). Gerbang fitur berbayar Berita & Pengumuman
+// (docs/platform/SITE-ADDONS-SPEC.md §3, site_addons.php = site_addons.js): template mampu tanpa fitur aktif → aksi pembeli
+// 403 POSTS_LOCKED, publik kosong / 404; tabel site_addon_orders belum ada = tidak aktif, bukan 500. Bagian PHP dilewati
+// bila `php` tidak ada.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -157,10 +160,14 @@ const Q = {
   seoInsert: 'INSERT INTO site_seo (site_id, title, description, og_image,',
   seoUpdate: 'UPDATE site_seo SET title = ?, description = ?, og_image = ?',
   seoRecheck: 'SELECT og_image FROM site_seo WHERE site_id = ? LIMIT 1',
+  addon: "FROM site_addon_orders WHERE site_id = ? AND addon_code = ? AND status = 'lunas'",
 };
 
-/** rows = hasil SELECT; affected = baris yang dikenai INSERT/UPDATE (bawaan 1); duplicate = kunci unik bentrok (1062). */
-interface Step { q: string; rows?: unknown[]; error?: string; affected?: number; duplicate?: boolean }
+/**
+ * rows = hasil SELECT; affected = baris yang dikenai INSERT/UPDATE (bawaan 1); duplicate = kunci unik bentrok (1062);
+ * missing = tabel belum ada (1146, migrasi belum dijalankan).
+ */
+interface Step { q: string; rows?: unknown[]; error?: string; affected?: number; duplicate?: boolean; missing?: boolean }
 interface Case {
   name: string;
   action: string;
@@ -194,11 +201,15 @@ interface Outcome {
   internal?: string;
 }
 
+// Gerbang fitur Berita & Pengumuman (sa_addon_active / addonActive): baris lunas yang tidak dicabut ada / tidak ada
+const ADDON_ON: Step = { q: Q.addon, rows: [{ active: 1 }] };
+const ADDON_OFF: Step = { q: Q.addon, rows: [] };
+
 const CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0 Safari/537.36';
 const CASES: Case[] = [
   // ── Pembeli: daftar ──
   { name: 'daftar tulisan pembeli', action: 'customer_get_site_posts', method: 'GET', input: { site_id: '7' },
-    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.adminList, rows: [DRAFT, ROW()] }] },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.adminList, rows: [DRAFT, ROW()] }] },
   { name: 'situs orang lain', action: 'customer_get_site_posts', method: 'GET', input: { site_id: '8' }, steps: [{ q: Q.ownSite, rows: [] }] },
   { name: 'template tanpa fitur tulisan', action: 'customer_get_site_posts', method: 'GET', input: { site_id: 7 },
     steps: [{ q: Q.ownSite, rows: [{ ...SITE, template_code: 'corporate-nexa' }] }] },
@@ -208,80 +219,80 @@ const CASES: Case[] = [
   // ── Pembeli: simpan ──
   { name: 'tulisan baru: slug otomatis bentrok, foto diunggah', action: 'customer_save_site_post', input: { site_id: 7, post: NEW_POST },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.count, rows: [{ n: 3 }] }, { q: Q.slugs, rows: [{ slug: 'juara-olimpiade-sains' }, { slug: 'lain' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.count, rows: [{ n: 3 }] }, { q: Q.slugs, rows: [{ slug: 'juara-olimpiade-sains' }, { slug: 'lain' }] },
       { q: Q.insert }, { q: Q.reread, rows: [ROW({ id: 20, slug: 'juara-olimpiade-sains-2', title: 'Juara Olimpiade Sains', image: 'IMG_NEW', view_count: 4 })] },
       { q: Q.deleteViews },
     ] },
   { name: 'ubah tulisan: foto tetap, jadi draf', action: 'customer_save_site_post',
     input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD', status: 'draft', published_at: '2026-10-20', noindex: '1' } },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
       { q: Q.slugs, rows: [{ slug: 'lain' }] }, { q: Q.update }, { q: Q.reread, rows: [ROW({ status: 'draft', noindex: 1 })] },
     ] },
   { name: 'ubah tulisan: foto diganti', action: 'customer_save_site_post',
     input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: JPEG } },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
       { q: Q.slugs, rows: [] }, { q: Q.update }, { q: Q.reread, rows: [ROW()] },
     ] },
   { name: 'ubah tulisan: foto dihapus, slug kosong dibuat ulang', action: 'customer_save_site_post',
     input: { site_id: 7, post: { ...NEW_POST, id: '15', image: null } },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
       { q: Q.slugs, rows: [] }, { q: Q.update }, { q: Q.reread, rows: [ROW({ image: null, slug: 'juara-olimpiade-sains' })] },
     ] },
   { name: 'slug dipakai tulisan lain', action: 'customer_save_site_post', input: { site_id: 7, post: { ...NEW_POST, slug: 'juara-olimpiade' } },
-    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.count, rows: [{ n: 3 }] }, { q: Q.slugs, rows: [{ slug: 'juara-olimpiade' }] }] },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.count, rows: [{ n: 3 }] }, { q: Q.slugs, rows: [{ slug: 'juara-olimpiade' }] }] },
   { name: 'validasi gagal', action: 'customer_save_site_post',
     input: { site_id: 7, post: { kind: 'artikel', title: 'ab', image: SVG, link_url: 'javascript:alert(1)', status: 'published' } },
-    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.count, rows: [{ n: 0 }] }] },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.count, rows: [{ n: 0 }] }] },
   { name: 'batas 500 tulisan', action: 'customer_save_site_post', input: { site_id: 7, post: NEW_POST },
-    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.count, rows: [{ n: 500 }] }] },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.count, rows: [{ n: 500 }] }] },
   { name: 'tulisan yang diubah tidak ada', action: 'customer_save_site_post', input: { site_id: 7, post: { ...NEW_POST, id: 99 } },
-    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [] }] },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [] }] },
   { name: 'situs nonaktif', action: 'customer_save_site_post', input: { site_id: 7, post: NEW_POST },
-    steps: [{ q: Q.ownSite, rows: [{ ...SITE, status: 'suspended' }] }] },
-  { name: 'tanpa data tulisan', action: 'customer_save_site_post', input: { site_id: 7, post: 'x' }, steps: [{ q: Q.ownSite, rows: [SITE] }] },
+    steps: [{ q: Q.ownSite, rows: [{ ...SITE, status: 'suspended' }] }, ADDON_ON] },
+  { name: 'tanpa data tulisan', action: 'customer_save_site_post', input: { site_id: 7, post: 'x' }, steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_ON] },
   { name: 'database gagal setelah foto diunggah', action: 'customer_save_site_post', input: { site_id: 7, post: NEW_POST },
-    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.count, rows: [{ n: 0 }] }, { q: Q.slugs, rows: [] }, { q: Q.insert, error: 'boom' }] },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.count, rows: [{ n: 0 }] }, { q: Q.slugs, rows: [] }, { q: Q.insert, error: 'boom' }] },
   // ── Pembeli: simpan bersamaan dari tab lain (UPDATE … AND image <=> foto yang tadi dibaca mengenai 0 baris) ──
   { name: 'ubah tulisan: dihapus di tab lain saat foto diunggah', action: 'customer_save_site_post',
     input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: JPEG } },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
       { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [] },
     ] },
   { name: 'ubah tulisan: foto diganti di tab lain saat foto diunggah', action: 'customer_save_site_post',
     input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: JPEG } },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
       { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [{ image: 'IMG_OTHER' }] },
     ] },
   { name: 'ubah tulisan: foto baru tidak tersimpan walau foto lama masih sama', action: 'customer_save_site_post',
     input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: JPEG } },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
       { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [{ image: 'IMG_OLD' }] },
     ] },
   { name: 'ubah tulisan tanpa foto baru: foto dihapus di tab lain', action: 'customer_save_site_post',
     input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' } },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
       { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [{ image: null }] },
     ] },
   { name: 'ubah tulisan: isian sama persis (0 baris berubah)', action: 'customer_save_site_post',
     input: { site_id: 7, post: { ...NEW_POST, id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' } },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
       { q: Q.slugs, rows: [] }, { q: Q.update, affected: 0 }, { q: Q.recheck, rows: [{ image: 'IMG_OLD' }] }, { q: Q.reread, rows: [ROW()] },
     ] },
   // ── Pembeli: hapus ──
   { name: 'hapus tulisan', action: 'customer_delete_site_post', input: { site_id: 7, post_id: 15 },
     steps: [
-      { q: Q.ownSite, rows: [SITE] }, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
+      { q: Q.ownSite, rows: [SITE] }, ADDON_ON, { q: Q.existing, rows: [{ id: 15, slug: 'juara-olimpiade', image: 'IMG_OLD' }] },
       { q: Q.deletePost }, { q: Q.deleteViews },
     ] },
-  { name: 'hapus tanpa post_id', action: 'customer_delete_site_post', input: { site_id: 7 }, steps: [{ q: Q.ownSite, rows: [SITE] }] },
+  { name: 'hapus tanpa post_id', action: 'customer_delete_site_post', input: { site_id: 7 }, steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_ON] },
   // ── Pembeli: SEO ──
   { name: 'SEO: belum ada pengaturan', action: 'customer_get_site_seo', method: 'GET', input: { site_id: '7' },
     steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [] }] },
@@ -323,25 +334,46 @@ const CASES: Case[] = [
     steps: [{ q: Q.activeSite, rows: [{ ...PUBLIC_SITE, content: SITE.content }] }, { q: Q.seoRow, rows: [SEO_ROW()] }] },
   { name: 'SEO publik: situs nonaktif', action: 'get_site_seo', method: 'GET', input: { site_id: '7' }, steps: [{ q: Q.activeSite, rows: [] }] },
   { name: 'daftar publik (limit dibatasi 100)', action: 'get_site_posts', method: 'GET', input: { site_id: '7', kind: 'berita', limit: '500' },
-    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, { q: Q.publicList, rows: [ROW()] }, { q: Q.publicCount, rows: [{ n: 5 }] }] },
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, ADDON_ON, { q: Q.publicList, rows: [ROW()] }, { q: Q.publicCount, rows: [{ n: 5 }] }] },
   { name: 'daftar publik bawaan 12', action: 'get_site_posts', method: 'GET', input: { site_id: '7', kind: 'pengumuman' },
-    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, { q: Q.publicList, rows: [] }, { q: Q.publicCount, rows: [{ n: 0 }] }] },
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, ADDON_ON, { q: Q.publicList, rows: [] }, { q: Q.publicCount, rows: [{ n: 0 }] }] },
   { name: 'daftar publik: jenis salah', action: 'get_site_posts', method: 'GET', input: { site_id: '7', kind: 'artikel' },
     steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }] },
   { name: 'daftar publik: template tanpa fitur tulisan', action: 'get_site_posts', method: 'GET', input: { site_id: '7', kind: 'berita' },
     steps: [{ q: Q.activeSite, rows: [{ ...PUBLIC_SITE, template_code: 'finova' }] }] },
   { name: 'tulisan publik', action: 'get_site_post', method: 'GET', input: { site_id: '7', slug: ' juara-olimpiade ' },
-    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, { q: Q.publicPost, rows: [ROW()] }] },
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, ADDON_ON, { q: Q.publicPost, rows: [ROW()] }] },
   { name: 'tulisan publik: slug tidak sah', action: 'get_site_post', method: 'GET', input: { site_id: '7', slug: 'Bad Slug' },
     steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }] },
   { name: 'tulisan publik: draf atau tidak ada', action: 'get_site_post', method: 'GET', input: { site_id: '7', slug: 'rapat-guru' },
-    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, { q: Q.publicPost, rows: [] }] },
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, ADDON_ON, { q: Q.publicPost, rows: [] }] },
   { name: 'dilihat', action: 'site_post_view', input: { site_id: 7, slug: 'juara-olimpiade' }, ua: CHROME,
-    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, { q: Q.publicPost, rows: [ROW()] }, { q: Q.viewUpsert }, { q: Q.viewCount, rows: [{ view_count: 13 }] }] },
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, ADDON_ON, { q: Q.publicPost, rows: [ROW()] }, { q: Q.viewUpsert }, { q: Q.viewCount, rows: [{ view_count: 13 }] }] },
   { name: 'dilihat perayap (tidak dihitung)', action: 'site_post_view', input: { site_id: 7, slug: 'juara-olimpiade' },
     ua: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, { q: Q.publicPost, rows: [ROW()] }, { q: Q.viewCount, rows: [] }] },
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, ADDON_ON, { q: Q.publicPost, rows: [ROW()] }, { q: Q.viewCount, rows: [] }] },
   { name: 'dilihat lewat GET', action: 'site_post_view', method: 'GET', input: { site_id: '7', slug: 'juara-olimpiade' }, steps: [] },
+  // ── Fitur Berita & Pengumuman belum aktif (belum dibeli / dicabut admin) atau tabelnya belum ada ──
+  { name: 'fitur belum aktif: daftar pembeli', action: 'customer_get_site_posts', method: 'GET', input: { site_id: '7' },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_OFF] },
+  { name: 'fitur belum aktif: simpan', action: 'customer_save_site_post', input: { site_id: 7, post: NEW_POST },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_OFF] },
+  { name: 'fitur belum aktif: hapus', action: 'customer_delete_site_post', input: { site_id: 7, post_id: 15 },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, ADDON_OFF] },
+  { name: 'fitur belum aktif: situs nonaktif', action: 'customer_save_site_post', input: { site_id: 7, post: NEW_POST },
+    steps: [{ q: Q.ownSite, rows: [{ ...SITE, status: 'suspended' }] }, ADDON_OFF] },
+  { name: 'tabel fitur belum ada: daftar pembeli', action: 'customer_get_site_posts', method: 'GET', input: { site_id: '7' },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.addon, missing: true }] },
+  { name: 'fitur belum aktif: SEO tetap jalan', action: 'customer_get_site_seo', method: 'GET', input: { site_id: '7' },
+    steps: [{ q: Q.ownSite, rows: [SITE] }, { q: Q.seoRow, rows: [] }] },
+  { name: 'fitur belum aktif: daftar publik kosong', action: 'get_site_posts', method: 'GET', input: { site_id: '7', kind: 'berita' },
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, ADDON_OFF] },
+  { name: 'fitur belum aktif: tulisan publik', action: 'get_site_post', method: 'GET', input: { site_id: '7', slug: 'juara-olimpiade' },
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, ADDON_OFF] },
+  { name: 'fitur belum aktif: dilihat', action: 'site_post_view', input: { site_id: 7, slug: 'juara-olimpiade' }, ua: CHROME,
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, ADDON_OFF] },
+  { name: 'tabel fitur belum ada: daftar publik', action: 'get_site_posts', method: 'GET', input: { site_id: '7', kind: 'pengumuman' },
+    steps: [{ q: Q.activeSite, rows: [PUBLIC_SITE] }, { q: Q.addon, missing: true }] },
 ];
 
 const caseOf = (name: string) => {
@@ -367,6 +399,8 @@ async function runNode(c: Case): Promise<Outcome> {
       if (step.error) throw new Error(step.error);
       // Kunci unik bentrok: galat mysql2 yang diubah dbRun menjadi 409
       if (step.duplicate) throw Object.assign(new Error("Duplicate entry '7' for key 'PRIMARY'"), { code: 'ER_DUP_ENTRY', errno: 1062 });
+      // Tabel belum ada: galat mysql2 ER_NO_SUCH_TABLE
+      if (step.missing) throw Object.assign(new Error("Table 'db.site_addon_orders' doesn't exist"), { code: 'ER_NO_SUCH_TABLE', errno: 1146 });
       return [step.rows ?? { affectedRows: step.affected ?? 1 }];
     },
   };
@@ -462,12 +496,13 @@ describe('site_posts.js: aksi lengkap', () => {
     expect(out.status).toBe(200);
     expect(out.uploads).toEqual([['sites/7/posts', 'post']]);
     expect(out.deletes).toEqual([]);
-    expect(out.queries[3].params).toEqual([
+    expect(out.queries[1].params).toEqual([7, 'posts']);
+    expect(out.queries[4].params).toEqual([
       7, 'berita', 'juara-olimpiade-sains-2', 'Juara Olimpiade Sains', 'Tim sains meraih emas.', 'Isi berita.', 'Prestasi', '',
       '/assets/sites/7/posts/post_NEW.png', 'Piala', '', 'published', 'TODAY', '', '', 0,
     ]);
-    expect(out.queries[4].params).toEqual([7, 'juara-olimpiade-sains-2']);
-    expect(out.queries[5].params).toEqual([20]);
+    expect(out.queries[5].params).toEqual([7, 'juara-olimpiade-sains-2']);
+    expect(out.queries[6].params).toEqual([20]);
     expect(out.body.post).toMatchObject({ id: 20, slug: 'juara-olimpiade-sains-2', view_count: 0, last_viewed_at: null, image: '/assets/sites/7/posts/post_NEW.png' });
   });
 
@@ -475,7 +510,7 @@ describe('site_posts.js: aksi lengkap', () => {
     const keep = nodeOf('ubah tulisan: foto tetap, jadi draf');
     expect([keep.status, keep.uploads, keep.deletes]).toEqual([200, [], []]);
     // Parameter terakhir = foto yang tadi dibaca (WHERE … AND image <=> ?)
-    expect(keep.queries[3].params.slice(-11)).toEqual([
+    expect(keep.queries[4].params.slice(-11)).toEqual([
       '/assets/sites/7/posts/post_OLD.jpg', 'Piala', '', 'draft', '2026-10-20', '', '', 1, 15, 7, '/assets/sites/7/posts/post_OLD.jpg',
     ]);
     expect(keep.body.post).toMatchObject({ status: 'draft', noindex: true, view_count: 12 });
@@ -485,9 +520,9 @@ describe('site_posts.js: aksi lengkap', () => {
 
     const removed = nodeOf('ubah tulisan: foto dihapus, slug kosong dibuat ulang');
     expect([removed.status, removed.uploads, removed.deletes]).toEqual([200, [], ['/assets/sites/7/posts/post_OLD.jpg']]);
-    expect(removed.queries[3].params.slice(0, 2)).toEqual(['berita', 'juara-olimpiade-sains']);
-    expect(removed.queries[3].params[7]).toBeNull();
-    expect(removed.queries[3].params.slice(-3)).toEqual([15, 7, '/assets/sites/7/posts/post_OLD.jpg']);
+    expect(removed.queries[4].params.slice(0, 2)).toEqual(['berita', 'juara-olimpiade-sains']);
+    expect(removed.queries[4].params[7]).toBeNull();
+    expect(removed.queries[4].params.slice(-3)).toEqual([15, 7, '/assets/sites/7/posts/post_OLD.jpg']);
   });
 
   it('simpan ditolak: slug dipakai, validasi, batas 500, tulisan tidak ada, tanpa data', () => {
@@ -520,9 +555,9 @@ describe('site_posts.js: aksi lengkap', () => {
     const gone = nodeOf('ubah tulisan: dihapus di tab lain saat foto diunggah');
     expect([gone.status, gone.body]).toEqual([404, { error: 'Tulisan tidak ditemukan.', code: 'POST_NOT_FOUND' }]);
     expect([gone.uploads, gone.deletes]).toEqual([[['sites/7/posts', 'post']], [NEW_JPG]]);
-    expect(gone.queries.map((q) => q.q)).toEqual([Q.ownSite, Q.existing, Q.slugs, Q.update, Q.recheck]);
-    expect(gone.queries[3].params.slice(-3)).toEqual([15, 7, '/assets/sites/7/posts/post_OLD.jpg']);
-    expect(gone.queries[4].params).toEqual([15, 7]);
+    expect(gone.queries.map((q) => q.q)).toEqual([Q.ownSite, Q.addon, Q.existing, Q.slugs, Q.update, Q.recheck]);
+    expect(gone.queries[4].params.slice(-3)).toEqual([15, 7, '/assets/sites/7/posts/post_OLD.jpg']);
+    expect(gone.queries[5].params).toEqual([15, 7]);
 
     // Foto baru dihapus; foto lama dan foto tab lain tidak disentuh
     const changed = nodeOf('ubah tulisan: foto diganti di tab lain saat foto diunggah');
@@ -541,7 +576,7 @@ describe('site_posts.js: aksi lengkap', () => {
   it('hapus tulisan beserta jumlah dilihat dan fotonya', () => {
     const out = nodeOf('hapus tulisan');
     expect([out.status, out.body, out.deletes]).toEqual([200, { success: true }, ['/assets/sites/7/posts/post_OLD.jpg']]);
-    expect(out.queries.map((q) => q.params)).toEqual([[7, 42], [15, 7], [15, 7], [15]]);
+    expect(out.queries.map((q) => q.params)).toEqual([[7, 42], [7, 'posts'], [15, 7], [15, 7], [15]]);
     expect(nodeOf('hapus tanpa post_id').body.code).toBe('POST_NOT_FOUND');
   });
 
@@ -611,16 +646,16 @@ describe('site_posts.js: aksi lengkap', () => {
     });
     expect(nodeOf('SEO publik: situs nonaktif').body).toEqual({ error: 'Situs tidak ditemukan atau sedang tidak aktif.', code: 'SITE_NOT_FOUND' });
     const list = nodeOf('daftar publik (limit dibatasi 100)');
-    expect(list.queries[1].params).toEqual([7, 'berita', 100]);
+    expect(list.queries[2].params).toEqual([7, 'berita', 100]);
     expect(list.body.total).toBe(5);
     expect(Object.keys(list.body.posts![0])).toEqual([
       'id', 'kind', 'slug', 'title', 'excerpt', 'category', 'badge', 'image', 'image_alt', 'link_url', 'published_at', 'updated_at',
     ]);
-    expect(nodeOf('daftar publik bawaan 12').queries[1].params).toEqual([7, 'pengumuman', 12]);
+    expect(nodeOf('daftar publik bawaan 12').queries[2].params).toEqual([7, 'pengumuman', 12]);
     expect(nodeOf('daftar publik: jenis salah').body.errors).toEqual({ kind: 'Jenis tulisan harus berita atau pengumuman.' });
     expect(nodeOf('daftar publik: template tanpa fitur tulisan').body).toEqual({ success: true, posts: [], total: 0 });
     const post = nodeOf('tulisan publik');
-    expect(post.queries[1].params).toEqual([7, 'juara-olimpiade']);
+    expect(post.queries[2].params).toEqual([7, 'juara-olimpiade']);
     expect(post.body.post).toMatchObject({ slug: 'juara-olimpiade', body: 'Paragraf satu.\n\nParagraf dua.', noindex: false });
     expect(post.body.post).not.toHaveProperty('status');
     expect(post.body.post).not.toHaveProperty('view_count');
@@ -631,11 +666,33 @@ describe('site_posts.js: aksi lengkap', () => {
   it('dilihat: +1 untuk pengunjung, perayap hanya dibaca', () => {
     const view = nodeOf('dilihat');
     expect(view.body).toEqual({ success: true, views: 13 });
-    expect(view.queries.map((q) => q.q)).toEqual([Q.activeSite, Q.publicPost, Q.viewUpsert, Q.viewCount]);
-    expect(view.queries[2].params).toEqual([15, 7]);
+    expect(view.queries.map((q) => q.q)).toEqual([Q.activeSite, Q.addon, Q.publicPost, Q.viewUpsert, Q.viewCount]);
+    expect(view.queries[3].params).toEqual([15, 7]);
     const bot = nodeOf('dilihat perayap (tidak dihitung)');
     expect(bot.body).toEqual({ success: true, views: 0 });
     expect(bot.queries.map((q) => q.q)).not.toContain(Q.viewUpsert);
+  });
+
+  it('fitur Berita & Pengumuman belum aktif: pembeli 403 POSTS_LOCKED, publik kosong / 404, tulisan tidak dibaca', () => {
+    const LOCKED = { error: 'Fitur Berita & Pengumuman belum aktif untuk situs ini. Aktifkan di menu Fitur tambahan.', code: 'POSTS_LOCKED' };
+    for (const name of ['fitur belum aktif: daftar pembeli', 'fitur belum aktif: simpan', 'fitur belum aktif: hapus',
+      'fitur belum aktif: situs nonaktif', 'tabel fitur belum ada: daftar pembeli']) {
+      const out = nodeOf(name);
+      expect([out.status, out.body], name).toEqual([403, LOCKED]);
+      expect(out.queries.map((q) => q.q), name).toEqual([Q.ownSite, Q.addon]);
+      expect(out.queries[1].params, name).toEqual([7, 'posts']);
+      expect([out.uploads, out.deletes], name).toEqual([[], []]);
+    }
+    // Template tanpa fitur tulisan tetap POSTS_UNAVAILABLE tanpa membaca site_addon_orders; SEO tidak terpengaruh fitur
+    expect(nodeOf('template tanpa fitur tulisan').queries.map((q) => q.q)).toEqual([Q.ownSite]);
+    expect(nodeOf('fitur belum aktif: SEO tetap jalan').status).toBe(200);
+    expect(nodeOf('fitur belum aktif: daftar publik kosong').body).toEqual({ success: true, posts: [], total: 0 });
+    expect(nodeOf('tabel fitur belum ada: daftar publik').body).toEqual({ success: true, posts: [], total: 0 });
+    for (const name of ['fitur belum aktif: tulisan publik', 'fitur belum aktif: dilihat']) {
+      const out = nodeOf(name);
+      expect([out.status, out.body], name).toEqual([404, { error: 'Tulisan tidak ditemukan.', code: 'POST_NOT_FOUND' }]);
+      expect(out.queries.map((q) => q.q), name).toEqual([Q.activeSite, Q.addon]);
+    }
   });
 });
 
@@ -659,6 +716,7 @@ ${TEMPLATE_BLOCKS}
 function client_ip() { return '203.0.113.9'; }
 function rate_limit_wait($key, $max) { return 0; }
 function rate_limit_hit($key, $windowSeconds) {}
+function ip_limit_key(string $prefix, string $ip): string { return $prefix . '|' . $ip; }
 function too_many_attempts($seconds) { throw new ApiError('Terlalu banyak percobaan.', 429); }
 function db_next(string $sql, array $params) {
     $at = $GLOBALS['__at'];
@@ -669,6 +727,8 @@ function db_next(string $sql, array $params) {
     if (isset($step['error'])) throw new Exception($step['error']);
     // Kunci unik bentrok: db_run di api.php mengubah galat MySQL 1062 menjadi ApiError 409
     if (!empty($step['duplicate'])) throw new ApiError('Data yang sama sudah ada (duplikat).', 409);
+    // Tabel belum ada: mysqli melempar mysqli_sql_exception 1146 (db_run meneruskannya)
+    if (!empty($step['missing'])) throw new mysqli_sql_exception("Table 'db.site_addon_orders' doesn't exist", 1146);
     $GLOBALS['__affected'] = $step['affected'] ?? 1;
     return $step;
 }
@@ -685,6 +745,8 @@ function delete_local_asset($path, $section) {
     if (is_string($path) && strpos($path, '/assets/' . $section . '/') === 0) $GLOBALS['__deletes'][] = $path;
 }
 require getenv('SP_MODULE');
+// Gerbang fitur Berita & Pengumuman (sa_addon_active / sa_posts_enabled)
+require getenv('SA_MODULE');
 
 $out = ['today' => sp_today(), 'results' => []];
 foreach (json_decode(stream_get_contents(STDIN), true) as $case) {
@@ -738,7 +800,11 @@ describe.skipIf(!PHP_AVAILABLE)('site_posts.php menjawab sama dengan site_posts.
       input: JSON.stringify(cases),
       encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
-      env: { ...process.env, SP_MODULE: join(ROOT, 'backend', 'modules', 'site_posts.php') },
+      env: {
+        ...process.env,
+        SP_MODULE: join(ROOT, 'backend', 'modules', 'site_posts.php'),
+        SA_MODULE: join(ROOT, 'backend', 'modules', 'site_addons.php'),
+      },
     });
     expect(result.stderr).toBe('');
     php = JSON.parse(result.stdout);

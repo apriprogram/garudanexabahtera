@@ -1,4 +1,4 @@
-// Ikon merek (WhatsApp, TikTok) yang tidak ada di lucide. Daftar ikon media sosial footer ada di ./social.
+// Ikon merek (WhatsApp, TikTok, X) yang tidak ada di lucide. Daftar ikon media sosial footer ada di ./social.
 
 export type IconProps = { className?: string };
 
@@ -11,5 +11,12 @@ export const WhatsAppIcon = ({ className }: IconProps) => (
 export const TikTokIcon = ({ className }: IconProps) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
     <path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5 2.6 2.6 0 0 1-2.6-2.6 2.6 2.6 0 0 1 3.37-2.48V9.66a5.73 5.73 0 0 0-.77-.05A5.7 5.7 0 0 0 4.16 15.3 5.7 5.7 0 0 0 9.86 21a5.7 5.7 0 0 0 5.7-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.3 4.3 0 0 1-3.26-1.48Z" />
+  </svg>
+);
+
+/** Logo X (dulu Twitter), untuk tombol bagikan tulisan. */
+export const XIcon = ({ className }: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );

@@ -1,7 +1,8 @@
 // Daftar berita & pengumuman situs pembeli (/akun/situs/:siteId/berita), docs/platform/SITE-POSTS-SEO-SPEC.md §8.
 // Tab jenis (Berita / Pengumuman, disimpan di ?jenis=), kartu per tulisan: foto mini, judul, status, tanggal, jumlah
 // dilihat & terakhir dilihat; aksi Edit, Lihat (tab baru, hanya yang terbit dan situsnya aktif) dan Hapus (konfirmasi).
-// Template tanpa fitur tulisan mendapat penjelasan; situs nonaktif hanya-baca. Setelah hapus, fokus pindah ke Edit tulisan
+// Template tanpa fitur tulisan mendapat penjelasan; fitur Berita & Pengumuman yang belum aktif (POSTS_LOCKED,
+// SITE-ADDONS-SPEC §5) mendapat panel terkunci; situs nonaktif hanya-baca. Setelah hapus, fokus pindah ke Edit tulisan
 // berikutnya (atau sebelumnya, atau panel daftar bila kosong); datang dari editor setelah hapus, fokus ke pesannya.
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -11,14 +12,15 @@ import { imageSrc } from '../cms/content';
 import { EditorLoadError, EditorNotFound } from '../cms/EditorStates';
 import { Toast } from '../cms/Toast';
 import { useToast } from '../cms/useToast';
+import { postsLocked } from '../components/addons';
 import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/payment';
 import { EmptyState } from '../components/States';
 import { DeletePostDialog } from './DeletePostDialog';
 import { KIND_COPY, currentTime, formatCount, kindFromQuery, postDate, relativeTime, viewsLabel } from './postModel';
-import { fetchPosts } from './postsApi';
+import { POSTS_LOCKED, fetchPosts } from './postsApi';
 import { editPostPath, hasPostsFeature, newPostPath } from './siteLinks';
-import { PageContainer, PostStatusPill, PostsUnavailable, SitePageHeader, SitePageSkeleton, SuspendedNotice } from './SitePage';
+import { PageContainer, PostStatusPill, PostsLocked, PostsUnavailable, SitePageHeader, SitePageSkeleton, SuspendedNotice } from './SitePage';
 import { parseSiteId, useSiteLoader } from './useSiteLoader';
 
 const LOAD_ERROR = 'Berita & pengumuman gagal dimuat. Silakan coba lagi.';
@@ -83,6 +85,17 @@ export default function SitePostsPage() {
   const back = site.order_number
     ? { to: `/akun/pesanan/${encodeURIComponent(site.order_number)}`, label: 'Detail pesanan' }
     : { to: '/akun', label: 'Pesanan saya' };
+
+  if (data === POSTS_LOCKED || postsLocked(site)) {
+    return (
+      <PageContainer>
+        <SitePageHeader site={site} back={back} title="Berita & Pengumuman" postsLocked />
+        <div className="mt-6">
+          <PostsLocked site={site} />
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (!data || !hasPostsFeature(site.template_code)) {
     return (
@@ -198,7 +211,9 @@ export default function SitePostsPage() {
           const neighbor = index < 0 ? undefined : (posts[index + 1] ?? posts[index - 1]);
           focusAfterDelete.current = neighbor ? neighbor.id : 'panel';
           setDeleting(null);
-          updateData((current) => (current ? { ...current, posts: current.posts.filter((item) => item.id !== post.id) } : current));
+          updateData((current) =>
+            current && current !== POSTS_LOCKED ? { ...current, posts: current.posts.filter((item) => item.id !== post.id) } : current,
+          );
           showToast('success', `${KIND_COPY[post.kind].label} “${post.title}” dihapus.`);
         }}
         onSuspended={(message) => {

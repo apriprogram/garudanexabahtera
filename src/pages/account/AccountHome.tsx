@@ -10,6 +10,7 @@ import {
   ArrowRight,
   BadgeCheck,
   CalendarClock,
+  ChartNoAxesColumn,
   ChevronDown,
   CreditCard,
   ExternalLink,
@@ -36,6 +37,7 @@ import { activePeriodPath } from './components/renewal';
 import { EmptyState, ErrorState, Skeleton } from './components/States';
 import { invoiceStatus, isAwaitingRefund, isPaymentUnderReview, isRefunded } from './components/paymentStatus';
 import { StatusPill } from './components/StatusPill';
+import { siteStatsPath } from './stats/links';
 
 type LoadState =
   | { status: 'loading' }
@@ -486,6 +488,11 @@ function SiteCard({ order, now }: { order: Order; now: Date }) {
           <Link to={`/akun/situs/${order.site_id}/seo`} className="btn btn-outline btn-sm" aria-label={`SEO situs ${domain}`}>
             <Search className="h-4 w-4" aria-hidden />
             SEO
+          </Link>
+          {/* Statistik kunjungan situs (docs/platform/SITE-STATS-SPEC.md §4) */}
+          <Link to={siteStatsPath(order.site_id!)} className="btn btn-outline btn-sm" aria-label={`Statistik kunjungan ${domain}`}>
+            <ChartNoAxesColumn className="h-4 w-4" aria-hidden />
+            Statistik
           </Link>
           <a href={`/situs/${order.site_id}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
             <ExternalLink className="h-4 w-4" aria-hidden />

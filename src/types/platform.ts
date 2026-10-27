@@ -1,5 +1,6 @@
 // Tipe data marketplace template & jasa custom. Kontrak lengkap: docs/platform/SPEC.md §6.
 // File bersama: jangan ubah bentuknya tanpa menyesuaikan SPEC dan kedua backend.
+import type { SiteAddonFlags } from './siteAddons';
 
 export type OrderStatus =
   | 'menunggu_pembayaran'
@@ -181,11 +182,14 @@ export interface RenewalOffer {
 
 /** Satu baris daftar nota pembeli (customer_get_invoices, menu Nota di /akun). */
 export interface CustomerInvoiceItem {
-  type: 'pembelian' | 'perpanjangan';
+  /** fitur = fitur tambahan berbayar (docs/platform/SITE-ADDONS-SPEC.md §4.3) */
+  type: 'pembelian' | 'perpanjangan' | 'fitur';
   invoice_number: string;
   order_number: string;
   renewal_number: string | null;
-  /** Nama template pesanan */
+  /** Nomor tagihan fitur tambahan (GNF-…), hanya untuk type 'fitur'; tidak ada di respons lama */
+  addon_number?: string | null;
+  /** Nama template pesanan; "Fitur Berita & Pengumuman" untuk type 'fitur' */
   title: string;
   domain: string;
   /** Lama perpanjangan (tahun); null untuk nota pembelian */
@@ -249,6 +253,10 @@ export interface Site {
   /** Masa aktif pesanan induk (hosting & jasa, domain); null sebelum migrasi 026 diisi */
   service_expires_at?: string | null;
   domain_expires_at?: string | null;
+  /** Fitur tambahan yang aktif (customer_get_site, SITE-ADDONS-SPEC §3); tidak ada di respons lama */
+  addons?: SiteAddonFlags;
+  /** Template situs mendukung berita & pengumuman (template sekolah); tidak ada di respons lama */
+  posts_capable?: boolean;
   /** Hanya untuk staf */
   owner_name?: string;
   owner_email?: string;

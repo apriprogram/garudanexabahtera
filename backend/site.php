@@ -13,6 +13,10 @@
 // - Halaman (/, /berita, /berita/{slug}, /pengumuman, /pengumuman/{slug}): cangkang index.html + head SEO + <main>
 //   sederhana yang bisa dibaca crawler tanpa JavaScript + data preload (gn-preload) supaya render pertama tidak perlu
 //   memanggil /api.php. React (createRoot) lalu mengganti isi #root.
+// - Tulisan berbayar (docs/platform/SITE-ADDONS-SPEC.md §3): rute /berita…, daftar di preload & <main>, dan tulisan di
+//   sitemap hanya ada bila template berfitur tulisan (site_defaults.json `posts`) DAN fitur Berita & Pengumuman aktif
+//   (site_addon_orders; tabel belum ada = tidak aktif). get_site_public di preload membawa addons.posts yang sama.
+//   Jenis organisasi JSON-LD School tetap mengikuti kemampuan template, bukan fitur.
 //
 // Aturan head SAMA PERSIS dengan src/templates/siteSeo.ts (buildSiteHead); __tests__/seo/site-seo.test.ts membandingkan
 // keduanya untuk masukan yang sama. Bawaan per template dari modules/site_defaults.json (ditulis tes
@@ -522,6 +526,21 @@ function site_optional_rows(callable $query, string $sql, array $params): array 
     }
 }
 
+/**
+ * Fitur Berita & Pengumuman aktif untuk situs ini: baris site_addon_orders lunas yang tidak dicabut (sa_addon_active di
+ * modules/site_addons.php). Tabel belum ada (migrasi 030 belum dijalankan, errno 1146) = tidak aktif.
+ */
+function site_posts_addon_active(callable $query, int $siteId): bool {
+    try {
+        return (bool)$query("SELECT 1 AS active FROM site_addon_orders WHERE site_id = ? AND addon_code = 'posts' AND status = 'lunas' "
+            . 'AND revoked_at IS NULL LIMIT 1', [$siteId]);
+    } catch (Throwable $e) {
+        if ((int)$e->getCode() !== 1146) throw $e;
+        error_log('[site.php] tabel site_addon_orders belum ada (jalankan migrasi 030): ' . $e->getMessage());
+        return false;
+    }
+}
+
 /** Situs untuk host ini atau varian www/apex-nya, status apa pun; domain tersimpan yang persis sama didahulukan. */
 function site_find_site(callable $query, string $host): ?array {
     $other = strpos($host, 'www.') === 0 ? substr($host, 4) : 'www.' . $host;
@@ -785,10 +804,12 @@ function site_handle(array $req, callable $query): array {
         $seoRow = site_find_seo($query, $siteId);
         $seo = site_seo_public($seoRow, $status, $content, $defaults);
         if ($file === 'sitemap.xml') {
-            $posts = $seo['indexable'] && $defaults['posts'] ? site_find_sitemap_posts($query, $siteId) : [];
+            $posts = $seo['indexable'] && $defaults['posts'] && site_posts_addon_active($query, $siteId) ? site_find_sitemap_posts($query, $siteId) : [];
             return site_sitemap($domain, $site, $seoRow, $seo['indexable'], $posts);
         }
         if ($status !== 'active') return site_missing_site($shell);
+        // Tulisan aktif = template berfitur tulisan dan fitur Berita & Pengumuman sudah dibeli (= get_site_public addons.posts)
+        $postsEnabled = $defaults['posts'] && site_posts_addon_active($query, $siteId);
 
         if ($path === '/index.html') return site_redirect("https://$domain/$search");
         if ($path === null) {
@@ -802,21 +823,21 @@ function site_handle(array $req, callable $query): array {
         } else {
             $route = site_parse_route($path);
         }
-        // Template tanpa fitur tulisan hanya punya beranda: /berita, /pengumuman, dan tulisan = 404 noindex (klien:
-        // servedRoute di siteRoutes.ts menampilkan "Halaman tidak ditemukan" dengan head yang sama)
-        if (!$defaults['posts'] && ($route['kind'] === 'list' || $route['kind'] === 'post')) $route = ['kind' => 'notfound'];
+        // Tanpa tulisan aktif (template tanpa fitur tulisan, atau fitur Berita & Pengumuman belum dibeli) situs hanya punya
+        // beranda: /berita, /pengumuman, dan tulisan = 404 noindex (klien: servedRoute di siteRoutes.ts dengan
+        // addons.posts menampilkan "Halaman tidak ditemukan" dengan head yang sama)
+        if (!$postsEnabled && ($route['kind'] === 'list' || $route['kind'] === 'post')) $route = ['kind' => 'notfound'];
 
-        // Daftar per jenis + batasnya (kunci preload). Beranda: kedua jenis limit 12. Daftar & tulisan: daftar beranda
-        // kedua jenis juga (menu/footer & "tulisan lainnya", seperti yang diminta useSitePages di setiap rute), kecuali
-        // jenis halaman daftar itu sendiri = limit 100.
-        $empty = ['posts' => [], 'total' => 0];
+        // Daftar per jenis + batasnya (kunci preload), hanya bila tulisan aktif (klien tidak meminta get_site_posts bila
+        // tidak). Beranda: kedua jenis limit 12. Daftar & tulisan: daftar beranda kedua jenis juga (menu/footer & "tulisan
+        // lainnya", seperti yang diminta useSitePages di setiap rute), kecuali jenis halaman daftar itu sendiri = limit 100.
         $lists = [];
         $limits = [];
         $post = null;
-        if ($route['kind'] !== 'notfound') {
+        if ($postsEnabled && $route['kind'] !== 'notfound') {
             foreach (SITE_POST_KINDS as $kind) {
                 $limits[$kind] = $route['kind'] === 'list' && $kind === $route['postKind'] ? SITE_LIST_POSTS_LIMIT : SITE_HOME_POSTS_LIMIT;
-                $lists[$kind] = $defaults['posts'] ? site_find_posts($query, $siteId, $kind, $limits[$kind]) : $empty;
+                $lists[$kind] = site_find_posts($query, $siteId, $kind, $limits[$kind]);
             }
         }
         if ($route['kind'] === 'post') {
@@ -842,6 +863,7 @@ function site_handle(array $req, callable $query): array {
             'template_code' => $site['template_code'],
             'domain' => $site['domain'],
             'content' => $public instanceof stdClass ? $public : null,
+            'addons' => ['posts' => $postsEnabled],
         ]],
         site_api_url('get_site_seo', ['site_id' => $siteId]) => ['seo' => $seo],
     ];

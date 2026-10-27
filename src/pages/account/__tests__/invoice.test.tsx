@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Nota resmi pembeli: model nota (pembelian, pesanan lama tanpa harga domain, perpanjangan) dan halaman
-// /akun/pesanan/:orderNumber/nota[/:renewalNumber] (judul, 404/409, cetak, unduh PDF).
+// /akun/pesanan/:orderNumber/nota[/:docNumber] (judul, 404/409, cetak, unduh PDF).
 // Jalankan: npx vitest run src/pages/account/__tests__/invoice.test.tsx
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -208,7 +208,7 @@ function renderPage(path = '/akun/pesanan/GN-20261023-DCZ03O/nota') {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/akun/pesanan/:orderNumber/nota" element={<AccountInvoice />} />
-        <Route path="/akun/pesanan/:orderNumber/nota/:renewalNumber" element={<AccountInvoice />} />
+        <Route path="/akun/pesanan/:orderNumber/nota/:docNumber" element={<AccountInvoice />} />
         <Route path="/akun/pesanan/:orderNumber" element={<p>Halaman pesanan</p>} />
       </Routes>
     </MemoryRouter>,

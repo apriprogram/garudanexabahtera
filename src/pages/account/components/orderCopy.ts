@@ -133,10 +133,11 @@ export interface HistoryEntry {
 
 /**
  * Log pesanan → kalimat untuk pembeli. Catatan (note) dari log TIDAK pernah ditampilkan mentah karena berisi catatan
- * internal admin, pesan teknis Midtrans, atau teks mode uji; pengecualiannya alasan penolakan dan catatan perpanjangan
- * (renewal_created/paid/cancelled), yang ditulis server khusus untuk pembeli (ACCOUNT-DOMAIN-RENEWAL-SPEC.md §5).
- * Log yang hanya berguna untuk tim (catatan admin, pembaruan pembayaran tanpa perubahan status, renewal_payment_*)
- * disembunyikan.
+ * internal admin, pesan teknis Midtrans, atau teks mode uji; pengecualiannya alasan penolakan, catatan perpanjangan
+ * (renewal_created/paid/cancelled, ACCOUNT-DOMAIN-RENEWAL-SPEC.md §5), dan catatan fitur tambahan
+ * (addon_created/paid/cancelled, SITE-ADDONS-SPEC.md §4.1), yang ditulis server khusus untuk pembeli. addon_granted dan
+ * addon_revoked tampil tanpa catatannya (catatan internal tim). Log yang hanya berguna untuk tim (catatan admin,
+ * pembaruan pembayaran tanpa perubahan status, renewal_payment_*) disembunyikan.
  */
 export const customerHistoryEntry = (log: OrderLog): HistoryEntry | null => {
   const base = { id: log.id, time: log.created_at };
@@ -171,6 +172,17 @@ export const customerHistoryEntry = (log: OrderLog): HistoryEntry | null => {
       return { ...base, title: 'Masa aktif diperpanjang', text: log.note?.trim() || undefined };
     case 'renewal_cancelled':
       return { ...base, title: 'Perpanjangan dibatalkan', text: log.note?.trim() || undefined };
+    // Fitur tambahan Berita & Pengumuman (tagihan GNF-…)
+    case 'addon_created':
+      return { ...base, title: 'Tagihan fitur tambahan dibuat', text: log.note?.trim() || undefined };
+    case 'addon_paid':
+      return { ...base, title: 'Fitur Berita & Pengumuman aktif', text: log.note?.trim() || undefined };
+    case 'addon_cancelled':
+      return { ...base, title: 'Tagihan fitur tambahan dibatalkan', text: log.note?.trim() || undefined };
+    case 'addon_granted':
+      return { ...base, title: 'Fitur Berita & Pengumuman aktif', text: 'Diaktifkan gratis oleh tim kami.' };
+    case 'addon_revoked':
+      return { ...base, title: 'Fitur Berita & Pengumuman dinonaktifkan', text: 'Dinonaktifkan oleh tim kami.' };
     default:
       return null;
   }

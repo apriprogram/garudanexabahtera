@@ -3,12 +3,16 @@
 // container query); tampilan HP = viewport 390px persis tanpa scrollbar desktop di dalam bingkai.
 // Head (judul tab, noindex,follow tanpa canonical): src/seo/pages/demo.seo.ts. Isi demo (nama usaha, testimoni) fiktif,
 // jadi halaman ini tidak diindeks dan bar demo menyebutnya dengan jelas (SEO-PLAN §2, audit CONTENT-11).
+// `?fitur=berita` (template sekolah yang mampu): contoh tampilan fitur berbayar Berita & Pengumuman
+// (docs/platform/SITE-ADDONS-SPEC.md §6) — section berita & pengumuman profesional dari item demo, tanpa tautan detail.
+// Tanpa query = berita biasa seperti situs yang belum membeli fitur itu.
 import { ArrowLeft, ExternalLink, LayoutTemplate, Monitor, ShoppingBag, Smartphone } from 'lucide-react';
 import { useState, useSyncExternalStore } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { getTemplate } from '../../templates';
 import { SiteRenderer } from '../../templates/SiteRenderer';
 import { SiteStatus } from '../../templates/SiteStatus';
+import { SITE_DATA_DEFAULT, type SiteData } from '../../templates/shared/siteData';
 import { formatRupiah, type Template } from '../../types/platform';
 import { useTemplateBySlug } from './template/useTemplateBySlug';
 
@@ -24,6 +28,12 @@ const subscribeWide = (onChange: () => void) => {
 };
 const readWide = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(WIDE_QUERY).matches;
 
+/** Nilai query yang menampilkan contoh fitur Berita & Pengumuman (tautan "Lihat contoh tampilan" di /akun/fitur). */
+const DEMO_POSTS_FEATURE = 'berita';
+
+/** Demo dengan fitur Berita & Pengumuman aktif: beranda tanpa tulisan → section profesional dari item demo. */
+const POSTS_DEMO_DATA: SiteData = { ...SITE_DATA_DEFAULT, postsEnabled: true };
+
 export default function TemplateDemo() {
   const { slug } = useParams();
   const { state, retry } = useTemplateBySlug(slug);
@@ -32,6 +42,10 @@ export default function TemplateDemo() {
   const device: Device = wide ? chosenDevice : 'desktop';
   const template = state.status === 'ready' ? state.template : null;
   const def = template ? getTemplate(template.template_code) : undefined;
+  const [params] = useSearchParams();
+  // Hanya template mampu; template lain mengabaikan query ini
+  const postsDemo = params.get('fitur') === DEMO_POSTS_FEATURE && def?.features?.posts === true;
+  const data = postsDemo ? POSTS_DEMO_DATA : undefined;
 
   return (
     <div className="min-h-[100svh] bg-canvas">
@@ -45,7 +59,7 @@ export default function TemplateDemo() {
       {template && def && device === 'desktop' && (
         // Header template menempel tepat di bawah bar demo (tinggi bar 56px / 64px)
         <div className="[--tpl-sticky-top:56px] sm:[--tpl-sticky-top:64px]">
-          <SiteRenderer templateCode={template.template_code} content={null} preview />
+          <SiteRenderer templateCode={template.template_code} content={null} preview data={data} />
         </div>
       )}
 
@@ -53,7 +67,7 @@ export default function TemplateDemo() {
         <div className="flex justify-center bg-alt px-6 py-8">
           <div className="w-[406px] max-w-full overflow-hidden rounded-[36px] bg-surface p-2 shadow-float ring-1 ring-line">
             <div className="no-scrollbar h-[min(844px,calc(100svh-64px-88px))] w-[390px] max-w-full overflow-y-auto overscroll-contain rounded-[28px] ring-1 ring-line [--tpl-sticky-top:0px]">
-              <SiteRenderer templateCode={template.template_code} content={null} preview />
+              <SiteRenderer templateCode={template.template_code} content={null} preview data={data} />
             </div>
           </div>
         </div>

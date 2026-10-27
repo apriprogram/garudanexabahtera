@@ -1,6 +1,8 @@
 // Data situs pembeli untuk CustomerSite (domain pembeli) dan SitePreview (/situs/:id):
-// - useSitePublic: situs aktif lewat `get_site_public` (site_id atau domain). Kontrak: SPEC §6.
-// - useSitePages: SEO situs + berita/pengumuman per rute (docs/platform/SITE-POSTS-SEO-SPEC.md §4.2, §7).
+// - useSitePublic: situs aktif lewat `get_site_public` (site_id atau domain). Kontrak: SPEC §6. `site.addons.posts`
+//   (docs/platform/SITE-ADDONS-SPEC.md §3) = fitur Berita & Pengumuman aktif → sitePostsEnabled().
+// - useSitePages: SEO situs + berita/pengumuman per rute (docs/platform/SITE-POSTS-SEO-SPEC.md §4.2, §7). Tulisan hanya
+//   diminta bila fitur aktif; tidak aktif = berita biasa dari konten CMS (tanpa get_site_posts/get_site_post).
 // Render pertama memakai data preload dari backend/site.php (peekApiGet, kunci = apiUrl dengan urutan parameter yang
 // SAMA dengan site_api_url di site.php), lalu data terbaru diminta ke server. Gagal menyegarkan data preload (jaringan,
 // 5xx, atau jawaban yang bukan bentuk API seperti halaman HTML dari host/CDN) → data preload tetap dipakai.
@@ -8,15 +10,34 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { ApiError, apiGet, apiPost, apiUrl, peekApiGet } from '../lib/api';
+import { getTemplate } from './index';
 import type { SiteRoute } from './siteRoutes';
 import { siteHref, type SiteData, type SitePostsByKind } from './shared/siteData';
 import { SITE_POST_KINDS, type SitePostKind, type SitePostPublic, type SitePostSummary, type SiteSeoPublic } from '../types/sitePosts';
+import type { SiteAddonFlags } from '../types/siteAddons';
 
 export interface PublicSite {
   id: number;
   template_code: string;
   domain: string;
   content: unknown;
+  /** Fitur tambahan aktif (get_site_public); tidak ada = tidak aktif */
+  addons?: Partial<SiteAddonFlags> | null;
+}
+
+/**
+ * Fitur Berita & Pengumuman aktif untuk situs ini: template mampu (features.posts) DAN `addons.posts === true`. Field
+ * tidak ada (backend lama, preload lama) = tidak aktif, sama dengan site.php.
+ */
+export const sitePostsEnabled = (site: Pick<PublicSite, 'template_code' | 'addons'> | null | undefined): boolean =>
+  !!site && getTemplate(site.template_code)?.features?.posts === true && site.addons?.posts === true;
+
+const ORIGIN_DOMAIN = /^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/;
+
+/** Domain tersimpan → "https://domain" (dasar URL kanonis, tombol bagikan); tidak sah → null. */
+export function siteOriginOf(domain: unknown): string | null {
+  const value = typeof domain === 'string' ? domain.trim().toLowerCase() : '';
+  return ORIGIN_DOMAIN.test(value) ? `https://${value}` : null;
 }
 
 export type SiteLoadState =
@@ -201,7 +222,7 @@ function requestsFor(siteId: number, route: SiteRoute, posts: boolean, skipPost:
 }
 
 export interface SitePagesOptions {
-  /** Template berfitur tulisan (TemplateDefinition.features.posts) */
+  /** Fitur Berita & Pengumuman aktif (sitePostsEnabled): false = tanpa permintaan tulisan, SiteData.postsEnabled false */
   posts: boolean;
   /** Server sudah menjawab 404 untuk rute awal ini (preload path null): tulisan = null tanpa meminta API */
   missing?: boolean;
@@ -209,8 +230,8 @@ export interface SitePagesOptions {
 
 export interface SitePages {
   seo: SiteSeoPublic | null;
-  /** Isi SiteDataContext tanpa basePath & navigate */
-  data: Omit<SiteData, 'basePath' | 'navigate'>;
+  /** Isi SiteDataContext tanpa basePath, navigate & siteOrigin */
+  data: Omit<SiteData, 'basePath' | 'navigate' | 'siteOrigin'>;
   /** Rute daftar: jumlah tulisan terbit (untuk robots, siteSeo.ts) */
   listCount: number | undefined;
 }
@@ -302,7 +323,7 @@ export function useSitePages(siteId: number | null, route: SiteRoute, options: S
     const seoBody = siteId === null ? null : entry(seoRequest(siteId));
     const seoValue = seoBody?.status === 'ready' ? asRecord(seoBody.data).seo : null;
     const seo = seoValue && typeof seoValue === 'object' ? (seoValue as SiteSeoPublic) : null;
-    const data: Omit<SiteData, 'basePath' | 'navigate'> = { route, posts: empty, post: undefined, error: null };
+    const data: SitePages['data'] = { route, postsEnabled: siteId !== null && hasPosts, posts: empty, post: undefined, error: null };
     let listCount: number | undefined;
     if (siteId === null || !hasPosts) return { seo, data, listCount };
 

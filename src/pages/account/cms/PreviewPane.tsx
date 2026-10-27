@@ -2,8 +2,11 @@
 // Mode Desktop dirender selebar 1280 px lalu diperkecil agar tata letak desktop tetap akurat; mode HP selebar 390 px.
 // Template memakai container query sehingga mengikuti lebar wadah ini, bukan viewport.
 // Pengecilan memakai CSS `zoom` (header lengket template tetap benar); browser lama memakai transform.
+// Situs dengan fitur Berita & Pengumuman aktif dipratinjau dengan section berita profesional, sama dengan situs live
+// (docs/platform/SITE-ADDONS-SPEC.md §6); daftarnya tetap dari item konten CMS, seperti demo ?fitur=berita.
 import { Component, memo, useEffect, useLayoutEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
 import { Monitor, Smartphone, TriangleAlert } from 'lucide-react';
+import { SITE_DATA_DEFAULT, SiteDataContext, type SiteData } from '../../../templates/shared/siteData';
 import type { SiteContent, TemplateDefinition } from '../../../templates/types';
 
 export type PreviewDevice = 'desktop' | 'mobile';
@@ -11,6 +14,8 @@ export type PreviewDevice = 'desktop' | 'mobile';
 const DEVICE_WIDTH: Record<PreviewDevice, number> = { desktop: 1280, mobile: 390 };
 const FRAME_PADDING = 16;
 const SUPPORTS_ZOOM = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('zoom', '0.5');
+// Konstanta modul: nilai konteks tetap sama di setiap render pane (template tidak dirender ulang karena konteks baru)
+const PREVIEW_POSTS_DATA: SiteData = { ...SITE_DATA_DEFAULT, postsEnabled: true };
 
 class PreviewErrorBoundary extends Component<{ resetKey: unknown; children: ReactNode }, { failed: boolean; failedKey: unknown }> {
   state = { failed: false, failedKey: undefined as unknown };
@@ -50,6 +55,8 @@ interface PreviewPaneProps {
   onDeviceChange: (device: PreviewDevice) => void;
   /** Section yang sedang diedit; pratinjau digulir ke sana */
   activeSection: string | null;
+  /** Fitur Berita & Pengumuman aktif untuk situs ini (template mampu + addons.posts) */
+  postsEnabled?: boolean;
   className?: string;
 }
 
@@ -61,6 +68,7 @@ export const PreviewPane = memo(function PreviewPane({
   device,
   onDeviceChange,
   activeSection,
+  postsEnabled = false,
   className = '',
 }: PreviewPaneProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -149,7 +157,9 @@ export const PreviewPane = memo(function PreviewPane({
             }
           >
             <PreviewErrorBoundary resetKey={content}>
-              <Template content={content} preview />
+              <SiteDataContext.Provider value={postsEnabled ? PREVIEW_POSTS_DATA : SITE_DATA_DEFAULT}>
+                <Template content={content} preview />
+              </SiteDataContext.Provider>
             </PreviewErrorBoundary>
           </div>
         </div>

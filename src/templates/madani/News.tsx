@@ -4,13 +4,16 @@
 // - Item dari tulisan (site_posts, kunci POST_PATH_KEY): seluruh kartu menaut ke halaman tulisan /berita/{slug} lewat
 //   judulnya, plus tombol "Lihat semua berita" ke /berita.
 // HP: 1 kolom; tablet: 2; layar lebar: 3.
+// Fitur Berita & Pengumuman aktif (usePostsEnabled) → section "newsroom" profesional bersama (shared/posts/pro) dengan
+// judul section Madani; tidak aktif = kartu di atas dari item CMS (berita biasa).
 import { ArrowRight, ArrowUpRight, CalendarDays, ChevronDown } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { stagger } from '../shared/motion';
-import { useSitePosts } from '../shared/posts/hooks';
+import { usePostsEnabled, useSitePosts } from '../shared/posts/hooks';
 import { POST_PATH_KEY } from '../shared/posts/model';
+import { ProNewsSection } from '../shared/posts/pro';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { SiteLink } from '../shared/SiteLink';
 import { field, hasImage, list, paragraphs, resolveAction, text } from '../shared/utils';
@@ -18,7 +21,7 @@ import type { ListItem } from '../types';
 import { KitPhoto } from '../kit/Photo';
 import { parseSchoolDate, type MadaniModel } from './model';
 import { MADANI_PHOTOS } from './photos';
-import { C, SECTION_PAD, TYPE_M } from './styles';
+import { C, POST_THEME, SECTION_PAD, TYPE_M } from './styles';
 import { ArrowLink, Chip, SectionHead } from './ui';
 
 /** Judul tulisan sebagai tautan selebar kartu (kartu `relative`); cincin fokus mengelilingi kartu. */
@@ -150,7 +153,18 @@ function NewsCard({ item, index }: { item: ListItem; index: number }) {
 
 export function News({ m }: { m: MadaniModel }) {
   const { news } = m;
+  const pro = usePostsEnabled();
   const posts = useSitePosts('berita');
+  if (pro) {
+    return (
+      <ProNewsSection
+        section={news}
+        theme={POST_THEME}
+        className={SECTION_PAD}
+        head={(filters) => <SectionHead eyebrow={text(news, 'eyebrow')} title={text(news, 'title') || 'Berita terbaru'} aside={filters} />}
+      />
+    );
+  }
   const items = list(news, 'items', 6).filter((item) => field(item, 'title'));
   if (items.length === 0) return null;
   return (
