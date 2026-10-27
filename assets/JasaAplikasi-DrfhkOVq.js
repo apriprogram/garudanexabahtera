@@ -1,1 +1,0 @@
-import{n as e,t}from"./ServicePage-BtCAmeTd.js";import{Ct as n}from"./index-G63LlJNV.js";var r=n();function i(){return(0,r.jsx)(t,{service:e})}export{i as default};

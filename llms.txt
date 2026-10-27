@@ -3,7 +3,7 @@
 
 Diperbarui 27 Oktober 2026.
 
-- Harga template: Rp990.000–Rp1.790.000 (per 27 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
+- Harga template: Rp990.000–Rp1.890.000 (per 27 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
 - Sudah termasuk: template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
 - Domain (tidak termasuk harga template; dipilih dan dicek ketersediaannya saat memesan), harga per tahun, sama untuk perpanjangan: .com Rp250.000, .id Rp250.000, .co.id Rp350.000, .my.id Rp50.000, .web.id Rp50.000, .biz.id Rp100.000, .net Rp250.000, .org Rp250.000, .or.id Rp100.000, .sch.id Rp75.000, .ac.id Rp75.000
 - Bayar online via Midtrans; isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -27,6 +27,9 @@ Diperbarui 27 Oktober 2026.
 - [Madani](https://garudanexa.com/template/madani): template Sekolah & Pendidikan, Rp1.690.000. Template website sekolah Islam untuk SMA IT, madrasah aliyah, dan sekolah berasrama: slider foto, profil, berita, agenda, dan PPDB lewat WhatsApp.
 - [Cakrawala](https://garudanexa.com/template/cakrawala): template Sekolah & Pendidikan, Rp1.690.000. Template website SMK dan SMA yang modern: hero slider foto, PPDB dengan formulir ke WhatsApp, berita, pengumuman, alumni, dan BKK.
 - [Bestari](https://garudanexa.com/template/bestari): template Sekolah & Pendidikan, Rp1.690.000. Template website SMA yang modern dan meyakinkan: hero slider foto, navbar transparan, PPDB dengan formulir ke WhatsApp, berita, program, dan guru.
+- [Altura](https://garudanexa.com/template/altura): template Company Profile, Rp1.890.000. Template company profile berbahasa Inggris untuk developer properti dan perusahaan besar: hero dua panel, proyek unggulan, portofolio berfilter, dan formulir enquiry.
+- [Portline](https://garudanexa.com/template/portline): template Company Profile, Rp1.890.000. Template company profile berbahasa Inggris untuk perusahaan pelayaran, logistik, dan grup multinasional: hero slider berindeks, newsroom bertagar, armada, jaringan global, dan formulir enquiry.
+- [Velora](https://garudanexa.com/template/velora): template Company Profile, Rp1.890.000. Template company profile berbahasa Inggris untuk grup otomotif dan perusahaan besar: hero kartu foto, jajaran model berfilter, carousel teknologi, dan formulir test drive ke WhatsApp/email.
 - [Dermaga](https://garudanexa.com/template/dermaga): template Company Profile, Rp1.590.000. Template company profile ekspor impor & freight forwarding: hero rute di atas foto terminal, layanan bernomor, pasar & Incoterm, proses kerja, dan formulir penawaran ke WhatsApp.
 - [Saudagar](https://garudanexa.com/template/saudagar): template Company Profile, Rp1.690.000. Template website eksportir kopi, kakao & rempah: hero tiga foto lengkung, tab spesifikasi komoditas, kalender panen, dan formulir penawaran ke WhatsApp.
 - [NusaNiaga](https://garudanexa.com/template/nusaniaga): template Company Profile, Rp1.590.000. Template company profile importir & distributor: hero foto berbilah, chip negara asal, layanan, produk bahan baku & mesin, proses impor, jangkauan, dan formulir penawaran ke WhatsApp.

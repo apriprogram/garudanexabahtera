@@ -10,7 +10,7 @@ Diperbarui 27 Oktober 2026.
 - Badan hukum: PT Garuda Nexa Bahtera
 - Situs: https://garudanexa.com/
 - Area layanan: Seluruh Indonesia (online)
-- Harga template: Rp990.000–Rp1.790.000 (per 27 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
+- Harga template: Rp990.000–Rp1.890.000 (per 27 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
 - Sudah termasuk: template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
 - Domain (tidak termasuk harga template; dipilih dan dicek ketersediaannya saat memesan), harga per tahun, sama untuk perpanjangan: .com Rp250.000, .id Rp250.000, .co.id Rp350.000, .my.id Rp50.000, .web.id Rp50.000, .biz.id Rp100.000, .net Rp250.000, .org Rp250.000, .or.id Rp100.000, .sch.id Rp75.000, .ac.id Rp75.000
 - Bayar online via Midtrans; isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -203,6 +203,45 @@ Bestari membuat website SMA terasa modern dan meyakinkan sejak layar pertama: sl
 
 Cocok untuk SMA swasta maupun negeri, dan bisa dipakai MA dengan mengganti isi program. Formulir PPDB menyusun pesan WhatsApp untuk panitia; tidak ada penyimpanan data pendaftar atau pembayaran online. Semua teks, foto, jadwal, dan satu warna tema (misalnya terakota, hijau, atau biru) bisa Anda ubah sendiri lewat CMS tanpa coding.
 
+### Altura
+- Halaman: https://garudanexa.com/template/altura
+- Kategori: Company Profile
+- Harga: Rp1.890.000 (per 27 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Ringkasan: Template company profile berbahasa Inggris untuk developer properti dan perusahaan besar: hero dua panel, proyek unggulan, portofolio berfilter, dan formulir enquiry.
+- Fitur: Hero dua panel: foto menara, judul besar, lingkaran angka, dan pil berfoto ke video atau proyek; Konten demo berbahasa Inggris; semua teks, termasuk label formulir dan pesan galat, bisa diganti lewat CMS; Proyek unggulan berbentuk akordion dan portofolio properti dengan filter kategori; Pita angka raksasa, tiga pilar bernomor, dan keunggulan berikon; Pimpinan, penghargaan, testimoni, dan artikel wawasan; Formulir enquiry yang menyusun pesan WhatsApp atau email, plus daftar kantor dan peta; Satu warna tema yang bisa diganti, warna teks menyesuaikan otomatis; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/altura (konten demo fiktif)
+
+Altura membuat perusahaan Anda tampil seperti developer properti kelas dunia sejak layar pertama: menu pil putih yang menumpang di atas hero dua panel, foto menara di kiri, dan panel krem berisi judul besar, lingkaran angka pengalaman, serta pil berfoto ke video perusahaan atau bagian proyek. Di bawahnya tersusun profil perusahaan, tiga pilar bernomor, deret layanan yang berjalan pelan, pita angka raksasa di atas foto cakrawala, keunggulan berikon, proyek unggulan berbentuk akordion, portofolio properti dengan filter kategori, harga, dan spesifikasi, pimpinan, penghargaan, testimoni, artikel wawasan, ajakan berfoto malam, daftar kantor, peta, dan formulir enquiry.
+
+Konten demo berbahasa Inggris sehingga cocok untuk perusahaan besar, multinasional, eksportir, dan perusahaan yang melayani klien luar negeri; semua teks di setiap bagian, termasuk menu, label formulir, dan pesan galat, tetap bisa Anda ganti lewat CMS, termasuk ke bahasa Indonesia. Formulir enquiry menyusun pesan WhatsApp atau email untuk tim Anda tanpa menyimpan data. Satu warna tema (limau bawaan) bisa diganti, dan warna teks menyesuaikan otomatis agar tetap terbaca.
+
+### Portline
+- Halaman: https://garudanexa.com/template/portline
+- Kategori: Company Profile
+- Harga: Rp1.890.000 (per 27 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Ringkasan: Template company profile berbahasa Inggris untuk perusahaan pelayaran, logistik, dan grup multinasional: hero slider berindeks, newsroom bertagar, armada, jaringan global, dan formulir enquiry.
+- Fitur: Konten demo berbahasa Inggris untuk perusahaan besar, multinasional, dan eksportir; Hero slider foto selebar layar dengan indeks 01/02/03 dan deret logo perusahaan grup; Menu dua lapis dengan tombol utilitas dan pilihan bahasa EN | ID yang menaut ke versi bahasa lain Anda; Newsroom mosaik dengan filter tagar, isi berita, dan liputan media; Kartu perusahaan grup, carousel armada, dan jaringan global per kawasan; Formulir enquiry yang menyusun pesan WhatsApp atau email, tanpa menyimpan data; Semua teks, termasuk nama menu, label formulir, dan pesan galat, bisa diganti lewat CMS; satu warna tema yang bisa diganti; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/portline (konten demo fiktif)
+
+Portline membuat perusahaan pelayaran, logistik, atau grup multinasional tampil seperti korporasi internasional sejak layar pertama: slider foto selebar layar dengan indeks 01/02/03, lingkaran radar, menu dua lapis dengan tombol utilitas biru, serta deret logo perusahaan grup. Di bawahnya tersusun newsroom berbentuk mosaik dengan filter tagar, liputan media, angka perusahaan berikon, kartu perusahaan grup atau layanan, carousel armada yang melebar, jaringan global per kawasan, pita keberlanjutan, banner karier, pimpinan, kontak kantor pusat dan kantor regional, serta footer navy multi-kolom.
+
+Konten demo berbahasa Inggris (Quaymoor Group, fiktif) dan bisa diganti seluruhnya lewat CMS, termasuk ke bahasa Indonesia: semua teks yang tampil, dari menu, judul, dan tombol sampai label formulir, pesan galat, dan judul kolom footer. Formulir enquiry menyusun pesan WhatsApp atau email untuk tim Anda; tidak ada data yang disimpan, dan tombol utilitas seperti "Shipment enquiry" hanya membuka formulir atau tautan pilihan Anda, bukan sistem pelacakan. Pilihan bahasa EN | ID tampil bila Anda menautkan versi bahasa lain. Satu warna tema bisa Anda ganti sendiri tanpa coding.
+
+### Velora
+- Halaman: https://garudanexa.com/template/velora
+- Kategori: Company Profile
+- Harga: Rp1.890.000 (per 27 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Ringkasan: Template company profile berbahasa Inggris untuk grup otomotif dan perusahaan besar: hero kartu foto, jajaran model berfilter, carousel teknologi, dan formulir test drive ke WhatsApp/email.
+- Fitur: Hero kartu foto lebar dengan menu di dalamnya, judul berpil, dan kartu sorotan yang bisa menautkan video; Jajaran produk atau model dengan tombol filter kategori, harga, dan spesifikasi singkat; Carousel teknologi yang melebar saat dipilih dan angka perusahaan yang menghitung naik; Dinding potret testimoni yang bisa diklik dan newsroom berita perusahaan; Formulir test drive yang menyusun pesan WhatsApp atau email, tanpa menyimpan data; Daftar studio atau dealer dengan Google Maps dan footer dengan newsletter lewat email; Salinan demo berbahasa Inggris; semua teks yang tampil (termasuk label formulir), foto, dan warna aksen bisa diubah lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
+- Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
+- Demo: https://garudanexa.com/demo/velora (konten demo fiktif)
+
+Velora menampilkan perusahaan besar dengan gaya showroom yang gelap dan elegan: kartu foto lebar dengan menu di dalamnya, judul dengan satu kata di dalam pil dan chip panah merah, serta kartu sorotan yang bisa menautkan video. Di bawahnya tersusun filosofi perusahaan, bento kartu foto dan baris berpanah, jajaran model dengan tombol filter, langkah kepemilikan, carousel teknologi yang melebar saat dipilih, angka perusahaan yang menghitung naik, dinding potret testimoni, newsroom, formulir test drive, daftar studio atau dealer dengan Google Maps, dan footer dengan newsletter.
+
+Salinan demo berbahasa Inggris untuk grup otomotif fiktif Velora Motor Group, cocok untuk perusahaan multinasional, eksportir, dealer, dan perusahaan yang melayani klien luar negeri. Formulir test drive dan newsletter hanya menyusun pesan WhatsApp atau email; tidak ada penyimpanan data, sistem booking, atau pembayaran online. Semua teks yang tampil, termasuk label dan pesan galat formulir, bisa Anda ganti lewat CMS (juga ke bahasa Indonesia), begitu pula foto dan warna aksen, tanpa coding.
+
 ### Dermaga
 - Halaman: https://garudanexa.com/template/dermaga
 - Kategori: Company Profile
@@ -254,7 +293,7 @@ Diperbarui 27 Oktober 2026.
 Diperbarui 27 Oktober 2026.
 
 ### Berapa harga template website di Garuda Nexa?
-Harga template website Garuda Nexa saat ini Rp990.000–Rp1.790.000, tergantung template yang Anda pilih. Harga itu dibayar di awal dan sudah termasuk setup, hosting, dan SSL tahun pertama, sedangkan domain dipilih saat memesan dengan harga sesuai ekstensinya. Biaya mulai tahun ke-2: hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun). Pembayaran online lewat Midtrans.
+Harga template website Garuda Nexa saat ini Rp990.000–Rp1.890.000, tergantung template yang Anda pilih. Harga itu dibayar di awal dan sudah termasuk setup, hosting, dan SSL tahun pertama, sedangkan domain dipilih saat memesan dengan harga sesuai ekstensinya. Biaya mulai tahun ke-2: hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun). Pembayaran online lewat Midtrans.
 
 ### Apa saja yang sudah termasuk dalam harga template?
 Untuk template, harga sudah termasuk template dan setup awal, hosting, serta sertifikat SSL (HTTPS) untuk tahun pertama. Domain tidak termasuk: Anda memilihnya saat memesan dan harganya ditambahkan ke total pesanan. Biaya mulai tahun ke-2: hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun). Untuk website atau aplikasi custom, domain dan hosting dibahas saat konsultasi.
