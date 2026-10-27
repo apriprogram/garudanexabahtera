@@ -1,7 +1,8 @@
 // Footer Portline: pita navy selebar layar. Kiri: kolom tautan Company (menu), Group companies, Fleet, Careers, Media,
-// Contact — diisi otomatis dari section yang tampil, judul kolom dari CMS. Kanan: KOLOM MEREK sedikit lebih terang
-// (--pl-deep-2) sampai tepi kanan layar, berisi logo, deskripsi, telepon, email, dan media sosial. Bawah: hak cipta
-// otomatis dari nama perusahaan dan tagline. HP: kolom merek selebar layar di atas, kolom tautan 2 kolom.
+// Contact — isinya otomatis dari section yang tampil, setiap judul kolom punya field CMS sendiri (footer.col_*). Kanan:
+// KOLOM MEREK sedikit lebih terang (--pl-deep-2) sampai tepi kanan layar, berisi logo, deskripsi, telepon, email, dan
+// media sosial. Bawah: hak cipta otomatis dari nama perusahaan dan tagline. HP: kolom merek selebar layar di atas,
+// kolom tautan 2 kolom.
 import { Mail, Phone } from 'lucide-react';
 import { CONTAINER } from '../shared/layout';
 import { ActionLink } from '../shared/Shell';
@@ -32,14 +33,14 @@ export function Footer({ m }: { m: PortlineModel }) {
   const columns: Column[] = [
     { title: m.ui.footerCompany, links: m.nav.map((item) => ({ label: item.label, action: { kind: 'section', target: item.key } as LinkAction })) },
     {
-      title: text(m.divisions, 'eyebrow') || m.ui.groupCompanies,
+      title: m.ui.footerGroup,
       links: list(m.hero, 'companies', 6)
         .map((item) => field(item, 'name'))
         .filter(Boolean)
         .map((label) => ({ label, action: to('divisions') })),
     },
     {
-      title: text(m.fleet, 'eyebrow') || m.ui.nav.fleet,
+      title: m.ui.footerFleet,
       links: m.items('fleet').map((item) => ({ label: field(item, 'name'), action: to('fleet') })),
     },
     {
@@ -55,7 +56,8 @@ export function Footer({ m }: { m: PortlineModel }) {
     {
       title: m.ui.footerMedia,
       links: [
-        { label: text(m.newsroom, 'title') || m.ui.nav.newsroom, action: to('newsroom') },
+        // Judul newsroom, kalau kosong nama newsroom di menu (field "Nama di menu")
+        { label: text(m.newsroom, 'title') || (m.nav.find((item) => item.key === 'newsroom')?.label ?? ''), action: to('newsroom') },
         { label: text(m.press, 'title'), action: to('press') },
         { label: text(m.leadership, 'title'), action: to('leadership') },
       ].filter((link) => link.label && link.action),

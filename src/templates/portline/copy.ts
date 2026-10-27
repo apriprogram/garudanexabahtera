@@ -66,7 +66,7 @@ const EN = {
     submit: 'Prepare message',
     errors: {
       name: 'Please enter your full name.',
-      email: 'Please enter a valid email address, e.g. name@company.com.',
+      email: 'Please enter a valid email address, e.g. name@company.example.',
       phone: 'Please enter a valid phone number or leave it empty.',
       type: 'Please choose an enquiry type.',
       message: 'Please write a short message (at least 10 characters).',
@@ -84,6 +84,8 @@ const EN = {
   },
   // Footer
   footerCompany: 'Company',
+  footerGroup: 'Group companies',
+  footerFleet: 'Fleet',
   footerCareers: 'Careers',
   footerMedia: 'Media',
   footerContact: 'Contact',
@@ -146,7 +148,7 @@ const ID: UiCopy = {
     submit: 'Susun pesan',
     errors: {
       name: 'Tulis nama lengkap Anda.',
-      email: 'Tulis alamat email yang valid, mis. nama@perusahaan.com.',
+      email: 'Tulis alamat email yang valid, mis. nama@perusahaan.example.',
       phone: 'Tulis nomor telepon yang valid atau kosongkan.',
       type: 'Pilih jenis pertanyaan.',
       message: 'Tulis pesan singkat (minimal 10 karakter).',
@@ -163,6 +165,8 @@ const ID: UiCopy = {
     subject: (type, company) => `${type || 'Pertanyaan'} – ${company}`,
   },
   footerCompany: 'Perusahaan',
+  footerGroup: 'Perusahaan grup',
+  footerFleet: 'Armada',
   footerCareers: 'Karier',
   footerMedia: 'Media',
   footerContact: 'Kontak',

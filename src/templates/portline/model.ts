@@ -490,6 +490,8 @@ export function readUi(content: SiteContent, lang: Lang = langOf(text(getSection
     viewMap: pick('contact', 'map_label', base.viewMap),
     offices: pick('contact', 'offices_title', base.offices),
     footerCompany: pick('footer', 'col_company', base.footerCompany),
+    footerGroup: pick('footer', 'col_group', base.footerGroup),
+    footerFleet: pick('footer', 'col_fleet', base.footerFleet),
     footerCareers: pick('footer', 'col_careers', base.footerCareers),
     footerMedia: pick('footer', 'col_media', base.footerMedia),
     footerContact: pick('footer', 'col_contact', base.footerContact),

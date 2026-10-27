@@ -93,7 +93,7 @@ describe('Portline: skema & konten bawaan', () => {
     );
     // Semua teks formulir yang tampil punya field CMS (bawaan Inggris di konten demo)
     expect(fields('enquiry')).toEqual(Object.keys(def.defaultContent.enquiry));
-    expect(fields('footer')).toEqual(expect.arrayContaining(['col_company', 'col_careers', 'col_media', 'col_contact']));
+    expect(fields('footer')).toEqual(expect.arrayContaining(['col_company', 'col_group', 'col_fleet', 'col_careers', 'col_media', 'col_contact']));
     expect(fields('newsroom')).toEqual(expect.arrayContaining(['menu_label', 'all_label', 'read_label']));
     expect(fields('fleet')).toEqual(expect.arrayContaining(['menu_label', 'specs_label']));
     for (const s of def.sections) {
@@ -172,6 +172,10 @@ describe('Portline: skema & konten bawaan', () => {
     // Data kontak demo jelas fiktif: email domain .example, telepon & WhatsApp blok 555, media sosial berakhiran -demo
     expect(c.contact.email).toMatch(/\.example$/);
     expect(c.careers.email).toMatch(/\.example$/);
+    // Semua alamat email di salinan demo & teks cadangan (termasuk contoh di pesan galat) memakai domain .example
+    const emails = [text, JSON.stringify(uiCopy('en').form.errors), JSON.stringify(uiCopy('id').form.errors)].join(' ').match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g) ?? [];
+    expect(emails.length).toBeGreaterThan(3);
+    for (const email of emails) expect(email, email).toMatch(/\.example$/);
     const phones = [c.contact.phone as string, c.contact.whatsapp as string, ...(c.contact.offices as Record<string, string>[]).map((o) => o.phone)];
     for (const phone of phones) expect(phone.replace(/\D/g, ''), phone).toMatch(/555/);
     for (const key of ['instagram', 'facebook', 'linkedin', 'youtube', 'tiktok']) {
@@ -297,7 +301,7 @@ describe('Portline: helper model', () => {
     const types = ['Freight quote', 'Media'];
     expect(validateEnquiry(form(), types)).toEqual({
       name: 'Please enter your full name.',
-      email: 'Please enter a valid email address, e.g. name@company.com.',
+      email: 'Please enter a valid email address, e.g. name@company.example.',
       type: 'Please choose an enquiry type.',
       message: 'Please write a short message (at least 10 characters).',
     });
@@ -342,10 +346,17 @@ describe('Portline: helper model', () => {
       resolveContent(def, {
         contact: { headquarters_label: 'Head office', form_button: 'Kirim' },
         enquiry: { label_email: 'Email', error_name: 'Isi nama.', greeting: 'Halo tim {company}!', closing: 'Salam.', subject: 'Pertanyaan' },
-        footer: { col_media: 'Press' },
+        footer: { col_media: 'Press', col_fleet: 'Vessels' },
       }),
     );
-    expect([custom.headquarters, custom.form.submit, custom.form.email, custom.form.errors.name, custom.footerMedia]).toEqual(['Head office', 'Kirim', 'Email', 'Isi nama.', 'Press']);
+    expect([custom.headquarters, custom.form.submit, custom.form.email, custom.form.errors.name, custom.footerMedia, custom.footerFleet]).toEqual([
+      'Head office',
+      'Kirim',
+      'Email',
+      'Isi nama.',
+      'Press',
+      'Vessels',
+    ]);
     expect(custom.form.greeting('Quaymoor Group')).toBe('Halo tim Quaymoor Group!');
     expect(custom.form.subject('', 'Quaymoor Group')).toBe('Pertanyaan – Quaymoor Group');
     expect(custom.form.subject('Media', 'Quaymoor Group')).toBe('Media – Quaymoor Group');
@@ -356,12 +367,14 @@ describe('Portline: helper model', () => {
       'Message: Halo semuanya',
       'Salam.',
     ]);
-    const emptied = readUi(resolveContent(def, { brand: { language: 'id' }, contact: { headquarters_label: '' }, enquiry: { label_name: '', note: '' }, footer: { col_company: '' } }));
-    expect([emptied.headquarters, emptied.form.name, emptied.form.privacy, emptied.footerCompany]).toEqual([
+    const emptied = readUi(resolveContent(def, { brand: { language: 'id' }, contact: { headquarters_label: '' }, enquiry: { label_name: '', note: '' }, footer: { col_company: '', col_group: '', col_fleet: '' } }));
+    expect([emptied.headquarters, emptied.form.name, emptied.form.privacy, emptied.footerCompany, emptied.footerGroup, emptied.footerFleet]).toEqual([
       'Kantor pusat',
       'Nama lengkap',
       uiCopy('id').form.privacy,
       'Perusahaan',
+      'Perusahaan grup',
+      'Armada',
     ]);
     // Isian lain tetap dari CMS (bawaan Inggris) walau bahasa situs "id"
     expect(emptied.form.email).toBe('Work email');
@@ -694,7 +707,7 @@ describe('Portline: demo', () => {
         ready_title: 'Pesan siap',
         whatsapp_label: 'Kirim ke WhatsApp',
       },
-      footer: { col_company: 'Perusahaan', col_careers: 'Karier', col_media: 'Media', col_contact: 'Kontak' },
+      footer: { col_company: 'Perusahaan', col_group: 'Grup usaha', col_fleet: 'Armada', col_careers: 'Karier', col_media: 'Media', col_contact: 'Kontak' },
     });
     expect(section(container, 'newsroom').querySelector('article')!.textContent).toContain('Baca selengkapnya');
     expect(section(container, 'fleet').textContent).toContain('Data kapal');
@@ -716,7 +729,7 @@ describe('Portline: demo', () => {
     expect(contact.querySelector('pre')!.textContent).toContain('Nama: Rina\nEmail: rina@contoh.co.id');
     expect(f.getByRole('link', { name: 'Kirim ke WhatsApp' })).toBeInTheDocument();
     const footerNav = within(container.querySelector('footer')!).getByRole('navigation', { name: 'Footer links' });
-    expect(Array.from(footerNav.querySelectorAll('p')).map((p) => p.textContent)).toEqual(['Perusahaan', 'Group companies', 'Our fleet', 'Karier', 'Media', 'Kontak']);
+    expect(Array.from(footerNav.querySelectorAll('p')).map((p) => p.textContent)).toEqual(['Perusahaan', 'Grup usaha', 'Armada', 'Karier', 'Media', 'Kontak']);
   });
 
   it('kontak & footer: kantor pusat, kantor regional, kolom footer otomatis, kolom merek, media sosial', () => {
@@ -731,10 +744,18 @@ describe('Portline: demo', () => {
     expect(nav.textContent).toContain('Quaymoor Shipyards');
     expect(nav.textContent).toContain('Coastline class');
     // Kolom footer: Company, Group companies, Fleet, Careers, Media, Contact (judul dari CMS)
-    expect(Array.from(nav.querySelectorAll('p')).map((p) => p.textContent)).toEqual(['Company', 'Group companies', 'Our fleet', 'Careers', 'Media', 'Contact']);
+    expect(Array.from(nav.querySelectorAll('p')).map((p) => p.textContent)).toEqual(['Company', 'Group companies', 'Fleet', 'Careers', 'Media', 'Contact']);
     expect(nav.textContent).toContain('Officer cadet programme');
     expect(within(footer).getByRole('link', { name: 'LinkedIn' })).toHaveAttribute('href', 'https://www.linkedin.com/company/quaymoor-group-demo');
     expect(footer.textContent).toContain(`© ${new Date().getFullYear()} Quaymoor Group. All rights reserved.`);
+  });
+
+  it('judul kolom footer tidak ikut label kecil section: eyebrow & judul newsroom dikosongkan → field footer / nama di menu', () => {
+    const container = demo({ divisions: { eyebrow: '' }, fleet: { eyebrow: '' }, newsroom: { title: '', menu_label: 'Stories' } });
+    const nav = within(container.querySelector('footer')!).getByRole('navigation', { name: 'Footer links' });
+    expect(Array.from(nav.querySelectorAll('p')).map((p) => p.textContent)).toEqual(['Company', 'Group companies', 'Fleet', 'Careers', 'Media', 'Contact']);
+    const media = Array.from(nav.children).find((col) => col.querySelector('p')!.textContent === 'Media')!;
+    expect(media.querySelector('a')!.textContent).toBe('Stories');
   });
 
   it('datar: tidak ada kelas shadow di file template', () => {

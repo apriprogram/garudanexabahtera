@@ -466,6 +466,8 @@ export const portlineSections: TemplateSection[] = [
       ta('description', 'Deskripsi singkat', { placeholder: 'Satu kalimat tentang perusahaan Anda.', maxLength: 220 }),
       t('copyright', 'Teks hak cipta', { placeholder: '© 2026 Nama Perusahaan. All rights reserved.', maxLength: 120, help: 'Kosongkan untuk membuat otomatis dari nama perusahaan.' }),
       t('col_company', 'Judul kolom menu', { placeholder: 'mis. Company', maxLength: 24, help: FALLBACK_HELP }),
+      t('col_group', 'Judul kolom perusahaan grup', { placeholder: 'mis. Group companies', maxLength: 24, help: `Isi kolom: nama perusahaan grup di hero. ${FALLBACK_HELP}` }),
+      t('col_fleet', 'Judul kolom armada', { placeholder: 'mis. Fleet', maxLength: 24, help: `Isi kolom: nama kelas kapal di bagian Armada. ${FALLBACK_HELP}` }),
       t('col_careers', 'Judul kolom karier', { placeholder: 'mis. Careers', maxLength: 24, help: `Isi kolom: poin bidang karier. ${FALLBACK_HELP}` }),
       t('col_media', 'Judul kolom media', { placeholder: 'mis. Media', maxLength: 24, help: FALLBACK_HELP }),
       t('col_contact', 'Judul kolom kontak', { placeholder: 'mis. Contact', maxLength: 24, help: `Isi kolom: kota kantor regional. ${FALLBACK_HELP}` }),

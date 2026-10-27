@@ -189,7 +189,7 @@ function SlideIndex({
                 onClick={() => onSelect(i)}
                 aria-label={s.label ? `${m.ui.slide(i + 1, count)}: ${s.label}` : m.ui.slide(i + 1, count)}
                 aria-current={current ? 'true' : undefined}
-                className={`group flex min-h-11 min-w-11 items-center gap-3 px-1 transition-colors duration-300 @6xl:flex-row-reverse @6xl:gap-4 ${current ? 'text-white' : 'text-white/80 hover:text-white'}`}
+                className={`group flex min-h-11 min-w-11 items-center gap-3 px-1 transition-colors duration-300 @6xl:flex-row-reverse @6xl:gap-4 ${current ? 'text-white' : 'text-white/90 hover:text-white'}`}
               >
                 {/* Garis indeks: mendatar di HP, tegak di layar lebar (berjalan pada slide aktif) */}
                 <span aria-hidden className={`relative block overflow-hidden bg-white/30 @6xl:hidden ${current ? 'h-[2px] w-10' : 'h-px w-5'}`}>
