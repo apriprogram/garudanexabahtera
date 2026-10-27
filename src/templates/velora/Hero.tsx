@@ -4,8 +4,8 @@
 // berpanah (gaya CBRLP, salinan sendiri). Kanan-bawah: kartu kaca "sorotan" dengan sampul (layar lebar) — tombol
 // putar HANYA bila tautannya video (YouTube/Vimeo/.mp4), selain itu bulatan panah — deskripsi singkat, dan pil putih +
 // bulatan panah. Foto = LCP (eager + fetchpriority high), zoom-out
-// pelan + parallax ringan hanya bila gerak menyala (bukan pratinjau CMS / prefers-reduced-motion). HP: kartu ±4:5, judul
-// di atas foto, kartu ulasan disembunyikan.
+// pelan + parallax ringan hanya bila gerak menyala (bukan pratinjau CMS / prefers-reduced-motion). HP: kartu tegak, foto di
+// bagian atas kartu (memudar ke bidang gelap) agar mobil terlihat di atas judul, kartu ulasan disembunyikan.
 import { ArrowDownRight, ArrowUpRight, Play } from 'lucide-react';
 import { Reveal } from '../shared/Animated';
 import { ActionLink, TemplateSection } from '../shared/Shell';
@@ -24,8 +24,9 @@ function PillTitle({ title, highlight }: { title: string; highlight: string }) {
   return (
     <>
       {before}
-      <span className="inline-flex max-w-full items-center gap-[0.16em] whitespace-nowrap align-[-0.06em]">
-        <span className="rounded-full px-[0.42em] pb-[0.06em] leading-[1.18] ring-[0.045em] ring-inset ring-white/80">{mark}</span>
+      {/* HP: sorotan panjang (> ±16 huruf) boleh terbagi dua baris di dalam pil, tidak terpotong tepi kartu */}
+      <span className="inline-flex max-w-full items-center gap-[0.16em] align-[-0.06em] @2xl:whitespace-nowrap">
+        <span className="min-w-0 rounded-[0.62em] px-[0.42em] pb-[0.06em] leading-[1.18] ring-[0.045em] ring-inset ring-white/80 [overflow-wrap:anywhere]">{mark}</span>
         <span aria-hidden className="vl-chip flex h-[0.86em] w-[0.86em] shrink-0 items-center justify-center rounded-full bg-(--vl-red) text-(--vl-on-red)">
           <ArrowDownRight className="h-[0.52em] w-[0.52em]" strokeWidth={2.4} />
         </span>
@@ -101,8 +102,9 @@ export function Hero({ m }: { m: VeloraModel }) {
   return (
     <TemplateSection sectionKey="hero" data-hero-layout="showroom" data-tpl-tone="inverse" className="pt-2 @2xl:pt-3 @5xl:pt-4">
       <div className={GUTTER}>
-        <div className="relative isolate flex min-h-[max(560px,min(122cqw,calc(100svh-24px)))] flex-col overflow-hidden rounded-[24px] bg-[#0D0E10] text-white @2xl:min-h-[max(600px,min(82cqw,calc(100svh-24px)))] @5xl:min-h-[clamp(640px,calc(100svh-32px),900px)] @5xl:rounded-[28px]">
-          <div aria-hidden className="vl-hero-zoom absolute inset-0 -z-20">
+        <div className="relative isolate flex min-h-[max(600px,min(150cqw,calc(100svh-24px)))] flex-col overflow-hidden rounded-[24px] bg-[#0D0E10] text-white @2xl:min-h-[max(600px,min(82cqw,calc(100svh-24px)))] @5xl:min-h-[clamp(640px,calc(100svh-32px),900px)] @5xl:rounded-[28px]">
+          {/* HP (wadah < 672px): foto hanya di bagian atas kartu dan memudar ke bidang gelap, jadi mobil terlihat di atas judul */}
+          <div aria-hidden className="vl-hero-zoom absolute inset-0 -z-20 @max-2xl:bottom-[36%] @max-2xl:[mask-image:linear-gradient(180deg,#000_68%,transparent_100%)]">
             <KitPhoto
               src={image}
               alt={VELORA_PHOTOS.alt(image, `${m.companyName} hero`)}

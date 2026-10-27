@@ -23,7 +23,19 @@
     }
   }
 
-  /* Lapisan gelap kartu foto (bento, teknologi, test drive): bawah untuk keterangan, atas-kiri untuk chip */
+  /* Lapisan gelap kartu test drive: layar lebar mendatar (teks di kolom kiri); wadah sempit merata & lebih gelap karena
+     teks selebar kartu dan bisa jatuh di atas langit terang (teks putih ≥ 4,5:1 di foto terang). */
+  .vl-cta-scrim {
+    background: linear-gradient(90deg, rgb(13 14 16 / 0.86) 0%, rgb(13 14 16 / 0.62) 55%, rgb(13 14 16 / 0.45) 100%);
+  }
+
+  @container (max-width: 1023px) {
+    .vl-cta-scrim {
+      background: linear-gradient(180deg, rgb(13 14 16 / 0.88) 0%, rgb(13 14 16 / 0.8) 55%, rgb(13 14 16 / 0.72) 100%);
+    }
+  }
+
+  /* Lapisan gelap kartu foto (bento, teknologi): bawah untuk keterangan, atas-kiri untuk chip */
   .vl-card-scrim {
     background:
       linear-gradient(0deg, rgb(13 14 16 / 0.86) 0%, rgb(13 14 16 / 0.42) 38%, transparent 66%),
@@ -119,6 +131,7 @@
 
   @media print {
     .vl-hero-scrim,
+    .vl-cta-scrim,
     .vl-card-scrim {
       display: none;
     }

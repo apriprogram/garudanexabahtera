@@ -3,27 +3,31 @@
 // di atas kartu hero (gutter + INSET = tepi CONTAINER, jadi sejajar dengan isi kartu); begitu halaman digulir menjadi
 // bilah gelap #0D0E10/85 + blur dengan susunan yang sama. Tanpa hero → selalu bilah gelap. Tombol bulat membuka panel
 // menu (semua section + tombol) di semua ukuran: kartu gelap di kanan pada layar lebar, selebar layar di HP. Esc atau
-// klik di luar menutup panel; fokus kembali ke tombol menu.
+// klik di luar menutup panel; fokus kembali ke tombol menu. Pil menu diukur (usePillNavFits): bila label menu dari CMS
+// terlalu panjang untuk muat di antara logo dan aksi kanan, pil disembunyikan dan menu lewat tombol bulat saja.
+// `wrap` pada Logo: nama perusahaan boleh membungkus (footer), bukan terpotong.
 import { ArrowUpRight, MapPin, Menu, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { CONTAINER } from '../shared/layout';
 import { BrandMark } from '../shared/media';
 import { ActionLink } from '../shared/Shell';
 import { mailHref, telHref, text } from '../shared/utils';
-import { useActiveSection, useScrolledPast } from './hooks';
+import { useActiveSection, usePillNavFits, useScrolledPast } from './hooks';
 import { VeloraMark } from './marks';
 import type { VeloraModel } from './model';
 import { DISPLAY } from './styles';
 import { ArrowPill } from './ui';
 
-export function Logo({ m, tone = 'dark' }: { m: VeloraModel; tone?: 'dark' | 'light' }) {
+export function Logo({ m, tone = 'dark', wrap = false }: { m: VeloraModel; tone?: 'dark' | 'light'; wrap?: boolean }) {
   const dark = tone === 'dark';
   return (
     <BrandMark
       name={m.companyName}
       logo={m.logo}
       mark={<VeloraMark className={`h-8 w-8 ${dark ? 'text-white' : 'text-[#0D0E10]'}`} />}
-      nameClassName={`${DISPLAY} text-[17px] font-medium tracking-[-0.02em] @3xl:text-[19px] ${dark ? 'text-white' : 'text-[#0D0E10]'}`}
+      nameClassName={`${DISPLAY} text-[17px] font-medium tracking-[-0.02em] @3xl:text-[19px] ${dark ? 'text-white' : 'text-[#0D0E10]'} ${
+        wrap ? 'whitespace-normal! leading-tight [overflow-wrap:anywhere]' : ''
+      }`}
     />
   );
 }
@@ -34,7 +38,9 @@ export function Header({ m, overlay }: { m: VeloraModel; overlay: boolean }) {
   const sentinel = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
+  const row = useRef<HTMLDivElement>(null);
   const scrolled = useScrolledPast(sentinel);
+  const pillFits = usePillNavFits(row, `${m.nav.pill.map((item) => item.label).join('|')}|${m.headerLabel}|${m.companyName}|${m.logo}`);
   const solid = !overlay || scrolled || open;
   const active = useActiveSection(
     sentinel,
@@ -77,7 +83,10 @@ export function Header({ m, overlay }: { m: VeloraModel; overlay: boolean }) {
           }`}
         >
           <div className={CONTAINER}>
-            <div className="flex h-[68px] items-center justify-between gap-3 @5xl:h-[80px] @6xl:grid @6xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+            <div
+              ref={row}
+              className={`flex h-[68px] items-center justify-between gap-3 @5xl:h-[80px] ${pillFits ? '@6xl:grid @6xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' : ''}`}
+            >
               <ActionLink
                 action={{ kind: 'section', target: 'hero' }}
                 onNavigate={close}
@@ -88,8 +97,10 @@ export function Header({ m, overlay }: { m: VeloraModel; overlay: boolean }) {
               </ActionLink>
 
               {m.nav.pill.length > 0 && (
-                <nav aria-label="Menu utama" className="hidden @6xl:block">
-                  <ul className="flex items-center gap-0.5 rounded-full bg-white p-1">
+                // Tidak muat → tetap dirender tak terlihat (visibility hidden: tidak bisa difokus, tidak dibacakan; kotak 0×0
+                // terpotong agar tidak melebarkan halaman) supaya lebar alaminya tetap bisa diukur
+                <nav data-vl-pill aria-label="Menu utama" className={pillFits ? 'hidden @6xl:block' : 'pointer-events-none invisible absolute left-0 top-0 h-0 w-0 overflow-hidden'}>
+                  <ul className="flex w-max items-center gap-0.5 rounded-full bg-white p-1">
                     {m.nav.pill.map((item) => {
                       const current = active === item.key;
                       return (

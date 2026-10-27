@@ -7,6 +7,7 @@
 // footer gelap dengan newsletter. Latar putih tulang ↔ hampir hitam bergantian, satu aksen merah dari CMS, judul Space
 // Grotesk, datar tanpa bayangan, gerak tenang yang mati pada prefers-reduced-motion & pratinjau CMS, container query
 // agar akurat di bingkai HP 390px dan panel CMS. Akar isi ber-lang="en" (salinan demo Inggris).
+import { useState } from 'react';
 import type { TemplateRenderProps } from '../types';
 import { useKitFont } from '../kit/fonts';
 import { PhotoSetContext } from '../kit/context';
@@ -20,7 +21,7 @@ import { Footer } from './Footer';
 import { Header } from './Header';
 import { Hero } from './Hero';
 import { Lineup } from './Lineup';
-import { readVelora } from './model';
+import { readVelora, type DrivePick } from './model';
 import { Ownership } from './Ownership';
 import { VELORA_PHOTOS } from './photos';
 import { Newsroom, Testimonials } from './Stories';
@@ -34,6 +35,9 @@ export default function Velora({ content, preview = false, motion }: TemplateRen
   const heroOn = isEnabled(m.hero);
   const philosophyOn = m.shown('philosophy');
   const bentoOn = m.shown('bento');
+  // Kartu model yang menuju test drive → model itu terpilih di formulir
+  const [drivePick, setDrivePick] = useState<DrivePick | null>(null);
+  const pickModel = (name: string) => setDrivePick((prev) => ({ name, n: (prev?.n ?? 0) + 1 }));
   return (
     <TemplateShell content={content} preview={preview} motion={motion} displayFont="inter" defaultAccent={VELORA_ACCENT}>
       <PhotoSetContext.Provider value={VELORA_PHOTOS}>
@@ -43,13 +47,13 @@ export default function Velora({ content, preview = false, motion }: TemplateRen
             {heroOn && <Hero m={m} />}
             {philosophyOn && <Philosophy m={m} tight={bentoOn} />}
             {bentoOn && <Bento m={m} tight={philosophyOn} />}
-            {m.shown('lineup') && <Lineup m={m} />}
+            {m.shown('lineup') && <Lineup m={m} onDrive={pickModel} />}
             {m.shown('how') && <Ownership m={m} />}
             {m.shown('engineering') && <Engineering m={m} />}
             {m.shown('stats') && <Stats m={m} />}
             {m.shown('testimonials') && <Testimonials m={m} />}
             {m.shown('newsroom') && <Newsroom m={m} />}
-            {isEnabled(m.cta) && <TestDrive m={m} />}
+            {isEnabled(m.cta) && <TestDrive m={m} pick={drivePick} />}
             {isEnabled(m.contact) && <Contact m={m} />}
           </main>
           {isEnabled(m.footer) && <Footer m={m} />}

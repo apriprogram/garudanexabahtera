@@ -148,8 +148,9 @@ export function Footer({ m }: { m: VeloraModel }) {
 
         <div className="grid gap-10 pt-14 @2xl:grid-cols-2 @5xl:grid-cols-12 @5xl:gap-8">
           <div className="min-w-0 @2xl:col-span-2 @5xl:col-span-4">
-            <ActionLink action={{ kind: 'section', target: 'hero' }} className="inline-flex rounded-full" aria-label={`${m.companyName}, back to top`}>
-              <Logo m={m} />
+            {/* Selebar kolom paling lebar (max-w-full + min-w-0): nama perusahaan panjang ("PT …") membungkus, tidak melebarkan halaman */}
+            <ActionLink action={{ kind: 'section', target: 'hero' }} className="flex w-fit min-w-0 max-w-full items-center rounded-full" aria-label={`${m.companyName}, back to top`}>
+              <Logo m={m} wrap />
             </ActionLink>
             {description && <p className="mt-5 max-w-[40ch] text-[14.5px] leading-relaxed text-white/70">{description}</p>}
             {m.socials.length > 0 && (

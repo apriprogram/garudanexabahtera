@@ -2,8 +2,8 @@
 // Testimoni, gaya "dinding potret" (referensi 10.jpg): latar putih, deret potret bertingkat di atas judul terpusat dengan
 // ubin abu samar di atasnya dan garis putus-putus tipis ke bawah; klik potret (tombol ber-aria-pressed) menampilkan
 // kutipannya di bawah judul, tombol ← → berpindah antar-testimoni. Ubin naik bertahap saat muncul (gerak menyala). HP:
-// dinding jadi dua baris yang bisa digeser.
-// Newsroom: bidang hampir hitam, kartu berita (foto 3:2, kategori + tanggal, judul, ringkasan, "Read story").
+// dinding jadi dua baris yang bisa digeser (rel diberi ruang atas/bawah agar cincin pilihan & fokus tidak terpotong).
+// Newsroom: bidang hampir hitam, kartu berita (foto 3:2, kategori + tanggal dengan nama bulan CMS, judul, ringkasan, "Read story").
 import { ArrowLeft, ArrowRight, ArrowUpRight, Quote } from 'lucide-react';
 import { useState, type CSSProperties } from 'react';
 import { Reveal } from '../shared/Animated';
@@ -45,7 +45,7 @@ export function Testimonials({ m }: { m: VeloraModel }) {
           <Reveal className="relative">
             <ul
               aria-label="Portraits"
-              className="vl-rail -mx-5 grid auto-cols-[34%] grid-flow-col grid-rows-2 gap-2 overflow-x-auto px-5 pb-1 @xl:auto-cols-[24%] @2xl:-mx-8 @2xl:px-8 @5xl:mx-0 @5xl:grid-flow-row @5xl:grid-rows-1 @5xl:justify-center @5xl:gap-3 @5xl:overflow-visible @5xl:px-0 @5xl:[grid-template-columns:repeat(var(--vl-cols),minmax(0,148px))] @5xl:[mask-image:linear-gradient(180deg,transparent_0,#000_96px)]"
+              className="vl-rail -mx-5 -my-1.5 grid auto-cols-[34%] grid-flow-col grid-rows-2 gap-2 overflow-x-auto px-5 py-1.5 @xl:auto-cols-[24%] @2xl:-mx-8 @2xl:px-8 @5xl:mx-0 @5xl:my-0 @5xl:py-0 @5xl:grid-flow-row @5xl:grid-rows-1 @5xl:justify-center @5xl:gap-3 @5xl:overflow-visible @5xl:px-0 @5xl:[grid-template-columns:repeat(var(--vl-cols),minmax(0,148px))] @5xl:[mask-image:linear-gradient(180deg,transparent_0,#000_96px)]"
               style={{ '--vl-cols': wall.length } as CSSProperties}
             >
               {wall.map(({ item, i }, k) => {
@@ -178,7 +178,7 @@ export function Newsroom({ m }: { m: VeloraModel }) {
         <ul className="mt-10 grid gap-x-4 gap-y-10 @3xl:mt-14 @3xl:grid-cols-2 @5xl:grid-cols-3">
           {items.map((item, i) => {
             const image = field(item, 'image');
-            const date = parseIsoDate(field(item, 'date'));
+            const date = parseIsoDate(field(item, 'date'), m.months);
             const rawDate = field(item, 'date');
             const action = m.linkOr(field(item, 'url'), null);
             const body = (

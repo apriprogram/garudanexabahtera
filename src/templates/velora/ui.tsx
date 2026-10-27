@@ -11,15 +11,15 @@ import { C, TYPE_V } from './styles';
 
 export type Tone = 'light' | 'dark';
 
-/** Label section: garis aksen pendek + teks kecil (aksen versi kontras sesuai latar). Kosong → tidak dirender. */
-export function SectionLabel({ label, tone = 'light', className = '' }: { label: string; tone?: Tone; className?: string }) {
+/**
+ * Label section: garis aksen pendek + teks kecil (aksen versi kontras sesuai latar). `photo` = di atas foto berlapis
+ * gelap: teks putih (warna aksen hanya dijamin kontras di bidang pejal), garis tetap aksen. Kosong → tidak dirender.
+ */
+export function SectionLabel({ label, tone = 'light', className = '' }: { label: string; tone?: Tone | 'photo'; className?: string }) {
   if (!label) return null;
+  const color = tone === 'photo' ? 'text-white' : tone === 'dark' ? 'text-(--vl-bright)' : 'text-(--vl-ink)';
   return (
-    <p
-      className={`inline-flex max-w-full items-center gap-3 text-[13px] font-semibold tracking-[0.02em] ${
-        tone === 'dark' ? 'text-(--vl-bright)' : 'text-(--vl-ink)'
-      } ${className}`}
-    >
+    <p className={`inline-flex max-w-full items-center gap-3 text-[13px] font-semibold tracking-[0.02em] ${color} ${className}`}>
       <span aria-hidden className="h-[2px] w-7 shrink-0 rounded-full bg-(--vl-red)" />
       <span className="min-w-0">{label}</span>
     </p>

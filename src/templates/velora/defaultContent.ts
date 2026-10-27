@@ -1,9 +1,10 @@
 // Konten demo Velora: Velora Motor Group, grup otomotif premium & mobilitas listrik FIKTIF ber-HQ di Zurich (didirikan
-// 1954). Nama perusahaan, model (Aster, Kestrel GT, Terra, Lumen, Vanta R), orang, angka, harga, penghargaan, alamat,
+// 1954). Nama perusahaan, model (Aster, Kestrel GT, Skarvane, Lumen, Vanta R), orang, angka, harga, penghargaan, alamat,
 // nomor telepon (blok 555), email (domain .example), dan akun media sosial (berakhiran -demo) adalah contoh; tidak ada
 // merek mobil atau perusahaan nyata. Salinan demo berbahasa Inggris (en-US) untuk perusahaan besar / multinasional; SEMUA
 // teks yang tampil, termasuk label & pesan galat formulir, judul kolom footer, dan label kontak, adalah field CMS sehingga
-// bisa diganti (termasuk ke bahasa Indonesia). Tanggal ISO (YYYY-MM-DD) di berita tampil sebagai "14 Oct 2026". Formulir
+// bisa diganti (termasuk ke bahasa Indonesia). Tanggal ISO (YYYY-MM-DD) di berita tampil sebagai "14 Oct 2026" dengan nama
+// bulan dari brand.month_names (bisa diganti, mis. "Jan, Feb, …, Des"). Contoh email di pesan galat memakai example.com. Formulir
 // test drive & newsletter hanya menyusun pesan WhatsApp/email: tidak ada data yang disimpan di website.
 import type { SiteContent } from '../types';
 import { veloraPhoto } from './photos';
@@ -19,6 +20,7 @@ export const veloraContent: SiteContent = {
     tagline: 'Premium cars & electric mobility · Zurich',
     logo: '',
     accent_color: VELORA_ACCENT,
+    month_names: 'Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec',
   },
   hero: {
     enabled: true,
@@ -96,20 +98,20 @@ export const veloraContent: SiteContent = {
         url: '',
       },
       {
-        name: 'Velora Terra',
+        name: 'Velora Skarvane',
         category: 'SUV, Electric',
         tagline: 'Seven seats, all-weather, all-electric',
         price: 'From $72,400',
         spec_1: '590 km range',
         spec_2: '7 seats',
         spec_3: '2,500 kg towing',
-        image: veloraPhoto('terra'),
+        image: veloraPhoto('skarvane'),
         url: '',
       },
       {
         name: 'Velora Lumen',
         category: 'Electric',
-        tagline: 'The compact EV for the city and beyond',
+        tagline: 'The compact electric crossover for the city and beyond',
         price: 'From $34,900',
         spec_1: '450 km range',
         spec_2: '10–80% in 18 min',
@@ -246,8 +248,8 @@ export const veloraContent: SiteContent = {
       },
       {
         name: 'Lucas Brenner',
-        role: 'Terra owner, Munich',
-        quote: 'Seven seats, a dog and two pairs of skis. The Terra swallows it all and still drives like a sedan.',
+        role: 'Skarvane owner, Munich',
+        quote: 'Seven seats, a dog and two pairs of skis. The Skarvane swallows it all and still drives like a sedan.',
         photo: veloraPhoto('portrait-4'),
       },
       {
@@ -265,7 +267,7 @@ export const veloraContent: SiteContent = {
       {
         name: 'Claire Dubois',
         role: 'Mobility subscriber, Paris',
-        quote: 'The subscription made switching simple. I moved from a Lumen to a Terra for the summer in two taps.',
+        quote: 'The subscription made switching simple. I moved from a Lumen to a Skarvane for the summer in two taps.',
         photo: veloraPhoto('portrait-7'),
       },
       {
@@ -344,7 +346,7 @@ export const veloraContent: SiteContent = {
     optional_label: 'optional',
     form_note: 'Nothing is stored on this website. Your request opens in WhatsApp or your email app, ready for you to send.',
     error_name: 'Please enter your full name.',
-    error_email: 'Enter a valid email address, e.g. name@company.com.',
+    error_email: 'Enter a valid email address, e.g. name@example.com.',
     error_phone: 'Enter a valid phone number with country code, e.g. +41 44 555 01 54.',
     error_model: 'Choose a model to drive.',
     error_date: 'Choose a valid date from today onwards.',
@@ -398,7 +400,7 @@ export const veloraContent: SiteContent = {
     newsletter_email: '',
     newsletter_label: 'Your email address',
     newsletter_note: 'Opens your email app with the request; nothing is stored on this website.',
-    newsletter_error: 'Enter a valid email address, e.g. name@company.com.',
+    newsletter_error: 'Enter a valid email address, e.g. name@example.com.',
     newsletter_ready_title: 'Almost done',
     newsletter_ready_text: 'Open your email app to send the subscription request for {email}.',
     newsletter_open: 'Open email app',

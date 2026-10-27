@@ -26,7 +26,7 @@ const listField = (key: string, label: string, itemLabel: string, fields: Templa
 });
 
 const EYEBROW_HELP = {
-  menu: 'Tampil di atas judul dengan garis merah pendek dan dipakai sebagai nama bagian ini di menu atas (paling pas 1–2 kata). Kosong → menu memakai judul.',
+  menu: 'Tampil di atas judul dengan garis merah pendek dan dipakai sebagai nama bagian ini di menu atas (paling pas 1–2 kata). Kosong → menu memakai judul. Bila nama-nama menu terlalu panjang untuk satu baris, menu atas otomatis hanya memakai tombol menu bulat.',
   plain: 'Tampil di atas judul dengan garis merah pendek. Kosongkan untuk menyembunyikan.',
 } as const;
 const eyebrow = (placeholder: string, kind: keyof typeof EYEBROW_HELP = 'plain') =>
@@ -34,13 +34,13 @@ const eyebrow = (placeholder: string, kind: keyof typeof EYEBROW_HELP = 'plain')
 const title = (placeholder: string, maxLength = 90) => t('title', 'Judul', { placeholder, maxLength });
 const subtitle = (placeholder = 'Kalimat pengantar singkat.', maxLength = 280) => ta('subtitle', 'Deskripsi singkat', { placeholder, maxLength });
 const SECTION_LINK_HELP = 'Boleh tautan ke bagian halaman, mis. #lineup, #how, #cta (test drive), atau #kontak.';
-const DATE_HELP = 'Tulis YYYY-MM-DD (mis. 2026-11-07) agar tampil sebagai "7 Nov 2026", atau teks bebas.';
+const DATE_HELP = 'Tulis YYYY-MM-DD (mis. 2026-11-07) agar tampil sebagai "7 Nov 2026" (nama bulan diatur di Identitas & warna aksen), atau teks bebas.';
 
 export const veloraSections: TemplateSection[] = [
   {
     key: 'brand',
     label: 'Identitas & warna aksen',
-    description: 'Nama perusahaan, logo, dan satu warna aksen untuk chip panah, titik, dan sorotan kecil. Latar gelap & putih tulang tetap.',
+    description: 'Nama perusahaan, logo, satu warna aksen untuk chip panah, titik, dan sorotan kecil, serta nama bulan untuk tanggal. Latar gelap & putih tulang tetap.',
     fields: [
       t('company_name', 'Nama perusahaan', { placeholder: 'mis. Velora Motor Group', maxLength: 80 }),
       t('tagline', 'Tagline', {
@@ -55,6 +55,11 @@ export const veloraSections: TemplateSection[] = [
         label: 'Warna aksen',
         help: 'Bawaan merah #E3342F. Versi lebih gelap (teks di latar terang) dan lebih terang (teks di latar gelap) dibuat otomatis agar tetap terbaca.',
       },
+      t('month_names', 'Nama bulan untuk tanggal', {
+        placeholder: 'mis. Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des',
+        maxLength: 160,
+        help: '12 nama bulan (boleh singkatan), dipisah koma. Dipakai di tanggal berita dan di pesan test drive, mis. "7 Nov 2026". Isi selain 12 nama → nama bulan bahasa Inggris.',
+      }),
     ],
   },
   {
@@ -73,7 +78,7 @@ export const veloraSections: TemplateSection[] = [
       t('highlight', 'Kata di dalam pil', {
         placeholder: 'mis. driving',
         maxLength: 24,
-        help: 'Tulis persis seperti di judul (satu-dua kata). Tampil di dalam pil bergaris dengan chip panah. Kosongkan untuk judul biasa.',
+        help: 'Tulis persis seperti di judul (satu-dua kata, paling pas ≤ 16 karakter; yang lebih panjang terbagi dua baris di HP). Tampil di dalam pil bergaris dengan chip panah. Kosongkan untuk judul biasa.',
       }),
       ta('subtitle', 'Deskripsi', {
         placeholder: 'Jelaskan perusahaan Anda dalam 1–2 kalimat.',
@@ -364,7 +369,7 @@ export const veloraSections: TemplateSection[] = [
         maxLength: 24,
         help: 'Kosongkan untuk memakai WhatsApp di bagian Dealer & kontak.',
       },
-      { type: 'email', key: 'email', label: 'Email penerima (opsional)', placeholder: 'sales@company.com', maxLength: 120, help: 'Kosongkan untuk memakai email di bagian Dealer & kontak.' },
+      { type: 'email', key: 'email', label: 'Email penerima (opsional)', placeholder: 'sales@example.com', maxLength: 120, help: 'Kosongkan untuk memakai email di bagian Dealer & kontak.' },
     ],
   },
   {
@@ -388,7 +393,7 @@ export const veloraSections: TemplateSection[] = [
         help: 'Link lokasi dipakai untuk tombol "Open in Google Maps"; kode embed (<iframe …>) dipakai untuk petanya.',
       }),
       { type: 'phone', key: 'phone', label: 'Telepon', placeholder: 'mis. +41 44 555 01 54', maxLength: 30 },
-      { type: 'email', key: 'email', label: 'Email', placeholder: 'hello@company.com', maxLength: 120 },
+      { type: 'email', key: 'email', label: 'Email', placeholder: 'hello@example.com', maxLength: 120 },
       {
         type: 'phone',
         key: 'whatsapp',
@@ -433,7 +438,7 @@ export const veloraSections: TemplateSection[] = [
         type: 'email',
         key: 'newsletter_email',
         label: 'Newsletter: email penerima',
-        placeholder: 'news@company.com',
+        placeholder: 'news@example.com',
         maxLength: 120,
         help: 'Pengunjung mengirim permintaan berlangganan lewat aplikasi email ke alamat ini. Kosongkan untuk memakai email di Dealer & kontak.',
       },

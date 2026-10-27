@@ -28,13 +28,16 @@ import {
   fillTokens,
   isVideoUrl,
   lineupFilters,
+  LOGO_MIN,
   mailtoHref,
   menuLabel,
   modelCategories,
+  monthNames,
   navItems,
   newsletterHref,
   PAGE_SECTIONS,
   parseIsoDate,
+  pillNavFits,
   readVelora,
   sectionTarget,
   todayIso,
@@ -78,7 +81,7 @@ describe('Velora: skema & konten bawaan', () => {
     expect(def.sections.map((s) => s.key)).toEqual(['brand', ...ORDER, 'footer']);
     expect(PAGE_SECTIONS).toEqual([...ORDER, 'footer']);
     const fields = (key: string) => def.sections.find((s) => s.key === key)!.fields.map((f) => f.key);
-    expect(fields('brand')).toEqual(['company_name', 'tagline', 'logo', 'accent_color']);
+    expect(fields('brand')).toEqual(['company_name', 'tagline', 'logo', 'accent_color', 'month_names']);
     expect(fields('hero')).toEqual(expect.arrayContaining(['eyebrow', 'title', 'highlight', 'subtitle', 'image', 'header_label', 'review_title', 'review_url']));
     expect(fields('lineup')).toEqual(expect.arrayContaining(['items', 'all_label', 'button_label']));
     expect(fields('cta')).toEqual(expect.arrayContaining(['form_title', 'form_button', 'whatsapp', 'email', 'image', 'points']));
@@ -151,7 +154,10 @@ describe('Velora: skema & konten bawaan', () => {
 
   it('salinan demo jujur: tanpa merek mobil nyata, klaim sertifikasi/regulator, atau janji investasi; formulir hanya menyusun pesan', () => {
     const text = JSON.stringify(def.defaultContent);
-    expect(text).not.toMatch(/\b(Porsche|BMW|Mercedes|Audi|Tesla|Ferrari|Toyota|Hyundai|Kia|Jaguar|Maserati|Polestar|Volvo|Lexus|Chevrolet|Corvette|Geely)\b/i);
+    expect(text).not.toMatch(/\b(Porsche|BMW|Mercedes|Audi|Tesla|Ferrari|Toyota|Hyundai|Kia|Jaguar|Maserati|Polestar|Volvo|Lexus|Chevrolet|Corvette|Geely|Nissan|Terra|Range Rover|Land Rover|KUKA|Zaptec)\b/i);
+    // Contoh email pengunjung di pesan galat & placeholder skema memakai domain contoh, bukan domain perusahaan nyata
+    expect(text).not.toMatch(/company\.com/);
+    expect(JSON.stringify(def.sections)).not.toMatch(/company\.com/);
     expect(text).not.toMatch(/ISO 9001|certified by|NYSE|NASDAQ|listed on|guaranteed|return on investment|zero emission|safest/i);
     // Data kontak demo jelas fiktif: email di domain .example, telepon blok 555, akun sosial berakhiran -demo
     const c = def.defaultContent;
@@ -205,6 +211,18 @@ describe('Velora: helper model', () => {
     expect(nameless.all.map((i) => i.key)).not.toContain('testimonials');
   });
 
+  it('pil menu header: muat bila pil + 2 × (aksi kanan atau logo, maks. LOGO_MIN) + jarak ≤ lebar baris; belum diukur → muat', () => {
+    // Konten bawaan di wadah 1152px (baris 1056px): pil ±526px, aksi ±198px, logo ±222px → muat
+    expect(pillNavFits({ row: 1056, nav: 526, logo: 222, actions: 198 })).toBe(true);
+    // Label menu bahasa Indonesia (pil ±740px, "Cari dealer terdekat" ±242px) di 1280px (baris 1152px) → tombol menu saja
+    expect(pillNavFits({ row: 1152, nav: 740, logo: 222, actions: 242 })).toBe(false);
+    // … di 1440px (baris 1312px) muat lagi
+    expect(pillNavFits({ row: 1312, nav: 740, logo: 222, actions: 242 })).toBe(true);
+    // Nama perusahaan panjang hanya dihitung sampai LOGO_MIN (sisanya terpotong rapi)
+    expect(pillNavFits({ row: 1056, nav: 526, logo: 600, actions: 150 })).toBe(526 + 2 * (LOGO_MIN + 12) <= 1056);
+    expect(pillNavFits({ row: 0, nav: 0, logo: 0, actions: 0 })).toBe(true);
+  });
+
   it('tautan "#…": alias (#models, #dealers, #test-drive, #kontak) ke section yang benar, anchor tak dikenal / tersembunyi → cadangan', () => {
     expect(sectionTarget('#models')).toBe('lineup');
     expect(sectionTarget('dealers')).toBe('contact');
@@ -239,8 +257,14 @@ describe('Velora: helper model', () => {
     expect(filterModels(items, 'Truck')).toHaveLength(5);
   });
 
-  it('tanggal: ISO valid → "14 Oct 2026", tanggal mustahil/teks → null', () => {
+  it('tanggal: ISO valid → "14 Oct 2026" (nama bulan dari CMS), tanggal mustahil/teks → null', () => {
     expect(parseIsoDate('2026-10-14')).toEqual({ iso: '2026-10-14', label: '14 Oct 2026' });
+    const id = monthNames('Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des');
+    expect(parseIsoDate('2026-10-14', id)!.label).toBe('14 Okt 2026');
+    // Bukan 12 nama → nama bulan bawaan (Inggris)
+    expect(monthNames('Jan, Feb')[9]).toBe('Oct');
+    expect(monthNames(null)[4]).toBe('May');
+    expect(readVelora(resolveContent(def, { brand: { month_names: 'Jan; Feb; Mar; Apr; Mei; Jun; Jul; Agu; Sep; Okt; Nov; Des' } })).months[7]).toBe('Agu');
     expect(parseIsoDate('2026-02-30')).toBeNull();
     expect(parseIsoDate('next week')).toBeNull();
     expect(todayIso(new Date(2026, 9, 7))).toBe('2026-10-07');
@@ -250,7 +274,7 @@ describe('Velora: helper model', () => {
     const today = '2026-10-27';
     const empty = validateDrive(EMPTY_DRIVE, { models: ['Velora Aster'], today });
     expect(Object.keys(empty).sort()).toEqual(['email', 'model', 'name']);
-    expect(empty.email).toBe('Enter a valid email address, e.g. name@company.com.');
+    expect(empty.email).toBe('Enter a valid email address, e.g. name@example.com.');
     const form = { ...EMPTY_DRIVE, name: 'Jane Doe', email: 'jane@example.com', model: 'Velora Aster' };
     expect(validateDrive(form, { models: ['Velora Aster'], today })).toEqual({});
     expect(validateDrive({ ...form, phone: '12ab' }, { models: [], today }).phone).toMatch(/country code/);
@@ -282,6 +306,9 @@ describe('Velora: helper model', () => {
     const indo = driveCopy({ message_intro: 'Halo {company}, saya ingin test drive.', message_closing: '', label_name: 'Nama', label_email: 'Surel', label_model: 'Mobil' });
     expect(driveMessage('PT Maju', form, indo)).toBe(['Halo PT Maju, saya ingin test drive.', 'Nama: Jane Doe', 'Surel: jane@example.com', 'Mobil: Velora Aster'].join('\n'));
     expect(fillTokens('Hi {company} – {email}', { company: 'A', email: 'b@c.de' })).toBe('Hi A – b@c.de');
+    // Tanggal di pesan memakai nama bulan CMS
+    const idMonths = monthNames('Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des');
+    expect(driveMessage('PT Maju', { ...form, date: '2026-12-07' }, indo, idMonths)).toContain('Preferred date: 7 Des 2026');
   });
 
   it('mailto: subjek & isi ter-encode; email tidak valid → kosong; newsletter butuh email pengunjung yang valid', () => {
@@ -331,7 +358,10 @@ describe('Velora: demo', () => {
     const h1 = container.querySelector('h1')!;
     expect(h1.textContent).toBe('Seven decades of driving what comes next');
     const pill = within(h1).getByText('driving');
-    expect(pill.className).toMatch(/rounded-full/);
+    expect(pill.className).toMatch(/rounded-\[0\.62em\]/);
+    // HP: sorotan panjang boleh terbagi dua baris di dalam pil (tidak terpotong); layar lebar: satu baris
+    expect(pill.parentElement!.className).toContain('@2xl:whitespace-nowrap');
+    expect(pill.parentElement!.className.split(' ')).not.toContain('whitespace-nowrap');
     expect(h1.querySelector('.vl-chip')).toHaveAttribute('aria-hidden', 'true');
     expect(within(hero).getByText('Drive the future today')).toBeInTheDocument();
     const explore = within(hero).getByRole('link', { name: 'Explore models' });
@@ -392,11 +422,11 @@ describe('Velora: demo', () => {
     const group = within(lineup).getByRole('group', { name: 'Filter models' });
     expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['All', 'Electric', 'Coupé', 'SUV', 'Performance']);
     const names = () => Array.from(lineup.querySelectorAll('ul li')).map((li) => li.querySelector('span[class*="text-[22px]"]')?.textContent);
-    expect(names()).toEqual(['Velora Aster', 'Kestrel GT', 'Velora Terra', 'Velora Lumen', 'Vanta R']);
+    expect(names()).toEqual(['Velora Aster', 'Kestrel GT', 'Velora Skarvane', 'Velora Lumen', 'Vanta R']);
     fireEvent.click(within(group).getByRole('button', { name: 'Electric' }));
     expect(within(group).getByRole('button', { name: 'Electric' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(group).getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'false');
-    expect(names()).toEqual(['Velora Aster', 'Velora Terra', 'Velora Lumen']);
+    expect(names()).toEqual(['Velora Aster', 'Velora Skarvane', 'Velora Lumen']);
     expect(lineup.querySelector('[aria-live="polite"]')!.textContent).toBe('Showing 3 of 5 models: Electric');
     fireEvent.click(within(group).getByRole('button', { name: 'Coupé' }));
     expect(names()).toEqual(['Kestrel GT', 'Vanta R']);
@@ -406,6 +436,30 @@ describe('Velora: demo', () => {
     expect(card.textContent).toContain('From $96,500');
     expect(card.textContent).toContain('480 kW system power');
     expect(within(lineup).getByRole('link', { name: 'Book a test drive' })).toHaveAttribute('href', '#ajakan');
+  });
+
+  it('kartu model: nama tautan = nama model + teks tombol CMS (harga & spesifikasi = deskripsi); klik memilih model itu di formulir test drive', () => {
+    const container = live();
+    const lineup = section(container, 'lineup');
+    const card = within(lineup).getByRole('link', { name: 'Kestrel GT Book a test drive' });
+    expect(card).toHaveAttribute('href', '#ajakan');
+    expect(card).toHaveAccessibleDescription(/From \$96,500/);
+    expect(card).toHaveAccessibleDescription(/480 kW system power/);
+    const select = () => within(section(container, 'cta')).getByLabelText('Model') as HTMLSelectElement;
+    expect(select().value).toBe('');
+    fireEvent.click(card);
+    expect(select().value).toBe('Kestrel GT');
+    expect(scrolled).toContain('cta');
+    // Kartu lain menimpa pilihan; pilihan manual tetap bisa diganti
+    fireEvent.click(within(lineup).getByRole('link', { name: 'Velora Skarvane Book a test drive' }));
+    expect(select().value).toBe('Velora Skarvane');
+    fireEvent.change(select(), { target: { value: 'Vanta R' } });
+    expect(select().value).toBe('Vanta R');
+    // Kartu dengan tautan sendiri: nama tautan = nama model saja, formulir tidak diubah
+    cleanup();
+    const own = live({ lineup: { items: [{ name: 'Solo', category: 'Electric', url: 'https://velora.example/solo' }, { name: 'Duo', category: 'SUV' }] } });
+    const soloCard = within(section(own, 'lineup')).getByRole('link', { name: 'Solo' });
+    expect(soloCard).toHaveAttribute('href', 'https://velora.example/solo');
   });
 
   it('teknologi: kartu terpilih melebar (aria-expanded), tombol ← → berputar; angka bertitik aksen', () => {
@@ -481,7 +535,7 @@ describe('Velora: demo', () => {
     const form = cta.querySelector('form')!;
     expect(within(cta).getByRole('heading', { level: 2 }).textContent).toBe('Book a test drive');
     const model = within(form).getByLabelText('Model') as HTMLSelectElement;
-    expect(Array.from(model.options).map((o) => o.textContent)).toEqual(['Choose a model', 'Velora Aster', 'Kestrel GT', 'Velora Terra', 'Velora Lumen', 'Vanta R']);
+    expect(Array.from(model.options).map((o) => o.textContent)).toEqual(['Choose a model', 'Velora Aster', 'Kestrel GT', 'Velora Skarvane', 'Velora Lumen', 'Vanta R']);
     const studio = within(form).getByLabelText(/Preferred studio/) as HTMLSelectElement;
     expect(Array.from(studio.options).map((o) => o.textContent)).toEqual(['Any studio', 'Zurich', 'Munich', 'London', 'Dubai', 'Singapore']);
     fireEvent.click(within(form).getByRole('button', { name: 'Prepare my request' }));
@@ -509,6 +563,34 @@ describe('Velora: demo', () => {
     fireEvent.click(within(cta).getByRole('button', { name: 'Edit details' }));
     expect((within(cta).getByLabelText('Full name') as HTMLInputElement).value).toBe('Jane Doe');
     expect(cta.textContent).toContain('Nothing is stored on this website.');
+  });
+
+  it('nama bulan dari CMS tampil di tanggal berita; label kecil test drive di atas foto berwarna putih', () => {
+    const container = live({ brand: { month_names: 'Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des' } });
+    const news = section(container, 'newsroom');
+    expect(news.querySelector('time[datetime="2026-10-14"]')!.textContent).toBe('14 Okt 2026');
+    expect(news.querySelector('time[datetime="2026-09-30"]')!.textContent).toBe('30 Sep 2026');
+    const label = within(section(container, 'cta')).getByText('Test drive', { selector: 'p span' }).closest('p')!;
+    expect(label.className).toContain('text-white');
+    // Tanpa foto latar → bidang grafit pejal, label kembali ke warna aksen terang
+    cleanup();
+    const plain = live({ cta: { image: '' } });
+    const plainLabel = within(section(plain, 'cta')).getByText('Test drive', { selector: 'p span' }).closest('p')!;
+    expect(plainLabel.className).toContain('text-(--vl-bright)');
+  });
+
+  it('footer: nama perusahaan panjang ("PT …", 80 huruf) membungkus di kolomnya, tidak melebarkan halaman', () => {
+    const long = 'PT Velora Motor Group International Indonesia Sejahtera Bersama Mandiri Abadi'.padEnd(80, 'x');
+    const container = live({ brand: { company_name: long } });
+    const link = within(container.querySelector('footer')!).getByRole('link', { name: `${long}, back to top` });
+    expect(link.className).toMatch(/\bmax-w-full\b/);
+    expect(link.className).toMatch(/\bmin-w-0\b/);
+    const name = within(link).getByText(long);
+    expect(name.className).toContain('whitespace-normal!');
+    expect(name.className).toContain('[overflow-wrap:anywhere]');
+    // Header tetap satu baris (terpotong rapi)
+    const headerName = within(container.querySelector('header')!).getByText(long);
+    expect(headerName.className).not.toContain('whitespace-normal!');
   });
 
   it('dealer & kontak: kantor pusat, studio, tombol WhatsApp & Google Maps, peta; footer: model, menu, sosial, hak cipta otomatis', () => {

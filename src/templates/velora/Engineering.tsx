@@ -2,7 +2,8 @@
 // Teknologi, gaya carousel kartu melebar (referensi Hugo): bidang hampir hitam selebar layar, kepala + tombol ← → di
 // kanan; deret kartu foto — kartu terpilih melebar halus dan menampilkan penjelasan, kartu lain menyempit dengan ikon +
 // judul (klik kartu atau tombol panah untuk memilih; tombol kartu ber-aria-expanded). Wadah < 1152px: rel geser snap,
-// semua kartu menampilkan penjelasan.
+// semua kartu menampilkan penjelasan, judul kartu teks biasa (tanpa tombol / aria-expanded). Rel hanya bisa difokus bila
+// isinya memang bisa digeser (useRailMode).
 // Angka: putih tulang, empat angka raksasa dengan titik aksen (ukuran mengikuti lebar kolom), label & penjelasan.
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useId, useRef, useState, type CSSProperties } from 'react';
@@ -12,6 +13,7 @@ import { stagger } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
 import { field, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
+import { useRailMode } from './hooks';
 import type { VeloraModel } from './model';
 import { VELORA_PHOTOS } from './photos';
 import { C, DISPLAY, SECTION_PAD } from './styles';
@@ -25,6 +27,7 @@ export function Engineering({ m }: { m: VeloraModel }) {
   const count = items.length;
   const active = Math.min(picked, count - 1);
   const rail = useRef<HTMLUListElement>(null);
+  const mode = useRailMode(rail, `${count}`);
   const go = (i: number) => setPicked(((i % count) + count) % count);
   /** Tombol ← →: pilih kartu berikut/sebelumnya; di wadah sempit (rel geser) juga menggeser rel satu kartu. */
   const step = (dir: 1 | -1) => {
@@ -65,7 +68,7 @@ export function Engineering({ m }: { m: VeloraModel }) {
         <Reveal className="mt-10 @3xl:mt-14">
           <ul
             ref={rail}
-            tabIndex={0}
+            tabIndex={mode.scrollable ? 0 : undefined}
             aria-label={text(s, 'title') || 'Technology'}
             className="vl-rail vl-eng-list -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-5 px-5 pb-1 @2xl:-mx-8 @2xl:scroll-px-8 @2xl:px-8 @6xl:mx-0 @6xl:h-[clamp(440px,34cqw,520px)] @6xl:overflow-visible @6xl:px-0 @6xl:pb-0"
           >
@@ -99,16 +102,20 @@ export function Engineering({ m }: { m: VeloraModel }) {
                         isActive ? '@6xl:text-[24px] @7xl:text-[28px]' : '@6xl:text-[14px] @7xl:text-[16px]'
                       }`}
                     >
-                      {/* Layar lebar: judul kartu = tombol pilih (menutupi kartu); HP: semua penjelasan sudah tampil */}
-                      <button
-                        type="button"
-                        onClick={() => go(i)}
-                        aria-expanded={isActive}
-                        aria-controls={textId}
-                        className="text-left after:absolute after:inset-0 after:rounded-[20px] after:content-[''] focus-visible:outline-none focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:-outline-offset-4 focus-visible:after:outline-white"
-                      >
-                        {title}
-                      </button>
+                      {/* Layar lebar: judul kartu = tombol pilih (menutupi kartu); rel geser: semua penjelasan sudah tampil → teks biasa */}
+                      {mode.wide ? (
+                        <button
+                          type="button"
+                          onClick={() => go(i)}
+                          aria-expanded={isActive}
+                          aria-controls={textId}
+                          className="text-left after:absolute after:inset-0 after:rounded-[20px] after:content-[''] focus-visible:outline-none focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:-outline-offset-4 focus-visible:after:outline-white"
+                        >
+                          {title}
+                        </button>
+                      ) : (
+                        title
+                      )}
                     </h3>
                     <div id={textId} className={`vl-eng-text relative z-10 ${isActive ? '' : '@6xl:hidden'}`}>
                       {field(item, 'text') && <p className="mt-2 max-w-[46ch] text-[14.5px] leading-relaxed text-white/80 @3xl:text-[15px]">{field(item, 'text')}</p>}

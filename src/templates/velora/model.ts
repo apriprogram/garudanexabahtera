@@ -1,5 +1,5 @@
 // Turunan konten Velora (fungsi murni, diuji di __tests__/velora.test.tsx): warna dari SATU aksen (merah bawaan), menu,
-// tujuan tautan, section yang tampil, filter model, tanggal Inggris, formulir test drive (validasi + pesan
+// tujuan tautan, section yang tampil, filter model, tanggal (nama bulan dari CMS), formulir test drive (validasi + pesan
 // WhatsApp/email), newsletter (mailto), media sosial, dan peta. Semua tahan konten mentah (null, angka, list rusak).
 // Formulir hanya MENYUSUN pesan: tidak ada data yang dikirim ke server atau disimpan.
 import type { CSSProperties } from 'react';
@@ -199,6 +199,26 @@ export function navItems(content: SiteContent): { pill: NavItem[]; all: NavItem[
   };
 }
 
+/** Lebar minimum logo di header (simbol + nama, boleh terpotong sampai sini) selama pil menu tampil di tengah. */
+export const LOGO_MIN = 200;
+
+/**
+ * Pil menu layar lebar muat di header? Pil ada di TENGAH, jadi kiri & kanan butuh ruang yang sama: aksi kanan (lebar
+ * alaminya) dan logo (lebar alami, maks. LOGO_MIN), masing-masing + jarak grid. Tidak muat → header hanya memakai tombol
+ * menu bulat (label menu CMS yang panjang, mis. bahasa Indonesia, tidak lagi menabrak pil "Find a dealer"). Ukuran 0
+ * (belum diukur / tersembunyi) → dianggap muat.
+ */
+export function pillNavFits({ row, nav, logo, actions, gap = 12 }: { row: number; nav: number; logo: number; actions: number; gap?: number }): boolean {
+  if (!row || !nav) return true;
+  return nav + 2 * (Math.max(actions, Math.min(logo, LOGO_MIN)) + gap) <= row;
+}
+
+/** Kartu model → formulir test drive: nama model yang dipilih (+ penghitung agar klik ulang model yang sama tetap terbaca). */
+export interface DrivePick {
+  name: string;
+  n: number;
+}
+
 // ─── Model & filter ───────────────────────────────────────────────────────────
 
 const normalize = (value: string) =>
@@ -241,22 +261,32 @@ export function filterModels(items: ListItem[], category: string | null): ListIt
 
 // ─── Tanggal ──────────────────────────────────────────────────────────────────
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** "Jan, Feb, …" dari CMS → 12 nama bulan; kosong atau jumlahnya bukan 12 → `fallback`. */
+export function monthNames(raw: unknown, fallback?: string[]): string[] {
+  const names = (typeof raw === 'string' ? raw : '')
+    .split(/[,;]/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+  return names.length === 12 ? names : (fallback ?? DEFAULT_MONTHS);
+}
+
+/** Nama bulan bawaan (demo, Inggris) dari defaultContent: brand.month_names. */
+const DEFAULT_MONTHS = monthNames(veloraContent.brand.month_names, ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 
 export interface EnDate {
   iso: string;
-  /** "14 Oct 2026" */
+  /** "14 Oct 2026" (nama bulan dari CMS, mis. "14 Okt 2026") */
   label: string;
 }
 
-/** Tanggal ISO "YYYY-MM-DD" (tanggal kalender valid) → { iso, label }; selain itu null. */
-export function parseIsoDate(raw: string | null | undefined): EnDate | null {
+/** Tanggal ISO "YYYY-MM-DD" (tanggal kalender valid) → { iso, label } dengan nama bulan `months`; selain itu null. */
+export function parseIsoDate(raw: string | null | undefined, months: string[] = DEFAULT_MONTHS): EnDate | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((raw || '').trim());
   if (!match) return null;
   const [y, m, d] = match.slice(1).map(Number);
   const date = new Date(Date.UTC(y, m - 1, d));
   if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null;
-  return { iso: match[0], label: `${d} ${MONTHS[m - 1]} ${y}` };
+  return { iso: match[0], label: `${d} ${months[m - 1] ?? DEFAULT_MONTHS[m - 1]} ${y}` };
 }
 
 /** Hari ini "YYYY-MM-DD" (waktu lokal pengunjung). */
@@ -360,10 +390,10 @@ export const fillTokens = (template: string, values: { company?: string; email?:
 
 /**
  * Isi pesan permintaan test drive: kalimat pembuka (CMS), satu baris per isian dengan label isian formulir (isian opsional
- * yang kosong tidak ikut), lalu kalimat penutup (CMS, boleh kosong).
+ * yang kosong tidak ikut; tanggal dengan nama bulan CMS), lalu kalimat penutup (CMS, boleh kosong).
  */
-export function driveMessage(company: string, form: DriveForm, copy: DriveCopy = DEFAULT_DRIVE_COPY): string {
-  const date = parseIsoDate(form.date);
+export function driveMessage(company: string, form: DriveForm, copy: DriveCopy = DEFAULT_DRIVE_COPY, months: string[] = DEFAULT_MONTHS): string {
+  const date = parseIsoDate(form.date, months);
   const { labels } = copy;
   const rows = [
     `${labels.name}: ${form.name.trim()}`,
@@ -515,6 +545,8 @@ export function readVelora(content: SiteContent) {
     /** Teks tombol WhatsApp (kartu kantor pusat & kartu test drive) */
     whatsappLabel: text(contact, 'whatsapp_label') || String(veloraContent.contact.whatsapp_label),
     nav: navItems(content),
+    /** Nama bulan untuk tanggal berita & pesan test drive (CMS brand.month_names, bawaan Inggris) */
+    months: monthNames(text(brand, 'month_names')),
     socials: socialLinks(footer),
     map: mapsInfo(text(contact, 'maps_url'), text(contact, 'maps_query') || text(contact, 'address')),
     year: new Date().getFullYear(),

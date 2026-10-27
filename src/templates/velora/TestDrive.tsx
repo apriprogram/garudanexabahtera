@@ -4,7 +4,9 @@
 // formulir hanya MENYUSUN pesan — tidak ada data yang dikirim ke server atau disimpan. Setelah lolos validasi, pesan
 // tampil apa adanya dengan tombol "Send via WhatsApp" / "Send via email" (pratinjau CMS: tautan tidak dibuka). Tanpa
 // WhatsApp & email → teks + tombol ke Dealer & kontak. SEMUA teks formulir (label, pilihan awal, pesan galat, catatan,
-// teks setelah diisi, kalimat pesan) dari CMS lewat m.drive (model.ts driveCopy).
+// teks setelah diisi, kalimat pesan) dari CMS lewat m.drive (model.ts driveCopy); tanggal di pesan memakai nama bulan CMS.
+// Kartu model di jajaran model (`pick`) memilih model itu di formulir. Lapisan gelap foto: mendatar di layar lebar (teks
+// di kiri), merata & lebih gelap di wadah sempit (teks selebar kartu); label kecil di atas foto berwarna putih.
 import { Check, ChevronDown, CircleAlert, Lock, Mail, PencilLine, Phone } from 'lucide-react';
 import { useId, useRef, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react';
 import { WhatsAppIcon } from '../shared/icons';
@@ -22,6 +24,7 @@ import {
   validateDrive,
   type DriveErrors,
   type DriveForm,
+  type DrivePick,
   type VeloraModel,
 } from './model';
 import { VELORA_PHOTOS } from './photos';
@@ -50,7 +53,7 @@ function Field({ id, label, error, optional = '', children }: { id: string; labe
 
 const ORDER: (keyof DriveForm)[] = ['name', 'email', 'phone', 'model', 'date'];
 
-function DriveFormCard({ m }: { m: VeloraModel }) {
+function DriveFormCard({ m, pick }: { m: VeloraModel; pick: DrivePick | null }) {
   const copy = m.drive;
   const baseId = useId();
   const [form, setForm] = useState<DriveForm>(EMPTY_DRIVE);
@@ -65,6 +68,16 @@ function DriveFormCard({ m }: { m: VeloraModel }) {
   const studios = contactOffices(m.contact)
     .map((item) => field(item, 'city'))
     .filter(Boolean);
+  // Kartu model diklik → model itu terpilih (disesuaikan saat render, pola "state dari prop sebelumnya"; tanpa efek)
+  const [seenPick, setSeenPick] = useState(pick);
+  if (pick !== seenPick) {
+    setSeenPick(pick);
+    if (pick && models.includes(pick.name)) {
+      setForm((f) => ({ ...f, model: pick.name }));
+      setErrors((e) => ({ ...e, model: undefined }));
+      setSent(null);
+    }
+  }
   const { title, labels } = copy;
   const wa = whatsappHref(m.driveWhatsapp) ? m.driveWhatsapp : '';
   const canMail = !!mailtoHref(m.driveEmail, 'x', 'x');
@@ -96,7 +109,7 @@ function DriveFormCard({ m }: { m: VeloraModel }) {
       refs.current[first]?.focus();
       return;
     }
-    setSent(driveMessage(m.companyName, form, copy));
+    setSent(driveMessage(m.companyName, form, copy, m.months));
     window.setTimeout(() => resultHeading.current?.focus(), 0);
   };
 
@@ -235,7 +248,7 @@ function DriveFormCard({ m }: { m: VeloraModel }) {
   );
 }
 
-export function TestDrive({ m }: { m: VeloraModel }) {
+export function TestDrive({ m, pick = null }: { m: VeloraModel; pick?: DrivePick | null }) {
   const { cta } = m;
   const image = text(cta, 'image');
   const eyebrow = text(cta, 'eyebrow');
@@ -258,14 +271,14 @@ export function TestDrive({ m }: { m: VeloraModel }) {
                 parallax={4}
                 className="absolute inset-0 -z-20"
               />
-              <span aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(13_14_16/0.86)_0%,rgb(13_14_16/0.6)_55%,rgb(13_14_16/0.45)_100%)]" />
+              <span aria-hidden className="vl-cta-scrim absolute inset-0 -z-10" />
             </>
           )}
           <div className={`grid items-start gap-10 py-14 @3xl:py-20 @5xl:grid-cols-12 @5xl:gap-12 @5xl:py-24 ${INSET}`}>
             <div data-tpl-tone="inverse" className="flex min-w-0 flex-col self-stretch text-white @5xl:col-span-6 @7xl:col-span-7">
               {eyebrow && (
                 <Reveal variant="fade">
-                  <SectionLabel label={eyebrow} tone="dark" />
+                  <SectionLabel label={eyebrow} tone={hasImage(image) ? 'photo' : 'dark'} />
                 </Reveal>
               )}
               {title && (
@@ -292,7 +305,7 @@ export function TestDrive({ m }: { m: VeloraModel }) {
               )}
               {(tel || m.waAction) && (
                 <Reveal delay={240} className="mt-10 border-t border-white/15 pt-6 @5xl:mt-auto">
-                  {m.drive.talk && <p className="mb-2 text-[13px] font-medium text-white/70">{m.drive.talk}</p>}
+                  {m.drive.talk && <p className="mb-2 text-[13px] font-medium text-white/85">{m.drive.talk}</p>}
                   <p className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[15px] text-white">
                     {tel && (
                       <ActionLink action={{ kind: 'external', href: tel }} className="inline-flex min-h-10 items-center gap-2 font-medium underline decoration-white/30 underline-offset-4 hover:decoration-white">
@@ -311,7 +324,7 @@ export function TestDrive({ m }: { m: VeloraModel }) {
               )}
             </div>
             <Reveal delay={120} className="min-w-0 @5xl:col-span-6 @7xl:col-span-5">
-              <DriveFormCard m={m} />
+              <DriveFormCard m={m} pick={pick} />
             </Reveal>
           </div>
         </div>

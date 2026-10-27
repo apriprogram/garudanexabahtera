@@ -1,19 +1,22 @@
 // Jajaran model (`lineup`): panel gelap membulat di dalam gutter. Kepala: label + judul putih + deskripsi kiri, tombol
 // filter kanan (dibuat dari kolom "Kategori" model; benar-benar menyaring, kartu memudar masuk). Kartu grafit radius 20:
 // foto 4:3 dengan chip panah aksen, nama, kalimat singkat, harga, dan tiga spesifikasi. HP: filter jadi rel geser, kartu
-// satu kolom. Jumlah model yang tampil diumumkan ke pembaca layar.
+// satu kolom. Jumlah model yang tampil diumumkan ke pembaca layar. Kartu menuju formulir test drive memilih model itu di
+// formulir (onDrive) dan bernama "<nama model> <teks tombol CMS>" untuk pembaca layar (harga & spesifikasi = deskripsi).
+// Garis pemisah spesifikasi sejajar antarkartu: kalimat singkat selalu setinggi dua baris di layar lebar.
 import { ArrowUpRight } from 'lucide-react';
 import { useId, useState, type CSSProperties } from 'react';
 import { Reveal } from '../shared/Animated';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { field, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
+import { veloraContent } from './defaultContent';
 import { filterModels, lineupFilters, modelCategories, type VeloraModel } from './model';
 import { VELORA_PHOTOS } from './photos';
 import { DISPLAY, GUTTER, INSET } from './styles';
 import { ArrowPill, SectionHead } from './ui';
 
-export function Lineup({ m }: { m: VeloraModel }) {
+export function Lineup({ m, onDrive }: { m: VeloraModel; onDrive?: (name: string) => void }) {
   const s = m.lineup;
   const items = m.items('lineup');
   const filters = lineupFilters(items);
@@ -23,7 +26,8 @@ export function Lineup({ m }: { m: VeloraModel }) {
   const statusId = useId();
   const active = current && filters.includes(current) ? current : null;
   const shownItems = filterModels(items, active);
-  const allLabel = text(s, 'all_label') || 'All';
+  const allLabel = text(s, 'all_label') || String(veloraContent.lineup.all_label);
+  const driveLabel = text(s, 'button_label');
   const buttonAction = m.linkOr(text(s, 'button_url'), m.driveAction);
   const fallbackAction = m.driveAction;
 
@@ -75,7 +79,10 @@ export function Lineup({ m }: { m: VeloraModel }) {
               const image = field(item, 'image');
               const specs = ['spec_1', 'spec_2', 'spec_3'].map((k) => field(item, k)).filter(Boolean);
               const action = m.linkOr(field(item, 'url'), fallbackAction);
+              const toDrive = action?.kind === 'section' && action.target === 'cta';
               const categories = modelCategories(item);
+              const id = (part: string) => `${statusId}-${i}-${part}`;
+              const described = [field(item, 'price') && id('price'), field(item, 'tagline') && id('tagline'), specs.length > 0 && id('specs')].filter(Boolean).join(' ');
               const body = (
                 <>
                   <KitPhoto
@@ -102,13 +109,28 @@ export function Lineup({ m }: { m: VeloraModel }) {
                   </KitPhoto>
                   <span className="flex flex-1 flex-col px-2.5 pb-2 pt-5 @3xl:px-3">
                     <span className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                      <span className={`${DISPLAY} text-[22px] font-medium leading-tight tracking-[-0.02em] text-white @3xl:text-[24px]`}>{name}</span>
-                      {field(item, 'price') && <span className="text-[14px] font-medium tabular-nums text-white/85">{field(item, 'price')}</span>}
+                      <span id={id('name')} className={`${DISPLAY} text-[22px] font-medium leading-tight tracking-[-0.02em] text-white @3xl:text-[24px]`}>
+                        {name}
+                      </span>
+                      {field(item, 'price') && (
+                        <span id={id('price')} className="text-[14px] font-medium tabular-nums text-white/85">
+                          {field(item, 'price')}
+                        </span>
+                      )}
                     </span>
-                    {field(item, 'tagline') && <span className="mt-1.5 block text-[14.5px] leading-snug text-white/70">{field(item, 'tagline')}</span>}
+                    {field(item, 'tagline') && (
+                      <span id={id('tagline')} className="mt-1.5 block text-[14.5px] leading-snug text-white/70 @2xl:min-h-[2lh]">
+                        {field(item, 'tagline')}
+                      </span>
+                    )}
+                    {toDrive && driveLabel && (
+                      <span id={id('go')} className="sr-only">
+                        {driveLabel}
+                      </span>
+                    )}
                     {specs.length > 0 && (
-                      <span className="mt-auto block pt-5">
-                        <span className="flex flex-wrap gap-1.5 border-t border-white/10 pt-4">
+                      <span className="block pt-5">
+                        <span id={id('specs')} className="flex flex-wrap gap-1.5 border-t border-white/10 pt-4">
                           {specs.map((spec, k) => (
                             <span key={`${spec}-${k}`} className="max-w-full truncate whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1.5 text-[12.5px] leading-none text-white/85 ring-1 ring-inset ring-white/[0.08]">
                               {spec}
@@ -124,7 +146,13 @@ export function Lineup({ m }: { m: VeloraModel }) {
               return (
                 <li key={`${name}-${i}`} className={`min-w-0 ${changed ? 'vl-fade-in' : ''}`} style={{ '--vl-delay': `${Math.min(i, 5) * 60}ms` } as CSSProperties}>
                   {action ? (
-                    <ActionLink action={action} className={`${box} hover:bg-[#23262B]`}>
+                    <ActionLink
+                      action={action}
+                      onNavigate={toDrive && onDrive ? () => onDrive(name) : undefined}
+                      aria-labelledby={toDrive && driveLabel ? `${id('name')} ${id('go')}` : id('name')}
+                      aria-describedby={described || undefined}
+                      className={`${box} hover:bg-[#23262B]`}
+                    >
                       {body}
                     </ActionLink>
                   ) : (
