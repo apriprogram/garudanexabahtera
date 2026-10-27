@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -51,7 +51,9 @@ const CAKRAWALA: Template = { ...FIXTURE_TEMPLATES[4], id: 67, slug: 'cakrawala'
 const BESTARI: Template = { ...FIXTURE_TEMPLATES[4], id: 83, slug: 'bestari', name: 'Bestari', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'bestari', sort_order: 14 };
 // Altura (2026-10-27, migrasi 031, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
 const ALTURA: Template = { ...FIXTURE_TEMPLATES[4], id: 86, slug: 'altura', name: 'Altura', category: 'Company Profile', price: 1890000, template_code: 'altura', sort_order: 15 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA].find((t) => t.slug === slug) as Template;
+// Portline (2026-10-27, migrasi 032, company profile berbahasa Inggris) juga belum ada di fixture prerender bersama
+const PORTLINE: Template = { ...FIXTURE_TEMPLATES[4], id: 87, slug: 'portline', name: 'Portline', category: 'Company Profile', price: 1890000, template_code: 'portline', sort_order: 16 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -81,6 +83,7 @@ describe('src/content/templates', () => {
       cakrawala: 'Cakrawala: Template Website SMK & SMA dengan Halaman PPDB',
       bestari: 'Bestari: Template Website SMA dengan Halaman PPDB',
       altura: 'Altura: Template Website Perusahaan Properti Berbahasa Inggris',
+      portline: 'Portline: Template Website Perusahaan Pelayaran & Logistik',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -99,6 +102,7 @@ describe('src/content/templates', () => {
       cakrawala: 'Cakrawala: Template Website SMK & SMA – Rp1,69 jt',
       bestari: 'Bestari: Template Website SMA & PPDB Online – Rp1,69 jt',
       altura: 'Altura: Template Website Perusahaan Properti – Rp1,89 jt',
+      portline: 'Portline: Template Website Perusahaan Pelayaran – Rp1,89 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -204,6 +208,15 @@ describe('src/content/templates', () => {
     expect(altura).toMatch(/fiktif/);
     expect(altura).toMatch(/bisa Anda ganti ke bahasa Indonesia/);
     expect(altura).not.toMatch(/imbal hasil|return investasi|pasti untung|ISO 9001|berizin resmi|terdaftar di bursa|listing otomatis|pembayaran online tersedia/i);
+    // Portline (2026-10-27): formulir hanya menyusun pesan, "Track a shipment" hanya tautan, demo fiktif, tanpa merek nyata
+    const portline = visibleText(templateContent('portline') as TemplatePageContent);
+    expect(portline).toMatch(/data tidak disimpan di website|Tidak ada data yang disimpan di website/);
+    expect(portline).toMatch(/bukan sistem pelacakan/);
+    expect(portline).toMatch(/fiktif/);
+    expect(portline).not.toMatch(/pelacakan kiriman real-?time tersedia|booking online tersedia|ISO 9001|IMO approved|terdaftar di bursa|\bMaersk\b|\bMSC\b|\bCOSCO\b/i);
+    // Perusahaan demo = Quaymoor Group (fiktif); nama perusahaan/media nyata tidak dipakai, termasuk "Portline Group"
+    expect(portline).not.toMatch(/Portline Group|\bHanjin\b|\bK ?Line\b|\bTidewater\b|\bNorthwind\b|Track a shipment/i);
+    expect(portline).toMatch(/Quaymoor Group/);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {
@@ -351,6 +364,24 @@ describe('src/content/templates', () => {
     expect(TEMPLATE_COPY.altura?.niche).toBe('Perusahaan Properti & Company Profile Bahasa Inggris');
     expect(TEMPLATE_PAGES.altura?.niche).toBe('perusahaan properti berbahasa Inggris');
     expect(TEMPLATE_COPY.altura?.updated).toBe('2026-10-27');
+  });
+
+  it('Portline: kata kunci "template website perusahaan pelayaran" di judul, meta, H1, dan pembuka; kata kunci pendukung di isi', () => {
+    const t = bySlug('portline');
+    const keyword = /template website perusahaan pelayaran/i;
+    expect(templateTitle(t)).toMatch(keyword);
+    expect(templateDescription(t)).toMatch(/^Template website perusahaan pelayaran /);
+    expect(templateDescription(t)).toContain('Rp1.890.000 sudah termasuk hosting & SSL tahun pertama; domain mulai Rp50.000/tahun');
+    expect(templateH1(t)).toMatch(keyword);
+    const c = templateContent('portline') as TemplatePageContent;
+    expect(fillName(c.lead, t)).toMatch(/^Portline adalah template website perusahaan pelayaran /);
+    const text = visibleText(c);
+    for (const phrase of ['website perusahaan logistik', 'template company profile bahasa Inggris', 'bahasa Indonesia']) expect(text, phrase).toContain(phrase);
+    // Wajar, bukan ditumpuk
+    expect(text.toLowerCase().split('template website perusahaan pelayaran').length - 1).toBeLessThanOrEqual(3);
+    expect(TEMPLATE_COPY.portline?.niche).toBe('Perusahaan Pelayaran & Logistik');
+    expect(TEMPLATE_PAGES.portline?.niche).toBe('perusahaan pelayaran & logistik');
+    expect(TEMPLATE_COPY.portline?.updated).toBe('2026-10-27');
   });
 
   it('alt gambar hanya untuk file yang ada, memakai nama template dari DB, dan cadangan alt untuk gambar lain', () => {

@@ -1,0 +1,215 @@
+/*
+ * CSS lokal Portline (diimpor ./Portline.tsx): lapisan navy foto hero, latar cadangan tanpa foto, pergantian slide
+ * (pudar + zoom pelan HANYA setelah slide berganti, jadi foto pertama = LCP tidak dianimasikan), garis indeks slide yang
+ * berjalan, lingkaran radar konsentris yang berdenyut sangat pelan, kisi titik dekoratif, buka-tutup, rel geser tanpa
+ * scrollbar, dan kartu armada yang melebar. Gerak hanya bila root template ber-data-tpl-motion="on" (demo & situs
+ * live); pratinjau CMS, prefers-reduced-motion, dan cetak → statis. Tanpa bayangan.
+ */
+
+@layer components {
+  /*
+   * Lapisan foto hero: pita atas tetap 150 px (bilah utilitas + menu putih ≥ 4,5:1 di foto terang), navy dari kiri
+   * (judul & deskripsi), navy tipis dari kanan (indeks slide 01/02/03 tetap terbaca di atas kontainer putih), dan bawah
+   * (deret logo anak usaha). Wadah sempit (HP, CMS): rata atas-bawah.
+   */
+  .pl-hero-scrim {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--pl-deep) 78%, transparent) 0, color-mix(in srgb, var(--pl-deep) 62%, transparent) 150px, transparent 340px),
+      linear-gradient(270deg, color-mix(in srgb, var(--pl-deep) 82%, transparent) 0%, color-mix(in srgb, var(--pl-deep) 68%, transparent) 19%, transparent 38%),
+      linear-gradient(90deg, color-mix(in srgb, var(--pl-deep) 90%, transparent) 0%, color-mix(in srgb, var(--pl-deep) 74%, transparent) 36%, color-mix(in srgb, var(--pl-deep) 28%, transparent) 58%, transparent 82%),
+      linear-gradient(0deg, color-mix(in srgb, var(--pl-deep) 92%, transparent) 0%, color-mix(in srgb, var(--pl-deep) 55%, transparent) 22%, transparent 45%);
+  }
+
+  /* HP & tablet (< @6xl): judul di bawah area foto → lapisan atas-bawah, makin gelap ke bawah */
+  @container (max-width: 1151px) {
+    .pl-hero-scrim {
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--pl-deep) 82%, transparent) 0%,
+        color-mix(in srgb, var(--pl-deep) 42%, transparent) 24%,
+        color-mix(in srgb, var(--pl-deep) 66%, transparent) 50%,
+        color-mix(in srgb, var(--pl-deep) 95%, transparent) 100%
+      );
+    }
+  }
+
+  /* Hero tanpa foto: navy → warna tema */
+  .pl-hero-fallback {
+    background:
+      radial-gradient(60% 70% at 75% 40%, color-mix(in srgb, var(--tpl-accent) 45%, transparent), transparent 70%),
+      linear-gradient(160deg, var(--pl-deep) 0%, color-mix(in srgb, var(--tpl-accent) 30%, var(--pl-deep)) 100%);
+  }
+
+  /* Kisi titik dekoratif (pengganti bayangan, gaya peta laut) */
+  .pl-dots {
+    background-image: radial-gradient(currentColor 1.2px, transparent 1.3px);
+    background-size: 14px 14px;
+  }
+
+  /* Foto slide: pudar antar-slide (pratinjau CMS & gerak mati: langsung berganti) */
+  [data-tpl-motion='on'] .pl-slide {
+    transition: opacity 1.2s var(--tpl-ease, ease);
+  }
+
+  /* Zoom pelan 1.08 → 1 hanya untuk slide yang tampil SETELAH pergantian; nama animasi bergantian agar diputar ulang */
+  [data-tpl-motion='on'] .pl-slide[data-zoom='a'] img {
+    animation: pl-zoom-a 9s ease-out both;
+  }
+
+  [data-tpl-motion='on'] .pl-slide[data-zoom='b'] img {
+    animation: pl-zoom-b 9s ease-out both;
+  }
+
+  /* Garis indeks slide: penuh bila tidak berganti otomatis; saat berjalan mengisi 0 → 100% lalu memicu slide berikutnya */
+  .pl-progress-y {
+    transform-origin: center top;
+  }
+
+  .pl-progress-x {
+    transform-origin: left center;
+  }
+
+  [data-tpl-motion='on'] .pl-progress-y[data-run='true'] {
+    animation: pl-fill-y var(--pl-autoplay, 7000ms) linear both;
+  }
+
+  [data-tpl-motion='on'] .pl-progress-x[data-run='true'] {
+    animation: pl-fill-x var(--pl-autoplay, 7000ms) linear both;
+  }
+
+  [data-tpl-motion='on'] [data-run='true'][data-hold='true'] {
+    animation-play-state: paused;
+  }
+
+  /* Teks slide naik pelan, hanya setelah pergantian */
+  [data-tpl-motion='on'] [data-enter='true'] .pl-rise {
+    animation: pl-rise 0.8s var(--tpl-ease, ease) both;
+    animation-delay: var(--pl-delay, 0ms);
+  }
+
+  /* Lingkaran radar: garis tipis putih; berdenyut sangat pelan hanya bila gerak menyala */
+  .pl-ring {
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.22);
+  }
+
+  [data-tpl-motion='on'] .pl-ring {
+    animation: pl-pulse 7s ease-in-out infinite;
+    animation-delay: var(--pl-ring-delay, 0s);
+  }
+
+  /* Buka-tutup (kawasan jaringan): 0fr → 1fr */
+  .pl-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .pl-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .pl-collapse {
+    transition: grid-template-rows 0.4s var(--tpl-ease, ease);
+  }
+
+  /* Rel geser horizontal (liputan, filter tagar, armada di HP) tanpa scrollbar */
+  .pl-rail {
+    scrollbar-width: none;
+  }
+
+  .pl-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Kartu armada melebar halus (layar lebar) */
+  [data-tpl-motion='on'] .pl-fleet-card {
+    transition: flex-grow 0.7s var(--tpl-ease, ease);
+  }
+
+  [data-tpl-motion='on'] .pl-fleet-card .pl-fleet-detail {
+    transition: opacity 0.5s var(--tpl-ease, ease) 0.2s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .pl-progress-y[data-run='true'],
+    [data-tpl-motion='on'] .pl-progress-x[data-run='true'],
+    [data-tpl-motion='on'] .pl-slide[data-zoom] img,
+    [data-tpl-motion='on'] [data-enter='true'] .pl-rise,
+    [data-tpl-motion='on'] .pl-ring {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .pl-slide,
+    [data-tpl-motion='on'] .pl-collapse,
+    [data-tpl-motion='on'] .pl-fleet-card,
+    [data-tpl-motion='on'] .pl-fleet-card .pl-fleet-detail {
+      transition: none;
+    }
+  }
+
+  @media print {
+    .pl-hero-scrim,
+    .pl-ring {
+      display: none;
+    }
+  }
+}
+
+@keyframes pl-fill-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes pl-fill-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pl-zoom-a {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes pl-zoom-b {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes pl-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pl-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.03);
+  }
+}

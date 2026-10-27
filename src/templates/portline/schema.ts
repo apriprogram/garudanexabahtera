@@ -1,0 +1,481 @@
+// Skema CMS Portline (label, bantuan, placeholder berbahasa Indonesia untuk pembeli; contoh placeholder boleh Inggris).
+// Urutan section = urutan halaman: hero slider → berita (mosaik bertagar) → liputan media → angka → perusahaan grup →
+// armada → jaringan global → keberlanjutan → karier → pimpinan → kontak (formulir → WhatsApp/email) → teks formulir →
+// footer. Setiap section halaman bisa disembunyikan; `enquiry` hanya berisi label & pesan formulir di bagian Kontak.
+// SEMUA teks yang tampil di situs punya field di sini (label menu, label baris kontak, judul kolom footer, label & pesan
+// formulir), dengan bawaan Inggris. Field yang dikosongkan memakai teks bawaan sesuai bahasa situs (en/id, ./copy).
+// Template baru belum punya konten tersimpan, jadi tanpa `introduced`.
+import type { TemplateField, TemplateListField, TemplateSection } from '../types';
+
+const t = (key: string, label: string, extra: Partial<TemplateField> = {}): TemplateField => ({ type: 'text', key, label, ...extra });
+const ta = (key: string, label: string, extra: Partial<TemplateField> = {}): TemplateField => ({ type: 'textarea', key, label, ...extra });
+const img = (key: string, label: string, help?: string): TemplateField => ({ type: 'image', key, label, help });
+const url = (key: string, label: string, extra: Partial<TemplateField> = {}): TemplateField => ({
+  type: 'url',
+  key,
+  label,
+  placeholder: 'https://...',
+  ...extra,
+});
+const listField = (key: string, label: string, itemLabel: string, fields: TemplateField[], max: number): TemplateListField => ({
+  type: 'list',
+  key,
+  label,
+  itemLabel,
+  fields,
+  max,
+});
+
+const EYEBROW_HELP = {
+  menu: 'Tampil di atas judul dengan garis pendek. Bila "Nama di menu" kosong, label singkat ini (≤ 14 huruf, ≤ 2 kata) dipakai sebagai nama di menu.',
+  plain: 'Tampil di atas judul dengan garis pendek. Kosongkan untuk menyembunyikan.',
+} as const;
+const eyebrow = (placeholder: string, kind: keyof typeof EYEBROW_HELP = 'plain') =>
+  t('eyebrow', 'Label kecil di atas judul', { placeholder, maxLength: 40, help: EYEBROW_HELP[kind] });
+/** Nama section di menu atas, menu HP, dan kolom menu footer. */
+const menuLabel = (placeholder: string) =>
+  t('menu_label', 'Nama di menu', {
+    placeholder,
+    maxLength: 16,
+    help: 'Kosongkan untuk memakai label kecil di atas judul bila singkat, atau nama bawaan sesuai bahasa situs. Bila semua nama menu terlalu panjang untuk satu baris, menu atas otomatis pindah ke tombol menu.',
+  });
+/** Teks kosong → teks bawaan sesuai bahasa situs (en/id). */
+const FALLBACK_HELP = 'Kosongkan untuk teks bawaan sesuai bahasa situs.';
+const title = (placeholder: string, maxLength = 90) =>
+  t('title', 'Judul', { placeholder, maxLength, help: 'Tampil dengan HURUF KAPITAL tebal; 3–7 kata paling pas.' });
+const subtitle = (placeholder = 'Kalimat pengantar singkat.') => ta('subtitle', 'Deskripsi singkat', { placeholder, maxLength: 260 });
+const DATE_HELP = 'Tulis YYYY-MM-DD (mis. 2026-10-14) agar tampil sebagai "14 Oct 2026", atau teks bebas.';
+const SECTION_LINK_HELP = 'Boleh tautan ke bagian halaman, mis. #fleet, #divisions, #newsroom, atau #kontak.';
+
+export const portlineSections: TemplateSection[] = [
+  {
+    key: 'brand',
+    label: 'Identitas, warna & bahasa',
+    description:
+      'Nama perusahaan, logo, warna tema, dan bahasa teks bawaan. Satu warna tema mengatur tombol, garis aktif, tagar, pita biru, serta navy judul dan footer.',
+    fields: [
+      t('company_name', 'Nama perusahaan', { placeholder: 'mis. Quaymoor Group', maxLength: 80 }),
+      t('tagline', 'Tagline', {
+        placeholder: 'mis. Integrated shipping & logistics, Rotterdam',
+        maxLength: 90,
+        help: 'Tampil di judul tab browser (judul di Google) setelah nama perusahaan: sebut bidang usaha dan kota/negara.',
+      }),
+      img('logo', 'Logo perusahaan', 'PNG/SVG berlatar transparan, maks. 2 MB. Kosongkan untuk memakai simbol bawaan template dan nama perusahaan.'),
+      {
+        type: 'color',
+        key: 'accent_color',
+        label: 'Warna tema',
+        help: 'Klik pilihan cepat (mis. hijau #047857), tombol "Pakai bawaan" untuk biru laut bawaan #1565C0, atau tulis kode hex sendiri. Navy untuk judul & footer, pita biru, dan versi terang/gelap dibuat otomatis agar tetap terbaca.',
+      },
+      t('language', 'Bahasa situs (en / id)', {
+        placeholder: 'en',
+        maxLength: 2,
+        help: 'Tulis en (Inggris) atau id (Indonesia). Mengatur atribut bahasa halaman (untuk Google & pembaca layar), label tombol ikon untuk pembaca layar, dan teks bawaan untuk label yang Anda kosongkan. Semua teks yang tampil tetap Anda tulis sendiri di setiap bagian, termasuk label & pesan formulir.',
+      }),
+    ],
+  },
+  {
+    key: 'hero',
+    label: 'Hero (slider foto)',
+    description:
+      'Foto besar selebar layar yang berganti otomatis (berhenti saat disorot/difokus) dengan indeks 01 / 02 / 03 di kanan, lingkaran radar, menu dua lapis di atasnya, dan deret logo perusahaan grup di bawahnya.',
+    toggleable: true,
+    fields: [
+      t('utility_1_label', 'Tombol biru atas 1: teks', { placeholder: 'mis. Container Lines', maxLength: 24, help: 'Tombol kecil di bilah paling atas. Kosongkan untuk menyembunyikan.' }),
+      url('utility_1_url', 'Tombol biru atas 1: tautan', { help: `Kosongkan untuk menuju bagian Perusahaan grup. ${SECTION_LINK_HELP}` }),
+      t('utility_2_label', 'Tombol biru atas 2: teks', {
+        placeholder: 'mis. Shipment enquiry',
+        maxLength: 24,
+        help: 'Kosongkan untuk menyembunyikan. Tulis "Track a shipment" hanya bila tautan di bawah menuju halaman pelacakan milik sistem Anda.',
+      }),
+      url('utility_2_url', 'Tombol biru atas 2: tautan', {
+        help: 'Mis. halaman pelacakan milik Anda sendiri. Kosongkan untuk membuka formulir kontak dengan topik status pengiriman (template ini tidak punya pelacak kiriman).',
+      }),
+      t('lang_current', 'Bahasa aktif (pilihan bahasa)', {
+        placeholder: 'mis. EN',
+        maxLength: 4,
+        help: 'Pilihan bahasa "EN | ID" tampil hanya bila tautan versi bahasa lain di bawah diisi.',
+      }),
+      t('lang_other', 'Bahasa lain', { placeholder: 'mis. ID', maxLength: 4 }),
+      url('lang_other_url', 'Tautan versi bahasa lain', {
+        help: 'Mis. alamat situs berbahasa Indonesia milik Anda. Kosongkan untuk menyembunyikan pilihan bahasa.',
+      }),
+      t('slide_label', 'Label slide 1 di indeks', { placeholder: 'mis. Ocean freight', maxLength: 24 }),
+      t('title', 'Judul utama (slide 1)', {
+        placeholder: 'mis. Connecting world trade, port by port',
+        maxLength: 70,
+        help: 'Tampil dengan HURUF KAPITAL tebal, 2–3 baris (± 30–45 karakter).',
+      }),
+      ta('subtitle', 'Deskripsi', {
+        placeholder: 'Jelaskan perusahaan Anda dalam 1–2 kalimat.',
+        maxLength: 240,
+        help: 'Juga dipakai sebagai deskripsi situs di hasil pencarian Google; 150–200 karakter paling pas.',
+      }),
+      t('link_label', 'Teks tautan di bawah deskripsi', { placeholder: 'mis. About Quaymoor', maxLength: 28 }),
+      url('link_url', 'Tujuan tautan', { help: `Kosongkan untuk menuju bagian Perusahaan grup. ${SECTION_LINK_HELP}` }),
+      img('image', 'Foto slide 1', 'Foto mendatar 16:9, disarankan 1920×1080 px, objek utama di kanan. Lapisan navy di kiri ditambahkan otomatis.'),
+      listField(
+        'slides',
+        'Slide tambahan',
+        'Slide',
+        [
+          img('image', 'Foto', 'Wajib; slide tanpa foto tidak tampil. Mendatar 16:9, 1920×1080 px.'),
+          t('label', 'Label di indeks', { placeholder: 'mis. Terminals', maxLength: 24 }),
+          t('title', 'Judul', { placeholder: 'Kosongkan untuk memakai judul slide 1', maxLength: 70 }),
+          ta('subtitle', 'Deskripsi', { maxLength: 200 }),
+        ],
+        3,
+      ),
+      t('service_label', 'Label layanan di kanan deret logo', { placeholder: 'mis. Liner, bulk & tanker services', maxLength: 36 }),
+      url('service_url', 'Tautan label layanan', { help: `Kosongkan untuk menuju bagian Armada. ${SECTION_LINK_HELP}` }),
+      listField(
+        'companies',
+        'Logo perusahaan grup / anak usaha',
+        'Perusahaan',
+        [
+          t('name', 'Nama', { placeholder: 'mis. Quaymoor Terminals', maxLength: 40 }),
+          img('logo', 'Logo (opsional)', 'Tampil putih satu warna di atas foto. Kosongkan untuk simbol bawaan + nama.'),
+        ],
+        6,
+      ),
+    ],
+  },
+  {
+    key: 'newsroom',
+    label: 'Berita (newsroom)',
+    description:
+      'Mosaik ubin berita: ubin pertama berlapis biru pejal, ubin lain berfoto dengan judul putih. Tombol tagar (mis. #Lines #Terminals) benar-benar menyaring berita. "Read story" membuka isi berita di bawah mosaik, atau tautan berita bila diisi.',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. Newsroom', 'menu'),
+      menuLabel('mis. Newsroom'),
+      title('mis. Quaymoor newsroom'),
+      t('all_label', 'Teks tombol semua tagar', { placeholder: 'mis. All', maxLength: 16 }),
+      t('read_label', 'Teks tautan di ubin berita utama', { placeholder: 'mis. Read story', maxLength: 24, help: FALLBACK_HELP }),
+      t('button_label', 'Teks tautan di bawah mosaik', { placeholder: 'mis. Media enquiries', maxLength: 30, help: 'Kosongkan untuk menyembunyikan.' }),
+      url('button_url', 'Tautan di bawah mosaik', { help: 'Mis. halaman media Anda. Kosongkan untuk membuka formulir kontak dengan topik media.' }),
+      listField(
+        'items',
+        'Berita',
+        'Berita',
+        [
+          t('title', 'Judul', { maxLength: 100 }),
+          t('date', 'Tanggal', { placeholder: 'mis. 2026-10-14', maxLength: 30, help: DATE_HELP }),
+          t('tags', 'Tagar', { placeholder: 'mis. Lines, Terminals', maxLength: 60, help: 'Pisahkan dengan koma. Tagar yang sama dikelompokkan di tombol filter.' }),
+          ta('excerpt', 'Ringkasan', { maxLength: 200 }),
+          ta('body', 'Isi lengkap (opsional)', { placeholder: 'Pisahkan paragraf dengan baris kosong.', maxLength: 1500 }),
+          img('image', 'Foto', 'Foto mendatar 3:2, disarankan 1200×800 px.'),
+          url('url', 'Tautan berita (opsional)', { help: 'Diisi → "Read story" membuka tautan ini, bukan isi lengkap.' }),
+        ],
+        8,
+      ),
+    ],
+  },
+  {
+    key: 'press',
+    label: 'Liputan media (In the press)',
+    description: 'Deret kutipan judul liputan media dengan tombol ‹ › untuk menggeser. Tulis nama media dan judul liputan apa adanya.',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. In the press'),
+      title('mis. In the press', 60),
+      listField(
+        'items',
+        'Liputan',
+        'Liputan',
+        [
+          t('outlet', 'Nama media', { placeholder: 'mis. Harbour Ledger', maxLength: 40 }),
+          t('date', 'Tanggal', { placeholder: 'mis. 2026-10-16', maxLength: 30, help: DATE_HELP }),
+          t('headline', 'Judul liputan', { maxLength: 120 }),
+          url('url', 'Tautan artikel (opsional)'),
+        ],
+        8,
+      ),
+    ],
+  },
+  {
+    key: 'stats',
+    label: 'Angka perusahaan',
+    description: 'Empat angka besar dengan ikon garis dan pemisah vertikal; angka berjalan saat pertama terlihat. Ikon dipilih otomatis dari keterangan.',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. Quaymoor in numbers'),
+      t('title', 'Judul (opsional)', { placeholder: 'mis. One group since 1968', maxLength: 60 }),
+      listField(
+        'items',
+        'Angka',
+        'Angka',
+        [
+          t('value', 'Angka', { placeholder: 'mis. 140+', maxLength: 10 }),
+          t('label', 'Keterangan', { placeholder: 'mis. Vessels in operation', maxLength: 36, help: 'Ikon otomatis: kapal, terminal, negara, karyawan, kantor, dll.' }),
+        ],
+        4,
+      ),
+    ],
+  },
+  {
+    key: 'divisions',
+    label: 'Perusahaan grup / layanan',
+    description:
+      'Kartu layanan berfoto dengan lencana ikon bulat yang menumpang foto. Tombol di kartu membuka tautan sendiri, atau formulir kontak dengan unit bisnis itu terpilih. Kartu ajakan biru di akhir (opsional).',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. Group companies', 'menu'),
+      menuLabel('mis. Group'),
+      title('mis. Five companies, one connected chain'),
+      subtitle(),
+      listField(
+        'items',
+        'Perusahaan',
+        'Perusahaan',
+        [
+          t('name', 'Nama', { placeholder: 'mis. Quaymoor Terminals', maxLength: 50, help: 'Ikon lencana dipilih otomatis dari nama (kapal, terminal, energi, darat & udara, galangan).' }),
+          t('label', 'Label kecil', { placeholder: 'mis. Ports', maxLength: 20 }),
+          ta('description', 'Deskripsi', { maxLength: 200 }),
+          img('image', 'Foto', 'Foto mendatar 4:3, disarankan 1080×810 px.'),
+          t('link_label', 'Teks tombol', {
+            placeholder: 'mis. Talk to this team',
+            maxLength: 24,
+            help: 'Tanpa tautan, tombol membuka formulir kontak: pakai teks seperti "Talk to this team", bukan "View detail".',
+          }),
+          url('url', 'Tautan tombol (opsional)', { help: 'Mis. halaman detail unit bisnis. Kosongkan untuk membuka formulir kontak dengan unit bisnis ini terpilih.' }),
+        ],
+        6,
+      ),
+      t('cta_title', 'Kartu ajakan: judul', { placeholder: 'mis. One partner for the whole route?', maxLength: 60, help: 'Kosongkan untuk menyembunyikan kartu ajakan.' }),
+      ta('cta_text', 'Kartu ajakan: teks', { maxLength: 180 }),
+      t('cta_label', 'Kartu ajakan: teks tombol', { placeholder: 'mis. Contact the group desk', maxLength: 30 }),
+      url('cta_url', 'Kartu ajakan: tautan', { help: 'Kosongkan untuk menuju formulir kontak.' }),
+    ],
+  },
+  {
+    key: 'fleet',
+    label: 'Armada / kelas kapal',
+    description: 'Carousel kartu melebar: kartu aktif lebar dengan foto, deskripsi, dan data utama; kartu lain sempit. Tombol ← → atau klik kartu. Di HP kartu digeser.',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. Our fleet', 'menu'),
+      menuLabel('mis. Fleet'),
+      title('mis. Purpose-built ships for every trade'),
+      subtitle(),
+      t('specs_label', 'Judul kotak data utama', { placeholder: 'mis. Key figures', maxLength: 24, help: FALLBACK_HELP }),
+      listField(
+        'items',
+        'Kelas kapal',
+        'Kelas kapal',
+        [
+          t('name', 'Nama kelas / unit', { placeholder: 'mis. Meridian class', maxLength: 40 }),
+          t('type', 'Jenis', { placeholder: 'mis. Container ship', maxLength: 40 }),
+          t('capacity', 'Kapasitas', { placeholder: 'mis. 15,000 TEU', maxLength: 24 }),
+          ta('description', 'Deskripsi', { maxLength: 200 }),
+          ta('specs', 'Data utama (satu baris per data)', { placeholder: 'Length overall: 366 m\nService speed: 17 knots', maxLength: 240, help: 'Format "Nama: nilai", satu per baris, maks. 4 baris.' }),
+          img('image', 'Foto', 'Foto mendatar 16:10, disarankan 1400×875 px.'),
+        ],
+        6,
+      ),
+    ],
+  },
+  {
+    key: 'network',
+    label: 'Jaringan global',
+    description: 'Daftar kawasan yang bisa dibuka (hub utama + angka) dan foto dengan lingkaran radar serta kartu kantor pusat.',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. Global network', 'menu'),
+      menuLabel('mis. Network'),
+      title('mis. Where we operate'),
+      subtitle(),
+      img('image', 'Foto', 'Foto mendatar 16:10, disarankan 1600×1000 px. Kosongkan untuk menyembunyikan.'),
+      t('image_label', 'Kartu di foto: label', { placeholder: 'mis. Our network', maxLength: 30, help: 'Kosongkan ketiga isian kartu untuk menyembunyikan kartu.' }),
+      t('image_value', 'Kartu di foto: isi', { placeholder: 'mis. Terminals on five continents', maxLength: 50, help: 'Sesuaikan dengan foto, mis. nama kota pelabuhan di foto.' }),
+      t('image_caption', 'Kartu di foto: keterangan kecil', { placeholder: 'mis. 38 terminals · 90+ countries', maxLength: 40 }),
+      listField(
+        'items',
+        'Kawasan',
+        'Kawasan',
+        [
+          t('region', 'Kawasan', { placeholder: 'mis. Europe', maxLength: 36 }),
+          t('value', 'Angka singkat', { placeholder: 'mis. 14 terminals', maxLength: 30 }),
+          t('hubs', 'Hub / kota', { placeholder: 'mis. Rotterdam, Hamburg, Antwerp', maxLength: 140, help: 'Pisahkan dengan koma.' }),
+          ta('text', 'Keterangan', { maxLength: 180 }),
+        ],
+        6,
+      ),
+    ],
+  },
+  {
+    key: 'sustainability',
+    label: 'Keberlanjutan',
+    description: 'Pita biru pejal: pernyataan besar, paragraf, hingga 4 komitmen bernomor, dan foto. Tulis program yang benar-benar dijalankan, tanpa klaim yang tidak bisa dibuktikan.',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. Sustainability', 'menu'),
+      menuLabel('mis. Sustainability'),
+      ta('title', 'Pernyataan besar', { placeholder: 'Satu kalimat sikap perusahaan.', maxLength: 140 }),
+      ta('text', 'Paragraf', { maxLength: 320 }),
+      img('image', 'Foto', 'Foto mendatar 16:10, disarankan 1600×1000 px. Kosongkan untuk menyembunyikan.'),
+      t('button_label', 'Teks tombol (opsional)', { placeholder: 'mis. Read our progress report', maxLength: 32 }),
+      url('button_url', 'Tautan tombol', { help: 'Mis. laporan keberlanjutan PDF. Tombol tampil bila teks & tautan diisi.' }),
+      listField(
+        'items',
+        'Komitmen',
+        'Komitmen',
+        [t('title', 'Judul', { placeholder: 'mis. Cleaner fuels', maxLength: 40 }), ta('text', 'Keterangan', { maxLength: 160 })],
+        4,
+      ),
+    ],
+  },
+  {
+    key: 'careers',
+    label: 'Karier',
+    description: 'Banner foto kru dengan lapisan navy, judul, paragraf, poin bidang karier, tombol, dan email rekrutmen.',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. Careers', 'menu'),
+      menuLabel('mis. Careers'),
+      title('mis. Build a career at sea and ashore'),
+      ta('text', 'Paragraf', { maxLength: 300 }),
+      img('image', 'Foto', 'Foto mendatar 16:10, disarankan 1600×1000 px. Kosongkan untuk panel navy polos.'),
+      listField('points', 'Poin bidang karier', 'Poin', [t('text', 'Poin', { placeholder: 'mis. Officer cadet programme', maxLength: 50 })], 6),
+      t('button_label', 'Teks tombol', { placeholder: 'mis. Talk to recruitment', maxLength: 30 }),
+      url('button_url', 'Tautan tombol', { help: 'Mis. halaman lowongan Anda. Kosongkan untuk membuka formulir kontak dengan topik karier.' }),
+      { type: 'email', key: 'email', label: 'Email rekrutmen (opsional)', placeholder: 'careers@perusahaan.com', maxLength: 120 },
+    ],
+  },
+  {
+    key: 'leadership',
+    label: 'Pimpinan',
+    description: 'Kartu foto pimpinan dengan nama, jabatan, profil singkat, dan tautan LinkedIn (opsional).',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. Leadership'),
+      title('mis. Executive board'),
+      subtitle(),
+      listField(
+        'items',
+        'Pimpinan',
+        'Pimpinan',
+        [
+          t('name', 'Nama', { maxLength: 60 }),
+          t('role', 'Jabatan', { placeholder: 'mis. Chief Executive Officer', maxLength: 60 }),
+          ta('bio', 'Profil singkat', { maxLength: 200 }),
+          img('photo', 'Foto', 'Foto tegak 4:5, disarankan 960×1200 px. Kosongkan untuk inisial.'),
+          url('linkedin', 'LinkedIn (opsional)', { placeholder: 'https://linkedin.com/in/...' }),
+        ],
+        6,
+      ),
+    ],
+  },
+  {
+    key: 'contact',
+    label: 'Kontak & formulir',
+    description:
+      'Kantor pusat, kantor regional, jam kantor, label baris kontak, dan formulir pertanyaan (label & pesan formulir ada di bagian berikutnya). Formulir HANYA menyusun pesan yang dikirim pengunjung sendiri lewat WhatsApp atau email; tidak ada data yang disimpan.',
+    toggleable: true,
+    fields: [
+      eyebrow('mis. Contact', 'menu'),
+      menuLabel('mis. Contact'),
+      title('mis. Talk to the right team'),
+      subtitle(),
+      ta('address', 'Alamat kantor pusat', { placeholder: 'mis. Quaymoor House, Harbour Quay 1, Rotterdam', maxLength: 200 }),
+      t('maps_query', 'Kata kunci peta', {
+        placeholder: 'mis. Rotterdam, the Netherlands',
+        maxLength: 120,
+        help: 'Untuk tautan "View on map". Kosongkan untuk memakai alamat.',
+      }),
+      url('maps_url', 'Link Google Maps (opsional)', { placeholder: 'https://maps.app.goo.gl/...' }),
+      { type: 'phone', key: 'phone', label: 'Telepon kantor pusat', placeholder: 'mis. +31 10 555 0140', maxLength: 30 },
+      { type: 'email', key: 'email', label: 'Email (penerima formulir)', placeholder: 'enquiries@perusahaan.com', maxLength: 120 },
+      {
+        type: 'phone',
+        key: 'whatsapp',
+        label: 'WhatsApp (penerima formulir)',
+        placeholder: 'mis. +31 6 5550 0140 atau 081234567890',
+        maxLength: 24,
+        help: 'Dipakai tombol WhatsApp melayang dan formulir. Nomor luar negeri tulis dengan kode negara (+31 …).',
+      },
+      t('whatsapp_message', 'Pesan awal WhatsApp', { placeholder: 'mis. Hello, I have a question about shipping.', maxLength: 160 }),
+      t('hours', 'Jam kantor', { placeholder: 'mis. Monday–Friday, 08:00–18:00 CET', maxLength: 90 }),
+      t('form_title', 'Formulir: judul', { placeholder: 'mis. Send an enquiry', maxLength: 50 }),
+      ta('form_text', 'Formulir: keterangan', { maxLength: 200 }),
+      t('form_button', 'Formulir: teks tombol', { placeholder: 'mis. Prepare message', maxLength: 30, help: FALLBACK_HELP }),
+      listField('enquiry_types', 'Pilihan jenis pertanyaan', 'Jenis', [t('name', 'Jenis', { placeholder: 'mis. Freight quote', maxLength: 40 })], 8),
+      listField(
+        'offices',
+        'Kantor regional',
+        'Kantor',
+        [
+          t('city', 'Kota', { placeholder: 'mis. Singapore', maxLength: 40 }),
+          t('address', 'Alamat / keterangan', { maxLength: 120 }),
+          { type: 'phone', key: 'phone', label: 'Telepon', placeholder: 'mis. +65 6555 0140', maxLength: 30 },
+        ],
+        6,
+      ),
+      t('headquarters_label', 'Label baris: alamat', { placeholder: 'mis. Headquarters', maxLength: 24, help: FALLBACK_HELP }),
+      t('phone_label', 'Label baris: telepon', { placeholder: 'mis. Call', maxLength: 24, help: FALLBACK_HELP }),
+      t('email_label', 'Label baris: email', { placeholder: 'mis. Email', maxLength: 24, help: FALLBACK_HELP }),
+      t('hours_label', 'Label baris: jam kantor', { placeholder: 'mis. Office hours', maxLength: 24, help: FALLBACK_HELP }),
+      t('map_label', 'Teks tautan peta', { placeholder: 'mis. View on map', maxLength: 24, help: FALLBACK_HELP }),
+      t('offices_title', 'Judul daftar kantor regional', { placeholder: 'mis. Regional offices', maxLength: 30, help: FALLBACK_HELP }),
+    ],
+  },
+  {
+    key: 'enquiry',
+    label: 'Formulir enquiry: label & pesan',
+    description:
+      'Semua teks di formulir bagian Kontak: label isian, pilihan kosong, contoh isian, catatan privasi, pesan galat, layar "pesan siap", dan isi pesan WhatsApp/email yang tersusun. Bawaan berbahasa Inggris; tulis ulang dalam bahasa Indonesia bila situs Anda berbahasa Indonesia. Judul, keterangan, tombol, dan pilihan jenis pertanyaan ada di bagian Kontak & formulir.',
+    fields: [
+      t('label_name', 'Label isian: nama', { placeholder: 'mis. Full name', maxLength: 30, help: `Juga dipakai di isi pesan yang tersusun. ${FALLBACK_HELP}` }),
+      t('label_company', 'Label isian: perusahaan', { placeholder: 'mis. Company', maxLength: 30, help: FALLBACK_HELP }),
+      t('label_email', 'Label isian: email', { placeholder: 'mis. Work email', maxLength: 30, help: FALLBACK_HELP }),
+      t('label_phone', 'Label isian: telepon', { placeholder: 'mis. Phone', maxLength: 30, help: FALLBACK_HELP }),
+      t('label_type', 'Label isian: jenis pertanyaan', { placeholder: 'mis. Enquiry type', maxLength: 30, help: FALLBACK_HELP }),
+      t('prompt_type', 'Pilihan kosong: jenis pertanyaan', { placeholder: 'mis. Choose a topic', maxLength: 30, help: FALLBACK_HELP }),
+      t('label_unit', 'Label isian: unit bisnis', { placeholder: 'mis. Business unit', maxLength: 30, help: `Pilihan unit diambil dari bagian Perusahaan grup. ${FALLBACK_HELP}` }),
+      t('prompt_unit', 'Pilihan kosong: unit bisnis', { placeholder: 'mis. Any / not sure', maxLength: 30, help: FALLBACK_HELP }),
+      t('label_message', 'Label isian: pesan', { placeholder: 'mis. Message', maxLength: 30, help: FALLBACK_HELP }),
+      t('placeholder_message', 'Contoh di isian pesan', { placeholder: 'mis. Cargo, route, volumes, timing…', maxLength: 80, help: FALLBACK_HELP }),
+      t('optional_label', 'Penanda isian opsional', { placeholder: 'mis. optional', maxLength: 16, help: `Tampil dalam kurung setelah label isian yang tidak wajib. ${FALLBACK_HELP}` }),
+      ta('note', 'Catatan di bawah tombol', { maxLength: 200, help: `Jelaskan bahwa data tidak disimpan. ${FALLBACK_HELP}` }),
+      t('error_name', 'Pesan galat: nama', { maxLength: 100, help: FALLBACK_HELP }),
+      t('error_email', 'Pesan galat: email', { maxLength: 100, help: FALLBACK_HELP }),
+      t('error_phone', 'Pesan galat: telepon', { maxLength: 100, help: FALLBACK_HELP }),
+      t('error_type', 'Pesan galat: jenis pertanyaan', { maxLength: 100, help: FALLBACK_HELP }),
+      t('error_message', 'Pesan galat: pesan', { maxLength: 100, help: `Pesan minimal 10 karakter. ${FALLBACK_HELP}` }),
+      t('ready_title', 'Setelah disusun: judul', { placeholder: 'mis. Your message is ready', maxLength: 40, help: FALLBACK_HELP }),
+      t('ready_text', 'Setelah disusun: keterangan', { maxLength: 120, help: FALLBACK_HELP }),
+      t('whatsapp_label', 'Tombol: buka WhatsApp', { placeholder: 'mis. Open WhatsApp', maxLength: 28, help: FALLBACK_HELP }),
+      t('email_label', 'Tombol: kirim email', { placeholder: 'mis. Send by email', maxLength: 28, help: FALLBACK_HELP }),
+      t('edit_label', 'Tombol: ubah isian', { placeholder: 'mis. Edit details', maxLength: 28, help: FALLBACK_HELP }),
+      t('no_channel_text', 'Teks bila WhatsApp & email kosong', { maxLength: 120, help: `Tampil sebagai ganti formulir. ${FALLBACK_HELP}` }),
+      t('greeting', 'Isi pesan: salam pembuka', {
+        placeholder: 'mis. Hello {company}, I would like to make an enquiry.',
+        maxLength: 120,
+        help: `Baris pertama pesan WhatsApp/email; {company} diganti nama perusahaan. Isian formulir menyusul per baris dengan label isian di atas. ${FALLBACK_HELP}`,
+      }),
+      t('closing', 'Isi pesan: penutup', { placeholder: 'mis. Thank you.', maxLength: 60, help: FALLBACK_HELP }),
+      t('subject', 'Subjek email', { placeholder: 'mis. Enquiry', maxLength: 40, help: `Subjek = jenis pertanyaan (atau teks ini bila tidak dipilih) dan nama perusahaan. ${FALLBACK_HELP}` }),
+    ],
+  },
+  {
+    key: 'footer',
+    label: 'Footer',
+    description: 'Footer navy multi-kolom (menu perusahaan, perusahaan grup, armada, karier, media, kontak) dengan kolom merek di kanan: logo, telepon, email, dan media sosial. Isi kolom diambil otomatis dari bagian lain.',
+    toggleable: true,
+    fields: [
+      ta('description', 'Deskripsi singkat', { placeholder: 'Satu kalimat tentang perusahaan Anda.', maxLength: 220 }),
+      t('copyright', 'Teks hak cipta', { placeholder: '© 2026 Nama Perusahaan. All rights reserved.', maxLength: 120, help: 'Kosongkan untuk membuat otomatis dari nama perusahaan.' }),
+      t('col_company', 'Judul kolom menu', { placeholder: 'mis. Company', maxLength: 24, help: FALLBACK_HELP }),
+      t('col_group', 'Judul kolom perusahaan grup', { placeholder: 'mis. Group companies', maxLength: 24, help: `Isi kolom: nama perusahaan grup di hero. ${FALLBACK_HELP}` }),
+      t('col_fleet', 'Judul kolom armada', { placeholder: 'mis. Fleet', maxLength: 24, help: `Isi kolom: nama kelas kapal di bagian Armada. ${FALLBACK_HELP}` }),
+      t('col_careers', 'Judul kolom karier', { placeholder: 'mis. Careers', maxLength: 24, help: `Isi kolom: poin bidang karier. ${FALLBACK_HELP}` }),
+      t('col_media', 'Judul kolom media', { placeholder: 'mis. Media', maxLength: 24, help: FALLBACK_HELP }),
+      t('col_contact', 'Judul kolom kontak', { placeholder: 'mis. Contact', maxLength: 24, help: `Isi kolom: kota kantor regional. ${FALLBACK_HELP}` }),
+      url('instagram', 'Instagram', { placeholder: 'https://instagram.com/...' }),
+      url('facebook', 'Facebook', { placeholder: 'https://facebook.com/...' }),
+      url('linkedin', 'LinkedIn', { placeholder: 'https://linkedin.com/company/...' }),
+      url('youtube', 'YouTube', { placeholder: 'https://youtube.com/@...' }),
+      url('tiktok', 'TikTok', { placeholder: 'https://tiktok.com/@...' }),
+    ],
+  },
+];

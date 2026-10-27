@@ -262,4 +262,22 @@ Konten demo berbahasa Inggris sehingga cocok untuk perusahaan besar, multinasion
    '["/assets/templates/altura-1.webp","/assets/templates/altura-2.webp"]',
    'altura', NULL, 'published', 15);
 
+-- Portline (2026-10-27, Company Profile; DB lama: migrasi 2026-10-27_032). Demo: Quaymoor Group, Rotterdam (fiktif), konten berbahasa Inggris.
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('portline',
+   'Portline',
+   'Company Profile',
+   'Template company profile berbahasa Inggris untuk perusahaan pelayaran, logistik, dan grup multinasional: hero slider berindeks, newsroom bertagar, armada, jaringan global, dan formulir enquiry.',
+   'Portline membuat perusahaan pelayaran, logistik, atau grup multinasional tampil seperti korporasi internasional sejak layar pertama: slider foto selebar layar dengan indeks 01/02/03, lingkaran radar, menu dua lapis dengan tombol utilitas biru, serta deret logo perusahaan grup. Di bawahnya tersusun newsroom berbentuk mosaik dengan filter tagar, liputan media, angka perusahaan berikon, kartu perusahaan grup atau layanan, carousel armada yang melebar, jaringan global per kawasan, pita keberlanjutan, banner karier, pimpinan, kontak kantor pusat dan kantor regional, serta footer navy multi-kolom.
+
+Konten demo berbahasa Inggris (Quaymoor Group, fiktif) dan bisa diganti seluruhnya lewat CMS, termasuk ke bahasa Indonesia: semua teks yang tampil, dari menu, judul, dan tombol sampai label formulir, pesan galat, dan judul kolom footer. Formulir enquiry menyusun pesan WhatsApp atau email untuk tim Anda; tidak ada data yang disimpan, dan tombol utilitas seperti "Shipment enquiry" hanya membuka formulir atau tautan pilihan Anda, bukan sistem pelacakan. Pilihan bahasa EN | ID tampil bila Anda menautkan versi bahasa lain. Satu warna tema bisa Anda ganti sendiri tanpa coding.',
+   '["Konten demo berbahasa Inggris untuk perusahaan besar, multinasional, dan eksportir","Hero slider foto selebar layar dengan indeks 01/02/03 dan deret logo perusahaan grup","Menu dua lapis dengan tombol utilitas dan pilihan bahasa EN | ID yang menaut ke versi bahasa lain Anda","Newsroom mosaik dengan filter tagar, isi berita, dan liputan media","Kartu perusahaan grup, carousel armada, dan jaringan global per kawasan","Formulir enquiry yang menyusun pesan WhatsApp atau email, tanpa menyimpan data","Semua teks, termasuk nama menu, label formulir, dan pesan galat, bisa diganti lewat CMS; satu warna tema yang bisa diganti","Domain sendiri dan sertifikat SSL (HTTPS)"]',
+   1890000.00,
+   '/assets/templates/portline-preview.webp',
+   '["/assets/templates/portline-1.webp","/assets/templates/portline-2.webp"]',
+   'portline', NULL, 'published', 16);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

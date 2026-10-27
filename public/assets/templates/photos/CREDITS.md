@@ -464,3 +464,41 @@ perusahaan, proyek, pimpinan, penghuni, dan alamat di demo fiktif dan tidak berh
 | `altura-insight-2-*` | Kawasan hunian bertingkat di antara pepohonan dari udara | https://unsplash.com/photos/IvDLrpSJzQg | Eugenia Clara @fleetingstill |
 | `altura-insight-3-*` | Ruang tamu apartemen bernuansa krem (dipotong tanpa patung balon; logo kecil di pintu oven disamarkan) | https://unsplash.com/photos/7NvBEeHDY7M | Lumbardh Plluzhina |
 | `altura-night-*` | Siluet cakrawala kota pada malam hari (dipotong tanpa papan reklame menyala) | https://unsplash.com/photos/xYu-SKOQ0Dc | Juliana Malta |
+
+## Portline (Quaymoor Group, fiktif)
+
+Slide hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; berita 3:2 `-1200.webp` + `-800.webp`; perusahaan grup 4:3
+`-1080.webp` + `-800.webp`; armada 16:10 `-1400.webp` + `-800.webp`; jaringan, keberlanjutan, dan karier 16:10
+`-1600.webp` + `-800.webp`; pimpinan 4:5 `-960.webp` + `-800.webp`. Kandidat foto gratis (bukan Unsplash+) dari daftar
+sesi integrasi 2026-10-27, lalu dipotong dan dikompres ke WebP. Tulisan merek nyata (huruf nama perusahaan pelayaran di
+lambung, logo di cerobong, nama kapal, logo jasa bandara di tangga pesawat, logo mesin, nama perusahaan di trailer)
+dihapus dengan OpenCV inpaint atau dipotong; dua foto hero dibalik kiri-kanan agar objek di kanan. Nama fotografer
+sudah dicek di halaman foto Unsplash (sesi integrasi, 2026-10-27). Nama perusahaan, kapal, pimpinan, dan media di demo
+fiktif dan tidak berhubungan dengan orang, kapal, atau perusahaan di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `portline-hero-1-*` | Kapal kontainer melaju di laut biru dari udara (dibalik kiri-kanan; huruf merek di lambung dan nama kapal di haluan dihapus) | https://unsplash.com/photos/ZT3i-6XW8J8 | Haydn |
+| `portline-hero-2-*` | Derek kontainer merah-biru dari udara melayani kapal di dermaga (dibalik kiri-kanan; dipotong ke bagian kiri-atas tanpa deret kontainer bertuliskan merek jalur pelayaran, sisa tulisan kecil di kontainer & lengan derek dihapus) | https://unsplash.com/photos/ARq5msv6XZM | Holger Woizick |
+| `portline-hero-3-*` | Terminal kontainer pada malam hari dengan pantulan lampu di air | https://unsplash.com/photos/gyTEPTvvHXQ | Stepan Konev |
+| `portline-news-1-*` | Kapal kargo melintas di depan perbukitan (aksara nama kapal di haluan dihapus) | https://unsplash.com/photos/tBRpPhRc3k0 | Big Dodzy |
+| `portline-news-2-*` | Konsol navigasi di anjungan kapal pada malam hari | https://unsplash.com/photos/qgJCTooDMns | Tom Donders |
+| `portline-news-3-*` | Kapal tanker merah saat senja (dipotong) | https://unsplash.com/photos/U9_pRASawlc | Fredrick F. |
+| `portline-news-4-*` | Kapal tunda di samping derek dermaga lama saat senja (nama kapal dan tulisan di kabin derek dihapus) | https://unsplash.com/photos/kDVaFjoQf4M | Maksym Kaharlytskyi |
+| `portline-news-5-*` | Pesawat berbadan lebar putih dengan tangga di apron (logo pada tangga dan mesin dihapus) | https://unsplash.com/photos/PEf3deR3l_U | Peaky_82 |
+| `portline-lines-*` | Kapal kontainer dari atas dengan kapal tunda (dipotong) | https://unsplash.com/photos/1cqIcrWFQBI | Venti Views |
+| `portline-terminals-*` | Terminal kontainer dari udara dengan kapal di bawah derek biru (dipotong) | https://unsplash.com/photos/a-E__y8y5Wo | Alex Duffy |
+| `portline-energy-*` | Kapal tanker merah di laut biru gelap dari atas | https://unsplash.com/photos/-subrrYxv8A | Shaah Shahidh |
+| `portline-airroad-*` | Truk trailer di jalan raya pegunungan (tulisan perusahaan di trailer belakang dihapus) | https://unsplash.com/photos/P0bVatS8Jdw | Bhargav Panchal |
+| `portline-shipyards-*` | Kapal derek berat bekerja di laut dari atas (dipotong tanpa helipad bertulisan) | https://unsplash.com/photos/0eqs4wjebyc | J.f Manzanero |
+| `portline-fleet-1-*` | Kapal kontainer besar meninggalkan buih putih, dari atas (dipotong) | https://unsplash.com/photos/FPKnAO-CF6M | Venti Views |
+| `portline-fleet-2-*` | Kapal curah merah di laut tenang saat matahari terbit (nama kapal di buritan dan logo cerobong dihapus) | https://unsplash.com/photos/sfjS-FglvU4 | Chris Pagan |
+| `portline-fleet-3-*` | Kapal tanker produk & LPG berdek hijau dari depan (dipotong) | https://unsplash.com/photos/mISMgFBDc9o | Haydn |
+| `portline-fleet-4-*` | Kapal keruk (hopper dredger) di cakrawala di balik ombak (dipotong) | https://unsplash.com/photos/UZOQtC24tBk | Birgit Steven-Lahno |
+| `portline-network-*` | Dermaga dengan derek pelabuhan di depan kota berbukit | https://unsplash.com/photos/cEocZhPqQrE | Gunnar Ridderström |
+| `portline-sustainability-*` | Dek kapal curah di laut di bawah awan biru saat fajar (dipotong) | https://unsplash.com/photos/ERbSI-9CRvQ | Vladimir Oprisko |
+| `portline-careers-*` | Sayap anjungan kapal dengan perwira jaga di atas pulau hijau (dipotong) | https://unsplash.com/photos/06JBfjNvIEU | Donovan Simpkin |
+| `portline-exec-1-*` | Pria berjas biru tua dan dasi bergaris berlatar abu-abu (dipotong) | https://unsplash.com/photos/qIZNyuZe638 | Jeppe Mønster |
+| `portline-exec-2-*` | Perempuan berkacamata dan bergaun biru tersenyum di kantor berdinding kaca (dipotong) | https://unsplash.com/photos/S3GrMiUhpNU | Christina @ wocintechchat.com M |
+| `portline-exec-3-*` | Pria berjas gelap bersandar pada pilar granit (dipotong setengah badan) | https://unsplash.com/photos/aAN9ocBHbyo | Fortune Vieyra |
+| `portline-exec-4-*` | Perempuan berblazer abu-abu tersenyum di dekat jendela kantor (dipotong) | https://unsplash.com/photos/0Zx1bDv5BNY | Christina @ wocintechchat.com M |

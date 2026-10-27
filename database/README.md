@@ -30,7 +30,8 @@ database/
 │   ├── 2026-10-26_029_site_posts_seo.sql           # berita & pengumuman template sekolah + SEO situs pembeli
 │   ├── 2026-10-27_030_site_addons.sql              # fitur tambahan berbayar (Berita & Pengumuman), jalankan SEBELUM deploy
 │   ├── 2026-10-27_031_site_stats.sql               # statistik kunjungan situs pembeli (agregat harian, tanpa IP)
-│   └── 2026-10-27_032_altura_template.sql          # data: katalog Altura (company profile bahasa Inggris), SETELAH deploy kodenya
+│   ├── 2026-10-27_032_altura_template.sql          # data: katalog Altura (company profile bahasa Inggris), SETELAH deploy kodenya
+│   └── 2026-10-27_032_portline_template.sql        # data: katalog Portline (company profile pelayaran, Inggris), SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -204,6 +205,11 @@ pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code` `bestari
 properti & perusahaan besar, kategori "Company Profile", Rp1.890.000, sort_order 15) berdasarkan slug, pola sama dengan 028:
 menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code` `altura`
 ter-deploy. DB baru cukup `seed.templates.sql`. (Nomor 030 dipakai pekerjaan lain.)
+
+`2026-10-27_032` (data saja) membuat/menyamakan baris katalog `portline` (company profile berbahasa Inggris untuk grup
+pelayaran & logistik, kategori "Company Profile", Rp1.890.000, sort_order 16) berdasarkan slug, pola sama dengan 028:
+menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan `template_code`
+`portline` ter-deploy. DB baru cukup `seed.templates.sql`.
 
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
