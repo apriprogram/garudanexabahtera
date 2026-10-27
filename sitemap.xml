@@ -6,7 +6,7 @@
   </url>
   <url>
     <loc>https://garudanexa.com/template/kategori/company-profile</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/template/kategori/kecantikan-klinik</loc>
@@ -188,6 +188,27 @@
     <lastmod>2026-10-27</lastmod>
     <image:image>
       <image:loc>https://garudanexa.com/assets/templates/bestari-preview.webp?v=57e64bbe</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/dermaga</loc>
+    <lastmod>2026-10-27</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/dermaga-preview.webp?v=9928beb2</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/saudagar</loc>
+    <lastmod>2026-10-27</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/saudagar-preview.webp?v=2f01d47e</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/nusaniaga</loc>
+    <lastmod>2026-10-27</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/nusaniaga-preview.webp?v=6d35ac42</image:loc>
     </image:image>
   </url>
 </urlset>
