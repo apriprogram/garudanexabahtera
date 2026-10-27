@@ -7,7 +7,10 @@
 // (authorize_request), so roles are already enforced; the handlers re-check them as a second line.
 // Helpers used from api.php: ApiError, db_run/db_all/db_one, in_str/in_int, env_value, client_ip,
 // rate_limit_wait/rate_limit_hit, too_many_attempts, auth_secret, issue_token, parse_upload,
-// save_base64_asset, delete_local_asset, db_affected_rows.
+// save_base64_asset, delete_local_asset, db_affected_rows. Paid add-on features (docs/platform/SITE-ADDONS-SPEC.md) live
+// in site_addons.php: sa_site_flags (get_site_public, customer_get_site), sa_midtrans_notification (GNF-…),
+// sa_invoice_items / sa_customer_invoice_addon (invoices), sa_order_addons (admin_get_template_order); sp_has_posts
+// comes from site_posts.php.
 //
 // Conventions shared with the Node backend:
 // - success: HTTP 200 + {success: true, ...data}; failure: HTTP 4xx/5xx + {error, code?, errors?}
@@ -51,8 +54,10 @@ const PF_RENEWAL_STATUS_LABEL = [
     'dibatalkan' => 'Dibatalkan',
 ];
 const PF_RENEWAL_YEARS = [1, 2, 3];
-// Log events whose note the customer sees (pf_logs); renewal notes are written by the server only
-const PF_CUSTOMER_NOTE_EVENTS = ['rejected', 'renewal_created', 'renewal_paid', 'renewal_cancelled'];
+// Log events whose note the customer sees (pf_logs); renewal and add-on notes are written by the server only (add-on:
+// docs/platform/SITE-ADDONS-SPEC.md §4.1; addon_granted / addon_revoked may carry a staff note, so they stay internal)
+const PF_CUSTOMER_NOTE_EVENTS = ['rejected', 'renewal_created', 'renewal_paid', 'renewal_cancelled', 'addon_created', 'addon_paid',
+    'addon_cancelled'];
 const PF_RENEWAL_MAX_YEARS_AHEAD = 10;      // a period never ends more than 10 years from now (registry limit)
 const PF_HOSTING_RENEWAL_DEFAULT = 500000;  // hosting & jasa per year when setting template_hosting_renewal_price is unset
 const PF_DOMAIN_CHECKS = 40;                // customer_check_domain calls per account per window
@@ -176,7 +181,9 @@ function pf_get_public_projects(mysqli $conn, array $input, ?array $user): array
     }, $rows)];
 }
 
-// A live customer site, by id (/situs/:siteId) or by host name (SiteHostGate). Only status active.
+// A live customer site, by id (/situs/:siteId) or by host name (SiteHostGate). Only status active. addons.posts = news &
+// announcements switched on (post-capable template + paid add-on, backend/modules/site_addons.php); backend/site.php
+// preloads the same shape.
 function pf_get_site_public(mysqli $conn, array $input, ?array $user): array {
     $siteId = in_int($input, 'site_id');
     $domain = strtolower(trim(in_str($input, 'domain')));
@@ -197,6 +204,7 @@ function pf_get_site_public(mysqli $conn, array $input, ?array $user): array {
         'template_code' => $row['template_code'],
         'domain' => $row['domain'],
         'content' => pf_content_out($row['content']),
+        'addons' => sa_site_flags($conn, $row),
     ]];
 }
 
@@ -402,9 +410,13 @@ function pf_midtrans_notification(mysqli $conn, array $input, ?array $user): arr
     if ($orderId === '' || $signature === '' || !hash_equals($expected, $signature)) {
         throw new ApiError('Signature tidak valid.', 403, 'INVALID_SIGNATURE');
     }
-    // Tagihan perpanjangan (GNR-…): signature sama, jalur pembayaran sendiri
+    // Tagihan perpanjangan (GNR-…) dan fitur tambahan (GNF-…, site_addons.php): signature sama, jalur pembayaran sendiri
     if (strncmp($orderId, 'GNR-', 4) === 0) {
         pf_renewal_notification($conn, $cfg, $input, $orderId, $gross);
+        return [];
+    }
+    if (strncmp($orderId, 'GNF-', 4) === 0) {
+        sa_midtrans_notification($conn, $cfg, $input, $orderId, $gross);
         return [];
     }
 
@@ -614,7 +626,7 @@ function pf_customer_cancel_order(mysqli $conn, array $input, ?array $user): arr
 
 function pf_customer_get_site(mysqli $conn, array $input, ?array $user): array {
     $user = pf_require_customer($user);
-    return ['site' => pf_site_out(pf_customer_site($conn, $input, $user), false)];
+    return ['site' => pf_customer_site_out($conn, pf_customer_site($conn, $input, $user))];
 }
 
 // Saves the CMS content. data: URIs (images) become files under public/assets/sites/<site_id>/.
@@ -662,7 +674,7 @@ function pf_customer_save_site_content(mysqli $conn, array $input, ?array $user)
     }
     db_run($conn, "UPDATE template_sites SET content = ? WHERE id = ? AND user_id = ?", [$json, $siteId, $user['id']]);
     pf_cleanup_site_assets($siteId, (string)$json);
-    return ['site' => pf_site_out(pf_customer_site($conn, ['site_id' => $siteId], $user), false)];
+    return ['site' => pf_customer_site_out($conn, pf_customer_site($conn, ['site_id' => $siteId], $user))];
 }
 
 // Runs the same payment transition as a Midtrans settlement (local testing without Midtrans)
@@ -809,27 +821,34 @@ function pf_profile_out(array $r): array {
     ];
 }
 
-// Data nota pembelian (pesanan lunas) atau nota perpanjangan (tagihan lunas) + identitas perusahaan untuk kop
+// Data nota pembelian (pesanan lunas), nota perpanjangan (tagihan lunas, renewal_number) atau nota fitur tambahan (tagihan
+// GNF- lunas dan berbayar, addon_number; site_addons.php) + identitas perusahaan untuk kop
 function pf_customer_get_invoice(mysqli $conn, array $input, ?array $user): array {
     $user = pf_require_customer($user);
     $order = pf_customer_order($conn, $input, $user);
     $number = strtoupper(trim(in_str($input, 'renewal_number')));
+    $addonNumber = strtoupper(trim(in_str($input, 'addon_number')));
     $renewal = null;
+    $addon = null;
     if ($number !== '') {
         $renewal = db_one($conn, pf_renewal_select() . " WHERE r.renewal_number = ? AND r.order_id = ? LIMIT 1", [$number, (int)$order['id']]);
         if (!$renewal) throw new ApiError('Tagihan perpanjangan tidak ditemukan.', 404, 'RENEWAL_NOT_FOUND');
         if ($renewal['status'] !== 'lunas') throw new ApiError(PF_INVOICE_NOT_AVAILABLE_MESSAGE, 409, 'INVOICE_NOT_AVAILABLE');
+    } elseif ($addonNumber !== '') {
+        $addon = sa_customer_invoice_addon($conn, $order, $addonNumber);
     } elseif ($order['paid_at'] === null) {
         throw new ApiError(PF_INVOICE_NOT_AVAILABLE_MESSAGE, 409, 'INVOICE_NOT_AVAILABLE');
     }
     return [
         'order' => pf_order_out($order, false),
         'renewal' => $renewal ? pf_renewal_out($renewal, false) : null,
+        'addon' => $addon,
         'company' => pd_settings($conn)['company'],
     ];
 }
 
-// Daftar nota pembeli (menu Nota): pesanan yang sudah dibayar + perpanjangan lunas, terbaru dulu
+// Daftar nota pembeli (menu Nota): pesanan yang sudah dibayar + perpanjangan lunas + fitur tambahan lunas berbayar
+// (type fitur, site_addons.php), terbaru dulu
 function pf_customer_get_invoices(mysqli $conn, array $input, ?array $user): array {
     $user = pf_require_customer($user);
     $items = [];
@@ -839,6 +858,7 @@ function pf_customer_get_invoices(mysqli $conn, array $input, ?array $user): arr
             'invoice_number' => 'INV-' . $o['order_number'],
             'order_number' => $o['order_number'],
             'renewal_number' => null,
+            'addon_number' => null,
             'title' => $o['template_name'],
             'domain' => $o['domain'] ?: $o['domain_primary'],
             'years' => null,
@@ -855,6 +875,7 @@ function pf_customer_get_invoices(mysqli $conn, array $input, ?array $user): arr
             'invoice_number' => 'INV-' . $r['renewal_number'],
             'order_number' => $r['order_number'],
             'renewal_number' => $r['renewal_number'],
+            'addon_number' => null,
             'title' => $r['template_name'],
             'domain' => $r['domain'],
             'years' => (int)$r['years'],
@@ -865,6 +886,7 @@ function pf_customer_get_invoices(mysqli $conn, array $input, ?array $user): arr
             'order_status' => null,
         ];
     }
+    $items = array_merge($items, sa_invoice_items($conn, (int)$user['id']));
     usort($items, function ($a, $b) {
         return strcmp((string)$b['paid_at'], (string)$a['paid_at']) ?: strcmp($b['invoice_number'], $a['invoice_number']);
     });
@@ -1330,11 +1352,15 @@ function pf_admin_get_template_order(mysqli $conn, array $input, ?array $user): 
     pf_require_staff($user);
     $order = pf_staff_order($conn, $input);
     $site = db_one($conn, pf_site_select() . " WHERE s.order_id = ? LIMIT 1", [(int)$order['id']]);
+    // Fitur tambahan situs pesanan ini (addons: keadaan per fitur, kosong tanpa situs; addon_orders: semua tagihannya)
+    $addons = sa_order_addons($conn, $site, (int)$order['id']);
     return [
         'order' => pf_order_out($order, true),
         'logs' => pf_logs($conn, (int)$order['id'], true),
         'site' => $site ? pf_site_out($site, true) : null,
         'renewals' => pf_order_renewals($conn, (int)$order['id'], true),
+        'addons' => $addons['addons'],
+        'addon_orders' => $addons['addon_orders'],
     ];
 }
 
@@ -1713,18 +1739,31 @@ function pf_midtrans_config(): array {
     $flag = function ($key) { return in_array(strtolower(env_value($key, '0')), ['1', 'true', 'yes'], true); };
     $production = $flag('MIDTRANS_IS_PRODUCTION');
     $clientKey = env_value('MIDTRANS_CLIENT_KEY');
+    $test = pf_midtrans_test_url();
     return [
         'server_key' => env_value('MIDTRANS_SERVER_KEY'),
         'client_key' => $clientKey !== '' ? $clientKey : null,
         'is_production' => $production,
         'simulator' => !$production && $flag('MIDTRANS_SIMULATOR'),
-        'snap_url' => $production ? 'https://app.midtrans.com/snap/v1/transactions' : 'https://app.sandbox.midtrans.com/snap/v1/transactions',
-        'api_base' => $production ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com',
+        'snap_url' => $test !== '' ? $test . '/snap/v1/transactions'
+            : ($production ? 'https://app.midtrans.com/snap/v1/transactions' : 'https://app.sandbox.midtrans.com/snap/v1/transactions'),
+        'api_base' => $test !== '' ? $test : ($production ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com'),
     ];
 }
 
-// HTTPS JSON request to Midtrans with Basic auth (server key). Never throws.
+// Tes saja: MIDTRANS_TEST_URL (http://127.0.0.1:<port> atau http://localhost:<port>) menggantikan Snap dan API Midtrans
+// dengan server palsu (__tests__/backend/site-addons.test.ts). Diabaikan bila MIDTRANS_IS_PRODUCTION aktif atau hostnya
+// lain, jadi server key tidak pernah terkirim ke luar mesin ini. Same rule in templates.js (midtransTestUrl).
+function pf_midtrans_test_url(): string {
+    if (in_array(strtolower(env_value('MIDTRANS_IS_PRODUCTION', '0')), ['1', 'true', 'yes'], true)) return '';
+    $url = rtrim(env_value('MIDTRANS_TEST_URL'), '/');
+    return preg_match('#^http://(127\.0\.0\.1|localhost)(:[0-9]{1,5})?$#D', $url) ? $url : '';
+}
+
+// HTTPS JSON request to Midtrans with Basic auth (server key). Never throws. Plain http only to the fake server of
+// MIDTRANS_TEST_URL (tests).
 function pf_midtrans_request(string $method, string $url, string $serverKey, ?array $body, int $timeout): array {
+    $test = pf_midtrans_test_url();
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -1732,7 +1771,7 @@ function pf_midtrans_request(string $method, string $url, string $serverKey, ?ar
         CURLOPT_HTTPHEADER => ['Accept: application/json', 'Content-Type: application/json', 'Authorization: Basic ' . base64_encode($serverKey . ':')],
         CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_TIMEOUT => $timeout,
-        CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+        CURLOPT_PROTOCOLS => $test !== '' && strpos($url, $test . '/') === 0 ? CURLPROTO_HTTP : CURLPROTO_HTTPS,
     ]);
     if ($body !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     elseif ($method === 'POST') curl_setopt($ch, CURLOPT_POSTFIELDS, '');
@@ -1880,7 +1919,7 @@ function pf_logs(mysqli $conn, int $orderId, bool $staff): array {
         $names = ['midtrans' => 'Midtrans', 'system' => 'Sistem'];
         $actorName = $names[$r['actor_type']] ?? $r['user_name'];
         if ($r['actor_type'] === 'staff' && !$staff) $actorName = 'Tim Garuda Nexa';
-        // Customers only get the rejection reason and the server-written renewal notes; other notes are internal
+        // Customers only get the rejection reason and the server-written renewal / add-on notes; other notes are internal
         // (admin notes, Midtrans/test-mode details)
         $note = ($staff || in_array($r['event'], PF_CUSTOMER_NOTE_EVENTS, true)) ? $r['note'] : null;
         $log = [
@@ -1936,6 +1975,15 @@ function pf_site_out(array $r, bool $staff): array {
         $out['owner_name'] = $r['owner_name'];
         $out['owner_email'] = $r['owner_email'];
     }
+    return $out;
+}
+
+// Site for its owner (customer_get_site, customer_save_site_content): pf_site_out + addons (SiteAddonFlags: posts = news &
+// announcements switched on) + posts_capable (the template has news & announcements; the add-on unlocks them)
+function pf_customer_site_out(mysqli $conn, array $r): array {
+    $out = pf_site_out($r, false);
+    $out['addons'] = sa_site_flags($conn, $r);
+    $out['posts_capable'] = sp_has_posts((string)$r['template_code']);
     return $out;
 }
 

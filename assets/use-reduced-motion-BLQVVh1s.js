@@ -1,1 +1,0 @@
-import{$r as e,ai as t}from"./index-B5jicLtL.js";import{a as n,o as r,s as i}from"./proxy-1Om_bsiO.js";var a=t(e(),1);function o(){!r.current&&n();let[e]=(0,a.useState)(i.current);return e}export{o as t};

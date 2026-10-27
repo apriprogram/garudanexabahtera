@@ -42,6 +42,7 @@ const PUBLIC_ACTIONS = [
     'get_guides', 'get_guide', 'guide_view', 'get_domain_prices',
     'google_auth_config', 'customer_google_auth',
     'get_site_seo', 'get_site_posts', 'get_site_post', 'site_post_view',
+    'site_visit',
 ];
 const ANY_ROLE_ACTIONS = [
     'pd_notifications_list', 'pd_notifications_read', 'pd_file',
@@ -53,6 +54,9 @@ const CUSTOMER_ACTIONS = [
     'customer_get_invoice', 'customer_get_invoices', 'customer_get_profile', 'customer_update_profile',
     'pd_my_projects', 'pd_my_project', 'pd_my_document', 'pd_my_document_decide',
     'customer_get_site_posts', 'customer_save_site_post', 'customer_delete_site_post', 'customer_get_site_seo', 'customer_save_site_seo',
+    'customer_get_site_addons', 'customer_buy_site_addon', 'customer_pay_site_addon', 'customer_cancel_site_addon',
+    'dev_simulate_site_addon_payment',
+    'customer_get_site_stats',
 ];
 const ADMIN_ACTIONS = [
     'add_user', 'delete_user',
@@ -67,6 +71,7 @@ const ADMIN_ACTIONS = [
     'pd_settings_save',
     'nexa_get_config', 'nexa_save_config',
     'admin_get_guides', 'admin_save_guide', 'admin_delete_guide',
+    'admin_set_site_addon',
 ];
 const STAFF_ROLES = ['admin', 'user'];
 const USER_ROLES = ['admin', 'user', 'customer'];
@@ -117,6 +122,13 @@ require_once __DIR__ . '/modules/guides.php';
 // Berita & pengumuman situs pembeli (template sekolah) dan SEO situs: bacaan publik, kelola di /akun (handle_site_post_action,
 // docs/platform/SITE-POSTS-SEO-SPEC.md)
 require_once __DIR__ . '/modules/site_posts.php';
+// Fitur tambahan berbayar per situs pembeli (Berita & Pengumuman template sekolah): beli/bayar/batal di /akun/fitur,
+// aktifkan/nonaktifkan oleh admin, gerbang tulisan untuk site_posts.php (handle_site_addon_action,
+// docs/platform/SITE-ADDONS-SPEC.md)
+require_once __DIR__ . '/modules/site_addons.php';
+// Statistik kunjungan situs pembeli: pencatatan publik site_visit dari domain pembeli dan dasbor CMS
+// customer_get_site_stats (handle_site_stats_action, docs/platform/SITE-STATS-SPEC.md)
+require_once __DIR__ . '/modules/site_stats.php';
 // Masuk & daftar pembeli dengan Google: client ID publik + verifikasi ID token Google (handle_google_auth_action,
 // docs/platform/GOOGLE-LOGIN.md)
 require_once __DIR__ . '/modules/google_auth.php';
@@ -206,6 +218,18 @@ if (handle_google_auth_action($conn, $action, $input)) {
 // Berita & pengumuman + SEO situs pembeli: get_site_seo/get_site_posts/get_site_post/site_post_view publik, customer_*
 // pembeli pemilik situs (backend/modules/site_posts.php)
 if (handle_site_post_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Fitur tambahan berbayar: customer_*_site_addon(s) + dev_simulate_site_addon_payment pembeli, admin_set_site_addon admin
+// (backend/modules/site_addons.php)
+if (handle_site_addon_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Statistik kunjungan: site_visit publik (selalu { success: true }), customer_get_site_stats pembeli
+// (backend/modules/site_stats.php)
+if (handle_site_stats_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }
@@ -950,9 +974,19 @@ function rate_limit_wait($key, $max) {
 }
 
 function rate_limit_hit($key, $windowSeconds) {
-    $fp = @fopen(rate_limit_file($key), 'c+');
+    $file = rate_limit_file($key);
+    $fp = @fopen($file, 'c+');
     if (!$fp) return;
     flock($fp, LOCK_EX);
+    // rate_limit_prune deleted the file while we waited for the lock: count in a fresh file, not the deleted one
+    $stat = fstat($fp);
+    if ($stat && $stat['nlink'] === 0) {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        $fp = @fopen($file, 'c+');
+        if (!$fp) return;
+        flock($fp, LOCK_EX);
+    }
     $entry = json_decode((string)stream_get_contents($fp), true);
     if (!is_array($entry) || $entry['reset'] <= time()) $entry = ["count" => 0, "reset" => time() + $windowSeconds];
     $entry['count']++;
@@ -965,6 +999,41 @@ function rate_limit_hit($key, $windowSeconds) {
 
 function rate_limit_clear($key) {
     @unlink(rate_limit_file($key));
+}
+
+// Per-visitor key for limiters on buyer sites (site_visit, site_post_view): IPv6 per /64 (nexa_ip_bucket), HMAC'd with
+// AUTH_SECRET so a file name in the temp folder cannot be matched back to a visitor's IP address
+function ip_limit_key(string $prefix, string $ip): string {
+    return $prefix . '|' . hash_hmac('sha256', nexa_ip_bucket($ip), (string)auth_secret());
+}
+
+// Delete limiter files whose window has passed (same as no file), at most $max per call starting at a random position,
+// so the temp folder keeps no lasting per-visitor trace. Called now and then from site_visit.
+function rate_limit_prune(int $max = 200): void {
+    $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'garudanexa-rate-limit';
+    $names = is_dir($dir) ? @scandir($dir) : false;
+    if (!$names) return;
+    $names = array_values(array_filter($names, function ($name) { return substr($name, -5) === '.json'; }));
+    $count = count($names);
+    if ($count === 0) return;
+    $start = random_int(0, $count - 1);
+    for ($i = 0; $i < min($max, $count); $i++) {
+        $file = $dir . DIRECTORY_SEPARATOR . $names[($start + $i) % $count];
+        $fp = @fopen($file, 'r');
+        if (!$fp) continue;
+        $expired = false;
+        $deleted = false;
+        if (flock($fp, LOCK_EX | LOCK_NB)) {
+            $entry = json_decode((string)stream_get_contents($fp), true);
+            $expired = !is_array($entry) || (int)($entry['reset'] ?? 0) <= time();
+            // Linux deletes while the lock is held, so a rate_limit_hit waiting on it sees nlink 0 and reopens; Windows
+            // cannot delete an open file, so it is retried after fclose
+            if ($expired) $deleted = @unlink($file);
+            flock($fp, LOCK_UN);
+        }
+        fclose($fp);
+        if ($expired && !$deleted) @unlink($file);
+    }
 }
 
 function too_many_attempts($seconds) {
