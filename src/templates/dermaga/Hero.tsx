@@ -1,6 +1,6 @@
 // Hero Dermaga — "Route" (data-hero-layout="route"). Layar lebar: label mono + H1 besar di kolom 1-8, deskripsi dan
 // tombol di kolom 9-12 rata bawah; di bawahnya foto terminal peti kemas saat senja 21:9 selebar wadah dengan garis rute
-// putih abstrak (SVG) + tiga chip kaca pelabuhan, lalu strip manifest empat sel (label mono, angka berjalan, garis
+// putih abstrak (SVG) + tiga chip putih pelabuhan, lalu strip manifest empat sel (label mono, angka berjalan, garis
 // pemisah). HP 390: label, H1, deskripsi, foto 4:5 penuh ke tepi layar dengan rute TEGAK, manifest 2×2, lalu tombol
 // penuh-lebar (urutan visual lewat `order`; isi fokus tetap berurutan karena foto & strip tidak berisi tautan).
 // Gerak khas (./dermaga.css): garis rute tergambar sekali (stroke-dashoffset), pin & chip muncul berurutan. Foto hero
@@ -43,7 +43,7 @@ function RouteLines({ layout, slots, className }: { layout: RouteLayout; slots: 
   );
 }
 
-/** Garis rute (HP tegak, layar lebar mendatar) + chip kaca pelabuhan (satu daftar, posisinya ikut lebar wadah). */
+/** Garis rute (HP tegak, layar lebar mendatar) + chip putih pelabuhan (satu daftar, posisinya ikut lebar wadah). */
 function RouteOverlay({ m }: { m: DermagaModel }) {
   const ports = m.ports;
   if (ports.length === 0) return null;
@@ -70,7 +70,8 @@ function RouteOverlay({ m }: { m: DermagaModel }) {
           const name = field(port, 'name');
           return (
             <li key={`${code}-${name}-${i}`} className="dm-port w-max max-w-[58%] @3xl:max-w-[240px]" style={style}>
-              <div className="dm-chip rounded-[2px] bg-white/85 px-3 py-2 ring-1 ring-inset ring-white/60 backdrop-blur-md">
+              {/* Putih solid (bukan kaca): kode pelabuhan --tpl-accent-ink hanya dijamin ≥ 4,5:1 di atas putih murni */}
+              <div className="dm-chip rounded-[2px] bg-white px-3 py-2">
                 {code && <span className={`block ${MONO_LABEL} leading-none text-(--tpl-accent-ink)`}>{code}</span>}
                 {name && (
                   <span className={`${code ? 'mt-1 block @3xl:hidden @5xl:block' : 'block'} text-[13px] font-medium leading-snug ${C.ink}`}>{name}</span>
@@ -84,12 +85,19 @@ function RouteOverlay({ m }: { m: DermagaModel }) {
   );
 }
 
-/** Garis pemisah sel manifest: HP 2×2 (garis kiri di kolom 2, garis atas di baris 2), layar lebar satu baris. */
+/**
+ * Garis pemisah sel manifest: HP 2 kolom (garis kiri di kolom 2, garis atas di baris 2; 3 angka → sel ketiga selebar
+ * strip), layar lebar satu baris.
+ */
 function cellBorders(i: number, n: number): string {
   const wide = i === 0 ? '@3xl:pl-0' : '@3xl:border-l @3xl:pl-5 @5xl:pl-7';
   if (n === 4) {
     const phone = ['pr-4', 'border-l pl-4 pr-2', 'border-t pr-4', 'border-l border-t pl-4 pr-2'][i];
     return `${phone} @3xl:border-t-0 @3xl:pr-5 ${wide}`;
+  }
+  if (n === 3) {
+    const phone = ['pr-4', 'border-l pl-4 pr-2', 'col-span-2 border-t pr-4 @3xl:col-span-1 @3xl:border-t-0'][i];
+    return `${phone} @3xl:pr-5 ${wide}`;
   }
   return `${i === 0 ? 'pr-3' : 'border-l pl-3 pr-2'} @3xl:pr-5 ${wide}`;
 }
@@ -97,7 +105,7 @@ function cellBorders(i: number, n: number): string {
 const STRIP_COLS: Record<number, string> = {
   1: 'grid-cols-1',
   2: 'grid-cols-2',
-  3: 'grid-cols-3',
+  3: 'grid-cols-2 @3xl:grid-cols-3',
   4: 'grid-cols-2 @3xl:grid-cols-4',
 };
 
@@ -159,21 +167,23 @@ export function Hero({ m }: { m: DermagaModel }) {
             {(primaryLabel || secondaryLabel) && (
               <Reveal
                 delay={240}
-                className="order-5 mt-8 flex flex-col items-stretch gap-1 @xl:flex-row @xl:items-center @xl:gap-7 @3xl:order-3 @5xl:mt-7"
+                className="order-5 mt-8 flex flex-col items-stretch gap-1 @xl:flex-row @xl:flex-wrap @xl:items-center @xl:gap-7 @xl:gap-y-3 @3xl:order-3 @5xl:mt-7"
               >
                 <ButtonLink action={m.primaryAction} label={primaryLabel} className="w-full @xl:w-auto" />
-                <TextLink action={m.secondaryAction} label={secondaryLabel} arrow={false} className="self-center" />
+                {/* Tidak terbungkus; kolom sempit (1024-1179px) → turun ke bawah tombol utuh */}
+                <TextLink action={m.secondaryAction} label={secondaryLabel} arrow={false} className="self-center whitespace-nowrap" />
               </Reveal>
             )}
           </div>
 
           <div className="relative order-3 -mx-5 mt-8 @2xl:-mx-8 @3xl:order-4 @3xl:mx-0 @3xl:mt-12 @5xl:col-span-12 @5xl:row-start-2 @5xl:mt-16">
+            {/* sizes HP 223vw: kotak 4:5 selebar layar memotong foto 16:9, jadi lebar gambar ± 2,22 × lebar layar */}
             <KitPhoto
               src={image}
               alt={DERMAGA_PHOTOS.alt(image, `Foto kegiatan pengiriman barang ${m.companyName}`)}
               priority
               fallback="tint"
-              sizes="(min-width: 1536px) 1552px, (min-width: 768px) 100vw, 160vw"
+              sizes="(min-width: 1536px) 1552px, (min-width: 768px) 100vw, 223vw"
               className="aspect-[4/5] @3xl:aspect-[21/9]"
               imgClassName="object-[45%_50%] @3xl:object-[50%_50%]"
             >

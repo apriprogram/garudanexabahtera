@@ -2,8 +2,9 @@
 // frasa miring berwarna tinta (bukan warna tema), label section serif miring "— Komoditas", kartu kraft radius 4 tanpa
 // garis, baris spesifikasi bergaris rambut, tombol pil tinta gelap + tautan teks berpanah, foto berbingkai lengkung
 // (rounded-t-full) dan bulat. Pita kertas ↔ putih, satu pita espresso untuk ajakan. DATAR: tanpa bayangan sama sekali;
-// kedalaman dari tingkat warna (kertas/putih/kraft/espresso), garis rambut, dan ring tipis. Warna tema hanya untuk
-// grafik (batang panen, garis tab aktif, simbol); teks berwarna tema SELALU --sg-ink / --sg-bright (./model).
+// kedalaman dari tingkat warna (kertas/putih/kraft/espresso), garis rambut, dan ring tipis. Warna tema mentah hanya
+// untuk grafik (batang panen, simbol, titik keterangan); teks dan penanda keadaan (garis tab aktif, garis menu aktif)
+// SELALU --sg-ink / --sg-bright (./model), agar tetap terlihat walau warna tema sangat terang.
 // Ukuran memakai container query (@…) karena template dirender di bingkai HP 390 / panel CMS.
 import type { KitFont } from '../kit/fonts';
 import { FONT_DISPLAY } from '../shared/layout';

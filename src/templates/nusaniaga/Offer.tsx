@@ -3,14 +3,16 @@
 // 16:10 opsional → judul → deskripsi → poin bertitik aksen di bawah garis rambut (rata bawah, tinggi kartu sama).
 // Produk: putih, BUKAN kartu: foto 16:10 radius 16 (zoom saat muncul, membesar pelan saat disorot) → label jenis
 // berbingkai + negara asal → judul → deskripsi → baris kemasan/MOQ. HP: rel geser snap (satu Reveal untuk seluruh rel).
-// Di bawahnya catatan + tombol "Minta data teknis" ke formulir penawaran.
+// Di bawahnya catatan + tombol (teks dari CMS, bawaan "Minta data teknis"; kosong → tanpa tombol) ke formulir penawaran.
 import { Globe, Package } from 'lucide-react';
+import { useRef } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER, SECTION_GAP } from '../shared/layout';
 import { stagger } from '../shared/motion';
 import { TemplateSection } from '../shared/Shell';
 import { field, hasImage, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
+import { useScrollable } from './hooks';
 import { pointLines, type NusaNiagaModel } from './model';
 import { NUSANIAGA_PHOTOS } from './photos';
 import { C, CARD, ICON_BOX, LINE, PHOTO, SECTION_PAD, TAG, TYPE_N } from './styles';
@@ -76,7 +78,12 @@ export function Products({ m }: { m: NusaNiagaModel }) {
   const { products } = m;
   const items = m.items('products');
   const note = text(products, 'note');
-  const dataAction = m.quoteAction;
+  const buttonLabel = text(products, 'button_label');
+  const dataAction = buttonLabel ? m.quoteAction : null;
+  const railRef = useRef<HTMLDivElement>(null);
+  // Rel HP bisa digeser → region berlabel yang bisa difokus (geser dengan panah); grid statis tablet/desktop → bukan
+  // tab stop
+  const scrollable = useScrollable(railRef);
 
   return (
     <TemplateSection sectionKey="products" className={`bg-white ${SECTION_PAD}`}>
@@ -85,9 +92,10 @@ export function Products({ m }: { m: NusaNiagaModel }) {
         {/* Satu Reveal untuk seluruh rel (bukan per item: item di luar layar rel tidak boleh tetap tersembunyi) */}
         <Reveal delay={120} className={SECTION_GAP}>
           <div
-            role="region"
-            aria-label="Daftar produk"
-            tabIndex={0}
+            ref={railRef}
+            role={scrollable ? 'region' : undefined}
+            aria-label={scrollable ? 'Daftar produk' : undefined}
+            tabIndex={scrollable ? 0 : undefined}
             className="nn-rail -mx-5 snap-x snap-mandatory scroll-px-5 overflow-x-auto px-5 @2xl:mx-0 @2xl:overflow-visible @2xl:px-0"
           >
             <ul className="flex gap-4 @2xl:grid @2xl:grid-cols-2 @2xl:gap-x-6 @2xl:gap-y-12 @5xl:grid-cols-3 @5xl:gap-x-8 @5xl:gap-y-14">
@@ -145,7 +153,7 @@ export function Products({ m }: { m: NusaNiagaModel }) {
         {(note || dataAction) && (
           <Reveal className={`mt-10 flex flex-col items-start gap-5 border-t pt-8 @3xl:flex-row @3xl:items-center @3xl:justify-between @5xl:mt-14 ${LINE}`}>
             {note && <p className={`max-w-[70ch] text-[14px] leading-relaxed ${C.muted}`}>{note}</p>}
-            <PillLink action={dataAction} label="Minta data teknis" variant="outline" className="w-full shrink-0 @xl:w-auto" />
+            <PillLink action={dataAction} label={buttonLabel} variant="outline" className="w-full shrink-0 @xl:w-auto" />
           </Reveal>
         )}
       </div>

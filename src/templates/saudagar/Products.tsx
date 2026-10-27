@@ -1,5 +1,6 @@
 // Komoditas (kunci `products`, latar kertas): kepala terbelah (label + H2 kiri, deskripsi kanan), lalu tab serif per
-// kategori (role=tablist; panah kiri/kanan, Home/End; garis saffron di bawah tab aktif) dan panel: foto kategori
+// kategori (role=tablist; panah kiri/kanan, Home/End; garis tinta tema di bawah tab aktif; rel geser: tab yang dipilih
+// digeser masuk ke tampilan) dan panel: foto kategori
 // berbingkai lengkung + daerah asal (kiri 4 kolom), pengantar + kartu spesifikasi kraft (kanan 8 kolom). Kartu: nama,
 // varietas miring, catatan, baris Grade · Asal · Kadar air · Kemasan · Min. pesanan bergaris rambut, dan tautan "Minta
 // penawaran" yang membuka formulir dengan komoditas itu terpilih. Panel tidak aktif `hidden` tetapi tetap di HTML
@@ -28,16 +29,19 @@ function SpecCard({ m, item, onQuote, wide = false }: { m: SaudagarModel; item: 
     : m.waWith(`Halo ${m.companyName}, saya ingin meminta penawaran ${name}.`);
   return (
     <article
-      className={`flex w-full min-w-0 flex-col p-6 @3xl:p-7 ${wide ? '@3xl:grid @3xl:grid-cols-2 @3xl:grid-rows-[1fr_auto] @3xl:gap-x-10' : ''} ${CARD.kraft}`}
+      className={`flex w-full min-w-0 flex-col p-6 @3xl:p-7 ${
+        wide ? '@3xl:grid @3xl:grid-cols-2 @3xl:grid-rows-[1fr_auto] @3xl:gap-x-10' : '@3xl:row-span-3 @3xl:grid @3xl:grid-rows-subgrid @3xl:gap-y-0'
+      } ${CARD.kraft}`}
     >
-      {/* Kepala kartu mengisi sisa tinggi → baris spesifikasi kartu bersebelahan sejajar walau catatannya beda panjang */}
-      <div className={`flex-1 ${wide ? '@3xl:col-start-1 @3xl:row-start-1' : ''}`}>
+      {/* Kisi dua/tiga kolom: kartu = subgrid 3 baris (kepala · spesifikasi · tautan) yang dibagi kartu sebaris, jadi
+          baris Grade kartu bersebelahan sejajar walau judul atau catatannya beda panjang. HP: kepala mengisi sisa tinggi. */}
+      <div className={`flex-1 ${wide ? '@3xl:col-start-1 @3xl:row-start-1' : '@3xl:row-start-1'}`}>
         <h3 className={`text-pretty ${C.ink} ${TYPE_S.h3}`}>{name}</h3>
         {variety && <p className={`mt-1 ${SERIF} text-[16px] italic leading-snug ${C.muted}`}>{variety}</p>}
         {note && <p className={`mt-3 max-w-[48ch] text-pretty text-[14.5px] leading-relaxed ${C.muted}`}>{note}</p>}
       </div>
       {rows.length > 0 && (
-        <dl className={`mt-5 divide-y border-t ${wide ? '@3xl:col-start-2 @3xl:row-span-2 @3xl:row-start-1 @3xl:mt-0 @3xl:border-b' : ''} ${C.line} ${C.divide}`}>
+        <dl className={`mt-5 divide-y border-t ${wide ? '@3xl:col-start-2 @3xl:row-span-2 @3xl:row-start-1 @3xl:mt-0 @3xl:border-b' : '@3xl:row-start-2'} ${C.line} ${C.divide}`}>
           {rows.map((row) => (
             <div key={row.key} className="flex items-baseline justify-between gap-4 py-3">
               <dt className={`shrink-0 text-[13px] ${C.muted}`}>{row.label}</dt>
@@ -46,7 +50,7 @@ function SpecCard({ m, item, onQuote, wide = false }: { m: SaudagarModel; item: 
           ))}
         </dl>
       )}
-      <div className={`pt-4 ${wide ? '@3xl:col-start-1 @3xl:row-start-2' : ''}`}>
+      <div className={`pt-4 ${wide ? '@3xl:col-start-1 @3xl:row-start-2' : '@3xl:row-start-3'}`}>
         <ArrowLink action={action} label={buttonLabel} ariaLabel={`${buttonLabel}: ${name}`} onNavigate={() => onQuote(name)} />
       </div>
     </article>
@@ -63,7 +67,7 @@ function Panel({ m, tab, onQuote }: { m: SaudagarModel; tab: ProductTab; onQuote
       {tab.items.map((item, i) => {
         const wide = wideLast && i === count - 1;
         return (
-          <li key={`${field(item, 'name')}-${i}`} className={`flex min-w-0 ${wide ? '@3xl:col-span-2' : ''}`}>
+          <li key={`${field(item, 'name')}-${i}`} className={`flex min-w-0 ${wide ? '@3xl:col-span-2' : '@3xl:row-span-3 @3xl:grid @3xl:grid-rows-subgrid @3xl:gap-y-0'}`}>
             <SpecCard m={m} item={item} onQuote={onQuote} wide={wide} />
           </li>
         );
@@ -109,6 +113,21 @@ function Panel({ m, tab, onQuote }: { m: SaudagarModel; tab: ProductTab; onQuote
   );
 }
 
+/**
+ * Rel tab tanpa scrollbar: tab yang dipilih (klik atau panah) digeser masuk ke tampilan dengan sisa 20px, tanpa
+ * menggulir halaman (scrollIntoView bisa ikut menggeser halaman). Nama kategori panjang tetap terbaca utuh.
+ */
+function revealTab(tab: HTMLElement) {
+  const rail = tab.parentElement;
+  if (!rail) return;
+  const r = rail.getBoundingClientRect();
+  const t = tab.getBoundingClientRect();
+  if (r.width === 0) return;
+  const pad = 20;
+  if (t.left < r.left + pad) rail.scrollLeft -= r.left + pad - t.left;
+  else if (t.right > r.right - pad) rail.scrollLeft += t.right - (r.right - pad);
+}
+
 export function Products({ m, onQuote }: { m: SaudagarModel; onQuote: (product: string) => void }) {
   const { products, tabs } = m;
   const baseId = useId();
@@ -126,7 +145,9 @@ export function Products({ m, onQuote }: { m: SaudagarModel; onQuote: (product: 
   const select = (key: string, focus = false) => {
     if (key !== selected) setChanged(true);
     setCurrent(key);
-    if (focus) tabRefs.current[key]?.focus();
+    const tab = tabRefs.current[key];
+    if (focus) tab?.focus();
+    if (tab) revealTab(tab);
   };
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const i = tabs.findIndex((tab) => tab.key === selected);
@@ -164,7 +185,8 @@ export function Products({ m, onQuote }: { m: SaudagarModel; onQuote: (product: 
                     aria-controls={panelId(i)}
                     tabIndex={isSelected ? 0 : -1}
                     onClick={() => select(tab.key)}
-                    className={`relative flex min-h-14 shrink-0 items-baseline gap-1.5 pb-3 pt-2 ${SERIF} text-[19px] font-normal @md:gap-2 @md:text-[22px] leading-none tracking-[-0.01em] transition-colors duration-300 @3xl:text-[28px] ${
+                    // Cincin fokus digambar DI DALAM tab (offset negatif): rel overflow-x memotong cincin di luar tab
+                    className={`relative flex min-h-14 shrink-0 items-baseline gap-1.5 pb-3 pt-2 ${SERIF} text-[19px] font-normal @md:gap-2 @md:text-[22px] leading-none tracking-[-0.01em] transition-colors duration-300 focus-visible:-outline-offset-2 @3xl:text-[24px] @6xl:text-[28px] ${
                       isSelected ? C.ink : `${C.muted} hover:text-[#221A13]`
                     }`}
                   >
@@ -172,7 +194,8 @@ export function Products({ m, onQuote }: { m: SaudagarModel; onQuote: (product: 
                     <span aria-hidden className={`font-sans text-[12px] tabular-nums ${C.muted}`}>
                       {tab.items.length}
                     </span>
-                    <span aria-hidden className="sg-tab-line absolute inset-x-0 -bottom-px h-0.5 bg-(--tpl-accent)" />
+                    {/* Garis tab aktif = tinta tema (≥ 4,6:1 di kertas), tetap terlihat walau warna tema sangat terang */}
+                    <span aria-hidden className="sg-tab-line absolute inset-x-0 -bottom-px h-0.5 bg-(--sg-ink)" />
                   </button>
                 );
               })}

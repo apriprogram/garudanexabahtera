@@ -163,6 +163,28 @@ describe('NusaNiaga: skema & konten bawaan', () => {
     expect(def.defaultContent.coverage.title).toContain('18 negara');
     expect(def.defaultContent.clients.title).toContain('140+ pabrik');
     expect(json).toContain('Gudang 6.500 m²');
+    // 6.500 m² = gudang saja, di poin Layanan maupun di angka (bukan "gudang dan ruang uji")
+    const stats = def.defaultContent.advantages.stats as { value: string; label: string }[];
+    expect(stats.find((s) => s.value === '6.500')?.label).toBe('Luas gudang di Cikarang');
+    expect(json).not.toMatch(/ruang uji/);
+    // Alur proses mencakup asal Eropa: PO minggu 2 + 8–12 minggu (FAQ) → tiba paling lambat minggu 14
+    const steps = def.defaultContent.process.steps as { title: string; duration: string }[];
+    expect(steps.find((s) => s.title === 'Pengapalan & kepabeanan')?.duration).toBe('Minggu 4–14');
+    expect(json).toContain('dari Eropa 8–12 minggu');
+    // Subjudul testimoni sesuai ketiga testimoni (kemasan plastik, komponen logam, kemasan makanan)
+    expect(def.defaultContent.testimonials.subtitle).toMatch(/^Pabrik kemasan plastik, komponen logam, dan kemasan makanan/);
+  });
+
+  it('skema: angka maks. 8 karakter (angka besar tidak meluber), tombol produk bisa diubah, label kalimat biasa', () => {
+    const fieldOf = (section: string, key: string) => def.sections.find((s) => s.key === section)!.fields.find((f) => f.key === key)!;
+    const stats = fieldOf('advantages', 'stats');
+    expect(isListField(stats) && stats.fields.find((f) => f.key === 'value')?.maxLength).toBe(8);
+    for (const stat of def.defaultContent.advantages.stats as { value: string }[]) expect(stat.value.length, stat.value).toBeLessThanOrEqual(8);
+    const button = fieldOf('products', 'button_label');
+    expect(button.type).toBe('text');
+    expect(!isListField(button) && button.maxLength).toBe(30);
+    expect(def.defaultContent.products.button_label).toBe('Minta data teknis');
+    expect(fieldOf('contact', 'form_needs').label).toBe('Pilihan kebutuhan di formulir');
   });
 });
 
@@ -246,7 +268,7 @@ describe('NusaNiaga: model', () => {
     expect(validateInquiry(form({ need: 'Lainnya' }), { needs })).toEqual({ need: 'Pilih kebutuhan Anda.' });
     expect(validateInquiry(form({ name: '  R ' }), { needs })).toEqual({ name: 'Tulis nama Anda.' });
 
-    expect(inquiryMessage(form({ origin: 'Korea Selatan', incoterm: 'DDP (diantar ke pabrik)', start: 'Januari 2027', note: 'Mohon sertakan data teknis.' }), 'PT Arunika Niaga Internasional')).toBe(
+    expect(inquiryMessage(form({ origin: 'Korea Selatan', incoterm: 'DDP', start: 'Januari 2027', note: 'Mohon sertakan data teknis.' }), 'PT Arunika Niaga Internasional')).toBe(
       [
         'Halo PT Arunika Niaga Internasional, saya ingin meminta penawaran.',
         '',
@@ -256,7 +278,7 @@ describe('NusaNiaga: model', () => {
         'Produk/spesifikasi: Resin PP homopolimer, MFI 12',
         'Volume: 20 ton per bulan',
         'Negara asal: Korea Selatan',
-        'Incoterm: DDP (diantar ke pabrik)',
+        'Incoterm: DDP',
         'Lokasi pabrik: Kawasan industri, Karawang',
         'Mulai dibutuhkan: Januari 2027',
         'Catatan: Mohon sertakan data teknis.',
@@ -291,13 +313,18 @@ describe('NusaNiaga: demo', () => {
     expect(img.getAttribute('srcset')).toContain(' 800w');
     expect(img.getAttribute('width')).toBe('1440');
     expect(img.getAttribute('height')).toBe('1800');
-    expect(img.getAttribute('alt')).toBe('Lorong gudang dengan rak palet tinggi berisi barang industri yang tertata rapi');
+    expect(img.getAttribute('alt')).toBe('Lorong gudang dengan rak palet tinggi berisi kardus yang tertata rapi');
     expect(container.querySelectorAll('img[loading="eager"]')).toHaveLength(1);
     const frame = img.parentElement!;
     expect(frame.className).toContain('nn-slats');
     expect(frame.className).not.toMatch(/tpl-reveal|tpl-photo-zoom|tpl-photo-parallax/);
     expect(img.className).not.toMatch(/tpl-photo-zoom|tpl-photo-parallax/);
     expect(frame.closest('.tpl-reveal')).toBeNull();
+    // Layar lebar: tinggi foto MINIMUM (bukan tetap), jadi bilah meregang sampai dasar hero bila kolom teks lebih tinggi
+    const box = frame.parentElement!;
+    expect(box.className).toContain('@5xl:row-[1/-1]');
+    expect(box.className).toContain('@5xl:min-h-[clamp(580px,calc(100svh-72px),820px)]');
+    expect(box.className).not.toMatch(/@5xl:h-\[/);
   });
 
   it('chip negara asal = tautan sungguhan ke Jangkauan (maks. 8); Jangkauan disembunyikan → chip tanpa tautan', () => {
@@ -305,6 +332,8 @@ describe('NusaNiaga: demo', () => {
     const chips = section(container, 'hero').querySelectorAll('a[href="#coverage"]');
     expect(chips).toHaveLength(8);
     expect(chips[0].textContent).toBe('DEJerman');
+    // Cincin fokus di dalam chip: baris chip HP adalah wadah gulir yang memotong outline di luar chip
+    for (const chip of chips) expect(chip.className).toContain('focus-visible:outline-offset-[-2px]');
     fireEvent.click(chips[2]);
     expect(scrolled).toEqual(['coverage']);
     cleanup();
@@ -375,6 +404,18 @@ describe('NusaNiaga: demo', () => {
     expect(within(faq).getByRole('link', { name: 'Tanya lewat WhatsApp' }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/6281234567890\?text=/);
   });
 
+  it('FAQ: cincin fokus di kartu (kartu overflow-hidden memotong outline tombol), tombol tanpa outline sendiri', () => {
+    const faq = section(demo(), 'faq');
+    for (const button of within(faq).getAllByRole('button')) {
+      expect(button.className).toContain('focus-visible:outline-none');
+      const card = button.closest('h3')!.parentElement!;
+      expect(card.className).toContain('overflow-hidden');
+      expect(card.className).toContain('has-[button:focus-visible]:outline-2');
+      expect(card.className).toContain('has-[button:focus-visible]:outline-offset-2');
+      expect(card.className).toContain('has-[button:focus-visible]:outline-(--tpl-accent-ink)');
+    }
+  });
+
   it('produk: daftar bisa digeser (region berlabel, bisa difokus), jenis & negara asal, tombol data teknis ke Kontak', () => {
     const products = section(demo(), 'products');
     const region = within(products).getByRole('region', { name: 'Daftar produk' });
@@ -383,6 +424,46 @@ describe('NusaNiaga: demo', () => {
     expect(products.textContent).toContain('Korea Selatan · Thailand');
     expect(products.textContent).toContain('Sak 25 kg · mulai 1 palet');
     expect(within(products).getByRole('link', { name: 'Minta data teknis' }).getAttribute('href')).toBe('#kontak');
+  });
+
+  it('produk: teks tombol dari CMS; dikosongkan → tanpa tombol (catatan tetap tampil)', () => {
+    const custom = section(demo({ products: { button_label: 'Minta katalog harga' } }), 'products');
+    expect(within(custom).getByRole('link', { name: 'Minta katalog harga' }).getAttribute('href')).toBe('#kontak');
+    expect(within(custom).queryByRole('link', { name: 'Minta data teknis' })).toBeNull();
+    cleanup();
+    const empty = section(demo({ products: { button_label: '' } }), 'products');
+    expect(empty.querySelectorAll('a')).toHaveLength(0);
+    expect(empty.textContent).toContain('Data teknis dan harga terbaru');
+    cleanup();
+    // Tanpa catatan DAN tanpa teks tombol → tanpa baris bawah sama sekali
+    const none = section(demo({ products: { button_label: '', note: '' } }), 'products');
+    expect(none.querySelector('.border-t.pt-8')).toBeNull();
+  });
+
+  it('produk: grid statis (tidak bisa digeser) bukan tab stop/region; rel yang bisa digeser tetap bisa difokus', () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    try {
+      // jsdom: scrollWidth = clientWidth = 0 → tidak bisa digeser (seperti grid tablet/desktop)
+      const grid = section(demo(), 'products');
+      expect(within(grid).queryByRole('region', { name: 'Daftar produk' })).toBeNull();
+      expect(grid.querySelector('[tabindex]')).toBeNull();
+      cleanup();
+      const wide = vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockReturnValue(1864);
+      const box = vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(390);
+      const rail = section(demo(), 'products');
+      expect(within(rail).getByRole('region', { name: 'Daftar produk' })).toHaveAttribute('tabindex', '0');
+      wide.mockRestore();
+      box.mockRestore();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('formulir penawaran: galat terfokus, lalu pesan WhatsApp tersusun (tanpa disimpan), "Ubah data" kembali', () => {
@@ -425,7 +506,10 @@ describe('NusaNiaga: demo', () => {
         'Lokasi pabrik: Tangerang',
       ].join('\n'),
     );
-    expect(within(contact).getByRole('heading', { name: 'Pesan siap dikirim', level: 3 })).toBeInTheDocument();
+    const done = within(contact).getByRole('heading', { name: 'Pesan siap dikirim', level: 3 });
+    // Fokus pindah ke judul hasil; formulir/hasil TIDAK di dalam aria-live (tidak dibacakan dua kali)
+    expect(done.closest('[aria-live]')).toBeNull();
+    expect(formEl.closest('[aria-live]')).toBeNull();
     expect(within(contact).getByRole('link', { name: 'Buka WhatsApp' }).getAttribute('href')).toBe(
       `https://wa.me/6281234567890?text=${encodeURIComponent(message)}`,
     );
@@ -580,6 +664,38 @@ describe('NusaNiaga: konten opsional kosong', () => {
     expect(section(demo({ advantages: { stats: [] } }), 'advantages').querySelector('dl')).toBeNull();
   });
 
+  it('angka besar: sel = wadah ukuran (huruf ikut lebar sel); 3 angka di samping foto bertumpuk di layar lebar', () => {
+    const cells = (container: HTMLElement) => Array.from(section(container, 'advantages').querySelectorAll('dl > div'));
+    const base = demo();
+    expect(cells(base)).toHaveLength(4);
+    for (const cell of cells(base)) {
+      expect(cell.className).toMatch(/(^|\s)@container(\s|$)/);
+      expect(cell.querySelector('dd:not([aria-hidden])')!.className).toContain('text-[clamp(28px,26cqi,68px)]');
+    }
+    cleanup();
+    const three = { stats: [{ value: '18', unit: 'negara' }, { value: '2.400+', unit: 'SKU' }, { value: '140+', unit: 'pabrik' }] };
+    const withPhoto = demo({ advantages: three });
+    expect(section(withPhoto, 'advantages').querySelector('dl')!.className).toContain('@5xl:grid-cols-1');
+    expect(cells(withPhoto).map((c) => c.className.includes('@5xl:border-b'))).toEqual([true, true, false]);
+    cleanup();
+    const noPhoto = demo({ advantages: { ...three, image: '' } });
+    expect(section(noPhoto, 'advantages').querySelector('dl')!.className).not.toContain('@5xl:grid-cols-1');
+    expect(section(noPhoto, 'advantages').querySelector('dl')!.className).toContain('@xl:grid-cols-3');
+  });
+
+  it('kontak: baris bertautan bergaris bawah & berubah warna saat disorot; jam operasional bukan tautan', () => {
+    const contact = section(demo(), 'contact');
+    const phone = within(contact).getByRole('link', { name: /Telepon/ });
+    expect(phone.getAttribute('href')).toMatch(/^tel:/);
+    const value = phone.querySelector('span.block.text-\\[15px\\]')!;
+    expect(value.textContent).toBe('081234567890');
+    expect(value.className).toContain('underline');
+    expect(value.className).toContain('group-hover:text-(--nn-ink)');
+    const hours = Array.from(contact.querySelectorAll('span.block.text-\\[15px\\]')).find((el) => el.textContent?.includes('Senin'))!;
+    expect(hours.closest('a')).toBeNull();
+    expect(hours.className).not.toContain('underline');
+  });
+
   it('daftar kosong menyembunyikan section dan item menunya; klien tanpa industri → tanpa strip', () => {
     const container = demo({
       products: { items: [] },
@@ -611,7 +727,13 @@ describe('NusaNiaga: konten opsional kosong', () => {
         fireEvent.submit(formEl);
       });
     };
-    const withEmail = demo({ contact: { whatsapp: '' } });
+    const withEmail = demo({ contact: { whatsapp: '', form_text: '' } });
+    // Tanpa nomor WhatsApp: tombol & kalimat bawaan tidak menjanjikan WhatsApp (teks tombol CMS diabaikan)
+    const submit = within(section(withEmail, 'contact')).getByRole('button', { name: 'Susun pesan' });
+    expect(submit).toHaveAttribute('type', 'submit');
+    expect(submit.querySelector('svg')).toBeNull();
+    expect(section(withEmail, 'contact').textContent).toContain('Formulir ini hanya menyusun pesan untuk tim kami; data tidak disimpan di website.');
+    expect(section(withEmail, 'contact').textContent).not.toMatch(/WhatsApp/);
     fill(section(withEmail, 'contact'));
     expect(within(section(withEmail, 'contact')).getByRole('link', { name: 'Kirim lewat email' }).getAttribute('href')).toMatch(
       /^mailto:penawaran@arunikaniaga\.test\?subject=Permintaan%20penawaran&body=Halo%20PT%20Arunika/,
@@ -621,6 +743,36 @@ describe('NusaNiaga: konten opsional kosong', () => {
     const neither = demo({ contact: { whatsapp: '', email: '' } });
     fill(section(neither, 'contact'));
     expect(within(section(neither, 'contact')).getByRole('button', { name: 'Salin pesan' })).toBeInTheDocument();
+  });
+
+  it('salin pesan: status "Pesan tersalin." diumumkan lewat satu baris aria-live kecil', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const contact = section(demo({ contact: { whatsapp: '', email: '' } }), 'contact');
+    const formEl = within(contact).getByRole('form');
+    for (const [label, value] of [
+      ['Nama', 'Rina'],
+      ['Perusahaan', 'PT Uji'],
+      ['Kebutuhan', 'Mesin'],
+      ['Perkiraan volume', '1 unit'],
+      ['Produk & spesifikasi', 'CNC'],
+      ['Lokasi pabrik / kota tujuan', 'Bekasi'],
+    ]) {
+      fireEvent.change(within(formEl).getByLabelText(label), { target: { value } });
+    }
+    act(() => {
+      fireEvent.submit(formEl);
+    });
+    const live = contact.querySelectorAll('[aria-live]');
+    expect(live).toHaveLength(1);
+    expect(live[0]).toHaveClass('sr-only');
+    expect(live[0].textContent).toBe('');
+    await act(async () => {
+      fireEvent.click(within(contact).getByRole('button', { name: 'Salin pesan' }));
+    });
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^Halo PT Arunika Niaga Internasional, saya ingin meminta penawaran\./));
+    expect(live[0].textContent).toBe('Pesan tersalin.');
+    expect(within(contact).getByRole('button', { name: 'Tersalin' })).toBeInTheDocument();
   });
 });
 

@@ -23,7 +23,12 @@ export function Faq({ m }: { m: DermagaModel }) {
   const baseId = useId();
   if (items.length === 0) return null;
   const eyebrow = text(faq, 'eyebrow');
-  const linkAction = m.linkOr(text(faq, 'link_url'), m.waWith(`Halo ${m.companyName}, saya ingin bertanya tentang pengiriman barang.`) ?? m.contactAction);
+  // Kosong → WhatsApp dengan pesan awal dari CMS; tanpa nomor WhatsApp tautan disembunyikan (labelnya "Tanya lewat
+  // WhatsApp"), sama seperti tautan kedua di Ajakan
+  const linkAction = m.linkOr(
+    text(faq, 'link_url'),
+    m.waWith(text(m.contact, 'whatsapp_message') || `Halo ${m.companyName}, saya ingin bertanya tentang pengiriman barang.`),
+  );
 
   return (
     <TemplateSection sectionKey="faq" className={SECTION_PAD}>
@@ -41,7 +46,7 @@ export function Faq({ m }: { m: DermagaModel }) {
           }`}
         >
           <div className={`min-w-0 ${eyebrow ? 'mt-7 @3xl:mt-10 @5xl:mt-0' : ''}`}>
-            <SectionHead layout="stack" eyebrow="" title={text(faq, 'title')} subtitle={text(faq, 'subtitle')} />
+            <SectionHead layout="stack" eyebrow="" title={text(faq, 'title')} subtitle={text(faq, 'subtitle')} srTitle={eyebrow || 'Tanya jawab'} />
           </div>
           <TextLink action={linkAction} label={text(faq, 'link_label')} className="order-last mt-6 justify-self-start @5xl:order-none @5xl:mt-8" />
         </div>
@@ -61,7 +66,7 @@ export function Faq({ m }: { m: DermagaModel }) {
                     onClick={() => setOpen(isOpen ? null : i)}
                     className={`group flex min-h-14 w-full items-center justify-between gap-6 py-5 text-left @3xl:py-6 ${C.ink}`}
                   >
-                    <span className={`${DISPLAY} text-[18px] font-medium leading-snug tracking-[-0.015em] transition-colors group-hover:text-(--tpl-accent-ink) @3xl:text-[20px]`}>
+                    <span className={`${DISPLAY} text-balance text-[18px] font-medium leading-snug tracking-[-0.015em] transition-colors group-hover:text-(--tpl-accent-ink) @3xl:text-[20px]`}>
                       {field(item, 'question')}
                     </span>
                     <span

@@ -19,8 +19,10 @@ import { PillLink, SectionHead, Tag, TextLink } from './ui';
 function FaqCard({ item, index, open, onToggle, baseId }: { item: ListItem; index: number; open: boolean; onToggle: () => void; baseId: string }) {
   const buttonId = `${baseId}-q${index}`;
   const panelId = `${baseId}-a${index}`;
+  // Cincin fokus digambar di KARTU, bukan di tombol: kartu ber-overflow-hidden memotong outline tombol yang menempel
+  // di tepinya (tidak ada penanda fokus sama sekali saat pertanyaan tertutup)
   return (
-    <div className={CARD}>
+    <div className={`${CARD} has-[button:focus-visible]:outline-2 has-[button:focus-visible]:outline-offset-2 has-[button:focus-visible]:outline-(--tpl-accent-ink)`}>
       <h3>
         <button
           id={buttonId}
@@ -28,7 +30,7 @@ function FaqCard({ item, index, open, onToggle, baseId }: { item: ListItem; inde
           aria-expanded={open}
           aria-controls={panelId}
           onClick={onToggle}
-          className="group flex min-h-16 w-full items-center justify-between gap-5 px-6 py-5 text-left"
+          className="group flex min-h-16 w-full items-center justify-between gap-5 px-6 py-5 text-left focus-visible:outline-none"
         >
           <span className={`min-w-0 ${C.ink} ${TYPE_N.h3}`}>{field(item, 'question')}</span>
           <span

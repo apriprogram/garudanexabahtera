@@ -115,7 +115,11 @@ export const dermagaSections: TemplateSection[] = [
         [
           t('name', 'Nama klien', { placeholder: 'mis. Rimbajati Furnitur', maxLength: 60 }),
           t('sector', 'Sektor · kota', { placeholder: 'mis. Furnitur · Jepara', maxLength: 40 }),
-          img('logo', 'Logo (opsional)', 'PNG/SVG transparan; tampil abu-abu. Kosongkan untuk menulis nama.'),
+          img(
+            'logo',
+            'Logo (opsional)',
+            'PNG/SVG transparan; tampil abu-abu. Nama klien tetap wajib diisi: dipakai sebagai teks pengganti logo dan tampil bila logo gagal dimuat. Kosongkan untuk menulis nama.',
+          ),
         ],
         12,
       ),
@@ -239,7 +243,7 @@ export const dermagaSections: TemplateSection[] = [
     toggleable: true,
     fields: [
       eyebrow('mis. Testimoni'),
-      title('mis. Kata pengirim yang sudah berangkat bersama kami'),
+      title('mis. Kata klien yang kirimannya sudah kami urus'),
       listField(
         'items',
         'Testimoni',

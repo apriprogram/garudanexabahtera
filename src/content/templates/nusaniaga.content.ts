@@ -19,7 +19,7 @@ export const content: TemplatePageContent = {
     ],
   },
   parts: [
-    { name: 'Menu atas', text: 'Logo atau simbol bawaan beserta nama perusahaan, tautan ke setiap bagian, dan tombol penawaran di blok warna aksen di ujung kanan.' },
+    { name: 'Menu atas', text: 'Logo atau simbol bawaan beserta nama perusahaan, tautan ke bagian utama (Layanan, Produk, Proses, Jangkauan, FAQ, Kontak), dan tombol penawaran di blok warna aksen di ujung kanan.' },
     {
       name: 'Hero bilah',
       text: 'Judul dengan bagian yang disorot warna aksen, deskripsi, dua tombol, chip negara asal yang menuju bagian Jangkauan, dan satu foto tegak yang tampil sebagai bilah-bilah vertikal.',
@@ -65,7 +65,7 @@ export const content: TemplatePageContent = {
     {
       question: 'Apakah {nama} cocok untuk distributor yang tidak mengimpor sendiri?',
       answer:
-        'Cocok. Bagian Jangkauan bisa diisi asal merek atau pabrik pemasok, dan langkah proses bisa diubah menjadi alur pemesanan dari gudang Anda. Semua teks dan jumlah langkah diatur lewat CMS.',
+        'Cocok. Bagian Jangkauan bisa diisi negara asal merek atau pabrik pemasok Anda, dan langkah proses bisa diubah menjadi alur pemesanan dari gudang Anda. Semua teks dan jumlah langkah diatur lewat CMS.',
     },
     {
       question: 'Bagaimana formulir permintaan penawaran bekerja?',

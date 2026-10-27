@@ -81,7 +81,7 @@ export const content: TemplatePageContent = {
     {
       question: 'Bisakah isi website ditulis dalam bahasa Inggris?',
       answer:
-        'Semua teks dari CMS bisa Anda tulis dalam bahasa Inggris, termasuk label spesifikasi dan nama bulan di kalender panen. Nama menu, label formulir, dan baris isi pesan WhatsApp tertanam di template dalam bahasa Indonesia; website dua bahasa dengan tombol ganti bahasa termasuk pekerjaan custom.',
+        'Semua teks dari CMS bisa Anda tulis dalam bahasa Inggris, termasuk label spesifikasi serta nama bulan dan keterangan di kalender panen. Nama menu mengikuti label kecil tiap bagian bila hanya satu kata. Judul kolom footer, label kontak seperti Alamat dan Jam kerja, label formulir, dan baris isi pesan WhatsApp tertanam di template dalam bahasa Indonesia; website dua bahasa dengan tombol ganti bahasa termasuk pekerjaan custom.',
     },
     {
       question: 'Bagaimana kalau saya hanya menjual satu komoditas, misalnya kopi?',

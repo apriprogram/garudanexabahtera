@@ -10,7 +10,7 @@ import { BrandMark } from '../shared/media';
 import { ActionLink } from '../shared/Shell';
 import { useActiveSection } from './hooks';
 import { DermagaMark } from './marks';
-import { pad2, type DermagaModel } from './model';
+import type { DermagaModel } from './model';
 import { C, DISPLAY } from './styles';
 import { ButtonLink } from './ui';
 
@@ -78,8 +78,10 @@ export function Header({ m }: { m: DermagaModel }) {
             {m.nav.length > 0 && (
               <nav aria-label="Menu utama" className="hidden self-stretch @6xl:flex">
                 <ul className="flex items-stretch">
-                  {m.nav.map((item, i) => {
+                  {m.nav.map((item) => {
                     const isCurrent = active === item.key;
+                    // Nomor = nomor label section yang sama ("07 / FAQ"), bukan urutan menu; section tanpa label → tanpa nomor
+                    const number = m.number(item.key);
                     return (
                       <li key={item.key} className="flex">
                         <ActionLink
@@ -89,9 +91,11 @@ export function Header({ m }: { m: DermagaModel }) {
                             isCurrent ? `${C.ink} after:opacity-100` : 'text-[#0F1D20]/75 after:opacity-0 hover:text-[#0F1D20]'
                           }`}
                         >
-                          <span aria-hidden className="hidden font-mono text-[11px] tabular-nums text-(--tpl-accent-ink) @7xl:inline">
-                            {pad2(i + 1)}
-                          </span>
+                          {number && (
+                            <span aria-hidden className="hidden font-mono text-[11px] tabular-nums text-(--tpl-accent-ink) @7xl:inline">
+                              {number}
+                            </span>
+                          )}
                           {item.label}
                         </ActionLink>
                       </li>
@@ -128,7 +132,7 @@ export function Header({ m }: { m: DermagaModel }) {
         >
           <div className={`${CONTAINER} pb-6 pt-1`}>
             <ul className="divide-y divide-[#0F1D20]/[0.1]">
-              {m.nav.map((item, i) => (
+              {m.nav.map((item) => (
                 <li key={item.key}>
                   <ActionLink
                     action={{ kind: 'section', target: item.key }}
@@ -136,8 +140,9 @@ export function Header({ m }: { m: DermagaModel }) {
                     aria-current={active === item.key ? 'true' : undefined}
                     className={`flex min-h-14 items-center gap-4 py-2 transition-colors hover:text-(--tpl-accent-ink) ${C.ink}`}
                   >
-                    <span aria-hidden className="w-6 font-mono text-[12px] tabular-nums text-(--tpl-accent-ink)">
-                      {pad2(i + 1)}
+                    {/* Tetap dirender walau kosong: label menu sejajar */}
+                    <span aria-hidden className="w-6 shrink-0 font-mono text-[12px] tabular-nums text-(--tpl-accent-ink)">
+                      {m.number(item.key)}
                     </span>
                     <span className={`${DISPLAY} text-[20px] font-medium tracking-[-0.02em]`}>{item.label}</span>
                   </ActionLink>

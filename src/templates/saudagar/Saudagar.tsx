@@ -53,7 +53,7 @@ export default function Saudagar({ content, preview = false, motion }: TemplateR
             {m.shown('gallery') && <Gallery m={m} />}
             {m.shown('testimonials') && <Testimonials m={m} />}
             {m.shown('faq') && <Faq m={m} />}
-            {isEnabled(m.cta) && <Cta m={m} />}
+            {m.shown('cta') && <Cta m={m} />}
             {isEnabled(m.contact) && <Contact m={m} preset={preset} />}
           </main>
           {isEnabled(m.footer) && <Footer m={m} />}

@@ -150,6 +150,11 @@ export const nusaniagaSections: TemplateSection[] = [
       title('mis. Bahan baku, mesin, dan suku cadang yang kami pasok'),
       subtitle(),
       t('note', 'Catatan di bawah daftar', { placeholder: 'mis. Data teknis dan harga dikirim setelah formulir diisi.', maxLength: 160 }),
+      t('button_label', 'Teks tombol di bawah daftar', {
+        placeholder: 'mis. Minta data teknis',
+        maxLength: 30,
+        help: 'Tombol menuju formulir penawaran. Kosongkan untuk menyembunyikan.',
+      }),
       listField(
         'items',
         'Daftar produk',
@@ -246,7 +251,7 @@ export const nusaniagaSections: TemplateSection[] = [
         'Angka',
         'Angka',
         [
-          t('value', 'Angka', { placeholder: 'mis. 2.400+', maxLength: 12, help: 'mis. 2.400+ atau 6.500' }),
+          t('value', 'Angka', { placeholder: 'mis. 2.400+', maxLength: 8, help: 'Maks. 8 karakter, mis. 2.400+ atau 6.500' }),
           t('unit', 'Satuan', { placeholder: 'mis. SKU', maxLength: 16, help: 'Satuan di chip, mis. negara, SKU, m²' }),
           t('label', 'Keterangan', { placeholder: 'mis. Bahan baku, mesin, dan suku cadang', maxLength: 60 }),
         ],
@@ -349,7 +354,7 @@ export const nusaniagaSections: TemplateSection[] = [
         help: 'Tampil di bawah tombol formulir. Sebaiknya tetap menyebut bahwa data tidak disimpan di website.',
       }),
       t('form_button', 'Teks tombol formulir', { placeholder: 'mis. Susun pesan WhatsApp', maxLength: 30 }),
-      listField('form_needs', 'Pilihan Kebutuhan di formulir', 'Pilihan', [t('label', 'Pilihan', { placeholder: 'mis. Bahan baku', maxLength: 30 })], 6),
+      listField('form_needs', 'Pilihan kebutuhan di formulir', 'Pilihan', [t('label', 'Pilihan', { placeholder: 'mis. Bahan baku', maxLength: 30 })], 6),
     ],
   },
   {

@@ -9,7 +9,7 @@ import { stagger } from '../shared/motion';
 import { ActionLink, TemplateSection } from '../shared/Shell';
 import { mailHref, telHref, text, type LinkAction } from '../shared/utils';
 import { Inquiry } from './Inquiry';
-import type { DermagaModel } from './model';
+import { displayPhone, type DermagaModel } from './model';
 import { C, GRID_GAP, MONO_LABEL, SECTION_PAD } from './styles';
 import { SectionHead, SectionLabel, TextLink } from './ui';
 
@@ -32,15 +32,17 @@ export function Contact({ m }: { m: DermagaModel }) {
   const mapLink: LinkAction | null = m.map.link ? { kind: 'external', href: m.map.link } : null;
   const rows: Row[] = [
     address && { key: 'address', label: 'Alamat', value: address, action: null },
-    phone && { key: 'phone', label: 'Telepon', value: phone, action: tel ? ({ kind: 'external', href: tel } as LinkAction) : null },
+    phone && { key: 'phone', label: 'Telepon', value: displayPhone(phone), action: tel ? ({ kind: 'external', href: tel } as LinkAction) : null },
     email && { key: 'email', label: 'Email', value: email, action: mail ? ({ kind: 'external', href: mail } as LinkAction) : null },
-    m.waAction && m.whatsapp && { key: 'whatsapp', label: 'WhatsApp', value: m.whatsapp, action: m.waAction },
+    m.waAction && m.whatsapp && { key: 'whatsapp', label: 'WhatsApp', value: displayPhone(m.whatsapp), action: m.waAction },
     hours && { key: 'hours', label: 'Jam kerja', value: hours, action: null },
   ].filter((row): row is Row => !!row);
 
   return (
     <TemplateSection sectionKey="contact" className={SECTION_PAD}>
-      <div className={`${CONTAINER} grid grid-cols-1 @5xl:grid-cols-12 ${GRID_GAP}`}>
+      {/* Layar lebar: baris 3 (1fr) menyerap sisa tinggi formulir yang membentang baris 2-3, jadi baris kontak langsung di
+          bawah deskripsi (tanpa celah kosong saat isian formulir bertumpuk satu kolom) */}
+      <div className={`${CONTAINER} grid grid-cols-1 @5xl:grid-cols-12 @5xl:grid-rows-[auto_auto_1fr] ${GRID_GAP}`}>
         {eyebrow && (
           <Reveal variant="fade" className="@5xl:col-span-12 @5xl:row-start-1">
             <SectionLabel label={eyebrow} number={m.number('contact')} />
@@ -64,7 +66,11 @@ export function Contact({ m }: { m: DermagaModel }) {
                     <dt className={`${MONO_LABEL} ${C.muted}`}>{row.label}</dt>
                     <dd className={`ml-auto max-w-[34ch] text-balance text-right text-[15px] leading-snug ${C.ink} [overflow-wrap:anywhere]`}>
                       {row.action ? (
-                        <ActionLink action={row.action} className="underline decoration-[#0F1D20]/25 underline-offset-4 transition-colors hover:text-(--tpl-accent-ink) hover:decoration-(--tpl-accent)">
+                        // Area sentuh ± 47px (py-3.5) tanpa menambah tinggi baris (-my-3.5)
+                        <ActionLink
+                          action={row.action}
+                          className="-my-3.5 inline-block py-3.5 underline decoration-[#0F1D20]/25 underline-offset-4 transition-colors hover:text-(--tpl-accent-ink) hover:decoration-(--tpl-accent)"
+                        >
                           {row.value}
                         </ActionLink>
                       ) : (

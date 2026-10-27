@@ -16,20 +16,20 @@ const HERO: KitPhotoSpec = [
   'nusaniaga-hero',
   1440,
   1800,
-  'Lorong gudang dengan rak palet tinggi berisi barang industri yang tertata rapi',
+  'Lorong gudang dengan rak palet tinggi berisi kardus yang tertata rapi',
 ];
 
 const BASE = definePhotos({
   scenes: [
     ['nusaniaga-resin', 1200, 750, 'Butiran resin plastik putih bertumpuk di atas permukaan gelap'],
-    ['nusaniaga-baja', 1200, 750, 'Gulungan baja lembaran tersusun berjajar di area penyimpanan gudang'],
+    ['nusaniaga-baja', 1200, 750, 'Dua gulungan baja lembaran diikat rantai di atas trailer truk'],
     ['nusaniaga-benang', 1200, 750, 'Gulungan benang industri putih tersusun rapi di rak pabrik tekstil'],
     ['nusaniaga-mesin-injeksi', 1200, 750, 'Deretan mesin injeksi plastik dengan lengan robot di lantai produksi pabrik'],
     ['nusaniaga-cnc', 1200, 750, 'Mesin CNC memotong benda kerja logam dengan semburan cairan pendingin'],
     ['nusaniaga-bearing', 1200, 750, 'Tiga bearing bola dengan seal karet hitam di atas meja putih'],
-    ['nusaniaga-gudang', 1200, 750, 'Petugas gudang mencatat hasil pemeriksaan barang pada papan klip'],
-    ['nusaniaga-pelabuhan', 1600, 1000, 'Crane pelabuhan membongkar kontainer dari kapal di dermaga pada siang hari'],
-    ['nusaniaga-teknisi', 1200, 750, 'Teknisi mengatur panel kontrol mesin CNC di pabrik pelanggan'],
+    ['nusaniaga-gudang', 1200, 750, 'Petugas gudang mencatat pada papan klip'],
+    ['nusaniaga-pelabuhan', 1600, 1000, 'Crane kapal mengangkat kontainer dari kapal kargo di pelabuhan pada siang hari'],
+    ['nusaniaga-teknisi', 1200, 750, 'Teknisi mengatur panel kontrol mesin CNC'],
   ],
   portraits: [
     ['nusaniaga-portrait-1', 480, 480, 'Potret pria berkaus hitam tersenyum di selasar kantor'],

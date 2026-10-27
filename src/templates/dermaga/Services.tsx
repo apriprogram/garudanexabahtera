@@ -19,7 +19,13 @@ export function Services({ m }: { m: DermagaModel }) {
   return (
     <TemplateSection sectionKey="services" className={SECTION_PAD}>
       <div className={CONTAINER}>
-        <SectionHead eyebrow={text(services, 'eyebrow')} number={m.number('services')} title={text(services, 'title')} subtitle={text(services, 'subtitle')} />
+        <SectionHead
+          eyebrow={text(services, 'eyebrow')}
+          number={m.number('services')}
+          title={text(services, 'title')}
+          subtitle={text(services, 'subtitle')}
+          srTitle={text(services, 'eyebrow') || 'Layanan'}
+        />
         <ul className="mt-10 grid gap-5 @3xl:mt-14 @3xl:grid-cols-2 @5xl:grid-cols-3 @5xl:gap-6">
           {items.map((item, i) => {
             const title = field(item, 'title');
@@ -51,8 +57,8 @@ export function Services({ m }: { m: DermagaModel }) {
                     {tags.length > 0 && (
                       <div className="mt-auto pt-6">
                         <ul aria-label={`Ringkasan ${title}`} className={`flex flex-wrap gap-x-4 gap-y-1.5 border-t pt-4 ${C.line}`}>
-                          {tags.map((tag) => (
-                            <li key={tag} className={`font-mono text-[12px] font-medium uppercase tracking-[0.06em] ${C.muted}`}>
+                          {tags.map((tag, j) => (
+                            <li key={`${tag}-${j}`} className={`font-mono text-[12px] font-medium uppercase tracking-[0.06em] ${C.muted}`}>
                               {tag}
                             </li>
                           ))}

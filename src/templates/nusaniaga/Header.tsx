@@ -21,7 +21,7 @@ export function Logo({ m }: { m: NusaNiagaModel }) {
       name={m.companyName}
       logo={m.logo}
       mark={<NusaNiagaMark className="h-8 w-8 text-(--tpl-accent)" />}
-      nameClassName={`${DISPLAY} text-[16px] leading-[1.2] font-bold! tracking-[-0.02em]! @3xl:text-[17px] ${C.ink}`}
+      nameClassName={`${DISPLAY} text-[15px] leading-[1.2] font-bold! tracking-[-0.02em]! @md:text-[16px] @3xl:text-[17px] ${C.ink}`}
     />
   );
 }
@@ -63,7 +63,7 @@ export function Header({ m }: { m: NusaNiagaModel }) {
 
   return (
     <header ref={headerRef} className={`sticky top-[var(--tpl-sticky-top,0px)] z-30 overflow-x-clip border-b bg-white ${LINE}`}>
-      <div className={`${CONTAINER} flex h-16 items-stretch gap-6 @5xl:h-[72px] @7xl:h-20`}>
+      <div className={`${CONTAINER} flex h-16 items-stretch gap-4 @md:gap-6 @5xl:h-[72px] @7xl:h-20`}>
         <ActionLink
           action={{ kind: 'section', target: 'hero' }}
           onNavigate={close}

@@ -27,14 +27,20 @@ export function Clients({ m }: { m: DermagaModel }) {
           {/* HP: judul panjang terbungkus 2 baris → garis disembunyikan supaya tidak menggantung di baris pertama */}
           {title && <span aria-hidden className="hidden h-px min-w-8 flex-1 bg-[#0F1D20]/[0.14] @3xl:block" />}
         </div>
-        <Reveal variant="fade" className="mt-6 overflow-hidden border-b border-[#0F1D20]/[0.14]">
-          <ul className="-ml-px grid grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-6">
+        {/* Tiap sel menggambar garis atas & bawahnya sendiri (-mt-px: baris bertetangga berbagi satu garis), jadi baris
+            terakhir yang tidak penuh tetap tertutup dan slot kosong tanpa garis. Garis kiri kolom pertama disembunyikan.
+            Warna garis pejal #DDDFE0 (= tinta 14% di atas putih): garis yang bertumpuk tidak menjadi lebih gelap. */}
+        <Reveal variant="fade" className="mt-6 overflow-hidden">
+          <ul className="-ml-px grid grid-cols-2 pt-px @3xl:grid-cols-3 @5xl:grid-cols-6">
             {items.map((item, i) => {
               const name = field(item, 'name');
               const logo = field(item, 'logo');
               const sector = field(item, 'sector');
               return (
-                <li key={`${name}-${i}`} className="flex min-h-[112px] min-w-0 flex-col justify-between gap-4 border-l border-t border-[#0F1D20]/[0.14] px-4 py-5 @3xl:px-5 @3xl:py-6">
+                <li
+                  key={`${name}-${i}`}
+                  className="-mt-px flex min-h-[112px] min-w-0 flex-col justify-between gap-4 border-y border-l border-[#DDDFE0] px-4 py-5 @3xl:px-5 @3xl:py-6"
+                >
                   {hasImage(logo) ? (
                     <ClientLogo name={name} logo={logo} className="h-7" />
                   ) : (
@@ -107,12 +113,15 @@ export function About({ m }: { m: DermagaModel }) {
             withPhoto ? '@5xl:col-span-5 @5xl:col-start-8' : '@5xl:col-span-8'
           } ${withPhoto ? 'mt-8' : eyebrow ? 'mt-7' : ''}`}
         >
-          {title && (
+          {title ? (
             // text-pretty (bukan balance): di kolom 5/12 balance memecah "Satu tim untuk / dokumen, / gudang, …", pretty
-            // mencegah satu kata menggantung di baris terakhir
-            <Reveal as="h2" delay={80} className={`max-w-[20ch] ${TYPE_D.h2} text-pretty! ${C.ink}`}>
+            // mencegah satu kata menggantung di baris terakhir. Wadah 1024-1151px: kolom 5/12 terlalu sempit untuk 50px →
+            // 42px supaya "dokumen, gudang," tetap sebaris.
+            <Reveal as="h2" delay={80} className={`max-w-[20ch] ${TYPE_D.h2} text-pretty! ${C.ink} ${withPhoto ? '@5xl:@max-6xl:text-[42px]!' : ''}`}>
               {title}
             </Reveal>
+          ) : (
+            <h2 className="sr-only">{eyebrow || 'Tentang kami'}</h2>
           )}
           {body.length > 0 && (
             <Reveal delay={160} className={`mt-6 space-y-4 ${TYPE_D.body} ${C.muted} @3xl:text-[16px]`}>

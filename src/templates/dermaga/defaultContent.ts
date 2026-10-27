@@ -3,7 +3,7 @@
 // Semua salinan berbahasa Indonesia, tanpa klaim izin, legalitas, atau sertifikat: proses kerja yang diceritakan, bukan
 // kredensial. Formulir permintaan penawaran hanya menyusun pesan WhatsApp; data tidak disimpan di website. Tidak ada
 // pelacakan kiriman real-time; tarif & jadwal kapal adalah teks biasa. Angka 38 negara di hero = jumlah negara di pasar
-// (9 + 6 + 7 + 11 + 5); ubah keduanya bersamaan.
+// (9 + 6 + 7 + 11 + 5), dan 3 pelabuhan muat = pelabuhan yang disebut di deskripsi pasar; ubah bersamaan.
 import type { SiteContent } from '../types';
 import { dermagaPhoto } from './photos';
 
@@ -41,7 +41,7 @@ export const dermagaContent: SiteContent = {
     stats: [
       { value: '1.200+', label: 'Pengiriman per tahun' },
       { value: '38', label: 'Negara tujuan' },
-      { value: '6', label: 'Pelabuhan muat' },
+      { value: '3', label: 'Pelabuhan muat' },
       { value: '16 thn', label: 'Pengalaman tim' },
     ],
   },
@@ -99,7 +99,7 @@ export const dermagaContent: SiteContent = {
       {
         title: 'Dokumen ekspor & impor',
         description:
-          'Invoice, packing list, PEB atau PIB, surat keterangan asal, dan bill of lading disusun bersama tim Anda dan diperiksa ulang sebelum kapal berangkat.',
+          'Invoice, packing list, PEB atau PIB, permohonan surat keterangan asal, dan draf bill of lading disiapkan bersama tim Anda dan diperiksa ulang sebelum diajukan.',
         tags: 'PEB · PIB · COO · B/L',
         image: dermagaPhoto('dokumen'),
       },
@@ -184,7 +184,7 @@ export const dermagaContent: SiteContent = {
     subtitle: 'Sebagian pekerjaan harian tim kami, dari menata palet sampai melepas kapal.',
     items: [
       { image: dermagaPhoto('galeri-terminal'), caption: 'Lapangan penumpukan peti kemas di terminal tepi laut' },
-      { image: dermagaPhoto('galeri-forklift'), caption: 'Forklift memindahkan palet di gudang konsolidasi' },
+      { image: dermagaPhoto('galeri-forklift'), caption: 'Forklift siaga di antara rak dan tumpukan barang di gudang' },
       { image: dermagaPhoto('galeri-bolder'), caption: 'Tali tambat kapal terikat di bolder dermaga' },
       { image: dermagaPhoto('galeri-kontainer'), caption: 'Kontainer kosong menunggu giliran dimuat' },
       { image: dermagaPhoto('galeri-tim'), caption: 'Tim operasional menyusun jadwal muat pekan ini' },
@@ -193,12 +193,12 @@ export const dermagaContent: SiteContent = {
   testimonials: {
     enabled: true,
     eyebrow: 'Testimoni',
-    title: 'Kata pengirim yang barangnya sudah kami berangkatkan',
+    title: 'Kata klien yang kirimannya sudah kami urus',
     items: [
       {
         name: 'Hendra Wiratama',
         role: 'Manajer ekspor, produsen furnitur, Jepara',
-        route: 'Semarang → Rotterdam · FCL 40 kaki',
+        route: 'Semarang → Rotterdam · FCL\u00a040\u00a0kaki',
         quote:
           'Dulu kami mengurus pelayaran, dokumen, dan truk dengan tiga pihak berbeda. Sekarang cukup satu grup WhatsApp, dan foto muat selalu kami terima sebelum kontainer disegel.',
         photo: dermagaPhoto('portrait-1'),
@@ -206,7 +206,7 @@ export const dermagaContent: SiteContent = {
       {
         name: 'Sari Puspitasari',
         role: 'Pemilik usaha kopi sangrai, Malang',
-        route: 'Surabaya → Busan · LCL 6 CBM',
+        route: 'Surabaya → Busan · LCL\u00a06\u00a0CBM',
         quote:
           'Volume kami belum cukup untuk satu kontainer. Lewat konsolidasi LCL, kopi kami tetap bisa berangkat rutin dengan biaya yang masuk akal untuk usaha kecil.',
         photo: dermagaPhoto('portrait-2'),
@@ -214,7 +214,7 @@ export const dermagaContent: SiteContent = {
       {
         name: 'Yohanes Halim',
         role: 'Kepala pengadaan, distributor suku cadang, Pasuruan',
-        route: 'Ningbo → Surabaya · FCL 20 kaki',
+        route: 'Ningbo → Surabaya · FCL\u00a020\u00a0kaki',
         quote:
           'Yang paling membantu adalah daftar dokumen yang jelas sejak awal. Biaya yang ditagihkan sama dengan rincian di penawaran, jadi anggaran kami tidak meleset.',
         photo: dermagaPhoto('portrait-3'),
@@ -232,15 +232,15 @@ export const dermagaContent: SiteContent = {
       {
         question: 'Berapa volume minimum untuk dikirim?',
         answer:
-          'Untuk LCL tidak ada minimum; biaya dihitung per meter kubik atau per ton, mana yang lebih besar. Mulai sekitar 15 CBM, kontainer FCL 20 kaki biasanya lebih hemat. Kami bantu hitung keduanya sebelum Anda memutuskan.',
+          'Untuk LCL tidak perlu satu kontainer penuh; biaya dihitung per meter kubik atau per ton, mana yang lebih besar, umumnya dengan tagihan minimum 1\u00a0CBM. Mulai sekitar 15\u00a0CBM, kontainer FCL 20 kaki biasanya lebih hemat. Kami bantu hitung keduanya sebelum Anda memutuskan.',
       },
       {
         question: 'Incoterm apa yang sebaiknya saya pakai?',
         answer:
-          'Tergantung siapa yang menanggung ongkos dan risiko di setiap titik. Banyak eksportir baru memulai dengan FOB, sementara pembeli yang ingin menerima barang di gudangnya memilih CIF atau DAP. Kami jelaskan bedanya saat konsultasi.',
+          'Tergantung siapa yang menanggung ongkos dan risiko di setiap titik. Banyak eksportir baru memulai dengan FOB, sementara pembeli yang ingin barang diantar sampai gudangnya memilih DAP atau DDP; dengan CFR atau CIF, ongkos kirim dari penjual hanya sampai pelabuhan tujuan. Kami jelaskan bedanya saat konsultasi.',
       },
       {
-        question: 'Apakah dokumen ekspor bisa disiapkan oleh tim Anda?',
+        question: 'Apakah dokumen ekspor bisa ikut disiapkan?',
         answer:
           'Bisa. Kami menyusun invoice, packing list, dan draf dokumen pengapalan bersama tim Anda, lalu memeriksanya sebelum diajukan. Data dan izin usaha tetap atas nama perusahaan Anda sebagai pengirim.',
       },

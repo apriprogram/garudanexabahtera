@@ -32,14 +32,15 @@ export function Markets({ m }: { m: DermagaModel }) {
       number={m.number('markets')}
       title={text(markets, 'title')}
       subtitle={text(markets, 'subtitle')}
+      srTitle={text(markets, 'eyebrow') || 'Pasar & rute'}
     />
   );
   const termBlock = terms.length > 0 && (
     <Reveal delay={200}>
       {termsLabel && <p className={`${MONO_LABEL} text-white/80`}>{termsLabel}</p>}
       <ul aria-label={termsLabel || 'Incoterm'} className={`flex flex-wrap gap-2 ${termsLabel ? 'mt-4' : ''}`}>
-        {terms.map((term) => (
-          <li key={term} className="inline-flex h-8 items-center rounded-[2px] px-2.5 font-mono text-[12.5px] font-medium text-white ring-1 ring-inset ring-white/30">
+        {terms.map((term, j) => (
+          <li key={`${term}-${j}`} className="inline-flex h-8 items-center rounded-[2px] px-2.5 font-mono text-[12.5px] font-medium text-white ring-1 ring-inset ring-white/30">
             {term}
           </li>
         ))}
@@ -115,7 +116,13 @@ export function Process({ m }: { m: DermagaModel }) {
   return (
     <TemplateSection sectionKey="process" className={SECTION_PAD}>
       <div className={CONTAINER}>
-        <SectionHead eyebrow={text(process, 'eyebrow')} number={m.number('process')} title={text(process, 'title')} subtitle={text(process, 'subtitle')} />
+        <SectionHead
+          eyebrow={text(process, 'eyebrow')}
+          number={m.number('process')}
+          title={text(process, 'title')}
+          subtitle={text(process, 'subtitle')}
+          srTitle={text(process, 'eyebrow') || 'Proses kerja'}
+        />
         <ol className="mt-10 border-t border-[#0F1D20] @3xl:mt-14">
           {steps.map((item, i) => (
             <Reveal

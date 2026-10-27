@@ -173,6 +173,17 @@ describe('Saudagar: skema & konten bawaan', () => {
     expect(text).toMatch(/harga komoditas tidak diperbarui otomatis/);
     expect(text).toMatch(/Pembayaran tidak dilakukan lewat website/);
     expect(text).toContain('.example');
+    // BWP pala = biji pecah/afkir untuk digiling, bukan bubuk
+    expect(text).not.toMatch(/BWP \(bubuk\)/);
+  });
+
+  it('foto tab Kakao & Rempah berbeda dari lengkung samping hero', () => {
+    const c = def.defaultContent;
+    const categories = c.products.categories as Record<string, string>[];
+    const image = (name: string) => categories.find((cat) => cat.name === name)!.image;
+    expect(image('Kakao')).not.toBe(c.hero.image_left);
+    expect(image('Rempah')).not.toBe(c.hero.image_right);
+    expect(new Set(categories.map((cat) => cat.image)).size).toBe(categories.length);
   });
 });
 
@@ -205,6 +216,35 @@ describe('Saudagar: helper model', () => {
     ]);
     const less = resolveContent(def, { quality: { steps: [] }, gallery: { enabled: false }, products: { items: [] } });
     expect(navItems(less).map((i) => i.key)).toEqual(['about', 'season', 'markets', 'contact']);
+    // Nama menu = label kecil section bila satu kata ≤ 12 huruf; lebih panjang / beberapa kata → bawaan; Kontak tetap
+    const own = resolveContent(def, {
+      products: { eyebrow: 'Products' },
+      quality: { eyebrow: 'Sertifikasinya' },
+      about: { eyebrow: 'About us' },
+      gallery: { eyebrow: '' },
+      contact: { eyebrow: 'Contact' },
+    });
+    expect(navItems(own).map((i) => i.label)).toEqual(['Tentang', 'Products', 'Mutu', 'Musim', 'Pasar', 'Galeri', 'Kontak']);
+  });
+
+  it('section tampil = syarat komponen: Tentang & ajakan yang kosong tidak ditautkan dari menu atau hero', () => {
+    const emptyAbout = resolveContent(def, { about: { title: '', body: '', image: '', stats: [], founder_name: 'Andi' } });
+    expect(sectionShown(emptyAbout, 'about')).toBe(false);
+    expect(navItems(emptyAbout).map((i) => i.key)).not.toContain('about');
+    const noProducts = readSaudagar(resolveContent(def, { about: { title: '', body: '', image: '', stats: [] }, products: { enabled: false } }));
+    expect(noProducts.secondaryAction).toBeNull();
+    expect(sectionShown(resolveContent(def, { about: { title: '', body: '', image: '', stats: [{ value: '15' }] } }), 'about')).toBe(true);
+
+    const emptyCta = resolveContent(def, { cta: { title: '', subtitle: '', button_label: '' }, hero: { secondary_url: '#ajakan' } });
+    expect(sectionShown(emptyCta, 'cta')).toBe(false);
+    expect(readSaudagar(emptyCta).secondaryAction).toEqual({ kind: 'section', target: 'products' });
+    const container = demo({ cta: { title: '', subtitle: '', button_label: '' }, hero: { secondary_url: '#ajakan' } });
+    expect(sectionKeys(container)).not.toContain('cta');
+    expect(container.querySelector('a[href="#ajakan"], a[href="#cta"]')).toBeNull();
+    cleanup();
+    // Hanya tombol: tampil bila tombolnya punya tujuan (formulir Kontak / WhatsApp)
+    expect(sectionShown(resolveContent(def, { cta: { title: '', subtitle: '' } }), 'cta')).toBe(true);
+    expect(sectionShown(resolveContent(def, { cta: { title: '', subtitle: '' }, contact: { enabled: false, whatsapp: '' } }), 'cta')).toBe(false);
   });
 
   it('tujuan tautan: anchor Indonesia dan kunci section; section tersembunyi → cadangan', () => {
@@ -270,6 +310,14 @@ describe('Saudagar: helper model', () => {
       items: [{ category: 'kopi', name: 'Arabika' }, { category: 'Lada', name: 'Lada putih' }, { name: 'Tanpa kategori' }, { category: 'Teh' }],
     } as unknown as SiteContent['products']);
     expect(extra.map((t) => `${t.name}:${t.items.length}`)).toEqual(['Kopi:1', 'Lada:1', 'Lainnya:1']);
+    // Kartu tanpa kategori masuk ke kategori "Lainnya" yang sudah ada (bukan tab "Lainnya" kedua)
+    const other = productTabs({
+      categories: [{ name: 'Kopi' }, { name: 'Lainnya' }],
+      items: [{ category: 'Kopi', name: 'Arabika' }, { category: 'Lainnya', name: 'Vanili' }, { name: 'Lada' }],
+    } as unknown as SiteContent['products']);
+    expect(other.map((t) => `${t.name}:${t.items.length}`)).toEqual(['Kopi:1', 'Lainnya:2']);
+    const loose = productTabs({ items: [{ name: 'Lada' }, { category: 'lainnya', name: 'Vanili' }] } as unknown as SiteContent['products']);
+    expect(loose.map((t) => `${t.name}:${t.items.length}`)).toEqual(['Lainnya:2']);
     const one = productTabs({ categories: [{ name: 'Kopi' }], items: [{ category: 'Kopi', name: 'Arabika' }] } as unknown as SiteContent['products']);
     expect(one).toHaveLength(1);
     expect(productTabs({ items: 'x' } as unknown as SiteContent['products'])).toEqual([]);
@@ -370,6 +418,17 @@ describe('Saudagar: demo', () => {
       'Minta penawaran|#kontak',
     ]);
     expect(header.querySelector('svg[viewBox="0 0 32 32"]'), 'SaudagarMark').not.toBeNull();
+    // Nama perusahaan panjang: tautan mengisi sel tengah (HP: terpotong "…" di dalam sel, tidak menimpa tombol);
+    // masthead lebar: nama maks. dua baris, kolom menu selebar isinya (tidak pernah menimpa nama)
+    const home = within(header).getByRole('link', { name: 'PT Saudagar Hasil Bumi, ke awal halaman' });
+    expect(home.className).toContain('justify-self-stretch');
+    const [phoneName, stackedName] = Array.from(home.querySelectorAll(':scope > span > span'));
+    expect(phoneName.className).toContain('truncate');
+    expect(stackedName.className).toContain('line-clamp-2');
+    expect(stackedName.className).toContain('max-w-[18rem]');
+    expect(home.parentElement!.className).toContain('@7xl:grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)]');
+    // Garis menu aktif memakai tinta tema (kontras di kertas), bukan aksen mentah
+    expect(within(nav).getByRole('link', { name: 'Musim' }).className).toContain('after:bg-(--sg-ink)');
     fireEvent.click(within(nav).getByRole('link', { name: 'Musim' }));
     expect(scrolled).toEqual(['season']);
     const toggle = within(header).getByRole('button', { name: 'Buka menu' });
@@ -407,10 +466,37 @@ describe('Saudagar: demo', () => {
     const cells = (panel: Element) => Array.from(panel.querySelectorAll('ul > li')).map((li) => li.className.includes('@3xl:col-span-2'));
     expect(cells(panels[2])).toEqual([false, false, true]);
     expect(cells(panels[0])).toEqual([false, false]);
-    // Kartu: baris spesifikasi berurutan
+    // Kartu: baris spesifikasi berurutan; kartu sebaris berbagi baris subgrid (kepala · spesifikasi · tautan)
     const card = products.querySelector('article')!;
     expect(Array.from(card.querySelectorAll('dt')).map((d) => d.textContent)).toEqual(['Grade', 'Asal', 'Kadar air', 'Kemasan', 'Min. pesanan']);
+    expect(card.className).toContain('@3xl:grid-rows-subgrid');
+    expect(card.parentElement!.className).toContain('@3xl:grid-rows-subgrid');
+    expect(card.querySelector('dl')!.className).toContain('@3xl:row-start-2');
     expect(products.textContent).toContain('harga komoditas tidak diperbarui otomatis');
+    // Cincin fokus tab di dalam tab (rel overflow memotongnya), garis tab aktif = tinta tema (kontras), bukan aksen mentah
+    for (const tab of tabs) expect(tab.className).toContain('focus-visible:-outline-offset-2');
+    const line = tabs[0].querySelector('.sg-tab-line')!;
+    expect(line.className).toContain('bg-(--sg-ink)');
+    expect(line.className).not.toContain('--tpl-accent');
+  });
+
+  it('tab yang diklik digeser masuk ke tampilan rel (nama kategori panjang tidak terpotong)', () => {
+    const products = section(demo(), 'products');
+    const tablist = within(products).getByRole('tablist');
+    const tabs = within(tablist).getAllByRole('tab');
+    let left = 0;
+    Object.defineProperty(tablist, 'scrollLeft', { configurable: true, get: () => left, set: (v: number) => (left = v) });
+    const rect = (l: number, r: number) => ({ left: l, right: r, width: r - l, top: 0, bottom: 40, height: 40, x: l, y: 0, toJSON: () => ({}) }) as DOMRect;
+    tablist.getBoundingClientRect = () => rect(0, 300);
+    tabs[3].getBoundingClientRect = () => rect(280, 420);
+    fireEvent.click(tabs[3]);
+    expect(tabs[3]).toHaveAttribute('aria-selected', 'true');
+    expect(left).toBe(140);
+    // Tab yang sudah terlihat tidak menggeser rel
+    tabs[0].getBoundingClientRect = () => rect(40, 120);
+    fireEvent.click(tabs[0]);
+    expect(left).toBe(140);
+    expect(scrolled).toEqual([]);
   });
 
   it('tautan kartu "Minta penawaran" memilih komoditas di formulir dan menggulir ke Kontak; formulir menyusun pesan WhatsApp', () => {
@@ -422,6 +508,9 @@ describe('Saudagar: demo', () => {
     const contact = section(container, 'contact');
     const formEl = within(contact).getByRole('form', { name: 'Formulir permintaan penawaran' });
     expect((within(formEl).getByLabelText('Komoditas') as HTMLSelectElement).value).toBe('Pala & Fuli');
+    // Fokus pindah ke pilihan komoditas (pengguna keyboard tidak tertinggal di kartu)
+    expect(within(formEl).getByLabelText('Komoditas')).toHaveFocus();
+    expect(within(formEl).getByRole('button', { name: 'Susun pesan WhatsApp' })).toHaveAttribute('type', 'submit');
     // Kirim kosong → galat + fokus ke isian pertama yang salah
     fireEvent.change(within(formEl).getByLabelText('Komoditas'), { target: { value: '' } });
     act(() => {
@@ -468,9 +557,18 @@ describe('Saudagar: demo', () => {
     const bars = (row: Element) => Array.from(row.querySelectorAll<HTMLElement>('.sg-bar')).map((b) => `${b.classList.contains('sg-bar-peak') ? 'P' : 'H'}:${b.style.left}/${b.style.width}`);
     expect(bars(rows[0])).toEqual(['H:33.33333333333333%/41.66666666666667%', 'P:41.66666666666667%/25%']);
     expect(bars(rows[2])).toHaveLength(3);
-    expect(rows[0].textContent).toContain('Panen Mei–Sep · puncak Jun–Agu');
+    // Ringkasan teks memakai keterangan batang dari CMS (sama dengan legenda di sampingnya)
+    expect(rows[0].textContent).toContain('Musim panen Mei–Sep · panen raya Jun–Agu');
     for (const bar of season.querySelectorAll('.sg-bar')) expect(bar.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(season.querySelector('.sg-cal')!.className).toContain('tpl-reveal');
+  });
+
+  it('kalender panen dalam bahasa lain: awalan ringkasan ikut keterangan batang; kosong → "Panen" / "puncak"', () => {
+    const english = section(demo({ season: { legend_harvest: 'Harvest', legend_peak: 'Peak', month_labels: 'Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec' } }), 'season');
+    expect(english.querySelector('.sg-cal ul > li')!.textContent).toContain('Harvest Mei–Sep · peak Jun–Agu');
+    cleanup();
+    const bare = section(demo({ season: { legend_harvest: '', legend_peak: '' } }), 'season');
+    expect(bare.querySelector('.sg-cal ul > li')!.textContent).toContain('Panen Mei–Sep · puncak Jun–Agu');
   });
 
   it('pita ajakan espresso satu-satunya bertema gelap; footer kertas dengan nama besar dan media sosial', () => {
@@ -479,6 +577,12 @@ describe('Saudagar: demo', () => {
     expect(inverse).toEqual(['cta']);
     const cta = section(container, 'cta');
     expect(cta.className).toContain('bg-[#2A1D15]');
+    // Lengkung hantu hanya mulai @6xl (di 1024px garisnya memotong paragraf ajakan)
+    expect(cta.querySelector('svg[viewBox="0 0 480 640"]')!.getAttribute('class')).toContain('@6xl:block');
+    // Tanda kutip testimoni menggantung hanya @5xl (di tablet daftar selebar penuh → tetap di dalam)
+    const quoteMark = section(container, 'testimonials').querySelector('blockquote > span')!;
+    expect(quoteMark.className).toContain('@5xl:-left-[0.62em]');
+    expect(quoteMark.className).not.toContain('@3xl:-left');
     const footer = container.querySelector('footer')!;
     expect(footer.getAttribute('data-tpl-section')).toBe('footer');
     expect(footer.className).toContain('bg-[#F7F2E8]');
@@ -637,6 +741,10 @@ describe('Saudagar: konten opsional kosong', () => {
     expect(section(container, 'cta').querySelector('img')).toBeNull();
     const contact = section(container, 'contact');
     const formEl = within(contact).getByRole('form');
+    // Tanpa nomor WhatsApp: tombol tidak menjanjikan WhatsApp
+    const submit = within(formEl).getByRole('button', { name: 'Susun pesan' });
+    expect(submit).toHaveAttribute('type', 'submit');
+    expect(submit.querySelector('svg')).toBeNull();
     fireEvent.change(within(formEl).getByLabelText('Nama'), { target: { value: 'Rina' } });
     fireEvent.change(within(formEl).getByLabelText('Negara tujuan'), { target: { value: 'Jepang' } });
     fireEvent.change(within(formEl).getByLabelText('Komoditas'), { target: { value: 'Kopra' } });
@@ -644,9 +752,61 @@ describe('Saudagar: konten opsional kosong', () => {
     act(() => {
       fireEvent.submit(formEl);
     });
-    expect(contact.textContent).toContain('Nomor WhatsApp belum diisi');
+    expect(contact.textContent).toContain('Periksa isinya, lalu kirim lewat email.');
+    expect(contact.textContent).not.toMatch(/WhatsApp belum diisi/);
     expect(within(contact).getByRole('link', { name: 'Kirim lewat email' }).getAttribute('href')).toMatch(/^mailto:ekspor@saudagar-hasilbumi\.example\?subject=/);
     expect(container.querySelector('a[href^="https://wa.me"]')).toBeNull();
+  });
+
+  it('tanpa WhatsApp dan email → formulir tetap berguna: "Salin pesan" menyalin pesan ke clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+    try {
+      const contact = section(demo({ contact: { whatsapp: '', email: '' } }), 'contact');
+      const formEl = within(contact).getByRole('form');
+      expect(within(formEl).getByRole('button', { name: 'Susun pesan' })).toBeInTheDocument();
+      fireEvent.change(within(formEl).getByLabelText('Nama'), { target: { value: 'Rina' } });
+      fireEvent.change(within(formEl).getByLabelText('Negara tujuan'), { target: { value: 'Jepang' } });
+      fireEvent.change(within(formEl).getByLabelText('Komoditas'), { target: { value: 'Kopra' } });
+      fireEvent.change(within(formEl).getByLabelText('Volume'), { target: { value: '1' } });
+      act(() => {
+        fireEvent.submit(formEl);
+      });
+      expect(contact.textContent).toContain('Salin pesan ini, lalu kirim ke kontak kami.');
+      expect(within(contact).queryByRole('link', { name: /email|WhatsApp/ })).toBeNull();
+      const message = contact.querySelector('pre')!.textContent!;
+      await act(async () => {
+        fireEvent.click(within(contact).getByRole('button', { name: 'Salin pesan' }));
+      });
+      expect(writeText).toHaveBeenCalledWith(message);
+      expect(within(contact).getByRole('button', { name: 'Tersalin' })).toHaveAttribute('type', 'button');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('nama kategori/komoditas kembar tidak membuat key React ganda', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const contact = section(
+        demo({
+          products: {
+            categories: [{ name: 'Kopi' }, { name: 'Lainnya' }],
+            items: [
+              { category: 'Kopi', name: 'Arabika Toraja', grade: 'G1' },
+              { category: 'Kopi', name: 'Arabika Toraja', grade: 'G2' },
+              { category: 'Lainnya', name: 'Vanili' },
+              { name: 'Lada' },
+            ],
+          },
+        }),
+        'contact',
+      );
+      expect(Array.from(contact.querySelectorAll('optgroup')).map((g) => `${g.label}:${g.children.length}`)).toEqual(['Kopi:2', 'Lainnya:2']);
+      expect(errors.mock.calls.map((c) => String(c[0])).filter((m) => /same key/.test(m))).toEqual([]);
+    } finally {
+      errors.mockRestore();
+    }
   });
 });
 

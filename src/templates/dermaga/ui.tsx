@@ -27,7 +27,8 @@ export function SectionLabel({ label, number = '', tone = 'light', className = '
           <span aria-hidden>/</span>
         </>
       )}
-      <span className="min-w-0 truncate">{label}</span>
+      {/* Label panjang (≤ 40 huruf) terbungkus, tidak dipotong "…" */}
+      <span className="min-w-0 text-balance">{label}</span>
       <span aria-hidden className={`h-px min-w-8 flex-1 ${dark ? 'bg-white/20' : 'bg-[#0F1D20]/[0.14]'}`} />
     </p>
   );
@@ -49,13 +50,15 @@ export function Highlighted({ title, highlight, tone = 'light' }: { title: strin
 
 /**
  * Kepala section. `split` = label selebar wadah, lalu H2 di kolom 1-7 & deskripsi di kolom 9-12 rata bawah (layar
- * lebar); `stack` = label, H2, deskripsi bertumpuk (untuk kolom sempit). Kosong semua → tidak dirender.
+ * lebar); `stack` = label, H2, deskripsi bertumpuk (untuk kolom sempit). Judul kosong → H2 `sr-only` berisi `srTitle`
+ * (section tetap diawali satu H2 sebelum H3 kartu/baris di bawahnya). Kosong semua tanpa `srTitle` → tidak dirender.
  */
 export function SectionHead({
   eyebrow,
   number = '',
   title,
   subtitle = '',
+  srTitle = '',
   tone = 'light',
   layout = 'split',
   className = '',
@@ -64,12 +67,15 @@ export function SectionHead({
   number?: string;
   title: string;
   subtitle?: string;
+  /** Teks H2 tersembunyi untuk pembaca layar bila `title` kosong (biasanya label section atau nama bawaan) */
+  srTitle?: string;
   tone?: Tone;
   layout?: 'split' | 'stack';
   className?: string;
 }) {
-  if (!eyebrow && !title && !subtitle) return null;
+  if (!eyebrow && !title && !subtitle && !srTitle) return null;
   const dark = tone === 'dark';
+  const hidden = !title && srTitle ? <h2 className="sr-only">{srTitle}</h2> : null;
   const label = eyebrow && (
     <Reveal variant="fade">
       <SectionLabel label={eyebrow} number={number} tone={tone} />
@@ -90,6 +96,7 @@ export function SectionHead({
     return (
       <div className={className}>
         {label}
+        {hidden}
         {heading && <div className={label ? 'mt-7 @3xl:mt-9' : ''}>{heading}</div>}
         {sub && <div className="mt-5">{sub}</div>}
       </div>
@@ -98,6 +105,7 @@ export function SectionHead({
   return (
     <div className={className}>
       {label}
+      {hidden}
       {(heading || sub) && (
         <div className={`grid gap-y-5 @5xl:grid-cols-12 @5xl:items-end ${GRID_GAP} ${label ? 'mt-7 @3xl:mt-10' : ''}`}>
           {heading && <div className="min-w-0 @5xl:col-span-7">{heading}</div>}

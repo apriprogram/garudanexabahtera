@@ -30,14 +30,16 @@ export function Testimonials({ m }: { m: SaudagarModel }) {
             return (
               <Reveal as="li" key={`${name}-${i}`} delay={stagger(i)} className="py-9 @3xl:py-11">
                 <figure>
-                  <blockquote className={`relative max-w-[34ch] pl-5 text-pretty @3xl:pl-0 ${TYPE_S.quote} ${C.ink}`}>
-                    <span aria-hidden className="absolute -left-0.5 -top-[0.08em] text-[1.6em] leading-none text-(--sg-ink) @3xl:-left-[0.62em]">
+                  {/* Tanda kutip menggantung ke celah kolom hanya @5xl (daftar 8 kolom); di bawahnya daftar selebar penuh,
+                      jadi tanda kutip tetap di dalam (pl-5) agar tidak menempel ke tepi layar */}
+                  <blockquote className={`relative max-w-[34ch] pl-5 text-pretty @5xl:pl-0 ${TYPE_S.quote} ${C.ink}`}>
+                    <span aria-hidden className="absolute -left-0.5 -top-[0.08em] text-[1.6em] leading-none text-(--sg-ink) @5xl:-left-[0.62em]">
                       “
                     </span>
                     {field(item, 'quote')}
                   </blockquote>
                   {(name || role) && (
-                    <figcaption className="mt-6 flex items-center gap-4 pl-5 @3xl:pl-0">
+                    <figcaption className="mt-6 flex items-center gap-4 pl-5 @5xl:pl-0">
                       {hasImage(photo) ? <KitAvatar name={name} photo={photo} className="h-12 w-12" sizes="48px" /> : <Initials name={name} />}
                       <span className="min-w-0">
                         {name && <span className={`block text-[15px] font-semibold ${C.ink}`}>{name}</span>}

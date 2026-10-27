@@ -1,4 +1,4 @@
-// Hook kecil Saudagar: section yang sedang dibaca (garis saffron di bawah item menu) dan bulan berjalan untuk kalender
+// Hook kecil Saudagar: section yang sedang dibaca (garis tinta tema di bawah item menu) dan bulan berjalan untuk kalender
 // panen. Tanpa IntersectionObserver (perayap, jsdom lama) → nilai awal, tanpa error.
 import { useEffect, useState, useSyncExternalStore, type RefObject } from 'react';
 import { useSiteData } from '../shared/siteData';

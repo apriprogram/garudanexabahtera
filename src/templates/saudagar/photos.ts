@@ -31,6 +31,9 @@ const BASE = definePhotos({
     ['saudagar-gudang', 960, 1200, 'Tumpukan karung goni berisi hasil bumi di rak gudang'],
     ['saudagar-pala', 960, 1200, 'Buah pala di pohon merekah memperlihatkan fuli merah'],
     ['saudagar-muat', 960, 1200, 'Pekerja menata karung di atas truk di pelabuhan kapal kayu'],
+    // Foto tab Kakao & Rempah: berbeda dari lengkung samping hero (kakao di pohon, pala di daun pisang)
+    ['saudagar-buah-kakao', 960, 1200, 'Kedua tangan memegang buah kakao kuning yang terbelah memperlihatkan bijinya'],
+    ['saudagar-cengkeh', 960, 1200, 'Cengkeh kering di sendok kayu dan berserakan di atas meja kayu'],
   ],
   portraits: [
     ['saudagar-pembeli-1', 480, 480, 'Potret pria berkemeja denim tersenyum tipis di meja kerja'],

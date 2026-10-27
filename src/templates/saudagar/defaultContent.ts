@@ -23,7 +23,7 @@ export const saudagarContent: SiteContent = {
     title: 'Kopi, kakao, dan rempah dari tanah Sulawesi',
     highlight: 'tanah Sulawesi',
     subtitle:
-      'PT Saudagar Hasil Bumi memasok kopi, kakao, cengkeh, pala, dan kopra dari kebun mitra di Sulawesi untuk pembeli luar negeri lewat Pelabuhan Makassar.',
+      'PT Saudagar Hasil Bumi memasok kopi, kakao, cengkeh, pala, dan kopra dari kebun mitra di Sulawesi dan Maluku ke pembeli luar negeri lewat Makassar.',
     primary_label: 'Minta penawaran',
     primary_url: '',
     secondary_label: 'Lihat komoditas',
@@ -76,14 +76,14 @@ export const saudagarContent: SiteContent = {
       },
       {
         name: 'Kakao',
-        intro: 'Biji kakao fermentasi dan asalan dari kebun rakyat di Luwu dan Kolaka, dijemur di bawah matahari.',
-        image: saudagarPhoto('kakao'),
-        origin: 'Luwu Utara & Kolaka',
+        intro: 'Biji kakao fermentasi dan asalan dari kebun rakyat di Luwu, Kolaka, dan Polewali Mandar, dijemur di bawah matahari.',
+        image: saudagarPhoto('buah-kakao'),
+        origin: 'Luwu Utara, Kolaka & Polewali Mandar',
       },
       {
         name: 'Rempah',
         intro: 'Cengkeh, pala, fuli, dan kayu manis kering yang disortir tangan sebelum dikemas.',
-        image: saudagarPhoto('rempah'),
+        image: saudagarPhoto('cengkeh'),
         origin: 'Bulukumba, Maluku Utara, Kerinci',
       },
       {
@@ -153,7 +153,7 @@ export const saudagarContent: SiteContent = {
         category: 'Rempah',
         name: 'Pala & Fuli',
         variety: 'Myristica fragrans · biji utuh dan fuli',
-        grade: 'ABCD (utuh) & BWP (bubuk)',
+        grade: 'ABCD (utuh) & BWP (pecah, untuk giling)',
         origin: 'Maluku Utara, lewat mitra pengepul',
         moisture: 'Maks. 10%',
         packaging: 'Karung goni 50 kg',
@@ -241,9 +241,9 @@ export const saudagarContent: SiteContent = {
   markets: {
     enabled: true,
     eyebrow: 'Asal & tujuan',
-    title: 'Dari kebun di Sulawesi ke pelabuhan pembeli kami',
+    title: 'Dari kebun di Sulawesi dan Maluku ke pelabuhan pembeli kami',
     subtitle:
-      'Kami membeli dari kelompok tani di empat daerah utama dan mengirim lewat Pelabuhan Makassar ke pembeli di Asia, Eropa, dan Amerika.',
+      'Kami membeli dari kelompok tani dan mitra pengepul di empat daerah utama, lalu mengirim lewat Pelabuhan Makassar ke pembeli di Asia, Eropa, dan Amerika.',
     origins_title: 'Asal komoditas',
     destinations_title: 'Pasar tujuan',
     port_note: 'Semua kiriman berangkat dari Pelabuhan Makassar. Rute transit mengikuti jadwal pelayaran yang dipilih bersama pembeli.',
@@ -379,7 +379,7 @@ export const saudagarContent: SiteContent = {
   footer: {
     enabled: true,
     description:
-      'Eksportir kopi, kakao, rempah, dan kelapa dari Sulawesi. Membeli langsung dari kelompok tani, menyortir di gudang Makassar, dan mengirim ke pembeli di Asia, Eropa, dan Amerika.',
+      'Eksportir kopi, kakao, rempah, dan kelapa. Membeli dari kelompok tani di Sulawesi dan lewat mitra pengepul di Maluku dan Sumatra, menyortir di gudang Makassar, lalu mengirim ke pembeli di Asia, Eropa, dan Amerika.',
     copyright: '',
     instagram: 'https://instagram.com/saudagarhasilbumi.contoh',
     facebook: '',

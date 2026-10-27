@@ -26,6 +26,11 @@ interface Row {
 
 function InfoRow({ row }: { row: Row }) {
   const Icon = row.icon;
+  // Baris bertautan: nilainya bergaris bawah tipis (berbeda dari "Jam operasional" yang bukan tautan) dan berwarna
+  // tinta aksen saat disorot
+  const link = row.action
+    ? 'underline decoration-current/25 underline-offset-4 transition-colors duration-200 group-hover:text-(--nn-ink) group-hover:decoration-current'
+    : '';
   const body = (
     <>
       <span aria-hidden className={ICON_BOX}>
@@ -33,12 +38,12 @@ function InfoRow({ row }: { row: Row }) {
       </span>
       <span className="min-w-0 pt-0.5">
         <span className={`block text-[13px] ${C.subtle}`}>{row.label}</span>
-        <span className={`mt-0.5 block text-[15px] font-medium leading-snug [overflow-wrap:anywhere] ${C.ink}`}>{row.value}</span>
+        <span className={`mt-0.5 block text-[15px] font-medium leading-snug [overflow-wrap:anywhere] ${C.ink} ${link}`}>{row.value}</span>
       </span>
     </>
   );
   return row.action ? (
-    <ActionLink action={row.action} className="group flex items-start gap-4 py-4 transition-colors duration-200 hover:text-(--nn-ink)">
+    <ActionLink action={row.action} className="group flex items-start gap-4 py-4">
       {body}
     </ActionLink>
   ) : (

@@ -21,9 +21,11 @@ import {
   ROUTE_WIDE,
   cleanText,
   dermagaVars,
+  displayPhone,
   inquiryMailHref,
   inquiryMessage,
   inquiryServices,
+  isImport,
   navItems,
   readDermaga,
   routeSlots,
@@ -276,7 +278,8 @@ describe('Dermaga: helper model', () => {
     const content = resolveContent(def, null);
     for (const key of ORDER) expect(sectionShown(content, key), key).toBe(true);
     const empty = resolveContent(def, {
-      clients: { items: [{ sector: 'tanpa nama' }] },
+      // Logo tanpa nama tidak dihitung: nama = alt logo dan teks cadangan bila logo gagal dimuat
+      clients: { items: [{ sector: 'tanpa nama' }, { logo: '/assets/templates/logos/dermaga-mark.svg', sector: 'logo saja' }] },
       services: { items: [] },
       markets: { regions: [{ ports: 'tanpa nama' }] },
       process: { steps: [] },
@@ -314,6 +317,12 @@ describe('Dermaga: helper model', () => {
     expect(wordmarkOf('', 'CV. Maju Jaya')).toBe('Maju Jaya');
     expect(wordmarkOf('Lintas', 'PT Lintas Dermaga Nusantara')).toBe('Lintas');
     expect(wordmarkOf('', 'PT')).toBe('PT');
+    // Nomor HP rapat dibaca berkelompok; nomor yang sudah diformat atau bukan HP apa adanya
+    expect(displayPhone('081234567890')).toBe('0812-3456-7890');
+    expect(displayPhone('0812345678')).toBe('0812-3456-78');
+    expect(displayPhone('(031) 555-0182')).toBe('(031) 555-0182');
+    expect(displayPhone('+62 812 3456 7890')).toBe('+62 812 3456 7890');
+    expect(displayPhone('')).toBe('');
   });
 
   it('formulir penawaran: validasi per isian, negara asal untuk impor, pesan WhatsApp berurutan, isian kosong tidak ikut', () => {
@@ -326,6 +335,13 @@ describe('Dermaga: helper model', () => {
       country: 'Tulis negara tujuan.',
     });
     expect(validateInquiry(inquiry({ service: 'Impor', country: '' }), SERVICES).country).toBe('Tulis negara asal.');
+    // Pilihan gabungan ekspor-impor tetap "negara tujuan"; hanya layanan impor murni yang menanyakan negara asal
+    expect(isImport('Impor')).toBe(true);
+    expect(isImport('Impor bahan baku')).toBe(true);
+    expect(isImport('Ekspor & impor')).toBe(false);
+    expect(isImport('Ekspor-Impor')).toBe(false);
+    expect(isImport('Ekspor')).toBe(false);
+    expect(validateInquiry(inquiry({ service: 'Ekspor & impor', country: '' }), [...SERVICES, 'Ekspor & impor']).country).toBe('Tulis negara tujuan.');
     expect(validateInquiry(inquiry({ service: 'Bukan pilihan' }), SERVICES).service).toBe('Pilih jenis layanan.');
     expect(validateInquiry(inquiry({ name: ' a ' }), SERVICES).name).toBe('Tulis nama Anda.');
 
@@ -456,16 +472,24 @@ describe('Dermaga: demo', () => {
     expect(within(header).getAllByRole('navigation', { name: 'Menu utama' })).toHaveLength(2);
     const panel = document.getElementById(toggle.getAttribute('aria-controls')!)!;
     expect(panel).toHaveAttribute('aria-label', 'Menu utama');
+    // Nomor menu = nomor label section ("07 / FAQ"); testimoni tidak di menu, jadi 06 dilewati
     expect(within(panel).getAllByRole('link').map((a) => a.textContent)).toEqual([
       '01Tentang kami',
       '02Layanan',
       '03Pasar',
       '04Proses',
       '05Galeri',
-      '06FAQ',
-      '07Kontak',
+      '07FAQ',
+      '08Kontak',
       'Minta Penawaran',
     ]);
+    const m = readDermaga(resolveContent(def, null));
+    const keys = ['about', 'services', 'markets', 'process', 'gallery', 'faq', 'contact'];
+    expect(Array.from(nav.querySelectorAll('a')).map((a) => a.querySelector('span[aria-hidden]')?.textContent)).toEqual(keys.map(m.number));
+    for (const key of keys) {
+      const sectionLabel = section(container, key).querySelector('p')!.textContent!;
+      expect(sectionLabel.startsWith(`${m.number(key)}/`), key).toBe(true);
+    }
     fireEvent.click(within(panel).getByRole('link', { name: 'Pasar' }));
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(scrolled).toEqual(['process', 'markets']);
@@ -473,6 +497,17 @@ describe('Dermaga: demo', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).toHaveFocus();
+    // Section tanpa label → tanpa nomor di menu (layar lebar tanpa span, menu HP span kosong agar label tetap sejajar)
+    cleanup();
+    const plain = demo({ services: { eyebrow: '' } }).querySelector('header')!;
+    const desktop = within(plain).getByRole('navigation', { name: 'Menu utama' });
+    expect(within(desktop).getByRole('link', { name: 'Layanan' }).querySelector('span')).toBeNull();
+    expect(within(desktop).getByRole('link', { name: 'Pasar' }).textContent).toBe('02Pasar');
+    fireEvent.click(within(plain).getByRole('button', { name: 'Buka menu' }));
+    const phone = within(plain).getAllByRole('navigation', { name: 'Menu utama' })[1];
+    const services = within(phone).getByRole('link', { name: 'Layanan' });
+    expect(services.querySelector('span[aria-hidden]')!.textContent).toBe('');
+    expect(services.querySelector('span[aria-hidden]')!.className).toContain('w-6');
   });
 
   it('label section mono bernomor dengan garis; kartu layanan bernomor bergaris tipis; tabel proses & pasar', () => {
@@ -545,6 +580,20 @@ describe('Dermaga: demo', () => {
     fireEvent.click(buttons[2]);
     expect(buttons.every((b) => b.getAttribute('aria-expanded') === 'false')).toBe(true);
     expect(within(faq).getByRole('link', { name: /Tanya lewat WhatsApp/ }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/6281234567890\?text=/);
+    // Pertanyaan panjang terbungkus seimbang (tanpa satu kata menggantung)
+    expect(buttons[0].querySelector('span')!.className).toContain('text-balance');
+    // Tautan memakai pesan awal WhatsApp dari CMS; tanpa nomor WhatsApp tautan disembunyikan (label menyebut WhatsApp)
+    cleanup();
+    const own = section(demo({ contact: { whatsapp_message: 'Halo, saya mau tanya jadwal kapal.' } }), 'faq');
+    expect(decodeURIComponent(within(own).getByRole('link', { name: /Tanya lewat WhatsApp/ }).getAttribute('href')!)).toBe(
+      'https://wa.me/6281234567890?text=Halo, saya mau tanya jadwal kapal.',
+    );
+    cleanup();
+    const noWa = section(demo({ contact: { whatsapp: '' } }), 'faq');
+    expect(within(noWa).queryByRole('link', { name: /Tanya lewat WhatsApp/ })).toBeNull();
+    cleanup();
+    const custom = section(demo({ contact: { whatsapp: '' }, faq: { link_url: '#kontak', link_label: 'Hubungi kami' } }), 'faq');
+    expect(within(custom).getByRole('link', { name: 'Hubungi kami' })).toHaveAttribute('href', '#kontak');
   });
 
   it('formulir permintaan penawaran: galat + fokus, negara asal untuk impor, pesan WhatsApp, ubah data', () => {
@@ -619,6 +668,46 @@ describe('Dermaga: demo', () => {
     expect(within(footer).getByRole('link', { name: 'LinkedIn' })).toHaveAttribute('href', 'https://linkedin.com/company/lintas-dermaga-contoh');
     expect(within(footer).getByRole('link', { name: 'YouTube' })).toHaveAttribute('href', 'https://youtube.com/@lintasdermaga.contoh');
     expect(within(footer).queryByRole('link', { name: 'Facebook' })).toBeNull();
+  });
+
+  it('target sentuh & tata letak: tautan kontak ≥ 44px, chip pelabuhan putih solid, kisi klien tertutup, kartu testimoni ganjil terakhir melebar', () => {
+    const container = demo();
+    const contact = section(container, 'contact');
+    for (const name of ['0812-3456-7890', 'penawaran@lintasdermaga.test']) {
+      for (const link of within(contact).getAllByRole('link', { name })) {
+        // py-3.5 (14px atas & bawah) + teks 15px ≈ 47px; -my-3.5 menjaga tinggi baris
+        expect(link.className, name).toMatch(/(^|\s)inline-block(\s|$)/);
+        expect(link.className, name).toContain('py-3.5');
+        expect(link.className, name).toContain('-my-3.5');
+      }
+    }
+    // Nomor rapat ditampilkan berkelompok, tautan tetap ke nomor yang sama
+    expect(within(contact).getAllByRole('link', { name: '0812-3456-7890' }).map((a) => a.getAttribute('href'))).toEqual([
+      'tel:+6281234567890',
+      expect.stringMatching(/^https:\/\/wa\.me\/6281234567890\?text=/),
+    ]);
+    const footer = container.querySelector('footer')!;
+    for (const link of footer.querySelectorAll('a[href^="tel:"], a[href^="mailto:"], nav a')) expect(link.className).toContain('min-h-11');
+    // Kode pelabuhan di atas putih murni (warna aksen-ink dijamin ≥ 4,5:1 hanya di putih)
+    const chip = section(container, 'hero').querySelector('.dm-chip')!;
+    expect(chip.className).toMatch(/(^|\s)bg-white(\s|$)/);
+    expect(chip.className).not.toMatch(/bg-white\/|backdrop-blur/);
+    // Sel klien menggambar garis atas & bawah sendiri (baris terakhir yang tidak penuh tetap tertutup)
+    const clientCell = section(container, 'clients').querySelector('li')!;
+    expect(clientCell.className).toContain('border-y');
+    expect(clientCell.className).toContain('-mt-px');
+    expect(clientCell.closest('ul')!.parentElement!.className).not.toMatch(/border-b/);
+    // Testimoni: 3 kartu → kartu ketiga melebar di rentang 2 kolom, kembali 1 kolom saat 3 kolom
+    const cards = section(container, 'testimonials').querySelectorAll('ul > li');
+    expect(cards).toHaveLength(3);
+    expect(cards[2].className).toContain('@4xl:last:odd:col-span-2');
+    expect(cards[2].className).toContain('@6xl:last:odd:col-span-1');
+    expect(cards[0].querySelector('figcaption')!.className).not.toContain('self-end');
+    // Label section panjang terbungkus, tidak dipotong "…"
+    const label = section(container, 'services').querySelector('p')!;
+    expect(label.innerHTML).not.toContain('truncate');
+    // Kontak: baris ke-3 menyerap sisa tinggi formulir (tanpa celah di bawah deskripsi)
+    expect(contact.querySelector('div')!.className).toContain('@5xl:grid-rows-[auto_auto_1fr]');
   });
 
   it('datar: tidak ada kelas shadow di template (kecuali tombol melayang Shell)', () => {
@@ -707,10 +796,32 @@ describe('Dermaga: SEO situs pembeli, judul, gambar, tautan', () => {
       expect(levels.filter((l) => l === 'H2'), key).toHaveLength(1);
     }
     expect(section(container, 'hero').querySelector('h2, h3')).toBeNull();
-    // Klien tanpa judul → H2 tersembunyi untuk pembaca layar
+    // Judul dikosongkan → H2 tersembunyi untuk pembaca layar (label section, atau nama bawaan bila label juga kosong);
+    // section tetap diawali satu H2 sebelum H3 kartu/baris
     cleanup();
-    const noTitle = section(demo({ clients: { title: '' } }), 'clients');
-    expect(noTitle.querySelector('h2')).toHaveClass('sr-only');
+    const untitled = demo(Object.fromEntries(ORDER.filter((k) => k !== 'hero').map((k) => [k, { title: '' }])));
+    for (const key of ORDER.filter((k) => k !== 'hero')) {
+      const levels = Array.from(section(untitled, key).querySelectorAll('h1, h2, h3')).map((h) => h.tagName);
+      expect(levels[0], key).toBe('H2');
+      expect(levels.filter((l) => l === 'H2'), key).toHaveLength(1);
+    }
+    expect(section(untitled, 'clients').querySelector('h2')).toHaveClass('sr-only');
+    expect(section(untitled, 'services').querySelector('h2')).toHaveClass('sr-only');
+    expect(section(untitled, 'services').querySelector('h2')!.textContent).toBe('Layanan');
+    expect(section(untitled, 'about').querySelector('h2')!.textContent).toBe('Tentang kami');
+    cleanup();
+    const bare = demo(
+      Object.fromEntries(['about', 'services', 'markets', 'process', 'gallery', 'testimonials', 'faq'].map((k) => [k, { title: '', eyebrow: '', subtitle: '' }])),
+    );
+    expect(['about', 'services', 'markets', 'process', 'gallery', 'testimonials', 'faq'].map((k) => section(bare, k).querySelector('h2')?.textContent)).toEqual([
+      'Tentang kami',
+      'Layanan',
+      'Pasar & rute',
+      'Proses kerja',
+      'Galeri',
+      'Testimoni',
+      'Tanya jawab',
+    ]);
   });
 
   it('gambar: alt deskriptif, width/height, srcset & sizes; foto persegi testimoni boleh alt kosong', () => {
@@ -760,6 +871,15 @@ describe('Dermaga: konten opsional kosong', () => {
     expect(one.querySelectorAll('.dm-port')).toHaveLength(1);
     expect(one.querySelector('dl')!.className).toContain('grid-cols-2');
     expect(one.querySelectorAll('dl > div')).toHaveLength(2);
+    // 3 angka: HP 2 kolom dengan sel ketiga selebar strip (angka panjang tidak meluber), layar lebar 3 kolom
+    cleanup();
+    const three = section(demo({ hero: { stats: [{ value: '12.000+', label: 'Pengiriman' }, { value: '38', label: 'Negara' }, { value: '3', label: 'Pelabuhan' }] } }), 'hero');
+    expect(three.querySelector('dl')!.className).toContain('grid-cols-2 @3xl:grid-cols-3');
+    const cells = Array.from(three.querySelectorAll('dl > div'));
+    expect(cells).toHaveLength(3);
+    expect(cells[2].className).toContain('col-span-2');
+    expect(cells[2].className).toContain('@3xl:col-span-1');
+    expect(cells[1].className).toContain('border-l');
   });
 
   it('pasar tanpa foto → tabel selebar wadah; tanpa Incoterm → tanpa label; label kosong → nomor dilewati', () => {

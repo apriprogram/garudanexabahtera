@@ -1,7 +1,7 @@
 // Gaya Dermaga "Route manifest": company profile ekspor-impor & freight forwarding yang tenang dan presisi. Halaman
 // putih, judul Space Grotesk 500 besar, label & angka JetBrains Mono seperti lembar manifest/bill of lading, SATU pita
 // penuh warna tema (pasar) dan footer teal-hitam. DATAR: tanpa bayangan; garis tipis 1px (border/divide/ring), tingkat
-// warna, dan chip kaca di atas foto menggantikan bayangan. Sudut tajam: tombol radius 2px, kartu 4px, foto persegi.
+// warna, dan chip putih di atas foto menggantikan bayangan. Sudut tajam: tombol radius 2px, kartu 4px, foto persegi.
 // Warna utama = warna tema dari CMS (--tpl-accent* milik Shell + --dm-* dari ./model, bawaan teal #0F5C63). Ukuran
 // memakai container query (@…) karena template dirender di bingkai HP 390 / panel CMS.
 import type { KitFont } from '../kit/fonts';

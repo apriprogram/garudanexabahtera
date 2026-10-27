@@ -8,7 +8,7 @@
 import type { TemplatePageContent } from './page.types';
 
 export const content: TemplatePageContent = {
-  lead: '{nama} adalah template website ekspor impor untuk perusahaan general trading, freight forwarder, dan eksportir yang ingin tampil rapi di depan pembeli luar negeri. Hero-nya memperlihatkan garis rute di atas foto terminal peti kemas, lalu halaman menuntun calon klien dari layanan, pasar tujuan, dan proses kerja sampai formulir permintaan penawaran.',
+  lead: '{nama} adalah template website ekspor impor untuk perusahaan general trading, freight forwarder, dan eksportir yang ingin tampil rapi di depan calon pembeli dan mitra. Hero-nya memperlihatkan garis rute di atas foto terminal peti kemas, lalu halaman menuntun calon klien dari layanan, pasar tujuan, dan proses kerja sampai formulir permintaan penawaran.',
   suitableFor: {
     intro:
       'Pilih {nama} bila calon pembeli dan pemasok biasanya memeriksa website perusahaan ekspor impor Anda sebelum meminta harga. Mereka ingin tahu barang apa yang Anda tangani, ke negara mana Anda rutin mengirim, dan bagaimana memulai kerja sama.',

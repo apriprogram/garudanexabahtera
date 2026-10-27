@@ -18,14 +18,17 @@ import { SAUDAGAR_PHOTOS } from './photos';
 import { ARCH, C, SECTION_PAD, TYPE_S } from './styles';
 import { ArrowLink, Highlighted, InkPill, Label, SectionHead } from './ui';
 
-/** Lengkung hantu dekoratif di pita espresso (garis 1px putih 8%). Hanya layar lebar: di HP/tablet garisnya memotong teks. */
+/**
+ * Lengkung hantu dekoratif di pita espresso (garis 1px putih 8%). Hanya mulai @6xl (1152px): di bawahnya, termasuk
+ * laptop 1024px, garis lengkung luar memotong paragraf ajakan.
+ */
 function GhostArch() {
   return (
     <svg
       aria-hidden
       viewBox="0 0 480 640"
       fill="none"
-      className="pointer-events-none absolute -right-10 top-1/2 hidden h-[135%] w-auto -translate-y-1/2 text-white/[0.08] @5xl:block"
+      className="pointer-events-none absolute -right-10 top-1/2 hidden h-[135%] w-auto -translate-y-1/2 text-white/[0.08] @6xl:block"
     >
       <path d="M40 640V240a200 200 0 0 1 400 0v400" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />
       <path d="M96 640V248a144 144 0 0 1 288 0v392" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" />

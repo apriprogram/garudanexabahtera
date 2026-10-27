@@ -1,7 +1,26 @@
-// Hook kecil NusaNiaga: section yang sedang dibaca (titik aksen di item menu). Tanpa IntersectionObserver (perayap,
-// jsdom lama) → null, tanpa error.
+// Hook kecil NusaNiaga: section yang sedang dibaca (titik aksen di item menu) dan apakah rel produk bisa digeser.
+// Tanpa IntersectionObserver / ResizeObserver (perayap, jsdom lama) → nilai aman, tanpa error.
 import { useEffect, useState, type RefObject } from 'react';
 import { useSiteData } from '../shared/siteData';
+
+/**
+ * true bila isi elemen lebih lebar dari elemennya (rel geser di HP), false bila tampil sebagai grid statis. Diukur ulang
+ * saat elemen atau anak pertamanya berubah ukuran. Tanpa ResizeObserver → true (tetap bisa difokus untuk digeser).
+ */
+export function useScrollable(ref: RefObject<HTMLElement | null>): boolean {
+  const [scrollable, setScrollable] = useState(true);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver !== 'function') return;
+    const measure = () => setScrollable(el.scrollWidth > el.clientWidth + 1);
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    measure();
+    return () => observer.disconnect();
+  }, [ref]);
+  return scrollable;
+}
 
 /**
  * Kunci section yang sedang di tengah layar (dari daftar `keys`), atau null. Section dicari di dalam root template yang

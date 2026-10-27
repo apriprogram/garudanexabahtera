@@ -1,7 +1,7 @@
 // Template "Dermaga" — "Route manifest": company profile perusahaan ekspor-impor umum & freight forwarding B2B
 // (general trading, konsolidasi LCL, dokumen ekspor, pengiriman FCL/LCL). Halaman putih yang tenang dan presisi seperti
 // lembar manifest: header putih solid bergaris tipis, hero "rute" (H1 Space Grotesk besar di 8 kolom, deskripsi & tombol
-// di 4 kolom kanan bawah, foto terminal peti kemas saat senja 21:9 dengan garis rute putih + tiga chip kaca pelabuhan,
+// di 4 kolom kanan bawah, foto terminal peti kemas saat senja 21:9 dengan garis rute putih + tiga chip putih pelabuhan,
 // lalu strip manifest empat angka), kisi klien statis, tentang dengan baris fakta, kartu layanan bernomor bergaris tipis,
 // SATU pita penuh warna tema untuk pasar & Incoterm, tabel proses kerja, galeri 21:9 + 3:2, testimoni bergaya surat
 // muatan, tanya jawab, kotak ajakan dengan garis rute statis, kontak + formulir permintaan penawaran yang menyusun pesan

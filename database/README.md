@@ -35,7 +35,7 @@ database/
 │   ├── 2026-10-27_034_velora_template.sql          # data: katalog Velora (company profile otomotif, Inggris), SETELAH deploy kodenya
 │   ├── 2026-10-27_035_dermaga_template.sql         # data: katalog Dermaga (company profile ekspor-impor), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-27_036_saudagar_template.sql        # data: katalog Saudagar (company profile ekspor-impor), jalankan SETELAH deploy kodenya
-│   └── 2026-10-27_037_nusaniaga_template.sql       # data: katalog NusaNiaga (company profile ekspor-impor), jalankan SETELAH deploy kodenya
+│   └── 2026-10-27_037_nusaniaga_template.sql       # data: katalog NusaNiaga (company profile importir & distributor), jalankan SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```

@@ -47,8 +47,11 @@ export const TYPE_N = {
   small: 'text-[13.5px] leading-snug',
   /** Kutipan testimoni */
   quote: `${DISPLAY} font-semibold text-[18px] leading-[1.45] tracking-[-0.01em] @3xl:text-[20px]`,
-  /** Angka besar 2×2 */
-  stat: `${DISPLAY} font-bold text-[44px] leading-none tracking-[-0.05em] tabular-nums @3xl:text-[56px] @7xl:text-[68px]`,
+  /**
+   * Angka besar 2×2: ukuran mengikuti lebar SEL angka (sel = @container, ./Proof), 28–68px, sehingga nilai sampai
+   * 8 huruf (batas skema) tetap di dalam sel di HP 320px maupun di kartu setengah halaman.
+   */
+  stat: `${DISPLAY} font-bold text-[clamp(28px,26cqi,68px)] leading-none tracking-[-0.05em] tabular-nums`,
   /** Kata besar di strip industri */
   marquee: `${DISPLAY} font-bold text-[28px] leading-[1.2] tracking-[-0.03em] @3xl:text-[40px] @6xl:text-[48px]`,
 } as const;

@@ -8,12 +8,12 @@ import { ActionLink } from '../shared/Shell';
 import { useTemplateRuntime } from '../shared/runtime';
 import { mailHref, SECTION_ANCHOR, telHref, text } from '../shared/utils';
 import { Logo } from './Header';
-import { wordmarkOf, type DermagaModel } from './model';
+import { displayPhone, wordmarkOf, type DermagaModel } from './model';
 import { MONO_LABEL, TYPE_D } from './styles';
 
 const COL_TITLE = `${MONO_LABEL} text-(--dm-bright)`;
 const COL_LINK =
-  'inline-flex min-h-10 items-center gap-1.5 text-[15px] text-white underline decoration-transparent underline-offset-[6px] transition-colors hover:decoration-white/70';
+  'inline-flex min-h-11 items-center gap-1.5 text-[15px] text-white underline decoration-transparent underline-offset-[6px] transition-colors hover:decoration-white/70';
 
 export function Footer({ m }: { m: DermagaModel }) {
   const { footer, contact } = m;
@@ -37,7 +37,7 @@ export function Footer({ m }: { m: DermagaModel }) {
       <div className={CONTAINER}>
         <div className="grid gap-x-8 gap-y-12 @2xl:grid-cols-2 @5xl:grid-cols-12 @7xl:gap-x-12">
           <div className="min-w-0 @2xl:col-span-2 @5xl:col-span-5">
-            <ActionLink action={{ kind: 'section', target: 'hero' }} className="inline-flex rounded-[2px]" aria-label={`${m.companyName}, ke awal halaman`}>
+            <ActionLink action={{ kind: 'section', target: 'hero' }} className="inline-flex min-h-11 items-center rounded-[2px]" aria-label={`${m.companyName}, ke awal halaman`}>
               <Logo m={m} tone="dark" />
             </ActionLink>
             {description && <p className="mt-6 max-w-[44ch] text-[15px] leading-relaxed text-white/70">{description}</p>}
@@ -45,14 +45,14 @@ export function Footer({ m }: { m: DermagaModel }) {
               <ul className="mt-6 grid gap-0.5 font-mono text-[13.5px] text-white/70">
                 {tel && (
                   <li>
-                    <ActionLink action={{ kind: 'external', href: tel }} className="inline-flex min-h-9 items-center transition-colors hover:text-white">
-                      {phone}
+                    <ActionLink action={{ kind: 'external', href: tel }} className="inline-flex min-h-11 items-center transition-colors hover:text-white">
+                      {displayPhone(phone)}
                     </ActionLink>
                   </li>
                 )}
                 {mail && (
                   <li>
-                    <ActionLink action={{ kind: 'external', href: mail }} className="inline-flex min-h-9 items-center transition-colors hover:text-white [overflow-wrap:anywhere]">
+                    <ActionLink action={{ kind: 'external', href: mail }} className="inline-flex min-h-11 items-center transition-colors hover:text-white [overflow-wrap:anywhere]">
                       {email}
                     </ActionLink>
                   </li>

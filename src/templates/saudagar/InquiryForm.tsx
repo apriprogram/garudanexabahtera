@@ -2,10 +2,11 @@
 // tujuan, komoditas (pilihan per kategori dari kartu Komoditas + "Lainnya"), volume + satuan, Incoterm, target
 // pengiriman, sampel, catatan. JUJUR: formulir hanya MENYUSUN pesan WhatsApp untuk tim penjualan — tidak ada data yang
 // dikirim ke server atau disimpan (tanpa localStorage), tidak ada pembayaran. Setelah lolos validasi, pesan tampil apa
-// adanya + "Buka WhatsApp" (pratinjau: tautan tidak dibuka) dan "Ubah isian". Tanpa nomor WhatsApp → keterangan +
-// tautan email (bila ada) berisi pesan yang sama. Tautan "Minta penawaran" di kartu komoditas memilih komoditasnya.
-import { Check, ChevronDown, CircleAlert, Mail, PencilLine } from 'lucide-react';
-import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+// adanya + "Buka WhatsApp" (pratinjau: tautan tidak dibuka) dan "Ubah isian". Tanpa nomor WhatsApp → tombol "Susun
+// pesan" (tanpa ikon WhatsApp), lalu "Kirim lewat email" berisi pesan yang sama, atau "Salin pesan" bila email juga
+// kosong. Tautan "Minta penawaran" di kartu komoditas memilih komoditasnya dan memindah fokus ke pilihan komoditas.
+import { Check, ChevronDown, CircleAlert, Copy, Mail, PencilLine } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { WhatsAppIcon } from '../shared/icons';
 import { ActionLink } from '../shared/Shell';
 import { field, text } from '../shared/utils';
@@ -64,7 +65,9 @@ export function InquiryForm({ m, preset }: { m: SaudagarModel; preset: QuotePres
   const [form, setForm] = useState<QuoteForm>(() => ({ ...EMPTY_QUOTE, product: preset.product }));
   const [errors, setErrors] = useState<QuoteErrors>({});
   const [sent, setSent] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [applied, setApplied] = useState(preset.n);
+  const initialPreset = useRef(preset.n);
   const refs = useRef<Partial<Record<keyof QuoteForm, Control | null>>>({});
   const resultHeading = useRef<HTMLHeadingElement>(null);
 
@@ -75,11 +78,18 @@ export function InquiryForm({ m, preset }: { m: SaudagarModel; preset: QuotePres
     setSent(null);
   }
 
+  // …lalu fokus pindah ke pilihan komoditas (pengguna keyboard & pembaca layar tahu komoditasnya terpilih). Tanpa
+  // menggulir: Shell sedang menggulir halus ke Kontak. Saat formulir pertama dipasang fokus tidak dipindah.
+  useEffect(() => {
+    if (applied !== initialPreset.current) refs.current.product?.focus({ preventScroll: true });
+  }, [applied]);
+
   const title = text(contact, 'form_title');
   const note = text(contact, 'form_note');
+  const canWa = !!m.waAction;
   const units = labelList(contact, 'units', 5);
   const incoterms = labelList(contact, 'incoterms', 6);
-  const groups = m.tabs.map((tab) => ({ name: tab.name, items: tab.items.map((item) => field(item, 'name')) }));
+  const groups = m.tabs.map((tab) => ({ key: tab.key, name: tab.name, items: tab.items.map((item) => field(item, 'name')) }));
   const unit = form.unit || units[0] || '';
   const id = (key: keyof QuoteForm) => `${baseId}-${key}`;
   const set = <K extends keyof QuoteForm>(key: K) => (value: QuoteForm[K]) => {
@@ -106,6 +116,7 @@ export function InquiryForm({ m, preset }: { m: SaudagarModel; preset: QuotePres
       refs.current[first]?.focus();
       return;
     }
+    setCopied(false);
     setSent(quoteMessage({ ...form, unit }, { greeting: text(contact, 'form_greeting'), company: m.companyName }));
     window.setTimeout(() => resultHeading.current?.focus(), 0);
   };
@@ -114,7 +125,15 @@ export function InquiryForm({ m, preset }: { m: SaudagarModel; preset: QuotePres
 
   if (sent) {
     const wa = m.waWith(sent);
-    const mail = quoteMailHref(text(contact, 'email'), sent, form.product);
+    const mail = wa ? '' : quoteMailHref(text(contact, 'email'), sent, form.product);
+    const copy = async () => {
+      try {
+        await navigator.clipboard.writeText(sent);
+        setCopied(true);
+      } catch {
+        setCopied(false);
+      }
+    };
     return (
       <div className={card}>
         <h3 ref={resultHeading} tabIndex={-1} className={`flex items-center gap-3 focus:outline-none ${C.ink} ${TYPE_S.h3}`}>
@@ -124,7 +143,11 @@ export function InquiryForm({ m, preset }: { m: SaudagarModel; preset: QuotePres
           Pesan siap dikirim
         </h3>
         <p className={`mt-3 text-[14.5px] leading-relaxed ${C.muted}`}>
-          {wa ? 'Periksa isinya, lalu buka WhatsApp untuk mengirim ke tim penjualan.' : 'Nomor WhatsApp belum diisi. Salin pesan ini atau kirim lewat email.'}
+          {wa
+            ? 'Periksa isinya, lalu buka WhatsApp untuk mengirim ke tim penjualan.'
+            : mail
+              ? 'Periksa isinya, lalu kirim lewat email.'
+              : 'Salin pesan ini, lalu kirim ke kontak kami.'}
         </p>
         <pre
           aria-live="polite"
@@ -138,13 +161,16 @@ export function InquiryForm({ m, preset }: { m: SaudagarModel; preset: QuotePres
               <WhatsAppIcon className="h-5 w-5 shrink-0" />
               Buka WhatsApp
             </ActionLink>
+          ) : mail ? (
+            <ActionLink action={{ kind: 'external', href: mail }} className={`${BTN.ink} ${BTN.lg}`}>
+              <Mail aria-hidden className="h-5 w-5 shrink-0" />
+              Kirim lewat email
+            </ActionLink>
           ) : (
-            mail && (
-              <ActionLink action={{ kind: 'external', href: mail }} className={`${BTN.ink} ${BTN.lg}`}>
-                <Mail aria-hidden className="h-5 w-5 shrink-0" />
-                Kirim lewat email
-              </ActionLink>
-            )
+            <button type="button" onClick={copy} className={`${BTN.ink} ${BTN.lg}`}>
+              {copied ? <Check aria-hidden className="h-5 w-5 shrink-0" /> : <Copy aria-hidden className="h-5 w-5 shrink-0" />}
+              {copied ? 'Tersalin' : 'Salin pesan'}
+            </button>
           )}
           <button
             type="button"
@@ -213,9 +239,9 @@ export function InquiryForm({ m, preset }: { m: SaudagarModel; preset: QuotePres
               >
                 <option value="">Pilih komoditas</option>
                 {groups.map((group) => (
-                  <optgroup key={group.name} label={group.name}>
-                    {group.items.map((name) => (
-                      <option key={name} value={name}>
+                  <optgroup key={group.key} label={group.name}>
+                    {group.items.map((name, i) => (
+                      <option key={`${name}-${i}`} value={name}>
                         {name}
                       </option>
                     ))}
@@ -321,9 +347,10 @@ export function InquiryForm({ m, preset }: { m: SaudagarModel; preset: QuotePres
         </Field>
       </div>
 
+      {/* Tanpa nomor WhatsApp: label & ikon tidak menjanjikan WhatsApp */}
       <button type="submit" className={`${BTN.ink} ${BTN.lg} mt-7 w-full @xl:w-auto`}>
-        <WhatsAppIcon className="h-5 w-5 shrink-0" />
-        Susun pesan WhatsApp
+        {canWa && <WhatsAppIcon className="h-5 w-5 shrink-0" />}
+        {canWa ? 'Susun pesan WhatsApp' : 'Susun pesan'}
       </button>
       {note && <p className={`mt-4 text-[12.5px] leading-snug ${C.muted}`}>{note}</p>}
     </form>

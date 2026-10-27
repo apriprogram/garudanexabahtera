@@ -107,6 +107,7 @@ export const nusaniagaContent: SiteContent = {
     subtitle:
       'Contoh produk yang rutin kami datangkan. Spesifikasi, grade, dan jumlahnya disesuaikan dengan kebutuhan pabrik Anda.',
     note: 'Data teknis dan harga terbaru kami kirim lewat WhatsApp atau email setelah Anda mengisi formulir penawaran.',
+    button_label: 'Minta data teknis',
     items: [
       {
         name: 'Resin plastik PP & HDPE',
@@ -187,7 +188,7 @@ export const nusaniagaContent: SiteContent = {
       },
       {
         title: 'Pengapalan & kepabeanan',
-        duration: 'Minggu 4–10',
+        duration: 'Minggu 4–14',
         text: 'Barang dikapalkan dan dokumen impornya disiapkan bersama mitra kepabeanan. Anda menerima kabar setiap kali tahapnya berganti.',
         output: 'Salinan dokumen pengapalan',
       },
@@ -251,14 +252,15 @@ export const nusaniagaContent: SiteContent = {
       { value: '18', unit: 'negara', label: 'Negara asal pemasok' },
       { value: '2.400+', unit: 'SKU', label: 'Bahan baku, mesin, dan suku cadang' },
       { value: '140+', unit: 'pabrik', label: 'Pelanggan aktif di Jawa dan Sumatra' },
-      { value: '6.500', unit: 'm²', label: 'Gudang dan ruang uji di Cikarang' },
+      { value: '6.500', unit: 'm²', label: 'Luas gudang di Cikarang' },
     ],
   },
   testimonials: {
     enabled: true,
     eyebrow: 'Testimoni',
     title: 'Kata bagian pengadaan yang sudah bekerja sama dengan kami',
-    subtitle: 'Pabrik kemasan, logam, dan makanan di Karawang, Bekasi, dan Tangerang yang rutin memesan bahan baku dan mesin lewat kami.',
+    subtitle:
+      'Pabrik kemasan plastik, komponen logam, dan kemasan makanan di Karawang, Bekasi, dan Tangerang yang rutin memesan bahan baku dan mesin lewat kami.',
     items: [
       {
         name: 'Andreas Wijaya',

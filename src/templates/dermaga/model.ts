@@ -73,7 +73,8 @@ const NUMBERED = ['about', 'services', 'markets', 'process', 'gallery', 'testimo
 
 /** [kunci list, maks. item (= skema), syarat item dirender] per section. Satu sumber untuk komponen, menu, nomor. */
 const ITEMS: Record<string, [listKey: string, max: number, keep: (item: ListItem) => boolean]> = {
-  clients: ['items', 12, (i) => !!(field(i, 'name') || hasImage(field(i, 'logo')))],
+  // Nama wajib: dipakai sebagai alt logo dan sebagai teks bila logo gagal dimuat (logo saja → sel hanya berisi sektor)
+  clients: ['items', 12, (i) => !!field(i, 'name')],
   services: ['items', 9, (i) => !!field(i, 'title')],
   markets: ['regions', 8, (i) => !!field(i, 'name')],
   process: ['steps', 6, (i) => !!field(i, 'title')],
@@ -231,6 +232,12 @@ export const wordmarkOf = (custom: string, company: string): string => custom ||
 /** Nomor dua digit "01". */
 export const pad2 = (n: number): string => String(n).padStart(2, '0');
 
+/** Nomor HP Indonesia yang ditulis rapat ("081234567890") → "0812-3456-7890" untuk dibaca; format lain apa adanya. */
+export const displayPhone = (raw: string): string => {
+  const value = (raw || '').trim();
+  return /^08\d{8,11}$/.test(value) ? `${value.slice(0, 4)}-${value.slice(4, 8)}-${value.slice(8)}` : value;
+};
+
 // ─── Formulir permintaan penawaran ────────────────────────────────────────────
 
 export interface InquiryForm {
@@ -283,8 +290,8 @@ export const INQUIRY_LIMITS: Record<keyof InquiryForm, number> = {
   note: 400,
 };
 
-/** Layanan impor → kolom negara menjadi "Negara asal". */
-export const isImport = (service: string): boolean => /impor/i.test(service || '');
+/** Layanan impor → kolom negara menjadi "Negara asal". Pilihan gabungan ("Ekspor & impor") tetap "Negara tujuan". */
+export const isImport = (service: string): boolean => /impor/i.test(service || '') && !/ekspor/i.test(service || '');
 
 /** Teks bersih satu baris: karakter kontrol dibuang, spasi dirapikan, dipotong ke `max`. */
 export function cleanText(raw: string, max: number): string {

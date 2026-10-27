@@ -21,7 +21,7 @@ function Caption({ index, caption }: { index: number; caption: string }) {
       <span aria-hidden className="shrink-0 font-mono text-[12px] font-medium tabular-nums tracking-[0.04em] text-(--tpl-accent-ink)">
         G{pad2(index + 1)}
       </span>
-      {caption && <span className={`text-[14px] leading-snug ${C.muted}`}>{caption}</span>}
+      {caption && <span className={`text-balance text-[14px] leading-snug ${C.muted}`}>{caption}</span>}
     </figcaption>
   );
 }
@@ -34,7 +34,13 @@ export function Gallery({ m }: { m: DermagaModel }) {
   return (
     <TemplateSection sectionKey="gallery" className={SECTION_PAD}>
       <div className={CONTAINER}>
-        <SectionHead eyebrow={text(gallery, 'eyebrow')} number={m.number('gallery')} title={text(gallery, 'title')} subtitle={text(gallery, 'subtitle')} />
+        <SectionHead
+          eyebrow={text(gallery, 'eyebrow')}
+          number={m.number('gallery')}
+          title={text(gallery, 'title')}
+          subtitle={text(gallery, 'subtitle')}
+          srTitle={text(gallery, 'eyebrow') || 'Galeri'}
+        />
         <Reveal variant="fade" as="figure" className="mt-10 @3xl:mt-14">
           <KitPhoto
             src={field(first, 'image')}
@@ -91,15 +97,26 @@ export function Testimonials({ m }: { m: DermagaModel }) {
   return (
     <TemplateSection sectionKey="testimonials" className={SECTION_PAD}>
       <div className={CONTAINER}>
-        <SectionHead eyebrow={text(testimonials, 'eyebrow')} number={m.number('testimonials')} title={text(testimonials, 'title')} />
-        {/* Subgrid: kepala REF, kutipan, dan nama sejajar antar-kartu sebaris walau rute di kepala terbungkus 2 baris */}
+        <SectionHead
+          eyebrow={text(testimonials, 'eyebrow')}
+          number={m.number('testimonials')}
+          title={text(testimonials, 'title')}
+          srTitle={text(testimonials, 'eyebrow') || 'Testimoni'}
+        />
+        {/* Subgrid: kepala REF, kutipan, dan nama sejajar antar-kartu sebaris walau rute di kepala terbungkus 2 baris.
+            Dua kolom (tablet mendatar): kartu terakhir bernomor ganjil melebar satu baris penuh, tanpa sel kosong. */}
         <ul className="mt-10 grid gap-x-5 @3xl:mt-14 @4xl:grid-cols-2 @5xl:gap-x-6 @6xl:grid-cols-3">
           {items.map((item, i) => {
             const name = field(item, 'name');
             const role = field(item, 'role');
             const route = field(item, 'route');
             return (
-              <Reveal as="li" key={`${name}-${i}`} delay={stagger(i)} className="row-span-3 grid min-w-0 grid-rows-subgrid pb-5 @5xl:pb-6">
+              <Reveal
+                as="li"
+                key={`${name}-${i}`}
+                delay={stagger(i)}
+                className="row-span-3 grid min-w-0 grid-rows-subgrid pb-5 @4xl:last:odd:col-span-2 @5xl:pb-6 @6xl:last:odd:col-span-1"
+              >
                 <figure className={`row-span-3 grid grid-rows-subgrid p-6 @5xl:p-7 ${CARD}`}>
                   <p className={`border-b pb-4 ${C.line} ${MONO_LABEL} ${C.muted} leading-relaxed`}>
                     <span className="text-(--tpl-accent-ink)">REF {pad2(i + 1)}</span>
@@ -114,7 +131,8 @@ export function Testimonials({ m }: { m: DermagaModel }) {
                     <p>“{field(item, 'quote')}”</p>
                   </blockquote>
                   {(name || role) && (
-                    <figcaption className="mt-8 flex items-center gap-3.5 self-end">
+                    // Mengisi baris subgrid ke-3, isi rata atas: foto & nama sejajar antar-kartu walau jabatan 2 baris
+                    <figcaption className="mt-8 flex items-start gap-3.5">
                       <SquareAvatar name={name} photo={field(item, 'photo')} />
                       <span className="min-w-0">
                         {name && <span className={`block text-[15px] font-semibold leading-snug ${C.ink}`}>{name}</span>}

@@ -232,7 +232,7 @@ export type InquiryErrors = Partial<Record<keyof InquiryForm, string>>;
 export const ORIGIN_ANY = 'Terserah / belum tahu';
 /** Incoterm bawaan "Belum tahu" juga tidak ikut pesan. */
 export const INCOTERM_ANY = 'Belum tahu';
-export const INCOTERMS = [INCOTERM_ANY, 'EXW', 'FOB', 'CFR', 'CIF', 'DAP', 'DDP (diantar ke pabrik)'] as const;
+export const INCOTERMS = [INCOTERM_ANY, 'EXW', 'FOB', 'CFR', 'CIF', 'DAP', 'DDP'] as const;
 
 /** Pilihan kebutuhan bila daftar di CMS kosong. */
 export const DEFAULT_NEEDS = ['Bahan baku', 'Mesin', 'Suku cadang', 'Sourcing pemasok'];

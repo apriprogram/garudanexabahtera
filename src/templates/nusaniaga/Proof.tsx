@@ -23,12 +23,15 @@ function statCell(i: number, count: number, wide: boolean): string {
   }
   // Satu baris (1–3 angka, atau 4 angka selebar penuh): garis kanan kecuali sel terakhir; HP 4 angka → 2×2
   if (count === 4) return `${i % 2 === 0 ? 'border-r' : ''} ${i >= 2 ? 'border-t @5xl:border-t-0' : ''} ${i === 1 ? '@5xl:border-r' : ''}`;
-  return i < count - 1 ? 'border-b @xl:border-b-0 @xl:border-r' : '';
+  if (i >= count - 1) return '';
+  // 3 angka di samping foto: kartunya hanya selebar setengah halaman, jadi di layar lebar ketiganya bertumpuk lagi
+  if (count === 3 && !wide) return 'border-b @xl:border-b-0 @xl:border-r @5xl:border-r-0 @5xl:border-b';
+  return 'border-b @xl:border-b-0 @xl:border-r';
 }
 
 function statGrid(count: number, wide: boolean): string {
   if (count === 4) return wide ? 'grid-cols-2 @5xl:grid-cols-4' : 'grid-cols-2';
-  if (count === 3) return 'grid-cols-1 @xl:grid-cols-3';
+  if (count === 3) return wide ? 'grid-cols-1 @xl:grid-cols-3' : 'grid-cols-1 @xl:grid-cols-3 @5xl:grid-cols-1';
   if (count === 2) return 'grid-cols-1 @xl:grid-cols-2';
   return 'grid-cols-1';
 }
@@ -56,7 +59,9 @@ export function Advantages({ m }: { m: NusaNiagaModel }) {
                     const unit = field(stat, 'unit');
                     const label = field(stat, 'label');
                     return (
-                      <div key={`${field(stat, 'value')}-${i}`} className={`flex min-w-0 flex-col p-6 @5xl:p-8 ${LINE} ${statCell(i, stats.length, wide)}`}>
+                      // Sel = wadah ukuran: angka besar menyesuaikan lebar selnya sendiri (cqi), tidak meluber di HP 320–375
+                      // atau di kartu setengah halaman
+                      <div key={`${field(stat, 'value')}-${i}`} className={`@container flex min-w-0 flex-col p-6 @5xl:p-8 ${LINE} ${statCell(i, stats.length, wide)}`}>
                         <dt className="order-3 mt-3 max-w-[28ch] text-[14px] leading-snug text-[#4D5562]">{label || unit}</dt>
                         {unit && (
                           <dd aria-hidden className="order-1">

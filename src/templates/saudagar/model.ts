@@ -15,6 +15,7 @@ import {
   list,
   mailHref,
   mapsInfo,
+  paragraphs,
   parseHex,
   resolveAction,
   safeUrl,
@@ -94,9 +95,11 @@ export function sectionTarget(target: string): string | null {
 
 export const MAX_CATEGORIES = 4;
 export const MAX_PRODUCTS = 12;
+/** Kunci tab untuk kartu tanpa kategori (= kategori bernama "Lainnya"). */
+const OTHER_TAB = 'lainnya';
 
 export interface ProductTab {
-  /** Kunci stabil (nama dinormalisasi; "" = tanpa kategori) */
+  /** Kunci stabil (nama dinormalisasi; kartu tanpa kategori → "lainnya") */
   key: string;
   name: string;
   intro: string;
@@ -115,8 +118,8 @@ const normalize = (value: string) =>
 
 /**
  * Tab komoditas: satu per kategori (urutan CMS) yang punya ≥ 1 kartu bernama; kategori kartu yang tidak terdaftar
- * ditambahkan di belakang (tanpa foto/pengantar); kartu tanpa kategori → tab "Lainnya". Maks. 4 tab; kartu di luar
- * tab yang tampil tidak dirender.
+ * ditambahkan di belakang (tanpa foto/pengantar); kartu tanpa kategori → tab "Lainnya" (sama dengan kategori bernama
+ * "Lainnya" bila ada, jadi tidak muncul dua tab "Lainnya"). Maks. 4 tab; kartu di luar tab yang tampil tidak dirender.
  */
 export function productTabs(products: SectionContent): ProductTab[] {
   const items = list(products, 'items', MAX_PRODUCTS).filter((item) => field(item, 'name'));
@@ -129,7 +132,7 @@ export function productTabs(products: SectionContent): ProductTab[] {
   }
   for (const item of items) {
     const raw = field(item, 'category');
-    const key = normalize(raw);
+    const key = normalize(raw) || OTHER_TAB;
     if (!tabs.has(key)) tabs.set(key, { key, name: raw || 'Lainnya', intro: '', image: '', origin: '', items: [] });
     tabs.get(key)!.items.push(item);
   }
@@ -233,7 +236,10 @@ export function sectionItems(key: string, section: SectionContent): ListItem[] {
 export const marketOrigins = (markets: SectionContent): ListItem[] => list(markets, 'origins', 6).filter((i) => field(i, 'name'));
 export const marketDestinations = (markets: SectionContent): ListItem[] => list(markets, 'destinations', 10).filter((i) => field(i, 'country'));
 
-/** Section tampil dan berisi? Kunci yang tidak dikenal → false. */
+/**
+ * Section tampil dan berisi? Syaratnya sama dengan komponennya (tanpa tautan mati ke section yang tidak dirender).
+ * Kunci yang tidak dikenal → false.
+ */
 export function sectionShown(content: SiteContent, key: string): boolean {
   if (!KNOWN_SECTIONS.has(key)) return false;
   const s = getSection(content, key);
@@ -241,6 +247,17 @@ export function sectionShown(content: SiteContent, key: string): boolean {
   if (key in ITEMS) return sectionItems(key, s).length > 0;
   if (key === 'products') return productTabs(s).length > 0;
   if (key === 'markets') return marketOrigins(s).length > 0 || marketDestinations(s).length > 0;
+  // Tentang (About.tsx): pernyataan, cerita, foto, atau angka
+  if (key === 'about') {
+    return !!text(s, 'title') || paragraphs(text(s, 'body')).length > 0 || hasImage(text(s, 'image')) || list(s, 'stats', 3).some((i) => !!field(i, 'value'));
+  }
+  // Ajakan (Closing.tsx Cta): judul, deskripsi, atau tombol yang punya tujuan (tautan sendiri, formulir, WhatsApp)
+  if (key === 'cta') {
+    if (text(s, 'title') || text(s, 'subtitle')) return true;
+    if (!text(s, 'button_label')) return false;
+    const contact = getSection(content, 'contact');
+    return !!resolveAction(text(s, 'button_url'), null) || isEnabled(contact) || !!whatsappHref(text(contact, 'whatsapp'));
+  }
   return true;
 }
 
@@ -253,7 +270,7 @@ export interface SaudagarNavItem {
   side: 'left' | 'right' | 'panel';
 }
 
-/** Menu tetap (label bawaan template). Kontak hanya di panel HP & footer; layar lebar mencapainya lewat tombol pil. */
+/** Menu (label bawaan template). Kontak hanya di panel HP & footer; layar lebar mencapainya lewat tombol pil. */
 const NAV: SaudagarNavItem[] = [
   { key: 'about', label: 'Tentang', side: 'left' },
   { key: 'products', label: 'Komoditas', side: 'left' },
@@ -264,9 +281,19 @@ const NAV: SaudagarNavItem[] = [
   { key: 'contact', label: 'Kontak', side: 'panel' },
 ];
 
-/** Menu hanya untuk section yang benar-benar tampil (tanpa tautan mati). */
+/** Label kecil section dipakai sebagai nama menu bila satu kata ≤ 12 huruf (masthead tetap muat). */
+export const NAV_LABEL_MAX = 12;
+
+/**
+ * Menu hanya untuk section yang benar-benar tampil (tanpa tautan mati). Nama menu = label kecil section dari CMS bila
+ * berupa satu kata ≤ 12 huruf (mis. "Produk", "Products"); lebih panjang / kosong → label bawaan. Kontak tetap "Kontak".
+ */
 export function navItems(content: SiteContent): SaudagarNavItem[] {
-  return NAV.filter(({ key }) => sectionShown(content, key));
+  return NAV.filter(({ key }) => sectionShown(content, key)).map(({ key, label, side }) => {
+    const eyebrow = text(getSection(content, key), 'eyebrow');
+    const own = key !== 'contact' && eyebrow.length <= NAV_LABEL_MAX && !/\s/.test(eyebrow);
+    return { key, side, label: own && eyebrow ? eyebrow : label };
+  });
 }
 
 // ─── Formulir permintaan penawaran ────────────────────────────────────────────

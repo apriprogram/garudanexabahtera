@@ -24,11 +24,13 @@ const listField = (key: string, label: string, itemLabel: string, fields: Templa
   max,
 });
 
-const eyebrow = (placeholder: string) =>
+const EYEBROW_HELP = 'Tampil miring dengan tanda pisah di depannya, mis. "— Komoditas". Kosongkan untuk menyembunyikan.';
+/** `inMenu`: section yang ada di menu; label satu kata (maks. 12 huruf) sekaligus menjadi nama menunya (./model navItems). */
+const eyebrow = (placeholder: string, inMenu = false) =>
   t('eyebrow', 'Label kecil di atas judul', {
     placeholder,
     maxLength: 40,
-    help: 'Tampil miring dengan tanda pisah di depannya, mis. "— Komoditas". Kosongkan untuk menyembunyikan.',
+    help: inMenu ? `${EYEBROW_HELP} Bila hanya satu kata (maks. 12 huruf), juga dipakai sebagai nama menu.` : EYEBROW_HELP,
   });
 const title = (placeholder: string, maxLength = 110) => t('title', 'Judul', { placeholder, maxLength });
 const highlight = (placeholder: string) =>
@@ -92,7 +94,7 @@ export const saudagarSections: TemplateSection[] = [
     description: 'Pernyataan besar, cerita perusahaan, nama pendiri, foto berbingkai lengkung, dan hingga 3 angka besar.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Tentang kami'),
+      eyebrow('mis. Tentang kami', true),
       t('title', 'Pernyataan besar', { placeholder: 'Satu kalimat tentang cara Anda bekerja.', maxLength: 140 }),
       highlight('mis. kami periksa sendiri'),
       ta('body', 'Cerita perusahaan', { placeholder: 'Pisahkan paragraf dengan baris kosong.', maxLength: 700, help: 'Paragraf dipisah baris kosong.' }),
@@ -119,7 +121,7 @@ export const saudagarSections: TemplateSection[] = [
       'Tab per kategori (mis. Kopi, Kakao, Rempah, Kelapa) dengan foto dan pengantar, lalu kartu spesifikasi per komoditas. Hanya satu kategori → tab otomatis hilang. Tombol di kartu membuka formulir penawaran dengan komoditas itu terpilih.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Komoditas'),
+      eyebrow('mis. Komoditas', true),
       title('mis. Spesifikasi komoditas yang kami kirim'),
       subtitle(),
       t('label_grade', 'Nama baris "Grade"', { placeholder: 'Grade', maxLength: 24, help: 'Ganti bila Anda menulis dalam bahasa lain. Kosong → "Grade".' }),
@@ -166,7 +168,7 @@ export const saudagarSections: TemplateSection[] = [
     description: 'Langkah bernomor dari pembelian sampai kontainer disegel, satu foto, dan daftar dokumen yang disiapkan bersama pembeli.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Mutu'),
+      eyebrow('mis. Mutu', true),
       title('mis. Lima langkah sebelum karung masuk kontainer'),
       subtitle(),
       img('image', 'Foto', ARCH_HELP),
@@ -191,11 +193,19 @@ export const saudagarSections: TemplateSection[] = [
     description: 'Satu baris per komoditas dengan batang musim panen dan panen raya per bulan. Bulan ditulis biasa, mis. "Mei–Sep" atau "Apr–Jul, Okt–Des".',
     toggleable: true,
     fields: [
-      eyebrow('mis. Musim panen'),
+      eyebrow('mis. Musim panen', true),
       title('mis. Kalender panen untuk merencanakan kontrak'),
       subtitle(),
-      t('legend_harvest', 'Keterangan batang muda', { placeholder: 'Musim panen', maxLength: 24 }),
-      t('legend_peak', 'Keterangan batang tegas', { placeholder: 'Panen raya', maxLength: 24 }),
+      t('legend_harvest', 'Keterangan batang muda', {
+        placeholder: 'Musim panen',
+        maxLength: 24,
+        help: 'Juga awalan teks tiap baris, mis. "Musim panen Mei–Sep". Kosong → "Panen".',
+      }),
+      t('legend_peak', 'Keterangan batang tegas', {
+        placeholder: 'Panen raya',
+        maxLength: 24,
+        help: 'Juga awalan teks tiap baris, mis. "panen raya Jun–Agu". Kosong → "puncak".',
+      }),
       t('month_labels', 'Nama bulan', {
         placeholder: 'Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des',
         maxLength: 90,
@@ -223,7 +233,7 @@ export const saudagarSections: TemplateSection[] = [
     description: 'Daerah asal dengan foto bulat, lalu negara tujuan beserta pelabuhan, komoditas, dan Incoterm.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Asal & tujuan'),
+      eyebrow('mis. Asal & tujuan', true),
       title('mis. Dari kebun di Sulawesi ke pelabuhan pembeli kami'),
       subtitle(),
       t('origins_title', 'Judul daftar asal', { placeholder: 'mis. Asal komoditas', maxLength: 40 }),
@@ -260,7 +270,7 @@ export const saudagarSections: TemplateSection[] = [
     description: 'Foto berbingkai lengkung dengan keterangan dan lokasi, dari kebun sampai pemuatan.',
     toggleable: true,
     fields: [
-      eyebrow('mis. Galeri'),
+      eyebrow('mis. Galeri', true),
       title('mis. Dari kebun ke kontainer'),
       listField(
         'items',

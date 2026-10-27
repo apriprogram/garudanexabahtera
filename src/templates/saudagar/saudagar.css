@@ -16,7 +16,7 @@
     display: none;
   }
 
-  /* Garis saffron di bawah tab aktif (keadaan, bukan animasi: tetap benar walau gerak mati) */
+  /* Garis tinta tema di bawah tab aktif (keadaan, bukan animasi: tetap benar walau gerak mati) */
   .sg-tab-line {
     transform: scaleX(0);
     transform-origin: left center;

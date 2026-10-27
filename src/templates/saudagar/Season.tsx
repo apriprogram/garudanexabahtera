@@ -1,11 +1,12 @@
 // Kalender panen (kunci `season`, latar kertas). Kepala terbelah (label + H2 kiri; deskripsi + keterangan batang
-// kanan), lalu satu baris per komoditas: ikon bulat kraft + nama (H3) + daerah + ringkasan teks "Panen Mei–Sep · puncak
-// Jun–Agu" (yang dibaca pembaca layar), dan lintasan 12 bulan (aria-hidden): batang muda bergaris saffron = musim panen,
-// batang saffron tegas = panen raya. Rentang yang melewati akhir tahun (Nov–Feb) jadi dua potong; teks bulan yang tidak
+// kanan), lalu satu baris per komoditas: ikon bulat kraft + nama (H3) + daerah + ringkasan teks "Musim panen Mei–Sep ·
+// panen raya Jun–Agu" (awalannya = keterangan batang dari CMS; versi teks dari batang yang aria-hidden), dan lintasan 12
+// bulan (aria-hidden): batang muda bergaris saffron = musim panen, batang saffron tegas = panen raya. Rentang yang
+// melewati akhir tahun (Nov–Feb) jadi dua potong; teks bulan yang tidak
 // dikenal → baris tanpa batang. Bulan berjalan ditandai di kepala kolom dan lajur tipis. Batang tumbuh sekali (scaleX)
 // saat kalender masuk layar (CSS .sg-cal/.sg-bar di ./saudagar.css). HP: satu baris inisial bulan di atas daftar,
 // lintasan selebar layar di bawah nama tiap komoditas.
-import type { CSSProperties } from 'react';
+import { Fragment, type CSSProperties } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { TemplateSection } from '../shared/Shell';
@@ -15,7 +16,7 @@ import { monthLabels, parseMonths, type SaudagarModel } from './model';
 import { C, SECTION_PAD, SERIF } from './styles';
 import { CommodityIcon, SectionHead } from './ui';
 
-// Kolom nama ≥ 272px: ringkasan "Panen Jul–Okt · puncak Agu–Sep" muat satu baris di laptop kecil & tablet
+// Kolom nama ≥ 272px: nama komoditas & daerah muat satu baris di laptop kecil & tablet (ringkasan boleh dua baris)
 const ROW = 'grid gap-3 @3xl:grid-cols-[minmax(272px,3fr)_9fr] @3xl:items-center @3xl:gap-8';
 
 function Bars({ ranges, peak = false, index }: { ranges: [number, number][]; peak?: boolean; index: number }) {
@@ -59,7 +60,12 @@ export function Season({ m }: { m: SaudagarModel }) {
   if (rows.length === 0) return null;
   const labels = monthLabels(text(season, 'month_labels'));
   const note = text(season, 'note');
-  const legend = <Legend harvest={text(season, 'legend_harvest')} peak={text(season, 'legend_peak')} />;
+  const legendHarvest = text(season, 'legend_harvest');
+  const legendPeak = text(season, 'legend_peak');
+  const legend = <Legend harvest={legendHarvest} peak={legendPeak} />;
+  // Awalan ringkasan tiap baris = keterangan batang (bisa ditulis dalam bahasa lain); kosong → "Panen" / "puncak"
+  const harvestWord = legendHarvest || 'Panen';
+  const peakWord = legendPeak ? legendPeak.charAt(0).toLowerCase() + legendPeak.slice(1) : 'puncak';
 
   const lanes = (
     <span aria-hidden className="absolute inset-0 grid grid-cols-12">
@@ -100,7 +106,7 @@ export function Season({ m }: { m: SaudagarModel }) {
               const peakRaw = field(item, 'peak');
               const harvest = parseMonths(harvestRaw);
               const peak = parseMonths(peakRaw);
-              const summary = [harvestRaw && `Panen ${harvestRaw}`, peakRaw && `puncak ${peakRaw}`].filter(Boolean).join(' · ');
+              const summary = [harvestRaw && `${harvestWord} ${harvestRaw}`, peakRaw && `${peakWord} ${peakRaw}`].filter(Boolean);
               return (
                 <li key={`${field(item, 'name')}-${i}`} className={`${ROW} py-5`}>
                   <div className="flex min-w-0 items-start gap-3.5">
@@ -110,10 +116,20 @@ export function Season({ m }: { m: SaudagarModel }) {
                     <div className="min-w-0">
                       <h3 className={`${SERIF} text-[20px] font-normal leading-snug tracking-[-0.01em] ${C.ink}`}>{field(item, 'name')}</h3>
                       {field(item, 'origin') && <p className={`text-[13px] leading-snug ${C.muted}`}>{field(item, 'origin')}</p>}
-                      {(summary || field(item, 'note')) && (
+                      {(summary.length > 0 || field(item, 'note')) && (
+                        // Tiap bagian ("Musim panen Mei–Sep") satu blok sebaris: baris hanya patah di tanda " · ", bukan di
+                        // tengah "panen raya"; bagian yang lebih panjang dari kolom tetap terlipat di dalam bloknya
                         <p className={`mt-1 text-pretty text-[13px] leading-snug ${C.muted}`}>
-                          {summary}
-                          {summary && field(item, 'note') ? '. ' : ''}
+                          {summary.map((part, j) => (
+                            <Fragment key={j}>
+                              {j > 0 && ' '}
+                              <span className="inline-block max-w-full">
+                                {part}
+                                {j < summary.length - 1 && ' ·'}
+                              </span>
+                            </Fragment>
+                          ))}
+                          {summary.length > 0 && field(item, 'note') ? '. ' : ''}
                           {field(item, 'note')}
                         </p>
                       )}

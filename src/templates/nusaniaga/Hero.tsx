@@ -69,7 +69,8 @@ export function Hero({ m }: { m: NusaNiagaModel }) {
                 return (
                   <li key={`${field(item, 'country')}-${i}`} className="flex shrink-0">
                     {m.originAction ? (
-                      <ActionLink action={m.originAction} className={`${CHIP} transition-colors duration-200 hover:ring-(--tpl-accent)`}>
+                      // Cincin fokus di DALAM chip: baris chip HP adalah wadah gulir (memotong atas-bawah) bertepi pudar
+                      <ActionLink action={m.originAction} className={`${CHIP} transition-colors duration-200 hover:ring-(--tpl-accent) focus-visible:outline-offset-[-2px]`}>
                         {body}
                       </ActionLink>
                     ) : (
@@ -83,9 +84,11 @@ export function Hero({ m }: { m: NusaNiagaModel }) {
         )}
 
         {/* Foto: menembus tepi kiri layar (margin negatif = jarak tepi CONTAINER; di atas 1680px dihitung dari lebar
-            wadah). Bilah = mask statis .nn-slats pada wadah foto. Garis aksen di atas bilah tertinggi (kanan). */}
+            wadah). Bilah = mask statis .nn-slats pada wadah foto. Garis aksen di atas bilah tertinggi (kanan).
+            Layar lebar: tinggi MINIMUM setinggi layar; bila kolom teks lebih tinggi (laptop 1280×720, 1366×768) foto
+            ikut meregang sampai dasar hero, jadi bilahnya tidak berhenti di tengah. */}
         <div
-          className={`relative -ml-5 mt-8 aspect-[4/5] @xl:aspect-square @2xl:-ml-8 @3xl:aspect-[5/4] @5xl:col-[1/7] @5xl:row-[1/-1] @5xl:mt-0 @5xl:-ml-12 @5xl:aspect-auto @5xl:h-[clamp(580px,calc(100svh-72px),820px)] @7xl:col-[1/8] @min-[96rem]:-ml-16 @min-[105rem]:ml-[calc(840px-50cqw-4rem)]`}
+          className={`relative -ml-5 mt-8 aspect-[4/5] @xl:aspect-square @2xl:-ml-8 @3xl:aspect-[5/4] @5xl:col-[1/7] @5xl:row-[1/-1] @5xl:mt-0 @5xl:-ml-12 @5xl:aspect-auto @5xl:h-auto @5xl:min-h-[clamp(580px,calc(100svh-72px),820px)] @7xl:col-[1/8] @min-[96rem]:-ml-16 @min-[105rem]:ml-[calc(840px-50cqw-4rem)]`}
         >
           <KitPhoto
             src={image}

@@ -27,7 +27,8 @@ import { BTN, C, CARD, INPUT, INPUT_ERROR, INPUT_IDLE, TYPE_N } from './styles';
 /** Urutan isian di layar (fokus ke galat pertama mengikuti urutan ini). */
 const ORDER: (keyof InquiryForm)[] = ['name', 'company', 'need', 'volume', 'product', 'origin', 'incoterm', 'location', 'start', 'note'];
 
-const FALLBACK_NOTE = 'Formulir ini hanya menyusun pesan WhatsApp untuk tim kami; data tidak disimpan di website.';
+/** Kalimat jujur bila "Keterangan formulir" dikosongkan; netral saluran (tanpa nomor WhatsApp pesan dikirim lewat email/salin). */
+const FALLBACK_NOTE = 'Formulir ini hanya menyusun pesan untuk tim kami; data tidak disimpan di website.';
 
 function Field({ id, label, optional = false, error, className = '', children }: { id: string; label: string; optional?: boolean; error?: string; className?: string; children: ReactNode }) {
   return (
@@ -68,7 +69,9 @@ export function Inquiry({ m }: { m: NusaNiagaModel }) {
   const countries = m.shown('coverage') ? m.items('coverage').map((item) => field(item, 'country')) : [];
   const title = text(contact, 'form_title');
   const note = text(contact, 'form_text') || FALLBACK_NOTE;
-  const button = text(contact, 'form_button') || 'Susun pesan WhatsApp';
+  // Tanpa nomor WhatsApp pesan dikirim lewat email atau disalin: tombol tidak menjanjikan WhatsApp
+  const hasWa = !!m.waAction;
+  const button = hasWa ? text(contact, 'form_button') || 'Susun pesan WhatsApp' : 'Susun pesan';
   const email = text(contact, 'email');
   const id = (key: keyof InquiryForm) => `${baseId}-${key}`;
 
@@ -293,7 +296,7 @@ export function Inquiry({ m }: { m: NusaNiagaModel }) {
         </div>
       </div>
       <button type="submit" className={`${BTN.primary} ${BTN.lg} mt-7 w-full`}>
-        <WhatsAppIcon className="h-5 w-5 shrink-0" />
+        {hasWa && <WhatsAppIcon className="h-5 w-5 shrink-0" />}
         {button}
       </button>
       <p className={`mt-4 flex items-start gap-2 text-[13px] leading-snug ${C.muted}`}>
@@ -303,10 +306,15 @@ export function Inquiry({ m }: { m: NusaNiagaModel }) {
     </form>
   );
 
-  // Pembungkus tetap (formulir ↔ pesan bergantian di dalamnya): tempat mencari isian untuk fokus + pengumuman sopan
+  // Pembungkus tetap (formulir ↔ pesan bergantian di dalamnya): tempat mencari isian untuk fokus. BUKAN aria-live:
+  // fokus sudah pindah ke judul "Pesan siap dikirim" / isian pertama yang salah, jadi pembaca layar tidak membacakan
+  // seluruh formulir atau pesan dua kali. Hanya status salin yang diumumkan (tombolnya tetap terfokus).
   return (
-    <div ref={cardRef} aria-live="polite">
+    <div ref={cardRef}>
       {result || formView}
+      <p className="sr-only" aria-live="polite">
+        {sent && copied ? 'Pesan tersalin.' : ''}
+      </p>
     </div>
   );
 }
