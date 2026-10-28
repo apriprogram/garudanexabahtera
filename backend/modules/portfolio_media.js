@@ -3,9 +3,13 @@
 // PHP backend: keep both identical (action names, limits, generated names, error messages and HTTP status codes).
 //
 // portfolio_data is a JSON array of projects (Pengaturan website > Proyek, src/pages/admin/portfolio). The old fields
-// are saved as sent: title, desc (tag / kategori), image (cover of the card; a data: URI of an older admin page stays a
-// data: URI, as before), span (grid width, no longer used by the site). The newer, optional fields are normalized
-// (src/components/sections/projects/portfolio.ts reads them the same way) and dropped when they end up empty:
+// are saved as sent: title, desc (tag / kategori), image (cover of the card), span (grid width, no longer used by the
+// site). Except a data: cover: older admin pages stored the cover inline, and get_settings put those base64 images into
+// every prerendered page (gn-preload). update_settings stores it on S3 with the checks of upload_project_image, as
+// assets/projects/project_<first 12 hex of its SHA-256>.<ext> so saving the same cover again gives the same object; a
+// cover the checks refuse fails the save (400 "Proyek ke-N: ..."). Objects are written only once every project passed.
+// The newer, optional fields are normalized (src/components/sections/projects/portfolio.ts reads them the same way) and
+// dropped when they end up empty:
 //   description  text, newlines kept (\r\n → \n), control characters removed, trimmed, at most 3000 characters
 //   tools        tech stack: strings with whitespace collapsed, at most 40 characters each, duplicates (ASCII case
 //                ignored) and empty names dropped, at most 12
@@ -13,7 +17,8 @@
 //                500 characters; anything else is dropped
 //   gallery      images shown in the project dialog: links (passThrough), at most 12; a data: URI is refused (400)
 //   video        a link (passThrough); a data: URI is refused (400)
-// Legacy: a project sent without image takes the stored image at the same position (as before this module).
+// Legacy: a project sent without image takes the stored image at the same position (as before this module); a stored
+// data: cover taken this way becomes an object too.
 // Trimming and lowercasing follow PHP (trim() characters, ASCII letters only), so both backends store the same text.
 //
 // upload_project_image (POST JSON {data: data URI}, staff token): JPG, PNG, WEBP or GIF by magic bytes, size limit
@@ -28,7 +33,7 @@
 // with portfolio_data deletes the names this module generates directly under assets/projects/ that were last modified
 // more than a day ago and whose name is not the file name (linkName) of an image, gallery entry or video in the stored
 // portfolio_data. No sweep while the stored portfolio_data is not a JSON array (a broken value must not cost the files).
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { deleteFromS3, listS3, parseUpload, passThrough, sniffImage, uploadToS3 } from '../s3-client.js';
 import { HeroMediaError, UNUSED_MS, linkName, sendError, storeRawVideo } from './hero_media.js';
 
@@ -100,13 +105,29 @@ function imageOf(dataUri) {
   return parseUpload(dataUri);
 }
 
+/** Stores an image as assets/projects/<name> on S3 (an existing object is replaced) and returns its URL. */
+const writeImage = (content, contentType, name) =>
+  uploadToS3(content, `assets/${FOLDER}/${name}`, contentType, 'public-read', { cacheControl: IMMUTABLE });
+
 /** Stores the data URI of upload_project_image on S3 and returns its URL. */
 async function storeImage(body) {
   const data = typeof body?.data === 'string' ? phpTrim(body.data) : '';
   if (!/^data:/i.test(data)) throw new HeroMediaError('Format file tidak valid.');
   const { content, ext, contentType } = imageOf(data);
-  const key = `assets/${FOLDER}/project_${randomBytes(6).toString('hex')}.${ext}`;
-  return await uploadToS3(content, key, contentType, 'public-read', { cacheControl: IMMUTABLE });
+  return await writeImage(content, contentType, `project_${randomBytes(6).toString('hex')}.${ext}`);
+}
+
+/** A data: cover of portfolio_data (see the header), decoded and named; a refused cover names its project. */
+function coverOf(dataUri, index) {
+  let image;
+  try {
+    image = imageOf(phpTrim(dataUri));
+  } catch (err) {
+    if (err?.expose) throw new HeroMediaError(`Proyek ke-${index + 1}: ${err.message}`, err.status);
+    throw err;
+  }
+  const hash = createHash('sha256').update(image.content).digest('hex').slice(0, 12);
+  return { ...image, name: `project_${hash}.${image.ext}` };
 }
 
 // ── update_settings ──
@@ -205,7 +226,8 @@ async function storedItems(pool) {
 
 /**
  * Normalizes portfolio_data of an update_settings payload in place, before anything is saved (see the header). Not a
- * string holding a JSON array → saved as sent. Refuses data: gallery images and videos (400) before anything is saved.
+ * string holding a JSON array → saved as sent. Refuses data: gallery images and videos and covers the upload checks
+ * refuse (400) before anything is saved; data: covers become objects.
  * @param {Record<string, unknown>} settings
  * @param {{ query: Function }} pool - reads the stored portfolio_data
  * @returns {Promise<(saved: boolean) => Promise<void>>} call once the request is over; after a successful save it runs
@@ -222,7 +244,16 @@ export async function preparePortfolioSettings(settings, pool) {
   }
   if (!Array.isArray(items)) return noop;
   const stored = (await storedItems(pool)) ?? [];
-  settings.portfolio_data = JSON.stringify(items.map((item, index) => (isObject(item) ? normalizeItem(item, stored[index]) : item)));
+  const covers = new Map();
+  const out = items.map((item, index) => {
+    if (!isObject(item)) return item;
+    const fields = normalizeItem(item, stored[index]);
+    if (typeof fields.image === 'string' && DATA_URI.test(fields.image)) covers.set(index, coverOf(fields.image, index));
+    return fields;
+  });
+  // Only now that every project passed
+  for (const [index, { content, contentType, name }] of covers) out[index].image = await writeImage(content, contentType, name);
+  settings.portfolio_data = JSON.stringify(out);
   return async (saved) => {
     if (saved) await sweepPortfolioMedia(pool);
   };

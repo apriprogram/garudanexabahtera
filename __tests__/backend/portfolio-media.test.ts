@@ -8,9 +8,12 @@
 // garbage-collect sweep of assets/projects/. backend/modules/portfolio_media.js and portfolio_media.php must answer the
 // same; the PHP half runs the real module in the CLI and behind `php -S` (php://input is only real over HTTP), and is
 // skipped without `php`. The frontend reader (src/components/sections/projects/portfolio.ts) cleans the same way.
+// data: covers of older admin pages become files (project_<SHA-256 prefix>.<ext>) so get_settings, and with it every
+// prerendered page, no longer carries base64 images.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -97,9 +100,9 @@ const PATH = '/assets/projects/project_0123456789ab.jpg';
 const VIDEO = '/assets/projects/project_video_0123456789ab.mp4';
 const CASES: Case[] = [
   {
-    name: 'old entries are saved as sent (data: cover, span, unknown keys)',
-    sent: [{ title: 'Web App Dashboard', desc: 'SAAS / FINANCE', image: 'data:image/jpeg;base64,/9j/AAAA', span: 'md:col-span-12', extra: { a: 1, b: [] } }],
-    expected: [{ title: 'Web App Dashboard', desc: 'SAAS / FINANCE', image: 'data:image/jpeg;base64,/9j/AAAA', span: 'md:col-span-12', extra: { a: 1, b: [] } }],
+    name: 'old entries are saved as sent (cover link, span, unknown keys)',
+    sent: [{ title: 'Web App Dashboard', desc: 'SAAS / FINANCE', image: '/assets/portofolio/portfolio1.png', span: 'md:col-span-12', extra: { a: 1, b: [] } }],
+    expected: [{ title: 'Web App Dashboard', desc: 'SAAS / FINANCE', image: '/assets/portofolio/portfolio1.png', span: 'md:col-span-12', extra: { a: 1, b: [] } }],
   },
   {
     name: 'the new fields are cleaned',
@@ -169,8 +172,8 @@ const CASES: Case[] = [
   {
     name: 'legacy: an empty image keeps the stored image at the same position; non-objects stay',
     sent: [{ title: 'A', image: '' }, { title: 'B' }, 'teks', null, [1, 2], {}],
-    stored: [{ title: 'A', image: 'data:image/png;base64,AAAA' }, { title: 'B', image: '/b.jpg' }],
-    expected: [{ title: 'A', image: 'data:image/png;base64,AAAA' }, { title: 'B', image: '/b.jpg' }, 'teks', null, [1, 2], {}],
+    stored: [{ title: 'A', image: '/a.jpg' }, { title: 'B', image: '/b.jpg' }],
+    expected: [{ title: 'A', image: '/a.jpg' }, { title: 'B', image: '/b.jpg' }, 'teks', null, [1, 2], {}],
   },
   {
     name: 'unicode names and every allowed URL character',
@@ -184,6 +187,47 @@ const REFUSED: [unknown[], string][] = [
   [[{ title: 'A', image: '/a.jpg', gallery: ['/ok.jpg', 'data:image/png;base64,AAAA'] }], DATA_IMAGE_ERROR],
   [[{ title: 'A', image: '/a.jpg', gallery: [' \u0001DATA:image/png;base64,AAAA'] }], DATA_IMAGE_ERROR],
   [[{ title: 'A', image: '/a.jpg', video: 'data:video/mp4;base64,AAAA' }], DATA_VIDEO_ERROR],
+];
+
+// data: covers: [sent, stored] and what is saved, for a URL base ('' = PHP's /assets/..., S3 = Node's object URL). The
+// cover becomes project_<first 12 hex of the SHA-256 of its bytes>.<sniffed ext>, also when it comes from the stored item
+// (legacy empty image); the same cover twice gives one name.
+const coverName = (bytes: Buffer, ext: string) => `project_${createHash('sha256').update(bytes).digest('hex').slice(0, 12)}.${ext}`;
+const COVER_SENT = [
+  { title: 'Web App Dashboard', desc: 'SAAS / FINANCE', image: dataUri(JPEG, 'image/jpeg'), span: 'md:col-span-4' },
+  { title: 'Mobile POS App', image: ` ${dataUri(WEBP, 'image/webp')}\n`, tools: [' Kotlin '] },
+  { title: 'E-Commerce System', image: '' },
+  { title: 'Sama', image: dataUri(JPEG, 'image/jpeg') },
+  { title: 'GIF', image: dataUri(GIF, 'image/png') },
+  { title: 'Berkas', image: PATH },
+  'teks',
+];
+const COVER_STORED = [{ title: 'x' }, { title: 'y' }, { title: 'E-Commerce System', image: dataUri(PNG) }];
+const COVER_FILES: [string, Buffer][] = [
+  [coverName(JPEG, 'jpg'), JPEG],
+  [coverName(WEBP, 'webp'), WEBP],
+  [coverName(PNG, 'png'), PNG],
+  [coverName(GIF, 'gif'), GIF],
+];
+const coverSaved = (base: string) => [
+  { title: 'Web App Dashboard', desc: 'SAAS / FINANCE', image: `${base}/assets/projects/${coverName(JPEG, 'jpg')}`, span: 'md:col-span-4' },
+  { title: 'Mobile POS App', image: `${base}/assets/projects/${coverName(WEBP, 'webp')}`, tools: ['Kotlin'] },
+  { title: 'E-Commerce System', image: `${base}/assets/projects/${coverName(PNG, 'png')}` },
+  { title: 'Sama', image: `${base}/assets/projects/${coverName(JPEG, 'jpg')}` },
+  { title: 'GIF', image: `${base}/assets/projects/${coverName(GIF, 'gif')}` },
+  { title: 'Berkas', image: PATH },
+  'teks',
+];
+
+// data: covers the upload checks refuse: [sent, stored, error]. Nothing is written, not even the valid covers before them
+const COVER_REFUSED: [unknown[], unknown[] | null, string][] = [
+  [[{ title: 'A', image: PATH }, { title: 'B', image: dataUri(SVG, 'image/svg+xml') }], null, `Proyek ke-2: ${TYPE_ERROR}`],
+  [[{ title: 'A', image: dataUri(ICO, 'image/x-icon') }], null, `Proyek ke-1: ${TYPE_ERROR}`],
+  [[{ title: 'A', image: dataUri(Buffer.concat([PNG, Buffer.alloc(1024 * 1024)])) }], null, 'Proyek ke-1: Ukuran gambar maksimal 1 MB.'],
+  [[{ title: 'A', image: 'data:image/png,iVBORw0KGgo=' }], null, 'Proyek ke-1: Format file tidak valid.'],
+  [[{ title: 'A', image: '' }], [{ title: 'A', image: 'data:image/png;base64,AAAA' }], `Proyek ke-1: ${TYPE_ERROR}`],
+  [[{ title: 'A', image: dataUri(PNG) }, { title: 'B', image: dataUri(RANDOM) }], null, `Proyek ke-2: ${TYPE_ERROR}`],
+  [[{ title: 'A', image: dataUri(PNG) }, { title: 'B', image: PATH, gallery: [dataUri(PNG)] }], null, DATA_IMAGE_ERROR],
 ];
 
 // portfolio_data values that are saved exactly as sent, without reading the stored value
@@ -330,6 +374,8 @@ const SWEEP_STORE: Store = {
     'teks',
   ]),
 };
+// Sent by the sweep-after-save cases: the sweep reads the stored value, not this
+const SWEEP_SENT = JSON.stringify([{ title: 'A', image: '/a.jpg' }]);
 const keptAfterSweep = SWEEP_FILES.filter(([, , kept]) => kept).map(([name]) => name).sort();
 
 describe('update_settings portfolio_data (Node)', () => {
@@ -347,6 +393,30 @@ describe('update_settings portfolio_data (Node)', () => {
       expect(out).toMatchObject({ status: 400, error });
       expect(settings.portfolio_data).toBe(JSON.stringify(items));
     }
+  });
+
+  it('stores data: covers on S3 under a name from their content and saves the URL instead', async () => {
+    const out = await prepareNode({ portfolio_data: JSON.stringify(COVER_SENT) }, { portfolio_data: JSON.stringify(COVER_STORED) });
+    expect(out.status).toBe(200);
+    expect(JSON.parse(String(out.settings?.portfolio_data))).toEqual(coverSaved(S3));
+    // In project order; the second "Sama" writes the same object again
+    const written = puts();
+    expect(written.map((put) => put.Key)).toEqual([0, 1, 2, 0, 3].map((i) => `assets/projects/${COVER_FILES[i][0]}`));
+    for (const put of written) {
+      const [name, bytes] = COVER_FILES.find(([file]) => put.Key === `assets/projects/${file}`)!;
+      expect(Buffer.from(put.Body as Buffer), name).toEqual(bytes);
+      expect(put).toMatchObject({ ContentType: `image/${name.endsWith('.jpg') ? 'jpeg' : name.split('.').pop()}`, ACL: 'public-read', CacheControl: IMMUTABLE });
+    }
+  });
+
+  it('refuses data: covers the upload checks refuse, naming the project, before anything is written', async () => {
+    for (const [items, stored, error] of COVER_REFUSED) {
+      const settings = { portfolio_data: JSON.stringify(items) };
+      const out = await prepareNode(settings, stored ? { portfolio_data: JSON.stringify(stored) } : {});
+      expect(out).toMatchObject({ status: 400, error });
+      expect(settings.portfolio_data).toBe(JSON.stringify(items));
+    }
+    expect(puts()).toEqual([]);
   });
 
   it('saves anything that is not a string holding a JSON array as sent, without reading the stored value', async () => {
@@ -381,7 +451,7 @@ describe('update_settings portfolio_data (Node)', () => {
   it('runs the sweep only after a successful save', async () => {
     for (const [name, age] of SWEEP_FILES) putObject(name, age);
     const pool = fakePool(SWEEP_STORE);
-    const finish = await pm.preparePortfolioSettings({ portfolio_data: SWEEP_STORE.portfolio_data }, pool);
+    const finish = await pm.preparePortfolioSettings({ portfolio_data: SWEEP_SENT }, pool);
     await finish(false);
     expect(projectNames()).toHaveLength(SWEEP_FILES.length);
     await finish(true);
@@ -588,6 +658,8 @@ describe.skipIf(!PHP_AVAILABLE)('portfolio media PHP ↔ Node parity', () => {
     const result = spawnSync('php', [join(harnessDir, 'cli.php')], {
       input: JSON.stringify(request),
       encoding: 'utf8',
+      // The reply repeats the settings, a cover over the 1 MB limit included
+      maxBuffer: 16 * 1024 * 1024,
       env: { ...process.env, ...ENV, PM_PUBLIC_DIR: publicDir },
     });
     if (result.status !== 0 || !result.stdout) throw new Error(`php failed: ${result.stderr || result.stdout}`);
@@ -656,6 +728,31 @@ describe.skipIf(!PHP_AVAILABLE)('portfolio media PHP ↔ Node parity', () => {
     }
   });
 
+  it('stores the same data: covers under the same names, replacing an old file of that name', async () => {
+    const [oldName] = COVER_FILES[0];
+    const dir = webRootWith([[oldName, 2 * DAY]]);
+    const store = { portfolio_data: JSON.stringify(COVER_STORED) };
+    const phpOut = runCli({ op: 'prepare', settings: { portfolio_data: JSON.stringify(COVER_SENT) }, store }, dir);
+    expect(phpOut.status).toBe(200);
+    expect(JSON.parse(phpOut.settings.portfolio_data)).toEqual(coverSaved(''));
+    const nodeOut = await prepareNode({ portfolio_data: JSON.stringify(COVER_SENT) }, store);
+    expect(String(nodeOut.settings?.portfolio_data).split(S3).join('')).toBe(phpOut.settings.portfolio_data);
+
+    expect(readdirSync(projectsDir(dir)).sort()).toEqual(COVER_FILES.map(([name]) => name).sort());
+    for (const [name, bytes] of COVER_FILES) expect(readFileSync(join(projectsDir(dir), name)), name).toEqual(bytes);
+    // Written again, so the sweep sees a new file
+    expect(statSync(join(projectsDir(dir), oldName)).mtimeMs).toBeGreaterThan(Date.now() - HOUR);
+  });
+
+  it('refuses the same data: covers with the same errors, before writing any file', () => {
+    const dir = webRootWith([]);
+    for (const [items, stored, error] of COVER_REFUSED) {
+      const store = stored ? { portfolio_data: JSON.stringify(stored) } : {};
+      expect(runCli({ op: 'prepare', settings: { portfolio_data: JSON.stringify(items) }, store }, dir)).toMatchObject({ status: 400, error });
+    }
+    expect(readdirSync(projectsDir(dir))).toEqual([]);
+  });
+
   it('upload_project_image: same answers, the file is written under the generated name', async () => {
     for (const [name, body, status, expected] of IMAGE_CASES) {
       const phpOut = runCli({ op: 'image', input: body });
@@ -704,7 +801,7 @@ describe.skipIf(!PHP_AVAILABLE)('portfolio media PHP ↔ Node parity', () => {
     const broken = webRootWith(SWEEP_FILES.map(([name, age]) => [name, age]));
     runCli({ op: 'sweep', store: { portfolio_data: '{"rusak"' } }, broken);
     expect(readdirSync(projectsDir(broken))).toHaveLength(SWEEP_FILES.length);
-    runCli({ op: 'prepare', save: true, settings: { portfolio_data: SWEEP_STORE.portfolio_data }, store: SWEEP_STORE }, broken);
+    runCli({ op: 'prepare', save: true, settings: { portfolio_data: SWEEP_SENT }, store: SWEEP_STORE }, broken);
     expect(readdirSync(projectsDir(broken)).sort()).toEqual(keptAfterSweep);
   });
 });

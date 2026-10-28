@@ -326,8 +326,13 @@ daftar mana pun; editor: Pengaturan website › Proyek, `src/pages/admin/portfol
 | `upload_project_video` | POST `/api.php?action=upload_project_video`, body = byte file mentah seperti `upload_hero_video` | `{ success, url }` (`/assets/projects/project_video_<12 hex>.<mp4\|webm>`); pemeriksaan & batas sama dengan `upload_hero_video` (`UPLOAD_MAX_VIDEO_MB`, batasnya dibaca admin lewat `get_hero_media_limits`) |
 
 `portfolio_data` (JSON array proyek): isian lama disimpan apa adanya (`title`, `desc` = tag/kategori, `image` = gambar
-kartu, termasuk data URI lama, `span` = lebar grid lama yang tidak dipakai situs lagi); proyek tanpa `image` memakai
-gambar tersimpan di posisi yang sama. Isian baru opsional, dirapikan `update_settings` dan dibuang bila kosong:
+kartu, `span` = lebar grid lama yang tidak dipakai situs lagi); proyek tanpa `image` memakai gambar tersimpan di posisi
+yang sama. `image` berupa data URI (halaman admin lama menyimpan gambar kartu base64 di setting, yang lalu ikut
+`get_settings` ke gn-preload setiap halaman prerender) disimpan jadi file dengan pemeriksaan `upload_project_image`:
+`/assets/projects/project_<12 hex pertama SHA-256 isinya>.<ext>` (Node: objek S3 dengan key sama), jadi menyimpan
+gambar yang sama lagi memakai file yang sama; yang ditolak pemeriksaan itu menggagalkan simpan, 400
+`Proyek ke-N: <pesan unggah>`. File baru ditulis setelah semua proyek lolos. Data lama pindah sekali simpan
+`update_settings` yang memuat `portfolio_data`. Isian baru opsional, dirapikan `update_settings` dan dibuang bila kosong:
 `description` (teks, maks. 3000 karakter), `tools` (maks. 12 nama, masing-masing maks. 40 karakter, tanpa kembar),
 `url` (http(s) atau domain saja → `https://`, karakter URL ASCII, maks. 500), `gallery` (maks. 12 tautan gambar) dan
 `video` (tautan); data URI di `gallery`/`video` ditolak 400. Sapu bersih setelah setiap unggahan dan `update_settings`

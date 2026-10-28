@@ -357,7 +357,8 @@ switch ($action) {
             }
 
             // portfolio_data: project fields of #projects (description, tools, url, gallery, video) normalized, data:
-            // gallery images/videos refused, an empty image keeps the stored one (backend/modules/portfolio_media.php)
+            // gallery images/videos refused, an empty image keeps the stored one, a data: cover becomes a file
+            // (backend/modules/portfolio_media.php)
             $finishPortfolio = portfolio_prepare_settings($conn, $settings);
 
             // Special handling for services_data

@@ -486,7 +486,8 @@ app.post('/api.php', async (req, res) => {
           }
 
           // ── portfolio_data ── project fields of #projects (description, tools, url, gallery, video) normalized,
-          // data: gallery images/videos refused, an empty image keeps the stored one (modules/portfolio_media.js)
+          // data: gallery images/videos refused, an empty image keeps the stored one, a data: cover becomes an S3
+          // object (modules/portfolio_media.js)
           finishPortfolio = await preparePortfolioSettings(settings, pool);
 
           // ── services_data ──

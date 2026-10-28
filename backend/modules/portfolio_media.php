@@ -4,9 +4,13 @@
 // Node backend: keep both identical (action names, limits, generated names, error messages and HTTP status codes).
 //
 // portfolio_data is a JSON array of projects (Pengaturan website > Proyek, src/pages/admin/portfolio). The old fields
-// are saved as sent: title, desc (tag / kategori), image (cover of the card; a data: URI of an older admin page stays a
-// data: URI, as before), span (grid width, no longer used by the site). The newer, optional fields are normalized
-// (src/components/sections/projects/portfolio.ts reads them the same way) and dropped when they end up empty:
+// are saved as sent: title, desc (tag / kategori), image (cover of the card), span (grid width, no longer used by the
+// site). Except a data: cover: older admin pages stored the cover inline, and get_settings put those base64 images into
+// every prerendered page (gn-preload). update_settings stores it as a file with the checks of upload_project_image,
+// named project_<first 12 hex of its SHA-256>.<ext> so saving the same cover again gives the same file; a cover the
+// checks refuse fails the save (400 "Proyek ke-N: ..."). Files are written only once every project passed.
+// The newer, optional fields are normalized (src/components/sections/projects/portfolio.ts reads them the same way) and
+// dropped when they end up empty:
 //   description  text, newlines kept (\r\n → \n), control characters removed, trimmed, at most 3000 characters
 //   tools        tech stack: strings with whitespace collapsed, at most 40 characters each, duplicates (ASCII case
 //                ignored) and empty names dropped, at most 12
@@ -14,7 +18,8 @@
 //                500 characters; anything else is dropped
 //   gallery      images shown in the project dialog: links (safe_link), at most 12; a data: URI is refused (400)
 //   video        a link (safe_link); a data: URI is refused (400)
-// Legacy: a project sent without image takes the stored image at the same position (as before this module).
+// Legacy: a project sent without image takes the stored image at the same position (as before this module); a stored
+// data: cover taken this way becomes a file too.
 //
 // upload_project_image (POST JSON {data: data URI}, staff token): JPG, PNG, WEBP or GIF by magic bytes, size limit
 // UPLOAD_MAX_IMAGE_MB (parse_upload), stored as /assets/projects/project_<12 hex>.<ext> → {success: true, url}.
@@ -75,6 +80,15 @@ function pm_image(string $dataUri): array {
     return parse_upload($dataUri, false);
 }
 
+// Writes an image to public/assets/projects/ (an existing file of that name is replaced, which also makes it new for
+// the sweep) and returns its path
+function pm_write_image(string $content, string $name): string {
+    $folder = public_dir() . '/assets/' . PM_FOLDER;
+    if (!is_dir($folder) && !mkdir($folder, 0755, true)) throw new RuntimeException("Cannot create upload folder $folder");
+    if (file_put_contents($folder . '/' . $name, $content) === false) throw new RuntimeException("Cannot write upload $folder/$name");
+    return '/assets/' . PM_FOLDER . '/' . $name;
+}
+
 // Stores the data URI of upload_project_image in public/assets/projects/ and returns its path
 function pm_store_image(array $input): string {
     // Nothing decoded from a body that was sent: PHP dropped it because it exceeds post_max_size
@@ -82,11 +96,17 @@ function pm_store_image(array $input): string {
     $data = is_string($input['data'] ?? null) ? pm_trim($input['data']) : '';
     if (!preg_match('/^data:/i', $data)) throw new ApiError('Format file tidak valid.');
     [$content, $ext] = pm_image($data);
-    $folder = public_dir() . '/assets/' . PM_FOLDER;
-    if (!is_dir($folder) && !mkdir($folder, 0755, true)) throw new RuntimeException("Cannot create upload folder $folder");
-    $name = 'project_' . bin2hex(random_bytes(6)) . '.' . $ext;
-    if (file_put_contents($folder . '/' . $name, $content) === false) throw new RuntimeException("Cannot write upload $folder/$name");
-    return '/assets/' . PM_FOLDER . '/' . $name;
+    return pm_write_image($content, 'project_' . bin2hex(random_bytes(6)) . '.' . $ext);
+}
+
+// A data: cover of portfolio_data (see the header) → [content, file name]; a refused cover names its project
+function pm_cover(string $dataUri, int $index): array {
+    try {
+        [$content, $ext] = pm_image(pm_trim($dataUri));
+    } catch (ApiError $e) {
+        throw new ApiError('Proyek ke-' . ($index + 1) . ': ' . $e->getMessage(), $e->status);
+    }
+    return [$content, 'project_' . substr(hash('sha256', $content), 0, 12) . '.' . $ext];
 }
 
 // ── update_settings ──
@@ -182,16 +202,23 @@ function pm_stored(mysqli $conn): ?array {
 }
 
 // Normalizes portfolio_data of an update_settings payload in place, before anything is saved (see the header). Not a
-// string holding a JSON array → saved as sent. Refuses data: gallery images and videos (400) before anything is saved.
-// Returns function (bool $saved): call it once the request is over; after a successful save it runs the sweep.
+// string holding a JSON array → saved as sent. Refuses data: gallery images and videos and covers the upload checks
+// refuse (400) before anything is saved; data: covers become files. Returns function (bool $saved): call it once the
+// request is over; after a successful save it runs the sweep.
 function portfolio_prepare_settings(mysqli $conn, array &$settings): callable {
     $value = $settings['portfolio_data'] ?? null;
     $items = is_string($value) ? json_decode($value) : null;
     if (!is_array($items)) return function (bool $saved) {};
     $stored = pm_stored($conn) ?? [];
+    $covers = [];
     foreach ($items as $index => $item) {
-        if ($item instanceof stdClass) $items[$index] = (object)pm_item(get_object_vars($item), $stored[$index] ?? null);
+        if (!($item instanceof stdClass)) continue;
+        $fields = pm_item(get_object_vars($item), $stored[$index] ?? null);
+        if (is_string($fields['image'] ?? null) && preg_match(PM_DATA_URI, $fields['image'])) $covers[$index] = pm_cover($fields['image'], $index);
+        $items[$index] = (object)$fields;
     }
+    // Only now that every project passed
+    foreach ($covers as $index => [$content, $name]) $items[$index]->image = pm_write_image($content, $name);
     $json = json_encode($items, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     if ($json === false) throw new RuntimeException('Cannot encode portfolio_data: ' . json_last_error_msg());
     $settings['portfolio_data'] = $json;

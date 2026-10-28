@@ -9,6 +9,7 @@ import {
   GUIDES_BOOTSTRAP_ENV,
   HTACCESS_MAX_LINE,
   HTACCESS_ROUTES_PER_RULE,
+  INLINE_IMAGE_WARN_BYTES,
   PRELOAD_OMIT_SETTINGS,
   SITE_DEFAULTS_UPDATE,
   USER_AGENT,
@@ -21,6 +22,7 @@ import {
   hoistLeadingTags,
   htaccessRoutes,
   injectHead,
+  inlineImageSettings,
   longHtaccessLines,
   preFileFor,
   preloadProjects,
@@ -60,6 +62,26 @@ describe('page assembly', () => {
     expect(preFileFor('/')).toBe('index.html');
     expect(preFileFor('/pesan-custom')).toBe('pesan-custom.html');
     expect(preFileFor('/template/finova')).toBe('template/finova.html');
+  });
+
+  it('flags preloaded settings that carry base64 images, which ride along on every page', () => {
+    const cover = `data:image/jpeg;base64,/9j/${'A'.repeat(INLINE_IMAGE_WARN_BYTES)}`;
+    const small = 'data:image/png;base64,iVBORw0KGgo=';
+    const settings = {
+      portfolio_data: JSON.stringify([{ title: 'A', image: cover }, { title: 'B', image: '/assets/projects/project_0123456789ab.jpg' }]),
+      // json_encode without JSON_UNESCAPED_SLASHES
+      hero_logos: `[{"src":"${cover.replace(/\//g, '\\/')}"}]`,
+      site_logo: small,
+      hero_images: JSON.stringify([small, small]),
+      // Not in gn-preload
+      products_data: JSON.stringify([{ image: cover }]),
+    };
+    expect(inlineImageSettings(settings)).toEqual([
+      { key: 'portfolio_data', bytes: cover.length },
+      { key: 'hero_logos', bytes: cover.replace(/\//g, '\\/').length },
+    ]);
+    expect(inlineImageSettings({ portfolio_data: JSON.stringify([{ image: cover.slice(0, INLINE_IMAGE_WARN_BYTES) }]) })).toEqual([]);
+    expect(inlineImageSettings(undefined)).toEqual([]);
   });
 
   it('keeps stale settings no public page reads (custom package prices, old sections) out of gn-preload', () => {

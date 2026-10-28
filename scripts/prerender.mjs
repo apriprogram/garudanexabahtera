@@ -314,6 +314,22 @@ export const preloadSettings = (settings) =>
   Object.fromEntries(Object.entries(settings ?? {}).filter(([key]) => !PRELOAD_OMIT_SETTINGS.includes(key)));
 
 /**
+ * Batas gambar base64 (data URI, byte) per setting gn-preload sebelum prerender memberi peringatan. Setting ikut ke
+ * setiap halaman: sampul proyek lama di portfolio_data (base64 dari halaman admin lama) membuat tiap halaman ~500 KB
+ * dan beranda ~1 MB. Tempat gambar adalah file upload; update_settings sudah menyimpan sampul data: sebagai file
+ * (backend/modules/portfolio_media.php), jadi sekali Simpan di admin memindahkan yang lama.
+ */
+export const INLINE_IMAGE_WARN_BYTES = 8 * 1024;
+// Data URI base64, juga di JSON yang garis miringnya di-escape (image\/jpeg)
+const BASE64_DATA_URI = /data:[\w.+-]+\\?\/[\w.+-]+;base64,[A-Za-z0-9+/=\\]+/gi;
+
+/** Setting gn-preload berisi gambar base64 lebih dari INLINE_IMAGE_WARN_BYTES: [{ key, bytes }]. */
+export const inlineImageSettings = (settings) =>
+  Object.entries(preloadSettings(settings))
+    .map(([key, value]) => ({ key, bytes: (String(value ?? '').match(BASE64_DATA_URI) ?? []).reduce((sum, uri) => sum + uri.length, 0) }))
+    .filter(({ bytes }) => bytes > INLINE_IMAGE_WARN_BYTES);
+
+/**
  * get_public_projects untuk gn-preload: hanya proyek yang benar-benar tampil (`select` = presentableProjects, fungsi
  * yang sama dengan Projects.tsx). Proyek berisi teks uji/Lorem ipsum, atau satu-satunya proyek layak (beranda lalu
  * memakai portofolio cadangan), tidak ikut ke HTML mentah yang dibaca crawler AI. Hasil render sama.
@@ -583,6 +599,12 @@ export async function prerender({ root, outDir, deployDir, strict }) {
   const builtAt = new Date().toISOString();
   const data = ssr.seoDataFromApi(api, builtAt);
   writeFileSync(join(deployDir, 'prerender-data.json'), JSON.stringify({ builtAt, api }, null, 2));
+  for (const { key, bytes } of inlineImageSettings(api[ssr.PRELOAD_URLS.settings])) {
+    warn(
+      `setting ${key} berisi ${Math.round(bytes / 1024)} KB gambar base64 yang ikut gn-preload ke setiap halaman. Simpan ` +
+        'gambarnya sebagai file upload (portfolio_data: sekali Simpan di admin Pengaturan website), lalu deploy ulang.',
+    );
+  }
 
   // Rute: semua routes() modul SEO (sitemap memakai yang index saja), tanpa rute aplikasi
   const indexable = ssr.getIndexableRoutes(data);
