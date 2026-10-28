@@ -10,16 +10,24 @@ import { dermaga } from './dermaga';
 import { finova } from './finova';
 import { gadgetku } from './gadgetku';
 import { glowstory } from './glowstory';
+import { healthlink } from './healthlink';
+import { homenest } from './homenest';
 import { jumantara } from './jumantara';
 import { madani } from './madani';
+import { medicareGeneral } from './medicare-general';
+import { momkid } from './momkid';
 import { nawasena } from './nawasena';
 import { nusaniaga } from './nusaniaga';
+import { paynow } from './paynow';
 import { portline } from './portline';
 import { pradipta } from './pradipta';
 import { puncakgear } from './puncakgear';
 import { saudagar } from './saudagar';
 import { serenity } from './serenity';
 import { skynusa } from './skynusa';
+import { smashhall } from './smashhall';
+import { sparringPadel } from './sparring-padel';
+import { specialistplus } from './specialistplus';
 import { startupClean } from './startup-clean';
 import { tanimakmur } from './tanimakmur';
 import { velora } from './velora';
@@ -47,6 +55,9 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // Jumantara (2026-10-27): landing page SMA negeri "Clean institutional", bilah utilitas + hero slider foto berbilah progres + pita angka sekolah + SPMB lewat WhatsApp (src/templates/jumantara/Jumantara.tsx).
 // Nawasena (2026-10-27): landing page SMA negeri "Elegant navy", hero slider foto latar Ken Burns + rel nomor slide + strip pengumuman + SPMB lewat WhatsApp (src/templates/nawasena/Nawasena.tsx).
 // Pradipta (2026-10-27): landing page SMA negeri "Simple sky", header putih dengan penunjuk menu bergeser + hero slider foto berthumbnail + SPMB lewat WhatsApp (src/templates/pradipta/Pradipta.tsx).
+// Batch 2026-10-28 (8 template, hero berlatar foto): Sparring Padel (booking padel + komunitas), SmashHall (GOR badminton),
+// PayNow (landing page dompet digital), MediCare General (RS umum), MomKid Hospital (RS ibu & anak), SpecialistPlus (klinik
+// spesialis & diagnostik), HealthLink (telemedicine), HomeNest (katalog & penjualan rumah); detail di komentar komponen root.
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -71,6 +82,14 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [jumantara.code]: jumantara,
   [nawasena.code]: nawasena,
   [pradipta.code]: pradipta,
+  [sparringPadel.code]: sparringPadel,
+  [smashhall.code]: smashhall,
+  [paynow.code]: paynow,
+  [medicareGeneral.code]: medicareGeneral,
+  [momkid.code]: momkid,
+  [specialistplus.code]: specialistplus,
+  [healthlink.code]: healthlink,
+  [homenest.code]: homenest,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */

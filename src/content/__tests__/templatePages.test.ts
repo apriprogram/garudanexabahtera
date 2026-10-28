@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline', 'velora', 'dermaga', 'saudagar', 'nusaniaga', 'jumantara', 'nawasena', 'pradipta'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline', 'velora', 'dermaga', 'saudagar', 'nusaniaga', 'jumantara', 'nawasena', 'pradipta', 'sparring-padel', 'smashhall', 'paynow', 'medicare-general', 'momkid', 'specialistplus', 'healthlink', 'homenest'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -67,7 +67,17 @@ const JUMANTARA: Template = { ...FIXTURE_TEMPLATES[4], id: 93, slug: 'jumantara'
 const NAWASENA: Template = { ...FIXTURE_TEMPLATES[4], id: 94, slug: 'nawasena', name: 'Nawasena', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'nawasena', sort_order: 22 };
 // Pradipta (2026-10-27, migrasi 040, landing page SMA negeri) juga belum ada di fixture prerender bersama
 const PRADIPTA: Template = { ...FIXTURE_TEMPLATES[4], id: 95, slug: 'pradipta', name: 'Pradipta', category: 'Sekolah & Pendidikan', price: 1690000, template_code: 'pradipta', sort_order: 23 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA, DERMAGA, SAUDAGAR, NUSANIAGA, JUMANTARA, NAWASENA, PRADIPTA].find((t) => t.slug === slug) as Template;
+// Delapan template 2026-10-28 (migrasi 041–048, hero foto latar penuh) juga belum ada di fixture prerender bersama;
+// "Kesehatan & Rumah Sakit" dan "Properti & Real Estate" kategori baru
+const SPARRING_PADEL: Template = { ...FIXTURE_TEMPLATES[4], id: 96, slug: 'sparring-padel', name: 'Sparring Padel', category: 'Olahraga & Komunitas', price: 1390000, template_code: 'sparring-padel', sort_order: 24 };
+const SMASHHALL: Template = { ...FIXTURE_TEMPLATES[4], id: 97, slug: 'smashhall', name: 'SmashHall', category: 'Olahraga & Komunitas', price: 1390000, template_code: 'smashhall', sort_order: 25 };
+const PAYNOW: Template = { ...FIXTURE_TEMPLATES[4], id: 98, slug: 'paynow', name: 'PayNow', category: 'Fintech & Startup', price: 1590000, template_code: 'paynow', sort_order: 26 };
+const MEDICARE_GENERAL: Template = { ...FIXTURE_TEMPLATES[4], id: 99, slug: 'medicare-general', name: 'MediCare General', category: 'Kesehatan & Rumah Sakit', price: 1890000, template_code: 'medicare-general', sort_order: 27 };
+const MOMKID: Template = { ...FIXTURE_TEMPLATES[4], id: 100, slug: 'momkid', name: 'MomKid Hospital', category: 'Kesehatan & Rumah Sakit', price: 1790000, template_code: 'momkid', sort_order: 28 };
+const SPECIALISTPLUS: Template = { ...FIXTURE_TEMPLATES[4], id: 101, slug: 'specialistplus', name: 'SpecialistPlus', category: 'Kesehatan & Rumah Sakit', price: 1890000, template_code: 'specialistplus', sort_order: 29 };
+const HEALTHLINK: Template = { ...FIXTURE_TEMPLATES[4], id: 102, slug: 'healthlink', name: 'HealthLink', category: 'Kesehatan & Rumah Sakit', price: 1690000, template_code: 'healthlink', sort_order: 30 };
+const HOMENEST: Template = { ...FIXTURE_TEMPLATES[4], id: 103, slug: 'homenest', name: 'HomeNest', category: 'Properti & Real Estate', price: 1690000, template_code: 'homenest', sort_order: 31 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA, DERMAGA, SAUDAGAR, NUSANIAGA, JUMANTARA, NAWASENA, PRADIPTA, SPARRING_PADEL, SMASHHALL, PAYNOW, MEDICARE_GENERAL, MOMKID, SPECIALISTPLUS, HEALTHLINK, HOMENEST].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -105,6 +115,14 @@ describe('src/content/templates', () => {
       jumantara: 'Jumantara: Template Website Sekolah Negeri untuk SMA',
       nawasena: 'Nawasena: Template Website Profil Sekolah untuk SMA',
       pradipta: 'Pradipta: Template Landing Page SMA dengan SPMB',
+      'sparring-padel': 'Sparring Padel: Template Website Padel dengan Booking Lapangan',
+      smashhall: 'SmashHall: Template Website GOR & Klub Badminton',
+      paynow: 'PayNow: Template Landing Page Dompet Digital & Payment Gateway',
+      'medicare-general': 'MediCare General: Template Website Rumah Sakit Umum',
+      momkid: 'MomKid Hospital: Template Website Rumah Sakit Ibu dan Anak',
+      specialistplus: 'SpecialistPlus: Template Website Klinik Spesialis & Laboratorium',
+      healthlink: 'HealthLink: Template Website Telemedicine & Konsultasi Online',
+      homenest: 'HomeNest: Template Website Properti dan Jual Rumah',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -131,6 +149,14 @@ describe('src/content/templates', () => {
       jumantara: 'Jumantara: Template Website Sekolah Negeri – Rp1,69 jt',
       nawasena: 'Nawasena: Template Website Profil Sekolah SMA – Rp1,69 jt',
       pradipta: 'Pradipta: Template Landing Page SMA & SPMB – Rp1,69 jt',
+      'sparring-padel': 'Sparring Padel: Template Website Lapangan Padel – Rp1,39 jt',
+      smashhall: 'SmashHall: Template Website GOR Badminton – Rp1,39 jt',
+      paynow: 'PayNow: Template Landing Page Dompet Digital – Rp1,59 jt',
+      'medicare-general': 'MediCare General: Template Website Rumah Sakit – Rp1,89 jt',
+      momkid: 'MomKid Hospital: Template Website RS Ibu & Anak – Rp1,79 jt',
+      specialistplus: 'SpecialistPlus: Template Klinik Spesialis & Lab – Rp1,89 jt',
+      healthlink: 'HealthLink: Template Website Telemedicine – Rp1,69 jt',
+      homenest: 'HomeNest: Template Website Jual Rumah & Properti – Rp1,69 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -302,6 +328,69 @@ describe('src/content/templates', () => {
     expect(pradipta).toMatch(/portal SPMB provinsi/);
     expect(pradipta).toMatch(/tanpa e-rapor, absensi, atau sistem informasi akademik/);
     expect(pradipta).not.toMatch(/e-rapor tersedia|sistem informasi akademik lengkap|data pendaftar tersimpan|pembayaran online tersedia|pasti diterima|terakreditasi|\bNPSN\b/i);
+    // Sparring Padel (2026-10-28): booking hanya pesan WhatsApp, jadwal contoh, tanpa pembayaran online/akun member
+    const sparring = visibleText(templateContent('sparring-padel') as TemplatePageContent);
+    expect(sparring).toMatch(/Booking hanya menyusun pesan WhatsApp ke admin/);
+    expect(sparring).toMatch(/jadwal yang tampil adalah contoh, ketersediaan dikonfirmasi admin/);
+    expect(sparring).toMatch(/tidak ada pembayaran online dan tidak ada akun member/);
+    expect(sparring).toMatch(/fiktif/);
+    expect(sparring).toMatch(/data tidak disimpan di website/);
+    expect(sparring).not.toMatch(/PBSI|\bFIP\b|resmi|bersertifikat|dijamin|terbaik/i);
+    // SmashHall (2026-10-28): sama untuk GOR badminton; toko perlengkapan tanpa keranjang belanja
+    const smashhall = visibleText(templateContent('smashhall') as TemplatePageContent);
+    expect(smashhall).toMatch(/Booking hanya menyusun pesan WhatsApp ke admin/);
+    expect(smashhall).toMatch(/jadwal yang tampil adalah contoh/);
+    expect(smashhall).toMatch(/ketersediaan dikonfirmasi admin/);
+    expect(smashhall).toMatch(/Tidak ada pembayaran online/i);
+    expect(smashhall).toMatch(/tidak ada akun member/);
+    expect(smashhall).toMatch(/tidak ada keranjang belanja/);
+    expect(smashhall).toMatch(/tidak disimpan di website/);
+    expect(smashhall).toMatch(/fiktif/);
+    expect(smashhall).not.toMatch(/PBSI|bersertifikat|berlisensi|\bresmi\b|terbaik|dijamin|100%/i);
+    // PayNow (2026-10-28): halaman pemasaran, tidak memproses pembayaran; izin & pengawas diisi pemilik merek
+    const paynow = visibleText(templateContent('paynow') as TemplatePageContent);
+    expect(paynow).toMatch(/tidak memproses pembayaran, tidak menyimpan saldo, dan contoh kode API hanya ilustrasi/);
+    expect(paynow).toMatch(/Izin usaha dan lembaga pengawas diisi pemilik merek/);
+    expect(paynow).toMatch(/data tidak disimpan di website/);
+    expect(paynow).toMatch(/fiktif/);
+    expect(paynow).not.toMatch(/berizin|diawasi (oleh )?(Bank Indonesia|OJK)|PCI DSS|terdaftar di|bersertifikat/i);
+    // MediCare General (2026-10-28): pendaftaran hanya pesan WhatsApp, tanpa rekam medis/antrean/pembayaran/video
+    const medicare = visibleText(templateContent('medicare-general') as TemplatePageContent);
+    expect(medicare).toMatch(/data pasien tidak disimpan di website/);
+    expect(medicare).toMatch(/Tidak ada rekam medis, nomor antrean otomatis, pembayaran online, atau konsultasi video/);
+    expect(medicare).toMatch(/fiktif/);
+    expect(medicare).not.toMatch(/terakreditasi|\bKARS\b|dokter terbaik|dijamin|bersertifikat|izin resmi/i);
+    // MomKid Hospital (2026-10-28): jadwal imunisasi hanya ringkasan, darurat ke 119
+    const momkid = visibleText(templateContent('momkid') as TemplatePageContent);
+    expect(momkid).toMatch(/data tidak disimpan di website/);
+    expect(momkid).toMatch(/tidak memiliki rekam medis/);
+    expect(momkid).toMatch(/pembayaran online/);
+    expect(momkid).toMatch(/ikuti anjuran dokter anak/);
+    expect(momkid).toMatch(/telepon 119/);
+    expect(momkid).toMatch(/fiktif/);
+    expect(momkid).not.toMatch(/terakreditasi|\bKARS\b|terbaik|dijamin|garansi|sembuh/i);
+    // SpecialistPlus (2026-10-28): hasil lab tidak tampil di website
+    const specialistplus = visibleText(templateContent('specialistplus') as TemplatePageContent);
+    expect(specialistplus).toMatch(/data tidak disimpan di website/);
+    expect(specialistplus).toMatch(/Hasil lab tidak ditampilkan di website/);
+    expect(specialistplus).toMatch(/tidak memiliki rekam medis, pembayaran online, konsultasi video, maupun antrean real-time/);
+    expect(specialistplus).toMatch(/fiktif/);
+    expect(specialistplus).not.toMatch(/\bKARS\b|terakreditasi|dokter terbaik|dijamin|sembuh total|\b100%/i);
+    // HealthLink (2026-10-28): halaman pemasaran telemedicine, konsultasi lewat WhatsApp/aplikasi pemilik
+    const healthlink = visibleText(templateContent('healthlink') as TemplatePageContent);
+    expect(healthlink).toMatch(/Template ini halaman pemasaran layanan; konsultasi berjalan lewat WhatsApp atau aplikasi milik Anda, rekam medis tidak disimpan di website/);
+    expect(healthlink).toMatch(/tidak ada pembayaran online/);
+    expect(healthlink).toMatch(/tidak ada data yang dikirim atau disimpan di website/);
+    expect(healthlink).toMatch(/fiktif/);
+    expect(healthlink).not.toMatch(/terakreditasi|\bKARS\b|dokter terbaik|dijamin|sembuh total|izin resmi|bersertifikat/i);
+    // HomeNest (2026-10-28): simulasi KPR perkiraan, tanpa tur 360° bawaan dan tanpa pembayaran tanda jadi
+    const homenest = visibleText(templateContent('homenest') as TemplatePageContent);
+    expect(homenest).toMatch(/data tidak disimpan di website/);
+    expect(homenest).toMatch(/bukan penawaran bank/);
+    expect(homenest).toMatch(/Tidak ada tur 360° bawaan/);
+    expect(homenest).toMatch(/Tidak ada pembayaran tanda jadi/);
+    expect(homenest).toMatch(/fiktif/);
+    expect(homenest).not.toMatch(/SHM dijamin|pasti naik|terbaik|nomor 1|#1|100%|garansi|dijamin/i);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {

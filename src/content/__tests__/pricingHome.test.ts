@@ -134,6 +134,17 @@ describe('beranda', () => {
     expect(joinId(['a', 'b'])).toBe('a dan b');
     expect(joinId(['a', 'b', 'c'])).toBe('a, b, dan c');
     expect(nichePhrases(FIXTURE_TEMPLATES)).toEqual(['company profile', 'klub olahraga', 'klinik kecantikan', 'fintech', 'studio yoga']);
+    // Kategori 2026-10-28 (4 template kesehatan, 1 properti)
+    const batch: Template[] = [
+      { ...FIXTURE_TEMPLATES[0], slug: 'medicare-general', category: 'Kesehatan & Rumah Sakit' },
+      { ...FIXTURE_TEMPLATES[0], slug: 'healthlink', category: 'Kesehatan & Rumah Sakit' },
+      { ...FIXTURE_TEMPLATES[0], slug: 'homenest', category: 'Properti & Real Estate' },
+    ];
+    expect(nichePhrases(batch)).toEqual(['rumah sakit & klinik', 'properti']);
+    expect(categoryTiles(batch).map((t) => [t.slug, t.count, t.path])).toEqual([
+      ['kesehatan-rumah-sakit', 2, '/template/kategori/kesehatan-rumah-sakit'],
+      ['properti-real-estate', 1, '/template/kategori/properti-real-estate'],
+    ]);
   });
 
   it('ubin kategori: hanya kategori berhalaman, jumlah dan harga termurah per kategori', () => {

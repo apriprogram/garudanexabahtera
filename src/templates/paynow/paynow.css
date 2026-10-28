@@ -1,0 +1,183 @@
+/*
+ * CSS lokal PayNow (diimpor ./PayNow.tsx): latar gradasi dari variabel --pn-* (./model paynowVars), lapisan gradasi
+ * hero di atas foto (pekat di sisi teks: putih ≥ 4,5:1 walau piksel foto putih), dan gerak khas: kilau gradasi hero
+ * bergeser SEKALI, HP hero naik masuk, kartu notifikasi muncul berurutan lalu diam, layar/foto tab fitur & kode berganti
+ * dengan pudar singkat, garis bawah tab kode bergeser, akordeon FAQ. Keadaan bawaan = keadaan akhir (semua terlihat);
+ * animasi hanya bila root template ber-data-tpl-motion="on" (demo & situs live). Pratinjau CMS,
+ * prefers-reduced-motion, dan cetak → statis. Foto hero tidak pernah dianimasikan. Tanpa bayangan.
+ */
+
+@layer components {
+  .pn-grad {
+    background-image: var(--pn-grad);
+  }
+
+  /* Lapisan gradasi hero. Wadah sempit: teks di atas (malam ≥ 80%), HP di bawah (indigo → ungu lebih tipis). */
+  .pn-hero-scrim {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--pn-night) 86%, transparent) 0%,
+      color-mix(in srgb, var(--pn-night) 82%, transparent) 58%,
+      color-mix(in srgb, var(--pn-band) 64%, transparent) 82%,
+      color-mix(in srgb, var(--pn-violet) 56%, transparent) 100%
+    );
+  }
+
+  /* Layar lebar: teks di kiri (kolom ≤ 50% lebar, malam ≥ 80%), HP di kanan (indigo → ungu). */
+  @container (min-width: 64rem) {
+    .pn-hero-scrim {
+      background: linear-gradient(
+        100deg,
+        color-mix(in srgb, var(--pn-night) 88%, transparent) 0%,
+        color-mix(in srgb, var(--pn-night) 82%, transparent) 46%,
+        color-mix(in srgb, var(--pn-band) 62%, transparent) 72%,
+        color-mix(in srgb, var(--pn-violet) 48%, transparent) 100%
+      );
+    }
+  }
+
+  /* Kilau gradasi dekoratif (cahaya biru & ungu di sisi HP) */
+  .pn-sheen {
+    background:
+      radial-gradient(38% 46% at 50% 86%, color-mix(in srgb, var(--pn-blue) 42%, transparent), transparent 72%),
+      radial-gradient(34% 40% at 88% 96%, color-mix(in srgb, var(--pn-violet) 40%, transparent), transparent 72%);
+    background-size: 150% 150%;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+  }
+
+  @container (min-width: 64rem) {
+    .pn-sheen {
+      background:
+        radial-gradient(30% 50% at 76% 34%, color-mix(in srgb, var(--pn-blue) 40%, transparent), transparent 72%),
+        radial-gradient(28% 44% at 94% 88%, color-mix(in srgb, var(--pn-violet) 42%, transparent), transparent 72%);
+      background-size: 150% 150%;
+      background-position: 50% 50%;
+      background-repeat: no-repeat;
+    }
+  }
+
+  /* Tab bergulir mendatar tanpa bilah gulir (target sentuh tetap 44px) */
+  .pn-scroll-x {
+    scrollbar-width: none;
+  }
+
+  .pn-scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Tepi strip jenis usaha memudar hanya saat marquee berjalan (daftar statis tidak terpotong) */
+  .pn-fade-x:has(.tpl-marquee) {
+    mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+  }
+
+  /* Garis bawah tab kode: posisi & lebar dari tab aktif (diukur di ./Developers) */
+  .pn-tab-ink {
+    width: var(--pn-w, 0);
+    transform: translateX(var(--pn-x, 0));
+  }
+
+  /* Buka-tutup akordeon FAQ: 0fr → 1fr */
+  .pn-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .pn-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .pn-sheen {
+    animation: pn-sheen 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.1s both;
+  }
+
+  [data-tpl-motion='on'] .pn-phone-in {
+    animation: pn-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.25s both;
+  }
+
+  [data-tpl-motion='on'] .pn-notif {
+    animation: pn-notif 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--pn-at, 1s);
+  }
+
+  [data-tpl-motion='on'] .pn-swap {
+    animation: pn-swap 0.38s var(--tpl-ease, ease) both;
+  }
+
+  [data-tpl-motion='on'] .pn-tab-ink {
+    transition:
+      transform 0.3s var(--tpl-ease, ease),
+      width 0.3s var(--tpl-ease, ease);
+  }
+
+  [data-tpl-motion='on'] .pn-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .pn-sheen,
+    [data-tpl-motion='on'] .pn-phone-in,
+    [data-tpl-motion='on'] .pn-notif,
+    [data-tpl-motion='on'] .pn-swap {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .pn-tab-ink,
+    [data-tpl-motion='on'] .pn-collapse {
+      transition: none;
+    }
+  }
+
+  @media print {
+    [data-tpl-motion='on'] .pn-sheen,
+    [data-tpl-motion='on'] .pn-phone-in,
+    [data-tpl-motion='on'] .pn-notif,
+    [data-tpl-motion='on'] .pn-swap {
+      animation: none;
+    }
+  }
+}
+
+@keyframes pn-sheen {
+  from {
+    background-position: 0% 70%;
+    opacity: 0.35;
+  }
+  to {
+    background-position: 50% 50%;
+    opacity: 1;
+  }
+}
+
+@keyframes pn-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pn-notif {
+  from {
+    opacity: 0;
+    transform: translate3d(16px, 8px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pn-swap {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

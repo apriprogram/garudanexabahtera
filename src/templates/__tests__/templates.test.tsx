@@ -12,7 +12,7 @@ const defs = Object.values(TEMPLATES);
 
 describe('registry', () => {
   it('memuat semua template katalog', () => {
-    expect(Object.keys(TEMPLATES).sort()).toEqual(['altura', 'arena-club', 'aura-studio', 'bestari', 'cakrawala', 'corporate-nexa', 'dermaga', 'finova', 'gadgetku', 'glowstory', 'jumantara', 'madani', 'nawasena', 'nusaniaga', 'portline', 'pradipta', 'puncakgear', 'saudagar', 'serenity', 'skynusa', 'startup-clean', 'tanimakmur', 'velora']);
+    expect(Object.keys(TEMPLATES).sort()).toEqual(['altura', 'arena-club', 'aura-studio', 'bestari', 'cakrawala', 'corporate-nexa', 'dermaga', 'finova', 'gadgetku', 'glowstory', 'healthlink', 'homenest', 'jumantara', 'madani', 'medicare-general', 'momkid', 'nawasena', 'nusaniaga', 'paynow', 'portline', 'pradipta', 'puncakgear', 'saudagar', 'serenity', 'skynusa', 'smashhall', 'sparring-padel', 'specialistplus', 'startup-clean', 'tanimakmur', 'velora']);
     for (const def of defs) {
       expect(def.code).toBeTruthy();
       expect(def.sections.length).toBeGreaterThan(5);
@@ -44,6 +44,14 @@ describe('registry', () => {
     expect(getTemplate('Jumantara')?.name).toBe('Jumantara');
     expect(getTemplate('Nawasena')?.name).toBe('Nawasena');
     expect(getTemplate('Pradipta')?.name).toBe('Pradipta');
+    expect(getTemplate('Sparring-Padel')?.name).toBe('Sparring Padel');
+    expect(getTemplate('SmashHall')?.name).toBe('SmashHall');
+    expect(getTemplate('PayNow')?.name).toBe('PayNow');
+    expect(getTemplate('MediCare-General')?.name).toBe('MediCare General');
+    expect(getTemplate('MomKid')?.name).toBe('MomKid Hospital');
+    expect(getTemplate('SpecialistPlus')?.name).toBe('SpecialistPlus');
+    expect(getTemplate('HealthLink')?.name).toBe('HealthLink');
+    expect(getTemplate('HomeNest')?.name).toBe('HomeNest');
     for (const code of ['constructor', '__proto__', 'toString', '', null, undefined, 'tidak-ada']) expect(getTemplate(code)).toBeUndefined();
   });
 });

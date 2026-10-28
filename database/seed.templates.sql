@@ -406,4 +406,148 @@ Cocok untuk SMA negeri yang membutuhkan landing page SPMB setiap tahun ajaran da
    '["/assets/templates/pradipta-1.webp","/assets/templates/pradipta-2.webp"]',
    'pradipta', NULL, 'published', 23);
 
+-- Sparring Padel (2026-10-28, Olahraga & Komunitas; DB lama: migrasi 2026-10-28_041). Demo: Sparring Padel, klub padel di Kemang, Jakarta Selatan (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('sparring-padel',
+   'Sparring Padel',
+   'Olahraga & Komunitas',
+   'Template website lapangan padel: hero foto dengan Booking cepat ke WhatsApp, jadwal & harga per jam, lapangan indoor/outdoor, cari lawan main per level, turnamen, dan sewa raket.',
+   'Sparring Padel membuat lapangan padel Anda tampil energik dan mudah dipesan. Hero-nya memakai foto aksi selebar layar dengan garis lapangan neon dan bilah Booking cepat: pengunjung memilih tanggal, indoor atau outdoor, jam mulai, dan jumlah pemain, lalu pesan WhatsApp untuk admin tersusun otomatis. Di bawahnya ada papan jadwal & harga per jam untuk hari kerja dan akhir pekan, kartu lapangan dengan spesifikasi, formulir cari lawan main dengan level 1 sampai 7, daftar turnamen, harga sewa raket, bola, sepatu, dan coaching, angka komunitas, galeri, tanya jawab, serta lokasi dengan Google Maps.
+
+Cocok untuk pengelola lapangan padel, klub padel, dan komunitas yang menerima booking lewat WhatsApp. Jujur soal batasnya: booking hanya menyusun pesan ke admin, jadwal yang tampil adalah contoh yang Anda perbarui sendiri, ketersediaan dikonfirmasi admin, dan tidak ada pembayaran online maupun akun member. Judul, harga, jadwal, lapangan, level, turnamen, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding; label formulir tetap berbahasa Indonesia.',
+   '["Hero foto aksi dengan garis lapangan neon dan bilah Booking cepat (tanggal, indoor/outdoor, jam, pemain) ke WhatsApp","Papan jadwal & harga per jam untuk hari kerja dan akhir pekan, tombol Book per sesi","Kartu lapangan indoor/outdoor dengan foto dan spesifikasi","Cari lawan main: level 1–7 dan formulir nama, hari, jam ke WhatsApp","Daftar turnamen dengan tanggal, kategori, biaya, kuota, dan tombol Daftar","Harga sewa raket, bola, sepatu, coaching, angka komunitas, galeri, dan FAQ","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1390000.00,
+   '/assets/templates/sparring-padel-preview.webp',
+   '["/assets/templates/sparring-padel-1.webp","/assets/templates/sparring-padel-2.webp"]',
+   'sparring-padel', NULL, 'published', 24);
+
+-- SmashHall (2026-10-28, Olahraga & Komunitas; DB lama: migrasi 2026-10-28_042). Demo: GOR SmashHall, GOR & klub badminton di Bandung (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('smashhall',
+   'SmashHall',
+   'Olahraga & Komunitas',
+   'Template website GOR & klub badminton: cek lapangan kosong, booking lewat WhatsApp, member bulanan, latihan, akademi, kejuaraan, dan toko perlengkapan.',
+   'SmashHall membuat GOR badminton tampil bersih dan sporty: foto lapangan yang terang selebar layar, judul besar, dua tombol, dan strip kaca berisi ketersediaan delapan lapangan hari ini yang terisi seperti papan skor. Di bawahnya ada tabel lapangan × jam per hari yang bisa dipilih, harga sewa per jam, fasilitas dengan angka besar, tiga paket member bulanan dengan pilihan periode 3 bulan, jadwal latihan dan pelatih, kelas akademi untuk anak, remaja, dan dewasa, garis waktu kejuaraan internal dan antarklub, toko perlengkapan, galeri, tanya jawab, serta kontak dengan Google Maps.
+
+Cocok untuk GOR, sport center bulu tangkis, klub, dan akademi. Booking, pendaftaran member, akademi, turnamen, dan pesanan toko hanya menyusun pesan WhatsApp ke admin: jadwal yang tampil adalah contoh yang Anda isi sendiri, ketersediaan dikonfirmasi admin, tidak ada pembayaran online, tidak ada akun member, tidak ada keranjang belanja, dan data formulir tidak disimpan di website. Judul, deskripsi, tombol, isi setiap bagian, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding; label formulir tetap berbahasa Indonesia.',
+   '["Hero foto GOR dengan strip ketersediaan 8 lapangan dan animasi kok yang mendarat","Tabel lapangan × jam per hari: pilih slot kosong lalu booking lewat WhatsApp","Tiga paket member bulanan dengan pilihan harga bulanan atau 3 bulan","Jadwal latihan, pelatih berinisial, dan kelas akademi per kelompok usia","Garis waktu kejuaraan internal & antarklub beserta status dan hasil","Toko perlengkapan (raket, kok, grip, sepatu) dengan tombol pesan via WhatsApp","Formulir booking & pendaftaran yang menyusun pesan WhatsApp; data tidak disimpan di website","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1390000.00,
+   '/assets/templates/smashhall-preview.webp',
+   '["/assets/templates/smashhall-1.webp","/assets/templates/smashhall-2.webp"]',
+   'smashhall', NULL, 'published', 25);
+
+-- PayNow (2026-10-28, Fintech & Startup; DB lama: migrasi 2026-10-28_043). Demo: PayNow, merek dompet digital & payment gateway di Jakarta (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('paynow',
+   'PayNow',
+   'Fintech & Startup',
+   'Template landing page dompet digital & payment gateway: hero foto dengan mockup HP dan notifikasi, fitur bertab, simulasi biaya, keamanan, contoh API, dan pendaftaran merchant ke WhatsApp.',
+   'PayNow membuat aplikasi pembayaran atau dompet digital Anda tampil modern dan tepercaya: foto latar di bawah gradasi biru-ungu, judul singkat, tombol unduh aplikasi, dan mockup HP berisi saldo, tombol QRIS, transfer, tagihan, dan isi saldo, lengkap dengan kartu notifikasi yang muncul berurutan. Di bawahnya tersusun strip jenis usaha, fitur bertab dengan layar HP yang berganti, simulasi biaya dari daftar contoh tarif, bagian keamanan, bagian developer dengan daftar endpoint dan contoh kode cURL, Node.js, dan PHP, pita angka, cerita merchant, tanya jawab, tombol Google Play dan App Store, serta formulir pendaftaran merchant.
+
+Cocok untuk startup dompet digital, penyedia payment gateway, dan aplikasi kasir yang ingin memperkenalkan produknya. Template ini halaman pemasaran: tidak memproses pembayaran, tidak menyimpan saldo, dan contoh kode API hanya ilustrasi. Formulir pendaftaran merchant menyusun pesan WhatsApp; data tidak disimpan di website. Izin usaha dan lembaga pengawas Anda tulis sendiri di baris legal footer. Judul, teks, tarif, foto, dan satu warna aksen bisa Anda ubah lewat CMS tanpa coding.',
+   '["Hero foto dengan gradasi biru-ungu, mockup HP berisi saldo, dan kartu notifikasi","Fitur bertab (QRIS, transfer, tagihan, isi saldo) dengan layar HP yang berganti","Simulasi biaya dari daftar contoh tarif yang bisa Anda ubah","Bagian developer: daftar endpoint dan contoh kode cURL, Node.js, PHP dengan tombol salin","Keamanan, pita angka, cerita merchant, dan tanya jawab","Formulir pendaftaran merchant yang menyusun pesan WhatsApp dan baris legal di footer","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/paynow-preview.webp',
+   '["/assets/templates/paynow-1.webp","/assets/templates/paynow-2.webp"]',
+   'paynow', NULL, 'published', 26);
+
+-- MediCare General (2026-10-28, Kesehatan & Rumah Sakit; DB lama: migrasi 2026-10-28_044). Demo: RS MediCare General, rumah sakit umum di Semarang (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('medicare-general',
+   'MediCare General',
+   'Kesehatan & Rumah Sakit',
+   'Template website rumah sakit umum: strip IGD 24 jam, ukuran teks yang bisa diperbesar, jadwal dokter tersaring, pendaftaran online ke WhatsApp, poliklinik, rawat inap, dan BPJS.',
+   'MediCare General membuat website rumah sakit umum yang jelas dan mudah dibaca semua usia, termasuk pasien lansia. Di paling atas ada strip merah IGD 24 jam dengan nomor yang bisa langsung ditelepon dan tombol ukuran teks (A, A+, A++). Hero menampilkan foto rumah sakit yang terang sebagai latar dengan tiga ubin besar: Daftar Online, Jadwal Dokter, dan IGD 24 Jam. Di bawahnya tersusun layanan utama, pendaftaran online tiga langkah, jadwal dokter yang bisa disaring per poli dan per hari, daftar poliklinik beserta lokasinya, penunjang medis, pita IGD dengan langkah saat darurat, kelas kamar rawat inap dan jam besuk, alur pasien BPJS, asuransi, dan umum, tanya jawab, serta kontak darurat dengan Google Maps.
+
+Cocok untuk rumah sakit umum swasta, rumah sakit daerah, dan klinik utama dengan IGD. Formulir pendaftaran hanya menyusun pesan WhatsApp ke petugas pendaftaran; data pasien tidak disimpan di website. Tidak ada rekam medis, antrean otomatis, pembayaran online, atau konsultasi video. Jadwal dokter, kelas kamar, dan daftar penjamin adalah teks yang Anda perbarui sendiri lewat CMS tanpa coding; label formulir, nama hari, dan judul kolom tabel tetap berbahasa Indonesia.',
+   '["Strip IGD 24 jam dengan nomor telepon dan tombol ukuran teks A, A+, A++","Hero foto rumah sakit dengan ubin Daftar Online, Jadwal Dokter, dan IGD 24 Jam","Jadwal dokter yang bisa disaring per poli dan per hari, dengan tombol Daftar","Pendaftaran online tiga langkah yang menyusun pesan WhatsApp (data pasien tidak disimpan)","Poliklinik, penunjang medis, pita IGD, dan kelas kamar rawat inap dengan jam besuk","Alur pasien BPJS, asuransi, dan umum dalam tab, plus tanya jawab dan kontak darurat","Satu warna tema yang bisa diganti; merah IGD tetap agar mudah dikenali","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1890000.00,
+   '/assets/templates/medicare-general-preview.webp',
+   '["/assets/templates/medicare-general-1.webp","/assets/templates/medicare-general-2.webp"]',
+   'medicare-general', NULL, 'published', 27);
+
+-- MomKid Hospital (2026-10-28, Kesehatan & Rumah Sakit; DB lama: migrasi 2026-10-28_045). Demo: RSIA MomKid, rumah sakit ibu & anak di Tangerang Selatan (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('momkid',
+   'MomKid Hospital',
+   'Kesehatan & Rumah Sakit',
+   'Template website rumah sakit ibu & anak bernuansa pastel: hero foto ibu dan bayi, paket persalinan, jadwal imunisasi interaktif, dokter anak, klinik laktasi, tur kamar bersalin, dan pendaftaran ke WhatsApp.',
+   'MomKid Hospital membuat rumah sakit ibu dan anak tampil hangat dan menenangkan di depan calon orang tua: foto ibu dan bayi selebar halaman dengan lapisan peach, tepi bergelombang, dan chip pastel yang mengapung. Di bawahnya tersusun tahap layanan dari kehamilan sampai tumbuh kembang, paket persalinan dengan harga mulai untuk dua pilihan kamar, jadwal imunisasi yang menyorot jadwal berikutnya sesuai umur si kecil, kartu jadwal dokter anak, klinik laktasi, foto tur kamar bersalin, artikel parenting, testimoni orang tua, tanya jawab, serta kontak dengan Google Maps.
+
+Cocok untuk RSIA, klinik bersalin, klinik anak, dan klinik laktasi. Formulir pendaftaran menanyakan layanan, tanggal, waktu, dan cara bayar, lalu menyusun pesan WhatsApp; data tidak disimpan di website, dan tidak ada rekam medis, pembayaran online, maupun konsultasi video. Jadwal imunisasi hanya ringkasan yang Anda sesuaikan dengan anjuran dokter anak. Judul, deskripsi, tombol, isi setiap bagian, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding; label formulir dan nama hari tetap berbahasa Indonesia.',
+   '["Hero foto latar ibu dan bayi dengan lapisan peach, tepi bergelombang, dan chip pastel","Tahap layanan: kehamilan, persalinan, dan tumbuh kembang dalam tab","Paket persalinan dengan harga mulai untuk dua pilihan kamar","Jadwal imunisasi interaktif sesuai umur si kecil (ringkasan, bisa diedit)","Jadwal dokter anak, klinik laktasi, dan tur kamar bersalin","Formulir pendaftaran kunjungan yang menyusun pesan WhatsApp","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1790000.00,
+   '/assets/templates/momkid-preview.webp',
+   '["/assets/templates/momkid-1.webp","/assets/templates/momkid-2.webp"]',
+   'momkid', NULL, 'published', 28);
+
+-- SpecialistPlus (2026-10-28, Kesehatan & Rumah Sakit; DB lama: migrasi 2026-10-28_046). Demo: SpecialistPlus Medical Center, klinik spesialis & laboratorium di Medan (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('specialistplus',
+   'SpecialistPlus',
+   'Kesehatan & Rumah Sakit',
+   'Template website klinik spesialis & laboratorium: hero konsol data, jadwal dokter per klinik, tabel paket MCU, permintaan hasil lab via WhatsApp, dan spesifikasi alat.',
+   'SpecialistPlus membuat pusat klinik spesialis, laboratorium, dan radiologi tampil rapi seperti lembar data: foto ruang pemeriksaan selebar layar dengan panel konsol tempat pasien memilih spesialis lalu melihat jumlah dokter, hari praktik, dan jadwal terdekat. Di bawahnya tersusun tab klinik spesialis (jantung, ortopedi, onkologi, dan lainnya) dengan tabel jadwal dokter, tabel perbandingan paket medical check-up, pita permintaan hasil lab, kartu spesifikasi alat seperti MRI, CT scan, cath lab, mammografi, dan lab otomatis, batang perkiraan waktu hasil, testimoni pasien, tanya jawab, serta kontak dengan jam layanan per unit dan Google Maps.
+
+Cocok untuk klinik utama, pusat spesialis, laboratorium klinik, klinik medical check-up, dan pusat diagnostik. Tombol daftar dokter, pesan paket, dan formulir hasil lab hanya menyusun pesan WhatsApp; data tidak disimpan di website dan hasil lab tidak ditampilkan di website. Tidak ada rekam medis, pembayaran online, atau konsultasi video. Judul, jadwal, harga, isi setiap bagian, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding; label formulir dan judul kolom tabel tetap berbahasa Indonesia.',
+   '["Hero konsol data: pilih spesialis untuk melihat jumlah dokter, hari praktik, dan jadwal terdekat","Tab klinik spesialis dengan tabel jadwal dokter dan tombol daftar via WhatsApp","Tabel perbandingan paket medical check-up dengan harga dan tombol pesan","Formulir permintaan hasil lab yang menyusun pesan WhatsApp, plus tautan portal pasien","Kartu spesifikasi alat diagnostik dan batang perkiraan waktu hasil","Testimoni pasien, tanya jawab, jam layanan per unit, dan catatan darurat 119","Satu warna aksen yang bisa diganti; navy header, pita hasil lab, dan footer ikut menyesuaikan","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1890000.00,
+   '/assets/templates/specialistplus-preview.webp',
+   '["/assets/templates/specialistplus-1.webp","/assets/templates/specialistplus-2.webp"]',
+   'specialistplus', NULL, 'published', 29);
+
+-- HealthLink (2026-10-28, Kesehatan & Rumah Sakit; DB lama: migrasi 2026-10-28_047). Demo: HealthLink, layanan konsultasi dokter online di Yogyakarta (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('healthlink',
+   'HealthLink',
+   'Kesehatan & Rumah Sakit',
+   'Template website telemedicine bergaya aplikasi: cari dokter online, chat & video call lewat WhatsApp atau aplikasi Anda, resep digital, pengingat kontrol, dan RS mitra.',
+   'HealthLink membuat layanan konsultasi dokter online Anda tampil seperti aplikasi yang rapi, dan dirancang dari layar HP lebih dulu. Halaman dibuka dengan foto selebar layar dan kartu putih berisi judul, kolom cari dokter, serta empat ubin besar: chat dokter, video call, tebus obat, dan rekam medis. Di bawahnya ada kartu layanan, cara konsultasi dengan ilustrasi percakapan, daftar dokter online yang bisa dicari dan disaring per spesialis, alur resep digital dan pengantaran obat, ilustrasi riwayat rekam medis, pengingat kontrol, rumah sakit mitra, biaya per sesi dan langganan keluarga, tombol unduh aplikasi, tanya jawab, serta kartu bantuan dan nomor darurat 119.
+
+Cocok untuk klinik, jaringan rumah sakit, dan startup kesehatan yang sudah punya alur konsultasi lewat WhatsApp atau aplikasi sendiri. Template ini halaman pemasaran layanan; konsultasi berjalan lewat WhatsApp atau aplikasi milik Anda, rekam medis tidak disimpan di website, dan tidak ada pembayaran online. Pengingat kontrol dibuat di perangkat pengunjung sebagai file kalender atau tautan Google Calendar. Judul, teks, dokter, harga, foto, tautan aplikasi, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero kartu aplikasi: foto latar, kolom cari dokter, dan empat ubin layanan besar","Daftar dokter online dengan pencarian keluhan, saringan spesialis, status, harga, dan tombol chat","Resep digital & tebus obat, ilustrasi rekam medis, dan cara konsultasi dengan ilustrasi chat","Pengingat kontrol: file kalender .ics atau Google Calendar, dibuat di perangkat pengunjung","RS mitra, biaya per sesi & langganan keluarga, unduh aplikasi, FAQ, dan kartu darurat 119","Dirancang dari HP dulu dengan bilah aksi bawah; satu warna aksen yang bisa diganti","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/healthlink-preview.webp',
+   '["/assets/templates/healthlink-1.webp","/assets/templates/healthlink-2.webp"]',
+   'healthlink', NULL, 'published', 30);
+
+-- HomeNest (2026-10-28, Properti & Real Estate; DB lama: migrasi 2026-10-28_048). Demo: HomeNest oleh PT Sarang Hunian Lestari, developer perumahan (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('homenest',
+   'HomeNest',
+   'Properti & Real Estate',
+   'Template website properti & jual rumah: hero foto besar dengan panel cari rumah, listing bersaringan, tur virtual, simulasi KPR, profil developer, dan jadwal kunjungan ke WhatsApp.',
+   'HomeNest menampilkan rumah yang Anda jual dengan tenang dan elegan: foto rumah selebar layar sebagai latar, judul besar di tengah, dan panel cari rumah (lokasi, tipe, harga) yang langsung menyaring daftar rumah. Setiap kartu memuat foto, harga, klaster, kota, luas tanah dan bangunan, serta jumlah kamar, lengkap dengan tombol simulasi KPR dan tanya unit lewat WhatsApp. Di bawahnya ada tur virtual per ruang dengan tombol menuju tautan tur milik Anda, kalkulator simulasi KPR, profil developer dengan angka dan foto proyek, fasilitas kawasan, cerita pembeli, kartu agen, tanya jawab, serta kantor pemasaran dengan Google Maps.
+
+Cocok untuk developer perumahan, agen properti, dan tim pemasaran klaster. Simulasi KPR hanya perkiraan dengan bunga tetap, bukan penawaran bank; formulir jadwal kunjungan menyusun pesan WhatsApp dan data tidak disimpan di website. Tidak ada tur 360° bawaan dan tidak ada pembayaran tanda jadi online. Rumah, harga, teks, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero foto rumah selebar layar dengan panel cari lokasi, tipe, dan harga","Daftar rumah dengan saringan lokasi, tipe, harga, dan urutan","Kartu rumah: harga, luas tanah & bangunan, kamar tidur & mandi, tombol WhatsApp","Simulasi KPR (perkiraan angsuran, bukan penawaran bank)","Tur virtual per ruang yang membuka tautan tur Anda","Profil developer, fasilitas kawasan, dan cerita pembeli","Agen per kawasan dan formulir jadwal kunjungan ke WhatsApp","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/homenest-preview.webp',
+   '["/assets/templates/homenest-1.webp","/assets/templates/homenest-2.webp"]',
+   'homenest', NULL, 'published', 31);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { FIXTURE_TEMPLATES } from '../../lib/__tests__/preloadFixture';
 import CategorySeo from '../../pages/public/catalog/CategoryPage.seo';
-import { CATEGORY_SLUGS, categoryPath } from '../../seo/paths';
+import { CATEGORY_SLUGS, PLANNED_ARTICLE_SLUGS, categoryPath } from '../../seo/paths';
 import { getHead, getIndexableRoutes } from '../../seo/routes';
 import { DESCRIPTION_MAX, TITLE_MAX } from '../../seo/templateSeo';
 import type { SeoData } from '../../seo/types';
@@ -36,7 +36,8 @@ const data = (templates: Template[]): SeoData => ({
 });
 
 describe('src/content/categories', () => {
-  it('memetakan nama kategori di DB ke 7 slug (aturan sama dengan categorySlugOf & seo.php)', () => {
+  it('memetakan nama kategori di DB ke 9 slug (aturan sama dengan categorySlugOf & seo.php)', () => {
+    expect(CATEGORY_LIST).toHaveLength(9);
     expect(CATEGORY_LIST.map((c) => c.slug)).toEqual([...CATEGORY_SLUGS]);
     expect(categoryOf('Company Profile')?.slug).toBe('company-profile');
     expect(categoryOf('Kecantikan & Klinik')?.slug).toBe('kecantikan-klinik');
@@ -46,6 +47,9 @@ describe('src/content/categories', () => {
     expect(templatesInCategory(FIXTURE_TEMPLATES, 'yoga-wellness').map((t) => t.slug)).toEqual(['serenity']);
     expect(categoryOf('Toko Online')?.slug).toBe('toko-online');
     expect(categoryOf('Sekolah & Pendidikan')?.slug).toBe('sekolah-pendidikan');
+    // Batch 2026-10-28: MediCare General, MomKid Hospital, SpecialistPlus, HealthLink; HomeNest
+    expect(categoryOf('Kesehatan & Rumah Sakit')?.slug).toBe('kesehatan-rumah-sakit');
+    expect(categoryOf('Properti & Real Estate')?.slug).toBe('properti-real-estate');
     expect(categoryOf(' company profile ')?.slug).toBe('company-profile');
     expect(categoryOf('Kuliner')).toBeNull();
     expect(categoryOf('')).toBeNull();
@@ -105,9 +109,22 @@ describe('src/content/categories', () => {
     const toko: Template = { ...FIXTURE_TEMPLATES[4], id: 41, slug: 'skynusa', name: 'SkyNusa', category: 'Toko Online', template_code: 'skynusa' };
     // Template sekolah (2026-10-25) juga belum ada di fixture bersama
     const sekolah: Template = { ...FIXTURE_TEMPLATES[4], id: 42, slug: 'madani', name: 'Madani', category: 'Sekolah & Pendidikan', template_code: 'madani' };
-    const full = data([...FIXTURE_TEMPLATES, toko, sekolah]);
-    expect(getHead(categoryPath('toko-online'), data(FIXTURE_TEMPLATES)).robots).toBe('noindex,follow');
-    expect(getHead(categoryPath('sekolah-pendidikan'), data(FIXTURE_TEMPLATES)).robots).toBe('noindex,follow');
+    // Batch 2026-10-28 juga belum ada di fixture bersama. Properti hanya punya 1 template: diindeks lewat hasGuide
+    const rs: Template = {
+      ...FIXTURE_TEMPLATES[4],
+      id: 43,
+      slug: 'medicare-general',
+      name: 'MediCare General',
+      category: 'Kesehatan & Rumah Sakit',
+      template_code: 'medicare-general',
+    };
+    const properti: Template = { ...FIXTURE_TEMPLATES[4], id: 44, slug: 'homenest', name: 'HomeNest', category: 'Properti & Real Estate', template_code: 'homenest' };
+    const full = data([...FIXTURE_TEMPLATES, toko, sekolah, rs, properti]);
+    for (const slug of ['toko-online', 'sekolah-pendidikan', 'kesehatan-rumah-sakit', 'properti-real-estate'] as const) {
+      expect(getHead(categoryPath(slug), data(FIXTURE_TEMPLATES)).robots, slug).toBe('noindex,follow');
+    }
+    expect(templatesInCategory(full.templates ?? [], 'properti-real-estate').map((t) => t.slug)).toEqual(['homenest']);
+    expect(isCategoryIndexable(CATEGORIES['properti-real-estate'], 1)).toBe(true);
     for (const slug of CATEGORY_SLUGS) {
       const head = getHead(categoryPath(slug), full);
       expect(head.robots, slug).toBe('index,follow');
@@ -139,6 +156,31 @@ describe('src/content/categories', () => {
     ]);
     const routes = Object.fromEntries((CategorySeo.routes?.(full) ?? []).map((e) => [e.path, e.lastmod]));
     expect(routes['/template/kategori/olahraga-komunitas']).toBe('2026-11-02');
-    expect(routes['/template/kategori/company-profile']).toBe('2026-10-25');
+    expect(routes['/template/kategori/company-profile']).toBe('2026-10-28');
+  });
+
+  it('kesehatan & properti (2026-10-28): jujur soal fitur, tanpa klaim mutlak atau status lembaga', () => {
+    const text = (slug: 'kesehatan-rumah-sakit' | 'properti-real-estate') => {
+      const meta = CATEGORIES[slug];
+      const c = CATEGORY_CONTENT[slug];
+      return [meta.name, meta.h1, meta.title, meta.description, meta.descriptionNoPrice, c.intro, guideText(slug), ...c.faq.flatMap((f) => [f.question, f.answer])].join(' ');
+    };
+    for (const slug of ['kesehatan-rumah-sakit', 'properti-real-estate'] as const) {
+      expect(text(slug), slug).not.toMatch(/dijamin|garansi|terbaik|#1|termurah|akreditasi|terakreditasi|izin|lisensi|termasuk domain/i);
+      // Nama template dari data, bukan dari teks kategori
+      expect(text(slug), slug).not.toMatch(/MediCare|MomKid|SpecialistPlus|HealthLink|HomeNest/i);
+    }
+    // Landing page: janji temu = pesan WhatsApp, tanpa data pasien, rekam medis, atau pembayaran online
+    const rs = text('kesehatan-rumah-sakit');
+    for (const phrase of ['pesan WhatsApp', 'tidak menyimpan data pasien', 'bukan sistem rekam medis', 'tidak memiliki pembayaran online']) {
+      expect(rs).toContain(phrase);
+    }
+    // Listing di CMS, bukan database; simulasi KPR hanya perkiraan; tanpa pembayaran online
+    const properti = text('properti-real-estate');
+    for (const phrase of ['bukan portal listing dengan database', 'perkiraan cicilan', 'ditentukan bank', 'tidak memiliki pembayaran online']) {
+      expect(properti).toContain(phrase);
+    }
+    expect(CATEGORIES['properti-real-estate'].guides.every((slug) => (PLANNED_ARTICLE_SLUGS as readonly string[]).includes(slug))).toBe(true);
+    expect(CATEGORIES['kesehatan-rumah-sakit'].guides.every((slug) => (PLANNED_ARTICLE_SLUGS as readonly string[]).includes(slug))).toBe(true);
   });
 });

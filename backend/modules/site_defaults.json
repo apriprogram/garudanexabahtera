@@ -69,6 +69,20 @@
     "logo": "",
     "posts": false
   },
+  "healthlink": {
+    "company_name": "HealthLink",
+    "tagline": "Konsultasi Dokter Online Yogyakarta",
+    "description": "Chat atau video call dengan dokter umum dan spesialis, tebus resep digital, dan atur pengingat kontrol. Semua langsung dari HP Anda.",
+    "logo": "",
+    "posts": false
+  },
+  "homenest": {
+    "company_name": "HomeNest",
+    "tagline": "Jual Rumah di Bogor, Depok, Tangsel & Bekasi",
+    "description": "Pilihan rumah, townhouse, dan kavling di empat kota penyangga Jakarta. Cari unit, hitung simulasi KPR, lalu jadwalkan kunjungan bersama agen.",
+    "logo": "",
+    "posts": false
+  },
   "jumantara": {
     "company_name": "SMA Negeri 1 Purbolinggo",
     "tagline": "Sekolah negeri di Lampung Timur",
@@ -83,6 +97,20 @@
     "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
     "posts": true
   },
+  "medicare-general": {
+    "company_name": "RS MediCare General",
+    "tagline": "Rumah Sakit Umum di Semarang",
+    "description": "Rumah sakit umum di Semarang dengan 12 poliklinik, IGD 24 jam, dan rawat inap. Cek jadwal dokter dan daftar berobat lewat WhatsApp.",
+    "logo": "",
+    "posts": false
+  },
+  "momkid": {
+    "company_name": "RSIA MomKid",
+    "tagline": "Rumah Sakit Ibu & Anak Tangerang Selatan",
+    "description": "Kontrol kehamilan, persalinan, imunisasi, dan konsultasi dokter anak di Tangerang Selatan, didampingi tim yang ramah dan sabar.",
+    "logo": "",
+    "posts": false
+  },
   "nawasena": {
     "company_name": "SMA Negeri 1 Purbolinggo",
     "tagline": "SMA Negeri di Lampung Timur",
@@ -94,6 +122,13 @@
     "company_name": "PT Arunika Niaga Internasional",
     "tagline": "Importir Bahan Baku & Mesin",
     "description": "Kami mencari pemasok di luar negeri, mengurus impor, menyimpan stok di gudang Cikarang, lalu mengantar bahan baku dan mesin ke pabrik Anda.",
+    "logo": "",
+    "posts": false
+  },
+  "paynow": {
+    "company_name": "PayNow",
+    "tagline": "Dompet Digital & Payment Gateway",
+    "description": "Bayar dengan QRIS, kirim uang, lunasi tagihan, dan isi saldo dari satu aplikasi. Merchant menerima pembayaran lewat satu dasbor.",
     "logo": "",
     "posts": false
   },
@@ -136,6 +171,27 @@
     "company_name": "SkyNusa",
     "tagline": "Toko Drone, Servis & Sewa Drone Jakarta",
     "description": "Toko drone di Jakarta: paket hemat drone + tas + baterai cadangan, garansi servis di bengkel sendiri, dan kelas terbang gratis untuk setiap pembeli. Belum siap membeli? Sewa harian juga ada.",
+    "logo": "",
+    "posts": false
+  },
+  "smashhall": {
+    "company_name": "GOR SmashHall",
+    "tagline": "GOR & Klub Badminton di Bandung",
+    "description": "Delapan lapangan karpet vinyl di Bandung, buka 07.00–23.00. Booking lewat WhatsApp, gabung member bulanan, atau daftar akademi.",
+    "logo": "",
+    "posts": false
+  },
+  "sparring-padel": {
+    "company_name": "Sparring Padel",
+    "tagline": "Lapangan Padel Kemang, Jakarta Selatan",
+    "description": "Enam lapangan indoor dan outdoor di Kemang, buka 06.00–24.00. Pilih jam main, kirim lewat WhatsApp, lalu admin mengonfirmasi jadwal Anda.",
+    "logo": "",
+    "posts": false
+  },
+  "specialistplus": {
+    "company_name": "SpecialistPlus Medical Center",
+    "tagline": "Klinik Spesialis & Lab Medan",
+    "description": "Konsultasi spesialis jantung, ortopedi, dan onkologi, lengkap dengan laboratorium dan radiologi di satu gedung di Medan.",
     "logo": "",
     "posts": false
   },

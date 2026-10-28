@@ -65,7 +65,17 @@ describe('paths', () => {
       guides: '/panduan',
       customOrder: '/pesan-custom',
     });
-    expect(CATEGORY_SLUGS).toEqual(['company-profile', 'kecantikan-klinik', 'olahraga-komunitas', 'fintech-startup', 'yoga-wellness', 'toko-online', 'sekolah-pendidikan']);
+    expect(CATEGORY_SLUGS).toEqual([
+      'company-profile',
+      'kecantikan-klinik',
+      'olahraga-komunitas',
+      'fintech-startup',
+      'yoga-wellness',
+      'toko-online',
+      'sekolah-pendidikan',
+      'kesehatan-rumah-sakit',
+      'properti-real-estate',
+    ]);
     expect(PLANNED_ARTICLE_SLUGS).toEqual([
       'biaya-website-company-profile',
       'template-vs-jasa-website-custom',

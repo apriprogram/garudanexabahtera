@@ -1,0 +1,219 @@
+/*
+ * CSS lokal HomeNest (diimpor ./HomeNest.tsx): lapisan hijau tua foto hero, latar cadangan tanpa foto, penggeser uang
+ * muka KPR, buka-tutup akordeon, garis tab ruang, dan gerak khas: Ken Burns pelan pada WADAH foto hero (skala 1 → 1,05
+ * selama 12 dtk, sekali; foto/LCP tidak pernah disembunyikan), kartu rumah muncul setelah saringan diganti (≤ 300 ms,
+ * bertahap), foto ruang tur berganti dengan pudar 300 ms, dan garis rumah developer tergambar SEKALI (stroke-dashoffset
+ * 1,6 dtk). Keadaan bawaan = keadaan akhir; gerak hanya bila root template ber-data-tpl-motion="on" (demo & situs live).
+ * Pratinjau CMS, prefers-reduced-motion, dan cetak → statis. Tanpa bayangan apa pun.
+ */
+
+@layer components {
+  /*
+   * Lapisan foto hero (hijau tua turunan warna tema): atas untuk menu transparan, elips di belakang judul & kalimat,
+   * bawah di belakang panel cari. Teks krem ≥ 4,5:1 di area teks pada foto demo (diperiksa di tangkapan layar).
+   */
+  .hn-hero-scrim {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--hn-deep) 62%, transparent) 0, color-mix(in srgb, var(--hn-deep) 0%, transparent) 220px),
+      radial-gradient(ellipse 62% 50% at 50% 50%, color-mix(in srgb, var(--hn-deep) 64%, transparent) 0%, color-mix(in srgb, var(--hn-deep) 40%, transparent) 60%, color-mix(in srgb, var(--hn-deep) 14%, transparent) 100%),
+      linear-gradient(0deg, color-mix(in srgb, var(--hn-deep) 70%, transparent) 0%, transparent 42%);
+  }
+
+  /*
+   * Wadah sempit (HP, tablet, panel CMS): foto berhenti di tepi atas panel cari. Gelap di bilah menu, terang di badan
+   * rumah, lalu ±380px terbawah (tempat label, judul, dan kalimat — diukur dari bawah agar ikut tinggi layar) gelap
+   * ≥ 76% (label kecil ≥ 4,5:1 pada piksel putih terburuk) dan melebur penuh ke hijau tua di tepi bawah foto.
+   */
+  @container (max-width: 767px) {
+    .hn-hero-scrim {
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--hn-deep) 55%, transparent) 0,
+        color-mix(in srgb, var(--hn-deep) 14%, transparent) 96px,
+        color-mix(in srgb, var(--hn-deep) 22%, transparent) calc(100% - 470px),
+        color-mix(in srgb, var(--hn-deep) 76%, transparent) calc(100% - 380px),
+        color-mix(in srgb, var(--hn-deep) 88%, transparent) calc(100% - 120px),
+        var(--hn-deep) 100%
+      );
+    }
+  }
+
+  .hn-kenburns {
+    transform-origin: 50% 60%;
+  }
+
+  [data-tpl-motion='on'] .hn-kenburns {
+    animation: hn-kenburns 12s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+
+  /* Penggeser uang muka: trek garis rambut tinta, kenop persegi warna tema (tanpa bayangan) */
+  .hn-range {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    accent-color: var(--tpl-accent);
+  }
+
+  .hn-range::-webkit-slider-runnable-track {
+    height: 2px;
+    background: rgb(30 42 36 / 0.3);
+  }
+
+  .hn-range::-moz-range-track {
+    height: 2px;
+    background: rgb(30 42 36 / 0.3);
+  }
+
+  .hn-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    margin-top: -10px;
+    border: 2px solid #f4efe4;
+    border-radius: 0;
+    background: var(--tpl-accent);
+    outline: 1px solid var(--tpl-accent);
+    cursor: pointer;
+  }
+
+  .hn-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #f4efe4;
+    border-radius: 0;
+    background: var(--tpl-accent);
+    outline: 1px solid var(--tpl-accent);
+    cursor: pointer;
+  }
+
+  .hn-range:focus-visible {
+    outline: 2px solid var(--hn-ink);
+    outline-offset: 4px;
+  }
+
+  /* Garis tab ruang aktif: tumbuh dari kiri */
+  .hn-tab-bar {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  .hn-tab-bar[data-on='true'] {
+    transform: scaleX(1);
+  }
+
+  [data-tpl-motion='on'] .hn-tab-bar {
+    transition: transform 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  /* Foto ruang tur: hanya yang aktif terlihat; pudar 300 ms bila gerak menyala */
+  .hn-tour-img {
+    opacity: 0;
+  }
+
+  .hn-tour-img[data-active='true'] {
+    opacity: 1;
+  }
+
+  [data-tpl-motion='on'] .hn-tour-img {
+    transition: opacity 300ms ease;
+  }
+
+  /* Kartu rumah setelah saringan/urutan diganti: muncul bertahap (opacity + skala), maks. ± 520 ms total */
+  [data-tpl-motion='on'] [data-filtered='true'] > .hn-pop {
+    animation: hn-pop 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--hn-delay, 0ms);
+  }
+
+  /* Garis rumah developer: pathLength=1 + dasharray 1; tergambar saat <Reveal> wadahnya "shown" */
+  .hn-draw path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  [data-tpl-motion='on'] .hn-draw[data-reveal='pending'] path {
+    stroke-dashoffset: 1;
+  }
+
+  [data-tpl-motion='on'] .hn-draw[data-reveal='shown'] path {
+    animation: hn-draw 1.1s cubic-bezier(0.65, 0, 0.35, 1) both;
+  }
+
+  /* Buka-tutup akordeon: 0fr → 1fr, transisi hanya bila gerak menyala */
+  .hn-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .hn-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .hn-collapse {
+    transition: grid-template-rows 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  [data-tpl-motion='on'] .hn-acc {
+    transition: rotate 240ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .hn-kenburns,
+    [data-tpl-motion='on'] [data-filtered='true'] > .hn-pop,
+    [data-tpl-motion='on'] .hn-draw[data-reveal='shown'] path {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .hn-draw[data-reveal='pending'] path {
+      stroke-dashoffset: 0;
+    }
+
+    [data-tpl-motion='on'] .hn-tab-bar,
+    [data-tpl-motion='on'] .hn-tour-img,
+    [data-tpl-motion='on'] .hn-collapse,
+    [data-tpl-motion='on'] .hn-acc {
+      transition: none;
+    }
+  }
+
+  @media print {
+    [data-tpl-motion='on'] .hn-kenburns,
+    [data-tpl-motion='on'] [data-filtered='true'] > .hn-pop,
+    [data-tpl-motion='on'] .hn-draw[data-reveal='shown'] path {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .hn-draw[data-reveal='pending'] path {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+@keyframes hn-kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes hn-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hn-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}

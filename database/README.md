@@ -38,7 +38,15 @@ database/
 │   ├── 2026-10-27_037_nusaniaga_template.sql       # data: katalog NusaNiaga (company profile importir & distributor), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-27_038_jumantara_template.sql       # data: katalog Jumantara (website SMA negeri), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-27_039_nawasena_template.sql        # data: katalog Nawasena (website profil sekolah SMA negeri), jalankan SETELAH deploy kodenya
-│   └── 2026-10-27_040_pradipta_template.sql        # data: katalog Pradipta (landing page SMA negeri), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-27_040_pradipta_template.sql        # data: katalog Pradipta (landing page SMA negeri), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-28_041_sparring_padel_template.sql  # data: katalog Sparring Padel (booking lapangan padel), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-28_042_smashhall_template.sql       # data: katalog SmashHall (GOR & klub badminton), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-28_043_paynow_template.sql          # data: katalog PayNow (landing page dompet digital & payment gateway), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-28_044_medicare_general_template.sql # data: katalog MediCare General (rumah sakit umum), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-28_045_momkid_template.sql          # data: katalog MomKid Hospital (rumah sakit ibu & anak), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-28_046_specialistplus_template.sql  # data: katalog SpecialistPlus (klinik spesialis & laboratorium), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-28_047_healthlink_template.sql      # data: katalog HealthLink (telemedicine), jalankan SETELAH deploy kodenya
+│   └── 2026-10-28_048_homenest_template.sql        # data: katalog HomeNest (katalog & penjualan rumah), jalankan SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -253,6 +261,23 @@ berita, pengumuman, agenda, dan SPMB, kategori "Sekolah & Pendidikan", Rp1.690.0
 sama dengan 028: menjalankan ulang MENIMPA perubahan admin pada baris itu. Jalankan setelah kode yang mendaftarkan
 `template_code` `pradipta` ter-deploy. DB baru cukup `seed.templates.sql`.
 
+`2026-10-28_041` s/d `2026-10-28_048` (data saja) membuat/menyamakan delapan baris katalog berdasarkan slug, pola sama
+dengan 028: menjalankan ulang MENIMPA perubahan admin pada baris itu. Semua hero-nya foto latar penuh:
+
+| Versi | Slug | Isi | Kategori | Harga | sort_order |
+| --- | --- | --- | --- | --- | --- |
+| 041 | `sparring-padel` | booking lapangan padel & komunitas | Olahraga & Komunitas | Rp1.390.000 | 24 |
+| 042 | `smashhall` | GOR & klub badminton | Olahraga & Komunitas | Rp1.390.000 | 25 |
+| 043 | `paynow` | landing page dompet digital & payment gateway | Fintech & Startup | Rp1.590.000 | 26 |
+| 044 | `medicare-general` | rumah sakit umum | Kesehatan & Rumah Sakit (baru) | Rp1.890.000 | 27 |
+| 045 | `momkid` | rumah sakit ibu & anak | Kesehatan & Rumah Sakit | Rp1.790.000 | 28 |
+| 046 | `specialistplus` | klinik spesialis & laboratorium | Kesehatan & Rumah Sakit | Rp1.890.000 | 29 |
+| 047 | `healthlink` | telemedicine | Kesehatan & Rumah Sakit | Rp1.690.000 | 30 |
+| 048 | `homenest` | katalog & penjualan rumah | Properti & Real Estate (baru) | Rp1.690.000 | 31 |
+
+Jalankan masing-masing setelah kode yang mendaftarkan `template_code`-nya ter-deploy; halaman dua kategori baru ikut kode
+yang sama. DB baru cukup `seed.templates.sql`.
+
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
 Koneksi DB lokal di `.env` (root XAMPP tanpa password), dibaca `api.php` di setiap request dan oleh
@@ -435,3 +460,11 @@ kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin per
 | 2026-10-27_038 | Data saja: baris katalog `jumantara` (website SMA negeri, kategori "Sekolah & Pendidikan", Rp1.690.000, sort_order 21), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `jumantara` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-27_039 | Data saja: baris katalog `nawasena` (website profil sekolah SMA negeri, kategori "Sekolah & Pendidikan", Rp1.690.000, sort_order 22), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `nawasena` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-27_040 | Data saja: baris katalog `pradipta` (landing page SMA negeri, kategori "Sekolah & Pendidikan", Rp1.690.000, sort_order 23), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `pradipta` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-28_041 | Data saja: baris katalog `sparring-padel` (booking lapangan padel & komunitas, kategori "Olahraga & Komunitas", Rp1.390.000, sort_order 24), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `sparring-padel` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-28_042 | Data saja: baris katalog `smashhall` (GOR & klub badminton, kategori "Olahraga & Komunitas", Rp1.390.000, sort_order 25), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `smashhall` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-28_043 | Data saja: baris katalog `paynow` (landing page dompet digital & payment gateway, kategori "Fintech & Startup", Rp1.590.000, sort_order 26), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `paynow` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-28_044 | Data saja: baris katalog `medicare-general` (rumah sakit umum, kategori baru "Kesehatan & Rumah Sakit", Rp1.890.000, sort_order 27), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `medicare-general` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-28_045 | Data saja: baris katalog `momkid` (rumah sakit ibu & anak, kategori "Kesehatan & Rumah Sakit", Rp1.790.000, sort_order 28), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `momkid` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-28_046 | Data saja: baris katalog `specialistplus` (klinik spesialis & laboratorium, kategori "Kesehatan & Rumah Sakit", Rp1.890.000, sort_order 29), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `specialistplus` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-28_047 | Data saja: baris katalog `healthlink` (telemedicine, kategori "Kesehatan & Rumah Sakit", Rp1.690.000, sort_order 30), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `healthlink` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-28_048 | Data saja: baris katalog `homenest` (katalog & penjualan rumah, kategori baru "Properti & Real Estate", Rp1.690.000, sort_order 31), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `homenest` ter-deploy. DB baru cukup `seed.templates.sql`. |

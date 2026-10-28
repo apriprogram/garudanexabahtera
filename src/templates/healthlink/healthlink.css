@@ -1,0 +1,230 @@
+/*
+ * CSS lokal HealthLink (diimpor ./HealthLink.tsx). Keadaan bawaan = keadaan akhir (semua terlihat, garis alur penuh,
+ * titik status diam); gerak hanya bila root template ber-data-tpl-motion="on" (demo & situs live). Pratinjau CMS,
+ * prefers-reduced-motion, dan cetak → statis. Foto hero (LCP), H1, dan kartu hero tidak pernah dianimasikan. Tanpa
+ * bayangan apa pun. Gerak khas:
+ *   1. ubin layanan di kartu hero "pop" (skala 0.96 → 1 + memudar, berurutan, sekali);
+ *   2. gelembung chat di Cara konsultasi muncul berurutan dengan titik "mengetik" di antaranya (sekali saat terlihat);
+ *   3. titik status dokter online berdenyut TIGA kali lalu diam (sekali saat daftar terlihat).
+ * Pelengkap: garis alur resep terisi sekali, kartu dokter memudar singkat saat saringan berubah, bilah aksi bawah
+ * bergeser masuk, akordeon tanya jawab membuka.
+ */
+
+@layer components {
+  /* ─── Bilah aksi bawah (fungsional: tersembunyi sampai hero lewat) ───────── */
+  .hl-dock[data-visible='false'] {
+    opacity: 0;
+    transform: translate3d(0, calc(100% + 24px), 0);
+  }
+
+  [data-tpl-motion='on'] .hl-dock {
+    transition:
+      opacity 0.3s var(--tpl-ease, ease),
+      transform 0.3s var(--tpl-ease, ease);
+  }
+
+  /* ─── 1. Ubin hero ───────────────────────────────────────────────────────── */
+  [data-tpl-motion='on'] .hl-tile {
+    animation: hl-pop 0.45s var(--tpl-ease, ease) both;
+    animation-delay: var(--hl-at, 0ms);
+  }
+
+  /* ─── 2. Percakapan ──────────────────────────────────────────────────────── */
+  .hl-typing {
+    opacity: 0;
+  }
+
+  [data-tpl-motion='on'] .hl-chat[data-play='pending'] .hl-bubble {
+    opacity: 0;
+  }
+
+  [data-tpl-motion='on'] .hl-chat[data-play='run'] .hl-bubble {
+    animation: hl-bubble 0.36s var(--tpl-ease, ease) both;
+    animation-delay: var(--hl-at, 0ms);
+  }
+
+  [data-tpl-motion='on'] .hl-chat[data-play='run'] .hl-typing {
+    animation: hl-typing var(--hl-type, 700ms) linear both;
+    animation-delay: var(--hl-type-at, 0ms);
+  }
+
+  [data-tpl-motion='on'] .hl-chat[data-play='run'] .hl-typing i {
+    animation: hl-blink 0.6s ease-in-out 2;
+    animation-delay: var(--hl-type-at, 0ms);
+  }
+
+  [data-tpl-motion='on'] .hl-chat[data-play='run'] .hl-typing i:nth-child(2) {
+    animation-delay: calc(var(--hl-type-at, 0ms) + 0.12s);
+  }
+
+  [data-tpl-motion='on'] .hl-chat[data-play='run'] .hl-typing i:nth-child(3) {
+    animation-delay: calc(var(--hl-type-at, 0ms) + 0.24s);
+  }
+
+  /* ─── 3. Titik status dokter online ──────────────────────────────────────── */
+  .hl-dot[data-online='true']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: currentColor;
+    color: #12a150;
+    opacity: 0;
+  }
+
+  [data-tpl-motion='on'] .hl-doctors[data-play='run'] .hl-dot[data-online='true']::after {
+    animation: hl-pulse 1.2s ease-out 0.3s 3;
+  }
+
+  /* ─── Garis alur resep: terisi sekali (scaleY 0 → 1) ─────────────────────── */
+  [data-tpl-motion='on'] .hl-flow[data-play='pending'] .hl-flow-fill {
+    transform: scaleY(0);
+  }
+
+  [data-tpl-motion='on'] .hl-flow[data-play='run'] .hl-flow-fill {
+    animation: hl-fill 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both;
+  }
+
+  /* ─── Kartu dokter saat saringan berubah ─────────────────────────────────── */
+  [data-tpl-motion='on'] .hl-swap {
+    animation: hl-fade 0.24s var(--tpl-ease, ease) both;
+  }
+
+  /* ─── Akordeon: 0fr → 1fr ────────────────────────────────────────────────── */
+  .hl-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .hl-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .hl-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* ─── Gerak mati: preferensi pengunjung & cetak ──────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .hl-tile,
+    [data-tpl-motion='on'] .hl-chat .hl-bubble,
+    [data-tpl-motion='on'] .hl-chat .hl-typing,
+    [data-tpl-motion='on'] .hl-chat .hl-typing i,
+    [data-tpl-motion='on'] .hl-dot::after,
+    [data-tpl-motion='on'] .hl-flow-fill,
+    [data-tpl-motion='on'] .hl-swap {
+      animation: none;
+    }
+
+    .hl-chat .hl-bubble {
+      opacity: 1;
+    }
+
+    .hl-flow .hl-flow-fill {
+      transform: none;
+    }
+
+    [data-tpl-motion='on'] .hl-dock,
+    [data-tpl-motion='on'] .hl-collapse {
+      transition: none;
+    }
+  }
+
+  @media print {
+    [data-tpl-motion='on'] .hl-tile,
+    [data-tpl-motion='on'] .hl-chat .hl-bubble,
+    [data-tpl-motion='on'] .hl-dot::after,
+    [data-tpl-motion='on'] .hl-flow-fill,
+    [data-tpl-motion='on'] .hl-swap {
+      animation: none;
+    }
+
+    .hl-chat .hl-bubble {
+      opacity: 1;
+    }
+
+    .hl-flow .hl-flow-fill {
+      transform: none;
+    }
+
+    .hl-dock {
+      display: none;
+    }
+  }
+}
+
+@keyframes hl-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hl-bubble {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hl-typing {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes hl-blink {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes hl-pulse {
+  from {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+@keyframes hl-fill {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes hl-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

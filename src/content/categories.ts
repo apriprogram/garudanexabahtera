@@ -43,7 +43,7 @@ export interface CategoryMeta {
  * Ubah setiap kali teksnya diubah.
  */
 export const CATALOG_UPDATED = '2026-10-25';
-export const CATEGORIES_UPDATED = '2026-10-25';
+export const CATEGORIES_UPDATED = '2026-10-28';
 
 export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
   'company-profile': {
@@ -138,6 +138,38 @@ export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
     niche: 'sekolah',
     hasGuide: true,
     guides: ['template-vs-jasa-website-custom'],
+  },
+  // Kesehatan (2026-10-28): MediCare General (RS umum), MomKid Hospital (RS ibu & anak), SpecialistPlus (klinik
+  // spesialis & laboratorium) dan HealthLink (telemedicine), kategori DB "Kesehatan & Rumah Sakit". Landing page saja:
+  // janji temu lewat pesan WhatsApp, tanpa data pasien, rekam medis, atau pembayaran online.
+  'kesehatan-rumah-sakit': {
+    slug: 'kesehatan-rumah-sakit',
+    name: 'Rumah sakit & klinik',
+    h1: 'Template website rumah sakit & klinik',
+    title: 'Template Website Rumah Sakit & Klinik | Garuda Nexa',
+    description:
+      'Template website rumah sakit, RS ibu & anak, klinik spesialis & telemedicine: dokter, jadwal praktik, janji temu via WhatsApp. Mulai {harga_min}.',
+    descriptionNoPrice:
+      'Template website rumah sakit, RS ibu & anak, klinik spesialis & telemedicine: profil dokter, jadwal praktik, janji temu via WhatsApp. Lihat demonya.',
+    niche: 'rumah sakit & klinik',
+    hasGuide: true,
+    guides: ['template-vs-jasa-website-custom', 'biaya-website-company-profile'],
+  },
+  // Properti (2026-10-28): HomeNest (katalog & penjualan rumah: filter listing, virtual tour, simulasi KPR, profil
+  // developer, hubungi agen), kategori DB "Properti & Real Estate". Satu template → diindeks lewat hasGuide.
+  // Listing ditulis di CMS (bukan database listing); simulasi KPR hanya perkiraan; tanpa pembayaran online.
+  'properti-real-estate': {
+    slug: 'properti-real-estate',
+    name: 'Properti & perumahan',
+    h1: 'Template website properti & perumahan',
+    title: 'Template Website Properti & Perumahan | Garuda Nexa',
+    description:
+      'Template website properti untuk developer perumahan & agen: listing berfilter, virtual tour, simulasi KPR, hubungi agen via WhatsApp. Mulai {harga_min}.',
+    descriptionNoPrice:
+      'Template website properti untuk developer perumahan & agen: listing berfilter, virtual tour, simulasi KPR, hubungi agen via WhatsApp. Lihat demonya.',
+    niche: 'properti & perumahan',
+    hasGuide: true,
+    guides: ['template-vs-jasa-website-custom', 'biaya-website-company-profile'],
   },
 };
 

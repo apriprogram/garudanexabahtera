@@ -466,4 +466,156 @@ export const CATEGORY_CONTENT: Readonly<Record<CategorySlug, CategoryPageContent
       },
     ],
   },
+  // Landing page fasilitas kesehatan: tanpa klaim medis, tanpa klaim status lembaga, tanpa data pasien (2026-10-28)
+  'kesehatan-rumah-sakit': {
+    intro:
+      'Pasien dan keluarganya membuka website rumah sakit atau klinik untuk mencari jawaban cepat: dokter siapa yang praktik, layanan apa yang tersedia, ke mana harus datang, dan bagaimana membuat janji. Template di kategori ini menyusun informasi itu untuk rumah sakit umum, rumah sakit ibu dan anak, klinik spesialis dengan laboratorium, dan layanan konsultasi online. Formulir janji temu menyusun pesan WhatsApp untuk admin Anda; template ini tidak menyimpan data pasien, tidak berisi rekam medis, dan tidak menerima pembayaran online.',
+    guideIntro:
+      'Website fasilitas kesehatan sering dibuka oleh orang yang sedang cemas atau terburu-buru: pasien yang mencari dokter, orang tua yang anaknya demam, atau keluarga yang ingin tahu jam besuk. Siapkan isi berikut supaya informasi penting bisa ditemukan dalam beberapa ketukan, apa pun template yang Anda pilih. Isi yang jelas dan rutin diperbarui juga membantu rumah sakit atau klinik Anda muncul saat orang mencari dokter dan layanan kesehatan di kota mereka.',
+    checklist: [
+      {
+        title: 'Nomor gawat darurat yang langsung terlihat',
+        text: 'Tampilkan nomor IGD atau ambulans di bagian atas halaman dan di footer, dengan tautan telepon yang bisa langsung diketuk di HP. Tulis juga bahwa kondisi darurat sebaiknya ditangani lewat telepon atau dengan datang ke IGD, bukan menunggu balasan chat. Bila fasilitas Anda tidak melayani gawat darurat, sebutkan dengan jelas ke mana pasien perlu pergi.',
+      },
+      {
+        title: 'Daftar dokter dan jadwal praktik',
+        text: 'Tulis nama lengkap dengan gelar, spesialisasi, hari dan jam praktik, serta foto yang ramah. Jadwal praktik adalah informasi yang paling sering dicari, jadi perbarui setiap kali dokter cuti, pindah jam, atau ada dokter baru yang bergabung.',
+      },
+      {
+        title: 'Layanan dan poliklinik yang mudah dipindai',
+        text: 'Kelompokkan layanan seperti poli umum, poli anak, kebidanan dan kandungan, gigi, rehabilitasi medik, laboratorium, dan radiologi. Satu-dua kalimat tentang siapa yang dilayani dan apa yang perlu disiapkan lebih membantu daripada daftar nama ruangan.',
+      },
+      {
+        title: 'Alur janji temu yang jelas',
+        text: 'Bila janji temu dibuat lewat WhatsApp, jelaskan data yang perlu dikirim, misalnya nama pasien, dokter atau poli tujuan, dan tanggal yang diinginkan, lalu tegaskan bahwa jadwal dikonfirmasi oleh admin. Jangan meminta keluhan rinci, foto luka, atau dokumen medis lewat chat umum.',
+      },
+      {
+        title: 'Penjamin dan kisaran biaya',
+        text: 'Pasien hampir selalu bertanya apakah fasilitas Anda melayani BPJS Kesehatan, asuransi swasta, atau pasien umum. Sebutkan penjamin yang memang bekerja sama dengan Anda, dan bila memungkinkan tampilkan kisaran tarif konsultasi atau harga paket pemeriksaan beserta tanggal berlakunya.',
+      },
+      {
+        title: 'Panduan untuk pasien dan pengunjung',
+        text: 'Alamat dengan peta, petunjuk pintu masuk IGD dan poliklinik, lokasi parkir, jam besuk, aturan pendamping, dan dokumen yang perlu dibawa pasien baru mengurangi antrean pertanyaan di meja informasi. Rumah sakit ibu dan anak dapat menambahkan kelas persiapan persalinan, ruang laktasi, dan jadwal imunisasi.',
+      },
+      {
+        title: 'Persiapan pemeriksaan penunjang',
+        text: 'Untuk laboratorium, radiologi, atau medical check-up, tulis persiapan seperti puasa, jam kedatangan yang disarankan, perkiraan lama hasil keluar, dan cara mengambil hasil. Pasien yang datang dengan persiapan tepat tidak perlu dijadwalkan ulang.',
+      },
+      {
+        title: 'Konsultasi online yang dijelaskan apa adanya',
+        text: 'Bila Anda membuka layanan telemedicine, jelaskan dokter yang bertugas, jam layanan, tarif, platform yang dipakai, serta keluhan yang bisa dan tidak bisa ditangani dari jarak jauh. Pasien perlu tahu kapan mereka tetap harus datang untuk diperiksa langsung.',
+      },
+      {
+        title: 'Bahasa kesehatan yang hati-hati',
+        text: 'Jelaskan layanan dan prosedur tanpa menjanjikan kesembuhan, angka keberhasilan, atau hasil yang sama untuk setiap pasien. Artikel edukasi sebaiknya ditinjau tenaga medis dan mengajak pembaca berkonsultasi langsung, bukan menggantikan pemeriksaan.',
+      },
+      {
+        title: 'Privasi pasien',
+        text: 'Jangan memajang nama, foto, atau cerita pasien tanpa persetujuan tertulis, termasuk di testimoni. Website profil cukup menjelaskan layanan; data pasien, hasil pemeriksaan, dan rekam medis tetap berada di sistem informasi rumah sakit atau klinik Anda.',
+      },
+    ],
+    faq: [
+      {
+        question: 'Apakah template rumah sakit punya pendaftaran pasien online?',
+        answer:
+          'Tidak. Formulir janji temu menyusun pesan WhatsApp ke nomor admin Anda, lalu jadwal dikonfirmasi lewat chat; isi formulir tidak disimpan di server website. Pendaftaran dan antrean online yang terhubung ke sistem rumah sakit bisa dibahas lewat jasa website custom.',
+      },
+      {
+        question: 'Apakah template ini bisa menyimpan rekam medis atau hasil laboratorium?',
+        answer:
+          'Tidak. Template ini adalah website profil dan informasi layanan, bukan sistem rekam medis. Data pasien, hasil laboratorium, dan rekam medis tetap dikelola di sistem informasi fasilitas kesehatan Anda.',
+      },
+      {
+        question: 'Apakah pasien bisa membayar lewat website?',
+        answer:
+          'Tidak. Template tidak memiliki pembayaran online. Tarif yang Anda tulis di CMS hanya informasi; pembayaran tetap dilakukan di kasir, lewat penjamin, atau dengan cara lain yang Anda konfirmasi kepada pasien.',
+      },
+      {
+        question: 'Apakah template telemedicine bisa dipakai untuk video call dengan dokter?',
+        answer:
+          'Tidak. Template telemedicine adalah website perkenalan layanan konsultasi online: dokter, cara kerja, jam layanan, dan tombol yang membuka WhatsApp. Konsultasi video, resep, dan pembayaran tetap berjalan di aplikasi atau platform yang Anda pakai.',
+      },
+      {
+        question: 'Apakah jadwal dokter bisa saya ubah sendiri?',
+        answer:
+          'Bisa. Nama dokter, spesialisasi, foto, dan jadwal praktik ditulis di CMS dan bisa diubah kapan saja tanpa menyentuh kode, misalnya saat dokter cuti atau ada jadwal baru.',
+      },
+    ],
+  },
+  // Landing page penjualan rumah: listing di CMS (bukan database), simulasi KPR = perkiraan, tanpa pembayaran online
+  'properti-real-estate': {
+    intro:
+      'Calon pembeli rumah membandingkan banyak proyek sebelum mau datang ke kantor pemasaran: lokasi, tipe dan luas, harga, cara bayar, dan siapa pengembangnya. Template di kategori ini menyusun semuanya untuk developer perumahan dan agen properti: daftar unit dengan filter, galeri dan virtual tour, simulasi KPR, profil developer, serta tombol hubungi agen yang membuka WhatsApp. Daftar unit Anda kelola sendiri lewat CMS; template ini bukan portal listing dengan database dan tidak menerima pembayaran booking fee secara online.',
+    guideIntro:
+      'Membeli rumah adalah keputusan besar, jadi calon pembeli mencari informasi yang lengkap dan bisa diperiksa sebelum mau dihubungi sales. Siapkan isi berikut agar website Anda menjawab pertanyaan mereka lebih dulu, baik Anda developer satu perumahan, pengembang beberapa proyek, maupun agen yang memasarkan rumah milik orang lain. Informasi yang rapi juga membantu proyek Anda ditemukan saat orang mencari rumah di daerah tertentu.',
+    checklist: [
+      {
+        title: 'Data unit yang bisa dibandingkan',
+        text: 'Untuk setiap tipe atau unit, tulis luas tanah dan bangunan, jumlah kamar tidur dan kamar mandi, daya listrik, sumber air, carport, dan harga. Data yang seragam memudahkan calon pembeli menyaring dan membandingkan unit tanpa harus bertanya satu per satu.',
+      },
+      {
+        title: 'Harga dan status unit yang jujur',
+        text: 'Tampilkan harga per unit atau harga mulai beserta tanggal berlakunya, dan tandai unit yang sudah terjual atau sedang dipesan. Listing yang sudah laku tetapi masih tampil membuat calon pembeli kecewa ketika menghubungi agen.',
+      },
+      {
+        title: 'Foto, denah, dan virtual tour',
+        text: 'Foto rumah contoh, denah setiap tipe, siteplan, serta video atau virtual tour membantu pembeli dari luar kota menilai rumah sebelum survei. Beri keterangan bila gambar berupa ilustrasi 3D atau unit contoh, bukan rumah yang akan diserahterimakan.',
+      },
+      {
+        title: 'Lokasi dan akses yang spesifik',
+        text: 'Sebutkan jarak dan perkiraan waktu tempuh ke gerbang tol, stasiun, sekolah, pasar, dan rumah sakit terdekat, lalu sertakan peta. Angka yang realistis lebih dipercaya daripada slogan seperti dekat ke mana-mana.',
+      },
+      {
+        title: 'Legalitas dan spesifikasi bangunan',
+        text: 'Calon pembeli akan menanyakan jenis sertifikat tanah, status persetujuan bangunan, dan spesifikasi seperti pondasi, dinding, atap, lantai, dan kusen. Tulis hanya informasi yang dokumennya sudah Anda pegang, dan siapkan salinannya bila pembeli ingin memeriksa.',
+      },
+      {
+        title: 'Cara bayar dan simulasi KPR',
+        text: 'Jelaskan pilihan tunai keras, tunai bertahap, dan KPR beserta besaran uang muka dan bank rekanan yang bisa dipilih. Hasil simulasi cicilan di website hanyalah perkiraan dari bunga dan tenor yang dimasukkan; angka akhir ditentukan bank setelah pengajuan disetujui.',
+      },
+      {
+        title: 'Profil developer dan proyek sebelumnya',
+        text: 'Ceritakan sejak kapan perusahaan membangun, proyek yang sudah selesai dan diserahterimakan, serta alamat kantor pemasaran. Foto kawasan yang sudah dihuni lebih meyakinkan daripada gambar render saja.',
+      },
+      {
+        title: 'Fasilitas kawasan dan biaya bulanan',
+        text: 'Sebutkan fasilitas seperti keamanan, taman, tempat ibadah, atau area bermain, lengkap dengan statusnya: sudah ada atau masih rencana. Cantumkan juga perkiraan iuran pengelolaan lingkungan agar pembeli bisa menghitung biaya setelah serah terima.',
+      },
+      {
+        title: 'Kontak agen dan jadwal survei',
+        text: 'Tampilkan nama dan nomor WhatsApp agen, jam buka kantor pemasaran, dan cara menjadwalkan survei lokasi. Pesan awal yang sudah berisi nama proyek atau tipe unit membuat agen langsung tahu rumah mana yang ditanyakan.',
+      },
+      {
+        title: 'Promo dengan syarat yang jelas',
+        text: 'Bila ada promo seperti subsidi biaya akad atau potongan harga, tulis periode dan syaratnya. Promo tanpa batas waktu atau dengan syarat yang samar mudah dianggap menyesatkan dan justru menurunkan kepercayaan.',
+      },
+    ],
+    faq: [
+      {
+        question: 'Apakah template properti punya database listing dan akun agen?',
+        answer:
+          'Tidak. Unit, harga, foto, dan keterangan listing ditulis lewat CMS, lalu filter di halaman menyaring daftar itu. Tidak ada akun agen, unggah listing oleh pengunjung, atau sinkronisasi dengan portal properti. Portal listing dengan database dan akun agen bisa dibuat lewat jasa website custom.',
+      },
+      {
+        question: 'Apakah hasil simulasi KPR sama dengan cicilan dari bank?',
+        answer:
+          'Belum tentu. Simulasi menghitung perkiraan cicilan dari harga, uang muka, bunga, dan tenor yang dimasukkan pengunjung. Bunga, biaya, dan persetujuan kredit ditentukan bank, jadi hasil simulasi sebaiknya dipakai sebagai gambaran awal saja.',
+      },
+      {
+        question: 'Apakah pembeli bisa membayar booking fee lewat website?',
+        answer:
+          'Tidak. Template ini tidak memiliki pembayaran online. Tombol hubungi agen membuka WhatsApp dengan pesan awal yang Anda atur, lalu booking fee dan pembayaran lain diproses langsung dengan pembeli sesuai prosedur perusahaan Anda.',
+      },
+      {
+        question: 'Bisakah dipakai oleh agen properti, bukan developer?',
+        answer:
+          'Bisa, selama daftar unitnya cukup dikelola manual lewat CMS. Profil developer bisa diisi dengan profil kantor agen, dan judul bagian serta isi listing bisa disesuaikan dengan rumah yang Anda pasarkan.',
+      },
+      {
+        question: 'Apakah daftar unit dan harga bisa saya ubah sendiri?',
+        answer:
+          'Bisa. Unit, harga, foto, dan keterangan setiap listing diubah lewat CMS tanpa menyentuh kode, jadi daftar bisa diperbarui setiap kali ada unit laku atau harga baru.',
+      },
+    ],
+  },
 };

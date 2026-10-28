@@ -1,0 +1,218 @@
+/*
+ * CSS lokal MomKid (diimpor ./MomKid.tsx): lapisan peach hero (HP: pita foto memudar ke bawah; layar lebar: dari kiri),
+ * gerak khas "cradle" (chip pastel muncul lalu mengapung naik-turun DUA kali dan diam; ruas garis waktu imunisasi tumbuh
+ * berurutan sekali; doodle ajakan berkilau sekali; pergantian tab/harga memudar ≤ 0,3 dtk), buka-tutup akordeon, dan
+ * rel foto tanpa scrollbar. Keadaan bawaan = keadaan akhir (semua terlihat); animasi hanya bila root template
+ * ber-data-tpl-motion="on" (demo & situs live). Pratinjau CMS, prefers-reduced-motion, dan cetak → statis. Foto hero
+ * (LCP) tidak pernah dianimasikan. Tanpa bayangan.
+ */
+
+@layer components {
+  /* ─── Lapisan hero ─────────────────────────────────────────────────────── */
+
+  /* HP: pita foto 400px memudar ke peach lembut di 120px terakhirnya; teks di bawahnya di atas peach padat */
+  .mk-hero-veil {
+    background: linear-gradient(to bottom, transparent 0, transparent 262px, var(--mk-peach-soft) 392px);
+  }
+
+  @container (min-width: 42rem) {
+    .mk-hero-veil {
+      background: linear-gradient(to bottom, transparent 0, transparent 312px, var(--mk-peach-soft) 452px);
+    }
+  }
+
+  /* Layar lebar: dari kiri, ≥ 92% di bawah kolom teks, hilang di 72% lebar */
+  @container (min-width: 64rem) {
+    .mk-hero-veil {
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--mk-peach-soft) 97%, transparent) 0%,
+        color-mix(in srgb, var(--mk-peach-soft) 93%, transparent) 38%,
+        color-mix(in srgb, var(--mk-peach-soft) 62%, transparent) 50%,
+        transparent 70%
+      );
+    }
+  }
+
+  /* Kata sorotan di judul: stabilo warna tema 45% di sepertiga bawah huruf (teks tetap tinta, kontras tidak berubah) */
+  .mk-mark {
+    background-image: linear-gradient(
+      transparent 60%,
+      color-mix(in srgb, var(--tpl-accent) 45%, transparent) 60%,
+      color-mix(in srgb, var(--tpl-accent) 45%, transparent) 92%,
+      transparent 92%
+    );
+    padding-inline: 0.06em;
+    margin-inline: -0.06em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  /* ─── Chip hero: muncul, lalu mengapung dua kali ───────────────────────── */
+
+  [data-tpl-motion='on'] [data-mk-play='pending'] .mk-chip {
+    opacity: 0;
+  }
+
+  [data-tpl-motion='on'] [data-mk-play='on'] .mk-chip {
+    animation:
+      mk-pop 0.5s var(--tpl-ease, ease) var(--mk-d, 0.5s) both,
+      mk-bob 2.6s ease-in-out calc(var(--mk-d, 0.5s) + 0.5s) 2;
+  }
+
+  /* ─── Garis waktu imunisasi: ruas terisi tumbuh berurutan sekali ──────── */
+
+  .mk-seg {
+    transform-origin: top;
+  }
+
+  @container (min-width: 72rem) {
+    .mk-seg {
+      transform-origin: left;
+    }
+  }
+
+  [data-tpl-motion='on'] .mk-seg {
+    transition:
+      scale 0.5s var(--tpl-ease, ease) var(--mk-d, 0s),
+      background-color 0.35s ease;
+  }
+
+  [data-tpl-motion='on'] [data-mk-play='pending'] .mk-seg {
+    scale: 1 0;
+  }
+
+  @container (min-width: 72rem) {
+    [data-tpl-motion='on'] [data-mk-play='pending'] .mk-seg {
+      scale: 0 1;
+    }
+  }
+
+  /* ─── Ajakan: doodle berkilau sekali ───────────────────────────────────── */
+
+  [data-tpl-motion='on'] [data-mk-play='pending'] .mk-spark {
+    opacity: 0;
+    scale: 0.6;
+  }
+
+  [data-tpl-motion='on'] [data-mk-play='on'] .mk-spark {
+    animation: mk-twinkle 0.9s var(--tpl-ease, ease) var(--mk-d, 0s) both;
+  }
+
+  /* ─── Pergantian isi (tab perjalanan, harga paket) ─────────────────────── */
+
+  [data-tpl-motion='on'] .mk-fade {
+    animation: mk-fade 0.3s var(--tpl-ease, ease) both;
+  }
+
+  /* ─── Akordeon tanya jawab: 0fr → 1fr ──────────────────────────────────── */
+
+  .mk-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .mk-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .mk-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* ─── Rel foto tur: digeser lewat tombol/jari, tanpa scrollbar ─────────── */
+
+  .mk-rail {
+    scrollbar-width: none;
+  }
+
+  .mk-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] [data-mk-play='on'] .mk-chip,
+    [data-tpl-motion='on'] .mk-spark,
+    [data-tpl-motion='on'] [data-mk-play='on'] .mk-spark,
+    [data-tpl-motion='on'] .mk-fade {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] [data-mk-play='pending'] .mk-chip,
+    [data-tpl-motion='on'] [data-mk-play='pending'] .mk-seg,
+    [data-tpl-motion='on'] [data-mk-play='pending'] .mk-spark {
+      opacity: 1;
+      scale: none;
+    }
+
+    [data-tpl-motion='on'] .mk-seg,
+    [data-tpl-motion='on'] .mk-collapse {
+      transition: none;
+    }
+  }
+
+  @media print {
+    [data-tpl-motion='on'] [data-mk-play='on'] .mk-chip,
+    [data-tpl-motion='on'] [data-mk-play='on'] .mk-spark,
+    [data-tpl-motion='on'] .mk-fade {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] [data-mk-play='pending'] .mk-chip,
+    [data-tpl-motion='on'] [data-mk-play='pending'] .mk-seg,
+    [data-tpl-motion='on'] [data-mk-play='pending'] .mk-spark {
+      opacity: 1;
+      scale: none;
+    }
+  }
+}
+
+@keyframes mk-pop {
+  from {
+    opacity: 0;
+    scale: 0.85;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes mk-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -7px;
+  }
+}
+
+@keyframes mk-twinkle {
+  0% {
+    opacity: 0;
+    scale: 0.6;
+    rotate: -10deg;
+  }
+  60% {
+    opacity: 1;
+    scale: 1.15;
+    rotate: 4deg;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
+@keyframes mk-fade {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}

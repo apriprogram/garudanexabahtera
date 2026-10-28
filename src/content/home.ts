@@ -18,6 +18,8 @@ const NICHE_PHRASE: Record<CategorySlug, string> = {
   'yoga-wellness': 'studio yoga',
   'toko-online': 'toko online',
   'sekolah-pendidikan': 'sekolah',
+  'kesehatan-rumah-sakit': 'rumah sakit & klinik',
+  'properti-real-estate': 'properti',
 };
 
 /** "a" / "a dan b" / "a, b, dan c". */

@@ -42,6 +42,8 @@ describe('getHead: semua rute index', () => {
     expect(paths).toEqual(expect.arrayContaining(['/template', ...withTemplates.map(categoryPath)]));
     expect(paths).not.toContain(categoryPath('toko-online'));
     expect(paths).not.toContain(categoryPath('sekolah-pendidikan'));
+    expect(paths).not.toContain(categoryPath('kesehatan-rumah-sakit'));
+    expect(paths).not.toContain(categoryPath('properti-real-estate'));
   });
 
   it('title ≤ 60 & description 50–155 karakter, keduanya unik', () => {
@@ -252,6 +254,8 @@ describe('penolong', () => {
     expect(categorySlugOf('Company Profile')).toBe('company-profile');
     expect(categorySlugOf('Fintech & Startup')).toBe('fintech-startup');
     expect(categorySlugOf('Yoga & Wellness')).toBe('yoga-wellness');
+    expect(categorySlugOf('Kesehatan & Rumah Sakit')).toBe('kesehatan-rumah-sakit');
+    expect(categorySlugOf('Properti & Real Estate')).toBe('properti-real-estate');
     expect(categorySlugOf('Lain-lain')).toBeNull();
   });
 

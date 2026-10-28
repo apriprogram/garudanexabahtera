@@ -1,0 +1,240 @@
+/*
+ * CSS lokal SmashHall (diimpor ./SmashHall.tsx): lapisan putih hero (HP: pudar di atas panel foto; layar lebar: dari
+ * kiri), pola arsir sel "penuh", buka-tutup akordeon, dan gerak khas: kok "di-smash" melengkung lalu mendarat di ikon
+ * strip ketersediaan (sekali, 1,4 dtk), pil strip & titik tabel terisi bergelombang, garis waktu kejuaraan tumbuh sekali,
+ * dan harga paket memudar saat periode diganti. Keadaan bawaan = keadaan akhir (kok di strip, pil penuh, garis utuh);
+ * animasi hanya bila root template ber-data-tpl-motion="on" (demo & situs live). Pratinjau CMS, prefers-reduced-motion,
+ * dan cetak → statis. Foto hero (LCP) tidak pernah dianimasikan. Tanpa bayangan.
+ */
+
+@layer components {
+  /* Lapisan putih hero. HP: pudar singkat di tepi atas panel foto (sambungan ke blok teks putih). */
+  .sh-hero-scrim {
+    background: linear-gradient(180deg, #ffffff 0, rgb(255 255 255 / 0) 72px);
+  }
+
+  /* Layar lebar: putih ≥ 0,97 di bawah kolom teks (teks gelap ≥ 14:1 walau piksel foto hitam), lalu pudar cepat */
+  @container (min-width: 64rem) {
+    .sh-hero-scrim {
+      background: linear-gradient(
+        90deg,
+        #ffffff 0%,
+        rgb(255 255 255 / 0.97) max(44%, calc(50% - 130px)),
+        rgb(255 255 255 / 0.78) max(49%, calc(50% - 10px)),
+        rgb(255 255 255 / 0.32) max(56%, calc(50% + 100px)),
+        rgb(255 255 255 / 0) max(64%, calc(50% + 230px))
+      );
+    }
+  }
+
+  /* Titik awal kok relatif ke lencana strip (kanan atas): masuk dari tepi kanan di atas foto, tidak melintasi teks */
+  .sh-slot {
+    --sh-fx: 34cqw;
+    --sh-fy0: -230px;
+    --sh-fyp: -290px;
+  }
+
+  @container (min-width: 64rem) {
+    .sh-slot {
+      --sh-fx: 16cqw;
+      --sh-fy0: -500px;
+      --sh-fyp: -580px;
+    }
+  }
+
+  /* Sel "penuh" di tabel ketersediaan: arsir diagonal tipis (statis) */
+  .sh-hatch {
+    background-image: repeating-linear-gradient(135deg, rgb(23 21 18 / 0.09) 0 2px, transparent 2px 7px);
+  }
+
+  .sh-track {
+    transform-origin: top;
+  }
+
+  /* Buka-tutup akordeon: 0fr → 1fr, transisi hanya bila gerak menyala */
+  .sh-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .sh-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  /* ─── Gerak (hanya data-tpl-motion="on"; strip & tabel menunggu <Reveal> "shown" = masuk layar) ─────────── */
+
+  [data-tpl-motion='on'] [data-reveal='shown'] .sh-fly {
+    animation: sh-fly-x 1.4s linear 0.5s both;
+  }
+
+  [data-tpl-motion='on'] [data-reveal='shown'] .sh-fly-y {
+    animation: sh-fly-y 1.4s linear 0.5s both;
+  }
+
+  [data-tpl-motion='on'] [data-reveal='shown'] .sh-spin {
+    animation: sh-spin 1.4s linear 0.5s both;
+  }
+
+  [data-tpl-motion='on'] [data-reveal='shown'] .sh-slot {
+    animation: sh-settle 0.36s var(--tpl-ease, ease) 1.9s both;
+  }
+
+  [data-tpl-motion='on'] [data-reveal='shown'] .sh-pill {
+    animation: sh-pill 0.32s var(--tpl-ease, ease) both;
+    animation-delay: calc(1.6s + var(--sh-i, 0) * 35ms);
+  }
+
+  [data-tpl-motion='on'] [data-reveal='shown'] .sh-dot {
+    animation: sh-pop 0.3s var(--tpl-ease, ease) both;
+    animation-delay: calc(var(--sh-i, 0) * 30ms);
+  }
+
+  [data-tpl-motion='on'] [data-reveal='pending'] .sh-track {
+    transform: scaleY(0);
+  }
+
+  [data-tpl-motion='on'] [data-reveal='shown'] .sh-track {
+    animation: sh-grow 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both;
+  }
+
+  [data-tpl-motion='on'] .sh-swap {
+    animation: sh-fade 0.26s var(--tpl-ease, ease) both;
+  }
+
+  [data-tpl-motion='on'] .sh-collapse {
+    transition: grid-template-rows 0.3s var(--tpl-ease, ease);
+  }
+
+  /* Preferensi gerak dikurangi & cetak: selektor sama persis (spesifisitas sama) agar selalu menang */
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] [data-reveal] .sh-fly,
+    [data-tpl-motion='on'] [data-reveal] .sh-fly-y,
+    [data-tpl-motion='on'] [data-reveal] .sh-spin,
+    [data-tpl-motion='on'] [data-reveal] .sh-slot,
+    [data-tpl-motion='on'] [data-reveal] .sh-pill,
+    [data-tpl-motion='on'] [data-reveal] .sh-dot,
+    [data-tpl-motion='on'] [data-reveal] .sh-track,
+    [data-tpl-motion='on'] .sh-swap {
+      animation: none;
+      transform: none;
+    }
+
+    [data-tpl-motion='on'] .sh-collapse {
+      transition: none;
+    }
+  }
+
+  @media print {
+    [data-tpl-motion='on'] [data-reveal] .sh-fly,
+    [data-tpl-motion='on'] [data-reveal] .sh-fly-y,
+    [data-tpl-motion='on'] [data-reveal] .sh-spin,
+    [data-tpl-motion='on'] [data-reveal] .sh-slot,
+    [data-tpl-motion='on'] [data-reveal] .sh-pill,
+    [data-tpl-motion='on'] [data-reveal] .sh-dot,
+    [data-tpl-motion='on'] [data-reveal] .sh-track,
+    [data-tpl-motion='on'] .sh-swap {
+      animation: none;
+      transform: none;
+    }
+  }
+}
+/* Mendatar: lurus dari kanan ke tempat mendarat; muncul pelan di awal */
+@keyframes sh-fly-x {
+  0% {
+    opacity: 0;
+    transform: translate3d(var(--sh-fx, 0), 0, 0);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Tegak: naik melambat ke puncak, lalu jatuh makin cepat (lengkung "smash") */
+@keyframes sh-fly-y {
+  0% {
+    transform: translate3d(0, var(--sh-fy0, 0), 0);
+    animation-timing-function: cubic-bezier(0.25, 0.6, 0.5, 1);
+  }
+  36% {
+    transform: translate3d(0, var(--sh-fyp, 0), 0);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.45);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Gabus selalu di depan: menghadap kiri-atas saat naik, kiri-bawah saat jatuh, lalu tegak di strip. Selama terbang kok
+   tampil lebih besar (terlihat jelas di atas foto), lalu mengecil ke ukuran lencana saat mendarat. */
+@keyframes sh-spin {
+  0% {
+    transform: rotate(125deg) scale(1.9);
+  }
+  36% {
+    transform: rotate(90deg) scale(1.8);
+  }
+  86% {
+    transform: rotate(40deg) scale(1.25);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@keyframes sh-settle {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes sh-pill {
+  from {
+    opacity: 0;
+    transform: scaleX(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sh-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sh-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes sh-fade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

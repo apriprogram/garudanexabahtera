@@ -17,14 +17,22 @@ import { DERMAGA_PHOTOS } from '../dermaga/photos';
 import { FINOVA_PHOTOS } from '../finova/photos';
 import { GADGETKU_PHOTOS } from '../gadgetku/photos';
 import { GLOWSTORY_PHOTOS } from '../glowstory/photos';
+import { HEALTHLINK_PHOTOS } from '../healthlink/photos';
+import { HOMENEST_PHOTOS } from '../homenest/photos';
 import { JUMANTARA_PHOTOS } from '../jumantara/photos';
 import { MADANI_PHOTOS } from '../madani/photos';
+import { MEDICARE_PHOTOS } from '../medicare-general/photos';
+import { MOMKID_PHOTOS } from '../momkid/photos';
 import { NAWASENA_PHOTOS } from '../nawasena/photos';
 import { NUSANIAGA_PHOTOS } from '../nusaniaga/photos';
+import { PAYNOW_PHOTOS } from '../paynow/photos';
 import { PORTLINE_PHOTOS } from '../portline/photos';
 import { PRADIPTA_PHOTOS } from '../pradipta/photos';
 import { SAUDAGAR_PHOTOS } from '../saudagar/photos';
 import { SERENITY_PHOTOS } from '../serenity/photos';
+import { SMASHHALL_PHOTOS } from '../smashhall/photos';
+import { SPARRING_PHOTOS } from '../sparring-padel/photos';
+import { SPECIALISTPLUS_PHOTOS } from '../specialistplus/photos';
 import { TANI_PHOTOS } from '../tanimakmur/photos';
 import { PUNCAK_PHOTOS } from '../puncakgear/photos';
 import { SKYNUSA_PHOTOS } from '../skynusa/photos';
@@ -45,7 +53,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'diptych' | 'harbor' | 'showroom' | 'triptych' | 'route' | 'slatted' | 'stories' | 'kenburns' | 'thumbs';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'diptych' | 'harbor' | 'showroom' | 'triptych' | 'route' | 'slatted' | 'stories' | 'kenburns' | 'thumbs' | 'court' | 'rally' | 'wallet' | 'triage' | 'cradle' | 'console' | 'appcard' | 'estate';
   photos: PhotoSet;
 }
 
@@ -76,6 +84,16 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'nawasena', component: 'Nawasena.tsx', heroLayout: 'kenburns', photos: NAWASENA_PHOTOS },
   // Pradipta (2026-10-27): landing page SMA negeri, slider foto latar dengan kartu judul putih + thumbnail "thumbs"
   { code: 'pradipta', component: 'Pradipta.tsx', heroLayout: 'thumbs', photos: PRADIPTA_PHOTOS },
+  // Delapan template 2026-10-28, semuanya hero foto latar penuh: olahraga (padel, badminton), fintech, empat layanan
+  // kesehatan, dan properti
+  { code: 'sparring-padel', component: 'SparringPadel.tsx', heroLayout: 'court', photos: SPARRING_PHOTOS },
+  { code: 'smashhall', component: 'SmashHall.tsx', heroLayout: 'rally', photos: SMASHHALL_PHOTOS },
+  { code: 'paynow', component: 'PayNow.tsx', heroLayout: 'wallet', photos: PAYNOW_PHOTOS },
+  { code: 'medicare-general', component: 'MediCareGeneral.tsx', heroLayout: 'triage', photos: MEDICARE_PHOTOS },
+  { code: 'momkid', component: 'MomKid.tsx', heroLayout: 'cradle', photos: MOMKID_PHOTOS },
+  { code: 'specialistplus', component: 'SpecialistPlus.tsx', heroLayout: 'console', photos: SPECIALISTPLUS_PHOTOS },
+  { code: 'healthlink', component: 'HealthLink.tsx', heroLayout: 'appcard', photos: HEALTHLINK_PHOTOS },
+  { code: 'homenest', component: 'HomeNest.tsx', heroLayout: 'estate', photos: HOMENEST_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */
