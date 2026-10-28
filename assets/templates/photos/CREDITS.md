@@ -766,3 +766,229 @@ sambutan kepala sekolah di demo tidak memakai foto wajah, dan kartu guru memakai
 | `pradipta-galeri-2-*` | Dua orang belajar di perpustakaan terang dilihat dari lantai atas (Sleman) | https://unsplash.com/photos/FWXvxnfOdJ0 | Yazid N |
 | `pradipta-galeri-3-*` | Pramuka putri bertopi cokelat memegang tongkat merah (dipotong; papan nama, badge, dan lencana bertulisan dikaburkan) | https://unsplash.com/photos/a5mX--9qrx8 | Fajar Herlambang STUDIO |
 | `pradipta-galeri-4-*` | Siswi berkebaya memainkan gamelan di panggung (dipotong 4:3 dari foto tegak) | https://unsplash.com/photos/8iHsYdQLHyY | Shannia Christanty |
+
+## Sparring Padel (klub padel Sparring Padel, Kemang, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; lapangan & galeri mendatar 3:2 `-1200.webp` + `-800.webp`; foto
+tegak 4:5 `-960.webp` + `-800.webp`; komunitas 16:9 `-1600.webp` + `-800.webp`. Dicek lisensinya lewat data foto
+Unsplash (Unsplash License, bukan Unsplash+/premium, URL di images.unsplash.com) 2026-10-28, lalu dipotong dan
+dikompres ke WebP. Suntingan: merek yang terbaca dihapus — muka raket "WIP" pada `sparring-padel-hero-*` dan
+`sparring-padel-court-classic-*` ditutup bidang raket polos gelap berlubang (digambar ulang, tepi & tulisan bingkai
+dikaburkan), muka raket pada `sparring-padel-galeri-serve-*` dikaburkan (juga teks di bingkai & gagang raket); spanduk
+"VPC", sablon celana, dan tulisan di tiang pada `sparring-padel-galeri-smash-*`; raket bergaris tiga, sablon kaus, dan
+logo kecil di kaus pada `sparring-padel-match-*`; tulisan di tiga bola pada `sparring-padel-galeri-bola-*`. Hero
+1920 sedikit dihaluskan (blur 1px) agar ringan. Tepi hitam kanan `sparring-padel-court-panorama-*` dipotong. Nama klub,
+alamat, harga, jadwal, turnamen, angka, dan orang di demo fiktif dan tidak berhubungan dengan orang atau tempat di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `sparring-padel-hero-*` | Pemain padel perempuan memukul bola rendah di lapangan biru yang gelap | https://unsplash.com/photos/WnxmzCNuDmU | Vincenzo Morelli |
+| `sparring-padel-court-panorama-*` | Net dan lantai rumput sintetis biru di lapangan padel indoor | https://unsplash.com/photos/3sSbRisCnmE | Oskar Hagberg |
+| `sparring-padel-court-classic-*` | Pemain padel pria bersiap memukul bola di lapangan indoor biru | https://unsplash.com/photos/aYTK2HNocNw | Vincenzo Morelli |
+| `sparring-padel-court-open-*` | Lapangan padel outdoor biru berdinding kaca dan jaring | https://unsplash.com/photos/1qI31edeY4M | Marija Zaric |
+| `sparring-padel-court-rooftop-*` | Lapangan padel merah beratap membran di atap gedung kota | https://unsplash.com/photos/z1txOkkTgGQ | Fiqih Alfarish |
+| `sparring-padel-match-*` | Empat pemain padel bersalaman di net setelah pertandingan | https://unsplash.com/photos/Gqr4pHQXRQU | Fiqih Alfarish |
+| `sparring-padel-rental-*` | Bola kuning di lantai biru dengan bayangan jaring | https://unsplash.com/photos/8iZbdNevfhY | Ahmed |
+| `sparring-padel-night-*` | Deretan lapangan padel biru dilihat dari udara pada malam hari | https://unsplash.com/photos/qUp58N3O1GI | P-squared Padel |
+| `sparring-padel-galeri-smash-*` | Pemain padel melompat untuk smash di lapangan indoor | https://unsplash.com/photos/OjbTWGZGX28 | erjola qerimi |
+| `sparring-padel-galeri-serve-*` | Pemain padel melempar bola untuk servis di depan net | https://unsplash.com/photos/ScuN2Puav48 | Vincenzo Morelli |
+| `sparring-padel-galeri-rally-*` | Gerak kabur pemain padel berlari di lapangan biru | https://unsplash.com/photos/7k96cUzHI1o | Olegs Jonins |
+| `sparring-padel-galeri-blur-*` | Pemain padel bergerak cepat di lapangan indoor pada malam hari | https://unsplash.com/photos/EtJ71uksmyU | Olegs Jonins |
+| `sparring-padel-galeri-mabar-*` | Dua pemain padel berdiri di dekat net dengan raket dan bola | https://unsplash.com/photos/n0Vu98G14iQ | Andrew Jooste |
+| `sparring-padel-galeri-bola-*` | Bola padel berserakan di lapangan biru dekat net | https://unsplash.com/photos/newhL3aprGk | Hermes Rivera |
+
+## SmashHall (GOR SmashHall, Bandung, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; kartu 4:3 `-1200.webp` + `-800.webp` (fasilitas, akademi,
+kejuaraan, toko); galeri 3:2 `-1200.webp` + `-800.webp` dan galeri lebar 16:9 `-1600.webp` + `-800.webp`. Dicek
+lisensinya di halaman foto (Unsplash License, bukan Unsplash+) 2026-10-28, lalu dipotong dan dikompres ke WebP.
+Suntingan: foto hero dicerminkan (pemain di kanan) dan bendera, logo merek baju/celana/sepatu dikaburkan; spanduk merek
+di dinding (lapangan), logo kaus anak dan papan tulisan (anak), logo celana dan spanduk (galeri latihan), papan
+tulisan dan logo kaus (galeri raket), logo pada wristband (galeri senar), serta sisa tulisan spanduk di tribun
+(kejuaraan, dipotong ke sisi kiri panorama) dikaburkan (blur). Nama GOR, pelatih, juara turnamen, dan pelanggan di demo
+fiktif dan tidak berhubungan dengan orang atau tempat di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `smashhall-hero-*` | Pemain bulu tangkis menjangkau kok di lapangan hijau yang terang (dicerminkan) | https://unsplash.com/photos/rl1XrMSfkAo | Dmitriy Ignatenko |
+| `smashhall-lapangan-*` | Lapangan bulu tangkis indoor berlantai biru di gedung berdinding biru | https://unsplash.com/photos/AILEpOyczIk | Palak Pitroda |
+| `smashhall-anak-*` | Dua anak bersiap bermain bulu tangkis di lapangan hijau | https://unsplash.com/photos/LHs86rqXEZI | Irish83 |
+| `smashhall-remaja-*` | Remaja putri menjangkau kok di lapangan indoor | https://unsplash.com/photos/TaPJ1bff2PM | Yoyo Hins Itta |
+| `smashhall-dewasa-*` | Empat orang bermain ganda di lapangan biru | https://unsplash.com/photos/0Zq9PQJvEv8 | Evan Marvell |
+| `smashhall-kejuaraan-*` | Gedung olahraga dengan beberapa lapangan saat pertandingan | https://unsplash.com/photos/6qTZBVH2h4Y | Irish83 |
+| `smashhall-raket-*` | Raket oranye dan tiga kok di permukaan hijau | https://unsplash.com/photos/VRqmHMYMq1c | Allison Saeng |
+| `smashhall-kok-*` | Tiga kok putih berpita hijau dari dekat | https://unsplash.com/photos/E57qoIfx-tE | Glen Carrie |
+| `smashhall-grip-*` | Gulungan grip raket biru | https://unsplash.com/photos/6Fo1ev8CmmI | NEXT Distro |
+| `smashhall-sepatu-*` | Sepasang sepatu indoor putih bersol madu | https://unsplash.com/photos/LIR5VDYMaaA | Tony Chen |
+| `smashhall-galeri-smash-*` | Pemain melompat untuk smash di lapangan indoor gelap | https://unsplash.com/photos/rjWfNR_AC5g | Muktasim Azlan |
+| `smashhall-galeri-raket-*` | Dua pemain muda terlihat dari balik bingkai raket | https://unsplash.com/photos/pRUw9c66zJA | Irish83 |
+| `smashhall-galeri-net-*` | Kok di bibir net dengan lapangan biru | https://unsplash.com/photos/VePgmkq3hHI | Stephan Rothe |
+| `smashhall-galeri-latihan-*` | Pemain menjangkau kok di atas kepala saat latihan | https://unsplash.com/photos/ek-J1s7qlTs | Irish83 |
+| `smashhall-galeri-senar-*` | Tangan menggenggam raket merah di atas lantai kayu | https://unsplash.com/photos/d1fFfk3bqMA | Mustafa Fatemi |
+
+## PayNow (merek dompet digital & payment gateway fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (tampil di bawah lapisan gradasi indigo yang pekat); foto tegak 4:5
+`-960.webp` + `-800.webp`; mendatar 3:2 `-1200.webp` + `-800.webp`; potret 1:1 `-480.webp` + `-240.webp`. Dicek
+lisensinya di halaman foto (Unsplash License, bukan Unsplash+) 2026-10-28, lalu dipotong dan dikompres ke WebP lewat
+CDN Unsplash. Suntingan: tulisan beraksara Thai di kaus pria latar belakang foto hero dikaburkan; foto warung dipotong agar papan nama gerobak di kanan tidak ikut; foto pedagang pasar dipotong
+agar kemasan bermerek yang tergantung di atas tidak ikut; potret dipotong persegi di wajah. Tidak ada kode QR atau logo
+bank/e-wallet/kartu yang terbaca. Merek PayNow, nama merchant, dan nama orang di cerita merchant demo fiktif dan tidak
+berhubungan dengan orang, usaha, atau tempat di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `paynow-hero-*` | Perempuan memeriksa ponsel di depan kios makanan yang terang pada malam hari (dipotong 16:9; tulisan di kaus pria latar belakang dikaburkan) | https://unsplash.com/photos/teBBORo5O1o | aung swam nyi |
+| `paynow-qris-*` | Perempuan berkemeja putih mendekatkan ponsel ke mesin pembayaran di kafe (dipotong 4:5) | https://unsplash.com/photos/vXJGcIkmEH8 | Mark OFlynn |
+| `paynow-transfer-*` | Empat perempuan berkerudung melihat satu ponsel bersama (dipotong 4:5) | https://unsplash.com/photos/wCtv8Lxmvbw | Khanh Nguyen |
+| `paynow-tagihan-*` | Perempuan berkacamata duduk santai memegang ponsel di depan rak buku (dipotong 4:5) | https://unsplash.com/photos/EWA-t7oSHEY | Khanh Do |
+| `paynow-topup-*` | Perempuan berkemeja putih tertawa melihat ponselnya (dipotong 4:5) | https://unsplash.com/photos/R6dSBkz32B8 | Ghen Mar Cuaño |
+| `paynow-keamanan-*` | Tangan memegang ponsel dengan layar kunci menyala, lampu kota malam (dipotong 4:5) | https://unsplash.com/photos/ZLG6zrR9mXg | Wasis Riyan |
+| `paynow-unduh-*` | Perempuan berkerudung tersenyum memegang ponsel dan minuman di bawah lampion merah (dipotong 4:5) | https://unsplash.com/photos/8yviKG3x8G4 | Ainur Iman |
+| `paynow-kopi-*` | Barista menuangkan susu ke gelas kopi di samping mesin espreso | https://unsplash.com/photos/gYsjG6_cTL4 | Yasamine June |
+| `paynow-warung-*` | Perempuan berkerudung makan dan membayar di warung pinggir jalan (dipotong 3:2; papan nama gerobak tidak ikut) | https://unsplash.com/photos/KgCdm9326Tc | Hobi industri |
+| `paynow-laundry-*` | Keranjang merah di depan mesin cuci biru di toko laundry (dipotong 3:2) | https://unsplash.com/photos/-5juQ_l5vmU | Sebastian Herrmann |
+| `paynow-merchant-*` | Pedagang perempuan berkerudung membungkus dagangan di kios pasar (dipotong 3:2; kemasan bermerek di atas tidak ikut) | https://unsplash.com/photos/MRtp7iCgLVw | Devi Puspita Amartha Yahya |
+| `paynow-portrait-1-*` | Potret perempuan berkacamata tersenyum di luar ruangan (dipotong persegi) | https://unsplash.com/photos/EKrFx0S7FuM | Grace Anne Bobadilla |
+| `paynow-portrait-2-*` | Potret pria paruh baya berkemeja kotak-kotak tersenyum (dipotong persegi) | https://unsplash.com/photos/n9gN8GFqLx0 | Vitaly Gariev |
+| `paynow-portrait-3-*` | Potret perempuan berkerudung krem tersenyum, lampu kota malam (dipotong persegi di wajah) | https://unsplash.com/photos/6awpFbYse3o | Lisa Marie Theck |
+
+## MediCare General (RS MediCare General, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; foto lain mendatar 3:2 `-1200.webp` + `-800.webp`. Dicek lisensinya
+di halaman foto (Unsplash License, bukan Unsplash+) 2026-10-28, lalu dipotong dan dikompres ke WebP. Suntingan: papan
+iklan di luar jendela, papan nama pintu, dan kertas pengumuman di dinding selasar (hero) dikaburkan; lambang layanan
+ambulans, logo kendaraan, pelat nomor, dan daun maple pada ambulans (igd) dikaburkan; nama merek dan logo pada mesin &
+meja pasien (radiologi) dikaburkan; merek pada ranjang pasien (kamar kelas 1 & 2) dan pada UPS (lab) dikaburkan; papan
+nama kecil di pintu masuk gedung dikaburkan. Nama rumah sakit, dokter, penjamin, dan orang di demo fiktif dan tidak
+berhubungan dengan orang, tempat, atau lembaga di foto; dokter di demo tidak memakai foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `medicare-general-hero-*` | Selasar rumah sakit yang terang dengan dinding kaca melengkung dan kursi tunggu biru muda | https://unsplash.com/photos/ruHzyEwwZgo | Arturo Esparza |
+| `medicare-general-pendaftaran-*` | Ruang tunggu dengan sofa biru toska dan jendela loket | https://unsplash.com/photos/B_sK_xgzwVA | Benyamin Bohlouli |
+| `medicare-general-igd-*` | Ambulans putih bergaris oranye dan biru melaju di jalan kota | https://unsplash.com/photos/V5nq6u-Ce_U | Jonnica Hill |
+| `medicare-general-kamar-vvip-*` | Kamar rawat inap dengan ranjang pasien, meja kerja, dan lukisan | https://unsplash.com/photos/_fdWqec7VRo | Zoshua Colah |
+| `medicare-general-kamar-vip-*` | Kamar satu ranjang dengan sofa biru untuk penunggu | https://unsplash.com/photos/KF-h9HMxRKg | Martha Dominguez de Gouveia |
+| `medicare-general-kamar-kelas-1-*` | Kamar rawat inap dengan ranjang pasien dan monitor di dinding | https://unsplash.com/photos/3EIraOmufG4 | Irshad Pathan |
+| `medicare-general-kamar-kelas-2-*` | Ruang rawat inap dengan tiga ranjang pasien dan lantai biru | https://unsplash.com/photos/cTH0dAHdqtQ | Irshad Pathan |
+| `medicare-general-kamar-kelas-3-*` | Bangsal rawat inap dengan deretan ranjang dan tirai merah muda | https://unsplash.com/photos/zbpgmGe27p8 | Adhy Savala |
+| `medicare-general-lab-*` | Laboratorium dengan deretan alat analisis dan petugas berjas putih | https://unsplash.com/photos/oCLuFi9GYNA | National Cancer Institute |
+| `medicare-general-radiologi-*` | Ruang pemeriksaan dengan mesin pemindai berbentuk cincin | https://unsplash.com/photos/QTP8UKW_PgI | Accuray |
+| `medicare-general-farmasi-*` | Apoteker mengambil kotak obat dari rak | https://unsplash.com/photos/byGTytEGjBo | National Cancer Institute |
+| `medicare-general-gedung-*` | Gedung rumah sakit bata merah dengan kanopi pintu masuk | https://unsplash.com/photos/1c8sj2IO2I4 | National Cancer Institute |
+
+## MomKid Hospital (RSIA MomKid, Tangerang Selatan, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (di desktop menjadi latar selebar hero, subjek di sepertiga kanan;
+di ponsel pita foto ± 1:1 lewat object-position); perjalanan 4:3 `-1200.webp` + `-800.webp`; laktasi dan tur kamar
+tegak 4:5 `-960.webp` + `-800.webp`; artikel 3:2 `-1200.webp` + `-800.webp`; potret testimoni 1:1 `-480.webp` +
+`-240.webp`. Dicek lisensinya di halaman foto (foto gratis di bawah Unsplash License, bukan Unsplash+) 2026-10-28, lalu
+dipotong dan dikompres ke WebP langsung dari CDN Unsplash. Suntingan: hanya dipotong (hero digeser dengan potongan
+persegi panjang dari kiri foto asli supaya ibu dan bayi berada di sepertiga kanan; potret testimoni diperbesar ke wajah;
+potret 3 dipotong di kiri pohon Natal). Tidak ada blur atau inpaint; tidak ada merek rumah sakit atau logo yang terbaca.
+Foto ruangan bukan foto rumah sakit sungguhan milik demo. Nama rumah sakit, dokter, orang di testimoni, harga paket, dan
+alamat di demo fiktif dan tidak berhubungan dengan orang, ruangan, atau tempat di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `momkid-hero-*` | Ibu mencium bayi baru lahir di dekat tirai jendela yang terang (dipotong 16:9 dari kiri foto asli) | https://unsplash.com/photos/NcU4Y2j0FT0 | Jonathan Borba |
+| `momkid-kehamilan-*` | Tangan ibu hamil membentuk hati di perut, gaun merah muda | https://unsplash.com/photos/SCteCA0Mf1A | Juan Encalada |
+| `momkid-persalinan-*` | Bayi baru lahir tidur di atas selimut rajut krem | https://unsplash.com/photos/NfE2M4Z9rME | Olivia Anne Snyder |
+| `momkid-tumbuh-*` | Balita berambut ikal merangkak di dekat mainan warna-warni | https://unsplash.com/photos/JpB1K1dG234 | Juan Encalada |
+| `momkid-laktasi-*` | Ibu duduk bersila di tempat tidur putih sambil menggendong bayi | https://unsplash.com/photos/xlY3ayphpIc | Jonathan Borba |
+| `momkid-tur-bersalin-*` | Kamar rawat dengan tempat tidur, kursi merah, dan lampu hangat (dipotong tegak) | https://unsplash.com/photos/60YFPezQ-oc | Max Tcvetkov |
+| `momkid-tur-rawat-*` | Kamar rawat berpanel kayu dengan dua tempat tidur pasien | https://unsplash.com/photos/xj611Vq9ky0 | Zoshua Colah |
+| `momkid-tur-bayi-*` | Kamar bayi dengan lemari kayu, boks bayi, dan hiasan bintang | https://unsplash.com/photos/xz0paWiP3zs | Eugenia Pan'kiv |
+| `momkid-tur-menyusui-*` | Kursi goyang kayu di depan jendela besar yang terang | https://unsplash.com/photos/kcUMi0vexEk | Elena Kloppenburg |
+| `momkid-tur-tunggu-*` | Ruang tunggu dengan sofa krem, kursi, dan meja bundar | https://unsplash.com/photos/XTC538P_eWk | Mateo Fernández |
+| `momkid-artikel-persalinan-*` | Ibu hamil berkemeja denim berdiri di depan pintu kayu | https://unsplash.com/photos/dz8g0IxEqh0 | Camylla Battani |
+| `momkid-artikel-tidur-*` | Bayi bertopi rajut menguap di samping boneka beruang | https://unsplash.com/photos/0hiUWSi7jvs | Minnie Zhou |
+| `momkid-artikel-mpasi-*` | Mangkuk dan sendok makan bayi berwarna pastel | https://unsplash.com/photos/bDL5_f3a8oU | Melina Bronca |
+| `momkid-portrait-1-*` | Perempuan berhijab merah muda tersenyum di taman (dipotong ke wajah) | https://unsplash.com/photos/CnaHn2z3AjM | Fajar Herlambang STUDIO |
+| `momkid-portrait-2-*` | Ayah dan ibu memeluk bayi yang tertidur (dipotong persegi) | https://unsplash.com/photos/4RGOgby2x9w | Marius Muresan |
+| `momkid-portrait-3-*` | Perempuan berkacamata tersenyum menggendong bayi (dipotong di kiri pohon Natal) | https://unsplash.com/photos/ErC7oKbA-1E | Tien Vu Ngoc |
+
+## SpecialistPlus (SpecialistPlus Medical Center, Medan, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (foto latar selebar hero; dipotong lewat object-position, di ponsel
+hanya bagian tengah); foto alat & klinik 4:3 `-1200.webp` + `-800.webp` (1200×900); foto lobi 3:2 `-1200.webp` +
+`-800.webp` (1200×800). Dicek lisensinya di halaman foto (foto gratis di bawah Unsplash License, bukan Unsplash+)
+2026-10-28, lalu dipotong dan dikompres ke WebP. Suntingan (blur lokal saat dipotong, tanpa inpaint): tulisan merek pada
+mesin MRI, merek injektor kontras, lambang di jaket petugas, dan nomor gelang pasien di foto CT scan, tiga tulisan/logo
+merek di ruang kateterisasi (lengan C, meja, monitor), serta label merek alat dan pemindai di foto lab otomatis
+dikaburkan; foto lain hanya dipotong. Tidak ada pasien dalam keadaan darurat, darah, atau jarum yang tampil dekat.
+Nama klinik, dokter, pasien di testimoni, jadwal, dan harga di demo fiktif dan tidak berhubungan dengan orang, rumah
+sakit, atau produsen alat di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `specialistplus-hero-*` | Ruang terapi modern dengan mesin pencitraan putih, lengan penunjuk, dan meja pasien (dipotong 16:9) | https://unsplash.com/photos/MhM8LiIzmZw | Accuray |
+| `specialistplus-mri-*` | Mesin MRI di ruang radiologi dengan lampu di langit-langit (tulisan merek pada gantry dikaburkan) | https://unsplash.com/photos/U9IriDpTcg4 | David Trinks |
+| `specialistplus-ct-*` | Petugas menyiapkan pasien berbaring di meja CT scan (merek injektor, lambang jaket, dan nomor gelang dikaburkan) | https://unsplash.com/photos/-N1bumMrRX0 | Navy Medicine |
+| `specialistplus-cathlab-*` | Ruang kateterisasi dengan lengan C, meja pasien, dan deretan monitor (tulisan & logo merek dikaburkan) | https://unsplash.com/photos/d7BwTSp3uQs | sandro porfirio |
+| `specialistplus-mammografi-*` | Petugas tersenyum mendampingi pasien di mesin mammografi | https://unsplash.com/photos/0izFVmwJ5pw | National Cancer Institute |
+| `specialistplus-lab-*` | Alat analisis laboratorium otomatis berpenutup bening dengan monitor (label merek dikaburkan) | https://unsplash.com/photos/6XVdhgyls-k | Mezidi Zineb |
+| `specialistplus-jantung-*` | Kertas rekaman EKG dengan garis irama jantung | https://unsplash.com/photos/eqTmD-baDkU | Joachim Schnürle |
+| `specialistplus-ortopedi-*` | Model tulang belakang dengan bantalan sendi berwarna | https://unsplash.com/photos/5thrMBqG5E0 | Julius Toltesi |
+| `specialistplus-onkologi-*` | Mesin terapi radiasi dan meja pasien di ruang berlantai kayu | https://unsplash.com/photos/mBrfAiw_CZA | National Cancer Institute |
+| `specialistplus-saraf-*` | Dua dokter mengamati film MRI otak di depan jendela | https://unsplash.com/photos/AB0r9z7eRYg | Vitaly Gariev |
+| `specialistplus-paru-*` | Foto rontgen dada yang memperlihatkan tulang rusuk dan paru | https://unsplash.com/photos/tHS9j3HWT1s | Umanoide |
+| `specialistplus-dalam-*` | Dokter mengukur tekanan darah pasien di meja konsultasi | https://unsplash.com/photos/NDOYHZ_98Rw | Vitaly Gariev |
+| `specialistplus-lobi-*` | Lobi gedung yang terang dengan meja resepsionis putih dan pilar tinggi | https://unsplash.com/photos/pQ5hSOrkYgE | Mar Ko |
+
+## HealthLink (layanan telemedicine HealthLink, Yogyakarta, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (subjek di kanan tengah; kartu aplikasi menutupi sisi kiri di layar
+lebar); foto tegak 4:5 `-960.webp` + `-800.webp` (cara konsultasi, unduh aplikasi); mendatar 4:3 `-1200.webp` +
+`-800.webp` (apotek, kurir, pengingat, RS mitra, bantuan, paket keluarga). Dicek lisensinya di halaman foto (foto gratis
+di bawah Unsplash License, bukan Unsplash+) 2026-10-28, lalu dipotong (titik fokus imgix) dan dikompres ke WebP lewat CDN
+Unsplash; tanpa blur. Suntingan: foto laboratorium (`healthlink-rs-2-*`) dipotong sehingga logo merek pada bingkai monitor tidak ikut; foto lain hanya dipotong. Tidak ada logo merek, nama rumah sakit, atau papan nama yang terbaca pada
+ukuran tampil; layar laptop di foto video call menampilkan orang (panggilan video), bukan merek. Foto rumah sakit, klinik,
+dan laboratorium belum tentu diambil di Indonesia dan demo tidak menyebut nama tempat di foto: nama RS mitra di demo fiktif. Dokter di demo tampil
+dengan inisial, tidak dengan foto; nama layanan, dokter, rumah sakit, dan pasien di demo fiktif dan tidak berhubungan
+dengan orang atau tempat di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `healthlink-hero-*` | Perempuan tersenyum memegang ponsel di dapur rumah yang terang | https://unsplash.com/photos/3N-M8AJ1e4A | Rifki Kurniawan |
+| `healthlink-video-*` | Dokter berjas putih melakukan panggilan video dengan pasien lewat laptop | https://unsplash.com/photos/c1ZGaJTOnJs | Vitaly Gariev |
+| `healthlink-apotek-*` | Apoteker berjas putih mengambil kotak obat dari rak apotek | https://unsplash.com/photos/cw2Zn2ZQ9YQ | National Cancer Institute |
+| `healthlink-kurir-*` | Kurir berhelm mengendarai skuter dengan kotak pengantaran putih | https://unsplash.com/photos/4_Ha_neGOEY | Nurulloh A.A |
+| `healthlink-pengingat-*` | Pasangan lansia melihat layar ponsel bersama | https://unsplash.com/photos/F0Fk1ERlhtU | Vitaly Gariev |
+| `healthlink-rs-1-*` | Kamar rawat inap dengan dua tempat tidur pasien dan tirai toska | https://unsplash.com/photos/XwguHkKQqSA | Hush Naidoo Jade Photography |
+| `healthlink-rs-2-*` | Dua petugas laboratorium berjas putih bekerja dengan alat dan komputer | https://unsplash.com/photos/XLQuTdktpa8 | Chidera Faustina Okeke |
+| `healthlink-rs-3-*` | Ruang praktik dokter gigi dengan kursi periksa modern | https://unsplash.com/photos/yJsMOVwazRU | Kari Bjorn Photography |
+| `healthlink-rs-4-*` | Ruang tunggu rumah sakit dengan kursi hijau di dekat jendela | https://unsplash.com/photos/xeNNZw4hnlk | Greg Rosenke |
+| `healthlink-unduh-*` | Tangan memegang ponsel berlayar putih saat bersantai di sofa | https://unsplash.com/photos/AvEYas-wFs0 | Jakub Żerdzicki |
+| `healthlink-bantuan-*` | Petugas layanan pelanggan bermikrofon kepala di depan komputer | https://unsplash.com/photos/wnpf3Q5pkXA | BaljkanN4 |
+| `healthlink-keluarga-*` | Keluarga kecil makan bersama di meja makan rumah | https://unsplash.com/photos/BQPi8F_UON0 | National Cancer Institute |
+
+## HomeNest (PT Sarang Hunian Lestari, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (latar hero selebar layar; dipotong tegak di ponsel lewat
+object-position); kartu rumah 4:3 `-1200.webp` + `-800.webp`; ruang tur virtual 3:2 `-1600.webp` + `-800.webp`; foto
+fasilitas tegak 4:5 `-960.webp` + `-800.webp`. Dicek lisensinya 2026-10-28 (foto gratis di bawah Unsplash License, bukan
+Unsplash+; data halaman foto: premium false, plus false, gambar di images.unsplash.com), lalu dipotong dan dikompres ke
+WebP. Tanpa blur atau inpaint: foto `homenest-sawo-*` dipotong di sisi kiri (rumah panggung di tepi kanan foto asli tidak
+ikut) dan `homenest-tour-taman-*` dipotong mendatar dari foto tegak; foto lain hanya dipotong. Foto tidak semuanya diambil
+di Indonesia (sebagian di Brasil, Vietnam, dan Bali) dan demo tidak menyebut lokasi asli foto. Nama perusahaan, klaster,
+rumah, harga, agen, dan pembeli di demo fiktif dan tidak berhubungan dengan orang, rumah, atau perusahaan di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `homenest-hero-*` | Rumah modern berfasad kisi kayu dan dinding batu alam di atas taman rumput, sore hari | https://unsplash.com/photos/rlesyj-1Kv0 | Alef Morais |
+| `homenest-kenari-*` | Pintu masuk rumah: undakan batu, dinding batu alam, dan kisi kayu (dipotong dari foto tegak) | https://unsplash.com/photos/qLJMuJkD4as | Alef Morais |
+| `homenest-palem-*` | Rumah dua lantai berdinding kayu dengan atap pelana dan pohon kamboja | https://unsplash.com/photos/0gwBhtUHI5w | Yudiono Putranto |
+| `homenest-laras-*` | Deretan townhouse tiga lantai berwarna krem di balik pepohonan taman | https://unsplash.com/photos/zVCHXZ_64CM | Ngoc Nguyen Phuong |
+| `homenest-jati-*` | Rumah beratap genteng dengan tangga bata dan pohon berbunga kuning di tepi jalan menanjak | https://unsplash.com/photos/YpT9KtbwLO4 | Abdul Ridwan |
+| `homenest-rasamala-*` | Hamparan sawah hijau dengan rumah kecil dan gunung di kejauhan | https://unsplash.com/photos/7J5i5Fpp8gQ | Gian-Carlo Zimmermann |
+| `homenest-nara-*` | Rumah modern dua lantai berkisi kayu, pagar hitam, dan dinding roster | https://unsplash.com/photos/ZnEx_6wniDU | rl arzues |
+| `homenest-lanai-*` | Rumah modern dua lantai berdinding kayu dan batu dengan carport pergola | https://unsplash.com/photos/2tAuXG3nYtM | Alef Morais |
+| `homenest-sawo-*` | Lembah hijau berpohon kelapa dan jalan setapak menurun saat pagi (dipotong di sisi kiri) | https://unsplash.com/photos/8_wnAiYn-1U | Marc Wieland |
+| `homenest-saga-*` | Rumah beratap ilalang dengan kolam renang dan taman tropis | https://unsplash.com/photos/S0VYuu8cw80 | Loris Boulinguez |
+| `homenest-tour-keluarga-*` | Ruang keluarga berlangit-langit tinggi dengan sofa putih dan dinding kayu | https://unsplash.com/photos/LtlBlCal4Fw | Alef Morais |
+| `homenest-tour-dapur-*` | Meja makan kayu di ruang berdinding kaca menghadap kebun rimbun | https://unsplash.com/photos/RUAtYIlOBTc | Rosemary Media |
+| `homenest-tour-kamar-*` | Kamar tidur terang berdinding kayu muda dengan tirai putih | https://unsplash.com/photos/WfFHp6RWvws | Caroline Badran |
+| `homenest-tour-taman-*` | Teras kayu beratap anyaman dengan kursi rotan, ayunan, dan hammock (dipotong mendatar dari foto tegak) | https://unsplash.com/photos/GGx0rUwnSPk | Alef Morais |
+| `homenest-fasilitas-*` | Pohon palem berjajar di taman rumput dengan jalan setapak batu | https://unsplash.com/photos/MT5MkFhSRmE | Alef Morais |
