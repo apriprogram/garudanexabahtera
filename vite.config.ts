@@ -128,12 +128,6 @@ export default defineConfig({
         target: apiTarget,
         changeOrigin: true,
       },
-      // Node serves the admin AI chat at /api/ai-chat; api.php has it as action=ai_chat
-      '/api/ai-chat': {
-        target: apiTarget,
-        changeOrigin: true,
-        rewrite: useNode ? undefined : () => '/api.php?action=ai_chat',
-      },
       '/assets/product': assetProxy,
       '/assets/portofolio': assetProxy,
       '/assets/services': assetProxy,

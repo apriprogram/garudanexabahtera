@@ -16,7 +16,6 @@ import cors from 'cors';
 import { join, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
 import sharp from 'sharp';
-import OpenAI from 'openai';
 import {
   uploadBase64ToS3,
   deleteFromS3,
@@ -55,13 +54,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 // PORT is for local runs and tests; Docker exposes 4000
 const PORT = Number(process.env.PORT) || 4000;
-
-// ── AI Setup ── (OpenAI-compatible API; Ollama on the docker host by default)
-const AI_MODEL = process.env.AI_MODEL || 'qwen2.5:3b';
-const openai = new OpenAI({
-  apiKey: process.env.AI_API_KEY || 'ollama', // Not needed for Ollama
-  baseURL: process.env.AI_BASE_URL || 'http://172.24.0.1:11434/v1',
-});
 
 // ── MySQL Connection Pool ──
 // MYSQL_PASS has no fallback on purpose: it must come from the environment (.env via docker-compose)
@@ -824,87 +816,6 @@ app.post('/api.php', async (req, res) => {
     res.status(err.expose ? err.status : 500).json({ error: err.message });
   } finally {
     conn.release();
-  }
-});
-
-// ── AI Chat ──
-app.post('/api/ai-chat', async (req, res) => {
-  const { messages } = req.body;
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: 'messages array required' });
-  }
-
-  try {
-    // System prompt with Garuda Nexa context; kept identical to ai_chat_reply() in api.php
-    const [settingsRows] = await pool.query('SELECT setting_key, setting_value FROM hero_settings');
-    const settings = {};
-    for (const row of settingsRows) {
-      settings[row.setting_key] = row.setting_value;
-    }
-
-    const [[visitorRow]] = await pool.query('SELECT total_visits FROM visitor_stats WHERE id = 1');
-    const totalVisits = Number(visitorRow?.total_visits ?? 0) || 0;
-    const [productRows] = await pool.query('SELECT title, description, link_button FROM list_products ORDER BY id');
-    const products = productRows.map(p => `- **${p.title}**: ${p.description || '(no description)'} — Link: ${p.link_button || 'N/A'}`);
-    const [[projectRow]] = await pool.query('SELECT COUNT(*) as c FROM project_client');
-    const [[userRow]] = await pool.query('SELECT COUNT(*) as c FROM users');
-    let portfolio = [];
-    try {
-      const parsed = JSON.parse(settings.portfolio_data ?? '[]');
-      if (parsed && typeof parsed === 'object') portfolio = Object.values(parsed);
-    } catch { /* invalid JSON counts as no portfolio, like json_decode() ?: [] */ }
-
-    // number_format($visits, 0, ',', '.'): 12345 -> 12.345
-    const visitsText = String(Math.trunc(totalVisits)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-    const systemPrompt = 'Kamu adalah AI Assistant untuk website Garuda Nexa Bahtera — perusahaan software house & digital agency asal Indonesia.\n\n'
-      + 'Informasi website:\n'
-      + `- Tagline: ${settings.hero_title ?? 'Solusi Digital Terpercaya'}\n`
-      + `- Deskripsi: ${settings.hero_subtitle ?? 'Membangun software custom untuk bisnis Anda'}\n`
-      + `- Total pengunjung website: ${visitsText} kali\n`
-      + `- Total produk: ${products.length} produk\n`
-      + `- Total user admin: ${Number(userRow?.c ?? 0)}\n`
-      + `- Total project client: ${Number(projectRow?.c ?? 0)}\n`
-      + `- Portfolio: ${portfolio.length} project\n\n`
-      + `Produk:\n${products.length > 0 ? products.join('\n') : 'Belum ada produk terdaftar.'}\n\n`
-      + 'Kontak: WA 6285188009152 | Email: info@garudanexa.com\n\n'
-      + 'Jawab pertanyaan admin tentang website, data pengunjung, produk, layanan, dan teknis dalam bahasa Indonesia yang ramah dan profesional. '
-      + 'Arahkan pertanyaan di luar konteks kembali ke topik Garuda Nexa. Gunakan Markdown yang rapi dan jawab ringkas.';
-
-    // Only user/assistant turns from the client; the system prompt is ours
-    const history = messages.slice(-20) // last 20 messages max
-      .filter(m => (m?.role === 'user' || m?.role === 'assistant') && typeof m.content === 'string')
-      .map(m => ({ role: m.role, content: m.content }));
-    let reply = null;
-    let aiError = '';
-    try {
-      const completion = await openai.chat.completions.create({
-        model: AI_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...history,
-        ],
-        temperature: 0.7,
-        max_tokens: 1500,
-      }, { timeout: 120_000, maxRetries: 0 }); // one attempt, 120 s cap, like the curl call in api.php
-      reply = completion?.choices?.[0]?.message?.content ?? null;
-    } catch (err) {
-      aiError = String(err?.message || 'unknown error').replace(/\.+$/, '');
-    }
-    // Same 502 + message as api.php when the AI server does not answer
-    if (reply === null) {
-      console.error('AI Chat Error:', aiError || 'empty reply');
-      const baseUrl = String(openai.baseURL || '').replace(/\/+$/, '');
-      res.locals.safeError = true; // staff-only route; the hint is meant to be shown in the admin chat widget
-      return res.status(502).json({
-        error: `AI server di ${baseUrl} tidak merespons${aiError ? `: ${aiError}` : ''}. Jalankan Ollama atau set AI_BASE_URL/AI_MODEL.`,
-      });
-    }
-
-    res.json({ reply });
-  } catch (err) {
-    console.error('AI Chat Error:', err);
-    res.status(500).json({ error: 'Terjadi kesalahan pada server. Silakan coba lagi.' });
   }
 });
 

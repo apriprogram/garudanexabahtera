@@ -392,7 +392,7 @@ Semua teks yang terlihat di panel admin memakai Bahasa Indonesia santai dan meny
 | Zoom in / Zoom out | Perbesar / Perkecil | Send / Message | Kirim / Pesan |
 | Welcome back | Selamat datang kembali | Logout | Keluar |
 
-Tetap ditulis apa adanya (istilah teknis/nama): Dashboard, Monitoring, server, website, URL, link, Hero, Navbar, Footer, CTA, FAQ, SEO, Changelog, API, agent, log, CPU, RAM, disk, SSL, uptime, ping, slug, Lucide, nama produk (i-School, i-Santri, Digital Invitation, Website Desa, Garuda Nexa, Garuda Nexa AI). Nilai data/isi bawaan yang tersimpan ke database atau tampil di website publik (mis. `defaultValue`, paket harga bawaan) bukan teks UI, jadi tidak diterjemahkan.
+Tetap ditulis apa adanya (istilah teknis/nama): Dashboard, Monitoring, server, website, URL, link, Hero, Navbar, Footer, CTA, FAQ, SEO, Changelog, API, agent, log, CPU, RAM, disk, SSL, uptime, ping, slug, Lucide, nama produk (i-School, i-Santri, Digital Invitation, Website Desa, Garuda Nexa). Nilai data/isi bawaan yang tersimpan ke database atau tampil di website publik (mis. `defaultValue`, paket harga bawaan) bukan teks UI, jadi tidak diterjemahkan.
 
 ## Aturan HP (< 640px), wajib
 

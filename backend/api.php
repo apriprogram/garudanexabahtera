@@ -678,15 +678,6 @@ switch ($action) {
         echo json_encode(["success" => true]);
         break;
 
-    // ── AI Chat (Node serves it at /api/ai-chat; the Vite dev proxy rewrites that path to this action) ──
-    case 'ai_chat':
-        $messages = $input['messages'] ?? null;
-        if (!is_array($messages)) throw new ApiError("messages array required");
-        $result = ai_chat_reply($conn, $messages);
-        if (isset($result['error'])) http_response_code(502);
-        echo json_encode($result);
-        break;
-
     default:
         http_response_code(400);
         echo json_encode(["error" => "Invalid action: " . $action]);
@@ -1232,66 +1223,5 @@ function parse_user_agent($ua) {
     elseif (preg_match('/iPhone|iPad|iPod/i', $ua)) $os = 'iOS';
     elseif (preg_match('/Linux/i', $ua)) $os = 'Linux';
     return [$device, $browser, $os];
-}
-
-// Admin AI assistant: OpenAI-compatible chat API (Ollama by default), same context as /api/ai-chat in server.js.
-// AI_BASE_URL, AI_MODEL and AI_API_KEY come from the environment.
-function ai_chat_reply($conn, $messages) {
-    $baseUrl = rtrim(getenv('AI_BASE_URL') ?: 'http://127.0.0.1:11434/v1', '/');
-    $model = getenv('AI_MODEL') ?: 'qwen2.5:3b';
-    $apiKey = getenv('AI_API_KEY') ?: 'ollama';
-
-    $settings = [];
-    foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings") as $row) $settings[$row['setting_key']] = $row['setting_value'];
-    $visits = (int)(db_one($conn, "SELECT total_visits FROM visitor_stats WHERE id = 1")['total_visits'] ?? 0);
-    $products = [];
-    foreach (db_all($conn, "SELECT title, description, link_button FROM list_products ORDER BY id") as $row) {
-        $products[] = "- **{$row['title']}**: " . ($row['description'] ?: '(no description)') . " — Link: " . ($row['link_button'] ?: 'N/A');
-    }
-    $projectCount = (int)(db_one($conn, "SELECT COUNT(*) as c FROM project_client")['c'] ?? 0);
-    $userCount = (int)(db_one($conn, "SELECT COUNT(*) as c FROM users")['c'] ?? 0);
-    $portfolio = json_decode($settings['portfolio_data'] ?? '[]', true) ?: [];
-
-    $system = "Kamu adalah AI Assistant untuk website Garuda Nexa Bahtera — perusahaan software house & digital agency asal Indonesia.\n\n"
-        . "Informasi website:\n"
-        . "- Tagline: " . ($settings['hero_title'] ?? 'Solusi Digital Terpercaya') . "\n"
-        . "- Deskripsi: " . ($settings['hero_subtitle'] ?? 'Membangun software custom untuk bisnis Anda') . "\n"
-        . "- Total pengunjung website: " . number_format($visits, 0, ',', '.') . " kali\n"
-        . "- Total produk: " . count($products) . " produk\n"
-        . "- Total user admin: $userCount\n"
-        . "- Total project client: $projectCount\n"
-        . "- Portfolio: " . count($portfolio) . " project\n\n"
-        . "Produk:\n" . ($products ? implode("\n", $products) : 'Belum ada produk terdaftar.') . "\n\n"
-        . "Kontak: WA 6285188009152 | Email: info@garudanexa.com\n\n"
-        . "Jawab pertanyaan admin tentang website, data pengunjung, produk, layanan, dan teknis dalam bahasa Indonesia yang ramah dan profesional. "
-        . "Arahkan pertanyaan di luar konteks kembali ke topik Garuda Nexa. Gunakan Markdown yang rapi dan jawab ringkas.";
-
-    // Only user/assistant turns from the client; the system prompt is ours
-    $chat = [["role" => "system", "content" => $system]];
-    foreach (array_slice($messages, -20) as $m) {
-        if (in_array($m['role'] ?? '', ['user', 'assistant'], true) && is_string($m['content'] ?? null)) {
-            $chat[] = ["role" => $m['role'], "content" => $m['content']];
-        }
-    }
-
-    $ch = curl_init($baseUrl . '/chat/completions');
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey],
-        CURLOPT_POSTFIELDS => json_encode(["model" => $model, "messages" => $chat, "temperature" => 0.7, "max_tokens" => 1500]),
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT => 120,
-    ]);
-    $body = curl_exec($ch);
-    $err = curl_error($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    $reply = json_decode((string)$body, true)['choices'][0]['message']['content'] ?? null;
-    if ($err || $code >= 400 || $reply === null) {
-        return ["error" => "AI server di $baseUrl tidak merespons" . ($err ? ": $err" : " (HTTP $code)") . ". Jalankan Ollama atau set AI_BASE_URL/AI_MODEL."];
-    }
-    return ["reply" => $reply];
 }
 ?>

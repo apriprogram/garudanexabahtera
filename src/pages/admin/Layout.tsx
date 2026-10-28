@@ -2,7 +2,6 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../../components/admin/Sidebar';
 import Header from '../../components/admin/Header';
-import AIChatWidget from '../../components/admin/AIChatWidget';
 import { getToken } from '../../lib/auth';
 
 /** Peran yang boleh membuka panel admin (SPEC §2). `customer` = pembeli template → /akun. */
@@ -56,11 +55,10 @@ const AdminLayout: React.FC = () => {
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-adm-surface lg:min-h-[calc(100vh-16px)] lg:rounded-[20px] lg:ring-1 lg:ring-inset lg:ring-adm-line">
         <Header />
-        <main id="konten" className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-24 pt-5 sm:px-6 sm:pb-10 sm:pt-7 lg:px-8">
+        <main id="konten" className="mx-auto w-full max-w-[1600px] flex-1 px-4 pb-10 pt-5 sm:px-6 sm:pt-7 lg:px-8">
           <Outlet />
         </main>
       </div>
-      <AIChatWidget />
     </div>
   );
 };

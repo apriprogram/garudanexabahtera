@@ -25,7 +25,7 @@ Di Claude desktop app kedua perintah ini ada di .claude/launch.json ("php-api" d
 
 
 Cara kerjanya
-- Vite meneruskan /api.php dan /api/ai-chat ke API di 127.0.0.1:8000 (lihat vite.config.ts).
+- Vite meneruskan /api.php ke API di 127.0.0.1:8000 (lihat vite.config.ts).
 - Gambar/dokumen yang di-upload dari admin disimpan di public/assets/<folder>/ di proyek ini,
   jadi langsung tampil di website lokal. File upload baru ini muncul sebagai file baru di git;
   jangan ikut di-commit kalau hanya data uji.
@@ -36,9 +36,6 @@ Cara kerjanya
 Pengaturan tambahan (opsional, di .env atau environment variable)
 - Database: MYSQL_HOST, MYSQL_USER, MYSQL_PASS, MYSQL_DB
   (default sudah cocok untuk XAMPP: localhost / root / kosong / db_garudanexabahtera)
-- AI chat di admin: AI_BASE_URL (default http://127.0.0.1:11434/v1 = Ollama lokal),
-  AI_MODEL (default qwen2.5:3b), AI_API_KEY.
-  Tanpa Ollama, AI chat membalas pesan error yang jelas; fitur lain tetap jalan.
 - Pembayaran template (Midtrans Snap): MIDTRANS_SERVER_KEY, MIDTRANS_CLIENT_KEY,
   MIDTRANS_IS_PRODUCTION (0/1), MIDTRANS_SIMULATOR (0/1), APP_URL (mis. http://localhost:5173).
   Tanpa server key, order tetap dibuat tetapi belum bisa dibayar online. Untuk uji lokal isi
@@ -61,13 +58,13 @@ Memakai backend Node (sama seperti produksi) — opsional
    -> API jalan di port 4000. Lalu di terminal lain (folder proyek):
    (PowerShell)  $env:API_BACKEND='node'; npm run dev
    Catatan: backend Node meng-upload ke S3 (butuh S3_* di .env, jadi upload masuk ke bucket
-   sungguhan) dan memanggil Ollama di AI_BASE_URL.
+   sungguhan).
 
 
 Catatan penting
 - C:\xampp\htdocs\api.php adalah salinan LAMA (Mei 2026) dan TIDAK dipakai lagi.
   sync-backend.ps1, deploy-api.ps1 dan "npm run dev:full" masih menyalin ke htdocs; tidak perlu dijalankan.
 - Server PHP bawaan hanya melayani satu request sekaligus. Request yang lama (mis. upload
-  gambar besar atau AI chat) membuat request lain ikut menunggu.
+  gambar besar) membuat request lain ikut menunggu.
 - Produksi (docker-compose + nginx) menjalankan backend/server.js, bukan api.php.
   Setiap action baru harus ditambahkan di KEDUA file: backend/server.js dan backend/api.php.

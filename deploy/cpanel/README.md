@@ -105,7 +105,6 @@ Catatan:
 - **Midtrans:**
   - `callbacks.finish` diarahkan ke `/akun/pesanan/{nomor}`, yang disajikan oleh `app.html`.
   - Notifikasi dikirim ke `api.php?action=midtrans_notification`, yang merupakan file nyata.
-  - `/api/ai-chat` tetap di-rewrite ke `api.php?action=ai_chat`, dan aturan ini diletakkan sebelum aturan garis miring.
 - **Cache:** semua `*.html` diberi `no-cache`, sedangkan file build ber-hash disimpan setahun. `app.html` dan `404.html` juga diberi `X-Robots-Tag: noindex, follow`.
 - `.txt` disajikan sebagai `text/plain; charset=utf-8`. `.webmanifest` disajikan sebagai `application/manifest+json`.
 

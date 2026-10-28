@@ -43,9 +43,6 @@ services:
       - UPLOAD_MAX_FILE_MB=${UPLOAD_MAX_FILE_MB:-25}
       # Hero background video (upload_hero_video); keep it below client_max_body_size in nginx.conf (64m)
       - UPLOAD_MAX_VIDEO_MB=${UPLOAD_MAX_VIDEO_MB:-30}
-      - AI_BASE_URL=${AI_BASE_URL:-}
-      - AI_API_KEY=${AI_API_KEY:-}
-      - AI_MODEL=${AI_MODEL:-}
       # Nexa AI, public chat on the home page (backend/modules/nexa.js); empty key = built-in answers only
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}

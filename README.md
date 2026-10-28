@@ -10,7 +10,6 @@ Staf mengelola semuanya di panel admin (`/admin`). Kontrak lengkap (peran, skema
 - **Backend dev lokal:** PHP `backend/api.php` (XAMPP PHP + MySQL), upload ke `public/assets/`
 
 Keduanya menerima request yang sama: `/api.php?action=...` (GET) atau `POST /api.php` dengan body JSON `{ "action": "...", ... }`.
-AI chat admin ada di `POST /api/ai-chat` (Node) atau `action=ai_chat` (PHP; Vite me-rewrite path itu di dev).
 
 ## Menjalankan di lokal
 

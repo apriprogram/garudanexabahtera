@@ -263,11 +263,10 @@ describe('.htaccess routing (main host only)', () => {
   const gone = (requestPath: string, current = decodeURIComponent(requestPath.split('?')[0]).replace(/^\//, '')) =>
     matches(/\s\/+404\.html[\s?]/i, /^\/*404\.html$/i, requestPath, current);
 
-  it('keeps the rule order: internal files blocked → ai-chat → trailing slash → prerender → seo.php → app → buyer site.php → 404', () => {
+  it('keeps the rule order: internal files blocked → trailing slash → prerender → seo.php → app → buyer site.php → 404', () => {
     const order = [
       pos(INTERNAL_RULE),
       pos(GONE_RULE),
-      pos('RewriteRule ^api/ai-chat/?$ api.php?action=ai_chat [QSA,L]'),
       pos('RewriteRule ^(.+?)/+$ https://garudanexa.com/$1 [R=301,L]'),
       pos('# BEGIN gn-prerender'),
       pos('RewriteRule ^template/([a-z0-9-]{1,120})$ seo.php?slug=$1 [L]'),

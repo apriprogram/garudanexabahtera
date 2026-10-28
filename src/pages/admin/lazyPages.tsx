@@ -1,7 +1,7 @@
 import { lazy } from 'react';
 
 // Halaman panel admin, dimuat hanya saat /admin dibuka: halaman publik tidak ikut mengunduh kerangka admin,
-// dashboard (recharts), editor dokumen (pdfmake/docx), navbar manager (dnd-kit) maupun AI chat (react-markdown).
+// dashboard (recharts), editor dokumen (pdfmake/docx) maupun navbar manager (dnd-kit).
 // Dipasang lewat ./routes.tsx. docs/platform/SEO-PLAN.md §5.7.
 export const AdminLayout = lazy(() => import('./Layout'));
 export const Dashboard = lazy(() => import('./Dashboard'));
