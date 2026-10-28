@@ -293,6 +293,43 @@ describe('FloatingWhatsApp', () => {
     expect(label.className).toContain('right-full');
   });
 
+  it('bar pesan /template/:slug tampil (aboveOrderBar): dok & panel naik 5.5rem di bawah lg, tidak menutupi tombol Pesan', () => {
+    const { rerender } = renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" />);
+    const launcher = screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' });
+    const dock = launcher.parentElement as HTMLElement;
+    expect(dock.className).not.toContain('translate-y');
+    // Naik seirama bar (300 ms), hanya di bawah lg (bar pesan lg:hidden)
+    expect(dock.className).toContain('transition-[translate]');
+    rerender(
+      <MemoryRouter>
+        <FloatingWhatsApp href="https://wa.me/6285188009152" aboveOrderBar />
+      </MemoryRouter>,
+    );
+    expect(dock.className).toContain('max-lg:-translate-y-[5.5rem]');
+    expect(dock.className).not.toMatch(/(^|\s)-translate-y/);
+
+    // Panel chat (portal ke body) tetap tepat di atas maskot: naik & memendek 5.5rem, ukuran desktop dipulihkan di lg
+    fireEvent.click(launcher);
+    const panel = screen.getByRole('dialog', { name: 'Tanya Nexa AI' });
+    expect(panel.className).toContain('bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+9.25rem)]');
+    expect(panel.className).toContain('h-[min(620px,calc(100svh-var(--nav-offset)-11.5rem))]');
+    expect(panel.className).toContain('sm:bottom-[11.75rem]');
+    expect(panel.className).toContain('lg:bottom-[6.25rem]');
+    expect(panel.className).toContain('lg:h-[min(820px,calc(100svh-var(--nav-offset)-7.25rem))]');
+    expect(panel.className).not.toContain('+3.75rem)]');
+
+    // Bar turun lagi (tombol utama di panel kembali terlihat): dok & panel kembali ke tempat biasa
+    rerender(
+      <MemoryRouter>
+        <FloatingWhatsApp href="https://wa.me/6285188009152" />
+      </MemoryRouter>,
+    );
+    expect(dock.className).not.toContain('translate-y');
+    expect(panel.className).toContain('bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+3.75rem)]');
+    expect(panel.className).toContain('sm:bottom-[6.25rem]');
+    expect(panel.className).not.toContain('lg:bottom-');
+  });
+
   it('chat dimatikan admin (chat=false): maskot hilang, tombol "Kembali ke atas" tetap bekerja', async () => {
     renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" backToTop chat={false} />);
     expect(screen.queryByRole('button', { name: 'Tanya Nexa, asisten AI' })).toBeNull();

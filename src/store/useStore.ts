@@ -5,10 +5,13 @@ interface AppState {
   isSearchActive: boolean;
   isSidebarCollapsed: boolean;
   isMobileSidebarOpen: boolean;
+  /** Bar pesan bawah di /template/:slug sedang tampil (HP/tablet): dok Nexa naik di atasnya (App.tsx → FloatingWhatsApp). */
+  isOrderBarShown: boolean;
   toggleTheme: () => void;
   toggleSearch: (active?: boolean) => void;
   toggleSidebar: () => void;
   toggleMobileSidebar: (open?: boolean) => void;
+  setOrderBarShown: (shown: boolean) => void;
 }
 
 // Modul ini juga diimpor saat prerender di Node (scripts/prerender.mjs): tanpa window/localStorage nilainya bawaan
@@ -36,7 +39,8 @@ export const useStore = create<AppState>((set) => ({
   isSearchActive: false,
   isSidebarCollapsed: readStorage('adminSidebarCollapsed') === '1',
   isMobileSidebarOpen: false,
-  
+  isOrderBarShown: false,
+
   toggleTheme: () => set((state) => {
     const newTheme = state.theme === 'light' ? 'dark' : 'light';
     localStorage.setItem('theme', newTheme);
@@ -61,4 +65,6 @@ export const useStore = create<AppState>((set) => ({
   toggleMobileSidebar: (open) => set((state) => ({
     isMobileSidebarOpen: open !== undefined ? open : !state.isMobileSidebarOpen
   })),
+
+  setOrderBarShown: (shown) => set({ isOrderBarShown: shown }),
 }));

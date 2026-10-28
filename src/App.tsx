@@ -86,13 +86,22 @@ const NEXA_EXCLUDED = ['/demo', '/situs', '/akun', '/login', '/auth', '/admin', 
 function FloatingNexa() {
   const { pathname } = useLocation();
   const { settings } = useSiteSettings();
+  // Bar pesan HP di /template/:slug (TemplateDetail): dok naik di atasnya selama bar tampil
+  const aboveOrderBar = useStore((state) => state.isOrderBarShown);
   if (NEXA_EXCLUDED.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return null;
   // Saklar admin (Pengaturan website → Tanya Nexa): '0' menyembunyikan chat di seluruh situs; tombol "ke atas"
   // beranda tetap tampil
   const chat = settings.nexa_enabled !== '0';
   const backToTop = pathname === '/';
   if (!chat && !backToTop) return null;
-  return <FloatingWhatsApp href={whatsappUrl(getWhatsappNumber(settings), WA_GREETING)} backToTop={backToTop} chat={chat} />;
+  return (
+    <FloatingWhatsApp
+      href={whatsappUrl(getWhatsappNumber(settings), WA_GREETING)}
+      backToTop={backToTop}
+      chat={chat}
+      aboveOrderBar={aboveOrderBar}
+    />
+  );
 }
 
 function App() {

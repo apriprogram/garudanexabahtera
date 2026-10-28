@@ -8,6 +8,7 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEMPLATE_PRICE_INCLUDES_DEFAULT, TEMPLATE_PRICE_NOTE_DEFAULT, type SiteSettings } from '../../../hooks/useSiteSettings';
 import { clearApiCache } from '../../../lib/api';
+import { useStore } from '../../../store/useStore';
 import TemplateDemo from '../TemplateDemo';
 import TemplateDetail from '../TemplateDetail';
 
@@ -163,11 +164,13 @@ describe('/template/:slug: harga & bar pesan HP', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual(['/demo/corporate-nexa', '/pesan/corporate-nexa']);
     expect(links[0]).toHaveAccessibleName('Lihat Demo Corporate Nexa');
     for (const link of links) expect(link).toHaveAttribute('tabindex', '-1');
+    // Bar tersembunyi: dok Nexa tetap di tempat biasa
+    expect(useStore.getState().isOrderBarShown).toBe(false);
   });
 
   it('bar HP tampil saat tombol panel tidak terlihat: kedua tombol bisa di-Tab', async () => {
     observeAs(false);
-    renderDetail();
+    const { unmount } = renderDetail();
     // Bar muncul setelah observer melaporkan tombol panel tidak terlihat (render berikutnya)
     const order = await screen.findByRole('link', { name: 'Pesan Template Corporate Nexa' }, { timeout: 5000 });
     const bar = order.closest('[aria-hidden]') as HTMLElement;
@@ -175,6 +178,10 @@ describe('/template/:slug: harga & bar pesan HP', () => {
     const links = within(bar).getAllByRole('link');
     expect(links.map((link) => link.getAttribute('aria-label'))).toEqual(['Lihat Demo Corporate Nexa', 'Pesan Template Corporate Nexa']);
     for (const link of links) expect(link).not.toHaveAttribute('tabindex');
+    // Dok Nexa (App.tsx → FloatingWhatsApp aboveOrderBar) naik di atas bar; meninggalkan halaman → turun lagi
+    expect(useStore.getState().isOrderBarShown).toBe(true);
+    unmount();
+    expect(useStore.getState().isOrderBarShown).toBe(false);
   });
 
   it('demo_url eksternal: tombol Demo di bar membuka tab baru', async () => {

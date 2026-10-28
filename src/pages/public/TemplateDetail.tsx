@@ -35,6 +35,7 @@ import { getTemplatePricing, getWhatsappNumber, useSiteSettings, whatsappUrl } f
 import { COMPANY_FACTS } from '../../lib/companyFacts';
 import { LEGAL_LABELS, LEGAL_PATHS } from '../../lib/legal';
 import { HUB_PATHS, categoryPath } from '../../seo/paths';
+import { useStore } from '../../store/useStore';
 import { formatRupiah, type Template } from '../../types/platform';
 import { guideLink } from './catalog/guideLink';
 import { includesSentence, usePriceDateLabel } from './catalog/pricing';
@@ -141,6 +142,7 @@ function DetailContent({ template, category }: { template: Template; category: C
   const asideRef = useRef<HTMLElement>(null);
   const [ctaVisible, setCtaVisible] = useState(true);
   const [asideHeight, setAsideHeight] = useState(0);
+  const setOrderBarShown = useStore((state) => state.setOrderBarShown);
   const { settings } = useSiteSettings();
   const { articles: guides } = useGuides();
   const slug = encodeURIComponent(template.slug);
@@ -168,6 +170,12 @@ function DetailContent({ template, category }: { template: Template; category: C
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Selama bar itu tampil, dok Nexa (App.tsx → FloatingWhatsApp) naik ke atasnya agar tidak menutupi tombol Pesan
+  useEffect(() => {
+    setOrderBarShown(!ctaVisible);
+    return () => setOrderBarShown(false);
+  }, [ctaVisible, setOrderBarShown]);
 
   // Panel kanan lengket (≥ lg): bila lebih tinggi dari layar, jarak atasnya dikurangi (lihat kelas `lg:top-*`) agar
   // seluruh panel tetap terlihat. Yang tergeser ke atas hanya kategori & nama; harga dan tombol tetap di layar.

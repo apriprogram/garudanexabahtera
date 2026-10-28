@@ -225,7 +225,19 @@ interface NexaChatProps {
   whatsappHref: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Dok naik 5.5rem di atas bar pesan HP/tablet (FloatingWhatsApp): panel ikut naik dan memendek sebanyak itu. */
+  aboveOrderBar?: boolean;
 }
+
+/**
+ * Letak & tinggi panel: tepat di atas maskot (48/56px + 12px), di bawah navbar. Bersama bar pesan (< lg) semuanya
+ * bergeser 5.5rem; ≥ lg bar tidak ada.
+ */
+const PANEL_PLACEMENT = {
+  base: 'bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+3.75rem)] h-[min(620px,calc(100svh-var(--nav-offset)-6rem))] sm:bottom-[6.25rem] sm:h-[min(820px,calc(100svh-var(--nav-offset)-7.25rem))]',
+  aboveOrderBar:
+    'bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+9.25rem)] h-[min(620px,calc(100svh-var(--nav-offset)-11.5rem))] sm:bottom-[11.75rem] sm:h-[min(820px,calc(100svh-var(--nav-offset)-12.75rem))] lg:bottom-[6.25rem] lg:h-[min(820px,calc(100svh-var(--nav-offset)-7.25rem))]',
+} as const;
 
 /**
  * Widget "Nexa AI" (permintaan pemilik 2026-10-24, gaya kartu chat AI putih): tombol maskot di samping tombol WhatsApp
@@ -239,7 +251,7 @@ interface NexaChatProps {
  * Nexa. Chip topik tidak pernah dilepas dari DOM (hanya aria-disabled selama Nexa mengetik), jadi fokus keyboard tidak
  * hilang; chip berada di luar role=log supaya tidak ikut dibacakan ulang setiap balasan.
  */
-export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenChange }) => {
+export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenChange, aboveOrderBar = false }) => {
   const panelId = useId();
   const titleId = useId();
   const inputId = useId();
@@ -485,9 +497,9 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
             // ringkas; desktop: 520–740 px, tinggi maks. 820 px, kepala/kolom/tombol ringkas (pemilik 2026-10-24: HP lebih
             // lebar & kecil, desktop lebih lebar, bayangan lebih lembut). Layar sangat pendek (HP mendatar, zoom besar): log
             // tetap minimal 8rem dan panel yang bergulir
-            className={`fixed inset-x-2 bottom-[calc(max(16px,calc(env(safe-area-inset-bottom)+8px))+3.75rem)] z-40 flex h-[min(620px,calc(100svh-var(--nav-offset)-6rem))] custom-scrollbar flex-col overflow-y-auto overscroll-contain rounded-3xl bg-surface text-left shadow-[0_24px_64px_-24px_rgba(24,29,37,0.14),0_2px_12px_-4px_rgba(24,29,37,0.05)] ring-1 ring-inset ring-line/50 transition-[opacity,translate,scale] duration-200 ease-calm starting:translate-y-3 starting:scale-[0.98] starting:opacity-0 motion-reduce:transition-none sm:inset-x-auto sm:bottom-[6.25rem] sm:right-8 sm:h-[min(820px,calc(100svh-var(--nav-offset)-7.25rem))] sm:w-[520px] sm:rounded-[28px] lg:w-[620px] xl:w-[680px] 2xl:w-[740px] ${
-              closing ? 'pointer-events-none translate-y-3 scale-[0.98] opacity-0' : ''
-            }`}
+            className={`fixed inset-x-2 z-40 flex custom-scrollbar flex-col overflow-y-auto overscroll-contain rounded-3xl bg-surface text-left shadow-[0_24px_64px_-24px_rgba(24,29,37,0.14),0_2px_12px_-4px_rgba(24,29,37,0.05)] ring-1 ring-inset ring-line/50 transition-[opacity,translate,scale] duration-200 ease-calm starting:translate-y-3 starting:scale-[0.98] starting:opacity-0 motion-reduce:transition-none sm:inset-x-auto sm:right-8 sm:w-[520px] sm:rounded-[28px] lg:w-[620px] xl:w-[680px] 2xl:w-[740px] ${
+              PANEL_PLACEMENT[aboveOrderBar ? 'aboveOrderBar' : 'base']
+            } ${closing ? 'pointer-events-none translate-y-3 scale-[0.98] opacity-0' : ''}`}
           >
             {/* Kepala ringkas (pemilik 2026-10-24: lebih kecil) */}
             <header className="flex shrink-0 items-center justify-between gap-3 px-4 pb-1 pt-3 sm:px-6 sm:pt-3.5">

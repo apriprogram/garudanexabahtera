@@ -8,6 +8,11 @@ interface FloatingWhatsAppProps {
   backToTop?: boolean;
   /** Chat Nexa (saklar admin nexa_enabled). Mati: hanya tombol "ke atas" yang tersisa (bila ada). */
   chat?: boolean;
+  /**
+   * Bar pesan bawah /template/:slug sedang tampil (HP/tablet, < lg; tinggi ±87–91px + home bar): dok naik 5.5rem
+   * bersama bar agar maskot tidak menutupi tombol "Pesan", panel chat ikut naik.
+   */
+  aboveOrderBar?: boolean;
 }
 
 /** Jarak gulir (px) sebelum tombol "ke atas" tampil. */
@@ -19,7 +24,7 @@ const TOP_AFTER = 480;
  * `href`-nya tetap dipakai chat. Dok selalu tampil di semua ukuran layar (pemilik 2026-10-24; logika sembunyi di HP
  * saat hero terlihat / menggulir ke bawah dihapus).
  */
-export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ href, backToTop = false, chat = true }) => {
+export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ href, backToTop = false, chat = true, aboveOrderBar = false }) => {
   const [chatOpen, setChatOpen] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const changeChatOpen = useCallback((next: boolean) => setChatOpen(next), []);
@@ -43,7 +48,10 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ href, backTo
 
   return (
     <div
-      className="fixed bottom-[max(16px,calc(env(safe-area-inset-bottom)+8px))] right-[max(16px,env(safe-area-inset-right))] z-40 flex flex-col items-center gap-3 sm:bottom-8 sm:right-8"
+      // Naik/turun seirama bar pesan (translate 300 ms, sama dengan bar di TemplateDetail)
+      className={`fixed bottom-[max(16px,calc(env(safe-area-inset-bottom)+8px))] right-[max(16px,env(safe-area-inset-right))] z-40 flex flex-col items-center gap-3 transition-[translate] duration-300 ease-calm motion-reduce:transition-none sm:bottom-8 sm:right-8 ${
+        aboveOrderBar ? 'max-lg:-translate-y-[5.5rem]' : ''
+      }`}
     >
       {/* Ke atas: kaca cair (gradasi putih tembus + blur latar), tampil setelah menggulir; tidak saat chat terbuka */}
       {backToTop && showTop && !chatOpen && (
@@ -56,7 +64,7 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ href, backTo
           <ArrowUp className="h-5 w-5" strokeWidth={2.25} aria-hidden />
         </button>
       )}
-      {chat && <NexaChat whatsappHref={href} open={chatOpen} onOpenChange={changeChatOpen} />}
+      {chat && <NexaChat whatsappHref={href} open={chatOpen} onOpenChange={changeChatOpen} aboveOrderBar={aboveOrderBar} />}
     </div>
   );
 };
