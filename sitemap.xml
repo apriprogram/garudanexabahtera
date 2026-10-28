@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://garudanexa.com/template</loc>
-    <lastmod>2026-10-28</lastmod>
+    <lastmod>2026-10-29</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/template/kategori/company-profile</loc>
@@ -14,11 +14,11 @@
   </url>
   <url>
     <loc>https://garudanexa.com/template/kategori/olahraga-komunitas</loc>
-    <lastmod>2026-10-28</lastmod>
+    <lastmod>2026-10-29</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/template/kategori/fintech-startup</loc>
-    <lastmod>2026-10-28</lastmod>
+    <lastmod>2026-10-29</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/template/kategori/yoga-wellness</loc>
@@ -33,8 +33,16 @@
     <lastmod>2026-10-28</lastmod>
   </url>
   <url>
+    <loc>https://garudanexa.com/template/kategori/kesehatan-rumah-sakit</loc>
+    <lastmod>2026-10-29</lastmod>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/kategori/properti-real-estate</loc>
+    <lastmod>2026-10-29</lastmod>
+  </url>
+  <url>
     <loc>https://garudanexa.com/harga</loc>
-    <lastmod>2026-10-28</lastmod>
+    <lastmod>2026-10-29</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/kontak</loc>
@@ -74,7 +82,7 @@
   </url>
   <url>
     <loc>https://garudanexa.com/</loc>
-    <lastmod>2026-10-28</lastmod>
+    <lastmod>2026-10-29</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/syarat-ketentuan</loc>
@@ -251,6 +259,62 @@
     <lastmod>2026-10-28</lastmod>
     <image:image>
       <image:loc>https://garudanexa.com/assets/templates/pradipta-preview.webp?v=4c7f1475</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/sparring-padel</loc>
+    <lastmod>2026-10-29</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/sparring-padel-preview.webp?v=6f476eca</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/smashhall</loc>
+    <lastmod>2026-10-29</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/smashhall-preview.webp?v=b5767595</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/paynow</loc>
+    <lastmod>2026-10-29</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/paynow-preview.webp?v=d0239797</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/medicare-general</loc>
+    <lastmod>2026-10-29</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/medicare-general-preview.webp?v=fa035e10</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/momkid</loc>
+    <lastmod>2026-10-29</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/momkid-preview.webp?v=03dea09c</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/specialistplus</loc>
+    <lastmod>2026-10-29</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/specialistplus-preview.webp?v=ac26cfcc</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/healthlink</loc>
+    <lastmod>2026-10-29</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/healthlink-preview.webp?v=b2da5c61</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/homenest</loc>
+    <lastmod>2026-10-29</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/homenest-preview.webp?v=965c5ab8</image:loc>
     </image:image>
   </url>
 </urlset>

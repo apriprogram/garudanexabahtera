@@ -1,9 +1,9 @@
 # Garuda Nexa
 > Garuda Nexa (PT Garuda Nexa Bahtera, Indonesia) menjual template website siap pakai yang sudah termasuk setup awal, hosting, dan SSL tahun pertama (domain dipilih saat memesan, mulai Rp50.000/tahun), serta menerima jasa pembuatan website dan aplikasi mobile Android/iOS custom.
 
-Diperbarui 28 Oktober 2026.
+Diperbarui 29 Oktober 2026.
 
-- Harga template: Rp990.000–Rp1.890.000 (per 28 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
+- Harga template: Rp990.000–Rp1.890.000 (per 29 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
 - Sudah termasuk: template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
 - Domain (tidak termasuk harga template; dipilih dan dicek ketersediaannya saat memesan), harga per tahun, sama untuk perpanjangan: .com Rp250.000, .id Rp250.000, .co.id Rp350.000, .my.id Rp50.000, .web.id Rp50.000, .biz.id Rp100.000, .net Rp250.000, .org Rp250.000, .or.id Rp100.000, .sch.id Rp75.000, .ac.id Rp75.000
 - Bayar online via Midtrans; isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -36,6 +36,14 @@ Diperbarui 28 Oktober 2026.
 - [Jumantara](https://garudanexa.com/template/jumantara): template Sekolah & Pendidikan, Rp1.690.000. Template website sekolah negeri untuk SMA yang rapi dan elegan: slider foto dengan bilah progres, angka sekolah, berita, pengumuman, agenda, dan informasi SPMB.
 - [Nawasena](https://garudanexa.com/template/nawasena): template Sekolah & Pendidikan, Rp1.690.000. Template website profil sekolah untuk SMA negeri yang elegan: slider foto latar, strip pengumuman, statistik, berita, agenda, dan informasi SPMB.
 - [Pradipta](https://garudanexa.com/template/pradipta): template Sekolah & Pendidikan, Rp1.690.000. Template landing page SMA negeri yang terang dan rapi: hero slider foto dengan thumbnail, statistik, berita, pengumuman, agenda, info SPMB, dan formulir tanya panitia ke WhatsApp.
+- [Sparring Padel](https://garudanexa.com/template/sparring-padel): template Olahraga & Komunitas, Rp1.390.000. Template website lapangan padel: hero foto dengan Booking cepat ke WhatsApp, jadwal & harga per jam, lapangan indoor/outdoor, cari lawan main per level, turnamen, dan sewa raket.
+- [SmashHall](https://garudanexa.com/template/smashhall): template Olahraga & Komunitas, Rp1.390.000. Template website GOR & klub badminton: cek lapangan kosong, booking lewat WhatsApp, member bulanan, latihan, akademi, kejuaraan, dan toko perlengkapan.
+- [PayNow](https://garudanexa.com/template/paynow): template Fintech & Startup, Rp1.590.000. Template landing page dompet digital & payment gateway: hero foto dengan mockup HP dan notifikasi, fitur bertab, simulasi biaya, keamanan, contoh API, dan pendaftaran merchant ke WhatsApp.
+- [MediCare General](https://garudanexa.com/template/medicare-general): template Kesehatan & Rumah Sakit, Rp1.890.000. Template website rumah sakit umum: strip IGD 24 jam, ukuran teks yang bisa diperbesar, jadwal dokter tersaring, pendaftaran online ke WhatsApp, poliklinik, rawat inap, dan BPJS.
+- [MomKid Hospital](https://garudanexa.com/template/momkid): template Kesehatan & Rumah Sakit, Rp1.790.000. Template website rumah sakit ibu & anak bernuansa pastel: hero foto ibu dan bayi, paket persalinan, jadwal imunisasi interaktif, dokter anak, klinik laktasi, tur kamar bersalin, dan pendaftaran ke WhatsApp.
+- [SpecialistPlus](https://garudanexa.com/template/specialistplus): template Kesehatan & Rumah Sakit, Rp1.890.000. Template website klinik spesialis & laboratorium: hero konsol data, jadwal dokter per klinik, tabel paket MCU, permintaan hasil lab via WhatsApp, dan spesifikasi alat.
+- [HealthLink](https://garudanexa.com/template/healthlink): template Kesehatan & Rumah Sakit, Rp1.690.000. Template website telemedicine bergaya aplikasi: cari dokter online, chat & video call lewat WhatsApp atau aplikasi Anda, resep digital, pengingat kontrol, dan RS mitra.
+- [HomeNest](https://garudanexa.com/template/homenest): template Properti & Real Estate, Rp1.690.000. Template website properti & jual rumah: hero foto besar dengan panel cari rumah, listing bersaringan, tur virtual, simulasi KPR, profil developer, dan jadwal kunjungan ke WhatsApp.
 
 ## Jasa custom
 - [Jasa Pembuatan Website Company Profile](https://garudanexa.com/jasa-pembuatan-website): Jasa pembuatan website custom untuk perusahaan, sekolah, instansi & UMKM. Konsultasi gratis, penawaran jelas sebelum mulai, didampingi sampai rilis.
