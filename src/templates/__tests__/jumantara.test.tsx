@@ -1582,6 +1582,8 @@ describe('Jumantara: data katalog', () => {
       expect(row).not.toMatch(/Semua teks, foto/);
       // Kata kunci katalog = kata kunci halaman (Jumantara), bukan "template website SMA" milik Bestari
       expect(row).toContain("'Template website sekolah negeri untuk SMA yang rapi dan elegan: ");
+      // Item domain & SSL seperti semua template lain di katalog
+      expect(row).toContain('"Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]');
     },
   );
 
