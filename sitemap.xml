@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://garudanexa.com/template</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/template/kategori/company-profile</loc>
@@ -30,11 +30,11 @@
   </url>
   <url>
     <loc>https://garudanexa.com/template/kategori/sekolah-pendidikan</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/harga</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/kontak</loc>
@@ -74,7 +74,7 @@
   </url>
   <url>
     <loc>https://garudanexa.com/</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
   </url>
   <url>
     <loc>https://garudanexa.com/syarat-ketentuan</loc>
@@ -230,6 +230,27 @@
     <lastmod>2026-10-27</lastmod>
     <image:image>
       <image:loc>https://garudanexa.com/assets/templates/nusaniaga-preview.webp?v=640cde38</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/jumantara</loc>
+    <lastmod>2026-10-28</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/jumantara-preview.webp?v=9368178f</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/nawasena</loc>
+    <lastmod>2026-10-28</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/nawasena-preview.webp?v=77b29c26</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/pradipta</loc>
+    <lastmod>2026-10-28</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/pradipta-preview.webp?v=4c7f1475</image:loc>
     </image:image>
   </url>
 </urlset>

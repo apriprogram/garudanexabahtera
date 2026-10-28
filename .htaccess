@@ -85,13 +85,13 @@ DirectoryIndex index.html
 
   # Halaman hasil prerender: / → _pre/index.html, /template/finova → _pre/template/finova.html. Daftar rutenya ditulis
   # scripts/prerender.mjs saat build (tanpa cek -f ke %{DOCUMENT_ROOT}, yang bisa berbeda di cPanel/LiteSpeed).
-  # BEGIN gn-prerender (diisi scripts/prerender.mjs: 43 halaman)
+  # BEGIN gn-prerender (diisi scripts/prerender.mjs: 46 halaman)
   RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
   RewriteRule ^$ _pre/index.html [L]
   RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
-  RewriteRule ^(harga|jasa-pembuatan-aplikasi-mobile|jasa-pembuatan-website|kebijakan-pengembalian-dana|kebijakan-privasi|kontak|panduan|panduan/biaya-aplikasi-android-ios|panduan/biaya-website-company-profile|panduan/template-vs-jasa-website-custom|panduan/website-klinik-kecantikan|pesan-custom|syarat-ketentuan|template|template/altura|template/arena-club|template/aura-studio|template/bestari|template/cakrawala|template/corporate-nexa|template/dermaga|template/finova|template/gadgetku|template/glowstory|template/kategori/company-profile|template/kategori/fintech-startup|template/kategori/kecantikan-klinik|template/kategori/olahraga-komunitas|template/kategori/sekolah-pendidikan|template/kategori/toko-online|template/kategori/yoga-wellness|template/madani|template/nusaniaga|template/portline|template/puncakgear|template/saudagar|template/serenity|template/skynusa|template/startup-clean|template/tanimakmur)$ _pre/$1.html [L]
+  RewriteRule ^(harga|jasa-pembuatan-aplikasi-mobile|jasa-pembuatan-website|kebijakan-pengembalian-dana|kebijakan-privasi|kontak|panduan|panduan/biaya-aplikasi-android-ios|panduan/biaya-website-company-profile|panduan/template-vs-jasa-website-custom|panduan/website-klinik-kecantikan|pesan-custom|syarat-ketentuan|template|template/altura|template/arena-club|template/aura-studio|template/bestari|template/cakrawala|template/corporate-nexa|template/dermaga|template/finova|template/gadgetku|template/glowstory|template/jumantara|template/kategori/company-profile|template/kategori/fintech-startup|template/kategori/kecantikan-klinik|template/kategori/olahraga-komunitas|template/kategori/sekolah-pendidikan|template/kategori/toko-online|template/kategori/yoga-wellness|template/madani|template/nawasena|template/nusaniaga|template/portline|template/pradipta|template/puncakgear|template/saudagar|template/serenity)$ _pre/$1.html [L]
   RewriteCond %{HTTP_HOST} ^garudanexa\.com$ [NC]
-  RewriteRule ^(template/velora|tentang)$ _pre/$1.html [L]
+  RewriteRule ^(template/skynusa|template/startup-clean|template/tanimakmur|template/velora|tentang)$ _pre/$1.html [L]
   # END gn-prerender
 
   # Template yang terbit setelah deploy terakhir: seo.php merender halamannya dari DB, atau 404 bila tidak ada /
