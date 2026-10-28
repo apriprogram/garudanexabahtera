@@ -805,16 +805,18 @@ lisensinya di halaman foto (Unsplash License, bukan Unsplash+) 2026-10-28, lalu 
 Suntingan: foto hero dicerminkan (pemain di kanan); logo merek dan bendera di kaus, tulisan merek di celana, dan logo
 sepatu dihapus dengan retus klon (ditambal motif kain, kulit, dan lantai dari foto yang sama, tanpa blur). Foto anak:
 logo dan tulisan sponsor di kedua kaus, bendera, lencana dan logo celana, serta dua papan tulisan di dinding juga
-dihapus dengan retus klon (2026-10-29, menggantikan blur sebelumnya). Spanduk merek di dinding (lapangan), logo celana
+dihapus dengan retus klon (2026-10-29, menggantikan blur sebelumnya; disimpan dengan nama baru `smashhall-hero-v2-*` dan
+`smashhall-anak-v2-*` karena Cloudflare menyimpan file lama per URL selama 30 hari; `smashhall-hero-*` dan `smashhall-anak-*` lama
+berisi foto yang sama untuk konten situs yang masih menautnya). Spanduk merek di dinding (lapangan), logo celana
 dan spanduk (galeri latihan), papan tulisan dan logo kaus (galeri raket), logo pada wristband (galeri senar), serta sisa
 tulisan spanduk di tribun (kejuaraan, dipotong ke sisi kiri panorama) dikaburkan (blur). Nama GOR, pelatih, juara
 turnamen, dan pelanggan di demo fiktif dan tidak berhubungan dengan orang atau tempat di foto.
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
-| `smashhall-hero-*` | Pemain bulu tangkis menjangkau kok di lapangan hijau yang terang (dicerminkan, logo diretus) | https://unsplash.com/photos/rl1XrMSfkAo | Dmitriy Ignatenko |
+| `smashhall-hero-v2-*` | Pemain bulu tangkis menjangkau kok di lapangan hijau yang terang (dicerminkan, logo diretus) | https://unsplash.com/photos/rl1XrMSfkAo | Dmitriy Ignatenko |
 | `smashhall-lapangan-*` | Lapangan bulu tangkis indoor berlantai biru di gedung berdinding biru | https://unsplash.com/photos/AILEpOyczIk | Palak Pitroda |
-| `smashhall-anak-*` | Dua anak bersiap bermain bulu tangkis di lapangan hijau (logo dan papan tulisan diretus) | https://unsplash.com/photos/LHs86rqXEZI | Irish83 |
+| `smashhall-anak-v2-*` | Dua anak bersiap bermain bulu tangkis di lapangan hijau (logo dan papan tulisan diretus) | https://unsplash.com/photos/LHs86rqXEZI | Irish83 |
 | `smashhall-remaja-*` | Remaja putri menjangkau kok di lapangan indoor | https://unsplash.com/photos/TaPJ1bff2PM | Yoyo Hins Itta |
 | `smashhall-dewasa-*` | Empat orang bermain ganda di lapangan biru | https://unsplash.com/photos/0Zq9PQJvEv8 | Evan Marvell |
 | `smashhall-kejuaraan-*` | Gedung olahraga dengan beberapa lapangan saat pertandingan | https://unsplash.com/photos/6qTZBVH2h4Y | Irish83 |
