@@ -21,7 +21,8 @@ function Steps({ steps }: { steps: ListItem[] }) {
     <ol className={`grid gap-4 ${steps.length >= 3 ? '@3xl:grid-cols-3' : steps.length === 2 ? '@3xl:grid-cols-2' : ''}`}>
       {steps.map((step, i) => (
         <Reveal as="li" key={`${field(step, 'title')}-${i}`} delay={stagger(i, 80)} className={`grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)] gap-x-3 p-5 @3xl:flex @3xl:flex-col @3xl:p-7 ${CARD}`}>
-          <span aria-hidden className="mc-t-num row-span-2 font-[family-name:var(--tpl-font-display)] font-bold tabular-nums text-(--tpl-accent-ink)">
+          {/* HP: nomor hanya di baris 1 (bukan row-span-2), jadi baris 1 setinggi nomor dan judul tegak di tengahnya */}
+          <span aria-hidden className="mc-t-num font-[family-name:var(--tpl-font-display)] font-bold tabular-nums text-(--tpl-accent-ink)">
             {i + 1}
           </span>
           <h3 className={`self-center @3xl:mt-4 @3xl:self-start ${T.h3} ${C.ink}`}>{field(step, 'title')}</h3>

@@ -33,7 +33,7 @@ export const smashhallContent: SiteContent = {
     secondary_url: '',
     header_label: 'Booking',
     header_url: '',
-    image: smashhallPhoto('hero'),
+    image: smashhallPhoto('hero-v2'),
     strip_title: 'Hari ini',
     strip_note: 'Contoh data. Ketersediaan dikonfirmasi admin via WhatsApp.',
     strip_link: 'Lihat semua jadwal',
@@ -158,7 +158,7 @@ export const smashhallContent: SiteContent = {
         schedule: 'Sabtu & Minggu · 08.00–10.00',
         focus: 'Pegangan raket, footwork dasar, dan servis.',
         price: 'Rp400.000/bulan',
-        image: smashhallPhoto('anak'),
+        image: smashhallPhoto('anak-v2'),
       },
       {
         name: 'Remaja',

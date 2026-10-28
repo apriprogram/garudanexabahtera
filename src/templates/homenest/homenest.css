@@ -25,16 +25,22 @@
    * ≥ 76% (label kecil ≥ 4,5:1 pada piksel putih terburuk) dan melebur penuh ke hijau tua di tepi bawah foto.
    */
   @container (max-width: 767px) {
+    /* Tiga lapisan (atas, dasar 14%, bawah diukur dari tepi bawah) supaya posisi warna tidak pernah terbalik: satu
+       gradien dengan `calc(100% - 470px)` di bawah 96px (foto < 566px, mis. HP 844px + bilah demo) membuat garis
+       keras di langit. Hasil gabungan: ±55% di tepi atas, 14% di badan rumah, 22% / 76% / 88% di 470 / 380 / 120px
+       dari bawah, penuh di tepi bawah — sama dengan sebelumnya. */
     .hn-hero-scrim {
-      background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--hn-deep) 55%, transparent) 0,
-        color-mix(in srgb, var(--hn-deep) 14%, transparent) 96px,
-        color-mix(in srgb, var(--hn-deep) 22%, transparent) calc(100% - 470px),
-        color-mix(in srgb, var(--hn-deep) 76%, transparent) calc(100% - 380px),
-        color-mix(in srgb, var(--hn-deep) 88%, transparent) calc(100% - 120px),
-        var(--hn-deep) 100%
-      );
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--hn-deep) 48%, transparent) 0, transparent 96px),
+        linear-gradient(
+          0deg,
+          var(--hn-deep) 0,
+          color-mix(in srgb, var(--hn-deep) 86%, transparent) 120px,
+          color-mix(in srgb, var(--hn-deep) 72%, transparent) 380px,
+          color-mix(in srgb, var(--hn-deep) 9%, transparent) 470px,
+          transparent 540px
+        ),
+        color-mix(in srgb, var(--hn-deep) 14%, transparent);
     }
   }
 

@@ -14,13 +14,13 @@ import { definePhotos, type KitPhotoSpec, type PhotoSet } from '../kit/photos';
 const DIR = '/assets/templates/photos';
 
 const HERO: readonly KitPhotoSpec[] = [
-  ['smashhall-hero', 1920, 1080, 'Pemain bulu tangkis berkaus putih menjangkau kok dengan langkah lebar di lapangan hijau yang terang'],
+  ['smashhall-hero-v2', 1920, 1080, 'Pemain bulu tangkis berkaus putih menjangkau kok dengan langkah lebar di lapangan hijau yang terang'],
 ];
 
 const BASE = definePhotos({
   scenes: [
     ['smashhall-lapangan', 1200, 900, 'Deretan lapangan bulu tangkis indoor berlantai biru dengan net terpasang di gedung berdinding biru muda'],
-    ['smashhall-anak', 1200, 900, 'Dua anak laki-laki memegang raket bersiap bermain bulu tangkis di lapangan hijau'],
+    ['smashhall-anak-v2', 1200, 900, 'Dua anak laki-laki memegang raket bersiap bermain bulu tangkis di lapangan hijau'],
     ['smashhall-remaja', 1200, 900, 'Remaja putri berkacamata menjangkau kok dengan raket di lapangan bulu tangkis indoor'],
     ['smashhall-dewasa', 1200, 900, 'Empat orang dewasa bermain ganda bulu tangkis di lapangan biru dalam gedung'],
     ['smashhall-kejuaraan', 1200, 900, 'Gedung olahraga berlantai biru muda dengan beberapa lapangan bulu tangkis saat pertandingan berlangsung'],
@@ -62,5 +62,5 @@ export const SMASHHALL_PHOTOS: PhotoSet = Object.freeze({
   keys: Object.freeze([...HERO.map((spec) => spec[0]), ...BASE.keys]),
 });
 
-/** Path foto demo untuk defaultContent, mis. `smashhallPhoto('hero')` → `/assets/templates/photos/smashhall-hero-1920.webp`. */
+/** Path foto demo untuk defaultContent, mis. `smashhallPhoto('hero-v2')` → `/assets/templates/photos/smashhall-hero-v2-1920.webp`. */
 export const smashhallPhoto = (name: string): string => SMASHHALL_PHOTOS.src(`smashhall-${name}`);

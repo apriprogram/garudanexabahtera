@@ -172,7 +172,7 @@ describe('SmashHall: skema & konten bawaan', () => {
     expect(c.brand.accent_color).toBe('#F0542D');
     expect(c.contact.whatsapp).toBe('081234567890');
     expect(c.contact.email).toBe('halo@smashhall.test');
-    expect(c.hero.image).toBe('/assets/templates/photos/smashhall-hero-1920.webp');
+    expect(c.hero.image).toBe('/assets/templates/photos/smashhall-hero-v2-1920.webp');
     for (const s of def.sections) if (s.key !== 'brand') expect(c[s.key].enabled, s.key).toBe(true);
     const photos = JSON.stringify(c).match(/\/assets\/templates\/photos\/[a-z0-9-]+\.webp/g) ?? [];
     for (const src of photos) expect(SMASHHALL_PHOTOS.asset(src), src).not.toBeNull();
@@ -212,7 +212,7 @@ describe('SmashHall: skema & konten bawaan', () => {
 
   it('foto demo ringan: hero 800/1280/1920, WebP ≤ 140 KB per file (800w ≤ 90 KB), total ≤ 2,5 MB', () => {
     expect(SMASHHALL_PHOTOS.asset(def.defaultContent.hero.image as string)!.srcSet).toBe(
-      '/assets/templates/photos/smashhall-hero-800.webp 800w, /assets/templates/photos/smashhall-hero-1280.webp 1280w, /assets/templates/photos/smashhall-hero-1920.webp 1920w',
+      '/assets/templates/photos/smashhall-hero-v2-800.webp 800w, /assets/templates/photos/smashhall-hero-v2-1280.webp 1280w, /assets/templates/photos/smashhall-hero-v2-1920.webp 1920w',
     );
     let total = 0;
     for (const key of SMASHHALL_PHOTOS.keys) {
@@ -473,7 +473,7 @@ describe('SmashHall: demo', () => {
     expect(hero.querySelector('h1')!.textContent).toBe('Main, latihan, dan bertanding di satu GOR');
     expect(hero.querySelector('h1 span')!.textContent).toBe('satu GOR');
     const img = hero.querySelector<HTMLImageElement>('img[fetchpriority="high"]')!;
-    expect(img.getAttribute('src')).toBe('/assets/templates/photos/smashhall-hero-1920.webp');
+    expect(img.getAttribute('src')).toBe('/assets/templates/photos/smashhall-hero-v2-1920.webp');
     expect(img.getAttribute('srcset')).toContain(' 800w');
     expect(img.getAttribute('srcset')).toContain(' 1280w');
     expect(img.getAttribute('loading')).toBe('eager');
@@ -495,7 +495,7 @@ describe('SmashHall: demo', () => {
     expect(hero.querySelector('h1')!.className).toMatch(/(^|\s)text-white\s.*@5xl:text-\[#171512\]/);
     expect(img.getAttribute('sizes')).toBe('(min-width: 1024px) 100vw, (min-width: 768px) 1180px, 960px');
     const eager = Array.from(container.querySelectorAll('img')).filter((i) => i.getAttribute('loading') !== 'lazy');
-    expect(eager.map((i) => i.getAttribute('src'))).toEqual(['/assets/templates/photos/smashhall-hero-1920.webp']);
+    expect(eager.map((i) => i.getAttribute('src'))).toEqual(['/assets/templates/photos/smashhall-hero-v2-1920.webp']);
     expect(within(hero).getByRole('link', { name: 'Cek Lapangan' })).toHaveAttribute('href', '#availability');
     expect(within(hero).getByRole('link', { name: 'Gabung Member' })).toHaveAttribute('href', '#membership');
     // Strip: 8 lapangan × 6 jam (Rabu: 10 slot penuh), legenda, catatan contoh, tautan ke tabel, ringkasan pembaca layar
