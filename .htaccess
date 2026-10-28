@@ -72,10 +72,6 @@ DirectoryIndex index.html
   RewriteCond %{THE_REQUEST} ^\S+\s+[^?\s]*%
   RewriteRule ^/*404\.html$ - [G,L,NC]
 
-  # Frontend memanggil /api/ai-chat (jalur Node); di PHP itu action=ai_chat. Sebelum aturan garis miring di bawah,
-  # supaya POST ke /api/ai-chat/ tidak dialihkan.
-  RewriteRule ^api/ai-chat/?$ api.php?action=ai_chat [QSA,L]
-
   # ── Host utama garudanexa.com (docs/platform/SEO-PLAN.md §5.2). Domain pembeli tidak terkena aturan ini. ──
 
   # Garis miring di akhir → tanpa garis miring (301, satu lompatan), kecuali folder nyata (assets/, …)
