@@ -24,7 +24,7 @@ function Steps({ steps }: { steps: ListItem[] }) {
           <span aria-hidden className="mc-t-num row-span-2 font-[family-name:var(--tpl-font-display)] font-bold tabular-nums text-(--tpl-accent-ink)">
             {i + 1}
           </span>
-          <h3 className={`self-center @3xl:mt-4 ${T.h3} ${C.ink}`}>{field(step, 'title')}</h3>
+          <h3 className={`self-center @3xl:mt-4 @3xl:self-start ${T.h3} ${C.ink}`}>{field(step, 'title')}</h3>
           {field(step, 'text') && <p className={`col-start-2 mt-1 @3xl:mt-2 ${T.body} ${C.muted}`}>{field(step, 'text')}</p>}
         </Reveal>
       ))}

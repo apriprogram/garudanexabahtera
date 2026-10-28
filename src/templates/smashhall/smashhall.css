@@ -1,16 +1,36 @@
 /*
- * CSS lokal SmashHall (diimpor ./SmashHall.tsx): lapisan putih hero (HP: pudar di atas panel foto; layar lebar: dari
- * kiri), pola arsir sel "penuh", buka-tutup akordeon, dan gerak khas: kok "di-smash" melengkung lalu mendarat di ikon
- * strip ketersediaan (sekali, 1,4 dtk), pil strip & titik tabel terisi bergelombang, garis waktu kejuaraan tumbuh sekali,
- * dan harga paket memudar saat periode diganti. Keadaan bawaan = keadaan akhir (kok di strip, pil penuh, garis utuh);
- * animasi hanya bila root template ber-data-tpl-motion="on" (demo & situs live). Pratinjau CMS, prefers-reduced-motion,
- * dan cetak → statis. Foto hero (LCP) tidak pernah dianimasikan. Tanpa bayangan.
+ * CSS lokal SmashHall (diimpor ./SmashHall.tsx): lapisan hero (HP/tablet: tinta yang menggelap dari jendela foto ke
+ * teks putih; layar lebar: putih dari kiri), pola arsir sel "penuh", buka-tutup akordeon, dan gerak khas: kok
+ * "di-smash" melengkung lalu mendarat di ikon strip ketersediaan (sekali, 1,4 dtk), pil strip & titik tabel terisi
+ * bergelombang, garis waktu kejuaraan tumbuh sekali, dan harga paket memudar saat periode diganti. Keadaan bawaan =
+ * keadaan akhir (kok di strip, pil penuh, garis utuh); animasi hanya bila root template ber-data-tpl-motion="on" (demo
+ * & situs live). Pratinjau CMS, prefers-reduced-motion, dan cetak → statis. Foto hero (LCP) tidak pernah dianimasikan.
+ * Tanpa bayangan.
  */
 
 @layer components {
-  /* Lapisan putih hero. HP: pudar singkat di tepi atas panel foto (sambungan ke blok teks putih). */
+  /* Lapisan hero HP/tablet (< 64rem): jendela foto atas hampir bening (pemain terlihat), lalu tinta #171512 menggelap
+     ke ≥ 0,86 tepat di label teks (teks putih ≥ 7:1, putih 80% ≥ 6:1, kata sorot --sh-bright ≥ 3:1 walau piksel foto
+     putih), dan pekat penuh di dasar kotak foto sehingga menyatu dengan latar tinta hero. Posisi dari var section. */
   .sh-hero-scrim {
-    background: linear-gradient(180deg, #ffffff 0, rgb(255 255 255 / 0) 72px);
+    background: linear-gradient(
+      180deg,
+      rgb(23 21 18 / 0.16) 0,
+      rgb(23 21 18 / 0) 64px,
+      rgb(23 21 18 / 0.04) calc(var(--sh-win, 272px) - 150px),
+      rgb(23 21 18 / 0.5) calc(var(--sh-win, 272px) - 56px),
+      rgb(23 21 18 / 0.86) var(--sh-win, 272px),
+      rgb(23 21 18 / 0.9) calc(var(--sh-win, 272px) + 90px),
+      rgb(23 21 18 / 0.93) calc(var(--sh-photo, 540px) - 90px),
+      #171512 var(--sh-photo, 540px)
+    );
+  }
+
+  /* Cincin fokus putih di atas lapisan gelap HP/tablet (layar lebar: cincin aksen bawaan di atas lapisan putih) */
+  @container (max-width: 63.99rem) {
+    [data-tpl-root] .sh-hero-copy :focus-visible {
+      outline-color: #ffffff;
+    }
   }
 
   /* Layar lebar: putih ≥ 0,97 di bawah kolom teks (teks gelap ≥ 14:1 walau piksel foto hitam), lalu pudar cepat */
@@ -27,11 +47,23 @@
     }
   }
 
-  /* Titik awal kok relatif ke lencana strip (kanan atas): masuk dari tepi kanan di atas foto, tidak melintasi teks */
+  /* Titik awal kok relatif ke lencana strip (kanan atas), tidak pernah melintasi teks hero. HP: dari tepi KIRI
+     menyeberangi celah kosong 76 px di atas strip dengan lengkung rendah (--sh-rs -1 = kok dicerminkan, gabus di depan);
+     tablet: lengkung tinggi dari kanan di sisi kanan (kolom teks di kiri); layar lebar: dari kanan atas di atas foto. */
   .sh-slot {
-    --sh-fx: 34cqw;
-    --sh-fy0: -230px;
-    --sh-fyp: -290px;
+    --sh-fx: -76cqw;
+    --sh-fy0: -6px;
+    --sh-fyp: -40px;
+    --sh-rs: -1;
+  }
+
+  @container (min-width: 48rem) {
+    .sh-slot {
+      --sh-rs: 1;
+      --sh-fx: 14cqw;
+      --sh-fy0: -300px;
+      --sh-fyp: -370px;
+    }
   }
 
   @container (min-width: 64rem) {
@@ -168,17 +200,18 @@
   }
 }
 
-/* Gabus selalu di depan: menghadap kiri-atas saat naik, kiri-bawah saat jatuh, lalu tegak di strip. Selama terbang kok
-   tampil lebih besar (terlihat jelas di atas foto), lalu mengecil ke ukuran lencana saat mendarat. */
+/* Gabus selalu di depan: menghadap kiri-atas saat naik, kiri-bawah saat jatuh, lalu tegak di strip (HP: --sh-rs -1 →
+   dicerminkan, kok terbang ke kanan). Selama terbang kok tampil lebih besar (terlihat jelas di atas foto), lalu
+   mengecil ke ukuran lencana saat mendarat. */
 @keyframes sh-spin {
   0% {
-    transform: rotate(125deg) scale(1.9);
+    transform: rotate(calc(125deg * var(--sh-rs, 1))) scale(1.9);
   }
   36% {
-    transform: rotate(90deg) scale(1.8);
+    transform: rotate(calc(90deg * var(--sh-rs, 1))) scale(1.8);
   }
   86% {
-    transform: rotate(40deg) scale(1.25);
+    transform: rotate(calc(40deg * var(--sh-rs, 1))) scale(1.25);
   }
   100% {
     transform: rotate(0deg) scale(1);

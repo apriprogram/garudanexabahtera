@@ -39,7 +39,8 @@ export function Tournaments({ m }: { m: SparringModel }) {
                   zoom
                   sizes="(min-width: 1024px) 30vw, 100vw"
                   className="aspect-[16/10] rounded-[14px] @5xl:aspect-[4/5]"
-                  imgClassName="object-[50%_60%]"
+                  // Foto tegak 4:5: potongan 16:10 di HP diambil dari atas agar kepala pemain tidak terpotong
+                  imgClassName="object-[50%_12%] @5xl:object-center"
                 />
               </Reveal>
             )}

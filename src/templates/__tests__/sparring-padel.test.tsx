@@ -662,12 +662,13 @@ describe('Sparring Padel: demo', () => {
     expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('lapangan: pita biru-malam, tab Indoor/Outdoor dengan jumlah, kartu gelap radius 14 dengan spesifikasi', () => {
+  it('lapangan: pita biru-malam, tab Indoor/Outdoor tanpa angka, kartu gelap radius 14 dengan spesifikasi', () => {
     const courts = section(demo(), 'courts');
     expect(courts.getAttribute('data-tpl-tone')).toBe('inverse');
     const tablist = within(courts).getByRole('tablist', { name: 'Jenis lapangan' });
     const tabs = within(tablist).getAllByRole('tab');
-    expect(tabs.map((t) => t.textContent)).toEqual(['Indoor2', 'Outdoor2']);
+    // Tanpa jumlah kartu: "Court 1–2" dihitung 1 kartu, jadi angka di tab bertentangan dengan subjudul (4 + 2 lapangan)
+    expect(tabs.map((t) => t.textContent)).toEqual(['Indoor', 'Outdoor']);
     const names = () => Array.from(courts.querySelectorAll('article h3')).map((h) => h.textContent);
     expect(names()).toEqual(['Court 1–2 Panorama', 'Court 3–4 Arena']);
     const card = courts.querySelector('article')!;

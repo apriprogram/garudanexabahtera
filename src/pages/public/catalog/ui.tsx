@@ -1,7 +1,7 @@
 // Komponen bersama halaman katalog /template, kategori /template/kategori/{slug} dan detail template
 // (docs/platform/SEO-PLAN.md §5.5). Semua tautan berupa <a href> asli (Link) supaya terbaca crawler di HTML prerender.
 import { ChevronDown, ChevronRight, CircleCheck } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { findNewestSlug } from '../../../components/sections/templates/catalog';
 import { TemplateShot } from '../../../components/sections/templates/TemplateShot';
@@ -91,9 +91,25 @@ export function CategoryChips({
   total: number;
 }) {
   const shown = categories.filter((meta) => (counts[meta.slug] ?? 0) > 0 || meta.slug === active);
+  const navRef = useRef<HTMLElement>(null);
+  // Baris geser (di bawah lg): chip aktif digeser ke dalam layar, mis. kategori terakhir di halaman kategorinya.
+  // Hanya scrollLeft milik baris chip, halaman tidak ikut bergulir.
+  useEffect(() => {
+    const nav = navRef.current;
+    const chip = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !chip || nav.scrollWidth <= nav.clientWidth) return;
+    // nav `relative` = offsetParent chip, jadi offsetLeft dihitung dari tepi isi baris (tidak terpengaruh scroll)
+    const left = chip.offsetLeft;
+    if (left + chip.offsetWidth > nav.scrollLeft + nav.clientWidth || left < nav.scrollLeft) nav.scrollLeft = Math.max(0, left - 20);
+  }, [active]);
   return (
-    <nav aria-label="Kategori template" className="-mx-5 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-1 sm:px-1 [&::-webkit-scrollbar]:hidden">
-      <ul className="flex w-max gap-2 py-1.5">
+    // Layar lebar: chip turun baris (11 kategori tidak muat satu baris di 1440 px); HP & tablet: satu baris geser
+    <nav
+      ref={navRef}
+      aria-label="Kategori template"
+      className="relative -mx-5 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-1 sm:px-1 lg:overflow-visible [&::-webkit-scrollbar]:hidden"
+    >
+      <ul className="flex w-max gap-2 py-1.5 lg:w-auto lg:flex-wrap">
         <li>
           <Link to={HUB_PATHS.catalog} aria-current={active === null ? 'page' : undefined} className={chipClass}>
             Semua

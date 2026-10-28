@@ -128,7 +128,8 @@ function Notifications({ m }: { m: PaynowModel }) {
           style={{ '--pn-at': `${NOTIF_DELAYS[i]}s` } as CSSProperties}
           className={`pn-notif absolute z-10 ${NOTIF_POS[i]}`}
         >
-          <div className="flex items-start gap-2.5 rounded-[18px] bg-white/[0.94] p-3 ring-1 ring-inset ring-white/60 backdrop-blur-md">
+          {/* Putih pekat: kartu menumpuk di atas baris transaksi mockup, teks di belakangnya tidak boleh tembus */}
+          <div className="flex items-start gap-2.5 rounded-[18px] bg-white p-3 ring-1 ring-inset ring-white/60">
             <span aria-hidden className="pn-grad flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white">
               <CircleCheck className="h-4 w-4" strokeWidth={2.4} />
             </span>

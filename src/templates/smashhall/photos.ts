@@ -1,7 +1,8 @@
 // Registry foto demo SmashHall (GOR SmashHall, GOR & klub badminton FIKTIF di Bandung). Semua foto asli dari Unsplash
 // (Unsplash License, bukan Unsplash+), WebP teroptimasi, kredit di public/assets/templates/photos/CREDITS.md (section
-// "SmashHall"). Logo merek, bendera, dan tulisan spanduk yang masih terbaca dikaburkan (blur) saat dipotong; foto hero
-// dicerminkan agar pemain berada di sisi kanan (teks hero di kiri).
+// "SmashHall"). Logo merek, bendera, dan papan tulisan di foto hero & anak dihapus dengan retus klon (tanpa noda blur);
+// di foto lain tulisan spanduk/logo yang masih terbaca dikaburkan saat dipotong. Foto hero dicerminkan agar pemain
+// berada di sisi kanan (teks hero di kiri).
 //
 // Konvensi file (kit/photos.ts):
 //   hero          → `<kunci>-1920.webp` + `-1280.webp` + `-800.webp` (16:9 1920×1080)

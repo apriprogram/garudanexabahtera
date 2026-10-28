@@ -95,8 +95,9 @@ export function Availability({ m }: { m: SmashModel }) {
         />
 
         <Reveal className="mt-10 @3xl:mt-12">
-          {/* Pilihan hari: bergulir mendatar di HP (gulir di dalam wadah ini, bukan halaman) */}
-          <div className="-mx-5 overflow-x-auto px-5 pb-1 @2xl:-mx-8 @2xl:px-8 @5xl:mx-0 @5xl:px-0">
+          {/* Pilihan hari: bergulir mendatar di HP (gulir di dalam wadah ini, bukan halaman). `relative` = wadah teks
+              sr-only (absolute) di tombol hari, supaya tidak melebarkan halaman di layar 320 px. */}
+          <div className="relative -mx-5 overflow-x-auto px-5 pb-1 @2xl:-mx-8 @2xl:px-8 @5xl:mx-0 @5xl:px-0">
             <div role="tablist" aria-label="Pilih hari" className="flex w-max gap-2 @5xl:w-full">
               {days.map((d, i) => {
                 const current = i === dayIndex;

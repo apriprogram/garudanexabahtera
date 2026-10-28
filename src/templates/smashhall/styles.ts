@@ -60,6 +60,8 @@ export const BTN = {
   ink: `${BUTTON} bg-[#171512] text-white hover:bg-[#2B2823]`,
   /** Garis putih di pita gelap */
   ghostDark: `${BUTTON} bg-transparent text-white ring-1 ring-inset ring-white/60 hover:bg-white/10`,
+  /** Hero: garis putih di atas lapisan gelap foto (HP/tablet); ≥ 64rem kembali seperti `ghost` dengan isi putih 70% */
+  ghostPhoto: `${BUTTON} bg-transparent text-white ring-1 ring-inset ring-white/60 hover:bg-white/10 @5xl:bg-white/70 @5xl:text-[#171512] @5xl:ring-[#171512]/80 @5xl:hover:bg-[#171512]/[0.05]`,
   md: 'h-11 px-5 text-[14.5px]',
   lg: 'h-12 px-6 text-[15px] @3xl:h-[52px] @3xl:px-7',
 } as const;

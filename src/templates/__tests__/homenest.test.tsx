@@ -630,7 +630,8 @@ describe('HomeNest: demo', () => {
     expect(img.getAttribute('src')).toBe('/assets/templates/photos/homenest-hero-1920.webp');
     expect(img.getAttribute('srcset')).toContain(' 800w');
     expect(img.getAttribute('srcset')).toContain(' 1280w');
-    expect(img.getAttribute('sizes')).toBe('100vw');
+    // HP: foto 16:9 menutupi kotak tegak → tergambar ±2,5× lebar layar (tanpa ini HP memuat varian 800 yang buram)
+    expect(img.getAttribute('sizes')).toBe('(max-width: 767px) 255vw, 100vw');
     expect(img.getAttribute('loading')).toBe('eager');
     expect(Number(img.getAttribute('width'))).toBe(1920);
     expect(Number(img.getAttribute('height'))).toBe(1080);

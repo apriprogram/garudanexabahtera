@@ -780,7 +780,7 @@ describe('SpecialistPlus: demo', () => {
     expect(heads).toHaveLength(5);
     expect(heads.every((th) => th.getAttribute('scope') === 'col' && /(^|\s)@5xl:sticky(\s|$)/.test(th.className))).toBe(true);
     expect(heads.some((th) => /(^|\s)sticky(\s|$)/.test(th.className))).toBe(false);
-    expect(heads[2].textContent).toBe('PKT-BEksekutifRp1.750.000Usia 35 tahun ke atas± 3 jamDisarankan usia 40+');
+    expect(heads[2].textContent).toBe('PKT-BEksekutifRp1.750.000Usia 35 tahun ke atas± 3 jamDisarankan usia 35+');
     expect(heads[2].className).toContain('color-mix(in_srgb,var(--tpl-accent)_7%,white)');
     expect(heads[1].className).not.toContain('color-mix');
     const rowHeads = Array.from(table.querySelectorAll('tbody th'));

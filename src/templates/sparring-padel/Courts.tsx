@@ -124,10 +124,8 @@ export function Courts({ m }: { m: SparringModel }) {
                     i === active ? 'bg-(--tpl-accent) text-(--tpl-on-accent)' : 'text-white/75 hover:text-white'
                   }`}
                 >
+                  {/* Tanpa angka: jumlah kartu (Court 1–2, 3–4) tidak sama dengan jumlah lapangan di subjudul */}
                   {g.label}
-                  <span aria-hidden className={`font-mono text-[12px] ${i === active ? 'opacity-70' : 'text-white/50'}`}>
-                    {g.items.length}
-                  </span>
                 </button>
               ))}
             </div>

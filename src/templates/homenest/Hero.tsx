@@ -99,7 +99,8 @@ export function Hero({ m, filters, onSearch }: { m: HomeNestModel; filters: List
             alt={HOMENEST_PHOTOS.alt(image, `Rumah yang dipasarkan ${m.companyName}`)}
             priority
             fallback="none"
-            sizes="100vw"
+            // HP: foto 16:9 menutupi kotak tegak (±390×557) sehingga tergambar ±2,5× lebar layar
+            sizes="(max-width: 767px) 255vw, 100vw"
             className="absolute inset-0"
             imgClassName="object-[42%_50%] @3xl:object-[46%_50%]"
           />

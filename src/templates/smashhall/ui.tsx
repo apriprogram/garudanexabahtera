@@ -10,18 +10,25 @@ import { ICONS, iconKey } from './icons';
 import { ShuttleIcon } from './marks';
 import { BTN, C, GRID_GAP, LABEL, TYPE_S } from './styles';
 
-export type Tone = 'light' | 'dark';
+/** `photo` = teks di atas foto hero: terang di atas lapisan gelap (HP/tablet), gelap di atas lapisan putih (≥ 64rem). */
+export type Tone = 'light' | 'dark' | 'photo';
+
+/** Label hero HP: spasi huruf sedikit lebih rapat agar muat satu baris di layar 375–390 px (≥ 48rem kembali 0,14em). */
+const LABEL_PHOTO = LABEL.replace('tracking-[0.14em]', 'tracking-[0.08em] @3xl:tracking-[0.14em]');
 
 /** Label section: ikon kok (warna tema) + label kapital. Label kosong → tidak dirender. */
 export function SectionLabel({ label, tone = 'light', className = '' }: { label: string; tone?: Tone; className?: string }) {
   if (!label) return null;
-  const dark = tone === 'dark';
+  const text = tone === 'dark' ? 'text-white/75' : tone === 'photo' ? 'text-white/80 @5xl:text-[#5A564F]' : C.muted;
+  const chip =
+    tone === 'dark'
+      ? 'bg-white/10 text-(--sh-bright)'
+      : tone === 'photo'
+        ? 'bg-white/[0.12] text-(--sh-bright) @5xl:bg-(--tpl-accent-50) @5xl:text-(--tpl-accent-ink)'
+        : 'bg-(--tpl-accent-50) text-(--tpl-accent-ink)';
   return (
-    <p className={`flex min-w-0 items-center gap-2.5 ${LABEL} ${dark ? 'text-white/75' : C.muted} ${className}`}>
-      <span
-        aria-hidden
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${dark ? 'bg-white/10 text-(--sh-bright)' : 'bg-(--tpl-accent-50) text-(--tpl-accent-ink)'}`}
-      >
+    <p className={`flex min-w-0 items-center gap-2.5 ${tone === 'photo' ? LABEL_PHOTO : LABEL} ${text} ${className}`}>
+      <span aria-hidden className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${chip}`}>
         <ShuttleIcon className="h-4 w-4 rotate-[-30deg]" />
       </span>
       <span className="min-w-0 text-balance">{label}</span>
@@ -37,7 +44,7 @@ export function Highlighted({ title, highlight, tone = 'light' }: { title: strin
   return (
     <>
       {before}
-      <span className={tone === 'dark' ? 'text-(--sh-bright)' : 'text-(--tpl-accent-ink)'}>{mark}</span>
+      <span className={tone === 'dark' ? 'text-(--sh-bright)' : tone === 'photo' ? 'text-(--sh-bright) @5xl:text-(--tpl-accent-ink)' : 'text-(--tpl-accent-ink)'}>{mark}</span>
       {after}
     </>
   );
@@ -97,7 +104,7 @@ export function SectionHead({
   );
 }
 
-type Variant = keyof Pick<typeof BTN, 'primary' | 'ghost' | 'ink' | 'ghostDark'>;
+type Variant = keyof Pick<typeof BTN, 'primary' | 'ghost' | 'ink' | 'ghostDark' | 'ghostPhoto'>;
 
 /** Tombol rounded-xl (+ panah untuk tombol utama). Tanpa label atau aksi → tidak dirender. */
 export function ButtonLink({

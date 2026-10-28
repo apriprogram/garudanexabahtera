@@ -135,7 +135,7 @@ export const specialistplusContent: SiteContent = {
     note: 'Harga contoh. Puasa 10–12 jam sebelum pemeriksaan darah.',
     packages: [
       { code: 'A', name: 'Dasar', price: 'Rp650.000', audience: 'Usia 18–35 tahun', duration: '± 2 jam', badge: '' },
-      { code: 'B', name: 'Eksekutif', price: 'Rp1.750.000', audience: 'Usia 35 tahun ke atas', duration: '± 3 jam', badge: 'Disarankan usia 40+' },
+      { code: 'B', name: 'Eksekutif', price: 'Rp1.750.000', audience: 'Usia 35 tahun ke atas', duration: '± 3 jam', badge: 'Disarankan usia 35+' },
       { code: 'C', name: 'Jantung', price: 'Rp2.400.000', audience: 'Riwayat hipertensi atau kolesterol', duration: '± 3,5 jam', badge: '' },
       { code: 'D', name: 'Wanita', price: 'Rp1.950.000', audience: 'Pemeriksaan khusus wanita', duration: '± 3 jam', badge: '' },
     ],

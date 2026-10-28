@@ -484,6 +484,16 @@ describe('SmashHall: demo', () => {
     expect(img.closest('.tpl-reveal, [data-reveal]')).toBeNull();
     expect(img.className).not.toMatch(/tpl-photo|sh-/);
     expect(hero.querySelector('.sh-hero-scrim')).not.toBeNull();
+    // HP/tablet: foto tetap latar di belakang teks (kotak foto & lapisan tinta membentang di belakang baris teks), teks
+    // putih di atas lapisan gelap; ≥ 64rem kembali teks tinta di atas lapisan putih. sizes = lebar potongan HP/tablet.
+    const photoBox = img.parentElement!;
+    expect(photoBox.className).toMatch(/\brow-start-1\b/);
+    expect(photoBox.className).toMatch(/\brow-end-3\b/);
+    expect(hero.querySelector('.sh-hero-scrim')!.className).toMatch(/\brow-start-1\b.*\brow-end-3\b/);
+    expect(hero.className).toContain('bg-[#171512]');
+    expect(hero.className).toContain('@5xl:bg-white');
+    expect(hero.querySelector('h1')!.className).toMatch(/(^|\s)text-white\s.*@5xl:text-\[#171512\]/);
+    expect(img.getAttribute('sizes')).toBe('(min-width: 1024px) 100vw, (min-width: 768px) 1180px, 960px');
     const eager = Array.from(container.querySelectorAll('img')).filter((i) => i.getAttribute('loading') !== 'lazy');
     expect(eager.map((i) => i.getAttribute('src'))).toEqual(['/assets/templates/photos/smashhall-hero-1920.webp']);
     expect(within(hero).getByRole('link', { name: 'Cek Lapangan' })).toHaveAttribute('href', '#availability');

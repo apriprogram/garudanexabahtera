@@ -2,10 +2,13 @@
 // kanan), lapisan putih dari kiri sehingga teks gelap terbaca (≥ 14:1), label berikon kok, H1 Sora dengan kata
 // berwarna, deskripsi, dua tombol ("Cek Lapangan" ke tabel ketersediaan, "Gabung Member"), lalu STRIP KACA
 // ketersediaan hari ini yang menempel di dasar foto: 8 lapangan × jam sebagai pil kecil (kosong = warna tema, penuh =
-// abu), legenda, catatan "contoh data", dan tautan ke jadwal lengkap. HP: teks di blok putih di atas, foto terlihat di
-// bawahnya, strip (4 × 2 lapangan) menumpang di dasar foto; tombol penuh-lebar.
-// Gerak khas (./smashhall.css): kok "di-smash" melengkung dari kanan atas lalu mendarat di ikon strip (sekali,
-// 1,4 dtk), lalu pil terisi bergelombang. Foto hero (LCP) TIDAK pernah disembunyikan atau dianimasikan.
+// abu), legenda, catatan "contoh data", dan tautan ke jadwal lengkap.
+// HP & tablet (< 64rem): foto tetap LATAR di belakang teks. Kotak foto setinggi --sh-photo di puncak hero (pemain
+// terlihat jelas di "jendela" --sh-win teratas), lapisan tinta menggelap ke bawah (≥ 0,86 di bawah teks) lalu menyatu
+// dengan latar tinta hero; teks putih, kata sorot --sh-bright, tombol penuh-lebar, strip putih (4 × 2 lapangan) di dasar.
+// Gerak khas (./smashhall.css): kok "di-smash" melengkung lalu mendarat di ikon strip (sekali, 1,4 dtk; tablet &
+// layar lebar dari kanan atas di atas foto, HP dari tepi kiri menyeberangi celah kosong di atas strip, tidak pernah
+// melintasi teks), lalu pil terisi bergelombang. Foto hero (LCP) TIDAK pernah disembunyikan atau dianimasikan.
 import type { CSSProperties } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
@@ -30,7 +33,7 @@ function HeroStrip({ m }: { m: SmashModel }) {
   const note = text(hero, 'strip_note');
 
   return (
-    <div data-sh-strip="" className="relative rounded-[20px] bg-white/[0.88] p-4 ring-1 ring-[#171512]/[0.08] backdrop-blur-md @3xl:p-5 @5xl:px-6 @5xl:pt-7">
+    <div data-sh-strip="" className="relative rounded-[20px] bg-white p-4 @5xl:bg-white/[0.88] ring-1 ring-[#171512]/[0.08] backdrop-blur-md @3xl:p-5 @5xl:px-6 @5xl:pt-7">
       {/* Tempat mendarat kok yang "di-smash" (gerak khas): lencana bulat di tepi atas kanan strip, di atas foto, jadi
           lintasan kok tidak melewati teks hero. Diam = kok tegak di dalam lencana. */}
       <span
@@ -39,7 +42,7 @@ function HeroStrip({ m }: { m: SmashModel }) {
       >
         <span className="sh-fly absolute inset-0 flex items-center justify-center">
           <span className="sh-fly-y flex items-center justify-center">
-            <ShuttleIcon className="sh-spin h-6 w-6 text-(--tpl-accent-ink) @5xl:h-7 @5xl:w-7" />
+            <ShuttleIcon className="sh-spin h-6 w-6 text-(--tpl-accent) @5xl:h-7 @5xl:w-7 @5xl:text-(--tpl-accent-ink)" />
           </span>
         </span>
       </span>
@@ -100,51 +103,52 @@ export function Hero({ m }: { m: SmashModel }) {
     <TemplateSection
       sectionKey="hero"
       data-hero-layout="rally"
-      className="relative isolate grid grid-cols-1 grid-rows-[auto_auto] overflow-hidden bg-white @5xl:min-h-[max(640px,min(calc(100svh-76px),800px))] @5xl:grid-rows-[1fr_auto]"
+      className="relative isolate grid grid-cols-1 grid-rows-[auto_auto] overflow-hidden bg-[#171512] [--sh-photo:540px] [--sh-win:272px] @3xl:[--sh-photo:660px] @3xl:[--sh-win:340px] @5xl:min-h-[max(640px,min(calc(100svh-76px),800px))] @5xl:grid-rows-[1fr_auto] @5xl:bg-white"
     >
-      {/* Foto latar = LCP: eager + fetchpriority high, tanpa reveal/zoom/parallax. HP: panel di bawah teks (di belakang
-          strip); layar lebar: latar seluruh hero di belakang lapisan putih kiri. */}
+      {/* Foto latar = LCP: eager + fetchpriority high, tanpa reveal/zoom/parallax. HP/tablet: kotak setinggi --sh-photo
+          di puncak hero (pemain di jendela atas, sisanya di bawah lapisan tinta); layar lebar: latar seluruh hero di
+          belakang lapisan putih kiri. */}
       <KitPhoto
         src={image}
         alt={SMASHHALL_PHOTOS.alt(image, `Suasana bermain bulu tangkis di ${m.companyName}`)}
         priority
         fallback="tint"
-        // HP: panel 390 × ± 430 px memotong foto 16:9 → lebar gambar ± 2 × lebar layar
-        sizes="(min-width: 1024px) 100vw, 200vw"
-        className="col-start-1 row-start-2 min-h-[420px] @5xl:row-start-1 @5xl:row-end-3 @5xl:min-h-0"
-        imgClassName="object-[61%_30%] @5xl:origin-[0%_60%] @5xl:scale-[1.1] @5xl:object-[62%_45%]"
+        // HP: kotak 390 × 540 px memotong foto 16:9 → lebar gambar ± 960 px; tablet 660 px → ± 1170 px
+        sizes="(min-width: 1024px) 100vw, (min-width: 768px) 1180px, 960px"
+        className="col-start-1 row-start-1 row-end-3 h-(--sh-photo) self-start @5xl:h-auto @5xl:self-stretch"
+        imgClassName="object-[71%_50%] @3xl:object-[86%_50%] @5xl:origin-[0%_60%] @5xl:scale-[1.1] @5xl:object-[62%_45%]"
       />
-      <div aria-hidden className="sh-hero-scrim pointer-events-none relative col-start-1 row-start-2 @5xl:row-start-1 @5xl:row-end-3" />
+      <div aria-hidden className="sh-hero-scrim pointer-events-none relative col-start-1 row-start-1 row-end-3" />
 
-      <div className="relative col-start-1 row-start-1 @5xl:flex @5xl:items-center">
-        <div className={`${CONTAINER} pb-8 pt-9 @3xl:pb-10 @3xl:pt-12 @5xl:py-14`}>
+      <div className="sh-hero-copy relative col-start-1 row-start-1 @5xl:flex @5xl:items-center">
+        <div className={`${CONTAINER} pt-(--sh-win) @5xl:py-14`}>
           <div className="min-w-0 @5xl:max-w-[min(600px,46%)] @min-[96rem]:max-w-[660px]">
             {eyebrow && (
               <Reveal variant="fade">
-                <SectionLabel label={eyebrow} />
+                <SectionLabel label={eyebrow} tone="photo" />
               </Reveal>
             )}
-            <Reveal as="h1" delay={80} className={`${eyebrow ? 'mt-5 @5xl:mt-6' : ''} max-w-[14ch] ${TYPE_S.h1} ${C.ink}`}>
-              <Highlighted title={title} highlight={text(hero, 'highlight')} />
+            <Reveal as="h1" delay={80} className={`${eyebrow ? 'mt-5 @5xl:mt-6' : ''} max-w-[14ch] ${TYPE_S.h1} text-white @5xl:text-[#171512]`}>
+              <Highlighted title={title} highlight={text(hero, 'highlight')} tone="photo" />
             </Reveal>
             {subtitle && (
-              <Reveal as="p" delay={160} className={`mt-5 max-w-[44ch] text-pretty ${TYPE_S.lead} ${C.muted}`}>
+              <Reveal as="p" delay={160} className={`mt-5 max-w-[44ch] text-pretty ${TYPE_S.lead} text-white/80 @5xl:text-[#5A564F]`}>
                 {subtitle}
               </Reveal>
             )}
             {(primaryLabel || secondaryLabel) && (
               <Reveal delay={240} className="mt-7 flex flex-col gap-3 @xl:flex-row @xl:items-center @5xl:mt-9">
                 <ButtonLink action={m.primaryAction} label={primaryLabel} className="w-full @xl:w-auto" />
-                <ButtonLink action={m.secondaryAction} label={secondaryLabel} variant="ghost" className="w-full bg-white/70 @xl:w-auto" />
+                <ButtonLink action={m.secondaryAction} label={secondaryLabel} variant="ghostPhoto" className="w-full @xl:w-auto" />
               </Reveal>
             )}
           </div>
         </div>
       </div>
 
-      {/* HP: ruang foto lalu strip di dasar panel foto; layar lebar: strip menempel di dasar hero */}
+      {/* HP/tablet: strip di dasar hero (celah atas = lintasan kok); layar lebar: strip menempel di dasar foto */}
       <div className="relative col-start-1 row-start-2 flex flex-col justify-end">
-        <div className={`${CONTAINER} pb-5 pt-[232px] @3xl:pb-7 @3xl:pt-[300px] @5xl:pb-8 @5xl:pt-0`}>
+        <div className={`${CONTAINER} pb-5 pt-[76px] @3xl:pb-7 @3xl:pt-16 @5xl:pb-8 @5xl:pt-0`}>
           {/* Reveal (fade): gerak kok & pil dimulai saat strip benar-benar masuk layar (HP: di bawah lipatan) */}
           <Reveal variant="fade">
             <HeroStrip m={m} />
