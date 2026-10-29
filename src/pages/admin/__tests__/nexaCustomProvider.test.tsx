@@ -196,4 +196,57 @@ describe('SiteSettings: tab Tanya Nexa dengan endpoint custom', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Simpan pengaturan AI' }));
     expect(await screen.findByText(/Alamat endpoint tidak valid: pakai https:\/\//)).toBeInTheDocument();
   }, 20000);
+
+  it('"Hapus kunci tersimpan" endpoint custom minta konfirmasi dulu (pemilik 2026-10-29); membatalkan tanda langsung', async () => {
+    const posts: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input).includes('get_hero_media_limits')) return json({ success: true, video_max_mb: 30, max_images: 12 });
+        if (init?.method === 'POST') {
+          const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+          posts.push(body);
+          if (body.action === 'nexa_get_config' || body.action === 'nexa_save_config') {
+            return json({
+              success: true,
+              config: {
+                enabled: true,
+                provider: 'custom',
+                anthropic: { on: true, key_masked: '', env_key: false },
+                gemini: { on: true, key_masked: '', env_key: false },
+                custom: { on: true, key_masked: '••••3456', env_key: false, url: 'https://api.openai.com/v1', model: 'gpt-x' },
+              },
+            });
+          }
+          return json({ success: true });
+        }
+        return json({});
+      }),
+    );
+    render(
+      <MemoryRouter>
+        <SiteSettings />
+      </MemoryRouter>,
+    );
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Bagian pengaturan' })).getByRole('button', { name: 'Tanya Nexa' }));
+    expect(await screen.findByText('Kunci tersimpan: ••••3456')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus kunci tersimpan' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Hapus kunci API Endpoint custom?' });
+    expect(dialog).toHaveTextContent('Kunci tersimpan ••••3456 dihapus dari server saat kamu klik Simpan pengaturan AI.');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+    expect(await screen.findByText('Kunci tersimpan akan dihapus saat pengaturan AI disimpan.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    // Membatalkan tanda tidak menghapus apa pun: tanpa dialog
+    fireEvent.click(screen.getByRole('button', { name: 'Batal menghapus kunci' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Kunci tersimpan: ••••3456')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus kunci tersimpan' }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Hapus kunci API Endpoint custom?' })).getByRole('button', { name: 'Ya, hapus' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan pengaturan AI' }));
+    await waitFor(() => expect(posts.some((p) => p.action === 'nexa_save_config')).toBe(true));
+    expect(posts.find((p) => p.action === 'nexa_save_config')).toMatchObject({ custom: { on: true, key: null } });
+  }, 20000);
 });

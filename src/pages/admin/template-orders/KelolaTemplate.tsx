@@ -591,6 +591,14 @@ function TemplateForm({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [uploading, setUploading] = useState(false);
+  // Hapus fitur/gambar di form selalu dikonfirmasi dulu; isi dialog tetap tampil selama animasi tutup
+  const [removal, setRemoval] = useState<{ title: string; description: string; run: () => void } | null>(null);
+  const [removalOpen, setRemovalOpen] = useState(false);
+  const askRemove = (title: string, description: string, run: () => void) => {
+    setRemoval({ title, description, run });
+    setRemovalOpen(true);
+  };
+  const UNSAVED_NOTE = 'Perubahan baru tersimpan setelah kamu klik Simpan.';
   const focusKey = useRef<string | null>(null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
@@ -867,7 +875,18 @@ function TemplateForm({
                   onClick={() => moveFeature(index, 1)}
                   className="max-sm:hidden"
                 />
-                <IconButton icon={<X />} label={`Hapus fitur ${index + 1}`} size="sm" variant="danger-ghost" onClick={() => removeFeature(item.key)} />
+                <IconButton
+                  icon={<X />}
+                  label={`Hapus fitur ${index + 1}`}
+                  size="sm"
+                  variant="danger-ghost"
+                  onClick={() =>
+                    // Baris kosong tidak berisi apa pun, jadi langsung dihapus tanpa konfirmasi
+                    item.value.trim()
+                      ? askRemove(`Hapus fitur ${index + 1}?`, `"${item.value.trim()}" dihapus dari daftar fitur. ${UNSAVED_NOTE}`, () => removeFeature(item.key))
+                      : removeFeature(item.key)
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -994,7 +1013,12 @@ function TemplateForm({
                   </span>
                 </label>
                 {form.preview_image && (
-                  <Button variant="danger-soft" size="sm" icon={<Trash2 />} onClick={() => set('preview_image', '')}>
+                  <Button
+                    variant="danger-soft"
+                    size="sm"
+                    icon={<Trash2 />}
+                    onClick={() => askRemove('Hapus gambar pratinjau?', `Gambar pratinjau dilepas dari template ini. ${UNSAVED_NOTE}`, () => set('preview_image', ''))}
+                  >
                     Hapus
                   </Button>
                 )}
@@ -1020,7 +1044,11 @@ function TemplateForm({
                     variant="secondary"
                     round
                     className="absolute right-1.5 top-1.5"
-                    onClick={() => setForm((f) => ({ ...f, gallery: f.gallery.filter((x) => x.key !== g.key) }))}
+                    onClick={() =>
+                      askRemove(`Hapus gambar galeri ${i + 1}?`, `Gambar ini dilepas dari galeri template. ${UNSAVED_NOTE}`, () =>
+                        setForm((f) => ({ ...f, gallery: f.gallery.filter((x) => x.key !== g.key) })),
+                      )
+                    }
                   />
                 </div>
               ))}
@@ -1062,6 +1090,17 @@ function TemplateForm({
           {saving ? 'Menyimpan...' : form.id ? 'Simpan perubahan' : 'Simpan template'}
         </Button>
       </ModalFooter>
+      <ConfirmDialog
+        open={removalOpen}
+        onClose={() => setRemovalOpen(false)}
+        onConfirm={() => {
+          removal?.run();
+          setRemovalOpen(false);
+        }}
+        tone="danger"
+        title={removal?.title}
+        description={removal?.description}
+      />
     </form>
   );
 }

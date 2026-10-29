@@ -11,15 +11,13 @@ import {
   BookOpen,
   Bot,
   Save,
-  CheckCircle2,
-  AlertCircle,
   Plus,
   Trash2,
   Edit2,
   RefreshCw,
   FileArchive
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import HeroSettings from './HeroSettings';
 import { NexaCustomProviderCard, type NexaCustomConfig } from './nexa/NexaCustomProviderCard';
 import { parseHeroOverlay, parseHeroTextTone } from '../../components/sections/hero/heroBgConfig';
@@ -37,10 +35,9 @@ import { DOMAIN_TLDS, HOSTING_RENEWAL_DEFAULT, HOSTING_RENEWAL_SETTING, hostingR
 import { useDomainPrices } from '../../lib/useDomainPrices';
 import {
   Button,
+  ConfirmDialog,
   Field,
-  FLOAT_PANEL,
   FOCUS_INSET,
-  IconBox,
   IconButton,
   Input,
   Modal,
@@ -69,6 +66,8 @@ import type { PortfolioItem } from '../../components/sections/projects/portfolio
 import PortfolioEditor from './portfolio/PortfolioEditor';
 import PortfolioImportDialog from './portfolio/PortfolioImportDialog';
 import { addImportedProject } from './portfolio/portfolioImport';
+import { useToast } from './template-orders/shared/hooks';
+import { Toast } from './template-orders/shared/OrderUi';
 
 /** Judul CTA bawaan (sentence case; baris kedua tampil lebih lembut di website). */
 const CTA_TITLE_DEFAULT = 'Siap membangun sistem digital?\nKonsultasikan sekarang juga!';
@@ -240,12 +239,17 @@ function InfoNote({ children }: { children: React.ReactNode }) {
   return <Panel className="space-y-2 text-sm leading-relaxed text-adm-muted">{children}</Panel>;
 }
 
-/* Gaya toast notifikasi per jenis (ikut tema lewat token). */
-const NOTIFY_TONE = {
-  success: { icon: <CheckCircle2 />, tone: 'mint' },
-  error: { icon: <AlertCircle />, tone: 'danger' },
-  warning: { icon: <AlertCircle />, tone: 'warning' },
-} as const;
+/* Daftar FAQ & proyek baru tampil di website setelah simpan global: diingatkan di notifikasi tambah/ubah/hapus. */
+const SAVE_REMINDER = 'Klik Simpan semua perubahan agar tersimpan di website.';
+
+/** Teks pendek untuk judul dialog & notifikasi (pertanyaan FAQ bisa panjang; data JSON lama bisa tanpa isian). */
+const clip = (text: string | undefined, max = 60) => {
+  const value = String(text ?? '').trim();
+  return value.length > max ? `${value.slice(0, max - 1).trimEnd()}…` : value;
+};
+
+/** Hapus yang menunggu konfirmasi: judul & keterangan dialog, lalu aksi yang dijalankan setelah "Ya, hapus". */
+type Removal = { title: string; description: string; run: () => void };
 
 /** Respons get_settings: setting_key → setting_value. Daftar di bawah disimpan sebagai string JSON. */
 type SettingsMap = Record<string, string>;
@@ -322,11 +326,17 @@ interface FaqItem {
 const SiteSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('hero');
   const [isSaving, setIsSaving] = useState(false);
-  const [notification, setNotification] = useState<{
-    type: 'success' | 'error' | 'warning';
-    message: string;
-    description: string;
-  } | null>(null);
+  // Notifikasi melayang bersama panel admin (atas tengah layar): satu untuk halaman ini, diteruskan ke tab Hero,
+  // editor & impor proyek, dan Panduan lewat prop `notify`
+  const { toast, show: notify, dismiss: dismissToast } = useToast();
+  // Setiap hapus dikonfirmasi dulu (pemilik 2026-10-29): FAQ, proyek, dan kunci AI tersimpan. Isi dialog dipertahankan
+  // selama animasi tutup.
+  const [removal, setRemoval] = useState<Removal | null>(null);
+  const [removalOpen, setRemovalOpen] = useState(false);
+  const askRemove = (title: string, description: string, run: () => void) => {
+    setRemoval({ title, description, run });
+    setRemovalOpen(true);
+  };
 
   // Urutan = urutan di website (beranda: Hero → Template → Proyek → Perbandingan → Keunggulan → FAQ → Banner CTA → Footer),
   // lalu halaman lain (harga template, Panduan). Produk & paket harga lama dihapus: tidak tampil di website (pemilik
@@ -344,11 +354,6 @@ const SiteSettings: React.FC = () => {
     { id: 'guides', label: 'Panduan', icon: BookOpen },
     { id: 'nexa', label: 'Tanya Nexa', icon: Bot },
   ];
-
-  const showNotify = useCallback((type: 'success' | 'error' | 'warning', message: string, description: string) => {
-    setNotification({ type, message, description });
-    setTimeout(() => setNotification(null), 4000);
-  }, []);
 
   // State values for all settings
   const [settings, setSettings] = useState<SettingsMap>({});
@@ -372,8 +377,8 @@ const SiteSettings: React.FC = () => {
   const handleHeroImagesProcessing = useCallback((delta: number) => setHeroImagesPending((n) => Math.max(0, n + delta)), []);
   // Pesan gambar latar yang selesai diproses setelah tab Hero ditutup (gagal dibaca, melewati batas)
   const handleHeroImageNotice = useCallback(
-    (message: string) => showNotify('warning', 'Gambar latar tidak ditambahkan', message),
-    [showNotify],
+    (message: string) => notify('warning', 'Gambar latar tidak ditambahkan', message),
+    [notify],
   );
   // Muat terakhir: simpan hanya boleh setelah get_settings berhasil, supaya muat gagal tidak menyimpan isian kosong
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'failed'>('loading');
@@ -460,11 +465,11 @@ const SiteSettings: React.FC = () => {
       return true;
     } catch (error) {
       console.error('Error fetching settings:', error);
-      showNotify('error', 'Gagal memuat pengaturan', 'Pengaturan website tidak bisa dimuat. Coba muat ulang halaman.');
+      notify('error', 'Gagal memuat pengaturan', 'Pengaturan website tidak bisa dimuat. Coba muat ulang halaman.');
       setLoadState('failed');
       return false;
     }
-  }, [showNotify]);
+  }, [notify]);
 
   useEffect(() => {
     // fetchSettings baru memanggil setState setelah await; aturan ini tidak membedakan fungsi async.
@@ -530,13 +535,32 @@ const SiteSettings: React.FC = () => {
       }
       setNexaKeys({ anthropic: '', gemini: '', custom: '' });
       setNexaClear({ anthropic: false, gemini: false, custom: false });
-      showNotify('success', 'Pengaturan AI tersimpan', 'Kunci disimpan di server dan tidak pernah ditampilkan penuh.');
+      notify('success', 'Pengaturan AI tersimpan', 'Kunci disimpan di server dan tidak pernah ditampilkan penuh.');
     } catch (error) {
       // Pesan utama server sudah menyebut alasannya (mis. "Alamat endpoint tidak valid: pakai https://…")
-      showNotify('error', 'Gagal menyimpan pengaturan AI', error instanceof ApiError ? error.message : errorMessage(error));
+      notify('error', 'Gagal menyimpan pengaturan AI', error instanceof ApiError ? error.message : errorMessage(error));
     } finally {
       setNexaSaving(false);
     }
+  };
+
+  // "Hapus kunci tersimpan" hanya menandai; kuncinya dihapus server saat pengaturan AI disimpan. Menandai dikonfirmasi
+  // dulu, membatalkan tanda tidak.
+  const toggleNexaKeyClear = (name: 'anthropic' | 'gemini' | 'custom') => {
+    if (nexaClear[name]) {
+      setNexaClear((prev) => ({ ...prev, [name]: false }));
+      return;
+    }
+    const masked = (name === 'custom' ? nexaCfg?.custom?.key_masked : nexaCfg?.[name].key_masked) ?? '';
+    const label = NEXA_PROVIDER_LABEL[name];
+    askRemove(
+      `Hapus kunci API ${label}?`,
+      `Kunci tersimpan${masked ? ` ${masked}` : ''} dihapus dari server saat kamu klik Simpan pengaturan AI.`,
+      () => {
+        setNexaClear((prev) => ({ ...prev, [name]: true }));
+        notify('info', `Kunci API ${label} akan dihapus.`, 'Klik Simpan pengaturan AI untuk menghapusnya dari server.');
+      },
+    );
   };
 
   // Saklar section: ubah daftar disabled_sections di state; ikut terkirim lewat `...settings` saat disimpan
@@ -644,7 +668,7 @@ const SiteSettings: React.FC = () => {
       }
       const data = await response.json();
       if (data.success) {
-        showNotify('success', 'Pengaturan berhasil disimpan', 'Konten website sudah diperbarui.');
+        notify('success', 'Pengaturan berhasil disimpan', 'Konten website sudah diperbarui.');
         setSettings(updatedSettings);
         // Muat ulang (path file baru dari backend, dasar latar hero baru) sebelum kunci dibuka, supaya isian yang
         // diubah selama menyimpan tidak tertimpa hasil muat ulang
@@ -660,7 +684,7 @@ const SiteSettings: React.FC = () => {
         : message.includes('HTTP')
           ? `Gagal menyimpan: ${message}`
           : "Gagal terhubung ke API. Pastikan server API berjalan (lihat 'cara menjalankan aplikasi') & cek konsol browser.";
-      showNotify('error', 'Gagal menyimpan pengaturan', msg);
+      notify('error', 'Gagal menyimpan pengaturan', msg);
     } finally {
       setIsSaving(false);
     }
@@ -682,6 +706,23 @@ const SiteSettings: React.FC = () => {
       setPortfolioList((prev) => [...prev, item]);
     }
     setIsPortfolioModalOpen(false);
+    notify(
+      'success',
+      editingPortfolioIndex !== null ? `Proyek "${clip(item.title)}" diperbarui.` : `Proyek "${clip(item.title)}" ditambahkan ke daftar.`,
+      SAVE_REMINDER,
+    );
+  };
+
+  const askDeletePortfolio = (index: number) => {
+    const name = clip(portfolioList[index]?.title);
+    askRemove(
+      name ? `Hapus proyek "${name}"?` : 'Hapus proyek ini?',
+      'Kartu proyek ini beserta detailnya hilang dari section Proyek setelah kamu klik Simpan semua perubahan.',
+      () => {
+        setPortfolioList((prev) => prev.filter((_, i) => i !== index));
+        notify('success', name ? `Proyek "${name}" dihapus dari daftar.` : 'Proyek dihapus dari daftar.', SAVE_REMINDER);
+      },
+    );
   };
 
   const handleOpenPortfolioImport = () => {
@@ -706,7 +747,7 @@ const SiteSettings: React.FC = () => {
 
   const handleSaveFaq = () => {
     if (!faqForm.question || !faqForm.answer) {
-      showNotify('warning', 'Data belum lengkap', 'Pertanyaan dan jawaban wajib diisi.');
+      notify('warning', 'Data belum lengkap', 'Pertanyaan dan jawaban wajib diisi.');
       return;
     }
     if (editingFaqIndex !== null) {
@@ -717,6 +758,19 @@ const SiteSettings: React.FC = () => {
       setFaqList(prev => [...prev, faqForm]);
     }
     setIsFaqModalOpen(false);
+    notify('success', editingFaqIndex !== null ? 'FAQ diperbarui.' : 'FAQ ditambahkan ke daftar.', SAVE_REMINDER);
+  };
+
+  const askDeleteFaq = (index: number) => {
+    const question = clip(faqList[index]?.question);
+    askRemove(
+      question ? `Hapus FAQ "${question}"?` : 'Hapus FAQ ini?',
+      'Pertanyaan dan jawabannya hilang dari section FAQ setelah kamu klik Simpan semua perubahan.',
+      () => {
+        setFaqList((prev) => prev.filter((_, i) => i !== index));
+        notify('success', 'FAQ dihapus dari daftar.', SAVE_REMINDER);
+      },
+    );
   };
 
 
@@ -743,6 +797,7 @@ const SiteSettings: React.FC = () => {
             onImagesProcessing={handleHeroImagesProcessing}
             imagesPending={heroImagesPending}
             onImageNotice={handleHeroImageNotice}
+            notify={notify}
             saving={isSaving}
             heroTextTone={heroTextTone}
             setHeroTextTone={setHeroTextTone}
@@ -816,7 +871,7 @@ const SiteSettings: React.FC = () => {
                         label={`Hapus ${item.title}`}
                         size="sm"
                         variant="danger-ghost"
-                        onClick={() => setPortfolioList(prev => prev.filter((_, i) => i !== index))}
+                        onClick={() => askDeletePortfolio(index)}
                       />
                     </div>
                   </div>
@@ -958,7 +1013,7 @@ const SiteSettings: React.FC = () => {
                       label="Hapus FAQ"
                       size="sm"
                       variant="danger-ghost"
-                      onClick={() => setFaqList(prev => prev.filter((_, i) => i !== index))}
+                      onClick={() => askDeleteFaq(index)}
                     />
                   </div>
                 </Panel>
@@ -1008,7 +1063,7 @@ const SiteSettings: React.FC = () => {
             </Panel>
 
             {/* Artikel dari database: tambah/edit/hapus tersimpan lewat tombolnya sendiri, bukan "Simpan semua perubahan" */}
-            <GuidesManager notify={showNotify} />
+            <GuidesManager notify={notify} />
           </div>
         );
 
@@ -1094,7 +1149,7 @@ const SiteSettings: React.FC = () => {
                           <button
                             type="button"
                             className="text-xs font-medium text-adm-muted underline-offset-2 hover:underline"
-                            onClick={() => setNexaClear((prev) => ({ ...prev, [name]: !prev[name] }))}
+                            onClick={() => toggleNexaKeyClear(name)}
                           >
                             {nexaClear[name] ? 'Batal menghapus kunci' : 'Hapus kunci tersimpan'}
                           </button>
@@ -1109,7 +1164,7 @@ const SiteSettings: React.FC = () => {
                     keyValue={nexaKeys.custom}
                     onKeyChange={(key) => setNexaKeys((prev) => ({ ...prev, custom: key }))}
                     clearKey={nexaClear.custom}
-                    onToggleClear={() => setNexaClear((prev) => ({ ...prev, custom: !prev.custom }))}
+                    onToggleClear={() => toggleNexaKeyClear('custom')}
                     selected={nexaCfg.provider === 'custom'}
                     savedUrl={nexaCustomSavedUrl}
                   />
@@ -1189,8 +1244,6 @@ const SiteSettings: React.FC = () => {
     }
   };
 
-  const notifyTone = notification ? NOTIFY_TONE[notification.type] : null;
-
   return (
     <div className="pb-10">
       {/* Header */}
@@ -1221,28 +1274,6 @@ const SiteSettings: React.FC = () => {
           </>
         }
       />
-
-      {/* Dynamic Notification */}
-      <AnimatePresence>
-        {notification && notifyTone && (
-          <div className="pointer-events-none fixed inset-x-4 top-4 z-[150] flex justify-center sm:top-6">
-            <motion.div
-              role={notification.type === 'error' ? 'alert' : 'status'}
-              initial={{ opacity: 0, y: -16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.18 }}
-              className={cn(FLOAT_PANEL, 'pointer-events-auto flex w-full max-w-[400px] items-start gap-3 px-4 py-3')}
-            >
-              <IconBox icon={notifyTone.icon} tone={notifyTone.tone} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-adm-fg">{notification.message}</p>
-                <p className="mt-0.5 break-words text-xs leading-relaxed text-adm-muted">{notification.description}</p>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Tabs Layout */}
       <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-[208px_minmax(0,1fr)]">
@@ -1335,6 +1366,7 @@ const SiteSettings: React.FC = () => {
         item={editingPortfolioIndex !== null ? portfolioList[editingPortfolioIndex] ?? null : null}
         onClose={() => setIsPortfolioModalOpen(false)}
         onSave={handleSavePortfolio}
+        notify={notify}
       />
       <PortfolioImportDialog
         key={`import-${portfolioImportKey}`}
@@ -1342,6 +1374,7 @@ const SiteSettings: React.FC = () => {
         existing={portfolioList}
         onClose={() => setIsPortfolioImportOpen(false)}
         onImport={(item, replace) => setPortfolioList((prev) => addImportedProject(prev, item, replace))}
+        notify={notify}
       />
 
       {/* 4. FAQ CRUD MODAL */}
@@ -1376,6 +1409,21 @@ const SiteSettings: React.FC = () => {
           />
         </Field>
       </Modal>
+
+      {/* Konfirmasi hapus FAQ, proyek, dan kunci AI (semuanya baru tersimpan lewat tombol simpannya) */}
+      <ConfirmDialog
+        open={removalOpen}
+        onClose={() => setRemovalOpen(false)}
+        onConfirm={() => {
+          removal?.run();
+          setRemovalOpen(false);
+        }}
+        tone="danger"
+        title={removal?.title}
+        description={removal?.description}
+      />
+
+      <Toast toast={toast} onClose={dismissToast} />
     </div>
   );
 };

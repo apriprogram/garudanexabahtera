@@ -11,6 +11,7 @@ import {
   type ServiceType,
   type Stage,
 } from '../../../../features/project-docs/types';
+import type { ToastTone } from '../../cms/Toast';
 
 export type Tone = 'warning' | 'brand' | 'info' | 'success' | 'danger' | 'neutral';
 
@@ -103,8 +104,15 @@ export interface ProjectFlash {
   title?: string;
   text: string;
 }
+/** Floating notification the next page shows once (the page that did the action is gone, e.g. after a revision request). */
+export interface ProjectToast {
+  tone: ToastTone;
+  message: string;
+  description?: string;
+}
 export interface ProjectNavState {
   flash?: ProjectFlash;
+  toast?: ProjectToast;
 }
 
 /** Positive integer route parameter, else null. */

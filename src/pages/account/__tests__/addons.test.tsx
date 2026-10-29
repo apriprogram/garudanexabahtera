@@ -307,6 +307,8 @@ describe('halaman /akun/fitur', UI_SUITE, () => {
     const row = await findRow();
     fireEvent.click(within(row).getByRole('button', { name: 'Beli & aktifkan' }));
     expect(await within(row).findByText('Masih ada tagihan fitur ini yang menunggu pembayaran. Bayar atau batalkan dulu.')).toBeInTheDocument();
+    // Toast gagal halaman (di luar baris) dengan pesan server
+    expect(screen.getByText('Gagal membuat tagihan fitur.').closest('[role="alert"]')).toHaveTextContent('Masih ada tagihan fitur ini');
     await waitFor(() => expect(within(row).getByRole('button', { name: 'Bayar Sekarang' })).toBeInTheDocument());
     expect(callsOf('customer_get_site_addons')).toHaveLength(2);
   });
@@ -338,6 +340,7 @@ describe('halaman /akun/fitur', UI_SUITE, () => {
     fireEvent.click(await within(row).findByRole('button', { name: 'Simulasikan pembayaran (mode uji)' }, LONG));
 
     expect(await screen.findByText(/Fitur Berita & Pengumuman aktif\./)).toBeInTheDocument();
+    expect(screen.getByText(`Simulasi pembayaran ${ADDON_NO} berhasil.`)).toBeInTheDocument();
     await waitFor(() => expect(row).toHaveTextContent('Aktif sejak 27 Oktober 2026.'));
     expect(within(row).getByRole('link', { name: 'Kelola berita' })).toHaveAttribute('href', `/akun/situs/${SITE_ID}/berita`);
     expect(within(row).getByRole('link', { name: 'Lihat nota' })).toHaveAttribute('href', `/akun/pesanan/${ORDER_NO}/nota/${ADDON_NO}`);
@@ -374,6 +377,7 @@ describe('halaman /akun/fitur', UI_SUITE, () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, batalkan' }));
     await waitFor(() => expect(row).toHaveTextContent('Terkunci'));
     expect(row).toHaveTextContent(`Tagihan ${ADDON_NO} dibatalkan.`);
+    expect(screen.getByText(`Tagihan ${ADDON_NO} berhasil dibatalkan.`)).toBeInTheDocument();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(within(row).getByRole('button', { name: 'Beli & aktifkan' })).toBeInTheDocument();
     expect(callsOf('customer_cancel_site_addon')[0].body).toEqual({ addon_number: ADDON_NO });

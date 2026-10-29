@@ -150,6 +150,31 @@ describe('Detail proyek', () => {
     expect(screen.queryByRole('region', { name: /Perlu persetujuan Anda/ })).not.toBeInTheDocument();
   });
 
+  it('toast dari halaman sebelumnya (state router) tampil sekali di atas halaman', async () => {
+    api.pdMyProject.mockResolvedValue({ success: true, project: detail({ documents: [docSummary({ status: 'selesai' })] }) });
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/akun/proyek/3',
+            state: {
+              flash: { tone: 'success', title: 'Permintaan revisi terkirim', text: 'Tim kami akan memperbaikinya.' },
+              toast: { tone: 'success', message: 'Permintaan revisi "PKS" berhasil dikirim.' },
+            },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/akun/proyek/:id" element={<MyProjectDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    // Toast tampil segera (tanpa menunggu proyek dimuat), pemberitahuan di halaman tetap ada
+    expect(screen.getByText('Permintaan revisi "PKS" berhasil dikirim.').closest('[role="status"]')).toBeInTheDocument();
+    expect(await screen.findByText('Permintaan revisi terkirim')).toBeInTheDocument();
+    expect(screen.getAllByText('Permintaan revisi "PKS" berhasil dikirim.')).toHaveLength(1);
+  });
+
   it('proyek orang lain / tidak ada → tidak ditemukan', async () => {
     api.pdMyProject.mockRejectedValue(new ApiError('Proyek tidak ditemukan.', 404, 'NOT_FOUND'));
     renderAt('/akun/proyek/99');

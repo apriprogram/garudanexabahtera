@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Folder, File, Upload, Trash2, Download,
   ChevronRight, FileText,
-  FolderPlus, Grid, List as ListIcon, X, Eye, AlertCircle, CheckCircle2
+  FolderPlus, Grid, List as ListIcon, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Button,
+  ConfirmDialog,
   EmptyState,
   FLOAT_PANEL,
   FOCUS_INSET,
@@ -21,7 +22,6 @@ import {
   PageHeader,
   Panel,
   SearchInput,
-  Spinner,
   Table,
   TableContainer,
   TBody,
@@ -34,6 +34,9 @@ import {
   cn,
   panelClass,
 } from '../../components/admin/ui';
+import { apiPost } from '../../lib/api';
+import { useToast } from './template-orders/shared/hooks';
+import { Toast } from './template-orders/shared/OrderUi';
 
 interface FileItem {
   id: string;
@@ -46,13 +49,16 @@ interface FileItem {
   created_at: string;
 }
 
-interface Notification {
-  type: 'success' | 'error' | 'info';
-  message: string;
-  id: number;
-}
-
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
+/** Baca file jadi data-URI (dikirim base64 lewat add_document). */
+const readAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 
 const Documents: React.FC = () => {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
@@ -64,15 +70,11 @@ const Documents: React.FC = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, itemId: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  const addNotification = useCallback((type: 'success' | 'error' | 'info', message: string) => {
-    const id = Date.now();
-    setNotifications(prev => [...prev, { type, message, id }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 5000);
-  }, []);
+  // Item yang akan dihapus (dialog konfirmasi terbuka)
+  const [toDelete, setToDelete] = useState<FileItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  // Notifikasi di atas tengah layar (satu sekaligus; yang terbaru menggantikan yang lama)
+  const { toast, show, dismiss } = useToast();
 
   // setState di sini hanya terjadi setelah respons API
   const loadDocuments = useCallback(async () => {
@@ -90,11 +92,11 @@ const Documents: React.FC = () => {
         throw new Error(data.error || 'Gagal memuat dokumen');
       }
     } catch (err) {
-      addNotification('error', `Gagal memuat dokumen: ${errorMessage(err)}`);
+      show('error', `Gagal memuat dokumen: ${errorMessage(err)}`);
     } finally {
       setIsLoading(false);
     }
-  }, [addNotification]);
+  }, [show]);
 
   const fetchDocuments = () => {
     setIsLoading(true);
@@ -108,93 +110,89 @@ const Documents: React.FC = () => {
     loadDocuments();
   }, [loadDocuments]);
 
+  // Aksi tulis lewat apiPost: respons gagal ({error}, HTTP bukan 2xx, koneksi putus) dilempar sebagai ApiError
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
     try {
-      const res = await fetch('/api.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'add_document',
-          name: newFolderName.trim(),
-          type: 'folder',
-          parent_id: currentFolder || null,
-          path: ''
-        })
+      await apiPost('add_document', {
+        name: newFolderName.trim(),
+        type: 'folder',
+        parent_id: currentFolder || null,
+        path: ''
       });
-      const result = await res.json();
-      if (result.success) {
-        addNotification('success', `Folder "${newFolderName}" berhasil dibuat.`);
-        fetchDocuments();
-        setNewFolderName('');
-        setIsNewFolderModalOpen(false);
-      } else {
-        addNotification('error', `Gagal membuat folder: ${result.error}`);
-      }
+      show('success', `Folder "${newFolderName}" berhasil dibuat.`);
+      fetchDocuments();
+      setNewFolderName('');
+      setIsNewFolderModalOpen(false);
     } catch (err) {
-      addNotification('error', `Gagal membuat folder: ${errorMessage(err)}`);
+      show('error', `Gagal membuat folder: ${errorMessage(err)}`);
+    }
+  };
+
+  /** Unggah satu file; hasilnya null bila berhasil, atau pesan gagalnya. */
+  const uploadFile = async (file: File, parentId: string | null): Promise<string | null> => {
+    let path: string;
+    try {
+      path = await readAsDataUrl(file);
+    } catch {
+      return `Gagal membaca file ${file.name}.`;
+    }
+    try {
+      await apiPost('add_document', {
+        name: file.name,
+        type: 'file',
+        size: file.size,
+        mime_type: file.type,
+        path,
+        parent_id: parentId
+      });
+      return null;
+    } catch (err) {
+      return `Gagal mengunggah ${file.name}: ${errorMessage(err)}`;
     }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    for (const file of Array.from(files)) {
-      addNotification('info', `Mengunggah ${file.name}...`);
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          const res = await fetch('/api.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'add_document',
-              name: file.name,
-              type: 'file',
-              size: file.size,
-              mime_type: file.type,
-              path: event.target?.result as string,
-              parent_id: currentFolder || null
-            })
-          });
-          const result = await res.json();
-          if (result.success) {
-            addNotification('success', `${file.name} berhasil diunggah.`);
-            fetchDocuments();
-          } else {
-            addNotification('error', `Gagal mengunggah ${file.name}: ${result.error}`);
-          }
-        } catch (err) {
-          addNotification('error', `Gagal mengunggah ${file.name}: ${errorMessage(err)}`);
-        }
-      };
-      reader.onerror = () => addNotification('error', `Gagal membaca file ${file.name}.`);
-      reader.readAsDataURL(file);
-    }
+    const files = Array.from(e.target.files ?? []);
     e.target.value = ''; // Reset input
+    if (files.length === 0) return;
+
+    // Notifikasi hanya satu sekaligus: beberapa file diringkas setelah semuanya selesai, supaya pesan gagal
+    // satu file tidak tertimpa pesan file lain
+    const single = files.length === 1 ? files[0] : null;
+    show('info', single ? `Mengunggah ${single.name}...` : `Mengunggah ${files.length} file...`);
+    const results = await Promise.all(files.map(file => uploadFile(file, currentFolder || null)));
+    const failures = results.filter((message): message is string => message !== null);
+    if (failures.length < files.length) fetchDocuments();
+    if (failures.length === 0) {
+      show('success', single ? `${single.name} berhasil diunggah.` : `${files.length} file berhasil diunggah.`);
+    } else if (single) {
+      show('error', failures[0]);
+    } else {
+      show('error', `${failures.length} dari ${files.length} file gagal diunggah.`, failures.join(' '));
+    }
   };
 
-  const handleDelete = async (id: string) => {
-    const item = items.find(i => String(i.id) === String(id));
-    if (!confirm(`Hapus ${item?.name}?`)) return;
-    
+  // Dipanggil tombol "Ya, hapus" di dialog konfirmasi; dialog tetap terbuka bila gagal
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setDeleting(true);
     try {
-      const res = await fetch('/api.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_document', id })
-      });
-      const result = await res.json();
-      if (result.success) {
-        addNotification('success', 'Item berhasil dihapus.');
-        fetchDocuments();
-      } else {
-        addNotification('error', `Gagal menghapus: ${result.error}`);
-      }
+      await apiPost('delete_document', { id: toDelete.id });
+      show('success', 'Item berhasil dihapus.');
+      setToDelete(null);
+      fetchDocuments();
     } catch (err) {
-      addNotification('error', `Gagal menghapus: ${errorMessage(err)}`);
+      show('error', `Gagal menghapus: ${errorMessage(err)}`);
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  /** Buka konfirmasi hapus (tombol hapus, menu klik kanan). */
+  const requestDelete = (id: string) => {
+    const item = items.find(i => String(i.id) === String(id));
+    if (item) setToDelete(item);
   };
 
   const handleContextMenu = (e: React.MouseEvent, itemId: string) => {
@@ -247,33 +245,8 @@ const Documents: React.FC = () => {
 
   return (
     <div className="relative min-h-screen pb-20">
-      {/* Toast Notifications */}
-      <div className="pointer-events-none fixed left-1/2 top-4 z-[200] flex w-full max-w-md -translate-x-1/2 flex-col gap-2 px-4 sm:top-6">
-        <AnimatePresence>
-          {notifications.map(n => (
-            <motion.div
-              key={n.id}
-              initial={{ opacity: 0, y: -50, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-              role={n.type === 'error' ? 'alert' : 'status'}
-              className="pointer-events-auto flex w-full items-center gap-3 rounded-2xl bg-adm-surface px-4 py-3 text-adm-fg shadow-float ring-1 ring-inset ring-adm-line"
-            >
-              {n.type === 'success' ? <CheckCircle2 className="h-5 w-5 shrink-0 text-adm-mint-fg" strokeWidth={1.75} /> :
-               n.type === 'error' ? <AlertCircle className="h-5 w-5 shrink-0 text-adm-danger-fg" strokeWidth={1.75} /> :
-               <Spinner size="sm" className="mx-0.5 text-cobalt" />}
-              <span className="min-w-0 flex-1 break-words text-sm font-medium">{n.message}</span>
-              <IconButton
-                icon={<X />}
-                label="Tutup"
-                size="xs"
-                onClick={() => setNotifications(prev => prev.filter(x => x.id !== n.id))}
-                className="-mr-1 ml-auto"
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+      {/* Notifikasi (gaya bersama panel admin) */}
+      <Toast toast={toast} onClose={dismiss} />
 
       <PageHeader
         title="Dokumen"
@@ -403,7 +376,7 @@ const Documents: React.FC = () => {
                     size="sm"
                     variant="secondary"
                     className="text-adm-danger-fg hover:bg-adm-danger-soft hover:text-adm-danger-fg"
-                    onClick={(e) => { e.stopPropagation(); handleDelete(String(item.id)); }}
+                    onClick={(e) => { e.stopPropagation(); requestDelete(String(item.id)); }}
                   />
                 </div>
               </motion.div>
@@ -443,7 +416,7 @@ const Documents: React.FC = () => {
                         label={`Hapus ${item.name}`}
                         size="sm"
                         variant="danger-ghost"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(String(item.id)); }}
+                        onClick={(e) => { e.stopPropagation(); requestDelete(String(item.id)); }}
                       />
                     </>
                   }
@@ -495,7 +468,7 @@ const Documents: React.FC = () => {
                             label={`Hapus ${item.name}`}
                             size="sm"
                             variant="danger-ghost"
-                            onClick={(e) => { e.stopPropagation(); handleDelete(String(item.id)); }}
+                            onClick={(e) => { e.stopPropagation(); requestDelete(String(item.id)); }}
                           />
                         </div>
                       </Td>
@@ -550,6 +523,23 @@ const Documents: React.FC = () => {
         )}
       </Modal>
 
+      {/* Konfirmasi hapus: folder ikut menghapus semua isinya (delete_document) */}
+      <ConfirmDialog
+        open={!!toDelete}
+        onClose={() => (deleting ? undefined : setToDelete(null))}
+        onConfirm={handleDelete}
+        loading={deleting}
+        tone="danger"
+        title={`Hapus ${toDelete?.type === 'folder' ? 'folder' : 'file'} "${toDelete?.name ?? ''}"?`}
+        description={
+          toDelete?.type === 'folder'
+            ? 'Folder ini beserta semua file dan folder di dalamnya akan dihapus permanen.'
+            : 'File ini akan dihapus permanen.'
+        }
+        confirmText="Ya, hapus"
+        cancelText="Batal"
+      />
+
       <AnimatePresence>
         {contextMenu && (
           <div
@@ -595,7 +585,7 @@ const Documents: React.FC = () => {
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  handleDelete(contextMenu.itemId);
+                  requestDelete(contextMenu.itemId);
                   setContextMenu(null);
                 }}
                 className={cn(MENU_ITEM, 'text-adm-danger-fg hover:bg-adm-danger-soft')}

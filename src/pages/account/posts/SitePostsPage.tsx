@@ -3,7 +3,8 @@
 // dilihat & terakhir dilihat; aksi Edit, Lihat (tab baru, hanya yang terbit dan situsnya aktif) dan Hapus (konfirmasi).
 // Template tanpa fitur tulisan mendapat penjelasan; fitur Berita & Pengumuman yang belum aktif (POSTS_LOCKED,
 // SITE-ADDONS-SPEC §5) mendapat panel terkunci; situs nonaktif hanya-baca. Setelah hapus, fokus pindah ke Edit tulisan
-// berikutnya (atau sebelumnya, atau panel daftar bila kosong); datang dari editor setelah hapus, fokus ke pesannya.
+// berikutnya (atau sebelumnya, atau panel daftar bila kosong); datang dari editor setelah hapus, fokus ke pesannya dan
+// toast yang sama dengan hapus dari daftar ikut tampil.
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CalendarDays, ExternalLink, Eye, ImageIcon, Megaphone, Newspaper, PenLine, Plus, Trash2 } from 'lucide-react';
@@ -62,12 +63,14 @@ export default function SitePostsPage() {
     (link ?? panelRef.current)?.focus();
   });
 
-  // Dari editor setelah hapus (tombolnya ikut hilang): fokus ke pesan "… dihapus." begitu daftar tampil
+  // Dari editor setelah hapus (tombolnya ikut hilang): fokus ke pesan "… dihapus." begitu daftar tampil, plus toast
+  // sukses yang sama dengan hapus dari daftar
   useEffect(() => {
     if (!ready || !flash || flashFocused.current) return;
     flashFocused.current = true;
     flashRef.current?.focus();
-  }, [ready, flash]);
+    showToast('success', flash);
+  }, [ready, flash, showToast]);
 
   // Pesan dari state navigasi cukup tampil sekali: buang dari riwayat supaya tidak muncul lagi saat dimuat ulang
   useEffect(() => {
@@ -223,6 +226,7 @@ export default function SitePostsPage() {
           markSuspended();
           showToast('danger', message);
         }}
+        notify={(tone, message, description) => showToast(tone, message, undefined, description)}
       />
       <Toast toast={toast} onClose={dismissToast} />
     </PageContainer>

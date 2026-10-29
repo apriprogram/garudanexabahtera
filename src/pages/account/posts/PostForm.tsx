@@ -15,7 +15,7 @@ import { SITE_POST_LIMITS, type SitePostAdmin, type SitePostKind, type SitePostP
 import { describedBy } from '../cms/a11y';
 import { fieldDomId } from '../cms/content';
 import { ImageField } from '../cms/ImageField';
-import { Toast } from '../cms/Toast';
+import { Toast, type ToastTone } from '../cms/Toast';
 import { CharCount, Notice, Switch } from '../cms/ui';
 import { useLeaveGuard } from '../cms/useLeaveGuard';
 import { useToast } from '../cms/useToast';
@@ -114,6 +114,8 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [now] = useState(currentTime);
   const { toast, show: showToast, dismiss: dismissToast } = useToast();
+  /** Toast form ini untuk komponen anak (foto, dialog hapus); mereka tidak merender <Toast> sendiri */
+  const notify = (tone: ToastTone, message: string, description?: string) => showToast(tone, message, undefined, description);
   const formErrorRef = useRef<HTMLDivElement>(null);
 
   const readOnly = site.status !== 'active';
@@ -230,7 +232,10 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
         focusField(first);
         showToast('danger', 'Periksa lagi isian yang ditandai.');
       } else {
-        showFormError(extra.length ? extra.join(' ') : errorMessage(err, 'Silakan coba lagi.'));
+        // Pesan di atas form + toast gagal dengan pesan yang sama
+        const detail = extra.join(' ');
+        showFormError(detail || errorMessage(err, 'Silakan coba lagi.'));
+        showToast('danger', `Gagal menyimpan ${copy.noun}.`, undefined, detail || errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
       }
     } finally {
       setSavingAs(null);
@@ -388,6 +393,7 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
               error={errors.image}
               disabled={locked}
               onProcessingChange={setPhotoBusy}
+              notify={notify}
             />
             <Field
               id={FIELD_ID.image_alt}
@@ -734,6 +740,7 @@ export function PostForm({ site, kind, initialPost, posts, maxPosts, siteSeo, on
           onSuspended();
           showToast('danger', message);
         }}
+        notify={notify}
       />
       <Toast toast={toast} onClose={dismissToast} />
     </form>

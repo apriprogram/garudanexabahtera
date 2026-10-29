@@ -3,6 +3,8 @@
 // Terkunci → "Beli & aktifkan" (tagihan GNF-… lalu Midtrans), Menunggu pembayaran → bayar / simulasi (mode uji) /
 // batalkan, Aktif → kelola berita & nota. ?situs=ID menggulir & memfokuskan baris situs itu. Kembali dari Midtrans
 // (?order_id=GNF-…&transaction_status=…) daftar dimuat ulang tiap 10 detik maks. 2 menit sampai lunas (pola perpanjangan).
+// Aksi baris (buat tagihan, bayar, simulasi, batalkan) memberi toast sukses/gagal milik halaman; pindah ke Midtrans
+// tidak perlu toast.
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -36,6 +38,8 @@ import {
   postsAddonOf,
   simulateSiteAddonPayment,
 } from './components/addons';
+import { Toast, type ToastTone } from './cms/Toast';
+import { useToast } from './cms/useToast';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { Notice, type NoticeTone } from './components/Notice';
 import { goToPayment, isPaymentUrl, useDocumentTitle } from './components/payment';
@@ -44,6 +48,11 @@ import { EmptyState, ErrorState, Skeleton } from './components/States';
 import { siteLinks } from './posts/siteLinks';
 
 type LoadState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; data: SiteAddonsResponse };
+
+/** Toast milik halaman, dipanggil baris situs (baris tidak merender <Toast> sendiri). */
+type Notify = (tone: ToastTone, message: string, description?: string) => void;
+
+const FAIL_TEXT = 'Terjadi kesalahan. Coba lagi.';
 
 interface Flash {
   tone: NoticeTone;
@@ -95,6 +104,8 @@ export default function AccountAddons() {
   const [config, setConfig] = useState<PaymentConfig | null>(null);
   const [flash, setFlash] = useState<Flash | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const { toast, show: showToast, dismiss: dismissToast } = useToast();
+  const notify: Notify = (tone, message, description) => showToast(tone, message, undefined, description);
 
   // Kembali dari halaman Midtrans (callbacks.finish = /akun/fitur, Midtrans menambahkan order_id & transaction_status)
   const returnNumber = addonNumberFromReturn(params.get('order_id'));
@@ -244,6 +255,7 @@ export default function AccountAddons() {
                           simulator={Boolean(config?.simulator)}
                           onReload={() => reload(true)}
                           onActivated={(domain) => setFlash(activatedFlash(domain))}
+                          notify={notify}
                         />
                       </li>
                     ))}
@@ -254,6 +266,7 @@ export default function AccountAddons() {
           </>
         )}
       </div>
+      <Toast toast={toast} onClose={dismissToast} />
     </div>
   );
 }
@@ -424,16 +437,17 @@ interface SiteRowProps {
   simulator: boolean;
   onReload: () => Promise<void>;
   onActivated: (domain: string) => void;
+  notify: Notify;
 }
 
 type Busy = 'buy' | 'pay' | 'simulate' | 'cancel' | 'reload' | null;
 
 /**
  * Satu situs: status fitur dan aksinya. Pesan aksi (gagal, tagihan dibuat tanpa link pembayaran, dibatalkan) tampil di
- * baris ini. Bila tombol yang ditekan hilang setelah dimuat ulang (mis. Beli → menunggu, Batalkan → terkunci), fokus
- * pindah ke baris (tidak jatuh ke <body>).
+ * baris ini, ditambah toast sukses/gagal halaman (notify). Bila tombol yang ditekan hilang setelah dimuat ulang (mis.
+ * Beli → menunggu, Batalkan → terkunci), fokus pindah ke baris (tidak jatuh ke <body>).
  */
-function SiteRow({ site, addon, targeted, simulator, onReload, onActivated }: SiteRowProps) {
+function SiteRow({ site, addon, targeted, simulator, onReload, onActivated, notify }: SiteRowProps) {
   const titleId = useId();
   const rowRef = useRef<HTMLElement>(null);
   const status = rowStatusOf(addon);
@@ -469,10 +483,12 @@ function SiteRow({ site, addon, targeted, simulator, onReload, onActivated }: Si
           } Coba lagi lewat tombol "Bayar Sekarang".`,
         ),
       });
+      notify('success', `Tagihan ${res.addon_order.addon_number} berhasil dibuat.`);
       await refreshAndFocus();
     } catch (err) {
       const stale = err instanceof ApiError && ['ADDON_ACTIVE', 'ADDON_PENDING', 'SITE_SUSPENDED'].includes(err.code ?? '');
       setMessage({ tone: stale ? 'warning' : 'danger', text: errorMessage(err, 'Tagihan fitur gagal dibuat. Silakan coba lagi.') });
+      notify('danger', 'Gagal membuat tagihan fitur.', errorMessage(err, FAIL_TEXT));
       // Keadaan di server berbeda dari yang tampil (sudah aktif / sudah ada tagihan / situs nonaktif): segarkan
       if (stale) await refreshAndFocus();
     }
@@ -487,6 +503,7 @@ function SiteRow({ site, addon, targeted, simulator, onReload, onActivated }: Si
       await paySiteAddon(pending.addon_number);
       return;
     } catch (err) {
+      notify('danger', 'Gagal membuka halaman pembayaran.', errorMessage(err, FAIL_TEXT));
       if (err instanceof ApiError && err.code === 'PAYMENT_UNDER_REVIEW') {
         setMessage({ tone: 'warning', text: err.message });
         await refreshAndFocus();
@@ -508,9 +525,11 @@ function SiteRow({ site, addon, targeted, simulator, onReload, onActivated }: Si
     try {
       await simulateSiteAddonPayment(pending.addon_number);
       onActivated(site.domain);
+      notify('success', `Simulasi pembayaran ${pending.addon_number} berhasil.`);
       await refreshAndFocus();
     } catch (err) {
       setMessage({ tone: 'danger', text: errorMessage(err, 'Simulasi pembayaran gagal.') });
+      notify('danger', 'Gagal menjalankan simulasi pembayaran.', errorMessage(err, FAIL_TEXT));
     }
     setBusy(null);
   };
@@ -529,9 +548,11 @@ function SiteRow({ site, addon, targeted, simulator, onReload, onActivated }: Si
       await cancelSiteAddon(pending.addon_number);
       setConfirmOpen(false);
       setMessage({ tone: 'success', text: `Tagihan ${pending.addon_number} dibatalkan. Anda bisa membeli fitur ini lagi kapan saja.` });
+      notify('success', `Tagihan ${pending.addon_number} berhasil dibatalkan.`);
       await refreshAndFocus();
     } catch (err) {
       setCancelError(errorMessage(err, 'Gagal membatalkan tagihan fitur.'));
+      notify('danger', 'Gagal membatalkan tagihan fitur.', errorMessage(err, FAIL_TEXT));
     }
     setBusy(null);
   };

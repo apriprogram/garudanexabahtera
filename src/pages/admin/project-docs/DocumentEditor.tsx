@@ -77,7 +77,7 @@ import { InvoiceFormModal } from './finance/InvoiceFormModal';
 import { PaymentFormModal } from './finance/PaymentFormModal';
 import { exportModel, signatureRefs, withSignatureImages, type ExportFormat } from './shared/documents';
 import { docShort, tanggal, waktu } from './shared/format';
-import { useUnsavedGuard, usePdQuery, useViewer } from './shared/hooks';
+import { navToast, useNavToast, useUnsavedGuard, usePdQuery, useViewer } from './shared/hooks';
 import { ReasonModal } from './shared/ReasonModal';
 import { DocStatusBadge, PaymentBadge } from './shared/ui';
 import { isDate } from './shared/validation';
@@ -143,6 +143,8 @@ export default function DocumentEditor() {
   const editable = !!perms?.editable;
   const dirty = editable && !!draft && JSON.stringify(draft) !== savedJson;
   const guard = useUnsavedGuard(dirty, navigate);
+  // Toast dari workspace yang baru ditinggalkan (mis. dokumen atau invoice baru dibuat), tampil setelah editor siap
+  useNavToast(show, !!doc && !!draft && !!perms);
 
   // Pratinjau langsung (ditunda sedikit saat mengetik agar input tetap ringan)
   const deferred = useDeferredValue(draft);
@@ -279,7 +281,9 @@ export default function DocumentEditor() {
     } else if (kind === 'complete') {
       await run('complete', () => pdDocumentComplete({ id: doc.id }), 'Dokumen berhasil ditandai selesai.');
     } else if (kind === 'delete') {
-      await run('delete', () => pdDocumentDelete({ id: doc.id }), 'Draft dokumen berhasil dihapus.', () => navigate(workspacePath));
+      const deleted = 'Draft dokumen berhasil dihapus.';
+      // Editor langsung ditutup, jadi toast suksesnya dibawa ke workspace
+      await run('delete', () => pdDocumentDelete({ id: doc.id }), deleted, () => navigate(workspacePath, navToast('success', deleted)));
     }
     setConfirm(null);
   };
@@ -642,6 +646,7 @@ export default function DocumentEditor() {
             show('error', message);
             query.reload();
           }}
+          notify={show}
         />
       )}
       <ReasonModal
@@ -654,6 +659,8 @@ export default function DocumentEditor() {
         confirmText="Ya, ajukan perubahan"
         minLength={10}
         icon={<FilePen />}
+        notify={show}
+        errorTitle="Gagal mengajukan perubahan."
         onSubmit={async (reason) => {
           await pdDocumentChange({ id: doc.id, reason });
           setChangeOpen(false);
@@ -672,6 +679,8 @@ export default function DocumentEditor() {
           confirmText="Ya, batalkan"
           tone="danger"
           icon={<Ban />}
+          notify={show}
+          errorTitle="Gagal membatalkan invoice."
           onSubmit={async (reason) => {
             if (!doc.invoice) return;
             await pdInvoiceCancel({ id: doc.invoice.id, reason });
@@ -694,6 +703,7 @@ export default function DocumentEditor() {
             show('success', 'Invoice berhasil diperbarui.');
             query.reload();
           }}
+          notify={show}
         />
       )}
       {isInvoice && doc.invoice && (
@@ -707,6 +717,7 @@ export default function DocumentEditor() {
             show('success', `Pembayaran berhasil dicatat. Kuitansi ${res.receipt_number} terbit.`);
             query.reload();
           }}
+          notify={show}
         />
       )}
       <ConfirmDialog

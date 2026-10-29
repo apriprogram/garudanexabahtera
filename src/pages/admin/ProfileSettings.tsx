@@ -2,6 +2,8 @@
 import { User, Mail, Phone, Camera, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge, Button, Field, Input, LoadingState, PageHeader, Panel, PasswordInput, cn } from '../../components/admin/ui';
+import { useToast } from './template-orders/shared/hooks';
+import { Toast } from './template-orders/shared/OrderUi';
 
 /** currentUser di localStorage (baris users dari login/get_users). */
 interface ProfileUser {
@@ -30,6 +32,8 @@ const ProfileSettings: React.FC = () => {
   }));
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  // Notifikasi di atas tengah layar; pesan status di samping tombol Simpan tetap tampil
+  const { toast, show, dismiss } = useToast();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,12 +89,15 @@ const ProfileSettings: React.FC = () => {
         delete updatedUser.password;
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
         setStatus({ type: 'success', message: 'Profil berhasil diperbarui.' });
+        show('success', 'Profil berhasil diperbarui.');
         setTimeout(() => setStatus(null), 3000);
       } else {
         setStatus({ type: 'error', message: data.error || 'Gagal memperbarui profil.' });
+        show('error', 'Gagal memperbarui profil.', data.error || 'Terjadi kesalahan. Coba lagi.');
       }
     } catch {
       setStatus({ type: 'error', message: 'Tidak bisa terhubung ke server.' });
+      show('error', 'Gagal memperbarui profil.', 'Tidak bisa terhubung ke server.');
     } finally {
       setIsSaving(false);
     }
@@ -213,6 +220,8 @@ const ProfileSettings: React.FC = () => {
           </Panel>
         </div>
       </div>
+
+      <Toast toast={toast} onClose={dismiss} />
     </div>
   );
 };

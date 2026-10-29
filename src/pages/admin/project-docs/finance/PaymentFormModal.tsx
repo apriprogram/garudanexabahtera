@@ -2,12 +2,12 @@
 // (jpg/png/pdf ≤ 5 MB as data URL) and note. The backend issues the Kuitansi (receipt document) in the same step.
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Paperclip, Wallet, X } from 'lucide-react';
-import { Button, Field, IconButton, Input, Modal, ModalBody, ModalFooter, Notice, Select, Textarea } from '../../../../components/admin/ui';
+import { Button, ConfirmDialog, Field, IconButton, Input, Modal, ModalBody, ModalFooter, Notice, Select, Textarea } from '../../../../components/admin/ui';
 import { pdPaymentRecord } from '../../../../features/project-docs/api';
 import { PAYMENT_METHOD_LABEL, type DocContent, type PaymentMethod, type PaymentRecordResponse } from '../../../../features/project-docs/types';
 import { errorMessage } from '../../../../lib/api';
 import { rupiah, todayIso } from '../shared/format';
-import { fieldErrorsOf } from '../shared/hooks';
+import { errorDetail, fieldErrorsOf, type Notify } from '../shared/hooks';
 import { validatePayment, type Errors } from '../shared/validation';
 
 const PROOF_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
@@ -37,6 +37,7 @@ export function PaymentFormModal({
   invoice,
   receiptContent,
   onSaved,
+  notify,
 }: {
   open: boolean;
   onClose: () => void;
@@ -44,6 +45,8 @@ export function PaymentFormModal({
   /** template content of the Kuitansi issued with this payment */
   receiptContent: DocContent;
   onSaved: (result: PaymentRecordResponse) => void;
+  /** toast halaman (galat simpan) */
+  notify: Notify;
 }) {
   const [amount, setAmount] = useState(Number.NaN);
   const [paidAt, setPaidAt] = useState('');
@@ -54,6 +57,7 @@ export function PaymentFormModal({
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [confirmProof, setConfirmProof] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [openedFor, setOpenedFor] = useState<number | null>(null);
@@ -115,6 +119,7 @@ export function PaymentFormModal({
     } catch (err) {
       setErrors(fieldErrorsOf(err));
       setServerError(`Gagal mencatat pembayaran: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
+      notify('error', 'Gagal mencatat pembayaran.', errorDetail(err));
     } finally {
       setSaving(false);
     }
@@ -170,7 +175,7 @@ export function PaymentFormModal({
               <div className="flex items-center gap-2 rounded-xl bg-adm-ghost px-3 py-2">
                 <Paperclip className="h-4 w-4 shrink-0 text-adm-subtle" strokeWidth={1.75} aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-[13px] text-adm-fg">{proof.name}</span>
-                <IconButton icon={<X />} label="Hapus bukti" size="xs" onClick={() => setProof(null)} />
+                <IconButton icon={<X />} label="Hapus bukti" size="xs" onClick={() => setConfirmProof(true)} />
               </div>
             ) : (
               <Button variant="secondary" size="sm" icon={<Paperclip />} onClick={() => fileRef.current?.click()}>
@@ -194,6 +199,18 @@ export function PaymentFormModal({
           </Button>
         </ModalFooter>
       </form>
+      <ConfirmDialog
+        open={confirmProof}
+        onClose={() => setConfirmProof(false)}
+        onConfirm={() => {
+          setProof(null);
+          setConfirmProof(false);
+        }}
+        tone="danger"
+        title={`Hapus bukti "${proof?.name ?? ''}"?`}
+        description="File ini batal dilampirkan; unggah bukti lain bila perlu."
+        confirmText="Ya, hapus"
+      />
     </Modal>
   );
 }

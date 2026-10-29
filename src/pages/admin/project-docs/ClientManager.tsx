@@ -303,6 +303,7 @@ export default function ClientManager() {
             query.reload();
             show('success', isEdit ? `Klien "${name}" berhasil diperbarui.` : `Klien "${name}" berhasil ditambahkan.`);
           }}
+          notify={show}
         />
       )}
 

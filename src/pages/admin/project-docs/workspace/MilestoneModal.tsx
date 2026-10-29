@@ -5,7 +5,7 @@ import { Button, Field, Input, Modal, ModalBody, ModalFooter, Notice, Select, Te
 import { pdMilestoneSave } from '../../../../features/project-docs/api';
 import { MILESTONE_STATUS_LABEL, type Milestone, type MilestoneStatus } from '../../../../features/project-docs/types';
 import { errorMessage } from '../../../../lib/api';
-import { fieldErrorsOf } from '../shared/hooks';
+import { errorDetail, fieldErrorsOf, type Notify } from '../shared/hooks';
 import { validateMilestone, type Errors } from '../shared/validation';
 
 interface Form {
@@ -31,6 +31,7 @@ export function MilestoneModal({
   milestone,
   onClose,
   onSaved,
+  notify,
 }: {
   open: boolean;
   projectId: number;
@@ -38,6 +39,8 @@ export function MilestoneModal({
   milestone: Milestone | null;
   onClose: () => void;
   onSaved: (title: string, isEdit: boolean) => void;
+  /** toast workspace (galat simpan) */
+  notify: Notify;
 }) {
   const [form, setForm] = useState<Form>(() => toForm(milestone));
   const [errors, setErrors] = useState<Errors>({});
@@ -82,6 +85,7 @@ export function MilestoneModal({
     } catch (err) {
       setErrors(fieldErrorsOf(err));
       setServerError(`Gagal menyimpan: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
+      notify('error', 'Gagal menyimpan tahapan.', errorDetail(err));
     } finally {
       setSaving(false);
     }

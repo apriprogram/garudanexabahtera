@@ -31,7 +31,10 @@ import {
   THead,
   Tr,
 } from '../../components/admin/ui';
+import { apiPost, errorMessage } from '../../lib/api';
 import { getCurrentUser } from '../../lib/auth';
+import { useToast } from './template-orders/shared/hooks';
+import { Toast } from './template-orders/shared/OrderUi';
 
 /** Peran `users.role` (SPEC §2): admin & user = staf panel admin, customer = pembeli template. */
 type Role = 'admin' | 'user' | 'customer';
@@ -71,6 +74,9 @@ const isRole = (value: unknown): value is Role => typeof value === 'string' && (
 const matchesRoleFilter = (role: Role, filter: RoleFilter) =>
   filter === 'all' || (filter === 'customer' ? role === 'customer' : STAFF_ROLES.includes(role));
 
+/** Subjek notifikasi: `Pengguna "Budi"`, atau "Pengguna" saja bila namanya kosong. */
+const userLabel = (name: string | undefined) => (name?.trim() ? `Pengguna "${name.trim()}"` : 'Pengguna');
+
 /** Peran di tabel & kartu HP: ikon + label (Admin / Staf / Pembeli). */
 const RoleLabel: React.FC<{ role: string }> = ({ role }) => {
   if (!isRole(role)) return <span className="text-[13px] text-adm-subtle">{role || '—'}</span>;
@@ -87,6 +93,7 @@ const UserManager: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState<string | null>(null);
+  const { toast, show, dismiss } = useToast();
 
   // setState di sini hanya terjadi setelah respons API
   const loadUsers = useCallback(async () => {
@@ -184,26 +191,19 @@ const UserManager: React.FC = () => {
     setEditingUser(null);
   };
 
+  // Simpan & hapus lewat apiPost: respons gagal ({error}, HTTP bukan 2xx, koneksi putus) dilempar sebagai ApiError
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const action = editingUser ? 'update_user' : 'add_user';
-    const payload = editingUser ? { ...formData, id: editingUser.id, action } : { ...formData, action };
+    const payload = editingUser ? { ...formData, id: editingUser.id } : { ...formData };
 
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      if (data.success) {
-        fetchUsers();
-        handleCloseModal();
-      } else {
-        alert('Gagal menyimpan pengguna: ' + (data.error || 'kesalahan tidak diketahui'));
-      }
+      await apiPost(action, payload);
+      show('success', editingUser ? `${userLabel(formData.name)} berhasil diperbarui.` : `${userLabel(formData.name)} berhasil ditambahkan.`);
+      fetchUsers();
+      handleCloseModal();
     } catch (error) {
-      console.error('Error saving user:', error);
+      show('error', 'Gagal menyimpan pengguna.', errorMessage(error, 'Terjadi kesalahan. Coba lagi.'));
     }
   };
 
@@ -247,30 +247,27 @@ const UserManager: React.FC = () => {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const confirmDelete = (user: User) => {
     setUserToDelete(user);
     setIsDeleteModalOpen(true);
   };
 
+  // Dipanggil tombol "Ya, hapus" di dialog konfirmasi; dialog tetap terbuka bila gagal
   const handleExecuteDelete = async () => {
     if (!userToDelete) return;
+    setDeleting(true);
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_user', id: userToDelete.id })
-      });
-      const data = await response.json();
-      if (data.success) {
-        fetchUsers();
-        setIsDeleteModalOpen(false);
-        setUserToDelete(null);
-      } else {
-        alert('Gagal menghapus pengguna: ' + (data.error || 'kesalahan tidak diketahui'));
-      }
+      await apiPost('delete_user', { id: userToDelete.id });
+      show('success', `${userLabel(userToDelete.name)} berhasil dihapus.`);
+      fetchUsers();
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
     } catch (error) {
-      console.error('Error deleting user:', error);
+      show('error', 'Gagal menghapus pengguna.', errorMessage(error, 'Terjadi kesalahan. Coba lagi.'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -533,8 +530,9 @@ const UserManager: React.FC = () => {
       {/* Konfirmasi hapus */}
       <ConfirmDialog
         open={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        onClose={() => (deleting ? undefined : setIsDeleteModalOpen(false))}
         onConfirm={handleExecuteDelete}
+        loading={deleting}
         tone="danger"
         title="Hapus pengguna?"
         description={
@@ -545,6 +543,8 @@ const UserManager: React.FC = () => {
         confirmText="Ya, hapus"
         cancelText="Batal"
       />
+
+      <Toast toast={toast} onClose={dismiss} />
     </div>
   );
 };

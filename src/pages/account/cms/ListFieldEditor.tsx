@@ -1,10 +1,12 @@
-// Field list CMS (layanan, testimoni, galeri, ...): tambah, hapus (dengan Urungkan lewat toast), urutkan naik/turun,
-// batas maksimal, dan tiap item bisa diciutkan. Kunci React tiap item stabil walau item diedit/dipindah.
+// Field list CMS (layanan, testimoni, galeri, ...): tambah, hapus (konfirmasi dulu, lalu Urungkan lewat toast),
+// urutkan naik/turun, batas maksimal, dan tiap item bisa diciutkan. Kunci React tiap item stabil walau item diedit/dipindah.
 import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import type { ListItem, TemplateListField } from '../../../templates/types';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { CmsField } from './CmsField';
 import { emptyListItem, fieldDomId, fieldPath, itemSummary } from './content';
+import type { FieldControlProps } from './FieldControl';
 import type { ContentErrors } from './validation';
 
 // Kunci stabil per objek item. Item yang diedit diberi kunci item lamanya; item yang dipulihkan (Urungkan)
@@ -35,13 +37,20 @@ interface ListFieldEditorProps {
   errors: ContentErrors;
   onBlurPath: (path: string) => void;
   disabled?: boolean;
+  /** Toast milik halaman, diteruskan ke field gambar di dalam item (gambar dihapus / gagal diproses) */
+  notify?: FieldControlProps['notify'];
 }
 
 const iconButton =
   'relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-subtle transition-colors after:absolute after:-inset-1 hover:bg-alt hover:text-fg disabled:pointer-events-none disabled:opacity-35 max-sm:h-8 max-sm:w-8';
 
-export function ListFieldEditor({ sectionKey, field, items, onChange, onRemoved, errors, onBlurPath, disabled }: ListFieldEditorProps) {
+export function ListFieldEditor({ sectionKey, field, items, onChange, onRemoved, errors, onBlurPath, disabled, notify }: ListFieldEditorProps) {
   const [openKeys, setOpenKeys] = useState<Set<number>>(() => new Set());
+  /**
+   * Kunci item yang menunggu konfirmasi hapus (null = dialog tertutup). Sengaja kunci, bukan indeks: Urungkan di toast
+   * tetap bisa diklik selagi dialog terbuka dan menyisipkan item lain, sehingga indeks item yang dipilih bergeser.
+   */
+  const [confirmKey, setConfirmKey] = useState<number | null>(null);
   const focusPath = useRef<string | null>(null);
   const addRef = useRef<HTMLButtonElement>(null);
   const label = field.itemLabel.toLowerCase();
@@ -49,6 +58,13 @@ export function ListFieldEditor({ sectionKey, field, items, onChange, onRemoved,
   const atMax = items.length >= max;
   const listId = fieldDomId(fieldPath(sectionKey, field.key));
   const listError = errors[fieldPath(sectionKey, field.key)];
+
+  const confirmIndex = confirmKey === null ? -1 : items.findIndex((item) => keyOf(item) === confirmKey);
+  // Editor terkunci selagi dialog terbuka (mis. Ctrl+S mulai menyimpan) atau itemnya sudah tidak ada: batalkan
+  // konfirmasi, supaya item tidak dihapus di tengah simpan lalu tertimpa konten dari server
+  if (confirmKey !== null && (disabled || confirmIndex < 0)) setConfirmKey(null);
+  const confirmItem = confirmIndex < 0 ? undefined : items[confirmIndex];
+  const confirmSummary = confirmItem ? itemSummary(field, confirmItem) : '';
 
   // Fokus ke field pertama item baru setelah item itu dirender
   useEffect(() => {
@@ -91,6 +107,12 @@ export function ListFieldEditor({ sectionKey, field, items, onChange, onRemoved,
     onRemoved(item, index);
     // Fokus pindah ke tombol tambah agar pengguna keyboard tidak kehilangan posisi
     requestAnimationFrame(() => addRef.current?.focus());
+  };
+
+  const confirmRemove = () => {
+    setConfirmKey(null);
+    if (disabled || confirmIndex < 0) return;
+    remove(confirmIndex);
   };
 
   return (
@@ -149,7 +171,7 @@ export function ListFieldEditor({ sectionKey, field, items, onChange, onRemoved,
                   </button>
                   <button
                     type="button"
-                    onClick={() => remove(index)}
+                    onClick={() => setConfirmKey(key)}
                     disabled={disabled}
                     aria-label={`Hapus ${title}`}
                     className={`${iconButton} hover:bg-danger-50 hover:text-danger-700`}
@@ -171,6 +193,7 @@ export function ListFieldEditor({ sectionKey, field, items, onChange, onRemoved,
                           onBlur={() => onBlurPath(path)}
                           error={errors[path]}
                           disabled={disabled}
+                          notify={notify}
                         />
                       );
                     })}
@@ -198,6 +221,17 @@ export function ListFieldEditor({ sectionKey, field, items, onChange, onRemoved,
           {listError}
         </p>
       )}
+
+      <ConfirmDialog
+        open={confirmItem !== undefined}
+        title={confirmSummary ? `Hapus ${label} “${confirmSummary}”?` : `Hapus ${label} ${confirmIndex + 1}?`}
+        description={`Semua isian ${label} ini ikut terhapus, dan situs baru berubah setelah Anda klik Simpan.`}
+        confirmLabel="Ya, hapus"
+        cancelLabel="Batal"
+        tone="danger"
+        onConfirm={confirmRemove}
+        onClose={() => setConfirmKey(null)}
+      />
     </fieldset>
   );
 }

@@ -1,8 +1,10 @@
 // Konfirmasi hapus satu tulisan (customer_delete_site_post), dipakai daftar dan editor tulisan. Gagal → pesan di dalam
-// dialog; tulisan yang ternyata sudah terhapus (POST_NOT_FOUND) dianggap berhasil; situs nonaktif → onSuspended.
+// dialog + toast halaman (notify); tulisan yang ternyata sudah terhapus (POST_NOT_FOUND) dianggap berhasil; situs
+// nonaktif → onSuspended.
 import { useState } from 'react';
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
 import type { SitePostAdmin } from '../../../types/sitePosts';
+import type { ToastTone } from '../cms/Toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { KIND_COPY } from './postModel';
 
@@ -13,9 +15,11 @@ interface DeletePostDialogProps {
   onClose: () => void;
   onDeleted: (post: SitePostAdmin) => void;
   onSuspended: (message: string) => void;
+  /** Toast milik halaman (dialog tidak merender <Toast> sendiri), mis. saat gagal menghapus */
+  notify: (tone: ToastTone, message: string, description?: string) => void;
 }
 
-export function DeletePostDialog({ siteId, post, onClose, onDeleted, onSuspended }: DeletePostDialogProps) {
+export function DeletePostDialog({ siteId, post, onClose, onDeleted, onSuspended, notify }: DeletePostDialogProps) {
   const [busy, setBusy] = useState(false);
   // Pesan gagal milik tulisan tertentu: dialog untuk tulisan lain mulai tanpa pesan lama
   const [failure, setFailure] = useState<{ id: number; message: string } | null>(null);
@@ -41,6 +45,7 @@ export function DeletePostDialog({ siteId, post, onClose, onDeleted, onSuspended
         onSuspended(err.message);
       } else {
         setFailure({ id: post.id, message: errorMessage(err, `Gagal menghapus ${copy.noun}. Silakan coba lagi.`) });
+        notify('danger', `Gagal menghapus ${copy.noun}.`, errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
       }
     } finally {
       setBusy(false);

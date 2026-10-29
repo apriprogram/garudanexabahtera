@@ -94,6 +94,8 @@ export default function DocSettings() {
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  // Baris rekening / prioritas SLA yang akan dihapus: tetap ditanya dulu walau baru tersimpan saat Simpan perubahan
+  const [toRemove, setToRemove] = useState<{ list: 'bank' | 'priority'; index: number } | null>(null);
   const { toast, show, dismiss } = useToast();
 
   const dirty = !!draft && !!baseline && JSON.stringify(draft) !== JSON.stringify(baseline);
@@ -156,6 +158,19 @@ export default function DocSettings() {
   const c = draft.company;
   const t = draft.tax;
   const now = todayIso();
+  const removeRow = () => {
+    if (!toRemove) return;
+    const { list, index } = toRemove;
+    if (list === 'bank') patch('company', { bank_accounts: c.bank_accounts.filter((_, j) => j !== index) });
+    else patch('sla_defaults', { priorities: draft.sla_defaults.priorities.filter((_, j) => j !== index) });
+    setToRemove(null);
+  };
+  // Judul dialog hapus menyebut barisnya: "BCA 1234567890" / "P1", atau nomor baris bila masih kosong
+  const removeName =
+    toRemove?.list === 'bank'
+      ? [c.bank_accounts[toRemove.index]?.bank, c.bank_accounts[toRemove.index]?.number].map((v) => v?.trim()).filter(Boolean).join(' ')
+      : (draft.sla_defaults.priorities[toRemove?.index ?? -1]?.level.trim() ?? '');
+  const removeLabel = toRemove?.list === 'bank' ? 'rekening' : 'prioritas';
   const sampleNumber = `007/PKS/${draft.numbering.prefix.trim().toUpperCase() || 'GNB'}/${romawi(Number(now.slice(5, 7)))}/${now.slice(0, 4)}`;
   // Tarif efektif PPN = tarif × DPP nilai lain (12% × 11/12 = 11%)
   const ratio = (t.ppn_rate * t.dpp_numerator) / t.dpp_denominator;
@@ -298,7 +313,7 @@ export default function DocSettings() {
                           size="sm"
                           variant="danger-ghost"
                           className="justify-self-end"
-                          onClick={() => patch('company', { bank_accounts: c.bank_accounts.filter((_, j) => j !== i) })}
+                          onClick={() => setToRemove({ list: 'bank', index: i })}
                         />
                       )}
                     </li>
@@ -385,7 +400,7 @@ export default function DocSettings() {
                           size="sm"
                           variant="danger-ghost"
                           className="col-span-2 justify-self-end sm:col-span-1"
-                          onClick={() => patch('sla_defaults', { priorities: draft.sla_defaults.priorities.filter((_, j) => j !== i) })}
+                          onClick={() => setToRemove({ list: 'priority', index: i })}
                         />
                       )}
                     </li>
@@ -500,6 +515,19 @@ export default function DocSettings() {
         title="Buang perubahan?"
         description="Isian kembali ke pengaturan yang terakhir disimpan."
         confirmText="Ya, reset"
+      />
+      <ConfirmDialog
+        open={!!toRemove}
+        onClose={() => setToRemove(null)}
+        onConfirm={removeRow}
+        tone="danger"
+        title={removeName ? `Hapus ${removeLabel} "${removeName}"?` : `Hapus ${removeLabel} ${(toRemove?.index ?? 0) + 1}?`}
+        description={
+          toRemove?.list === 'bank'
+            ? 'Rekening ini tidak tercantum lagi di invoice setelah pengaturan disimpan.'
+            : 'Prioritas ini hilang dari SLA bawaan setelah pengaturan disimpan.'
+        }
+        confirmText="Ya, hapus"
       />
       <ConfirmDialog
         open={!!guard.pending}

@@ -1,7 +1,8 @@
 // Detail proyek (/akun/proyek/:id): stage stepper and progress, "Perlu persetujuan Anda", the sent documents (never
 // drafts), invoices with status / due date / amount and PDF download, receipts, a short summary and the client-visible
-// history (pd_my_project; docs/platform/PROJECT-DOCS-SPEC.md §7 Customer).
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+// history (pd_my_project; docs/platform/PROJECT-DOCS-SPEC.md §7 Customer). A message from the document page (router
+// state, e.g. after a revision request) shows once as a notice and/or a toast.
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -35,6 +36,8 @@ import {
 } from '../../../features/project-docs/types';
 import { ApiError, errorMessage } from '../../../lib/api';
 import { formatRupiah, formatTanggal } from '../../../types/platform';
+import { Toast } from '../cms/Toast';
+import { useToast } from '../cms/useToast';
 import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/payment';
 import { EmptyState, ErrorState, Skeleton } from '../components/States';
@@ -71,13 +74,23 @@ export default function MyProjectDetail() {
   const [state, setState] = useState<LoadState>(id ? { status: 'loading' } : { status: 'not_found' });
   const [refreshing, setRefreshing] = useState(false);
   const [flash, setFlash] = useState<ProjectFlash | null>(() => (location.state as ProjectNavState | null)?.flash ?? null);
+  const { toast, show: showToast, dismiss: dismissToast } = useToast();
+  const navToast = useRef((location.state as ProjectNavState | null)?.toast ?? null);
 
   useDocumentTitle(state.status === 'ready' ? state.project.name : 'Detail proyek');
 
-  // A flash from the previous page is shown once (not again after a reload)
+  // A flash / toast from the previous page is shown once (not again after a reload)
   useEffect(() => {
-    if ((location.state as ProjectNavState | null)?.flash) navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+    const navState = location.state as ProjectNavState | null;
+    if (navState?.flash || navState?.toast) navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
   }, [location.pathname, location.search, location.state, navigate]);
+
+  useEffect(() => {
+    const pending = navToast.current;
+    if (!pending) return;
+    navToast.current = null;
+    showToast(pending.tone, pending.message, undefined, pending.description);
+  }, [showToast]);
 
   const fetchProject = useCallback(() => (id ? pdMyProject({ id }).then((res) => res.project) : Promise.reject(new ApiError('Proyek tidak ditemukan.', 404))), [id]);
 
@@ -137,6 +150,7 @@ export default function MyProjectDetail() {
           <ProjectView project={state.project} flash={flash} onFlash={setFlash} refreshing={refreshing} onReload={reload} />
         )}
       </div>
+      <Toast toast={toast} onClose={dismissToast} />
     </div>
   );
 }

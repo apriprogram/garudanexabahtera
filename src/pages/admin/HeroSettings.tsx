@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom';
 import { X, Plus, Sparkles, Image as ImageIcon, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Chip, Field, Input, Notice, PanelHeader, Segmented, Spinner, Textarea, cn, FOCUS } from '../../components/admin/ui';
+import { Chip, ConfirmDialog, Field, Input, Notice, PanelHeader, Segmented, Spinner, Textarea, cn, FOCUS } from '../../components/admin/ui';
 import { HERO_MAX_IMAGES } from '../../components/sections/hero/heroBgConfig';
 import { HERO_OVERLAY_DEFAULT, type HeroTextTone } from '../../components/sections/hero/heroContrast';
 import HeroLegibilityField from './hero/HeroLegibilityField';
@@ -18,6 +18,10 @@ import {
   type ImageRejectReason,
 } from './hero/heroMedia';
 import { dropZoneClass } from './hero/styles';
+import type { ToastTone } from './template-orders/shared/hooks';
+
+/* Latar & logo baru tampil di website setelah simpan global: diingatkan di notifikasi hapus. */
+const SAVE_REMINDER = 'Klik Simpan semua perubahan agar tersimpan di website.';
 
 /* Tombol hapus kecil di atas gambar pratinjau (latar solid danger). Selalu tampak di HP, muncul saat hover di desktop. */
 const REMOVE_BTN = cn(
@@ -72,6 +76,8 @@ interface HeroSettingsProps {
   imagesPending?: number;
   /** Pesan gambar latar yang selesai diproses setelah tab Hero ditutup (mis. gagal dibaca atau melewati batas). */
   onImageNotice?: (message: string) => void;
+  /** Notifikasi halaman (toast di atas tengah layar): hapus gambar/logo/video dan hasil unggah video. */
+  notify?: (tone: ToastTone, message: string, description?: string) => void;
   /** true selama halaman menyimpan: pilihan latar dan unggah/hapus media dikunci supaya tidak tertimpa hasil muat ulang. */
   saving?: boolean;
   /** hero_text_tone: warna teks hero di atas gambar/video (Otomatis / Terang / Gelap). */
@@ -99,6 +105,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   onImagesProcessing,
   imagesPending = 0,
   onImageNotice,
+  notify,
   saving = false,
   heroTextTone = 'auto',
   setHeroTextTone,
@@ -106,6 +113,13 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   setHeroOverlay,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  // Hapus gambar latar / logo dikonfirmasi dulu (pemilik 2026-10-29); isi dialog dipertahankan selama animasi tutup
+  const [removal, setRemoval] = useState<{ title: string; description: string; run: () => void } | null>(null);
+  const [removalOpen, setRemovalOpen] = useState(false);
+  const askRemove = (title: string, description: string, run: () => void) => {
+    setRemoval({ title, description, run });
+    setRemovalOpen(true);
+  };
   const [videoBusy, setVideoBusy] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [processingImages, setProcessingImages] = useState(0);
@@ -367,7 +381,16 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                         <img src={src} alt={`Gambar latar ${index + 1}`} className="h-full w-full object-cover" />
                         <button
                           type="button"
-                          onClick={() => setHeroImages(prev => prev.filter((_, i) => i !== index))}
+                          onClick={() =>
+                            askRemove(
+                              `Hapus gambar latar ${index + 1}?`,
+                              'Gambar ini hilang dari latar hero setelah kamu klik Simpan semua perubahan.',
+                              () => {
+                                setHeroImages((prev) => prev.filter((_, i) => i !== index));
+                                notify?.('success', `Gambar latar ${index + 1} dihapus.`, SAVE_REMINDER);
+                              },
+                            )
+                          }
                           aria-label={`Hapus gambar ${index + 1}`}
                           disabled={saving}
                           className={REMOVE_BTN}
@@ -450,6 +473,7 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
               onBusyChange={handleVideoBusy}
               pendingUpload={videoBusyElsewhere}
               disabled={saving}
+              notify={notify}
             />
           )}
 
@@ -503,7 +527,17 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
                   <img src={logo.src} alt={logo.name} className="pointer-events-none max-h-full max-w-full object-contain opacity-60 grayscale transition-all group-hover:opacity-100 group-hover:grayscale-0" />
                   <button
                     type="button"
-                    onClick={() => setHeroLogos(prev => prev.filter((_, i) => i !== index))}
+                    onClick={() => {
+                      const name = logo.name.trim();
+                      askRemove(
+                        name ? `Hapus logo "${name}"?` : 'Hapus logo ini?',
+                        'Logo ini hilang dari deretan logo partner setelah kamu klik Simpan semua perubahan.',
+                        () => {
+                          setHeroLogos((prev) => prev.filter((_, i) => i !== index));
+                          notify?.('success', name ? `Logo "${name}" dihapus.` : 'Logo dihapus.', SAVE_REMINDER);
+                        },
+                      );
+                    }}
                     aria-label={`Hapus ${logo.name || 'logo'}`}
                     disabled={saving}
                     className={REMOVE_BTN}
@@ -552,6 +586,19 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
           </label>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={removalOpen}
+        onClose={() => setRemovalOpen(false)}
+        onConfirm={() => {
+          // Selama menyimpan daftar dikunci (ADM-2), juga untuk dialog yang masih terbuka
+          if (!saving) removal?.run();
+          setRemovalOpen(false);
+        }}
+        tone="danger"
+        title={removal?.title}
+        description={removal?.description}
+      />
     </div>
   );
 };

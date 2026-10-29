@@ -27,6 +27,9 @@ import {
   FOCUS_INSET,
   type Tone,
 } from '../../components/admin/ui';
+import { apiPost, errorMessage } from '../../lib/api';
+import { useToast } from './template-orders/shared/hooks';
+import { Toast } from './template-orders/shared/OrderUi';
 
 interface ChangelogItem {
   id: number;
@@ -55,7 +58,10 @@ const Changelog: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ChangelogItem | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  // Changelog yang akan dihapus (dialog konfirmasi terbuka)
+  const [deleteConfirm, setDeleteConfirm] = useState<ChangelogItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toast, show, dismiss } = useToast();
 
   // Calendar state
   const now = new Date();
@@ -142,44 +148,33 @@ const Changelog: React.FC = () => {
     setModalOpen(true);
   };
 
+  // Simpan & hapus lewat apiPost: respons gagal ({error}, HTTP bukan 2xx, koneksi putus) dilempar sebagai ApiError
   const handleSave = async () => {
-    const body = editing
-      ? { action: 'update_changelog', id: editing.id, ...form }
-      : { action: 'add_changelog', ...form };
+    const title = form.title.trim();
     try {
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setModalOpen(false);
-        fetchLogs();
-      } else {
-        alert('Gagal menyimpan changelog: ' + (data.error || 'kesalahan tidak diketahui'));
-      }
-    } catch {
-      alert('Gagal menyimpan changelog.');
+      if (editing) await apiPost('update_changelog', { id: editing.id, ...form });
+      else await apiPost('add_changelog', { ...form });
+      show('success', editing ? `Changelog "${title}" berhasil diperbarui.` : `Changelog "${title}" berhasil ditambahkan.`);
+      setModalOpen(false);
+      fetchLogs();
+    } catch (err) {
+      show('error', 'Gagal menyimpan changelog.', errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
     }
   };
 
-  const handleDelete = async (id: number) => {
+  // Dipanggil tombol "Ya, hapus" di dialog konfirmasi; dialog tetap terbuka bila gagal
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    setDeleting(true);
     try {
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete_changelog', id }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setDeleteConfirm(null);
-        fetchLogs();
-      } else {
-        alert('Gagal menghapus changelog: ' + (data.error || 'kesalahan tidak diketahui'));
-      }
-    } catch {
-      alert('Gagal menghapus changelog.');
+      await apiPost('delete_changelog', { id: deleteConfirm.id });
+      show('success', `Changelog "${deleteConfirm.title}" berhasil dihapus.`);
+      setDeleteConfirm(null);
+      fetchLogs();
+    } catch (err) {
+      show('error', 'Gagal menghapus changelog.', errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -470,7 +465,7 @@ const Changelog: React.FC = () => {
                                   label={`Hapus ${item.title}`}
                                   size="sm"
                                   variant="danger-ghost"
-                                  onClick={e => { e.stopPropagation(); setDeleteConfirm(item.id); }}
+                                  onClick={e => { e.stopPropagation(); setDeleteConfirm(item); }}
                                 />
                                 <IconButton
                                   icon={<ChevronDown className={cn('transition-transform duration-200', isOpen && 'rotate-180')} />}
@@ -587,15 +582,22 @@ const Changelog: React.FC = () => {
       {/* ── Delete Modal ── */}
       <ConfirmDialog
         open={deleteConfirm !== null}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={() => deleteConfirm !== null && handleDelete(deleteConfirm)}
+        onClose={() => (deleting ? undefined : setDeleteConfirm(null))}
+        onConfirm={handleDelete}
+        loading={deleting}
         tone="danger"
         icon={<AlertTriangle />}
         title="Hapus changelog?"
-        description="Tindakan ini tidak bisa dibatalkan."
+        description={
+          <>
+            Changelog <span className="font-semibold text-adm-fg">"{deleteConfirm?.title}"</span> akan dihapus. Tindakan ini tidak bisa dibatalkan.
+          </>
+        }
         confirmText="Ya, hapus"
         cancelText="Batal"
       />
+
+      <Toast toast={toast} onClose={dismiss} />
     </div>
   );
 };

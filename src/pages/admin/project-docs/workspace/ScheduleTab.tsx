@@ -103,6 +103,7 @@ export function ScheduleTab({ ctx }: { ctx: WorkspaceContext }) {
         const m = milestones.find((x) => x.id === id);
         if (m && m.sort_order !== i + 1) await saveMilestone(m, { sort_order: i + 1 });
       }
+      notify('success', `Urutan tahapan "${milestones[index].title}" berhasil diubah.`);
       reload();
     } catch (err) {
       notify('error', `Gagal mengubah urutan: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
@@ -286,6 +287,7 @@ export function ScheduleTab({ ctx }: { ctx: WorkspaceContext }) {
           notify('success', isEdit ? `Tahapan "${title}" berhasil diperbarui.` : `Tahapan "${title}" berhasil ditambahkan.`);
           reload();
         }}
+        notify={notify}
       />
       <ConfirmDialog
         open={!!toDelete}

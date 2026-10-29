@@ -1,6 +1,7 @@
 // Light dialog with a form inside (approve & sign, request revision). Bottom sheet on phones, centered card from sm.
 // Accessible: role dialog + aria-modal, labelled by its title, focus moves to the first field and stays inside
 // (Tab cycles), Escape / backdrop close unless busy, focus returns to the opener, page scroll locked while open.
+// Escape pressed inside a dialog opened on top of this one (e.g. a delete confirmation) only closes that dialog.
 import { useEffect, useId, useRef, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { LoaderCircle, X } from 'lucide-react';
@@ -52,7 +53,10 @@ export function FormDialog({
     const first = panel?.querySelector<HTMLElement>('input:not([type=checkbox]):not([disabled]),textarea:not([disabled])');
     (first ?? panel)?.focus();
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape' && !latest.current.busy) latest.current.onClose();
+      if (e.key !== 'Escape' || latest.current.busy) return;
+      const owner = e.target instanceof Element ? e.target.closest('[role="dialog"],[role="alertdialog"]') : null;
+      if (owner && owner !== panel) return;
+      latest.current.onClose();
     };
     document.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;

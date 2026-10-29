@@ -321,6 +321,7 @@ function Harness({
   onBusyChange,
   onImagesProcessing,
   onImageNotice,
+  notify,
 }: {
   initialMode?: HeroBgMode;
   initialImages?: string[];
@@ -333,6 +334,7 @@ function Harness({
   onBusyChange?: (busy: boolean) => void;
   onImagesProcessing?: (delta: number) => void;
   onImageNotice?: (message: string) => void;
+  notify?: (tone: string, message: string, description?: string) => void;
 }) {
   const [mode, setMode] = useState<HeroBgMode>(initialMode);
   const [images, setImages] = useState<string[]>(initialImages);
@@ -371,6 +373,7 @@ function Harness({
             onImagesProcessing?.(delta);
           }}
           onImageNotice={onImageNotice}
+          notify={notify}
           heroTextTone={tone}
           setHeroTextTone={setTone}
           heroOverlay={overlay}
@@ -402,6 +405,9 @@ const addImageInput = () => screen.getByLabelText(/^(Tambah|Memproses\.\.\.)$/);
 const replaceInput = () => document.querySelector<HTMLInputElement>('input[type="file"][accept="video/mp4,video/webm"][tabindex="-1"]')!;
 /** Baris status aria-live pengunggah video. */
 const liveStatus = () => document.querySelector('[aria-live="polite"]');
+/** Setiap hapus dikonfirmasi dulu (pemilik 2026-10-29): klik "Ya, hapus" di dialog berjudul `title`. */
+const confirmDelete = async (title: string) =>
+  fireEvent.click(within(await screen.findByRole('dialog', { name: title })).getByRole('button', { name: 'Ya, hapus' }));
 
 describe('HeroSettings: latar hero', () => {
   it('grid gambar hanya di mode Gambar, pengunggah video hanya di mode Video', () => {
@@ -476,7 +482,10 @@ describe('HeroSettings: latar hero', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Gambar' })).toBeEnabled();
 
+    // Hapus dikonfirmasi dulu
     fireEvent.click(screen.getByRole('button', { name: /Hapus video/ }));
+    expect(state().video).toBe(VIDEO_URL);
+    await confirmDelete('Hapus video latar?');
     expect(state()).toEqual({ mode: 'video', video: '', poster: '' });
     expect(screen.getByLabelText(/Unggah video/)).toBeInTheDocument();
   });
@@ -741,6 +750,7 @@ describe('HeroVideoField: status unggahan', () => {
 
     // Dihapus → saran ikut hilang (juga setelah video lain dipasang lagi tanpa durasi)
     fireEvent.click(screen.getByRole('button', { name: /Hapus video/ }));
+    await confirmDelete('Hapus video latar?');
     expect(screen.queryByText(/lebih dari 1 menit/)).not.toBeInTheDocument();
     vi.mocked(captureVideoPoster).mockImplementation(async () => ({ poster: null, duration: null }));
     fireEvent.change(screen.getByLabelText(/Unggah video/), { target: { files: [videoFile()] } });
@@ -776,8 +786,9 @@ describe('HeroVideoField: status unggahan', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /Ganti video/ })).toHaveFocus());
     expect(liveStatus()).toHaveTextContent(DONE_STATUS);
 
-    // Hapus → fokus ke kotak unggah
+    // Hapus (setelah dikonfirmasi) → fokus ke kotak unggah
     fireEvent.click(screen.getByRole('button', { name: /Hapus video/ }));
+    await confirmDelete('Hapus video latar?');
     await waitFor(() => expect(screen.getByLabelText(/Unggah video/)).toHaveFocus());
     expect(liveStatus()).toHaveTextContent(/Video dihapus/);
 
@@ -885,6 +896,65 @@ describe('HeroVideoField: status unggahan', () => {
     await act(async () => MockXHR.last!.respond(200, JSON.stringify({ success: true, url: VIDEO_URL })));
     await waitFor(() => expect(screen.getByRole('button', { name: /Ganti video/ })).toBeEnabled());
     expect(state()).toEqual({ mode: 'video', video: VIDEO_URL, poster: '' });
+  });
+});
+
+// ─── HeroSettings: hapus dikonfirmasi & notifikasi halaman (pemilik 2026-10-29) ──
+
+describe('HeroSettings: hapus dikonfirmasi & notifikasi (pemilik 2026-10-29)', () => {
+  const SAVE_REMINDER = 'Klik Simpan semua perubahan agar tersimpan di website.';
+
+  it('gambar latar & logo: dialog dulu (Batal = tetap), "Ya, hapus" menghapus lalu memberi notifikasi', async () => {
+    const notify = vi.fn();
+    render(<Harness initialMode="image" initialImages={storedImages(2)} initialLogos={[{ name: 'Alpha', src: '/assets/logos/alpha.png' }]} notify={notify} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus gambar 2' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Hapus gambar latar 2?' });
+    expect(dialog).toHaveTextContent('Gambar ini hilang dari latar hero setelah kamu klik Simpan semua perubahan.');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(images()).toEqual(storedImages(2));
+    expect(notify).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus gambar 2' }));
+    await confirmDelete('Hapus gambar latar 2?');
+    expect(images()).toEqual(storedImages(1));
+    expect(notify).toHaveBeenLastCalledWith('success', 'Gambar latar 2 dihapus.', SAVE_REMINDER);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Alpha' }));
+    await confirmDelete('Hapus logo "Alpha"?');
+    expect(logos()).toEqual([]);
+    expect(notify).toHaveBeenLastCalledWith('success', 'Logo "Alpha" dihapus.', SAVE_REMINDER);
+  });
+
+  it('video: gagal & berhasil unggah dan hapus memberi notifikasi; pesan gagal tetap di bawah pengunggah', async () => {
+    const notify = vi.fn();
+    render(<Harness initialMode="video" notify={notify} />);
+    fireEvent.change(screen.getByLabelText(/Unggah video/), { target: { files: [videoFile('klip.mov', 'video/quicktime')] } });
+    expect(screen.getByRole('alert')).toHaveTextContent('Format video harus MP4 atau WebM.');
+    expect(notify).toHaveBeenLastCalledWith('error', 'Gagal mengunggah video.', 'Format video harus MP4 atau WebM.');
+
+    fireEvent.change(screen.getByLabelText(/Unggah video/), { target: { files: [videoFile()] } });
+    await act(async () => MockXHR.last!.respond(500, ''));
+    expect(screen.getByRole('alert')).toHaveTextContent('Gagal mengunggah video (HTTP 500).');
+    expect(notify).toHaveBeenLastCalledWith('error', 'Gagal mengunggah video.', 'Gagal mengunggah video (HTTP 500).');
+
+    fireEvent.change(screen.getByLabelText(/Unggah video/), { target: { files: [videoFile()] } });
+    await act(async () => MockXHR.last!.respond(200, JSON.stringify({ success: true, url: VIDEO_URL })));
+    await waitFor(() => expect(notify).toHaveBeenLastCalledWith('success', 'Video berhasil diunggah.', 'Klik Simpan semua perubahan agar tampil di website.'));
+
+    // Batal di dialog: video tetap, tanpa notifikasi baru
+    const calls = notify.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: /Hapus video/ }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Hapus video latar?' })).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(state().video).toBe(VIDEO_URL);
+    expect(notify).toHaveBeenCalledTimes(calls);
+
+    fireEvent.click(screen.getByRole('button', { name: /Hapus video/ }));
+    await confirmDelete('Hapus video latar?');
+    expect(state().video).toBe('');
+    expect(notify).toHaveBeenLastCalledWith('success', 'Video dihapus.', SAVE_REMINDER);
   });
 });
 
@@ -1200,8 +1270,9 @@ describe('SiteSettings: setting latar hero', () => {
     await waitFor(() => expect(posts).toHaveLength(3));
     expect(posts[2].settings).not.toHaveProperty('hero_bg_mode');
 
-    // Gambar dihapus → hero_images dikirim
+    // Gambar dihapus (setelah dikonfirmasi) → hero_images dikirim
     fireEvent.click(screen.getByRole('button', { name: 'Hapus gambar 1' }));
+    await confirmDelete('Hapus gambar latar 1?');
     fireEvent.click(await readySave());
     await waitFor(() => expect(posts).toHaveLength(4));
     expect(posts[3].settings.hero_images).toBe('[]');
@@ -1509,6 +1580,77 @@ describe('SiteSettings: tab mengikuti website (pemilik 2026-10-24)', () => {
     fireEvent.click(await readySave());
     await waitFor(() => expect(posts).toHaveLength(3));
     expect(posts[2].settings.nexa_enabled).toBe('0');
+  });
+});
+
+describe('SiteSettings: hapus dikonfirmasi & notifikasi (pemilik 2026-10-29)', () => {
+  const nav = () => screen.getByRole('navigation', { name: 'Bagian pengaturan' });
+  const FAQ = [
+    { question: 'Berapa lama pengerjaan?', answer: 'Sekitar satu minggu.' },
+    { question: 'Apakah ada biaya bulanan?', answer: 'Tidak ada.' },
+  ];
+
+  it('FAQ: dialog menyebut pertanyaannya (Batal = tetap); "Ya, hapus" → notifikasi, ikut terkirim saat simpan', async () => {
+    const { posts } = mockSiteApi({ stored: { faq_data: JSON.stringify(FAQ) } });
+    renderSite();
+    await readySave();
+    fireEvent.click(within(nav()).getByRole('button', { name: 'FAQ' }));
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Hapus FAQ' })[0]);
+    const dialog = await screen.findByRole('dialog', { name: 'Hapus FAQ "Berapa lama pengerjaan?"?' });
+    expect(dialog).toHaveTextContent('setelah kamu klik Simpan semua perubahan');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getAllByRole('button', { name: 'Hapus FAQ' })).toHaveLength(2);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Hapus FAQ' })[0]);
+    await confirmDelete('Hapus FAQ "Berapa lama pengerjaan?"?');
+    expect(await screen.findByText('FAQ dihapus dari daftar.')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Hapus FAQ' })).toHaveLength(1);
+
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(JSON.parse(posts[0].settings.faq_data)).toEqual([FAQ[1]]);
+    expect(await screen.findByText('Pengaturan berhasil disimpan')).toBeInTheDocument();
+  });
+
+  it('proyek: kartu dihapus setelah dikonfirmasi, dengan notifikasi', async () => {
+    const { posts } = mockSiteApi({ stored: { portfolio_data: JSON.stringify([{ title: 'Kasir Toko', desc: 'RETAIL', image: '/assets/projects/a.jpg' }]) } });
+    renderSite();
+    await readySave();
+    fireEvent.click(within(nav()).getByRole('button', { name: 'Proyek' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Kasir Toko' }));
+    await confirmDelete('Hapus proyek "Kasir Toko"?');
+    expect(await screen.findByText('Proyek "Kasir Toko" dihapus dari daftar.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hapus Kasir Toko' })).not.toBeInTheDocument();
+
+    fireEvent.click(await readySave());
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0].settings.portfolio_data).toBe('[]');
+  });
+
+  it('kunci AI tersimpan: "Hapus kunci tersimpan" minta konfirmasi, lalu key null terkirim saat pengaturan AI disimpan', async () => {
+    const { posts } = mockSiteApi({ stored: {} });
+    renderSite();
+    fireEvent.click(within(nav()).getByRole('button', { name: 'Tanya Nexa' }));
+    expect(await screen.findByText('Kunci tersimpan: ••••9988')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus kunci tersimpan' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Hapus kunci API Gemini (Google)?' });
+    expect(dialog).toHaveTextContent('Kunci tersimpan ••••9988 dihapus dari server saat kamu klik Simpan pengaturan AI.');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByText('Kunci tersimpan: ••••9988')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus kunci tersimpan' }));
+    await confirmDelete('Hapus kunci API Gemini (Google)?');
+    expect(await screen.findByText('Kunci API Gemini (Google) akan dihapus.')).toBeInTheDocument();
+    expect(screen.getByText('Kunci tersimpan akan dihapus saat pengaturan AI disimpan.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan pengaturan AI' }));
+    await waitFor(() => expect(posts.some((p) => p.action === 'nexa_save_config')).toBe(true));
+    expect(posts.find((p) => p.action === 'nexa_save_config')).toMatchObject({ gemini: { on: true, key: null } });
+    expect(await screen.findByText('Pengaturan AI tersimpan')).toBeInTheDocument();
   });
 });
 

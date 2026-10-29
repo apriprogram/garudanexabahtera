@@ -1,6 +1,6 @@
 // What every workspace tab receives from ProjectWorkspace.
 import type { DocType, PdSettings, ProjectDetail } from '../../../../features/project-docs/types';
-import type { ToastTone } from '../../template-orders/shared/hooks';
+import type { Notify, PdNavState } from '../shared/hooks';
 
 export interface WorkspaceContext {
   project: ProjectDetail;
@@ -11,10 +11,11 @@ export interface WorkspaceContext {
   canEditType: (type: DocType) => boolean;
   /** reload the project after a change */
   reload: () => void;
-  notify: (tone: ToastTone, message: string) => void;
+  /** toast halaman workspace; `description` = kalimat kedua, mis. pesan galat dari server */
+  notify: Notify;
   openTab: (tab: 'ringkasan' | 'dokumen' | 'jadwal' | 'invoice' | 'aktivitas') => void;
-  /** in-app navigation that asks first while the Ringkasan form has unsaved changes */
-  go: (to: string) => void;
+  /** in-app navigation that asks first while the Ringkasan form has unsaved changes; `options` = navToast(...) for the next page */
+  go: (to: string, options?: { state: PdNavState }) => void;
   /** the Ringkasan form reports its unsaved changes (drives the leave guard) */
   setSetupDirty: (dirty: boolean) => void;
 }

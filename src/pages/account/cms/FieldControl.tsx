@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import type { TemplateField } from '../../../templates/types';
 import { describedBy } from './a11y';
 import { fieldDomId } from './content';
+import type { ToastTone } from './Toast';
 import { CharCount } from './ui';
 
 export interface FieldControlProps {
@@ -17,6 +18,11 @@ export interface FieldControlProps {
   disabled?: boolean;
   /** Nilai bawaan template (tombol "Pakai bawaan" pada gambar/warna) */
   defaultValue?: string;
+  /**
+   * Toast milik halaman (field tidak merender <Toast> sendiri). Dipakai field gambar: gambar dihapus, gagal diproses.
+   * Tanpa ini field tetap jalan, hanya tanpa toast.
+   */
+  notify?: (tone: ToastTone, message: string, description?: string) => void;
 }
 
 // Isian berisi data bisnis di situs (bukan data pribadi pengisi), jadi autofill browser dimatikan

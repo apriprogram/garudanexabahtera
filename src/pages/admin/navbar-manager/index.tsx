@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import {
   Button,
+  ConfirmDialog,
   Field,
   IconBox,
   IconButton,
@@ -19,6 +20,9 @@ import {
   Spinner,
   Textarea,
 } from '../../../components/admin/ui';
+import { apiPost, errorMessage } from '../../../lib/api';
+import { useToast } from '../template-orders/shared/hooks';
+import { Toast } from '../template-orders/shared/OrderUi';
 import {
   DndContext,
   closestCenter,
@@ -69,7 +73,8 @@ const getIcon = (iconName: string, size = 16) => {
 interface SortableItemProps {
   menu: NavbarMenu;
   onEdit: (menu: NavbarMenu) => void;
-  onDelete: (id: number) => void;
+  /** Membuka konfirmasi hapus menu ini */
+  onDelete: (menu: NavbarMenu) => void;
   children?: React.ReactNode;
 }
 
@@ -107,7 +112,7 @@ function SortableItem({ menu, onEdit, onDelete, children }: SortableItemProps) {
 
         <div className="flex shrink-0 items-center gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
           <IconButton icon={<Edit2 />} label={`Edit ${menu.label_id}`} size="sm" onClick={() => onEdit(menu)} />
-          <IconButton icon={<Trash2 />} label={`Hapus ${menu.label_id}`} size="sm" variant="danger-ghost" onClick={() => onDelete(menu.id)} />
+          <IconButton icon={<Trash2 />} label={`Hapus ${menu.label_id}`} size="sm" variant="danger-ghost" onClick={() => onDelete(menu)} />
         </div>
       </div>
       {children && <div className="ml-4 mt-2 border-l border-adm-line pl-3 sm:ml-10">{children}</div>}
@@ -123,27 +128,18 @@ const NavbarManager = () => {
   const [editingMenu, setEditingMenu] = useState<NavbarMenu | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // Menu yang akan dihapus (dialog konfirmasi terbuka)
+  const [toDelete, setToDelete] = useState<NavbarMenu | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toast, show, dismiss } = useToast();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const api = async (action: string, body?: object) => {
-    // GET tidak boleh membawa body (fetch akan throw), jadi action dikirim lewat query string
-    const res = body
-      ? await fetch('/api.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action, ...body }),
-        })
-      : await fetch(`/api.php?action=${encodeURIComponent(action)}`);
-    // For GET we need to handle it since current backend uses POST for everything usually
-    // but the backend I just patched handles both.
-    return res.json();
-  };
-
-  // setState di sini hanya terjadi setelah respons API
+  // setState di sini hanya terjadi setelah respons API. Setelah simpan/hapus daftar dimuat ulang lewat fungsi ini
+  // juga (tanpa spinner satu halaman), supaya halaman beserta notifikasinya tetap terpasang.
   const loadMenus = useCallback(async () => {
     try {
       // Because current backend logic expects action in body even for GET often:
@@ -158,11 +154,6 @@ const NavbarManager = () => {
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, []);
-
-  const fetchMenus = () => {
-    setLoading(true);
-    return loadMenus();
-  };
 
   useEffect(() => {
     // loading=true sudah menjadi state awal; loadMenus baru memanggil setState setelah await,
@@ -179,7 +170,10 @@ const NavbarManager = () => {
       const newIndex = items.findIndex(m => m.id === over.id);
       
       const newOrder = arrayMove(items, oldIndex, newIndex);
-      
+
+      // Salinan urutan lama: dipasang lagi bila urutan baru gagal disimpan
+      const previousMenus = menus.map(m => ({ ...m }));
+
       // Update local state first
       const updatedMenus = [...menus];
       newOrder.forEach((item, idx) => {
@@ -190,32 +184,47 @@ const NavbarManager = () => {
 
       // Save to backend
       try {
-        await api('save_navbar_menus_order', { menus: updatedMenus.map(m => ({ id: m.id, sort_order: m.sort_order, parent_id: m.parent_id })) });
-      } catch (err) { console.error(err); }
+        await apiPost('save_navbar_menus_order', { menus: updatedMenus.map(m => ({ id: m.id, sort_order: m.sort_order, parent_id: m.parent_id })) });
+        show('success', 'Urutan menu berhasil disimpan.');
+      } catch (err) {
+        setMenus(previousMenus);
+        show('error', 'Gagal menyimpan urutan menu.', errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
+      }
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMenu) return;
+    const isNew = editingMenu.id === 0;
     setIsSaving(true);
     try {
-      const action = editingMenu.id === 0 ? 'add_navbar_menu' : 'edit_navbar_menu';
+      const action = isNew ? 'add_navbar_menu' : 'edit_navbar_menu';
       // Kolom label_en tetap ada di database (dipakai migrasi sebagai kunci): menu lama menyimpan nilainya,
       // menu baru memakai label Indonesia.
-      await api(action, { ...editingMenu, label_en: editingMenu.label_en || editingMenu.label_id });
-      await fetchMenus();
+      await apiPost(action, { ...editingMenu, label_en: editingMenu.label_en || editingMenu.label_id });
+      show('success', isNew ? `Menu "${editingMenu.label_id}" berhasil ditambahkan.` : `Menu "${editingMenu.label_id}" berhasil diperbarui.`);
       setIsModalOpen(false);
-    } catch (err) { console.error(err); }
-    finally { setIsSaving(false); }
+      loadMenus();
+    } catch (err) {
+      show('error', 'Gagal menyimpan menu.', errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
+    } finally { setIsSaving(false); }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Hapus menu ini? Submenu di dalamnya ikut terhapus.')) return;
+  // Dipanggil tombol "Ya, hapus" di dialog konfirmasi; dialog tetap terbuka bila gagal
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setDeleting(true);
     try {
-      await api('delete_navbar_menu', { id });
-      await fetchMenus();
-    } catch (err) { console.error(err); }
+      await apiPost('delete_navbar_menu', { id: toDelete.id });
+      show('success', `Menu "${toDelete.label_id}" berhasil dihapus.`);
+      setToDelete(null);
+      loadMenus();
+    } catch (err) {
+      show('error', 'Gagal menghapus menu.', errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const openAdd = (parentId: number | null = null) => {
@@ -239,6 +248,8 @@ const NavbarManager = () => {
   );
 
   const mainMenus = menus.filter(m => m.parent_id === null).sort((a, b) => a.sort_order - b.sort_order);
+  // Submenu milik menu yang akan dihapus ikut terhapus di server (delete_navbar_menu)
+  const deleteChildCount = toDelete ? menus.filter(m => m.parent_id === toDelete.id).length : 0;
 
   return (
     <div className="pb-10">
@@ -258,12 +269,12 @@ const NavbarManager = () => {
             {mainMenus.map(menu => {
               const children = menus.filter(m => m.parent_id === menu.id).sort((a, b) => a.sort_order - b.sort_order);
               return (
-                <SortableItem key={menu.id} menu={menu} onEdit={openEdit} onDelete={handleDelete}>
+                <SortableItem key={menu.id} menu={menu} onEdit={openEdit} onDelete={setToDelete}>
                   <div className="mb-3">
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, menu.id)}>
                       <SortableContext items={children.map(c => c.id)} strategy={verticalListSortingStrategy}>
                         {children.map(child => (
-                          <SortableItem key={child.id} menu={child} onEdit={openEdit} onDelete={handleDelete} />
+                          <SortableItem key={child.id} menu={child} onEdit={openEdit} onDelete={setToDelete} />
                         ))}
                       </SortableContext>
                     </DndContext>
@@ -343,6 +354,25 @@ const NavbarManager = () => {
           </form>
         )}
       </Modal>
+
+      {/* ── Konfirmasi hapus ── */}
+      <ConfirmDialog
+        open={!!toDelete}
+        onClose={() => (deleting ? undefined : setToDelete(null))}
+        onConfirm={handleDelete}
+        loading={deleting}
+        tone="danger"
+        title={`Hapus menu "${toDelete?.label_id ?? ''}"?`}
+        description={
+          deleteChildCount > 0
+            ? `Menu ini beserta ${deleteChildCount} submenu di dalamnya akan dihapus permanen dari navbar website.`
+            : 'Menu ini akan dihapus permanen dari navbar website.'
+        }
+        confirmText="Ya, hapus"
+        cancelText="Batal"
+      />
+
+      <Toast toast={toast} onClose={dismiss} />
     </div>
   );
 };

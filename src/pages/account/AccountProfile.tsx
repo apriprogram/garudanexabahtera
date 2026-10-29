@@ -3,12 +3,16 @@
 // di klien (persegi ≤ 512 px, WebP) sebelum dikirim; `avatar` tidak dikirim bila foto tidak diubah, '' bila dihapus.
 // Setelah simpan, profileStore diperbarui: nama & foto di menu akun langsung berganti, dan isian otomatis form pesan
 // (getCurrentUser) ikut memakai data baru. Email = email login, tidak bisa diubah di sini.
+// "Hapus foto" minta konfirmasi dulu; fotonya benar-benar terhapus saat perubahan disimpan. Simpan berhasil/gagal = toast.
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Camera, LoaderCircle, Trash2, Undo2 } from 'lucide-react';
 import { ApiError, apiPost, errorMessage } from '../../lib/api';
 import type { CustomerProfile } from '../../types/platform';
 import { UserAvatar } from './AccountLayout';
+import { Toast, type ToastTone } from './cms/Toast';
 import { useLeaveGuard } from './cms/useLeaveGuard';
+import { useToast } from './cms/useToast';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { Field } from './components/Field';
 import { fieldProps } from './components/fieldProps';
 import { Notice } from './components/Notice';
@@ -34,12 +38,17 @@ import {
 
 type LoadState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; profile: CustomerProfile };
 
+/** Toast milik halaman, dipanggil form (form tidak merender <Toast> sendiri). */
+type Notify = (tone: ToastTone, message: string, description?: string) => void;
+
 const loadErrorMessage = (err: unknown) =>
   err instanceof ApiError && err.code === 'NETWORK' ? err.message : errorMessage(err, 'Profil belum bisa dimuat. Silakan coba lagi.');
 
 export default function AccountProfile() {
   useDocumentTitle('Profil saya');
   const [state, setState] = useState<LoadState>({ status: 'loading' });
+  const { toast, show: showToast, dismiss: dismissToast } = useToast();
+  const notify: Notify = (tone, message, description) => showToast(tone, message, undefined, description);
 
   useEffect(() => {
     let alive = true;
@@ -71,9 +80,10 @@ export default function AccountProfile() {
         <div className="mt-6 sm:mt-8" aria-busy={state.status === 'loading'}>
           {state.status === 'loading' && <ProfileSkeleton />}
           {state.status === 'error' && <ErrorState title="Profil belum bisa dimuat" message={state.message} onRetry={retry} />}
-          {state.status === 'ready' && <ProfileForm initial={state.profile} />}
+          {state.status === 'ready' && <ProfileForm initial={state.profile} notify={notify} />}
         </div>
       </div>
+      <Toast toast={toast} onClose={dismissToast} />
     </div>
   );
 }
@@ -117,7 +127,7 @@ function checkField(key: TextField, values: Values): string | undefined {
 
 const LEAVE_MESSAGE = 'Perubahan profil belum disimpan. Tinggalkan halaman ini?';
 
-function ProfileForm({ initial }: { initial: CustomerProfile }) {
+function ProfileForm({ initial, notify }: { initial: CustomerProfile; notify: Notify }) {
   const [saved, setSaved] = useState(initial);
   const [values, setValues] = useState<Values>(() => valuesFrom(initial));
   const [avatar, setAvatar] = useState<AvatarChange>({ kind: 'keep' });
@@ -128,15 +138,25 @@ function ProfileForm({ initial }: { initial: CustomerProfile }) {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const uploadRef = useRef<HTMLButtonElement>(null);
   // Galat dari server: field baru bisa difokus setelah tidak nonaktif lagi (saving selesai dan sudah dirender)
   const focusAfterSave = useRef<FieldErrors<ProfileField> | null>(null);
+  // Foto dihapus lewat dialog: tombol "Hapus foto" ikut hilang, jadi fokus pindah ke "Unggah foto" setelah dialog tutup
+  const focusAfterRemove = useRef(false);
 
   useEffect(() => {
     if (saving || !focusAfterSave.current) return;
     focusFirstError(FIELD_ORDER, focusAfterSave.current);
     focusAfterSave.current = null;
   }, [saving]);
+
+  useEffect(() => {
+    if (confirmRemove || !focusAfterRemove.current) return;
+    focusAfterRemove.current = false;
+    uploadRef.current?.focus();
+  }, [confirmRemove]);
 
   const baseline = valuesFrom(saved);
   const dirty = avatar.kind !== 'keep' || TEXT_FIELDS.some((key) => values[key].trim() !== baseline[key].trim());
@@ -186,11 +206,14 @@ function ProfileForm({ initial }: { initial: CustomerProfile }) {
     }
   };
 
+  // Dipanggil "Ya, hapus" di dialog konfirmasi
   const removePhoto = () => {
     setSuccess(false);
     setErrors((prev) => ({ ...prev, avatar: undefined }));
     // Foto baru yang belum disimpan cukup dibuang; foto tersimpan ditandai untuk dihapus saat simpan
     setAvatar(savedAvatar ? { kind: 'remove' } : { kind: 'keep' });
+    focusAfterRemove.current = true;
+    setConfirmRemove(false);
   };
 
   const undoPhoto = () => {
@@ -231,7 +254,10 @@ function ProfileForm({ initial }: { initial: CustomerProfile }) {
       setAvatar({ kind: 'keep' });
       setSubmitted(false);
       setSuccess(true);
+      notify('success', 'Profil berhasil disimpan.');
     } catch (err) {
+      // Galat per field / pesan di atas tombol tetap tampil; toast gagal ikut muncul di atas layar
+      notify('danger', 'Gagal menyimpan profil.', errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
       if (err instanceof ApiError && err.fieldErrors) {
         const serverErrors: FieldErrors<ProfileField> = {};
         for (const key of FIELD_ORDER) {
@@ -278,6 +304,7 @@ function ProfileForm({ initial }: { initial: CustomerProfile }) {
           <div className="min-w-0">
             <div className="flex flex-wrap gap-2">
               <button
+                ref={uploadRef}
                 id="avatar"
                 type="button"
                 className="btn btn-outline"
@@ -290,7 +317,12 @@ function ProfileForm({ initial }: { initial: CustomerProfile }) {
               </button>
               {/* Foto baru tanpa foto tersimpan cukup dibatalkan (tombol Batalkan), tidak perlu dua tombol yang sama */}
               {shownAvatar && (avatar.kind !== 'new' || savedAvatar) && (
-                <button type="button" className="btn btn-ghost text-danger-700 hover:bg-danger-50 hover:text-danger-700" onClick={removePhoto} disabled={busy}>
+                <button
+                  type="button"
+                  className="btn btn-ghost text-danger-700 hover:bg-danger-50 hover:text-danger-700"
+                  onClick={() => setConfirmRemove(true)}
+                  disabled={busy}
+                >
                   <Trash2 className="h-4 w-4" aria-hidden />
                   Hapus foto
                 </button>
@@ -325,6 +357,17 @@ function ProfileForm({ initial }: { initial: CustomerProfile }) {
             )}
           </div>
         </div>
+
+        <ConfirmDialog
+          open={confirmRemove}
+          title="Hapus foto profil?"
+          description="Foto profil dihapus saat Anda menyimpan perubahan; setelah itu menu akun menampilkan inisial nama Anda."
+          confirmLabel="Ya, hapus"
+          cancelLabel="Batal"
+          tone="danger"
+          onConfirm={removePhoto}
+          onClose={() => setConfirmRemove(false)}
+        />
       </section>
 
       <section aria-labelledby="profile-bio-title" className="border-t border-line px-5 py-6 sm:px-8 sm:py-7">

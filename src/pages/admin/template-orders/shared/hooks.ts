@@ -57,10 +57,14 @@ export function useDebounced<T>(value: T, delay = 350): T {
   return debounced;
 }
 
-export type ToastTone = 'success' | 'error' | 'info';
-export type ToastState = { id: number; tone: ToastTone; message: string } | null;
+export type ToastTone = 'success' | 'error' | 'info' | 'warning';
+export type ToastState = { id: number; tone: ToastTone; message: string; description?: string } | null;
 
-/** Notifikasi singkat di atas layar (hilang sendiri setelah 4 detik). Pasangkan dengan komponen <Toast>. */
+/**
+ * Notifikasi singkat di atas tengah layar. Pasangkan dengan komponen <Toast>.
+ * - Hilang sendiri: sukses/info 4 detik, gagal/peringatan 6 detik.
+ * - `description` = kalimat kedua opsional di bawah judul, mis. pesan galat dari server.
+ */
 export function useToast() {
   const [toast, setToast] = useState<ToastState>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -70,10 +74,10 @@ export function useToast() {
     setToast(null);
   }, []);
 
-  const show = useCallback((tone: ToastTone, message: string) => {
+  const show = useCallback((tone: ToastTone, message: string, description?: string) => {
     window.clearTimeout(timer.current);
-    setToast({ id: Date.now(), tone, message });
-    timer.current = window.setTimeout(() => setToast(null), tone === 'error' ? 6000 : 4000);
+    setToast({ id: Date.now(), tone, message, description });
+    timer.current = window.setTimeout(() => setToast(null), tone === 'error' || tone === 'warning' ? 6000 : 4000);
   }, []);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);

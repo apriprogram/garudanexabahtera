@@ -184,11 +184,92 @@ describe('SiteEditor', { timeout: 30_000 }, () => {
     const before = screen.getAllByRole('button', { name: /^Hapus Layanan/ }).length;
     fireEvent.click(add);
     expect(screen.getAllByRole('button', { name: /^Hapus Layanan/ })).toHaveLength(before + 1);
+
+    // Hapus selalu dikonfirmasi dulu (judul menyebut itemnya); Batal tidak menghapus apa pun
     fireEvent.click(screen.getAllByRole('button', { name: /^Hapus Layanan/ })[0]);
+    let dialog = screen.getByRole('alertdialog', { name: 'Hapus layanan “Perencanaan & desain”?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Hapus Layanan/ })).toHaveLength(before + 1);
+    expect(screen.queryByRole('button', { name: 'Urungkan' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^Hapus Layanan/ })[0]);
+    dialog = screen.getByRole('alertdialog', { name: 'Hapus layanan “Perencanaan & desain”?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^Hapus Layanan/ })).toHaveLength(before);
     expect(screen.getByRole('button', { name: 'Urungkan' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Urungkan' }));
     expect(screen.getAllByRole('button', { name: /^Hapus Layanan/ })).toHaveLength(before + 1);
+    // Item kosong (belum ada isian) disebut dengan nomornya
+    fireEvent.click(screen.getAllByRole('button', { name: /^Hapus Layanan/ })[before]);
+    expect(screen.getByRole('alertdialog', { name: `Hapus layanan ${before + 1}?` })).toBeInTheDocument();
+
+    // Ctrl+S selagi dialog terbuka: simpan berjalan dan konfirmasi dibatalkan (item tidak dihapus di tengah simpan)
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 's', ctrlKey: true });
+    });
+    expect(await screen.findByText(/berhasil disimpan/i)).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Hapus Layanan/ })).toHaveLength(before + 1);
+  });
+
+  it('Urungkan selagi dialog hapus terbuka: yang dihapus tetap item yang dipilih', async () => {
+    mockApi();
+    renderEditor();
+    await screen.findByRole('heading', { name: 'Kelola konten situs' });
+    fireEvent.click(screen.getByRole('button', { name: /^Layanan/ }));
+    const services = document.querySelector<HTMLElement>('[data-cms-section="services"]')!;
+    const deleteFirst = () => fireEvent.click(within(services).getAllByRole('button', { name: /^Hapus Layanan/ })[0]);
+
+    // Hapus item pertama → toast dengan Urungkan
+    deleteFirst();
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Ya, hapus' }));
+    expect(within(services).queryByText('· Perencanaan & desain')).not.toBeInTheDocument();
+
+    // Hapus item yang kini pertama, lalu Urungkan hapus sebelumnya selagi dialognya terbuka (indeks item bergeser)
+    deleteFirst();
+    expect(screen.getByRole('alertdialog', { name: 'Hapus layanan “Konstruksi gedung komersial”?' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Urungkan' }));
+    expect(within(services).getByText('· Perencanaan & desain')).toBeInTheDocument();
+    const dialog = screen.getByRole('alertdialog', { name: 'Hapus layanan “Konstruksi gedung komersial”?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(within(services).getByText('· Perencanaan & desain')).toBeInTheDocument();
+    expect(within(services).queryByText('· Konstruksi gedung komersial')).not.toBeInTheDocument();
+    expect(within(services).getByText('· Gudang & pabrik')).toBeInTheDocument();
+  });
+
+  it('hapus gambar dikonfirmasi dulu, lalu fokus pindah ke tombol unggah', async () => {
+    mockApi();
+    renderEditor();
+    await screen.findByRole('heading', { name: 'Kelola konten situs' });
+    const hero = document.querySelector<HTMLElement>('[data-cms-section="hero"]')!;
+    fireEvent.click(within(hero).getByRole('button', { name: /^Hero/ }));
+    expect(within(hero).getByAltText('Pratinjau gambar hero')).toBeInTheDocument();
+
+    // Batal: gambar tetap
+    fireEvent.click(within(hero).getByRole('button', { name: 'Hapus' }));
+    let dialog = screen.getByRole('alertdialog', { name: 'Hapus gambar hero?' });
+    expect(dialog).toHaveTextContent('situs baru berubah setelah perubahan disimpan');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    expect(within(hero).getByAltText('Pratinjau gambar hero')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Simpan$/ })).toBeDisabled();
+
+    // Ya, hapus: gambar dikosongkan (belum tersimpan sampai Simpan), tombol Hapus hilang
+    fireEvent.click(within(hero).getByRole('button', { name: 'Hapus' }));
+    dialog = screen.getByRole('alertdialog', { name: 'Hapus gambar hero?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(within(hero).queryByAltText('Pratinjau gambar hero')).not.toBeInTheDocument();
+    expect(within(hero).getByText('Belum ada gambar')).toBeInTheDocument();
+    expect(within(hero).queryByRole('button', { name: 'Hapus' })).not.toBeInTheDocument();
+    expect(within(hero).getByRole('button', { name: /Pakai bawaan/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Simpan$/ })).toBeEnabled();
+    // Toast halaman: gambar dihapus, situs berubah setelah disimpan
+    expect(screen.getByText('Gambar hero dihapus.').closest('[role="status"]')).toHaveTextContent('Situs baru berubah setelah perubahan disimpan.');
+    await waitFor(() => expect(within(hero).getByRole('button', { name: /Unggah gambar/ })).toHaveFocus());
   });
 
   it('situs dinonaktifkan → hanya baca, bantuan lewat WhatsApp', async () => {
@@ -271,9 +352,21 @@ describe('SiteEditor', { timeout: 30_000 }, () => {
     localStorage.setItem('cms-draft-1', JSON.stringify({ content: { brand: { company_name: 'PT Lama' } }, savedAt: Date.now() }));
     mockApi();
     renderEditor();
+    // Buang ditanyakan dulu; Batal = draf tetap ditawarkan
     fireEvent.click(await screen.findByRole('button', { name: 'Buang' }));
+    let dialog = screen.getByRole('alertdialog', { name: 'Buang perubahan yang belum disimpan?' });
+    expect(dialog).toHaveTextContent('tidak bisa dipulihkan lagi');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    expect(screen.getByText('Pulihkan perubahan yang belum disimpan?')).toBeInTheDocument();
+    expect(localStorage.getItem('cms-draft-1')).toContain('PT Lama');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Buang' }));
+    dialog = screen.getByRole('alertdialog', { name: 'Buang perubahan yang belum disimpan?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, buang' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.queryByText('Pulihkan perubahan yang belum disimpan?')).not.toBeInTheDocument();
     expect(localStorage.getItem('cms-draft-1')).toBeNull();
+    expect(screen.getByText('Perubahan yang belum disimpan sudah dibuang.')).toBeInTheDocument();
     cleanup();
 
     const def = TEMPLATES['corporate-nexa'];

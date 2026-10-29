@@ -416,6 +416,10 @@ describe('dialog perpanjangan', UI_SUITE, () => {
     const dialog = screen.getByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Lanjut ke pembayaran' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(`Masih ada tagihan perpanjangan ${RENEWAL_NO}`);
+    // Toast gagal halaman (di luar dialog)
+    expect(screen.getByText('Gagal membuat tagihan perpanjangan.').closest('[role="alert"]')).toHaveTextContent(
+      `Masih ada tagihan perpanjangan ${RENEWAL_NO}`,
+    );
     expect(goToPaymentMock).not.toHaveBeenCalled();
   });
 
@@ -440,6 +444,7 @@ describe('dialog perpanjangan', UI_SUITE, () => {
     );
     await waitFor(() => expect(document.activeElement).toBe(pending));
     expect(within(card).queryByRole('button', { name: 'Perpanjang masa aktif' })).not.toBeInTheDocument();
+    expect(screen.getByText(`Tagihan perpanjangan ${RENEWAL_NO} berhasil dibuat.`)).toBeInTheDocument();
     expect(goToPaymentMock).not.toHaveBeenCalled();
   });
 });
@@ -492,6 +497,7 @@ describe('tagihan perpanjangan menunggu pembayaran', UI_SUITE, () => {
 
     const flash = await screen.findByText('Masa aktif sekarang sampai 22 Oktober 2028.');
     expect(flash.closest('[role="status"]')).toHaveTextContent('Perpanjangan berhasil');
+    expect(screen.getByText(`Simulasi pembayaran ${RENEWAL_NO} berhasil.`)).toBeInTheDocument();
     await waitFor(() => expect(within(card).queryByRole('group')).not.toBeInTheDocument());
     expect(callsOf('dev_simulate_renewal_payment')[0].body).toMatchObject({ renewal_number: RENEWAL_NO });
 
@@ -526,6 +532,7 @@ describe('tagihan perpanjangan menunggu pembayaran', UI_SUITE, () => {
     fireEvent.click(within(confirm).getByRole('button', { name: 'Ya, batalkan' }));
 
     expect(await screen.findByText(`Tagihan perpanjangan ${RENEWAL_NO} dibatalkan.`)).toBeInTheDocument();
+    expect(screen.getByText(`Tagihan perpanjangan ${RENEWAL_NO} berhasil dibatalkan.`)).toBeInTheDocument();
     await waitFor(() => expect(within(card).queryByRole('group')).not.toBeInTheDocument());
     expect(callsOf('customer_cancel_renewal')[0].body).toMatchObject({ renewal_number: RENEWAL_NO });
     const history = within(card).getByRole('heading', { name: 'Riwayat perpanjangan' }).parentElement!;

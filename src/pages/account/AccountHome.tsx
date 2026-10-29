@@ -4,6 +4,7 @@
 // - orders (/akun/pesanan, Pesanan saya): ringkasan/filter + semua pesanan dengan aksi per status. Urutan: yang perlu
 //   tindakan dulu; pesanan dibatalkan/ditolak dilipat di bawah;
 // - sites (/akun/situs, Situs saya): semua situs aktif dengan masa aktifnya.
+// "Bayar Sekarang" di kartu pesanan pindah ke Midtrans (tanpa toast); gagal membuka pembayaran = pesan di kartu + toast.
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -29,6 +30,8 @@ import { templateHasPosts } from '../../templates/postTemplates';
 import { ApiError, apiPost, errorMessage } from '../../lib/api';
 import { getCurrentUser } from '../../lib/auth';
 import { formatRupiah, formatTanggal, type Order, type OrderStatus } from '../../types/platform';
+import { Toast, type ToastTone } from './cms/Toast';
+import { useToast } from './cms/useToast';
 import { countdownLabel, periodTone, remaining, type PeriodTone } from './components/activePeriod';
 import { Notice } from './components/Notice';
 import { REFUNDED_TEXT, STATUS_HINT, asSentence, displayDomain, refundHint } from './components/orderCopy';
@@ -87,6 +90,9 @@ const loadErrorMessage = (err: unknown) =>
 
 export type AccountHomeView = 'dashboard' | 'orders' | 'sites';
 
+/** Toast milik halaman, dipanggil kartu pesanan (kartu tidak merender <Toast> sendiri). */
+type Notify = (tone: ToastTone, message: string, description?: string) => void;
+
 /** Pesanan berjalan yang tampil di Beranda; sisanya lewat "Lihat semua pesanan". */
 const DASHBOARD_ORDER_LIMIT = 3;
 
@@ -98,6 +104,8 @@ export default function AccountHome({ view = 'dashboard' }: { view?: AccountHome
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>('all');
+  const { toast, show: showToast, dismiss: dismissToast } = useToast();
+  const notify: Notify = (tone, message, description) => showToast(tone, message, undefined, description);
 
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
@@ -308,7 +316,7 @@ export default function AccountHome({ view = 'dashboard' }: { view?: AccountHome
             </div>
           )}
 
-          {openOrders.length > 0 && <OrderList orders={openOrders} />}
+          {openOrders.length > 0 && <OrderList orders={openOrders} notify={notify} />}
 
           {state.status === 'ready' && view === 'dashboard' && hiddenOrders > 0 && (
             <div className="mt-4 flex justify-center">
@@ -327,12 +335,13 @@ export default function AccountHome({ view = 'dashboard' }: { view?: AccountHome
                 <span className="tabular-nums font-medium text-subtle">({closedOrders.length})</span>
                 <ChevronDown className="h-4 w-4 text-subtle transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
               </summary>
-              <OrderList orders={closedOrders} className="mt-2" />
+              <OrderList orders={closedOrders} notify={notify} className="mt-2" />
             </details>
           )}
         </div>
       </section>
       )}
+      <Toast toast={toast} onClose={dismissToast} />
     </div>
   );
 }
@@ -391,12 +400,12 @@ function SitesView({
   );
 }
 
-function OrderList({ orders, className = '' }: { orders: Order[]; className?: string }) {
+function OrderList({ orders, notify, className = '' }: { orders: Order[]; notify: Notify; className?: string }) {
   return (
     <ul className={`space-y-3 sm:space-y-4 ${className}`}>
       {orders.map((order) => (
         <li key={order.order_number}>
-          <OrderCard order={order} />
+          <OrderCard order={order} notify={notify} />
         </li>
       ))}
     </ul>
@@ -522,7 +531,7 @@ function SiteCard({ order, now }: { order: Order; now: Date }) {
   );
 }
 
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({ order, notify }: { order: Order; notify: Notify }) {
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const detailPath = `/akun/pesanan/${encodeURIComponent(order.order_number)}`;
@@ -539,6 +548,7 @@ function OrderCard({ order }: { order: Order }) {
       await payOrder(order.order_number);
     } catch (err) {
       setPayError(errorMessage(err, 'Gagal membuka halaman pembayaran. Silakan coba lagi.'));
+      notify('danger', 'Gagal membuka halaman pembayaran.', errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
       setPaying(false);
     }
   };

@@ -103,6 +103,9 @@ const renderAccount = (path = '/akun/profil') =>
 
 const menuButton = () => screen.getByRole('button', { name: /^Menu akun / });
 const pageAvatar = () => screen.getByRole('main').querySelector('img');
+/** Toast "Gagal menyimpan profil." dengan pesan tertentu (toast sebelumnya bisa masih beranimasi keluar). */
+const failureToast = (text: string) =>
+  screen.queryAllByRole('alert').find((el) => el.textContent?.includes('Gagal menyimpan profil.') && el.textContent.includes(text));
 
 /* ─────────────────────────── profileStore ─────────────────────────── */
 
@@ -269,6 +272,8 @@ describe('halaman profil', { timeout: 20_000 }, () => {
     fireEvent.click(screen.getByRole('button', { name: 'Simpan perubahan' }));
 
     expect(await screen.findByText('Profil tersimpan.')).toBeInTheDocument();
+    // Notifikasi melayang (toast) ikut tampil
+    expect(screen.getByText('Profil berhasil disimpan.').closest('[role="status"]')).toBeInTheDocument();
     const body = lastCall('customer_update_profile')!;
     expect(body).toEqual({
       action: 'customer_update_profile',
@@ -284,7 +289,7 @@ describe('halaman profil', { timeout: 20_000 }, () => {
     expect(screen.queryByText('Ada perubahan yang belum disimpan.')).not.toBeInTheDocument();
   });
 
-  it('Hapus foto mengirim avatar kosong; header kembali ke inisial', async () => {
+  it('Hapus foto (setelah konfirmasi) mengirim avatar kosong; header kembali ke inisial', async () => {
     seedSession({ name: 'Budi Santoso', avatar: PHOTO });
     api.customer_get_profile = () => json(200, { profile: makeProfile({ avatar: PHOTO }) });
     api.customer_update_profile = () => json(200, { profile: makeProfile({ avatar: null }) });
@@ -293,14 +298,40 @@ describe('halaman profil', { timeout: 20_000 }, () => {
     expect(pageAvatar()).toHaveAttribute('src', PHOTO);
 
     fireEvent.click(screen.getByRole('button', { name: /Hapus foto/ }));
+    // Konfirmasi dulu: foto belum ditandai sebelum "Ya, hapus"
+    const dialog = screen.getByRole('alertdialog', { name: 'Hapus foto profil?' });
+    expect(pageAvatar()).toHaveAttribute('src', PHOTO);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(pageAvatar()).toBeNull();
     expect(screen.getByText('Foto akan dihapus saat Anda menyimpan perubahan.')).toBeInTheDocument();
+    // Tombol Hapus foto hilang: fokus ke Unggah foto, bukan <body>
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Unggah foto/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Simpan perubahan' }));
 
     await screen.findByText('Profil tersimpan.');
     expect(lastCall('customer_update_profile')).toMatchObject({ avatar: '' });
     expect(menuButton().querySelector('img')).toBeNull();
     expect(JSON.parse(localStorage.getItem('currentUser')!).avatar).toBeNull();
+  });
+
+  it('Hapus foto lalu Batal di dialog: foto tetap, tidak ada perubahan', async () => {
+    seedSession({ name: 'Budi Santoso', avatar: PHOTO });
+    api.customer_get_profile = () => json(200, { profile: makeProfile({ avatar: PHOTO }) });
+    renderAccount();
+    await screen.findByLabelText('Nama lengkap');
+
+    const remove = screen.getByRole('button', { name: /Hapus foto/ });
+    remove.focus();
+    fireEvent.click(remove);
+    const dialog = screen.getByRole('alertdialog', { name: 'Hapus foto profil?' });
+    expect(dialog).toHaveTextContent('Foto profil dihapus saat Anda menyimpan perubahan');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(pageAvatar()).toHaveAttribute('src', PHOTO);
+    expect(screen.queryByText('Ada perubahan yang belum disimpan.')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(remove);
   });
 
   it('foto baru: pratinjau sebelum simpan, dikirim sebagai data URI; Batalkan mengembalikan foto lama', async () => {
@@ -377,12 +408,15 @@ describe('halaman profil', { timeout: 20_000 }, () => {
     expect(screen.getByLabelText(/Kota/)).toHaveAccessibleDescription('Kota maksimal 100 karakter.');
     expect(document.activeElement).toBe(phone);
     expect(screen.queryByText('Profil tersimpan.')).not.toBeInTheDocument();
+    // Galat per field tetap di bawah field, plus toast gagal
+    expect(failureToast('Data belum valid.')).toBeDefined();
 
-    // Galat tanpa field → pemberitahuan umum
+    // Galat tanpa field → pemberitahuan umum + toast gagal dengan pesan yang sama
     api.customer_update_profile = () => json(500, { error: 'Server sedang sibuk.' });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan perubahan' }));
-    const alert = await screen.findByText('Server sedang sibuk.');
-    expect(alert.closest('[role="alert"]')).toHaveTextContent('Profil belum tersimpan');
+    const notice = await screen.findByText('Profil belum tersimpan');
+    expect(notice.closest('[role="alert"]')).toHaveTextContent('Server sedang sibuk.');
+    expect(failureToast('Server sedang sibuk.')).toBeDefined();
   });
 
   it('gagal memuat → Coba lagi', async () => {

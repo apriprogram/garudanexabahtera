@@ -2,12 +2,12 @@
 // pelanggan (role customer) yang dipakai klien untuk menyetujui dan menandatangani dokumen (spec §0, §5).
 import { useState, type FormEvent } from 'react';
 import { Link2, Search, Unlink, UserRound } from 'lucide-react';
-import { Button, Drawer, Field, Input, ModalBody, ModalFooter, Notice, SearchInput, Segmented, Spinner, Textarea, cn } from '../../../../components/admin/ui';
+import { Button, ConfirmDialog, Drawer, Field, Input, ModalBody, ModalFooter, Notice, SearchInput, Segmented, Spinner, Textarea, cn } from '../../../../components/admin/ui';
 import { pdClientSave, pdCustomersList } from '../../../../features/project-docs/api';
 import { CLIENT_TYPE_LABEL, type ClientListItem, type ClientType, type CustomerOption } from '../../../../features/project-docs/types';
 import { errorMessage } from '../../../../lib/api';
 import { useDebounced } from '../../template-orders/shared/hooks';
-import { fieldErrorsOf, usePdQuery } from '../shared/hooks';
+import { errorDetail, fieldErrorsOf, usePdQuery, type Notify } from '../shared/hooks';
 import { validateClient, type ClientForm, type Errors } from '../shared/validation';
 
 const EMPTY: ClientForm = { type: 'perusahaan', name: '', pic_name: '', pic_title: '', email: '', phone: '', address: '', city: '', npwp: '', notes: '' };
@@ -35,27 +35,51 @@ function CustomerPicker({ linked, onChange }: { linked: { id: number; label: str
   const [search, setSearch] = useState('');
   const q = useDebounced(search.trim(), 300);
   const [picking, setPicking] = useState(false);
+  /** label akun yang akan dilepas (dialog konfirmasi terbuka) */
+  const [unlinking, setUnlinking] = useState<string | null>(null);
   const query = usePdQuery<{ customers: CustomerOption[] }>(picking ? `customers:${q}` : null, () => pdCustomersList({ q: q || undefined }));
+
+  // Tautan baru benar-benar lepas saat form disimpan, tetapi tetap ditanya dulu
+  const unlinkDialog = (
+    <ConfirmDialog
+      open={unlinking !== null}
+      onClose={() => setUnlinking(null)}
+      onConfirm={() => {
+        setUnlinking(null);
+        onChange(null);
+      }}
+      tone="danger"
+      title={`Lepas akun "${unlinking ?? ''}"?`}
+      description="Setelah disimpan, klien tidak bisa lagi masuk untuk menyetujui dan menandatangani dokumen."
+      confirmText="Ya, lepas"
+    />
+  );
 
   if (linked && !picking) {
     return (
-      <div className="flex items-center gap-3 rounded-xl bg-adm-ghost px-3 py-2.5">
-        <UserRound className="h-[18px] w-[18px] shrink-0 text-adm-subtle" strokeWidth={1.75} aria-hidden />
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-adm-fg">{linked.label}</span>
-        <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
-          Ganti
-        </Button>
-        <Button size="sm" variant="ghost" icon={<Unlink />} onClick={() => onChange(null)}>
-          Lepas
-        </Button>
-      </div>
+      <>
+        <div className="flex items-center gap-3 rounded-xl bg-adm-ghost px-3 py-2.5">
+          <UserRound className="h-[18px] w-[18px] shrink-0 text-adm-subtle" strokeWidth={1.75} aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-adm-fg">{linked.label}</span>
+          <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
+            Ganti
+          </Button>
+          <Button size="sm" variant="ghost" icon={<Unlink />} onClick={() => setUnlinking(linked.label)}>
+            Lepas
+          </Button>
+        </div>
+        {unlinkDialog}
+      </>
     );
   }
   if (!picking) {
     return (
-      <Button variant="secondary" size="sm" icon={<Link2 />} onClick={() => setPicking(true)}>
-        Tautkan akun pelanggan
-      </Button>
+      <>
+        <Button variant="secondary" size="sm" icon={<Link2 />} onClick={() => setPicking(true)}>
+          Tautkan akun pelanggan
+        </Button>
+        {unlinkDialog}
+      </>
     );
   }
   const customers = query.data?.customers ?? [];
@@ -117,12 +141,15 @@ export function ClientFormDrawer({
   client,
   onClose,
   onSaved,
+  notify,
 }: {
   open: boolean;
   /** null = klien baru */
   client: ClientListItem | null;
   onClose: () => void;
   onSaved: (name: string, isEdit: boolean) => void;
+  /** toast halaman Klien (galat simpan) */
+  notify: Notify;
 }) {
   const [form, setForm] = useState<ClientForm>(() => toForm(client));
   const [linked, setLinked] = useState<{ id: number; label: string } | null>(null);
@@ -176,6 +203,7 @@ export function ClientFormDrawer({
     } catch (err) {
       setErrors(fieldErrorsOf(err));
       setServerError(`Gagal menyimpan: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
+      notify('error', 'Gagal menyimpan klien.', errorDetail(err));
     } finally {
       setSaving(false);
     }

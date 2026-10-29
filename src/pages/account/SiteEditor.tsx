@@ -3,7 +3,8 @@
 // Kiri: daftar section (diciutkan, sakelar tampil) + field per tipe. Kanan: pratinjau langsung (Desktop/HP).
 // Di HP pratinjau menjadi tab tersendiri.
 // Selama ada perubahan belum disimpan, konten dicadangkan di localStorage (`cms-draft-{siteId}`) dan ditawarkan untuk
-// dipulihkan saat editor dibuka lagi (mis. sesi habis di tengah mengedit, tab tertutup, atau keluar akun).
+// dipulihkan saat editor dibuka lagi (mis. sesi habis di tengah mengedit, tab tertutup, atau keluar akun). Membuang
+// cadangan itu ditanyakan dulu lewat dialog konfirmasi.
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarClock, ExternalLink, Globe, MessageCircle, Sparkles } from 'lucide-react';
@@ -13,6 +14,7 @@ import { formatTanggal, type Site } from '../../types/platform';
 import { getTemplate, resolveContent } from '../../templates';
 import type { ListItem, SiteContent } from '../../templates/types';
 import { addonsPath, postsLocked } from './components/addons';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { helpWhatsappUrl, siteHelpMessage } from './components/orderCopy';
 import { SiteNav } from './components/SiteNav';
 import { postsListPath } from './posts/siteLinks';
@@ -116,6 +118,8 @@ export default function SiteEditor() {
   const [toolbarHeight, setToolbarHeight] = useState(112);
   /** Draf lokal dari sesi sebelumnya yang belum dipulihkan/dibuang (selama ada, draf baru tidak ditulis) */
   const [draftOffer, setDraftOffer] = useState<CmsDraft | null>(null);
+  /** Dialog konfirmasi "Buang" draf lokal terbuka */
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   const { toast, show: showToast, dismiss: dismissToast } = useToast();
   const { settings } = useSiteSettings();
@@ -124,6 +128,9 @@ export default function SiteEditor() {
   const definition = useMemo(() => (site ? getTemplate(site.template_code) : undefined), [site]);
   const defaults = useMemo(() => (definition ? resolveContent(definition, null) : {}), [definition]);
   const readOnly = site?.status !== 'active';
+  // Tawaran draf hilang selagi dialog Buang terbuka (mis. perubahan tersimpan lewat Ctrl+S): tutup dialognya, supaya
+  // tidak muncul sendiri saat ada tawaran draf berikutnya
+  if (confirmDiscard && (!draftOffer || readOnly)) setConfirmDiscard(false);
 
   // ─── Muat situs ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -206,8 +213,11 @@ export default function SiteEditor() {
   };
 
   const discardDraft = () => {
+    setConfirmDiscard(false);
+    if (!draftOffer) return;
     if (site) clearDraft(site.id);
     setDraftOffer(null);
+    showToast('success', 'Perubahan yang belum disimpan sudah dibuang.');
   };
 
   // Tinggi bilah atas (berubah di HP karena baris tab) → offset pratinjau lengket & scroll-margin section
@@ -395,7 +405,7 @@ export default function SiteEditor() {
                     <button type="button" onClick={restoreDraft} className="btn btn-primary btn-sm">
                       Pulihkan
                     </button>
-                    <button type="button" onClick={discardDraft} className="btn btn-outline btn-sm">
+                    <button type="button" onClick={() => setConfirmDiscard(true)} className="btn btn-outline btn-sm">
                       Buang
                     </button>
                   </>
@@ -469,6 +479,7 @@ export default function SiteEditor() {
                 onBlurPath={markTouched}
                 readOnly={readOnly || saving}
                 notice={hasPosts ? <PostsNotice siteId={site.id} sectionKey={section.key} locked={postsIsLocked} /> : undefined}
+                notify={(tone, message, description) => showToast(tone, message, undefined, description)}
               />
             ))}
 
@@ -500,6 +511,20 @@ export default function SiteEditor() {
         </div>
       </div>
 
+      <ConfirmDialog
+        open={confirmDiscard}
+        title="Buang perubahan yang belum disimpan?"
+        description={
+          draftOffer
+            ? `Perubahan dari ${formatTanggal(new Date(draftOffer.savedAt).toISOString(), true)} di perangkat ini akan dihapus dan tidak bisa dipulihkan lagi.`
+            : undefined
+        }
+        confirmLabel="Ya, buang"
+        cancelLabel="Batal"
+        tone="danger"
+        onConfirm={discardDraft}
+        onClose={() => setConfirmDiscard(false)}
+      />
       <Toast toast={toast} onClose={dismissToast} />
     </div>
   );

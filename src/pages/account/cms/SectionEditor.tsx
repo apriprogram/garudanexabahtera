@@ -5,6 +5,7 @@ import { ChevronDown, EyeOff } from 'lucide-react';
 import { isListField, type ListItem, type SiteContent, type TemplateSection } from '../../../templates/types';
 import { CmsField } from './CmsField';
 import { fieldPath, isSectionEnabled, readList, readText } from './content';
+import type { FieldControlProps } from './FieldControl';
 import { ListFieldEditor } from './ListFieldEditor';
 import { Notice, Switch } from './ui';
 import type { ContentErrors } from './validation';
@@ -26,6 +27,8 @@ interface SectionEditorProps {
   readOnly?: boolean;
   /** Pemberitahuan di atas field section ini, mis. berita/pengumuman dikelola di menu Berita & Pengumuman */
   notice?: ReactNode;
+  /** Toast milik halaman untuk field di section ini (gambar dihapus / gagal diproses) */
+  notify?: FieldControlProps['notify'];
 }
 
 export function SectionEditor({
@@ -43,6 +46,7 @@ export function SectionEditor({
   onBlurPath,
   readOnly,
   notice,
+  notify,
 }: SectionEditorProps) {
   const enabled = isSectionEnabled(content, section.key);
   const panelId = `cms-section-${section.key}`;
@@ -121,6 +125,7 @@ export function SectionEditor({
                   errors={errors}
                   onBlurPath={onBlurPath}
                   disabled={readOnly}
+                  notify={notify}
                 />
               );
             }
@@ -136,6 +141,7 @@ export function SectionEditor({
                 onBlur={() => onBlurPath(path)}
                 error={errors[path]}
                 disabled={readOnly}
+                notify={notify}
               />
             );
           })}

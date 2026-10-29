@@ -1,7 +1,9 @@
-// Modal dengan satu alasan wajib (batalkan invoice, ajukan perubahan dokumen). onSubmit melempar error → tampil di modal.
+// Modal dengan satu alasan wajib (batalkan invoice, ajukan perubahan dokumen). onSubmit melempar error → tampil di modal
+// dan sebagai toast halaman (`errorTitle` + pesan server lewat `notify`).
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Button, Field, Modal, ModalBody, ModalFooter, Notice, Textarea } from '../../../../components/admin/ui';
 import { errorMessage } from '../../../../lib/api';
+import { errorDetail, type Notify } from './hooks';
 
 export function ReasonModal({
   open,
@@ -17,10 +19,16 @@ export function ReasonModal({
   maxLength = 500,
   icon,
   children,
+  notify,
+  errorTitle,
 }: {
   open: boolean;
   onClose: () => void;
   onSubmit: (reason: string) => Promise<void>;
+  /** toast halaman saat onSubmit gagal */
+  notify: Notify;
+  /** judul toast galat, mis. "Gagal membatalkan invoice." */
+  errorTitle: string;
   title: ReactNode;
   description?: ReactNode;
   label: string;
@@ -59,6 +67,7 @@ export function ReasonModal({
       await onSubmit(text);
     } catch (err) {
       setServerError(errorMessage(err, 'kesalahan tidak diketahui'));
+      notify('error', errorTitle, errorDetail(err));
     } finally {
       setSaving(false);
     }

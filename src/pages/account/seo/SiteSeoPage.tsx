@@ -190,8 +190,11 @@ function SeoForm({ site, initial, onSuspended }: SeoFormProps) {
         focusField(first);
         showToast('danger', 'Periksa lagi isian yang ditandai.');
       } else {
-        setFormError(extra.length ? extra.join(' ') : errorMessage(err, 'Silakan coba lagi.'));
+        // Pesan di atas form + toast gagal dengan pesan yang sama
+        const detail = extra.join(' ');
+        setFormError(detail || errorMessage(err, 'Silakan coba lagi.'));
         window.setTimeout(() => formErrorRef.current?.focus(), 0);
+        showToast('danger', 'Gagal menyimpan pengaturan SEO.', undefined, detail || errorMessage(err, 'Terjadi kesalahan. Coba lagi.'));
       }
     } finally {
       setSaving(false);
@@ -325,6 +328,7 @@ function SeoForm({ site, initial, onSuspended }: SeoFormProps) {
               error={errors.og_image}
               disabled={locked}
               onProcessingChange={setImageBusy}
+              notify={(tone, message, description) => showToast(tone, message, undefined, description)}
             />
           </FormCard>
 

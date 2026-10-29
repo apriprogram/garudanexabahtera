@@ -3,6 +3,8 @@
 // bila MIDTRANS_SIMULATOR aktif, kelola situs, pesan lagi, tanya via WhatsApp). Setelah kembali dari Midtrans
 // (?order_id=…&transaction_status=…) status dimuat ulang tiap 10 detik selama pesanan, atau tagihan perpanjangan bila
 // order_id = GNR-…, masih menunggu pembayaran. Aturan masa aktif: docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md §5.
+// Setiap aksi (batalkan, simulasi, buat/batalkan tagihan perpanjangan, gagal membuka pembayaran) memberi toast
+// sukses/gagal milik halaman; pindah ke Midtrans tidak perlu toast.
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -48,6 +50,8 @@ import {
   type RenewalStatus,
   type Site,
 } from '../../types/platform';
+import { Toast, type ToastTone } from './cms/Toast';
+import { useToast } from './cms/useToast';
 import {
   clockText,
   countdownLabel,
@@ -124,6 +128,11 @@ interface Flash {
   text: string;
 }
 
+/** Toast milik halaman, dipanggil kartu & dialog di dalamnya (mereka tidak merender <Toast> sendiri). */
+type Notify = (tone: ToastTone, message: string, description?: string) => void;
+
+const FAIL_TEXT = 'Terjadi kesalahan. Coba lagi.';
+
 const POLL_INTERVAL_MS = 10_000;
 const MAX_POLLS = 30; // 5 menit
 
@@ -170,6 +179,10 @@ export default function AccountOrderDetail() {
   const [polls, setPolls] = useState(0);
   const statusRef = useRef<OrderStatus | null>(null);
   const renewalFlashedRef = useRef(false);
+  const { toast, show: showToast, dismiss: dismissToast } = useToast();
+  const notify: Notify = (tone, message, description) => showToast(tone, message, undefined, description);
+  // Pesanan baru dari /pesan/:slug: toast sukses sekali, bersama pemberitahuan di atas
+  const createdToastRef = useRef(Boolean((location.state as OrderCreatedState | null)?.justCreated));
 
   useDocumentTitle(`Pesanan ${orderNumber}`);
 
@@ -179,6 +192,12 @@ export default function AccountOrderDetail() {
       navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
     }
   }, [location.pathname, location.search, location.state, navigate]);
+
+  useEffect(() => {
+    if (!createdToastRef.current) return;
+    createdToastRef.current = false;
+    showToast('success', `Pesanan ${orderNumber} berhasil dibuat.`);
+  }, [orderNumber, showToast]);
 
   const apply = useCallback((data: OrderDetail) => {
     const previous = statusRef.current;
@@ -326,9 +345,11 @@ export default function AccountOrderDetail() {
             pollsExhausted={pollsExhausted}
             refreshing={refreshing}
             onReload={() => reload()}
+            notify={notify}
           />
         )}
       </div>
+      <Toast toast={toast} onClose={dismissToast} />
     </div>
   );
 }
@@ -347,6 +368,7 @@ interface OrderViewProps {
   pollsExhausted: boolean;
   refreshing: boolean;
   onReload: () => Promise<void> | void;
+  notify: Notify;
 }
 
 function OrderView({
@@ -360,6 +382,7 @@ function OrderView({
   pollsExhausted,
   refreshing,
   onReload,
+  notify,
 }: OrderViewProps) {
   const { order, logs, site } = data;
   const renewals = data.renewals ?? [];
@@ -480,6 +503,7 @@ function OrderView({
               helpHref={helpHref}
               onFlash={onFlash}
               onReload={onReload}
+              notify={notify}
             />
           )}
           <TimelineCard order={order} logs={logs} />
@@ -487,7 +511,15 @@ function OrderView({
           <CustomerCard order={order} />
         </div>
         <div className="order-first space-y-5 lg:order-none lg:sticky lg:top-24">
-          <InvoiceCard order={order} site={site} simulator={simulator} helpHref={helpHref} onFlash={onFlash} onReload={onReload} />
+          <InvoiceCard
+            order={order}
+            site={site}
+            simulator={simulator}
+            helpHref={helpHref}
+            onFlash={onFlash}
+            onReload={onReload}
+            notify={notify}
+          />
         </div>
       </div>
     </>
@@ -850,6 +882,7 @@ function InvoiceCard({
   helpHref,
   onFlash,
   onReload,
+  notify,
 }: {
   order: Order;
   site: Site | null;
@@ -858,6 +891,7 @@ function InvoiceCard({
   helpHref: string;
   onFlash: (flash: Flash | null) => void;
   onReload: () => Promise<void> | void;
+  notify: Notify;
 }) {
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
@@ -887,6 +921,7 @@ function InvoiceCard({
           ? `${err.message} Untuk pengujian, gunakan tombol "Simulasikan pembayaran".`
           : errorMessage(err, 'Gagal membuka halaman pembayaran. Silakan coba lagi.'),
       );
+      notify('danger', 'Gagal membuka halaman pembayaran.', errorMessage(err, FAIL_TEXT));
       setPaying(false);
     }
   };
@@ -897,9 +932,11 @@ function InvoiceCard({
     try {
       await apiPost('dev_simulate_payment', { order_number: order.order_number });
       onFlash({ tone: 'success', title: 'Pembayaran simulasi berhasil', text: 'Pesanan sekarang menunggu persetujuan tim kami.' });
+      notify('success', `Simulasi pembayaran ${order.order_number} berhasil.`);
       await onReload();
     } catch (err) {
       setPayError(errorMessage(err, 'Simulasi pembayaran gagal.'));
+      notify('danger', 'Gagal menjalankan simulasi pembayaran.', errorMessage(err, FAIL_TEXT));
     } finally {
       setSimulating(false);
     }
@@ -912,9 +949,11 @@ function InvoiceCard({
       await apiPost('customer_cancel_order', { order_number: order.order_number });
       setConfirmOpen(false);
       onFlash({ tone: 'success', text: 'Pesanan berhasil dibatalkan.' });
+      notify('success', `Pesanan ${order.order_number} berhasil dibatalkan.`);
       await onReload();
     } catch (err) {
       setCancelError(errorMessage(err, 'Gagal membatalkan pesanan.'));
+      notify('danger', 'Gagal membatalkan pesanan.', errorMessage(err, FAIL_TEXT));
     } finally {
       setCancelling(false);
     }
@@ -1208,6 +1247,7 @@ interface ActivePeriodCardProps {
   helpHref: string;
   onFlash: (flash: Flash | null) => void;
   onReload: () => Promise<void> | void;
+  notify: Notify;
 }
 
 /**
@@ -1215,7 +1255,7 @@ interface ActivePeriodCardProps {
  * berjalan, tanggal mulai–berakhir hosting dan domain, peringatan ≤ 30/7 hari atau sudah lewat, lalu perpanjangan:
  * tombol "Perpanjang masa aktif" (dialog 1–3 tahun), tagihan yang menunggu pembayaran, dan riwayatnya.
  */
-function ActivePeriodCard({ order, renewals, offer, simulator, helpHref, onFlash, onReload }: ActivePeriodCardProps) {
+function ActivePeriodCard({ order, renewals, offer, simulator, helpHref, onFlash, onReload, notify }: ActivePeriodCardProps) {
   const now = useMinuteClock();
   const titleId = useId();
   const cardRef = useRef<HTMLElement>(null);
@@ -1258,6 +1298,7 @@ function ActivePeriodCard({ order, renewals, offer, simulator, helpHref, onFlash
           : 'Anda bisa mencoba lagi lewat tombol "Bayar Sekarang".'
       }`,
     });
+    notify('success', `Tagihan perpanjangan ${result.renewal.renewal_number} berhasil dibuat.`);
     focusAfterRef.current = 'pending';
     await onReload();
   };
@@ -1349,6 +1390,7 @@ function ActivePeriodCard({ order, renewals, offer, simulator, helpHref, onFlash
               focusAfterRef.current = 'card';
             }}
             onReload={onReload}
+            notify={notify}
           />
         ) : canRenew && offer ? (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
@@ -1377,7 +1419,7 @@ function ActivePeriodCard({ order, renewals, offer, simulator, helpHref, onFlash
       {history.length > 0 && <RenewalHistory order={order} renewals={history} />}
 
       {dialogOpen && offer && canRenew && (
-        <RenewDialog order={order} offer={offer} onClose={() => setDialogOpen(false)} onCreated={onCreated} />
+        <RenewDialog order={order} offer={offer} onClose={() => setDialogOpen(false)} onCreated={onCreated} notify={notify} />
       )}
     </section>
   );
@@ -1394,13 +1436,14 @@ interface PendingRenewalProps {
   /** Tagihan akan hilang dari blok ini (lunas/dibatalkan): fokus pindah ke kartu setelah dimuat ulang */
   onSettled: () => void;
   onReload: () => Promise<void> | void;
+  notify: Notify;
 }
 
 /**
  * Tagihan perpanjangan yang menunggu pembayaran: bayar (Midtrans), simulasi (mode uji), atau batalkan. Pembayaran kartu
  * yang sedang ditinjau bank (payment_status capture) tidak ditawari bayar ulang (backend menolak: PAYMENT_UNDER_REVIEW).
  */
-function PendingRenewal({ containerRef, order, renewal, simulator, notice, onFlash, onSettled, onReload }: PendingRenewalProps) {
+function PendingRenewal({ containerRef, order, renewal, simulator, notice, onFlash, onSettled, onReload, notify }: PendingRenewalProps) {
   const headingId = useId();
   const underReview = renewal.payment_status === 'capture';
   const [busy, setBusy] = useState<'pay' | 'simulate' | 'cancel' | 'reload' | null>(null);
@@ -1421,6 +1464,7 @@ function PendingRenewal({ containerRef, order, renewal, simulator, notice, onFla
           ? `${err.message} Untuk pengujian, gunakan tombol "Simulasikan pembayaran (mode uji)".`
           : errorMessage(err, 'Gagal membuka halaman pembayaran. Silakan coba lagi.'),
       );
+      notify('danger', 'Gagal membuka halaman pembayaran.', errorMessage(err, FAIL_TEXT));
       setBusy(null);
     }
   };
@@ -1431,10 +1475,12 @@ function PendingRenewal({ containerRef, order, renewal, simulator, notice, onFla
     try {
       const res = await simulateRenewalPayment(renewal.renewal_number);
       onFlash(renewalPaidFlash(res.order?.service_expires_at ?? res.renewal.service_expires_after));
+      notify('success', `Simulasi pembayaran ${renewal.renewal_number} berhasil.`);
       onSettled();
       await onReload();
     } catch (err) {
       setError(errorMessage(err, 'Simulasi pembayaran gagal.'));
+      notify('danger', 'Gagal menjalankan simulasi pembayaran.', errorMessage(err, FAIL_TEXT));
     } finally {
       setBusy(null);
     }
@@ -1456,10 +1502,12 @@ function PendingRenewal({ containerRef, order, renewal, simulator, notice, onFla
       await cancelRenewal(renewal.renewal_number);
       setConfirmOpen(false);
       onFlash({ tone: 'success', text: `Tagihan perpanjangan ${renewal.renewal_number} dibatalkan.` });
+      notify('success', `Tagihan perpanjangan ${renewal.renewal_number} berhasil dibatalkan.`);
       onSettled();
       await onReload();
     } catch (err) {
       setCancelError(errorMessage(err, 'Gagal membatalkan tagihan perpanjangan.'));
+      notify('danger', 'Gagal membatalkan tagihan perpanjangan.', errorMessage(err, FAIL_TEXT));
     } finally {
       setBusy(null);
     }
@@ -1620,6 +1668,8 @@ interface RenewDialogProps {
   onClose: () => void;
   /** Tagihan dibuat tanpa link pembayaran (dengan link, halaman langsung pindah ke Midtrans) */
   onCreated: (result: CreateRenewalResult) => void;
+  /** Toast halaman saat tagihan gagal dibuat (pesan juga tampil di dialog) */
+  notify: Notify;
 }
 
 /**
@@ -1627,7 +1677,7 @@ interface RenewDialogProps {
  * ikut) berisi harga, rincian per tahun, dan tanggal berakhir baru. Pola sama dengan ConfirmDialog: lembar dari bawah di
  * HP, fokus terkunci (mulai di pilihan terpilih), Esc/klik latar = tutup kecuali saat memproses, fokus kembali ke pemicu.
  */
-function RenewDialog({ order, offer, onClose, onCreated }: RenewDialogProps) {
+function RenewDialog({ order, offer, onClose, onCreated, notify }: RenewDialogProps) {
   const titleId = useId();
   const descId = useId();
   const radioName = useId();
@@ -1678,6 +1728,7 @@ function RenewDialog({ order, offer, onClose, onCreated }: RenewDialogProps) {
           ? err.fieldErrors.years
           : errorMessage(err, 'Tagihan perpanjangan belum bisa dibuat. Silakan coba lagi.'),
       );
+      notify('danger', 'Gagal membuat tagihan perpanjangan.', errorMessage(err, FAIL_TEXT));
       setSubmitting(false);
     }
   };

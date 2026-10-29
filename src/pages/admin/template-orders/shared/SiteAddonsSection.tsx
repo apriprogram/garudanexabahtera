@@ -81,6 +81,8 @@ export function SiteAddonsSection({
     } catch (err) {
       if (err instanceof ApiError && err.fieldErrors?.note) setNoteError(err.fieldErrors.note);
       else setError(errorMessage(err, 'Gagal mengubah fitur tambahan.'));
+      // Rincian galat tampil di dalam dialog; toast memberi tahu bahwa perubahan tidak tersimpan
+      notify('error', active ? `Gagal mengaktifkan fitur ${addon.name}.` : `Gagal menonaktifkan fitur ${addon.name}.`);
     } finally {
       setBusy(false);
     }

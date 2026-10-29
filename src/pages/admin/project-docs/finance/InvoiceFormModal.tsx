@@ -3,7 +3,7 @@
 // the engine's calcInvoice (the server recomputes them; spec §4.2).
 import { useMemo, useState, type FormEvent } from 'react';
 import { Plus, Receipt, Trash2 } from 'lucide-react';
-import { Button, Field, IconButton, Input, Modal, ModalBody, ModalFooter, Notice, Select, Switch, Textarea, cn } from '../../../../components/admin/ui';
+import { Button, ConfirmDialog, Field, IconButton, Input, Modal, ModalBody, ModalFooter, Notice, Select, Switch, Textarea, cn } from '../../../../components/admin/ui';
 import { pdInvoiceCreate, pdInvoiceUpdate } from '../../../../features/project-docs/api';
 import { calcInvoice } from '../../../../features/project-docs/engine';
 import {
@@ -19,7 +19,7 @@ import {
 } from '../../../../features/project-docs/types';
 import { errorMessage } from '../../../../lib/api';
 import { addDays, formatPercent, rupiah, todayIso } from '../shared/format';
-import { fieldErrorsOf } from '../shared/hooks';
+import { errorDetail, fieldErrorsOf, type Notify } from '../shared/hooks';
 import { validateInvoice, type Errors } from '../shared/validation';
 
 /** Project data the invoice form needs (ProjectDetail in the workspace, MergeData.project in the editor). */
@@ -100,6 +100,7 @@ export function InvoiceFormModal({
   tax,
   content,
   onSaved,
+  notify,
 }: {
   open: boolean;
   onClose: () => void;
@@ -109,12 +110,17 @@ export function InvoiceFormModal({
   /** document content saved with the invoice (template for a new one, the editor's content when updating) */
   content: DocContent;
   onSaved: (result: { documentId: number; number: string | null }) => void;
+  /** toast halaman (galat simpan) */
+  notify: Notify;
 }) {
   const taxes = tax ?? DEFAULT_TAX;
   const [form, setForm] = useState<Form>(() => initialForm(mode, project, taxes));
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  // Baris tagihan yang akan dihapus (indeks): ditanya dulu walau baru tersimpan saat invoice disimpan
+  const [itemToRemove, setItemToRemove] = useState<number | null>(null);
+  const removingItem = itemToRemove === null ? null : form.items[itemToRemove];
   const modeKey = mode.kind === 'edit' ? `edit-${mode.invoice.id}` : `create-${mode.term?.key ?? 'manual'}`;
   const [openedFor, setOpenedFor] = useState<string | null>(null);
   const openKey = open ? modeKey : null;
@@ -192,6 +198,7 @@ export function InvoiceFormModal({
     } catch (err) {
       setErrors(fieldErrorsOf(err));
       setServerError(`Gagal menyimpan invoice: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
+      notify('error', mode.kind === 'edit' ? 'Gagal menyimpan invoice.' : 'Gagal membuat invoice.', errorDetail(err));
     } finally {
       setSaving(false);
     }
@@ -301,7 +308,7 @@ export function InvoiceFormModal({
                         variant="danger-ghost"
                         className="justify-self-end"
                         disabled={form.items.length <= 1}
-                        onClick={() => set('items', form.items.filter((_, j) => j !== i))}
+                        onClick={() => setItemToRemove(i)}
                       />
                     </div>
                     {lineErrors.length > 0 && (
@@ -380,6 +387,18 @@ export function InvoiceFormModal({
           </Button>
         </ModalFooter>
       </form>
+      <ConfirmDialog
+        open={itemToRemove !== null}
+        onClose={() => setItemToRemove(null)}
+        onConfirm={() => {
+          if (itemToRemove !== null) set('items', form.items.filter((_, j) => j !== itemToRemove));
+          setItemToRemove(null);
+        }}
+        tone="danger"
+        title={removingItem?.description.trim() ? `Hapus baris "${removingItem.description.trim().slice(0, 60)}"?` : `Hapus baris ${(itemToRemove ?? 0) + 1}?`}
+        description="Uraian, jumlah, dan harga baris ini hilang dari rincian tagihan."
+        confirmText="Ya, hapus"
+      />
     </Modal>
   );
 }

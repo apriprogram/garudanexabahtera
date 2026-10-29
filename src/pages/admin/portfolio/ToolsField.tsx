@@ -11,13 +11,16 @@ const lower = (text: string) => text.toLowerCase();
 /**
  * Isian tools / teknologi proyek: chip yang bisa dihapus + kolom ketik (Enter atau koma menambah, Backspace di kolom
  * kosong menghapus chip terakhir) + saran cepat. Nama dirapikan seperti backend (projectTools: maks. 12, tanpa kembar).
+ * `onRemoveRequest`: tombol × di chip meminta konfirmasi dulu ke editor (yang lalu menghapusnya); Backspace tetap
+ * langsung menghapus seperti mengetik.
  */
-const ToolsField: React.FC<{ id: string; tools: string[]; onChange: (tools: string[]) => void; describedBy?: string }> = ({
-  id,
-  tools,
-  onChange,
-  describedBy,
-}) => {
+const ToolsField: React.FC<{
+  id: string;
+  tools: string[];
+  onChange: (tools: string[]) => void;
+  onRemoveRequest?: (tool: string) => void;
+  describedBy?: string;
+}> = ({ id, tools, onChange, onRemoveRequest, describedBy }) => {
   const [text, setText] = useState('');
   const full = tools.length >= PROJECT_MAX_TOOLS;
 
@@ -38,7 +41,7 @@ const ToolsField: React.FC<{ id: string; tools: string[]; onChange: (tools: stri
             <span className="truncate">{tool}</span>
             <button
               type="button"
-              onClick={() => remove(index)}
+              onClick={() => (onRemoveRequest ? onRemoveRequest(tool) : remove(index))}
               aria-label={`Hapus ${tool}`}
               className="relative flex h-5 w-5 shrink-0 items-center justify-center rounded-md hover:bg-cobalt/15 after:absolute after:-inset-2"
             >

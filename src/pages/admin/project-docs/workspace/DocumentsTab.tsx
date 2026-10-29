@@ -9,6 +9,7 @@ import type { ChecklistItem, DocType } from '../../../../features/project-docs/t
 import { errorMessage } from '../../../../lib/api';
 import { exportDocumentById, templateFor, type ExportFormat } from '../shared/documents';
 import { lowerFirst, requiredLabel, STAGE_LABEL, tanggal } from '../shared/format';
+import { navToast, type PdNavState } from '../shared/hooks';
 import { DocChip, DocStatusBadge } from '../shared/ui';
 import type { WorkspaceContext } from './context';
 
@@ -44,14 +45,16 @@ export function ExportMenu({ docId, onError, size = 'sm' }: { docId: number; onE
 export function DocumentsTab({ ctx }: { ctx: WorkspaceContext }) {
   const { project, settings, canEditType, notify } = ctx;
   const [creating, setCreating] = useState<DocType | null>(null);
-  const open = (docId: number) => ctx.go(`/admin/proyek/${project.id}/dokumen/${docId}`);
+  const open = (docId: number, options?: { state: PdNavState }) => ctx.go(`/admin/proyek/${project.id}/dokumen/${docId}`, options);
 
   const create = async (type: DocType) => {
     setCreating(type);
     try {
       const res = await pdDocumentCreate({ project_id: project.id, doc_type: type, title: DOC_TYPES[type].label, content: templateFor(type, project, settings) });
-      notify('success', `${DOC_TYPES[type].short} ${res.number} berhasil dibuat.`);
-      open(res.id);
+      const created = `${DOC_TYPES[type].short} ${res.number} berhasil dibuat.`;
+      notify('success', created);
+      // Workspace langsung ditinggalkan: toast yang sama tampil di editor dokumen baru
+      open(res.id, navToast('success', created));
     } catch (err) {
       notify('error', `Gagal membuat dokumen: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
       setCreating(null);

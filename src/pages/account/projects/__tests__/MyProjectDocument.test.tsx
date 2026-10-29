@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run src/pages/account/projects/__tests__
-// /akun/proyek/:id/dokumen/:docId: pratinjau, unduh PDF/DOCX, setujui (+ tanda tangan Pihak Kedua), minta revisi.
+// /akun/proyek/:id/dokumen/:docId: pratinjau, unduh PDF/DOCX, setujui (+ tanda tangan Pihak Kedua, hapus gambar dengan
+// konfirmasi), minta revisi, toast sukses/gagal.
 import { cleanup, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocModel } from '../../../../features/project-docs/engine';
@@ -36,6 +37,7 @@ vi.mock('../../../../features/project-docs/engine', async (importOriginal) => ({
 }));
 
 import { ApiError } from '../../../../lib/api';
+import type { ProjectNavState } from '../components/projectCopy';
 import MyProjectDocument from '../MyProjectDocument';
 
 function renderDoc(path = '/akun/proyek/3/dokumen/20') {
@@ -51,7 +53,20 @@ function renderDoc(path = '/akun/proyek/3/dokumen/20') {
 
 /** Halaman proyek tiruan yang menampilkan pesan dari state router. */
 function ProjectPage() {
-  return <p>Halaman proyek</p>;
+  const state = useLocation().state as ProjectNavState | null;
+  return (
+    <>
+      <p>Halaman proyek</p>
+      {state?.toast && <p data-testid="nav-toast">{state.toast.message}</p>}
+    </>
+  );
+}
+
+/** Coretan di area tanda tangan (kanvas jsdom tanpa konteks 2D: gambar tidak bisa diproses, tetapi tombol Hapus aktif). */
+function scribble(pad: HTMLElement) {
+  fireEvent.pointerDown(pad, { pointerId: 1, pointerType: 'mouse', button: 0, clientX: 40, clientY: 60 });
+  fireEvent.pointerMove(pad, { pointerId: 1, pointerType: 'mouse', clientX: 120, clientY: 90 });
+  fireEvent.pointerUp(pad, { pointerId: 1, pointerType: 'mouse', clientX: 120, clientY: 90 });
 }
 
 beforeEach(() => {
@@ -116,9 +131,37 @@ describe('Dokumen proyek (pembeli)', () => {
       }),
     );
     expect(await screen.findByText('Dokumen disetujui dan ditandatangani')).toBeInTheDocument();
+    expect(screen.getByText('Dokumen "Perjanjian Kerja Sama Pembuatan Website" berhasil disetujui dan ditandatangani.')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(api.pdMyDocument).toHaveBeenCalledTimes(2);
     expect(screen.getByText('Menunggu tanda tangan kami', { selector: 'p' })).toBeInTheDocument();
+  });
+
+  it('Hapus gambar tanda tangan minta konfirmasi; Esc hanya menutup konfirmasi, dialog tanda tangan tetap', async () => {
+    api.pdMyDocument.mockResolvedValue({ success: true, document: pksDoc() });
+    renderDoc();
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Setujui & tandatangani' }))[0]);
+    const dialog = screen.getByRole('dialog', { name: 'Setujui & tandatangani' });
+    scribble(within(dialog).getByRole('img', { name: /Area tanda tangan/ }));
+    const clear = within(dialog).getByRole('button', { name: 'Hapus' });
+    expect(clear).toBeEnabled();
+
+    clear.focus();
+    fireEvent.click(clear);
+    const confirm = screen.getByRole('alertdialog', { name: 'Hapus gambar tanda tangan?' });
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Setujui & tandatangani' })).toBeInTheDocument();
+    expect(clear).toBeEnabled();
+    expect(confirm).not.toBeInTheDocument();
+
+    fireEvent.click(clear);
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Ya, hapus' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Hapus' })).toBeDisabled();
+    // Tombol Hapus nonaktif setelah dihapus: fokus pindah ke pilihan cara tanda tangan, bukan <body>
+    expect(document.activeElement).toBe(within(dialog).getByRole('radio', { name: 'Gambar' }));
+    expect(api.pdMyDocumentDecide).not.toHaveBeenCalled();
   });
 
   it('dokumen tanpa tanda tangan disetujui lewat dialog konfirmasi', async () => {
@@ -132,7 +175,24 @@ describe('Dokumen proyek (pembeli)', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, setujui' }));
     await waitFor(() => expect(api.pdMyDocumentDecide).toHaveBeenCalledWith({ id: 10, decision: 'approved', content_hash: 'a'.repeat(64) }));
     expect(await screen.findByText('Dokumen disetujui')).toBeInTheDocument();
+    expect(screen.getByText('Dokumen "Dokumen Kebutuhan Bisnis" berhasil disetujui.')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Tanda tangan' })).not.toBeInTheDocument();
+  });
+
+  it('setujui gagal (bukan 409): dialog konfirmasi tetap terbuka dengan pesannya + toast gagal', async () => {
+    const brd = pksDoc({ id: 10, doc_type: 'brd', number: '001/BRD/GNB/X/2026', title: 'Dokumen Kebutuhan Bisnis' });
+    api.pdMyDocument.mockResolvedValue({ success: true, document: brd });
+    api.pdMyDocumentDecide.mockRejectedValue(new ApiError('Server sedang sibuk.', 500));
+    renderDoc('/akun/proyek/3/dokumen/10');
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Setujui dokumen' }))[0]);
+    const dialog = screen.getByRole('alertdialog', { name: 'Setujui dokumen ini?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, setujui' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Gagal menyetujui dokumen: Server sedang sibuk.');
+    // Toast gagal halaman (di luar dialog); dialog tidak tertutup sehingga pesannya tidak hilang
+    expect(screen.getByText('Gagal menyetujui dokumen.').closest('[role="alert"]')).toHaveTextContent('Server sedang sibuk.');
+    expect(screen.getByRole('alertdialog', { name: 'Setujui dokumen ini?' })).toBe(dialog);
+    expect(within(dialog).getByRole('button', { name: 'Ya, setujui' })).toBeEnabled();
   });
 
   it('minta revisi: catatan wajib, lalu kembali ke halaman proyek', async () => {
@@ -150,6 +210,8 @@ describe('Dokumen proyek (pembeli)', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Kirim permintaan revisi' }));
     await waitFor(() => expect(api.pdMyDocumentDecide).toHaveBeenCalledWith({ id: 20, decision: 'rejected', note: 'Ubah jadwal serah terima.', content_hash: 'a'.repeat(64) }));
     expect(await screen.findByText('Halaman proyek')).toBeInTheDocument();
+    // Halaman dokumen (dan toast-nya) sudah ditinggalkan: toast sukses dibawa ke halaman proyek lewat state router
+    expect(screen.getByTestId('nav-toast')).toHaveTextContent('Permintaan revisi "Perjanjian Kerja Sama Pembuatan Website" berhasil dikirim.');
   });
 
   it('409: dokumen sudah berubah → pesan dan muat ulang', async () => {
@@ -163,7 +225,12 @@ describe('Dokumen proyek (pembeli)', () => {
     const dialog = screen.getByRole('dialog', { name: 'Minta revisi' });
     fireEvent.change(within(dialog).getByLabelText('Catatan revisi'), { target: { value: 'Revisi' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Kirim permintaan revisi' }));
-    expect(await screen.findByText('Dokumen ini tidak sedang menunggu persetujuan Anda.')).toBeInTheDocument();
+    // Pesan di halaman + toast gagal dengan pesan yang sama
+    const notice = await screen.findByText('Dokumen sudah berubah');
+    expect(notice.closest('[role="alert"]')).toHaveTextContent('Dokumen ini tidak sedang menunggu persetujuan Anda.');
+    expect(screen.getByText('Gagal mengirim permintaan revisi.').closest('[role="alert"]')).toHaveTextContent(
+      'Dokumen ini tidak sedang menunggu persetujuan Anda.',
+    );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await waitFor(() => expect(screen.queryAllByRole('button', { name: /Minta revisi/ })).toHaveLength(0));
   });

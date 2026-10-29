@@ -1,7 +1,8 @@
 // Payment terms editor (PaymentTerm[], spec §4.2): used for a project's terms (workspace Ringkasan) and the default
 // terms (Pengaturan dokumen). Keys of existing terms never change because invoices refer to them (term_key).
+import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { Button, IconButton, Input, Select, cn } from '../../../../components/admin/ui';
+import { Button, ConfirmDialog, IconButton, Input, Select, cn } from '../../../../components/admin/ui';
 import { PAYMENT_TRIGGER_LABEL, type PaymentTerm, type PaymentTrigger } from '../../../../features/project-docs/types';
 import { formatPercent, rupiah } from './format';
 import { nextTermKey, termsTotal, type Errors } from './validation';
@@ -27,6 +28,9 @@ export function TermsEditor({
   /** shows the amount of every term */
   contractValue?: number;
 }) {
+  // Termin yang akan dihapus (indeks): ditanya dulu walau baru tersimpan saat form disimpan
+  const [toRemove, setToRemove] = useState<number | null>(null);
+  const removing = toRemove === null ? null : value[toRemove];
   const total = termsTotal(value);
   const ok = Math.abs(total - 100) <= 0.01;
   const update = (i: number, patch: Partial<PaymentTerm>) => onChange(value.map((t, j) => (j === i ? { ...t, ...patch } : t)));
@@ -114,7 +118,7 @@ export function TermsEditor({
                   {contractValue != null && (
                     <span className="text-xs tabular-nums text-adm-muted md:hidden">{rupiah(Math.round(((contractValue || 0) * (t.percent || 0)) / 100))}</span>
                   )}
-                  <IconButton icon={<Trash2 />} label={`Hapus termin ${i + 1}`} size="sm" variant="danger-ghost" onClick={() => remove(i)} disabled={disabled || value.length <= 1} />
+                  <IconButton icon={<Trash2 />} label={`Hapus termin ${i + 1}`} size="sm" variant="danger-ghost" onClick={() => setToRemove(i)} disabled={disabled || value.length <= 1} />
                 </div>
               </div>
               {contractValue != null && (
@@ -145,6 +149,18 @@ export function TermsEditor({
           {errors[field]}
         </p>
       )}
+      <ConfirmDialog
+        open={toRemove !== null}
+        onClose={() => setToRemove(null)}
+        onConfirm={() => {
+          if (toRemove !== null) remove(toRemove);
+          setToRemove(null);
+        }}
+        tone="danger"
+        title={removing?.label.trim() ? `Hapus termin "${removing.label.trim()}"?` : `Hapus termin ${(toRemove ?? 0) + 1}?`}
+        description="Nama, persentase, dan jatuh tempo termin ini hilang setelah perubahan disimpan."
+        confirmText="Ya, hapus"
+      />
     </div>
   );
 }

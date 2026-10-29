@@ -249,7 +249,7 @@ export function GuidesManager({ notify }: { notify: GuidesNotify }) {
         </ul>
       )}
 
-      <GuideForm key={form.key} open={form.open} guide={form.guide} guides={guides} onClose={closeForm} onSaved={handleSaved} />
+      <GuideForm key={form.key} open={form.open} guide={form.guide} guides={guides} onClose={closeForm} onSaved={handleSaved} notify={notify} />
 
       <GuidePreview
         open={preview.open}

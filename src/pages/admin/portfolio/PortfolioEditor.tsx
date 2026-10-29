@@ -1,8 +1,9 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { Briefcase, ChevronLeft, ChevronRight, Film, Plus, RefreshCw, Trash2, Upload, X } from 'lucide-react';
-import { Button, Chip, Field, Input, Modal, Spinner, Textarea, ThinProgress, cn } from '../../../components/admin/ui';
+import { Button, Chip, ConfirmDialog, Field, Input, Modal, Spinner, Textarea, ThinProgress, cn } from '../../../components/admin/ui';
 import { apiGet } from '../../../lib/api';
 import { getToken } from '../../../lib/auth';
+import type { ToastTone } from '../template-orders/shared/hooks';
 import {
   PROJECT_DESCRIPTION_MAX,
   PROJECT_MAX_GALLERY,
@@ -34,6 +35,9 @@ const entryKey = () => `g${(entrySeq += 1)}`;
 
 const message = (error: unknown, fallback: string) => (error instanceof Error && error.message ? error.message : fallback);
 
+/* Isi editor baru tersimpan lewat "Simpan proyek" lalu "Simpan semua perubahan": diingatkan di notifikasi unggah & hapus. */
+const SAVE_HINT = 'Perubahan tersimpan setelah kamu klik Simpan proyek, lalu Simpan semua perubahan.';
+
 /* Tombol kecil di atas gambar (geser, hapus): tampil saat hover/fokus di perangkat ber-mouse, selalu di layar sentuh. */
 const tileButton = (danger = false) =>
   cn(
@@ -48,6 +52,8 @@ interface PortfolioEditorProps {
   item: PortfolioItem | null;
   onClose: () => void;
   onSave: (item: PortfolioItem) => void;
+  /** Notifikasi halaman (toast di atas tengah layar): hasil unggah gambar/video, hapus, dan isian yang belum benar. */
+  notify?: (tone: ToastTone, message: string, description?: string) => void;
 }
 
 /**
@@ -56,7 +62,7 @@ interface PortfolioEditorProps {
  * langsung diunggah saat dipilih (portfolioMedia.ts); "Simpan proyek" hanya memasukkan proyek ke daftar, yang baru tampil
  * di website setelah "Simpan semua perubahan". Pasang `key` baru tiap kali dibuka supaya isiannya mulai dari `item`.
  */
-const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, onSave }) => {
+const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, onSave, notify }) => {
   const id = useId();
   const [title, setTitle] = useState(item?.title ?? '');
   const [desc, setDesc] = useState(item?.desc ?? '');
@@ -74,6 +80,12 @@ const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, 
   const [maxMb, setMaxMb] = useState(HERO_VIDEO_MAX_MB);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<'cover' | 'gallery' | 'video' | null>(null);
+  // Hapus gambar detail, video, dan tools dikonfirmasi dulu (pemilik 2026-10-29); isi dialog dipertahankan selama
+  // animasi tutup
+  const [removal, setRemoval] = useState<{ title: string; description: string; run: () => void } | null>(null);
+  const [removalOpen, setRemovalOpen] = useState(false);
+  // Gambar detail yang dihapus sebelum/selagi diunggah: tidak diunggah lagi dan tidak ikut dihitung di notifikasi
+  const removedGallery = useRef(new Set<string>());
   // false setelah ditutup/dilepas: hasil unggahan yang terlambat diabaikan
   const aliveRef = useRef(true);
   const videoJobRef = useRef<HeroVideoUpload | null>(null);
@@ -133,48 +145,81 @@ const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, 
     onClose();
   };
 
+  const askRemove = (title: string, description: string, run: () => void) => {
+    setRemoval({ title, description, run });
+    setRemovalOpen(true);
+  };
+
   const uploadCover = async (file: File | undefined) => {
     if (!file || coverBusy) return;
     setError('image', null);
     setCoverBusy(true);
     try {
       const src = await uploadProjectImage(file, 'cover');
-      if (aliveRef.current) setImage(src);
+      if (aliveRef.current) {
+        setImage(src);
+        notify?.('success', 'Gambar kartu berhasil diunggah.', SAVE_HINT);
+      }
     } catch (error) {
-      if (aliveRef.current) setError('image', message(error, 'Gagal mengunggah gambar.'));
+      if (aliveRef.current) {
+        const text = message(error, 'Gagal mengunggah gambar.');
+        setError('image', text);
+        notify?.('error', 'Gagal mengunggah gambar kartu.', text);
+      }
     } finally {
       if (aliveRef.current) setCoverBusy(false);
     }
   };
 
-  // Satu per satu, supaya server tidak menerima banyak gambar besar sekaligus; tambah lagi baru bisa setelah selesai
+  // Satu per satu, supaya server tidak menerima banyak gambar besar sekaligus; tambah lagi baru bisa setelah selesai.
+  // Hasilnya satu notifikasi untuk semua file yang dipilih.
   const uploadGallery = async (files: File[]) => {
     if (!files.length || galleryUploading) return;
     const room = PROJECT_MAX_GALLERY - gallery.length;
     const accepted = files.slice(0, Math.max(0, room));
-    const notes: string[] = [];
-    if (accepted.length < files.length) {
-      notes.push(
-        accepted.length > 0
+    const capNote =
+      accepted.length < files.length
+        ? accepted.length > 0
           ? `Maksimal ${PROJECT_MAX_GALLERY} gambar, jadi ${files.length - accepted.length} file terakhir tidak ditambahkan.`
-          : `Maksimal ${PROJECT_MAX_GALLERY} gambar. Hapus salah satu dulu.`,
-      );
-    }
+          : `Maksimal ${PROJECT_MAX_GALLERY} gambar. Hapus salah satu dulu.`
+        : undefined;
+    const notes: string[] = capNote ? [capNote] : [];
     setError('gallery', notes.join(' ') || null);
     const entries = accepted.map((file) => ({ key: entryKey(), src: null, name: file.name }));
     setGallery((prev) => [...prev, ...entries]);
+    let uploaded = 0;
+    const failed: string[] = [];
     for (const [index, file] of accepted.entries()) {
       const { key } = entries[index];
+      if (removedGallery.current.has(key)) continue;
       try {
         const src = await uploadProjectImage(file, 'gallery');
         if (!aliveRef.current) return;
+        if (removedGallery.current.has(key)) continue;
         setGallery((prev) => prev.map((entry) => (entry.key === key ? { ...entry, src } : entry)));
+        uploaded += 1;
       } catch (error) {
         if (!aliveRef.current) return;
+        if (removedGallery.current.has(key)) continue;
         setGallery((prev) => prev.filter((entry) => entry.key !== key));
-        notes.push(message(error, `"${file.name}" gagal diunggah.`));
+        const text = message(error, `"${file.name}" gagal diunggah.`);
+        notes.push(text);
+        failed.push(text);
         setError('gallery', notes.join(' '));
       }
+    }
+    if (failed.length > 0) {
+      notify?.(
+        'error',
+        uploaded > 0 ? `${failed.length} dari ${uploaded + failed.length} gambar detail gagal diunggah.` : 'Gagal mengunggah gambar detail.',
+        failed.join(' '),
+      );
+    } else if (uploaded > 0) {
+      notify?.(
+        capNote ? 'warning' : 'success',
+        uploaded === 1 ? 'Gambar detail berhasil diunggah.' : `${uploaded} gambar detail berhasil diunggah.`,
+        capNote ?? SAVE_HINT,
+      );
     }
   };
 
@@ -187,16 +232,22 @@ const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, 
       return next;
     });
 
+  /** Unggah video gagal: pesan tetap di bawah kolom Video, ditambah notifikasi halaman. */
+  const failVideo = (text: string) => {
+    setError('video', text);
+    notify?.('error', 'Gagal mengunggah video.', text);
+  };
+
   const startVideo = async (file: File | undefined) => {
     if (!file || videoJobRef.current) return;
     const invalid = validateHeroVideoFile(file, maxMb);
     if (invalid) {
-      setError('video', invalid);
+      failVideo(invalid);
       return;
     }
     const token = getToken();
     if (!token) {
-      setError('video', UPLOAD_SESSION_ERROR);
+      failVideo(UPLOAD_SESSION_ERROR);
       return;
     }
     setError('video', null);
@@ -211,9 +262,12 @@ const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, 
     videoJobRef.current = job;
     try {
       const src = await job.promise;
-      if (aliveRef.current) setVideo(src);
+      if (aliveRef.current) {
+        setVideo(src);
+        notify?.('success', 'Video berhasil diunggah.', SAVE_HINT);
+      }
     } catch (error) {
-      if (aliveRef.current && !(error instanceof HeroUploadError && error.aborted)) setError('video', message(error, 'Gagal mengunggah video.'));
+      if (aliveRef.current && !(error instanceof HeroUploadError && error.aborted)) failVideo(message(error, 'Gagal mengunggah video.'));
     } finally {
       videoJobRef.current = null;
       if (aliveRef.current) setVideoUpload(null);
@@ -229,7 +283,11 @@ const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, 
     if (url.trim() && !cleanUrl) next.url = 'Isi alamat situs, mis. https://contoh.com atau contoh.com.';
     if (!image) next.image = 'Gambar kartu wajib: proyek tanpa gambar tidak tampil di website.';
     setErrors(next);
-    if (Object.keys(next).length > 0) return;
+    if (Object.keys(next).length > 0) {
+      // Pesan per kolom tetap tampil; notifikasi membantu bila kolomnya sedang tergulir di luar layar
+      notify?.('warning', 'Proyek belum bisa disimpan.', Object.values(next).join(' '));
+      return;
+    }
     onSave(
       cleanPortfolioItem({
         ...item,
@@ -353,7 +411,17 @@ const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, 
         labelAction={<Chip className="tabular-nums">{tools.length}/12</Chip>}
         hint="Tampil sebagai chip di detail proyek. Ketik lalu tekan Enter, atau pilih dari saran."
       >
-        <ToolsField id={fid('tools')} tools={tools} onChange={setTools} />
+        <ToolsField
+          id={fid('tools')}
+          tools={tools}
+          onChange={setTools}
+          onRemoveRequest={(tool) =>
+            askRemove(`Hapus tools "${tool}"?`, `"${tool}" dilepas dari daftar tools proyek ini. ${SAVE_HINT}`, () => {
+              setTools((prev) => prev.filter((name) => name !== tool));
+              notify?.('success', `Tools "${tool}" dihapus.`, SAVE_HINT);
+            })
+          }
+        />
       </Field>
 
       <Field label="Gambar kartu (mockup)" required error={errors.image}>
@@ -476,7 +544,13 @@ const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, 
                 ))}
                 <button
                   type="button"
-                  onClick={() => setGallery((prev) => prev.filter((other) => other.key !== entry.key))}
+                  onClick={() =>
+                    askRemove(`Hapus gambar detail ${index + 1}?`, `Gambar ini dilepas dari detail proyek. ${SAVE_HINT}`, () => {
+                      removedGallery.current.add(entry.key);
+                      setGallery((prev) => prev.filter((other) => other.key !== entry.key));
+                      notify?.('success', `Gambar detail ${index + 1} dihapus.`, SAVE_HINT);
+                    })
+                  }
                   aria-label={`Hapus gambar ${index + 1}`}
                   className={tileButton(true)}
                 >
@@ -563,7 +637,17 @@ const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, 
                   Ganti video
                 </span>
               </label>
-              <Button variant="danger-soft" size="sm" icon={<Trash2 />} onClick={() => setVideo('')}>
+              <Button
+                variant="danger-soft"
+                size="sm"
+                icon={<Trash2 />}
+                onClick={() =>
+                  askRemove('Hapus video proyek?', `Video ini dilepas dari detail proyek. ${SAVE_HINT}`, () => {
+                    setVideo('');
+                    notify?.('success', 'Video proyek dihapus.', SAVE_HINT);
+                  })
+                }
+              >
                 Hapus video
               </Button>
             </div>
@@ -596,6 +680,19 @@ const PortfolioEditor: React.FC<PortfolioEditorProps> = ({ open, item, onClose, 
           </label>
         )}
       </Field>
+
+      {/* Dialog lapis kedua (z-index di atas editor, lewat portal); Escape di dialog ini hanya menutup dialognya */}
+      <ConfirmDialog
+        open={removalOpen}
+        onClose={() => setRemovalOpen(false)}
+        onConfirm={() => {
+          removal?.run();
+          setRemovalOpen(false);
+        }}
+        tone="danger"
+        title={removal?.title}
+        description={removal?.description}
+      />
     </Modal>
   );
 };

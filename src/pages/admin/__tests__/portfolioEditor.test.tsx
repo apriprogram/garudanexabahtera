@@ -67,14 +67,19 @@ afterEach(() => {
 const renderEditor = (item: PortfolioItem | null) => {
   const onSave = vi.fn();
   const onClose = vi.fn();
-  render(<PortfolioEditor open item={item} onSave={onSave} onClose={onClose} />);
-  return { onSave, onClose, dialog: screen.getByRole('dialog') };
+  const notify = vi.fn();
+  render(<PortfolioEditor open item={item} onSave={onSave} onClose={onClose} notify={notify} />);
+  return { onSave, onClose, notify, dialog: screen.getByRole('dialog') };
 };
 
 const file = (name: string, type: string, size = 64) => new File([new Uint8Array(size)], name, { type });
 const pick = (input: HTMLInputElement, files: File[]) => fireEvent.change(input, { target: { files } });
 const fileInput = (dialog: HTMLElement, label: string) => within(dialog).getByLabelText(label) as HTMLInputElement;
 const save = (dialog: HTMLElement) => fireEvent.click(within(dialog).getByRole('button', { name: /Simpan proyek|Menunggu unggahan/ }));
+/** Setiap hapus dikonfirmasi dulu (pemilik 2026-10-29): klik "Ya, hapus" di dialog berjudul `title` (di atas editor). */
+const confirmDelete = async (title: string) =>
+  fireEvent.click(within(await screen.findByRole('dialog', { name: title })).getByRole('button', { name: 'Ya, hapus' }));
+const SAVE_HINT = 'Perubahan tersimpan setelah kamu klik Simpan proyek, lalu Simpan semua perubahan.';
 
 describe('PortfolioEditor', () => {
   it('entri lama tanpa perubahan tersimpan persis seperti sebelumnya (lebar grid & gambar base64 tetap, tanpa isian baru)', () => {
@@ -87,7 +92,7 @@ describe('PortfolioEditor', () => {
   });
 
   it('isian wajib & tautan: pesan per kolom; domain saja → https://; proyek baru wajib punya gambar kartu', () => {
-    const { onSave, dialog } = renderEditor(null);
+    const { onSave, notify, dialog } = renderEditor(null);
     const url = within(dialog).getByLabelText(/Tautan situs/);
     fireEvent.change(url, { target: { value: 'bukan tautan' } });
     save(dialog);
@@ -96,13 +101,15 @@ describe('PortfolioEditor', () => {
     expect(dialog).toHaveTextContent('Tag / kategori wajib diisi.');
     expect(dialog).toHaveTextContent('Isi alamat situs, mis. https://contoh.com atau contoh.com.');
     expect(dialog).toHaveTextContent('Gambar kartu wajib: proyek tanpa gambar tidak tampil di website.');
+    // Notifikasi juga, karena kolom yang salah bisa tergulir di luar layar
+    expect(notify).toHaveBeenCalledWith('warning', 'Proyek belum bisa disimpan.', expect.stringContaining('Nama proyek wajib diisi.'));
 
     fireEvent.change(url, { target: { value: '  Contoh.com/portofolio?id=1 ' } });
     fireEvent.blur(url);
     expect(url).toHaveValue('https://Contoh.com/portofolio?id=1');
   });
 
-  it('tools: Enter & koma menambah chip, kembar diabaikan, saran sekali klik, chip bisa dihapus', () => {
+  it('tools: Enter & koma menambah chip, kembar diabaikan, saran sekali klik, chip bisa dihapus (dikonfirmasi)', async () => {
     const { onSave, dialog } = renderEditor(LEGACY);
     const input = within(dialog).getByLabelText(/Tools \/ teknologi/);
     fireEvent.change(input, { target: { value: 'React JS' } });
@@ -113,17 +120,21 @@ describe('PortfolioEditor', () => {
     fireEvent.click(within(within(dialog).getByRole('group', { name: 'Saran tools' })).getByRole('button', { name: 'Figma' }));
     expect(within(within(dialog).getByRole('group', { name: 'Saran tools' })).queryByRole('button', { name: 'Laravel' })).toBeNull();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Hapus laravel' }));
+    await confirmDelete('Hapus tools "laravel"?');
     save(dialog);
     expect(onSave).toHaveBeenCalledWith({ ...LEGACY, tools: ['React JS', 'Flutter', 'Figma'] });
   });
 
   it('gambar detail: diunggah satu per satu sebagai data URI kecil, bisa digeser & dihapus; urutan ikut tersimpan', async () => {
-    const { onSave, dialog } = renderEditor(LEGACY);
+    const { onSave, notify, dialog } = renderEditor(LEGACY);
     pick(fileInput(dialog, 'Tambah gambar detail'), [file('a.png', 'image/png'), file('b.jpg', 'image/jpeg'), file('c.webp', 'image/webp')]);
     // Selama mengunggah: simpan ditahan
     expect(within(dialog).getByRole('button', { name: 'Menunggu unggahan...' })).toBeDisabled();
     await waitFor(() => expect(within(dialog).getAllByRole('img', { name: /^Gambar detail/ })).toHaveLength(3));
     expect(uploads).toEqual(Array(3).fill('data:image/jpeg;base64,/9j/AAAA'));
+    // Satu notifikasi untuk semua file yang dipilih
+    await waitFor(() => expect(notify).toHaveBeenCalledWith('success', '3 gambar detail berhasil diunggah.', SAVE_HINT));
+    expect(notify).toHaveBeenCalledTimes(1);
 
     const right = within(dialog).getByRole('button', { name: 'Geser gambar 1 ke kanan' });
     right.focus();
@@ -131,7 +142,15 @@ describe('PortfolioEditor', () => {
     // Fokus ikut gambar yang digeser (kini #2)
     expect(within(dialog).getByRole('button', { name: 'Geser gambar 2 ke kanan' })).toHaveFocus();
     expect(within(dialog).getByRole('button', { name: 'Geser gambar 1 ke kiri' })).toBeDisabled();
+    // Hapus: Batal di dialog = gambar tetap; "Ya, hapus" = dilepas, dengan notifikasi
     fireEvent.click(within(dialog).getByRole('button', { name: 'Hapus gambar 3' }));
+    const confirm = await screen.findByRole('dialog', { name: 'Hapus gambar detail 3?' });
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Hapus gambar detail 3?' })).not.toBeInTheDocument());
+    expect(within(dialog).getAllByRole('img', { name: /^Gambar detail/ })).toHaveLength(3);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Hapus gambar 3' }));
+    await confirmDelete('Hapus gambar detail 3?');
+    expect(notify).toHaveBeenLastCalledWith('success', 'Gambar detail 3 dihapus.', SAVE_HINT);
     save(dialog);
     expect(onSave).toHaveBeenCalledWith({
       ...LEGACY,
@@ -139,8 +158,45 @@ describe('PortfolioEditor', () => {
     });
   });
 
+  it('gambar detail yang dihapus selagi/sebelum diunggah: tidak dipakai, tidak diunggah, dan tidak dihitung di notifikasi', async () => {
+    // Unggahan pertama ditahan sampai dilepas, supaya gambar lain masih menunggu giliran saat dihapus
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = () => resolve();
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const action = new URL(String(input), 'http://localhost').searchParams.get('action');
+        if (action !== 'upload_project_image') return json(200, { success: true, video_max_mb: 30, max_images: 12 });
+        uploads.push(String((JSON.parse(String(init?.body)) as { data: string }).data));
+        const n = uploads.length;
+        await gate;
+        return json(200, { success: true, url: `/assets/projects/project_00000000000${n}.jpg` });
+      }),
+    );
+    const { onSave, notify, dialog } = renderEditor(LEGACY);
+    pick(fileInput(dialog, 'Tambah gambar detail'), [file('a.png', 'image/png'), file('b.png', 'image/png'), file('c.png', 'image/png')]);
+    await waitFor(() => expect(uploads).toHaveLength(1));
+
+    // c belum gilirannya, a sedang diunggah: keduanya dihapus lewat dialog
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Hapus gambar 3' }));
+    await confirmDelete('Hapus gambar detail 3?');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Hapus gambar detail 3?' })).not.toBeInTheDocument());
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Hapus gambar 1' }));
+    await confirmDelete('Hapus gambar detail 1?');
+    expect(notify).toHaveBeenLastCalledWith('success', 'Gambar detail 1 dihapus.', SAVE_HINT);
+
+    await act(async () => release());
+    await waitFor(() => expect(notify).toHaveBeenLastCalledWith('success', 'Gambar detail berhasil diunggah.', SAVE_HINT));
+    // Hanya a (sudah terkirim) dan b; c tidak diunggah
+    expect(uploads).toHaveLength(2);
+    save(dialog);
+    expect(onSave).toHaveBeenCalledWith({ ...LEGACY, gallery: ['/assets/projects/project_000000000002.jpg'] });
+  });
+
   it('gambar ditolak dengan pesan jelas: bukan JPG/PNG/WEBP/GIF, terlalu besar, atau ditolak server; GIF dikirim apa adanya', async () => {
-    const { dialog } = renderEditor(LEGACY);
+    const { notify, dialog } = renderEditor(LEGACY);
     uploadReply = () => json(400, { error: 'Ukuran gambar maksimal 10 MB.' });
     pick(fileInput(dialog, 'Tambah gambar detail'), [
       file('logo.svg', 'image/svg+xml'),
@@ -153,11 +209,20 @@ describe('PortfolioEditor', () => {
       ),
     );
     expect(within(dialog).queryAllByRole('img', { name: /^Gambar detail/ })).toHaveLength(0);
+    // Pesan di kolom tetap; notifikasi gagal merangkum semuanya
+    await waitFor(() =>
+      expect(notify).toHaveBeenCalledWith(
+        'error',
+        'Gagal mengunggah gambar detail.',
+        '"logo.svg": Gambar proyek harus JPG, PNG, WEBP, atau GIF. "besar.png" lebih dari 25 MB. Ukuran gambar maksimal 10 MB.',
+      ),
+    );
 
     uploadReply = (n) => json(200, { success: true, url: `/assets/projects/project_00000000000${n}.gif` });
     pick(fileInput(dialog, 'Ganti gambar kartu'), [new File(['GIF89a'], 'anim.gif', { type: 'image/gif' })]);
     await waitFor(() => expect(within(dialog).getByRole('img', { name: 'Gambar kartu proyek' })).toHaveAttribute('src', '/assets/projects/project_000000000002.gif'));
     expect(uploads[1]).toMatch(/^data:image\/gif;base64,R0lGODlh/);
+    expect(notify).toHaveBeenLastCalledWith('success', 'Gambar kartu berhasil diunggah.', SAVE_HINT);
   });
 
   it('video: batas dari server, unggah mentah ke upload_project_video dengan progres, simpan ditahan sampai selesai', async () => {
@@ -167,7 +232,7 @@ describe('PortfolioEditor', () => {
       options.onProgress?.(40);
       return { promise: new Promise<string>((resolve) => (finish = resolve)), abort } satisfies HeroVideoUpload;
     });
-    const { onSave, dialog } = renderEditor(LEGACY);
+    const { onSave, notify, dialog } = renderEditor(LEGACY);
     await waitFor(() => expect(dialog).toHaveTextContent('MP4 atau WebM, maks. 30 MB.'));
 
     pick(fileInput(dialog, 'Tambah video'), [file('besar.mp4', 'video/mp4', 31 * 1024 * 1024)]);
@@ -175,6 +240,7 @@ describe('PortfolioEditor', () => {
     expect(uploadHeroVideo).not.toHaveBeenCalled();
     pick(fileInput(dialog, 'Tambah video'), [file('film.mov', 'video/quicktime')]);
     expect(dialog).toHaveTextContent('Format video harus MP4 atau WebM.');
+    expect(notify).toHaveBeenLastCalledWith('error', 'Gagal mengunggah video.', 'Format video harus MP4 atau WebM.');
 
     pick(fileInput(dialog, 'Tambah video'), [file('demo.mp4', 'video/mp4')]);
     expect(vi.mocked(uploadHeroVideo).mock.calls[0][1]).toMatchObject({ token: 'test-token', url: PROJECT_VIDEO_UPLOAD_URL });
@@ -182,6 +248,7 @@ describe('PortfolioEditor', () => {
     expect(within(dialog).getByRole('button', { name: 'Menunggu unggahan...' })).toBeDisabled();
     await act(async () => finish('/assets/projects/project_video_0123456789ab.mp4'));
     expect(dialog.querySelector('video')).toHaveAttribute('src', '/assets/projects/project_video_0123456789ab.mp4');
+    expect(notify).toHaveBeenLastCalledWith('success', 'Video berhasil diunggah.', SAVE_HINT);
     save(dialog);
     expect(onSave).toHaveBeenCalledWith({ ...LEGACY, video: '/assets/projects/project_video_0123456789ab.mp4' });
   });
@@ -196,7 +263,7 @@ describe('PortfolioEditor', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('isian lengkap tersimpan rapi (deskripsi dirapikan, tautan, tools, galeri, video), lalu bisa dikosongkan lagi', () => {
+  it('isian lengkap tersimpan rapi (deskripsi dirapikan, tautan, tools, galeri, video), lalu bisa dikosongkan lagi', async () => {
     const full: PortfolioItem = {
       ...LEGACY,
       description: 'Kasir Android.',
@@ -212,9 +279,13 @@ describe('PortfolioEditor', () => {
 
     fireEvent.change(within(dialog).getByLabelText(/Deskripsi proyek/), { target: { value: '   ' } });
     fireEvent.change(within(dialog).getByLabelText(/Tautan situs/), { target: { value: '' } });
+    // Tiap hapus lewat dialog konfirmasi
     fireEvent.click(within(dialog).getByRole('button', { name: 'Hapus Flutter' }));
+    await confirmDelete('Hapus tools "Flutter"?');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Hapus gambar 1' }));
+    await confirmDelete('Hapus gambar detail 1?');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Hapus video' }));
+    await confirmDelete('Hapus video proyek?');
     save(dialog);
     expect(onSave).toHaveBeenLastCalledWith(LEGACY);
   });

@@ -6,7 +6,7 @@ import { Button, Field, Input, Modal, ModalBody, ModalFooter, Notice, Segmented,
 import { pdDocumentSign } from '../../../../features/project-docs/api';
 import type { DocumentSignResponse, SignatureMethod } from '../../../../features/project-docs/types';
 import { ApiError, errorMessage } from '../../../../lib/api';
-import { fieldErrorsOf } from '../shared/hooks';
+import { errorDetail, fieldErrorsOf, type Notify } from '../shared/hooks';
 import type { Errors } from '../shared/validation';
 import { SignaturePad, type SignaturePadHandle } from './SignaturePad';
 
@@ -22,6 +22,7 @@ export function SignModal({
   defaultTitle,
   onSigned,
   onConflict,
+  notify,
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,6 +38,8 @@ export function SignModal({
   onSigned: (result: DocumentSignResponse) => void;
   /** 409: the document changed or was already signed meanwhile; the editor reloads it */
   onConflict: (message: string) => void;
+  /** toast halaman editor (galat lain selain 409) */
+  notify: Notify;
 }) {
   const padRef = useRef<SignaturePadHandle>(null);
   const [method, setMethod] = useState<SignatureMethod>('draw');
@@ -91,6 +94,7 @@ export function SignModal({
       }
       setErrors(fieldErrorsOf(err));
       setServerError(`Gagal menandatangani: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
+      notify('error', 'Gagal menandatangani dokumen.', errorDetail(err));
     } finally {
       setSaving(false);
     }

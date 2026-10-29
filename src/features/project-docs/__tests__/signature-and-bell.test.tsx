@@ -78,6 +78,24 @@ describe('SignaturePad', () => {
     expect(screen.getByText('Belum ada tanda tangan')).toBeInTheDocument();
   });
 
+  it('onClearRequest: Hapus menunggu konfirmasi form, gambar baru dihapus saat clear dipanggil', () => {
+    const onChange = vi.fn<(value: SignatureValue | null) => void>();
+    const onClearRequest = vi.fn<(clear: () => void) => void>();
+    render(<SignaturePad onChange={onChange} onClearRequest={onClearRequest} />);
+    draw(screen.getByRole('img', { name: /Area tanda tangan/ }));
+    expect(onChange.mock.lastCall?.[0]?.input).toEqual({ method: 'draw', data_url: SMALL_PNG });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus' }));
+    expect(onClearRequest).toHaveBeenCalledTimes(1);
+    // Belum dikonfirmasi: gambar tetap ada
+    expect(onChange.mock.lastCall?.[0]).not.toBeNull();
+    expect(screen.getByRole('img', { name: 'Pratinjau tanda tangan' })).toHaveAttribute('src', SMALL_PNG);
+
+    act(() => onClearRequest.mock.calls[0][0]());
+    expect(onChange).toHaveBeenLastCalledWith(null);
+    expect(screen.getByText('Belum ada tanda tangan')).toBeInTheDocument();
+  });
+
   it('memperkecil gambar yang melebihi 300 KB dan menolak bila tetap terlalu besar', () => {
     const onChange = vi.fn<(value: SignatureValue | null) => void>();
     toDataUrl.mockReturnValueOnce(HUGE_PNG).mockReturnValueOnce(SMALL_PNG);

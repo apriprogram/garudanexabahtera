@@ -10,7 +10,7 @@ import type { ProjectGetResponse, SettingsGetResponse } from '../../../features/
 import { useToast } from '../template-orders/shared/hooks';
 import { Toast } from '../template-orders/shared/OrderUi';
 import { rupiah, STAGE_LABEL, tanggal } from './shared/format';
-import { usePdQuery, useUnsavedGuard, useViewer } from './shared/hooks';
+import { useNavToast, usePdQuery, useUnsavedGuard, useViewer } from './shared/hooks';
 import { ActivityList, ProgressCell, StageStepper } from './shared/ui';
 import { DocumentsTab } from './workspace/DocumentsTab';
 import { FinanceTab } from './workspace/FinanceTab';
@@ -47,6 +47,8 @@ export default function ProjectWorkspace() {
   // Pengaturan (termin bawaan, pajak, SLA) dibutuhkan untuk template dan invoice; gagal memuat tidak memblokir halaman
   const settingsQuery = usePdQuery<SettingsGetResponse>('pd_settings', pdSettingsGet);
   const project = query.data?.project ?? null;
+  // Toast dari editor yang baru ditutup (mis. draft dokumen dihapus), tampil setelah proyek dimuat
+  useNavToast(show, !!project);
 
   const setTab = (next: Tab) => {
     const params = new URLSearchParams(searchParams);

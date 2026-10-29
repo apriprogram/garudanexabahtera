@@ -1,9 +1,48 @@
 // Hooks shared by the admin project-docs pages: data loading through the typed pd_* wrappers
-// (src/features/project-docs/api.ts, POST only), the viewer's role and the unsaved-changes guard.
+// (src/features/project-docs/api.ts, POST only), the viewer's role, the unsaved-changes guard and the toast that
+// travels to the next page.
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ApiError, errorMessage } from '../../../../lib/api';
 import { getCurrentUser } from '../../../../lib/auth';
 import { DEVELOPER_DOC_TYPES, type DocType } from '../../../../features/project-docs/types';
+import type { ToastTone } from '../../template-orders/shared/hooks';
+
+/** Toast halaman (useToast().show): drawer, modal, dan panel melapor lewat callback ini, bukan merender <Toast> sendiri. */
+export type Notify = (tone: ToastTone, message: string, description?: string) => void;
+
+/** Kalimat kedua toast galat: pesan dari server, atau ajakan mencoba lagi. */
+export const errorDetail = (err: unknown) => errorMessage(err, 'Terjadi kesalahan. Coba lagi.');
+
+/**
+ * State navigasi antarhalaman proyek. `toast` = hasil aksi yang langsung diikuti pindah halaman (dokumen dibuat lalu
+ * editornya dibuka, draft dihapus lalu kembali ke workspace): toast halaman asal ikut hilang saat halaman itu ditutup,
+ * jadi halaman tujuan yang menampilkannya lewat useNavToast.
+ */
+export interface PdNavState {
+  toast?: { tone: ToastTone; message: string; description?: string };
+}
+
+/** Opsi navigate() yang membawa toast ke halaman berikutnya. */
+export const navToast = (tone: ToastTone, message: string, description?: string): { state: PdNavState } => ({
+  state: { toast: { tone, message, ...(description ? { description } : {}) } },
+});
+
+/**
+ * Menampilkan sekali toast dari halaman sebelumnya (PdNavState.toast) begitu halaman siap (`ready`: <Toast> sudah
+ * dirender), lalu menghapus state itu dari riwayat agar tidak muncul lagi saat halaman dimuat ulang.
+ */
+export function useNavToast(show: Notify, ready: boolean) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const toast = (location.state as PdNavState | null)?.toast;
+  const { pathname, search, hash } = location;
+  useEffect(() => {
+    if (!toast || !ready) return;
+    show(toast.tone, toast.message, toast.description);
+    navigate(`${pathname}${search}${hash}`, { replace: true, state: null });
+  }, [toast, ready, show, navigate, pathname, search, hash]);
+}
 
 type QueryState<T> = { key: string; data: T | null; error: string | null; notFound: boolean };
 
@@ -72,7 +111,7 @@ export function useViewer() {
  * clicks on in-app links anywhere on the page (sidebar, breadcrumbs, back links). `pending` holds the blocked path;
  * the page shows a ConfirmDialog and calls proceed() or cancel().
  */
-export function useUnsavedGuard(dirty: boolean, navigate: (to: string) => void) {
+export function useUnsavedGuard(dirty: boolean, navigate: (to: string, options?: { state: PdNavState }) => void) {
   const [pending, setPending] = useState<string | null>(null);
   const dirtyRef = useRef(dirty);
   useEffect(() => {
@@ -108,8 +147,11 @@ export function useUnsavedGuard(dirty: boolean, navigate: (to: string) => void) 
 
   return {
     pending,
-    /** Ask before leaving to `to` (own buttons that navigate in code). */
-    request: (to: string) => (dirtyRef.current ? setPending(to) : navigate(to)),
+    /**
+     * Ask before leaving to `to` (own buttons that navigate in code). `options` (navToast) only travels with an
+     * immediate navigation; while the dialog asks, the current page still shows the caller's own toast.
+     */
+    request: (to: string, options?: { state: PdNavState }) => (dirtyRef.current ? setPending(to) : navigate(to, options)),
     proceed: () => {
       const to = pending;
       dirtyRef.current = false;

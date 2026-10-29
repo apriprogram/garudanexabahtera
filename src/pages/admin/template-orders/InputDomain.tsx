@@ -166,6 +166,8 @@ function DomainCard({
       if (err instanceof ApiError && err.fieldErrors?.domain) {
         setError(err.fieldErrors.domain);
         document.getElementById(inputId)?.focus();
+        // Rincian galat sudah tampil di bawah kolom domain; toast cukup memberi tahu bahwa simpan gagal
+        notify('error', 'Gagal menyimpan domain. Periksa isian domain.');
       } else {
         notify('error', `Gagal menyimpan domain: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
         if (err instanceof ApiError && (err.code === 'INVALID_STATUS' || err.status === 404)) onStale();

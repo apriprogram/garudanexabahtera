@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FileArchive, FolderOpen, ImageOff, Upload } from 'lucide-react';
 import { Badge, Button, Modal, Notice, Segmented, Spinner, ThinProgress, cn, type Tone } from '../../../components/admin/ui';
 import { apiGet } from '../../../lib/api';
+import type { ToastTone } from '../template-orders/shared/hooks';
 import {
   PROJECT_DESCRIPTION_MAX,
   PROJECT_MAX_GALLERY,
@@ -92,6 +93,8 @@ interface PortfolioImportDialogProps {
   onClose: () => void;
   /** Satu proyek selesai diunggah; replace = ganti proyek bernama sama (addImportedProject). */
   onImport: (item: PortfolioItem, replace: boolean) => void;
+  /** Notifikasi halaman (toast di atas tengah layar): ringkasan hasil impor setelah semua proyek selesai diunggah. */
+  notify?: (tone: ToastTone, message: string, description?: string) => void;
 }
 
 /**
@@ -100,7 +103,7 @@ interface PortfolioImportDialogProps {
  * diunggah satu per satu dan tiap proyek yang selesai langsung masuk daftar (portfolioImport.ts). Tampil di website
  * setelah "Simpan semua perubahan", sama seperti editor. Pasang `key` baru tiap kali dibuka.
  */
-const PortfolioImportDialog: React.FC<PortfolioImportDialogProps> = ({ open, existing, onClose, onImport }) => {
+const PortfolioImportDialog: React.FC<PortfolioImportDialogProps> = ({ open, existing, onClose, onImport, notify }) => {
   const [stage, setStage] = useState<Stage>('pick');
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -223,6 +226,8 @@ const PortfolioImportDialog: React.FC<PortfolioImportDialogProps> = ({ open, exi
     const replacing = mode === 'replace';
     setStage('upload');
     setRows(Object.fromEntries(items.map((item) => [item.number, { status: item.problems.length ? 'skipped' : 'waiting' } as Row])));
+    let importedCount = 0;
+    let failedCount = 0;
     for (const item of ready) {
       if (controller.signal.aborted) break;
       setRow(item.number, { status: 'uploading', percent: 0 });
@@ -238,10 +243,12 @@ const PortfolioImportDialog: React.FC<PortfolioImportDialogProps> = ({ open, exi
         const replace = replacing && item.existing >= 0;
         onImport(saved, replace);
         setRow(item.number, { status: 'done', replaced: replace });
+        importedCount += 1;
       } catch (failure) {
         if (!aliveRef.current) return;
         if (failure instanceof ImportCancelled || controller.signal.aborted) break;
         setRow(item.number, { status: 'failed', error: message(failure, 'Gagal mengunggah.') });
+        failedCount += 1;
       }
     }
     if (!aliveRef.current) return;
@@ -253,6 +260,18 @@ const PortfolioImportDialog: React.FC<PortfolioImportDialogProps> = ({ open, exi
     );
     setStopping(false);
     setStage('done');
+    // Ringkasan juga sebagai notifikasi halaman; rincian per proyek tetap di daftar. Dihentikan tanpa hasil: tanpa notifikasi.
+    if (importedCount > 0 && failedCount === 0) {
+      notify?.('success', `${importedCount} proyek berhasil diimpor.`, 'Klik Simpan semua perubahan agar tampil di website.');
+    } else if (importedCount > 0) {
+      notify?.(
+        'warning',
+        `${importedCount} proyek diimpor, ${failedCount} gagal.`,
+        'Lihat alasannya di daftar impor. Klik Simpan semua perubahan agar proyek yang masuk tampil di website.',
+      );
+    } else if (failedCount > 0) {
+      notify?.('error', 'Gagal mengimpor proyek.', 'Lihat alasannya di daftar impor, perbaiki ZIP-nya, lalu impor lagi.');
+    }
   };
 
   const stop = () => {

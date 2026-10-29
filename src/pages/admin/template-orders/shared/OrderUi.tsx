@@ -1,8 +1,8 @@
 // Komponen tampilan bersama halaman admin pesanan template & Dashboard (gaya "Calm Workspace", token adm-*).
 import type { ReactNode } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Ban, CheckCircle2, CircleHelp, Clock, CreditCard, Globe, Hourglass, Info, RefreshCw, X, XCircle } from 'lucide-react';
-import { Badge, IconBox, IconButton, Notice, cn, type Tone } from '../../../../components/admin/ui';
+import { AlertTriangle, Ban, CheckCircle2, CircleHelp, Clock, CreditCard, Globe, Hourglass, Info, RefreshCw, XCircle } from 'lucide-react';
+import { Badge, Notice, cn, type Tone } from '../../../../components/admin/ui';
+import { FloatingToast } from '../../../../components/feedback/FloatingToast';
 import { formatRupiah, formatTanggal, type OrderStatus, type Renewal } from '../../../../types/platform';
 import { SITE_ADDON_NAME, type SiteAddonOrder } from '../../../../types/siteAddons';
 import {
@@ -301,27 +301,10 @@ export function AddonOrderHistory({ orders }: { orders: SiteAddonOrder[] }) {
 /** Notifikasi melayang (pasangkan dengan useToast). */
 export function Toast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
   return (
-    <AnimatePresence>
-      {toast && (
-        <motion.div
-          key={toast.id}
-          initial={{ opacity: 0, y: -24, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -12, scale: 0.96 }}
-          transition={{ duration: 0.18 }}
-          role={toast.tone === 'error' ? 'alert' : 'status'}
-          aria-live={toast.tone === 'error' ? 'assertive' : 'polite'}
-          className="fixed left-1/2 top-4 z-[150] flex w-[calc(100%-32px)] max-w-md -translate-x-1/2 items-center gap-3 rounded-2xl bg-adm-surface px-3.5 py-3 shadow-float ring-1 ring-inset ring-adm-line sm:top-8 sm:w-auto sm:min-w-[320px]"
-        >
-          <IconBox
-            size="sm"
-            tone={toast.tone === 'success' ? 'mint' : toast.tone === 'error' ? 'danger' : 'cobalt'}
-            icon={toast.tone === 'success' ? <CheckCircle2 /> : toast.tone === 'error' ? <AlertTriangle /> : <Info />}
-          />
-          <span className="min-w-0 flex-1 text-sm font-medium text-adm-fg">{toast.message}</span>
-          <IconButton icon={<X />} label="Tutup" size="xs" onClick={onClose} />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <FloatingToast
+      variant="admin"
+      toast={toast && { id: toast.id, tone: toast.tone, title: toast.message, description: toast.description }}
+      onClose={onClose}
+    />
   );
 }

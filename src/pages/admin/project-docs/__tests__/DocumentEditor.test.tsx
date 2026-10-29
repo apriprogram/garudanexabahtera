@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Jalankan: npx vitest run src/pages/admin/project-docs/__tests__/DocumentEditor.test.tsx
 import { cleanup, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocDetail } from '../../../../features/project-docs/types';
@@ -49,13 +49,26 @@ vi.mock('../../../../features/project-docs/engine', async (importOriginal) => {
 
 import DocumentEditor from '../DocumentEditor';
 import { editorPermissions } from '../editor/permissions';
+import type { PdNavState } from '../shared/hooks';
 
-function renderEditor() {
+/** Pengganti workspace: menampilkan toast yang dibawa editor lewat state navigasi. */
+function WorkspaceStub() {
+  const toast = (useLocation().state as PdNavState | null)?.toast;
+  return (
+    <>
+      <p>Halaman workspace</p>
+      {toast && <p data-testid="nav-toast">{toast.message}</p>}
+    </>
+  );
+}
+
+/** `state` = state navigasi dari halaman sebelumnya (mis. toast dari workspace). */
+function renderEditor(state?: PdNavState) {
   return render(
-    <MemoryRouter initialEntries={['/admin/proyek/3/dokumen/12']}>
+    <MemoryRouter initialEntries={[{ pathname: '/admin/proyek/3/dokumen/12', state }]}>
       <Routes>
         <Route path="/admin/proyek/:id/dokumen/:docId" element={<DocumentEditor />} />
-        <Route path="/admin/proyek/:id" element={<p>Halaman workspace</p>} />
+        <Route path="/admin/proyek/:id" element={<WorkspaceStub />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -190,6 +203,117 @@ describe('Editor dokumen', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, tinggalkan' }));
     expect(await screen.findByText('Halaman workspace')).toBeInTheDocument();
+  });
+
+  it('hapus kolom, baris, dan tabel bagian ditanya dulu lewat dialog konfirmasi', async () => {
+    api.pdDocumentGet.mockResolvedValue({ success: true, document: brdDraft() });
+    renderEditor();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Tambah tabel' }));
+    expect(screen.getByLabelText('Judul kolom 2')).toHaveValue('Kolom 2');
+
+    // Batal: kolom tetap ada
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus kolom 2' }));
+    let dialog = await screen.findByRole('dialog', { name: 'Hapus kolom "Kolom 2"?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByLabelText('Judul kolom 2')).toBeInTheDocument();
+
+    // Ya, hapus: kolom hilang
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus kolom 2' }));
+    dialog = await screen.findByRole('dialog', { name: 'Hapus kolom "Kolom 2"?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.queryByLabelText('Judul kolom 2')).not.toBeInTheDocument();
+
+    // Judul dialog hapus baris memakai isi sel pertamanya
+    fireEvent.change(screen.getByLabelText('Baris 1, Kolom 1'), { target: { value: 'Modul laporan' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus baris 1' }));
+    dialog = await screen.findByRole('dialog', { name: 'Hapus baris "Modul laporan"?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+    expect(await screen.findByText('Tabel belum punya baris.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus tabel' }));
+    dialog = await screen.findByRole('dialog', { name: 'Hapus tabel bagian "Latar belakang"?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+    expect(await screen.findByRole('button', { name: 'Tambah tabel' })).toBeInTheDocument();
+    // Hanya draft di layar yang berubah; tidak ada yang dikirim ke server
+    expect(api.pdDocumentSave).not.toHaveBeenCalled();
+  });
+
+  it('hapus gambar tanda tangan Pihak Pertama ditanya dulu', async () => {
+    // jsdom tidak punya kanvas 2D dan pointer capture
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    Object.defineProperty(HTMLCanvasElement.prototype, 'setPointerCapture', { value: vi.fn(), configurable: true, writable: true });
+    try {
+      api.pdDocumentGet.mockResolvedValue({
+        success: true,
+        document: brdDraft({ doc_type: 'pks', number: '001/PKS/GNB/X/2026', status: 'menunggu_persetujuan', submitted_at: '2026-10-21 10:00:00' }),
+      });
+      renderEditor();
+
+      fireEvent.click((await screen.findAllByRole('button', { name: 'Tandatangani' }))[0]);
+      const sign = await screen.findByRole('dialog', { name: 'Tandatangani sebagai Pihak Pertama' });
+      fireEvent.pointerDown(within(sign).getByRole('img', { name: /Area tanda tangan/ }), { pointerId: 1, clientX: 40, clientY: 60 });
+      fireEvent.pointerUp(within(sign).getByRole('img', { name: /Area tanda tangan/ }), { pointerId: 1 });
+      expect(within(sign).getByRole('button', { name: 'Tandatangani' })).toBeEnabled();
+
+      fireEvent.click(within(sign).getByRole('button', { name: 'Hapus' }));
+      const confirm = await screen.findByRole('dialog', { name: 'Hapus gambar tanda tangan?' });
+      fireEvent.click(within(confirm).getByRole('button', { name: 'Ya, hapus' }));
+      await waitFor(() => expect(within(sign).getByRole('button', { name: 'Hapus' })).toBeDisabled());
+      expect(within(sign).getByRole('button', { name: 'Tandatangani' })).toBeDisabled();
+      expect(screen.getByRole('dialog', { name: 'Tandatangani sebagai Pihak Pertama' })).toBeInTheDocument();
+      expect(api.pdDocumentSign).not.toHaveBeenCalled();
+    } finally {
+      getContext.mockRestore();
+      Reflect.deleteProperty(HTMLCanvasElement.prototype, 'setPointerCapture');
+    }
+  });
+
+  it('ajukan perubahan yang gagal: pesan tetap di modal dan muncul toast galat', async () => {
+    const { ApiError } = await import('../../../../lib/api');
+    api.pdDocumentGet.mockResolvedValue({ success: true, document: brdDraft({ status: 'disetujui', submitted_at: '2026-10-21 10:00:00', approved_at: '2026-10-22 10:00:00' }) });
+    api.pdDocumentChange.mockRejectedValue(new ApiError('Dokumen sedang diproses. Coba beberapa saat lagi.', 409, 'STATE'));
+    renderEditor();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Aksi lainnya' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Ajukan perubahan' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Ajukan perubahan dokumen?' });
+    fireEvent.change(within(dialog).getByLabelText(/Alasan perubahan/), { target: { value: 'Klien menambah modul laporan.' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, ajukan perubahan' }));
+
+    await waitFor(() => expect(api.pdDocumentChange).toHaveBeenCalledWith({ id: 12, reason: 'Klien menambah modul laporan.' }));
+    expect(await screen.findByText('Gagal mengajukan perubahan.')).toBeInTheDocument();
+    // Pesan server tampil di modal dan sebagai keterangan toast; modal tetap terbuka
+    expect(screen.getAllByText('Dokumen sedang diproses. Coba beberapa saat lagi.')).toHaveLength(2);
+    expect(screen.getByRole('dialog', { name: 'Ajukan perubahan dokumen?' })).toBeInTheDocument();
+  });
+
+  it('hapus draft ditanya dulu; toast suksesnya dibawa ke workspace', async () => {
+    api.pdDocumentGet.mockResolvedValue({ success: true, document: brdDraft() });
+    api.pdDocumentDelete.mockResolvedValue({ success: true });
+    renderEditor();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Aksi lainnya' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Hapus draft' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Hapus draft dokumen?' });
+    expect(api.pdDocumentDelete).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+
+    await waitFor(() => expect(api.pdDocumentDelete).toHaveBeenCalledWith({ id: 12 }));
+    expect(await screen.findByText('Halaman workspace')).toBeInTheDocument();
+    // Editor sudah ditutup: toast "berhasil dihapus" tampil di workspace, bukan hilang bersama editor
+    expect(screen.getByTestId('nav-toast')).toHaveTextContent('Draft dokumen berhasil dihapus.');
+  });
+
+  it('toast dari workspace (dokumen baru dibuat) tampil setelah editor dimuat', async () => {
+    api.pdDocumentGet.mockResolvedValue({ success: true, document: brdDraft() });
+    renderEditor({ toast: { tone: 'success', message: 'BRD 001/BRD/GNB/X/2026 berhasil dibuat.' } });
+
+    expect(await screen.findByText('BRD 001/BRD/GNB/X/2026 berhasil dibuat.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'BRD – Dokumen Kebutuhan Bisnis' })).toBeInTheDocument();
   });
 
   it('dokumen tidak ditemukan', async () => {

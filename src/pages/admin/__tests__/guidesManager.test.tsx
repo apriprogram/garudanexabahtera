@@ -357,9 +357,11 @@ describe('GuidesManager: tambah & edit', () => {
     expect(screen.getByText('Deskripsi wajib diisi.')).toBeInTheDocument();
     expect(screen.getByText('Isi artikel wajib diisi.')).toBeInTheDocument();
     expect(calls.some((call) => call.action === 'admin_save_guide')).toBe(false);
+    // Belum ada yang dikirim: cukup error di bawah kolom, tanpa notifikasi
+    expect(notify).not.toHaveBeenCalled();
   });
 
-  it('error dari server: pesan umum di atas form, error per kolom di bawah kolomnya', async () => {
+  it('error dari server: pesan umum di atas form, error per kolom di bawah kolomnya, dan notifikasi gagal', async () => {
     mockGuidesApi({ save: () => json({ error: 'Periksa lagi isian artikel.', errors: { slug: 'Slug sudah dipakai artikel lain.' } }, 422) });
     renderManager();
     fireEvent.click(await screen.findByRole('button', { name: `Edit ${DRAFT.title}` }));
@@ -369,6 +371,20 @@ describe('GuidesManager: tambah & edit', () => {
     expect(await screen.findByText('Gagal menyimpan: Periksa lagi isian artikel.')).toBeInTheDocument();
     expect(screen.getByText('Slug sudah dipakai artikel lain.')).toBeInTheDocument();
     expect(field(/^Slug/)).toHaveAttribute('aria-invalid', 'true');
+    expect(notify).toHaveBeenCalledWith('error', 'Gagal menyimpan artikel.', 'Periksa lagi isian artikel.');
+    // Form tetap terbuka dengan isiannya
+    expect(screen.getByRole('dialog', { name: 'Edit artikel' })).toBeInTheDocument();
+  });
+
+  it('koneksi putus saat menyimpan: pesan di atas form dan notifikasi gagal', async () => {
+    mockGuidesApi({ save: () => Promise.reject(new TypeError('Failed to fetch')) });
+    renderManager();
+    fireEvent.click(await screen.findByRole('button', { name: `Edit ${DRAFT.title}` }));
+    await screen.findByRole('dialog', { name: 'Edit artikel' });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    expect(await screen.findByText('Tidak bisa terhubung ke server.')).toBeInTheDocument();
+    expect(notify).toHaveBeenCalledWith('error', 'Gagal menyimpan artikel.', 'Tidak bisa terhubung ke server.');
   });
 
   it('edit: isian terisi, slug tidak ikut judul, id ikut terkirim', async () => {
@@ -454,6 +470,7 @@ describe('GuidesManager: tambah & edit', () => {
     expect(await screen.findByText(`Gagal menyimpan: ${taken}`)).toBeInTheDocument();
     expect(screen.getByText(taken)).toBeInTheDocument();
     expect(field(/^Judul/)).toHaveAttribute('aria-invalid', 'true');
+    expect(notify).toHaveBeenCalledWith('error', 'Gagal menyimpan artikel.', taken);
   }, 30_000);
 
   it('ganti slug artikel yang ditautkan situs (draf juga): peringatan, dan related artikel lain ikut slug baru', async () => {

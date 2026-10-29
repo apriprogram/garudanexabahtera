@@ -29,6 +29,7 @@ import { InvoiceFormModal } from '../finance/InvoiceFormModal';
 import { PaymentFormModal } from '../finance/PaymentFormModal';
 import { templateFor } from '../shared/documents';
 import { formatPercent, invoiceKindLabel, rupiah, rupiahRingkas, tanggal } from '../shared/format';
+import { navToast, type PdNavState } from '../shared/hooks';
 import { ReasonModal } from '../shared/ReasonModal';
 import { DocStatusBadge, PaymentBadge } from '../shared/ui';
 import type { WorkspaceContext } from './context';
@@ -56,7 +57,7 @@ export function FinanceTab({ ctx }: { ctx: WorkspaceContext }) {
   const paid = active.reduce((s, i) => s + i.amount_paid, 0);
   const outstanding = active.filter((i) => i.doc_status !== 'draft').reduce((s, i) => s + i.remaining, 0);
   const termInvoice = (key: string) => invoices.find((i) => i.term_key === key && live(i)) ?? null;
-  const openDoc = (documentId: number) => ctx.go(`/admin/proyek/${project.id}/dokumen/${documentId}`);
+  const openDoc = (documentId: number, options?: { state: PdNavState }) => ctx.go(`/admin/proyek/${project.id}/dokumen/${documentId}`, options);
   // Isi awal invoice baru dan kuitansi yang terbit bersama pembayaran (template engine)
   const invoiceContent = useMemo(() => templateFor('invoice', project, settings), [project, settings]);
   const receiptContent = useMemo(() => templateFor('receipt', project, settings), [project, settings]);
@@ -294,9 +295,12 @@ export function FinanceTab({ ctx }: { ctx: WorkspaceContext }) {
             content={invoiceContent}
             onSaved={({ documentId, number }) => {
               setInvoiceModal((s) => ({ ...s, open: false }));
-              notify('success', `Invoice ${number ?? ''} berhasil dibuat. Periksa lalu terbitkan.`);
-              openDoc(documentId);
+              const created = `Invoice ${number ?? ''} berhasil dibuat. Periksa lalu terbitkan.`;
+              notify('success', created);
+              // Workspace langsung ditinggalkan: toast yang sama tampil di editor invoice
+              openDoc(documentId, navToast('success', created));
             }}
+            notify={notify}
           />
           <PaymentFormModal
             open={!!paying}
@@ -308,6 +312,7 @@ export function FinanceTab({ ctx }: { ctx: WorkspaceContext }) {
               notify('success', `Pembayaran berhasil dicatat. Kuitansi ${res.receipt_number} terbit.`);
               reload();
             }}
+            notify={notify}
           />
           <ReasonModal
             open={!!cancelling}
@@ -319,6 +324,8 @@ export function FinanceTab({ ctx }: { ctx: WorkspaceContext }) {
             confirmText="Ya, batalkan"
             tone="danger"
             icon={<Ban />}
+            notify={notify}
+            errorTitle="Gagal membatalkan invoice."
             onSubmit={async (reason) => {
               if (!cancelling) return;
               await pdInvoiceCancel({ id: cancelling.id, reason });

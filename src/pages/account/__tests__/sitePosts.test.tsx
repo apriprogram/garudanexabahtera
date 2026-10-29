@@ -424,7 +424,7 @@ describe('daftar berita & pengumuman', () => {
     await waitFor(() => expect(panel).toHaveFocus());
   });
 
-  it('gagal menghapus: pesan tampil di dalam dialog', async () => {
+  it('gagal menghapus: pesan tampil di dalam dialog + toast gagal', async () => {
     mockApi({ customer_delete_site_post: () => json(500, { error: 'Terjadi kesalahan pada server. Silakan coba lagi.' }) });
     renderAt('/akun/situs/1/berita');
     await screen.findByRole('heading', { level: 1, name: 'Berita & Pengumuman' });
@@ -434,6 +434,10 @@ describe('daftar berita & pengumuman', () => {
     });
     expect(within(screen.getByRole('alertdialog')).getByRole('alert')).toHaveTextContent('Terjadi kesalahan pada server');
     expect(screen.getByText('Kegiatan pramuka')).toBeInTheDocument();
+    // Toast halaman (di luar dialog): judul + pesan server
+    const toast = screen.getByText('Gagal menghapus berita.').closest('[role="alert"]')!;
+    expect(screen.getByRole('alertdialog')).not.toContainElement(toast as HTMLElement);
+    expect(toast).toHaveTextContent('Terjadi kesalahan pada server. Silakan coba lagi.');
   });
 
   it('belum ada tulisan → keadaan kosong dengan ajakan menulis', async () => {
@@ -585,7 +589,7 @@ describe('editor tulisan', () => {
     expect(screen.getByLabelText(/^Alamat \(slug\)/)).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it('galat server tanpa kolom tampil di atas form', async () => {
+  it('galat server tanpa kolom tampil di atas form + toast gagal', async () => {
     mockApi({ customer_save_site_post: () => json(429, { error: 'Terlalu banyak percobaan. Coba lagi dalam 5 menit.' }) });
     renderAt('/akun/situs/1/berita/2');
     await screen.findByRole('heading', { level: 1, name: 'Edit berita' });
@@ -594,7 +598,9 @@ describe('editor tulisan', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Simpan draf' }));
     });
     expect(await screen.findByText('Berita belum tersimpan')).toBeInTheDocument();
-    expect(screen.getByText('Terlalu banyak percobaan. Coba lagi dalam 5 menit.')).toBeInTheDocument();
+    expect(screen.getByText('Berita belum tersimpan').closest('[role="alert"]')).toHaveTextContent('Terlalu banyak percobaan. Coba lagi dalam 5 menit.');
+    const toast = screen.getByText('Gagal menyimpan berita.').closest('[role="alert"]');
+    expect(toast).toHaveTextContent('Terlalu banyak percobaan. Coba lagi dalam 5 menit.');
   });
 
   it('foto SVG ditolak dengan pesan yang jelas', async () => {
@@ -618,7 +624,9 @@ describe('editor tulisan', () => {
       fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Ya, hapus' }));
     });
     await waitFor(() => expect(location()).toBe('/akun/situs/1/berita'));
-    expect(await screen.findByText('Berita “Kegiatan pramuka” dihapus.')).toBeInTheDocument();
+    // Pesan di atas daftar + toast sukses yang sama dengan hapus dari daftar
+    await waitFor(() => expect(screen.getAllByText('Berita “Kegiatan pramuka” dihapus.')).toHaveLength(2));
+    expect(screen.getByRole('button', { name: 'Tutup notifikasi' })).toBeInTheDocument();
     expect(screen.queryByText('Kegiatan pramuka')).not.toBeInTheDocument();
     // Tombol Hapus ikut hilang bersama editor: fokus ke pesan "… dihapus." di daftar
     await waitFor(() => expect(document.activeElement).toHaveTextContent('Berita “Kegiatan pramuka” dihapus.'));
@@ -626,6 +634,33 @@ describe('editor tulisan', () => {
     // Pesan ditutup → fokus ke panel daftar
     fireEvent.click(screen.getByRole('button', { name: 'Tutup pemberitahuan' }));
     expect(screen.getByRole('tabpanel')).toHaveFocus();
+  });
+
+  it('hapus foto dikonfirmasi dulu, lalu tersimpan tanpa foto', async () => {
+    mockApi();
+    renderAt('/akun/situs/1/berita/1');
+    await screen.findByRole('heading', { level: 1, name: 'Edit berita' });
+    expect(screen.getByAltText('Pratinjau foto utama')).toBeInTheDocument();
+
+    // Batal: foto tetap, tidak ada perubahan
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus' }));
+    let dialog = screen.getByRole('alertdialog', { name: 'Hapus foto utama?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    expect(screen.getByAltText('Pratinjau foto utama')).toBeInTheDocument();
+    expect(screen.getByText('Semua perubahan tersimpan.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus' }));
+    dialog = screen.getByRole('alertdialog', { name: 'Hapus foto utama?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Belum ada gambar')).toBeInTheDocument();
+    expect(screen.getByText('Ada perubahan yang belum disimpan.')).toBeInTheDocument();
+    expect(screen.getByText('Foto utama dihapus.').closest('[role="status"]')).toHaveTextContent('Situs baru berubah setelah perubahan disimpan.');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Simpan perubahan' }));
+    });
+    expect(saveCalls()[0].body.post).toMatchObject({ id: 1, image: null });
+    expect(await screen.findByText('Perubahan disimpan dan sudah tampil di situs.')).toBeInTheDocument();
   });
 
   it('foto masih diproses: tombol simpan & Ctrl+S ditahan sampai foto selesai', async () => {
@@ -667,7 +702,9 @@ describe('editor tulisan', () => {
     expect(await screen.findByText(PHOTO_BUSY)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Terbitkan' })).toBeDisabled();
     await act(async () => photo.reject(new Error('Gambar tidak bisa dibaca. Coba file lain.')));
-    expect(screen.getByText('Gambar tidak bisa dibaca. Coba file lain.')).toBeInTheDocument();
+    // Pesan di bawah kolom foto + toast gagal halaman dengan pesan yang sama
+    expect(screen.getAllByText('Gambar tidak bisa dibaca. Coba file lain.')).toHaveLength(2);
+    expect(screen.getByText('Gagal memproses gambar.').closest('[role="alert"]')).toHaveTextContent('Gambar tidak bisa dibaca. Coba file lain.');
     expect(screen.queryByText(PHOTO_BUSY)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Terbitkan' })).toBeEnabled();
   });

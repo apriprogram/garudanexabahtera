@@ -22,6 +22,7 @@ import {
 } from '../../../components/admin/ui';
 import { ARTICLE_CTAS, GUIDE_LIMITS, type AdminGuide, type ArticleCta } from '../../../content/panduan/core';
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
+import type { GuidesNotify } from './GuidesManager';
 import { GuideBodyPreview, GuidePreview } from './GuidePreview';
 import {
   AUTHOR_NAMES,
@@ -71,6 +72,7 @@ export function GuideForm({
   guides,
   onClose,
   onSaved,
+  notify,
 }: {
   open: boolean;
   /** null = artikel baru */
@@ -80,6 +82,8 @@ export function GuideForm({
   onClose: () => void;
   /** Tersimpan. saved = baris dari server, null bila respons tanpa artikel (daftar dimuat ulang). */
   onSaved: (saved: AdminGuide | null, created: boolean) => void;
+  /** Toast halaman (gagal simpan); pesan di atas form dan error per kolom tetap tampil */
+  notify: GuidesNotify;
 }) {
   const isEdit = guide !== null;
   const others = guides.filter((other) => other.id !== guide?.id);
@@ -194,12 +198,12 @@ export function GuideForm({
           else extra.push(message);
         }
       }
-      const reason =
-        error instanceof ApiError && error.status === 0
-          ? 'Tidak bisa terhubung ke server.'
-          : `Gagal menyimpan: ${errorMessage(error, 'kesalahan tidak diketahui')}`;
+      const offline = error instanceof ApiError && error.status === 0;
+      const detail = offline ? 'Tidak bisa terhubung ke server.' : errorMessage(error, 'kesalahan tidak diketahui');
+      const reason = offline ? detail : `Gagal menyimpan: ${detail}`;
       setErrors(fieldErrors);
       setFormError([reason, ...extra].join(' '));
+      notify('error', 'Gagal menyimpan artikel.', [detail, ...extra].join(' '));
       const firstServer = GUIDE_FIELDS.find((field) => fieldErrors[field]);
       if (firstServer) focusField(firstServer);
       else window.setTimeout(() => noticeRef.current?.focus(), 0);

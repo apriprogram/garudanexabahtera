@@ -466,14 +466,15 @@ describe('PortfolioImportDialog', () => {
   const renderDialog = () => {
     const onImport = vi.fn();
     const onClose = vi.fn();
-    render(<PortfolioImportDialog open existing={EXISTING} onImport={onImport} onClose={onClose} />);
-    return { onImport, onClose, dialog: screen.getByRole('dialog') };
+    const notify = vi.fn();
+    render(<PortfolioImportDialog open existing={EXISTING} onImport={onImport} onClose={onClose} notify={notify} />);
+    return { onImport, onClose, notify, dialog: screen.getByRole('dialog') };
   };
   const pickZip = (dialog: HTMLElement, file: File) =>
     fireEvent.change(within(dialog).getByLabelText('Pilih file ZIP proyek'), { target: { files: [file] } });
 
   it('ZIP → pratinjau & masalah per proyek → ganti nama sama → unggah → proyek masuk daftar, ingatkan Simpan semua perubahan', async () => {
-    const { onImport, dialog } = renderDialog();
+    const { onImport, notify, dialog } = renderDialog();
     pickZip(dialog, zipFile(ZIP_ENTRIES, 'portofolio.zip'));
     expect(await within(dialog).findByText(/3 proyek, 2 siap diimpor, 1 dilewati karena bermasalah/)).toBeInTheDocument();
     expect(dialog).toHaveTextContent('Gambar kartu: file "tidak-ada.jpg" tidak ada di ZIP/folder.');
@@ -511,10 +512,13 @@ describe('PortfolioImportDialog', () => {
     ]);
     expect(vi.mocked(uploadHeroVideo).mock.calls[0][0]).toMatchObject({ name: 'demo.webm', size: 900 });
     expect(within(dialog).getAllByText('Dilewati')).toHaveLength(1);
+    // Ringkasan juga sebagai notifikasi halaman (sekali, setelah semua proyek selesai)
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith('success', '2 proyek berhasil diimpor.', 'Klik Simpan semua perubahan agar tampil di website.');
   });
 
   it('satu proyek gagal diunggah: lainnya tetap masuk; bukan ZIP → pesan', async () => {
-    const { onImport, dialog } = renderDialog();
+    const { onImport, notify, dialog } = renderDialog();
     pickZip(dialog, new File(['halo'], 'catatan.txt', { type: 'text/plain' }));
     expect(dialog).toHaveTextContent('"catatan.txt" bukan file ZIP.');
     pickZip(dialog, new File(['halo'], 'rusak.zip', { type: 'application/zip' }));
@@ -528,5 +532,6 @@ describe('PortfolioImportDialog', () => {
     expect(dialog).toHaveTextContent('1 gagal; lihat daftar di bawah.');
     expect(onImport).toHaveBeenCalledTimes(1);
     expect(onImport.mock.calls[0][0]).toMatchObject({ title: 'Company Profile' });
+    expect(notify).toHaveBeenCalledWith('warning', '1 proyek diimpor, 1 gagal.', expect.stringContaining('Lihat alasannya di daftar impor.'));
   });
 });

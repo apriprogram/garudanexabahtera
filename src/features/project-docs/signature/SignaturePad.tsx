@@ -94,11 +94,16 @@ interface SignaturePadProps {
   disabled?: boolean;
   /** validation message of the surrounding form, shown under the pad */
   error?: string;
+  /**
+   * Tombol Hapus ditekan: form di sekitarnya bisa menampilkan dialog konfirmasi dulu, lalu memanggil `clear` saat
+   * dikonfirmasi. Tanpa prop ini gambar langsung dihapus.
+   */
+  onClearRequest?: (clear: () => void) => void;
   ref?: Ref<SignaturePadHandle>;
   className?: string;
 }
 
-export function SignaturePad({ onChange, variant = 'account', defaultName = '', disabled = false, error, ref, className }: SignaturePadProps) {
+export function SignaturePad({ onChange, variant = 'account', defaultName = '', disabled = false, error, onClearRequest, ref, className }: SignaturePadProps) {
   const style = STYLE[variant];
   const uid = useId();
   const typedId = `${uid}-typed`;
@@ -294,7 +299,7 @@ export function SignaturePad({ onChange, variant = 'account', defaultName = '', 
             <p id={hintId} className={cn('pt-1.5', style.hint)}>
               Gunakan mouse, pena, atau jari. Tidak bisa menggambar? Pilih Ketik nama.
             </p>
-            <button type="button" className={cn(style.clear, 'shrink-0')} onClick={clear} disabled={disabled || !hasInk}>
+            <button type="button" className={cn(style.clear, 'shrink-0')} onClick={() => (onClearRequest ? onClearRequest(clear) : clear())} disabled={disabled || !hasInk}>
               <Eraser className="h-4 w-4" aria-hidden />
               Hapus
             </button>

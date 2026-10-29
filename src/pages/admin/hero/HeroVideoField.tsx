@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Film, RefreshCw, Trash2, Upload } from 'lucide-react';
-import { Button, Notice, ThinProgress, cn } from '../../../components/admin/ui';
+import { Button, ConfirmDialog, Notice, ThinProgress, cn } from '../../../components/admin/ui';
 import { apiGet } from '../../../lib/api';
 import { getToken } from '../../../lib/auth';
+import type { ToastTone } from '../template-orders/shared/hooks';
 import {
   HERO_VIDEO_LONG_SECONDS,
   HERO_VIDEO_MAX_MB,
@@ -15,7 +16,12 @@ import { HeroUploadError, captureVideoPoster, uploadHeroVideo, type HeroVideoUpl
 import { dropZoneClass } from './styles';
 
 const VIDEO_ACCEPT = 'video/mp4,video/webm';
-const DONE_STATUS = 'Video berhasil diunggah. Klik Simpan semua perubahan agar tampil di website.';
+// Judul & kalimat kedua juga dipakai notifikasi halaman; status pembaca layar = gabungan keduanya
+const DONE_TITLE = 'Video berhasil diunggah.';
+const DONE_HINT = 'Klik Simpan semua perubahan agar tampil di website.';
+const DONE_STATUS = `${DONE_TITLE} ${DONE_HINT}`;
+const REMOVED_TITLE = 'Video dihapus.';
+const REMOVED_HINT = 'Klik Simpan semua perubahan agar tersimpan di website.';
 
 /** Elemen yang menerima fokus setelah tahap unggah berganti ('drop' = kotak unggah, atau "Ganti video" bila video ada). */
 type FocusTarget = 'cancel' | 'replace' | 'drop';
@@ -40,6 +46,11 @@ interface HeroVideoFieldProps {
   pendingUpload?: boolean;
   /** true selama halaman menyimpan: unggah, ganti, hapus, dan lepas file dinonaktifkan. */
   disabled?: boolean;
+  /**
+   * Notifikasi halaman (toast): unggah berhasil/gagal dan video dihapus. Dipanggil juga setelah tampilan ini ditutup
+   * (unggahan yang selesai belakangan), seperti onBusyChange.
+   */
+  notify?: (tone: ToastTone, message: string, description?: string) => void;
 }
 
 /** Unggah, pratinjau, ganti, dan hapus video latar hero. Hasil baru tampil di website setelah "Simpan semua perubahan". */
@@ -51,10 +62,13 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({
   onBusyChange,
   pendingUpload = false,
   disabled = false,
+  notify,
 }) => {
   /* phase 'upload' = file sedang dikirim (bisa dibatalkan); 'poster' = file sudah tersimpan, menunggu gambar sampul. */
   const [upload, setUpload] = useState<{ name: string; size: number; percent: number; phase: 'upload' | 'poster' } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /* Dialog konfirmasi "Hapus video" (pemilik 2026-10-29: setiap hapus dikonfirmasi). */
+  const [confirmRemove, setConfirmRemove] = useState(false);
   /* URL video yang diketahui lebih dari 1 menit: saran hanya tampil selama video itu yang terpasang. */
   const [longVideoUrl, setLongVideoUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -105,16 +119,22 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({
     el.focus();
   });
 
+  /** Unggah gagal: pesan tetap tampil di bawah pengunggah, ditambah notifikasi halaman. */
+  const failUpload = (message: string) => {
+    setError(message);
+    notify?.('error', 'Gagal mengunggah video.', message);
+  };
+
   const startUpload = async (file: File) => {
     if (jobRef.current || blocked) return;
     const invalid = validateHeroVideoFile(file, maxMb);
     if (invalid) {
-      setError(invalid);
+      failUpload(invalid);
       return;
     }
     const token = getToken();
     if (!token) {
-      setError(UPLOAD_SESSION_ERROR);
+      failUpload(UPLOAD_SESSION_ERROR);
       return;
     }
 
@@ -146,7 +166,7 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({
       onBusyChange?.(false);
       // Dibatalkan tanpa Batal = komponen dilepas: tidak ada yang perlu ditampilkan
       if (err instanceof HeroUploadError && err.aborted) return;
-      setError(err instanceof Error && err.message ? err.message : 'Gagal mengunggah video.');
+      failUpload(err instanceof Error && err.message ? err.message : 'Gagal mengunggah video.');
       setStatus('Video gagal diunggah.');
       focusRef.current = 'drop';
       return;
@@ -169,6 +189,7 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({
     setUpload(null);
     onBusyChange?.(false);
     setStatus(DONE_STATUS);
+    notify?.('success', DONE_TITLE, DONE_HINT);
     focusRef.current = 'replace';
   };
 
@@ -187,12 +208,14 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({
     focusRef.current = 'drop';
   };
 
+  // Lewat dialog konfirmasi; video baru hilang dari website setelah "Simpan semua perubahan"
   const removeVideo = () => {
     setVideo('');
     setPoster('');
     setLongVideoUrl(null);
     setError(null);
-    setStatus('Video dihapus. Klik Simpan semua perubahan agar tersimpan di website.');
+    setStatus(`${REMOVED_TITLE} ${REMOVED_HINT}`);
+    notify?.('success', REMOVED_TITLE, REMOVED_HINT);
     focusRef.current = 'drop';
   };
 
@@ -284,7 +307,7 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({
             <Button ref={replaceRef} variant="secondary" icon={<RefreshCw />} disabled={locked} onClick={() => inputRef.current?.click()}>
               Ganti video
             </Button>
-            <Button variant="danger-soft" icon={<Trash2 />} disabled={locked} onClick={removeVideo}>
+            <Button variant="danger-soft" icon={<Trash2 />} disabled={locked} onClick={() => setConfirmRemove(true)}>
               Hapus video
             </Button>
           </div>
@@ -341,6 +364,19 @@ const HeroVideoField: React.FC<HeroVideoFieldProps> = ({
         1920×1080 px. Pengunjung dengan mode hemat data atau animasi dikurangi melihat gambar sampul. Klik “Simpan semua perubahan” agar
         tampil di website.
       </Notice>
+
+      <ConfirmDialog
+        open={confirmRemove}
+        onClose={() => setConfirmRemove(false)}
+        onConfirm={() => {
+          setConfirmRemove(false);
+          // Terkunci (menyimpan / unggahan berjalan) sejak dialog dibuka: video tetap
+          if (!locked) removeVideo();
+        }}
+        tone="danger"
+        title="Hapus video latar?"
+        description="Video dan gambar sampulnya hilang dari latar hero setelah kamu klik Simpan semua perubahan."
+      />
     </div>
   );
 };

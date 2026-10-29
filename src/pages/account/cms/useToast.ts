@@ -9,9 +9,9 @@ export function useToast() {
   const counter = useRef(0);
 
   const dismiss = useCallback(() => setToast(null), []);
-  const show = useCallback((tone: ToastTone, message: string, action?: ToastData['action']) => {
+  const show = useCallback((tone: ToastTone, message: string, action?: ToastData['action'], description?: string) => {
     counter.current += 1;
-    setToast({ id: counter.current, tone, message, action });
+    setToast({ id: counter.current, tone, message, action, description });
   }, []);
 
   useEffect(() => {

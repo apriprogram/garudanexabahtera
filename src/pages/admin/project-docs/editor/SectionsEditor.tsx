@@ -25,6 +25,8 @@ export function SectionsEditor({
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(sections[0] ? [sections[0].id] : []));
   const [toDelete, setToDelete] = useState<DocSection | null>(null);
+  // Bagian yang tabelnya akan dihapus (ditanya dulu seperti hapus bagian)
+  const [tableOf, setTableOf] = useState<DocSection | null>(null);
   const allOpen = sections.length > 0 && sections.every((s) => expanded.has(s.id));
 
   const update = (id: string, patch: Partial<DocSection>) => onChange(sections.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -134,7 +136,7 @@ export function SectionsEditor({
                       <div className="mb-1.5 flex items-center justify-between gap-2">
                         <span className="text-[13px] font-medium text-adm-fg">Tabel</span>
                         {!disabled && (
-                          <Button size="sm" variant="ghost" icon={<Trash2 />} onClick={() => update(s.id, { table: undefined })}>
+                          <Button size="sm" variant="ghost" icon={<Trash2 />} onClick={() => setTableOf(s)}>
                             Hapus tabel
                           </Button>
                         )}
@@ -187,6 +189,18 @@ export function SectionsEditor({
             berubah pikiran, pulihkan versi sebelumnya dari riwayat revisi atau sembunyikan saja bagiannya.
           </>
         }
+        confirmText="Ya, hapus"
+      />
+      <ConfirmDialog
+        open={!!tableOf}
+        onClose={() => setTableOf(null)}
+        onConfirm={() => {
+          if (tableOf) update(tableOf.id, { table: undefined });
+          setTableOf(null);
+        }}
+        tone="danger"
+        title={`Hapus tabel bagian "${tableOf?.title.trim() || excerpt(tableOf ?? { id: '', title: '' }) || 'tanpa judul'}"?`}
+        description="Semua kolom dan baris tabel ini dihapus dari draft; teks isi bagian tetap ada."
         confirmText="Ya, hapus"
       />
     </div>

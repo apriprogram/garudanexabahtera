@@ -202,6 +202,21 @@ describe('Pesanan saya /akun/pesanan', { timeout: 20_000 }, () => {
     const summary = await screen.findByText('Pesanan dibatalkan/ditolak');
     expect(summary.closest('details')).toHaveAttribute('open');
   });
+
+  it('Bayar Sekarang gagal: pesan di kartu + toast gagal halaman', async () => {
+    api.customer_get_orders = () => json(200, { orders: [makeOrder({ template_name: 'Belum Bayar' })] });
+    api.customer_pay_order = () => json(503, { error: 'Pembayaran online belum dikonfigurasi.', code: 'PAYMENT_NOT_CONFIGURED' });
+    renderHome('orders');
+    fireEvent.click(await screen.findByRole('button', { name: /Bayar Sekarang/ }, { timeout: 5000 }));
+
+    const card = screen.getByRole('article', { name: 'Belum Bayar' });
+    expect(await within(card).findByRole('alert')).toHaveTextContent('Pembayaran online belum dikonfigurasi.');
+    // Toast halaman (di luar kartu) dengan pesan server
+    expect(screen.getByText('Gagal membuka halaman pembayaran.').closest('[role="alert"]')).toHaveTextContent(
+      'Pembayaran online belum dikonfigurasi.',
+    );
+    expect(within(card).getByRole('button', { name: /Bayar Sekarang/ })).toBeEnabled();
+  });
 });
 
 describe('Beranda /akun', { timeout: 20_000 }, () => {
@@ -326,6 +341,47 @@ describe('detail pesanan', () => {
     expect(history).not.toHaveAttribute('open');
     expect(history.querySelectorAll('li')).toHaveLength(2);
     expect(screen.queryByRole('heading', { name: 'Riwayat' })).not.toBeInTheDocument();
+  });
+
+  it('pesanan baru dari /pesan/:slug (tanpa link pembayaran): pemberitahuan + toast sukses sekali', async () => {
+    const order = makeOrder();
+    api.customer_get_order = () => json(200, { order, logs: [], site: null });
+    render(
+      <MemoryRouter initialEntries={[{ pathname: `/akun/pesanan/${order.order_number}`, state: { justCreated: true } }]}>
+        <Routes>
+          <Route path="/akun/pesanan/:orderNumber" element={<AccountOrderDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(`Pesanan ${order.order_number} berhasil dibuat.`).closest('[role="status"]')).toBeInTheDocument();
+    expect(await screen.findByText('Kami akan memproses pesanan Anda.')).toBeInTheDocument();
+    expect(screen.getAllByText(`Pesanan ${order.order_number} berhasil dibuat.`)).toHaveLength(1);
+  });
+
+  it('Batalkan pesanan: konfirmasi dulu; gagal → pesan di dialog + toast; berhasil → pemberitahuan + toast', async () => {
+    const order = makeOrder();
+    let fail = true;
+    api.customer_cancel_order = () => {
+      if (fail) return json(500, { error: 'Server sedang sibuk.' });
+      const cancelled = { ...order, status: 'dibatalkan', cancelled_at: '2026-10-20 12:00:00' };
+      const logs = [log({ event: 'cancelled', to_status: 'dibatalkan', actor_type: 'customer', note: 'Dibatalkan oleh pemesan.' })];
+      api.customer_get_order = () => json(200, { order: cancelled, logs, site: null });
+      return json(200, { success: true });
+    };
+    renderDetail(order);
+    fireEvent.click(await screen.findByRole('button', { name: 'Batalkan pesanan' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Batalkan pesanan?' });
+    expect(dialog).toHaveTextContent(order.order_number);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, batalkan' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Server sedang sibuk.');
+    expect(screen.getByText('Gagal membatalkan pesanan.').closest('[role="alert"]')).toHaveTextContent('Server sedang sibuk.');
+
+    fail = false;
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, batalkan' }));
+    expect(await screen.findByText('Pesanan berhasil dibatalkan.')).toBeInTheDocument();
+    expect(screen.getByText(`Pesanan ${order.order_number} berhasil dibatalkan.`)).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('Muat ulang hanya untuk status yang masih bisa berubah; label Kelola Situs', async () => {

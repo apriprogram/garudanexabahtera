@@ -2,6 +2,7 @@
 // images), PDF / DOCX download, and for a document waiting for the client: approve (with e-signature as Pihak Kedua
 // for MoU/PKS/UAT/BAST/SLA) or request a revision with a note (pd_my_document, pd_my_document_decide;
 // docs/platform/PROJECT-DOCS-SPEC.md §1.1, §7 Customer). Drafts are never served to a client (404).
+// Every decision shows a success / failure toast; the revision request hands its toast to the project page.
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -32,6 +33,8 @@ import {
 import { ApiError, errorMessage } from '../../../lib/api';
 import { getCurrentUser } from '../../../lib/auth';
 import { formatRupiah, formatTanggal } from '../../../types/platform';
+import { Toast, type ToastTone } from '../cms/Toast';
+import { useToast } from '../cms/useToast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Notice } from '../components/Notice';
 import { useDocumentTitle } from '../components/payment';
@@ -54,6 +57,10 @@ import { useScrollReset } from './components/useScrollReset';
 
 type LoadState = { status: 'loading' } | { status: 'not_found' } | { status: 'error'; message: string } | { status: 'ready'; doc: DocDetail };
 type Dialog = 'sign' | 'approve' | 'revise' | null;
+/** The page's toast (the view and its dialogs do not render their own <Toast>). */
+type Notify = (tone: ToastTone, message: string, description?: string) => void;
+
+const FAIL_TEXT = 'Terjadi kesalahan. Coba lagi.';
 
 export default function MyProjectDocument() {
   const params = useParams();
@@ -64,6 +71,8 @@ export default function MyProjectDocument() {
   const [state, setState] = useState<LoadState>(docId ? { status: 'loading' } : { status: 'not_found' });
   const [refreshing, setRefreshing] = useState(false);
   const [flash, setFlash] = useState<ProjectFlash | null>(null);
+  const { toast, show: showToast, dismiss: dismissToast } = useToast();
+  const notify: Notify = (tone, message, description) => showToast(tone, message, undefined, description);
   const backPath = projectId ? `/akun/proyek/${projectId}` : '/akun/proyek';
 
   useDocumentTitle(state.status === 'ready' ? state.doc.title : 'Dokumen proyek');
@@ -104,6 +113,7 @@ export default function MyProjectDocument() {
   };
 
   // Revision requested: the document is a draft again (hidden from the client) → back to the project with a message
+  // and the success toast (this page and its toast are gone after navigating)
   const onRevisionSent = (title: string) => {
     const navState: ProjectNavState = {
       flash: {
@@ -111,6 +121,7 @@ export default function MyProjectDocument() {
         title: 'Permintaan revisi terkirim',
         text: `Tim kami akan memperbaiki ${title} lalu mengirimkannya lagi untuk Anda tinjau.`,
       },
+      toast: { tone: 'success', message: `Permintaan revisi "${title}" berhasil dikirim.` },
     };
     navigate(backPath, { state: navState });
   };
@@ -145,9 +156,11 @@ export default function MyProjectDocument() {
             refreshing={refreshing}
             onReload={reload}
             onRevisionSent={() => onRevisionSent(state.doc.title)}
+            notify={notify}
           />
         )}
       </div>
+      <Toast toast={toast} onClose={dismissToast} />
     </div>
   );
 }
@@ -161,6 +174,7 @@ function DocumentView({
   refreshing,
   onReload,
   onRevisionSent,
+  notify,
 }: {
   doc: DocDetail;
   flash: ProjectFlash | null;
@@ -168,6 +182,7 @@ function DocumentView({
   refreshing: boolean;
   onReload: () => Promise<void>;
   onRevisionSent: () => void;
+  notify: Notify;
 }) {
   const model = useMemo(() => modelOf(doc), [doc]);
   const refs = useMemo(() => [...signatureRefs(model), ...doc.signatures.map((s) => s.image_url).filter(Boolean)], [model, doc]);
@@ -198,6 +213,7 @@ function DocumentView({
           ? { tone: 'success', title: 'Dokumen disetujui dan ditandatangani', text: 'Terima kasih, tanda tangan Anda sudah tercatat.' }
           : { tone: 'success', title: 'Dokumen disetujui', text: 'Terima kasih, persetujuan Anda sudah kami terima.' },
     );
+    notify('success', signed ? `Dokumen "${doc.title}" berhasil disetujui dan ditandatangani.` : `Dokumen "${doc.title}" berhasil disetujui.`);
     await onReload();
   };
 
@@ -214,6 +230,7 @@ function DocumentView({
     try {
       await afterDecision(await pdMyDocumentDecide({ id: doc.id, decision: 'approved', content_hash: doc.content_hash ?? undefined }), false);
     } catch (err) {
+      notify('danger', 'Gagal menyetujui dokumen.', errorMessage(err, FAIL_TEXT));
       if (err instanceof ApiError && err.status === 409) await onConflict(err.message);
       else setApproveError(`Gagal menyetujui dokumen: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
     } finally {
@@ -328,6 +345,7 @@ function DocumentView({
         onClose={() => setDialog(null)}
         onDone={(result) => void afterDecision(result, true)}
         onConflict={(message) => void onConflict(message)}
+        notify={notify}
       />
       <RevisionDialog
         open={dialog === 'revise'}
@@ -338,6 +356,7 @@ function DocumentView({
           onRevisionSent();
         }}
         onConflict={(message) => void onConflict(message)}
+        notify={notify}
       />
       <ConfirmDialog
         open={dialog === 'approve'}

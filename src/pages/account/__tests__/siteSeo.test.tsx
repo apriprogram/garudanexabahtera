@@ -296,6 +296,48 @@ describe('halaman SEO situs', () => {
     await waitFor(() => expect(screen.getByLabelText(/^Deskripsi di Google/)).toHaveFocus());
   });
 
+  it('galat server tanpa kolom: pesan di atas form + toast gagal', async () => {
+    mockApi({ customer_save_site_seo: () => json(429, { error: 'Terlalu banyak percobaan. Coba lagi dalam 5 menit.' }) });
+    renderPage();
+    await screen.findByRole('heading', { level: 1, name: 'SEO situs' });
+    fireEvent.change(screen.getByLabelText(/^Judul di Google/), { target: { value: 'SMA IT Nurul Azka Bandung' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
+    });
+    expect(await screen.findByText('Pengaturan SEO belum tersimpan')).toBeInTheDocument();
+    expect(screen.getByText('Pengaturan SEO belum tersimpan').closest('[role="alert"]')).toHaveTextContent('Terlalu banyak percobaan. Coba lagi dalam 5 menit.');
+    const toast = screen.getByText('Gagal menyimpan pengaturan SEO.').closest('[role="alert"]');
+    expect(toast).toHaveTextContent('Terlalu banyak percobaan. Coba lagi dalam 5 menit.');
+    expect(screen.getByText('Ada perubahan yang belum disimpan.')).toBeInTheDocument();
+  });
+
+  it('hapus gambar saat dibagikan dikonfirmasi dulu, lalu tersimpan kosong', async () => {
+    seo = { ...seo, og_image: '/assets/sites/1/seo/seo_aaaaaaaaaaaa.webp' };
+    mockApi();
+    renderPage();
+    await screen.findByRole('heading', { level: 1, name: 'SEO situs' });
+    expect(screen.getByAltText('Pratinjau gambar')).toBeInTheDocument();
+
+    // Batal: gambar tetap, tidak ada perubahan
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus' }));
+    let dialog = screen.getByRole('alertdialog', { name: 'Hapus gambar?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    expect(screen.getByAltText('Pratinjau gambar')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Simpan pengaturan/ })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus' }));
+    dialog = screen.getByRole('alertdialog', { name: 'Hapus gambar?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ya, hapus' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Belum ada gambar')).toBeInTheDocument();
+    expect(screen.getByText('Gambar dihapus.').closest('[role="status"]')).toHaveTextContent('Situs baru berubah setelah perubahan disimpan.');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
+    });
+    expect(saveCalls()[0].body.seo).toMatchObject({ og_image: null });
+    expect(await screen.findByText('Pengaturan SEO disimpan.')).toBeInTheDocument();
+  });
+
   it('disembunyikan manual → tombol "Ubah pilihan" memfokuskan pilihan Tampil di Google', async () => {
     seo = { ...seo, index_mode: 'noindex' };
     reasons = ['manual_noindex'];

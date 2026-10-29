@@ -2,7 +2,7 @@
 // Hasilnya PNG transparan (data URL) yang dikirim ke pd_document_sign; ukurannya jauh di bawah batas 300 KB.
 import { useEffect, useImperativeHandle, useRef, useState, type PointerEvent, type Ref } from 'react';
 import { Eraser } from 'lucide-react';
-import { Button, cn } from '../../../../components/admin/ui';
+import { Button, ConfirmDialog, cn } from '../../../../components/admin/ui';
 
 export interface SignaturePadHandle {
   /** PNG data URL of the drawing, null when empty */
@@ -21,6 +21,7 @@ export function SignaturePad({ onChange, ref, className }: { onChange?: (empty: 
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
   const [empty, setEmpty] = useState(true);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -118,10 +119,22 @@ export function SignaturePad({ onChange, ref, className }: { onChange?: (empty: 
         )}
       </div>
       <div className="mt-2 flex justify-end">
-        <Button size="sm" variant="ghost" icon={<Eraser />} onClick={clear} disabled={empty}>
+        <Button size="sm" variant="ghost" icon={<Eraser />} onClick={() => setConfirmClear(true)} disabled={empty}>
           Hapus
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={() => {
+          clear();
+          setConfirmClear(false);
+        }}
+        tone="danger"
+        title="Hapus gambar tanda tangan?"
+        description="Coretan di kanvas dihapus dan kamu perlu menggambar tanda tangan lagi."
+        confirmText="Ya, hapus"
+      />
     </div>
   );
 }
