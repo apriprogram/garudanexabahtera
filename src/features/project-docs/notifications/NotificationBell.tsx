@@ -49,7 +49,7 @@ const STYLE = {
     button:
       'relative flex h-10 w-10 items-center justify-center rounded-full text-muted ring-1 ring-inset ring-line transition-colors after:absolute after:-inset-1 hover:bg-alt hover:text-fg hover:ring-line-strong aria-expanded:bg-alt aria-expanded:text-fg',
     badge: 'bg-danger text-white ring-2 ring-surface',
-    panel: 'rounded-2xl bg-surface shadow-float ring-1 ring-line',
+    panel: 'rounded-2xl bg-surface text-fg shadow-float ring-1 ring-line',
     title: 'text-sm font-semibold text-fg',
     sub: 'text-xs text-subtle',
     action:
@@ -112,7 +112,14 @@ type Style = (typeof STYLE)[NotificationBellVariant];
 const PANEL_WIDTH = 380;
 const EDGE = 12;
 
-export function NotificationBell({ variant }: { variant: NotificationBellVariant }) {
+/** Trigger on the blue account topbar (onBrand): white icon and ring; the panel keeps the variant's style. */
+const ON_BRAND = {
+  button:
+    'relative flex h-10 w-10 items-center justify-center rounded-full text-white/85 ring-1 ring-inset ring-white/30 transition-colors after:absolute after:-inset-1 hover:bg-white/10 hover:text-white hover:ring-white/50 focus-visible:outline-white aria-expanded:bg-white/15 aria-expanded:text-white',
+  badge: 'bg-danger text-white ring-2 ring-brand-600',
+};
+
+export function NotificationBell({ variant, onBrand = false }: { variant: NotificationBellVariant; onBrand?: boolean }) {
   const style = STYLE[variant];
   const { items, unread, status, error, loadedAt, reload, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
@@ -189,14 +196,14 @@ export function NotificationBell({ variant }: { variant: NotificationBellVariant
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        className={style.button}
+        className={onBrand ? ON_BRAND.button : style.button}
       >
         <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
         {unread > 0 && (
           <span
             className={cn(
               'absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none tabular-nums',
-              style.badge,
+              onBrand ? ON_BRAND.badge : style.badge,
             )}
             aria-hidden
           >

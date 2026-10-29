@@ -1,5 +1,7 @@
 // Bilah atas CMS (lengket di bawah header akun): kembali, judul + domain, status simpan, Lihat situs, Simpan.
 // Di HP ada baris kedua: tab "Edit konten" / "Pratinjau".
+// Latarnya bergaya liquid glass (.glass-liquid di src/index.css, permintaan pemilik 2026-10-29): kaca tembus pandang yang
+// memburamkan konten yang digulir di bawahnya, dengan kilau tipis di tepi atas.
 import { forwardRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, CircleCheck, ExternalLink, Eye, Loader2, Lock, PencilLine, Save } from 'lucide-react';
@@ -57,10 +59,7 @@ export const EditorToolbar = forwardRef<HTMLDivElement, EditorToolbarProps>(func
   ref,
 ) {
   return (
-    <div
-      ref={ref}
-      className="sticky top-[calc(4rem_+_env(safe-area-inset-top))] z-30 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85"
-    >
+    <div ref={ref} className="glass-liquid sticky top-[calc(4rem_+_env(safe-area-inset-top))] z-30">
       <div className="mx-auto flex min-h-16 w-full max-w-[1600px] items-center gap-2 px-4 py-2 sm:gap-3 sm:px-6 lg:px-8">
         <Link
           to={backTo}

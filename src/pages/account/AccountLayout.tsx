@@ -23,6 +23,9 @@ import { useAccountTheme, type AccountTheme } from './components/useAccountTheme
 
 const COLLAPSE_KEY = 'accountSidebarCollapsed';
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary';
+// Kontrol di atas topbar biru: cincin fokus putih (biru brand tidak terlihat di atas latar biru)
+const focusRingOnBrand = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white';
+const onBrandIconButton = `relative flex shrink-0 items-center justify-center text-white/85 transition-colors hover:bg-white/10 hover:text-white ${focusRingOnBrand}`;
 
 const readCollapsed = () => {
   try {
@@ -288,10 +291,10 @@ function AccountTopbar({
 
   return (
     // Pembungkus menempel di atas (layar lg: ikut menutup gutter 8px & sudut lengkung dengan warna kanvas), jadi konten
-    // yang digulir tidak pernah tampak di atas atau di sudut topbar. Topbar sendiri padat (tanpa transparansi/blur) dan
-    // di layar lg membawa garis tepi panel konten (ring) karena tepi panel di belakangnya tertutup pembungkus.
+    // yang digulir tidak pernah tampak di atas atau di sudut topbar. Topbar biru brand yang padat (permintaan pemilik
+    // 2026-10-29), sama di tema terang & gelap: teks, ikon, dan tombol di atasnya putih.
     <div className="sticky top-0 z-20 shrink-0 lg:-mt-2 lg:bg-alt lg:pt-2">
-      <header className="flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between gap-3 border-b border-line bg-surface px-3 pt-[env(safe-area-inset-top)] sm:px-6 lg:h-14 lg:rounded-t-[20px] lg:border-b-0 lg:pt-0 lg:ring-1 lg:ring-inset lg:ring-line">
+      <header className="flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between gap-3 bg-brand-600 px-3 pt-[env(safe-area-inset-top)] text-white sm:px-6 lg:h-14 lg:rounded-t-[20px] lg:pt-0">
         <div className="flex min-w-0 items-center gap-2">
           <button
             ref={menuButtonRef}
@@ -299,15 +302,15 @@ function AccountTopbar({
             onClick={onOpenDrawer}
             aria-label="Buka menu"
             aria-expanded={drawerOpen}
-            className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted transition-colors hover:bg-alt hover:text-fg lg:hidden ${focusRing}`}
+            className={`${onBrandIconButton} h-10 w-10 rounded-xl lg:hidden`}
           >
             <Menu className="h-5 w-5" strokeWidth={1.75} aria-hidden />
           </button>
 
           <nav aria-label="Breadcrumb" className="min-w-0 text-[13px]">
             <ol className="flex min-w-0 items-center gap-1.5">
-              <li className="hidden shrink-0 text-muted sm:block">
-                <Link to="/akun" className={`rounded-md hover:text-fg ${focusRing}`}>
+              <li className="hidden shrink-0 text-white/75 sm:block">
+                <Link to="/akun" className={`rounded-md hover:text-white ${focusRingOnBrand}`}>
                   Akun
                 </Link>
               </li>
@@ -315,13 +318,13 @@ function AccountTopbar({
                 const last = i === crumbs.length - 1;
                 return (
                   <li key={`${crumb.label}-${i}`} className={`min-w-0 items-center gap-1.5 ${last ? 'flex' : 'hidden sm:flex'}`}>
-                    <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 text-subtle sm:block" aria-hidden />
+                    <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 text-white/55 sm:block" aria-hidden />
                     {last || !crumb.to ? (
-                      <span className={`truncate ${last ? 'font-medium text-fg' : 'text-muted'}`} aria-current={last ? 'page' : undefined}>
+                      <span className={`truncate ${last ? 'font-medium text-white' : 'text-white/75'}`} aria-current={last ? 'page' : undefined}>
                         {crumb.label}
                       </span>
                     ) : (
-                      <Link to={crumb.to} className={`truncate rounded-md text-muted hover:text-fg ${focusRing}`}>
+                      <Link to={crumb.to} className={`truncate rounded-md text-white/75 hover:text-white ${focusRingOnBrand}`}>
                         {crumb.label}
                       </Link>
                     )}
@@ -333,17 +336,17 @@ function AccountTopbar({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <span className="hidden items-center gap-1.5 text-[13px] text-muted xl:inline-flex">
+          <span className="hidden items-center gap-1.5 text-[13px] text-white/80 xl:inline-flex">
             <CalendarDays className="h-4 w-4" strokeWidth={1.75} aria-hidden />
             {today}
           </span>
-          <span className="hidden h-4 w-px bg-line xl:block" aria-hidden />
+          <span className="hidden h-4 w-px bg-white/25 xl:block" aria-hidden />
           <button
             type="button"
             onClick={onToggleTheme}
             aria-label={theme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
             title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
-            className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors after:absolute after:-inset-1 hover:bg-alt hover:text-fg max-sm:h-9 max-sm:w-9 ${focusRing}`}
+            className={`${onBrandIconButton} h-10 w-10 rounded-full after:absolute after:-inset-1 max-sm:h-9 max-sm:w-9`}
           >
             {theme === 'dark' ? (
               <Sun className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
@@ -351,7 +354,7 @@ function AccountTopbar({
               <Moon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
             )}
           </button>
-          <NotificationBell variant="account" />
+          <NotificationBell variant="account" onBrand />
           <UserMenu />
         </div>
       </header>
@@ -364,11 +367,22 @@ function AccountTopbar({
  * nama selalu tertulis di dekatnya. `src` dari server harus lolos safeAvatarUrl(); pratinjau unggahan di /akun/profil
  * berupa data URI buatan canvas halaman itu sendiri.
  */
-export function UserAvatar({ name, src, className = 'h-8 w-8 text-xs' }: { name: string; src: string | null; className?: string }) {
+export function UserAvatar({
+  name,
+  src,
+  className = 'h-8 w-8 text-xs',
+  onBrand = false,
+}: {
+  name: string;
+  src: string | null;
+  className?: string;
+  /** Di atas topbar biru: lingkaran putih berinisial biru agar tidak menyatu dengan latar */
+  onBrand?: boolean;
+}) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   return (
     <span
-      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary font-semibold text-white ${className}`}
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold ${onBrand ? 'bg-white text-brand-600' : 'bg-primary text-white'} ${className}`}
       aria-hidden
     >
       {src && src !== failedSrc ? (
@@ -440,21 +454,21 @@ function UserMenu() {
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-label={`Menu akun ${name}`}
-        className={`relative flex h-10 items-center gap-2 rounded-full p-1 ring-1 ring-inset ring-line transition-colors after:absolute after:-inset-1 hover:bg-alt max-sm:h-9 sm:pr-3 ${focusRing}`}
+        className={`relative flex h-10 items-center gap-2 rounded-full p-1 ring-1 ring-inset ring-white/30 transition-colors after:absolute after:-inset-1 hover:bg-white/10 hover:ring-white/50 max-sm:h-9 sm:pr-3 ${focusRingOnBrand}`}
       >
-        <UserAvatar name={name} src={avatar} className="h-8 w-8 text-xs max-sm:h-7 max-sm:w-7" />
+        <UserAvatar name={name} src={avatar} onBrand className="h-8 w-8 text-xs max-sm:h-7 max-sm:w-7" />
         <span className="hidden min-w-0 text-left sm:block">
-          <span className="block max-w-[150px] truncate text-[13px] font-semibold leading-tight text-fg">{name}</span>
-          <span className="block text-[11px] leading-tight text-subtle">Pembeli</span>
+          <span className="block max-w-[150px] truncate text-[13px] font-semibold leading-tight text-white">{name}</span>
+          <span className="block text-[11px] leading-tight text-white/80">Pembeli</span>
         </span>
-        <ChevronDown className={`hidden h-4 w-4 text-subtle transition-transform sm:block ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} aria-hidden />
+        <ChevronDown className={`hidden h-4 w-4 text-white/70 transition-transform sm:block ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} aria-hidden />
       </button>
 
       {open && (
         <div
           ref={panelRef}
           id={panelId}
-          className="absolute right-0 top-full z-50 mt-2 w-[min(16rem,calc(100vw-1.5rem))] rounded-2xl bg-surface p-2 shadow-float ring-1 ring-inset ring-line"
+          className="absolute right-0 top-full z-50 mt-2 w-[min(16rem,calc(100vw-1.5rem))] rounded-2xl bg-surface p-2 text-fg shadow-float ring-1 ring-inset ring-line"
         >
           <div className="mb-1 flex items-center gap-3 rounded-xl bg-alt px-3 py-2.5">
             <UserAvatar name={name} src={avatar} className="h-9 w-9 text-xs" />
