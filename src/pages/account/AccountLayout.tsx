@@ -4,11 +4,12 @@
 // Penjaga akses (SPEC §2): tanpa sesi → /masuk?next=..., staf (admin/user) → /admin.
 // <Outlet /> tidak diberi lebar/padding: tiap halaman mengatur sendiri. Topbar sticky setinggi 4rem (+ safe-area) di HP
 // dan 3.5rem di lg dengan offset 8px, jadi elemen sticky di halaman anak tetap memakai top-16 / 4rem atau lebih.
+// Tema terang/gelap (tombol bulan/matahari di topbar): useAccountTheme, token warna gelap di src/index.css.
 // "Lewati ke konten" (SkipLink) = elemen fokus pertama, menuju <main id="konten-akun">.
 import { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { CalendarDays, ChevronDown, ChevronRight, LogOut, Menu, PanelLeftClose, PanelLeftOpen, UserRound, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronRight, LogOut, Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun, UserRound, X } from 'lucide-react';
 import { LogoMark } from '../../components/ui/LogoMark';
 import { SkipLink } from '../../components/ui/SkipLink';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
@@ -18,6 +19,7 @@ import { confirmLeave } from './cms/useLeaveGuard';
 import { ACCOUNT_NAV, ACCOUNT_NAV_GROUPS, accountCrumbs } from './components/accountNav';
 import { accountHelpMessage, helpWhatsappUrl } from './components/orderCopy';
 import { profileInitials, refreshProfile, safeAvatarUrl, useProfile } from './components/profileStore';
+import { useAccountTheme, type AccountTheme } from './components/useAccountTheme';
 
 const COLLAPSE_KEY = 'accountSidebarCollapsed';
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary';
@@ -43,6 +45,7 @@ export default function AccountLayout() {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const { theme, toggleTheme } = useAccountTheme();
 
   // Sekali per kunjungan akun (layout tetap terpasang selama berpindah di /akun/*); gagal = tetap data sesi login
   useEffect(() => {
@@ -79,8 +82,6 @@ export default function AccountLayout() {
   return (
     <div className="min-h-dvh bg-alt text-fg lg:flex lg:gap-2 lg:p-2">
       <SkipLink target="konten-akun" />
-      {/* Penutup gutter atas agar konten yang digulir tidak tampak di atas topbar */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-30 hidden h-2 bg-alt lg:block" aria-hidden />
 
       <aside
         className={`sticky top-2 z-30 hidden h-[calc(100dvh-16px)] shrink-0 transition-[width] duration-200 ease-out motion-reduce:transition-none lg:block ${
@@ -92,7 +93,13 @@ export default function AccountLayout() {
       <MobileDrawer open={drawerOpen} onClose={closeDrawer} />
 
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col bg-surface lg:min-h-[calc(100dvh-16px)] lg:rounded-[20px] lg:ring-1 lg:ring-inset lg:ring-line">
-        <AccountTopbar menuButtonRef={menuButtonRef} drawerOpen={drawerOpen} onOpenDrawer={() => setDrawerOpen(true)} />
+        <AccountTopbar
+          menuButtonRef={menuButtonRef}
+          drawerOpen={drawerOpen}
+          onOpenDrawer={() => setDrawerOpen(true)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
         <main id="konten-akun" tabIndex={-1} className="flex-1 focus:outline-none">
           <Outlet />
         </main>
@@ -266,67 +273,89 @@ function AccountTopbar({
   menuButtonRef,
   drawerOpen,
   onOpenDrawer,
+  theme,
+  onToggleTheme,
 }: {
   menuButtonRef: React.RefObject<HTMLButtonElement | null>;
   drawerOpen: boolean;
   onOpenDrawer: () => void;
+  theme: AccountTheme;
+  onToggleTheme: () => void;
 }) {
   const { pathname, search } = useLocation();
   const crumbs = accountCrumbs(pathname, search);
   const [today] = useState(todayLabel);
 
   return (
-    <header className="sticky top-0 z-20 flex h-[calc(4rem+env(safe-area-inset-top))] shrink-0 items-center justify-between gap-3 border-b border-line bg-surface/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-surface/85 sm:px-6 lg:top-2 lg:h-14 lg:rounded-t-[20px] lg:pt-0">
-      <div className="flex min-w-0 items-center gap-2">
-        <button
-          ref={menuButtonRef}
-          type="button"
-          onClick={onOpenDrawer}
-          aria-label="Buka menu"
-          aria-expanded={drawerOpen}
-          className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted transition-colors hover:bg-alt hover:text-fg lg:hidden ${focusRing}`}
-        >
-          <Menu className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-        </button>
+    // Pembungkus menempel di atas (layar lg: ikut menutup gutter 8px & sudut lengkung dengan warna kanvas), jadi konten
+    // yang digulir tidak pernah tampak di atas atau di sudut topbar. Topbar sendiri padat (tanpa transparansi/blur) dan
+    // di layar lg membawa garis tepi panel konten (ring) karena tepi panel di belakangnya tertutup pembungkus.
+    <div className="sticky top-0 z-20 shrink-0 lg:-mt-2 lg:bg-alt lg:pt-2">
+      <header className="flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between gap-3 border-b border-line bg-surface px-3 pt-[env(safe-area-inset-top)] sm:px-6 lg:h-14 lg:rounded-t-[20px] lg:border-b-0 lg:pt-0 lg:ring-1 lg:ring-inset lg:ring-line">
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            ref={menuButtonRef}
+            type="button"
+            onClick={onOpenDrawer}
+            aria-label="Buka menu"
+            aria-expanded={drawerOpen}
+            className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted transition-colors hover:bg-alt hover:text-fg lg:hidden ${focusRing}`}
+          >
+            <Menu className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+          </button>
 
-        <nav aria-label="Breadcrumb" className="min-w-0 text-[13px]">
-          <ol className="flex min-w-0 items-center gap-1.5">
-            <li className="hidden shrink-0 text-muted sm:block">
-              <Link to="/akun" className={`rounded-md hover:text-fg ${focusRing}`}>
-                Akun
-              </Link>
-            </li>
-            {crumbs.map((crumb, i) => {
-              const last = i === crumbs.length - 1;
-              return (
-                <li key={`${crumb.label}-${i}`} className={`min-w-0 items-center gap-1.5 ${last ? 'flex' : 'hidden sm:flex'}`}>
-                  <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 text-subtle sm:block" aria-hidden />
-                  {last || !crumb.to ? (
-                    <span className={`truncate ${last ? 'font-medium text-fg' : 'text-muted'}`} aria-current={last ? 'page' : undefined}>
-                      {crumb.label}
-                    </span>
-                  ) : (
-                    <Link to={crumb.to} className={`truncate rounded-md text-muted hover:text-fg ${focusRing}`}>
-                      {crumb.label}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-      </div>
+          <nav aria-label="Breadcrumb" className="min-w-0 text-[13px]">
+            <ol className="flex min-w-0 items-center gap-1.5">
+              <li className="hidden shrink-0 text-muted sm:block">
+                <Link to="/akun" className={`rounded-md hover:text-fg ${focusRing}`}>
+                  Akun
+                </Link>
+              </li>
+              {crumbs.map((crumb, i) => {
+                const last = i === crumbs.length - 1;
+                return (
+                  <li key={`${crumb.label}-${i}`} className={`min-w-0 items-center gap-1.5 ${last ? 'flex' : 'hidden sm:flex'}`}>
+                    <ChevronRight className="hidden h-3.5 w-3.5 shrink-0 text-subtle sm:block" aria-hidden />
+                    {last || !crumb.to ? (
+                      <span className={`truncate ${last ? 'font-medium text-fg' : 'text-muted'}`} aria-current={last ? 'page' : undefined}>
+                        {crumb.label}
+                      </span>
+                    ) : (
+                      <Link to={crumb.to} className={`truncate rounded-md text-muted hover:text-fg ${focusRing}`}>
+                        {crumb.label}
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+        </div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        <span className="hidden items-center gap-1.5 text-[13px] text-muted xl:inline-flex">
-          <CalendarDays className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-          {today}
-        </span>
-        <span className="hidden h-4 w-px bg-line xl:block" aria-hidden />
-        <NotificationBell variant="account" />
-        <UserMenu />
-      </div>
-    </header>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden items-center gap-1.5 text-[13px] text-muted xl:inline-flex">
+            <CalendarDays className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            {today}
+          </span>
+          <span className="hidden h-4 w-px bg-line xl:block" aria-hidden />
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            aria-label={theme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
+            title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+            className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors after:absolute after:-inset-1 hover:bg-alt hover:text-fg max-sm:h-9 max-sm:w-9 ${focusRing}`}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+            ) : (
+              <Moon className="h-[18px] w-[18px]" strokeWidth={1.75} aria-hidden />
+            )}
+          </button>
+          <NotificationBell variant="account" />
+          <UserMenu />
+        </div>
+      </header>
+    </div>
   );
 }
 

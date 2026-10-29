@@ -153,7 +153,7 @@
 }
 
 /*
- * Website publik & akun pembeli: SELALU tema terang (tidak ada toggle tema).
+ * Website publik: SELALU tema terang. Akun pembeli: terang, dengan mode gelap opsional (blok html.account-dark di bawah).
  * Kelas `light-theme` di <body> (dipasang store untuk panel admin) tidak mengubah apa pun di sini.
  * Nilai = skala netral SPEC §1 (abu dingin).
  */
@@ -167,6 +167,75 @@
   --site-subtle: #697181;      /* neutral-500 sedikit digelapkan (4,6:1 di atas --site-alt, 4,9:1 di putih): keterangan, placeholder */
   --site-line: #e3e6ee;        /* neutral-200: garis */
   --site-line-strong: #cbd0db; /* neutral-300: garis tegas, hover */
+}
+
+/*
+ * Mode gelap akun pembeli (/akun).
+ * - Tombol bulan/matahari di topbar memanggil useAccountTheme. Selama panel terbuka, <html> diberi kelas
+ *   .account-dark, jadi dialog dan toast yang lewat portal ikut gelap.
+ * - Nilai mengikuti tema gelap panel admin (src/styles/admin.css).
+ * - Hanya untuk layar: nota yang dicetak tetap memakai token terang di atas.
+ * - Variabel yang ditimpa: warna netral --site-* dan warna latar lembut (-50/-100/-200). Primary = #5553ff seperti
+ *   admin, jadi latar tombol dengan teks putih tetap 5,2:1.
+ * - Teks bernada primary/brand/merah dinaikkan nadanya lewat utilitas dan komponen teks saja (≥ 7:1 di atas kartu).
+ *   Variabel-nya tidak diubah, karena -800/-700 juga dipakai sebagai latar tombol saat hover/ditekan.
+ * - Kelas `.light-theme` ikut ditimpa, supaya kelas tema admin di <body> tidak mengembalikan token terang.
+ */
+@media screen {
+  html.account-dark,
+  html.account-dark .light-theme {
+    color-scheme: dark;
+    --site-canvas: #08090b;
+    --site-alt: #08090b;
+    --site-surface: #101217;
+    --site-fg: #eef1f5;
+    --site-muted: #a3afba;
+    --site-subtle: #8b97a3;
+    --site-line: rgba(255, 255, 255, 0.08);
+    --site-line-strong: rgba(255, 255, 255, 0.16);
+    --color-primary: #5553ff;
+    --color-primary-hover: #3e3cff;
+    --color-brand-50: rgba(85, 83, 255, 0.16);
+    --color-brand-100: rgba(85, 83, 255, 0.26);
+    --color-brand-200: rgba(85, 83, 255, 0.36);
+    --color-brand-700: #b0afff;
+    --color-success-50: rgba(18, 183, 106, 0.14);
+    --color-success-700: #6ce9a6;
+    --color-danger-50: rgba(240, 68, 56, 0.15);
+    --color-warning-50: rgba(247, 144, 9, 0.14);
+    --color-warning-700: #fdb022;
+  }
+
+  /* :where() menjaga spesifisitas tetap rendah, jadi varian hover/aktif milik kelas aslinya masih menang */
+  @layer components {
+    html.account-dark :where(.link-site, .btn-outline-primary) {
+      color: #9c9aff;
+    }
+    html.account-dark :where(.link-site):hover {
+      color: #c2c1ff;
+    }
+    html.account-dark :where(.error-site) {
+      color: #fda29b;
+    }
+  }
+  @layer utilities {
+    html.account-dark :where(.text-primary) {
+      color: #9c9aff;
+    }
+    html.account-dark :where(.hover\:text-primary):hover {
+      color: #c2c1ff;
+    }
+    html.account-dark :where(.text-brand-800) {
+      color: #c2c1ff;
+    }
+    html.account-dark :where(.text-danger-700) {
+      color: #fda29b;
+    }
+    /* Latar dialog: --site-fg terang akan membuatnya jadi kabut terang */
+    html.account-dark :where(.bg-fg\/30) {
+      background-color: rgb(0 0 0 / 0.6);
+    }
+  }
 }
 
 @media (max-width: 639.98px) {
