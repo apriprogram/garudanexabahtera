@@ -15,6 +15,7 @@ import {
   type NexaAnswer,
   type NexaMood,
 } from './localAnswer';
+import { adminWhatsappHref } from './adminHandoff';
 import { NexaReply } from './NexaReply';
 import { PROJECT_QUESTION, useNexaCatalog, type NexaCards } from './replyModel';
 
@@ -64,8 +65,10 @@ interface NexaTopic {
 /**
  * Topik cepat: jawaban tetap (fakta yang juga tertulis di situs) + tautan halaman, tanpa memanggil AI. Domain tidak
  * termasuk harga template (pemilik 2026-10-25); `hostingRenewal` = biaya hosting & jasa per tahun dari setting admin.
+ * "Hubungi admin" (pemilik 2026-10-29) membuka WhatsApp dengan pesan awal yang membuat bot WhatsApp langsung
+ * mengalihkan chat ke admin manusia (adminHandoff.ts).
  */
-const nexaTopics = (hostingRenewal: number): NexaTopic[] => [
+const nexaTopics = (hostingRenewal: number, whatsappHref: string): NexaTopic[] => [
   {
     label: 'Pilih template',
     reply: TEMPLATES_INTRO,
@@ -88,6 +91,12 @@ const nexaTopics = (hostingRenewal: number): NexaTopic[] => [
     reply:
       'Pilih template, klik Pesan, isi data Anda, lalu pilih nama domain dan cek ketersediaannya. Bayar template dan domain lewat Midtrans. Setelah pembayaran dikonfirmasi, tim kami menyiapkan website Anda dan isinya bisa Anda kelola sendiri lewat CMS.',
     action: { label: 'Mulai pilih template', to: HUB_PATHS.catalog },
+  },
+  {
+    label: 'Hubungi admin',
+    reply:
+      'Admin kami siap membantu lewat WhatsApp. Ketuk tombol di bawah lalu kirim pesan yang sudah terisi: admin langsung mendapat notifikasi dan membalas Anda.',
+    action: { label: 'Chat admin di WhatsApp', href: adminWhatsappHref(whatsappHref) },
   },
 ];
 
@@ -277,7 +286,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
   const catalog = useNexaCatalog(open);
   // Biaya hosting & jasa per tahun mulai tahun ke-2 (setting admin, bawaan Rp500.000) untuk jawaban tanpa AI
   const { price: hostingRenewal } = useHostingRenewalPrice();
-  const topics = nexaTopics(hostingRenewal);
+  const topics = nexaTopics(hostingRenewal, whatsappHref);
   // Maskot tombol menyapa saat disorot/difokus; selebihnya hidup sendiri (berkedip dkk. tiap beberapa detik)
   const [greetingLauncher, setGreetingLauncher] = useState(false);
   const idleMood = useIdleMood('netral', true, LAUNCHER_CYCLE);
@@ -396,7 +405,8 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
     } catch {
       // jawab dari data situs di bawah (status "mengetik" selalu selesai)
     }
-    return answerLocally(question, whatsappHref, hostingRenewal);
+    // Tombol WhatsApp jawaban bawaan (kontak, pertanyaan yang belum terjawab) = jalur ke admin manusia, dengan pertanyaannya
+    return answerLocally(question, adminWhatsappHref(whatsappHref, question), hostingRenewal);
   };
 
   const askTopic = (topic: NexaTopic) => {

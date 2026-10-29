@@ -5,7 +5,8 @@
 //
 // Claude dipanggil lewat HTTPS biasa (fetch, seperti Midtrans di templates.js), sama dengan cURL di nexa.php. Penyedia
 // lain dari tab admin: Gemini, atau endpoint custom OpenAI-compatible (…/chat/completions + Authorization: Bearer).
-// Modul ini tanpa impor ke modul backend lain: handler nexa_chat (nexaChat) ada di templates.js.
+// Modul ini tanpa impor ke modul backend lain: handler nexa_chat (nexaChat) ada di templates.js, bot WhatsApp di
+// waha.js; keduanya memberi pool database ke nexaConfigRows / nexaLiveContext.
 import { readFileSync, statSync } from 'node:fs';
 import { isIPv6 } from 'node:net';
 import { dirname, join } from 'node:path';
@@ -693,6 +694,60 @@ export function nexaReplyText(response) {
     .map((block) => block.text);
   const text = phpTrim(parts.join('\n\n'));
   return text === '' ? null : text;
+}
+
+// ── Bagian yang membaca database (pool mysql2 diberikan pemanggil; modul ini tetap tanpa impor modul backend lain) ──
+
+/** Setiap nilai di-bind (= db_all di api.php). */
+async function nexaDbAll(pool, sql, params = []) {
+  const [rows] = await pool.query({ sql, values: params, dateStrings: true });
+  return rows;
+}
+
+/** Baris setting nexa_* dari database (= nexa_config_rows di nexa.php). */
+export async function nexaConfigRows(pool) {
+  const placeholders = NEXA_CONFIG_KEYS.map(() => '?').join(', ');
+  const rows = {};
+  for (const row of await nexaDbAll(pool, `SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN (${placeholders})`, NEXA_CONFIG_KEYS)) {
+    rows[row.setting_key] = String(row.setting_value ?? '');
+  }
+  return rows;
+}
+
+/**
+ * Blok DATA TERKINI untuk satu pertanyaan (= nexa_live_context di nexa.php): template terbit, harga & isi paket,
+ * domain & perpanjangan, kontak, dan proyek beranda. Dipakai nexa_chat dan bot WhatsApp (waha.js).
+ */
+export async function nexaLiveContext(pool) {
+  const settings = {};
+  for (const row of await nexaDbAll(pool, `SELECT setting_key, setting_value FROM hero_settings
+                                       WHERE setting_key IN ('footer_whatsapp', 'footer_email', 'template_price_includes', 'template_price_note', 'template_hosting_renewal_price')`)) {
+    settings[row.setting_key] = String(row.setting_value ?? '');
+  }
+  const templates = await nexaDbAll(pool, "SELECT name, slug, category, price FROM templates WHERE status = 'published' ORDER BY sort_order ASC, id ASC");
+  const projects = await nexaDbAll(pool, 'SELECT id, name, service_type, image, description FROM project_client WHERE show_on_website = 1 ORDER BY id DESC LIMIT 60');
+  const showcase = {};
+  for (const row of await nexaDbAll(pool, "SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN ('portfolio_data', 'disabled_sections')")) {
+    showcase[row.setting_key] = String(row.setting_value ?? '');
+  }
+  return `${nexaLiveFacts(templates, settings)}\n\n${nexaShowcaseFacts(projects, showcase.portfolio_data ?? null, nexaProjectsHidden(showcase.disabled_sections ?? null))}`;
+}
+
+/**
+ * Jawaban penyedia aktif untuk riwayat yang sudah bersih (= nexa_provider_reply): { reply } atau { error }. `live` =
+ * blok system kedua (DATA TERKINI, bisa ditambah aturan kanal). Tidak pernah melempar.
+ */
+export async function nexaProviderReply(active, live, messages, fetchImpl = fetch) {
+  const env = (key, fallback) => (process.env[key] === undefined || process.env[key] === '' ? fallback : process.env[key]);
+  if (active.provider === 'gemini') {
+    const model = env('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
+    return nexaGeminiReply(active.key, nexaGeminiModels(model), nexaGeminiBody(nexaKnowledge(), live, messages), fetchImpl);
+  }
+  if (active.provider === 'custom') {
+    return nexaCustomReply(active.url, active.key, nexaCustomBody(active.model, nexaKnowledge(), live, messages), fetchImpl);
+  }
+  const model = env('NEXA_MODEL', NEXA_DEFAULT_MODEL);
+  return nexaClaudeReply(active.key, nexaRequestBody(model, nexaKnowledge(), live, messages), fetchImpl);
 }
 
 /** Panggil Claude: { reply } atau { error } (alasan untuk log). Tidak pernah melempar. */

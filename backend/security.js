@@ -43,6 +43,8 @@ export const PUBLIC_ACTIONS = new Set([
   'google_auth_config', 'customer_google_auth',
   'get_site_seo', 'get_site_posts', 'get_site_post', 'site_post_view',
   'site_visit',
+  // Webhook WAHA: tanpa token, tetapi ditolak tanpa tanda tangan HMAC yang sah (backend/modules/waha.js)
+  'waha_webhook',
 ]);
 export const ANY_ROLE_ACTIONS = new Set([
   'pd_notifications_list', 'pd_notifications_read', 'pd_file',
@@ -72,6 +74,7 @@ export const ADMIN_ACTIONS = new Set([
   'nexa_get_config', 'nexa_save_config',
   'admin_get_guides', 'admin_save_guide', 'admin_delete_guide',
   'admin_set_site_addon',
+  'waha_get_config', 'waha_save_config', 'waha_test', 'waha_close_handoff',
 ]);
 
 const STAFF_ROLES = new Set(['admin', 'user']);

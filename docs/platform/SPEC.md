@@ -50,6 +50,9 @@ Peran `users.role`: `admin`, `user` (staf), **`customer`** (baru, pembeli templa
     `customer_get_site_addons`, `customer_buy_site_addon`, `customer_pay_site_addon`, `customer_cancel_site_addon`,
     `dev_simulate_site_addon_payment`; admin saja `admin_set_site_addon`; `midtrans_notification` dengan order id `GNF-…`.
   - Statistik kunjungan situs pembeli (migrasi 031, docs/platform/SITE-STATS-SPEC.md): publik `site_visit` (POST, selalu `{ success: true }`), pembeli `customer_get_site_stats` (GET).
+  - Bot WhatsApp lewat WAHA (migrasi 049, docs/platform/WHATSAPP-BOT-SPEC.md): publik `waha_webhook` (POST bertanda
+    tangan HMAC `X-Webhook-Hmac`; tanpa tanda tangan sah → 401); admin saja `waha_get_config`, `waha_save_config`,
+    `waha_test`, `waha_close_handoff`. Setting `waha_*` tidak ikut `get_settings` dan ditolak `update_settings` (403).
   - Selain itu = **aksi staf**: token role `admin` atau `user`. Token `customer` → 403.
   - `ADMIN_ACTIONS` (admin saja): yang lama + `admin_delete_template`.
   - **Nilai kontrak** (`project_client.price`, "Nilai kontrak" dokumen proyek) hanya diisi/diubah admin (keputusan

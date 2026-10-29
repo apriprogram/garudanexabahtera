@@ -20,6 +20,7 @@ import {
 import { motion } from 'framer-motion';
 import HeroSettings from './HeroSettings';
 import { NexaCustomProviderCard, type NexaCustomConfig } from './nexa/NexaCustomProviderCard';
+import { WhatsAppBotPanel } from './nexa/WhatsAppBotPanel';
 import { parseHeroOverlay, parseHeroTextTone } from '../../components/sections/hero/heroBgConfig';
 import type { HeroTextTone } from '../../components/sections/hero/heroContrast';
 import {
@@ -292,7 +293,7 @@ const TAB_SUBTITLE: Partial<Record<string, string>> = {
   compare: 'Tabel "Pilih sesuai kebutuhanmu" di beranda.',
   pricing: 'Tampil di detail template, halaman pesan, akun pembeli, dan halaman Harga.',
   guides: 'Halaman /panduan dan artikel panduan.',
-  nexa: 'Chat Nexa AI melayang di seluruh situs: penyedia jawaban dan kunci API-nya.',
+  nexa: 'Chat Nexa AI melayang di seluruh situs dan bot WhatsApp: penyedia jawaban, kunci API, dan alih ke admin.',
 };
 
 /** Error simpan dengan pesan dari server yang ditampilkan apa adanya (mis. 409 latar hero diubah di tab lain). */
@@ -1178,6 +1179,9 @@ const SiteSettings: React.FC = () => {
                 </>
               )}
             </Panel>
+
+            {/* Bot WhatsApp (WAHA) memakai penyedia AI di atas; tersimpan lewat tombolnya sendiri */}
+            <WhatsAppBotPanel notify={showNotify} />
           </div>
         );
 

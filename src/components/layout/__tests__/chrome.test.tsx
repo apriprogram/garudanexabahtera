@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Navbar from '../Navbar';
 import Footer from '../Footer';
 import { FloatingWhatsApp } from '../FloatingWhatsApp';
+import { adminWhatsappHref, NEXA_ADMIN_WA_TEXT } from '../nexa/adminHandoff';
 import SyaratKetentuan from '../../../pages/public/legal/SyaratKetentuan';
 import KebijakanPrivasi from '../../../pages/public/legal/KebijakanPrivasi';
 import KebijakanPengembalianDana from '../../../pages/public/legal/KebijakanPengembalianDana';
@@ -509,13 +510,26 @@ describe('Nexa AI', () => {
       { role: 'user', content: 'Bisa bikin toko online?' },
     ]);
 
-    // Tidak ada yang cocok: jujur + WhatsApp; maskot menyesal (maaf)
+    // Tidak ada yang cocok: jujur + WhatsApp ke admin (pesan awal + pertanyaannya, dialihkan bot ke admin); maskot menyesal
     ask(panel, 'Siapa juara piala dunia?');
     const wa = await within(panel).findByRole('link', { name: /Chat WhatsApp/ }, { timeout: 2000 });
-    expect(wa).toHaveAttribute('href', WA);
+    expect(wa).toHaveAttribute('href', adminWhatsappHref(WA, 'Siapa juara piala dunia?'));
+    expect(decodeURIComponent(wa.getAttribute('href')!.split('?text=')[1])).toBe(`${NEXA_ADMIN_WA_TEXT}\nPertanyaan saya: Siapa juara piala dunia?`);
     expect(wa).toHaveAttribute('target', '_blank');
     expect(panel).toHaveTextContent(/belum punya jawabannya/);
     expect(wa.closest('[data-message-id]')?.querySelector('img')?.getAttribute('src')).toContain('nexa-maaf');
+  });
+
+  it('chip "Hubungi admin": tautan WhatsApp berisi pesan awal yang dialihkan bot ke admin manusia (tanpa AI)', async () => {
+    const posts = mockNexa(() => json(503, { error: 'Nexa AI belum aktif.', code: 'NEXA_OFFLINE' }));
+    const panel = openPanel();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Hubungi admin' }));
+    const link = await within(panel).findByRole('link', { name: /Chat admin di WhatsApp/ }, { timeout: 2000 });
+    expect(link).toHaveAttribute('href', `${WA}?text=${encodeURIComponent(NEXA_ADMIN_WA_TEXT)}`);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(panel).toHaveTextContent(/admin langsung mendapat notifikasi/);
+    // Topik cepat tidak memanggil AI
+    expect(posts).toHaveLength(0);
   });
 
   it('tanpa AI: "sudah termasuk domain?" dijawab jujur, biaya hosting & jasa dari setting admin', async () => {

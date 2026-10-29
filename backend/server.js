@@ -49,6 +49,9 @@ import { handleSiteAddonAction } from './modules/site_addons.js';
 // Statistik kunjungan situs pembeli (site_visit_stats, site_visitors): pencatatan publik site_visit + dasbor CMS
 // customer_get_site_stats, docs/platform/SITE-STATS-SPEC.md
 import { handleSiteStatsAction } from './modules/site_stats.js';
+// Chatbot WhatsApp lewat WAHA: webhook bertanda tangan HMAC, jawaban Nexa AI, alih ke admin manusia
+// (docs/platform/WHATSAPP-BOT-SPEC.md)
+import { handleWahaAction } from './modules/waha.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -171,6 +174,8 @@ app.get('/api.php', async (req, res) => {
   if (await handleSitePostAction(action, req.query, req, res, pool)) return;
   if (await handleSiteAddonAction(action, req.query, req, res, pool)) return;
   if (await handleSiteStatsAction(action, req.query, req, res, pool)) return;
+  // Bot WhatsApp: semua aksinya POST (GET → 405, sama dengan api.php)
+  if (await handleWahaAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -179,8 +184,9 @@ app.get('/api.php', async (req, res) => {
       // pd_settings_get only; the comparison follows the column's case-insensitive collation
       // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik.
       // domain_markup_percent: markup harga beli DewaBiz, hanya lewat admin_get_domain_pricing (backend/modules/domains.js)
+      // waha_*: alamat, API key & nomor admin bot WhatsApp, hanya lewat waha_get_config (admin)
       const [rows] = await pool.query(
-        "SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_') AND setting_key <> 'domain_markup_percent'",
+        "SELECT setting_key, setting_value FROM hero_settings WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_') AND LEFT(setting_key, 5) <> 'waha_' AND setting_key <> 'domain_markup_percent'",
       );
       const settings = {};
       for (const row of rows) {
@@ -389,6 +395,8 @@ app.post('/api.php', async (req, res) => {
   if (await handleSitePostAction(action, req.body, req, res, pool)) return;
   if (await handleSiteAddonAction(action, req.body, req, res, pool)) return;
   if (await handleSiteStatsAction(action, req.body, req, res, pool)) return;
+  // Bot WhatsApp: WAHA memposting event ke /api.php?action=waha_webhook (backend/modules/waha.js)
+  if (await handleWahaAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {
@@ -432,6 +440,11 @@ app.post('/api.php', async (req, res) => {
           }
           if (lower.startsWith('nexa_') && lower !== 'nexa_enabled') {
             res.status(403).json({ error: 'Pengaturan Nexa AI hanya bisa diubah lewat tab Tanya Nexa.', code: 'FORBIDDEN' });
+            return;
+          }
+          // Alamat & API key WAHA, nomor admin: hanya lewat waha_save_config (admin), sama dengan api.php
+          if (lower.startsWith('waha_')) {
+            res.status(403).json({ error: 'Pengaturan bot WhatsApp hanya bisa diubah lewat tab Tanya Nexa.', code: 'FORBIDDEN' });
             return;
           }
           // Client ID Google = aud yang dipercaya customer_google_auth: staf tidak boleh menggantinya (hanya database/env)

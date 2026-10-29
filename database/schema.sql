@@ -1117,6 +1117,51 @@ CREATE TABLE IF NOT EXISTS site_visitors (
   PRIMARY KEY (site_id, day, visitor)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- WhatsApp bot through WAHA (migration 049, docs/platform/WHATSAPP-BOT-SPEC.md). waha_seen: processed message markers
+-- (sha256 of the WAHA message id, never the id itself, which contains a phone number), rows older than 3 days removed by
+-- the code. waha_chats: per-chat bot pause, hand-off status and the last 12 messages for the AI. waha_handoffs: log of
+-- chats handed to a human admin (admin tab Tanya Nexa).
+CREATE TABLE IF NOT EXISTS waha_seen (
+  message_key  CHAR(64) NOT NULL,                       -- sha256 hex dari payload.id WAHA
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (message_key),
+  KEY idx_waha_seen_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS waha_chats (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  chat_id         VARCHAR(100) NOT NULL,                -- id chat WAHA: 628…@c.us atau …@lid
+  phone           VARCHAR(20) NULL,                     -- nomor berkode negara (angka saja) bila diketahui
+  name            VARCHAR(100) NULL,                    -- nama profil WhatsApp klien
+  history         MEDIUMTEXT NULL,                      -- JSON [{role, content}]: 12 pesan terakhir untuk Nexa AI
+  last_message    VARCHAR(1000) NULL,                   -- pesan klien terakhir
+  last_in_at      DATETIME NULL,                        -- waktu pesan klien terakhir
+  paused_until    DATETIME NULL,                        -- bot dijeda sampai waktu ini (NULL / lewat = bot aktif)
+  handoff_status  VARCHAR(12) NOT NULL DEFAULT '',      -- '' | 'menunggu' | 'ditangani' | 'selesai'
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_waha_chat (chat_id),
+  KEY idx_waha_chat_phone (phone),
+  KEY idx_waha_chat_handoff (handoff_status, paused_until)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS waha_handoffs (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  chat_id     VARCHAR(100) NOT NULL,
+  phone       VARCHAR(20) NULL,
+  name        VARCHAR(100) NULL,
+  reason      VARCHAR(20) NOT NULL,                     -- 'permintaan' | 'website' | 'ai_memutuskan' | 'ai_mati' |
+                                                        -- 'ai_gagal' | 'ai_batas' | 'batas'
+  message     VARCHAR(1000) NULL,                       -- pesan klien yang memicu
+  status      VARCHAR(12) NOT NULL DEFAULT 'menunggu',  -- 'menunggu' | 'ditangani' | 'selesai'
+  notified    TINYINT(1) NOT NULL DEFAULT 0,            -- 1 = notifikasi ke nomor WA admin terkirim
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  handled_at  DATETIME NULL,                            -- admin membalas manual dari nomor bisnis
+  closed_at   DATETIME NULL,                            -- selesai (tombol admin atau perintah SELESAI)
+  KEY idx_waha_handoff_chat (chat_id, status),
+  KEY idx_waha_handoff_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- A fresh install already has every migration up to this baseline.
 -- (002, 003, 007 and the navbar/FAQ data steps of 004 only touch existing rows, which a
 --  fresh install does not have; with an empty navbar_menus the frontend uses its
@@ -1140,7 +1185,8 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-25_027', 'baseline: users.google_sub (Google sign-in)'),
   ('2026-10-26_029', 'baseline: site_posts, site_post_views, site_seo (school news & announcements, customer site SEO)'),
   ('2026-10-27_030', 'baseline: site_addon_orders (paid add-on features: news & announcements; no sites to inherit)'),
-  ('2026-10-27_031', 'baseline: site_visit_stats, site_visitors (customer site visit statistics, daily aggregates, no IP)');
+  ('2026-10-27_031', 'baseline: site_visit_stats, site_visitors (customer site visit statistics, daily aggregates, no IP)'),
+  ('2026-10-29_049', 'baseline: waha_seen, waha_chats, waha_handoffs (WhatsApp bot through WAHA)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

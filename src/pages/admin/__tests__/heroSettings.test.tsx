@@ -1185,6 +1185,10 @@ function mockSiteApi({
       if ((body as { action?: string }).action === 'admin_get_guides') {
         return json({ success: true, hubViews: 7, guides: [{ id: 1, slug: 'artikel-uji', title: 'Artikel uji panduan', description: 'Deskripsi artikel uji.', body: '## Isi', author: 'Tim Garuda Nexa', datePublished: '2026-10-23', dateModified: '2026-10-23', reviewed: null, cta: 'template', sources: [], related: [], views: 3, createdAt: '2026-10-24 10:00:00', updatedAt: '2026-10-24 10:00:00' }] });
       }
+      // Tab Tanya Nexa: panel bot WhatsApp memuat pengaturannya sendiri (diuji di whatsappBotPanel.test.tsx)
+      if ((body as { action?: string }).action === 'waha_get_config') {
+        return json({ success: true, config: { enabled: true, pause_hours: 12, effective: {} }, handoffs: [], tables_ready: true });
+      }
       posts.push(body);
       if (post) return post(body);
       // Tab Tanya Nexa: konfigurasi AI (kunci hanya topeng)

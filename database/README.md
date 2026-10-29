@@ -51,7 +51,8 @@ database/
 │   ├── 2026-10-29_050_nusaline_template.sql        # data: katalog Nusaline (PO bus antarkota), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-29_051_lawatan_template.sql         # data: katalog Lawatan (tour & travel rombongan), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-29_052_kemudi_template.sql          # data: katalog Kemudi (rental mobil), jalankan SETELAH deploy kodenya
-│   └── 2026-10-29_053_pesiar_template.sql          # data: katalog Pesiar (private tour & sewa mobil dengan sopir), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-29_053_pesiar_template.sql          # data: katalog Pesiar (private tour & sewa mobil dengan sopir), jalankan SETELAH deploy kodenya
+│   └── 2026-10-31_054_waha_whatsapp_bot.sql        # bot WhatsApp lewat WAHA: dedup pesan, jeda bot per chat, log alih ke admin
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```

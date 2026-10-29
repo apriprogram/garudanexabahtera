@@ -25,10 +25,9 @@ import bcrypt from 'bcryptjs';
 import { issueToken, createLimiter, isAuthConfigured } from '../security.js';
 import { uploadBase64ToS3, parseUpload, deleteFromS3, S3_PUBLIC_URL } from '../s3-client.js';
 import {
-  NEXA_CONFIG_KEYS, NEXA_DEFAULT_DAILY_LIMIT, NEXA_DEFAULT_MODEL, NEXA_GEMINI_DEFAULT_MODEL, NEXA_PER_DAY, NEXA_PER_HOUR,
-  NexaConfigError, nexaCleanMessages, nexaClaudeReply, nexaConfigOut, nexaConfigWrites, nexaCustomBody, nexaCustomReply, nexaGeminiBody,
-  nexaGeminiModels, nexaGeminiReply,
-  nexaIpBucket, nexaKnowledge, nexaLiveFacts, nexaProjectsHidden, nexaRequestBody, nexaResolveProvider, nexaShowcaseFacts,
+  NEXA_DEFAULT_DAILY_LIMIT, NEXA_PER_DAY, NEXA_PER_HOUR,
+  NexaConfigError, nexaCleanMessages, nexaConfigOut, nexaConfigRows, nexaConfigWrites, nexaIpBucket, nexaLiveContext, nexaProviderReply,
+  nexaResolveProvider,
 } from './nexa.js';
 // Domain berbayar: harga per ekstensi, validasi & cek ketersediaan RDAP (docs/platform/ACCOUNT-DOMAIN-RENEWAL-SPEC.md)
 import {
@@ -366,44 +365,13 @@ async function nexaChat({ pool, body, req }) {
   nexaIpDayLimiter.hit(dayKey);
   daily.hit('nexa|all');
 
-  const settings = {};
-  for (const row of await dbAll(pool, `SELECT setting_key, setting_value FROM hero_settings
-                                       WHERE setting_key IN ('footer_whatsapp', 'footer_email', 'template_price_includes', 'template_price_note')`)) {
-    settings[row.setting_key] = String(row.setting_value ?? '');
-  }
-  const templates = await dbAll(pool, "SELECT name, slug, category, price FROM templates WHERE status = 'published' ORDER BY sort_order ASC, id ASC");
-
-  const projects = await dbAll(pool, 'SELECT id, name, service_type, image, description FROM project_client WHERE show_on_website = 1 ORDER BY id DESC LIMIT 60');
-  const showcase = {};
-  for (const row of await dbAll(pool, "SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN ('portfolio_data', 'disabled_sections')")) {
-    showcase[row.setting_key] = String(row.setting_value ?? '');
-  }
-  const live = `${nexaLiveFacts(templates, settings)}\n\n${nexaShowcaseFacts(projects, showcase.portfolio_data ?? null, nexaProjectsHidden(showcase.disabled_sections ?? null))}`;
-  let result;
-  if (active.provider === 'gemini') {
-    const model = envValue('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
-    result = await nexaGeminiReply(active.key, nexaGeminiModels(model), nexaGeminiBody(nexaKnowledge(), live, messages));
-  } else if (active.provider === 'custom') {
-    result = await nexaCustomReply(active.url, active.key, nexaCustomBody(active.model, nexaKnowledge(), live, messages));
-  } else {
-    const model = envValue('NEXA_MODEL', NEXA_DEFAULT_MODEL);
-    result = await nexaClaudeReply(active.key, nexaRequestBody(model, nexaKnowledge(), live, messages));
-  }
+  // DATA TERKINI & panggilan penyedia di nexa.js (= nexa_live_context / nexa_provider_reply), juga dipakai waha.js
+  const result = await nexaProviderReply(active, await nexaLiveContext(pool), messages);
   if (result.reply === undefined) {
     console.error(`[nexa] ${result.error}`);
     throw new ApiError('Nexa AI sedang tidak tersedia.', 503, 'NEXA_UNAVAILABLE');
   }
   return { reply: result.reply };
-}
-
-/** Baris setting nexa_* dari database (= nexa_config_rows di nexa.php). */
-async function nexaConfigRows(pool) {
-  const placeholders = NEXA_CONFIG_KEYS.map(() => '?').join(', ');
-  const rows = {};
-  for (const row of await dbAll(pool, `SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN (${placeholders})`, NEXA_CONFIG_KEYS)) {
-    rows[row.setting_key] = String(row.setting_value ?? '');
-  }
-  return rows;
 }
 
 // Tab admin "Tanya Nexa": baca konfigurasi (kunci hanya tampil 4 karakter terakhir) — = pf_nexa_get_config
