@@ -103,118 +103,123 @@ const Header: React.FC = () => {
   );
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-adm-line bg-adm-surface/95 px-3 backdrop-blur-xl sm:px-6 lg:top-2 lg:rounded-t-[20px]">
-      <div className="flex min-w-0 items-center gap-2">
-        <button
-          type="button"
-          onClick={() => toggleMobileSidebar(true)}
-          aria-label="Buka menu"
-          aria-expanded={isMobileSidebarOpen}
-          className={`${iconBtn} lg:hidden`}
-        >
-          <Menu className="h-5 w-5" strokeWidth={1.75} />
-        </button>
-
-        <nav aria-label="Breadcrumb" className="min-w-0 text-[13px]">
-          <ol className="flex min-w-0 items-center gap-1.5">
-            <li className="hidden text-adm-muted sm:block">
-              <Link to="/admin" className={`rounded-md hover:text-adm-fg ${focusRing}`}>Admin</Link>
-            </li>
-            <li className="hidden text-adm-subtle sm:block" aria-hidden>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </li>
-            {parent && (
-              <>
-                <li className="hidden truncate text-adm-muted sm:block">
-                  <Link to={parent.path} className={`rounded-md hover:text-adm-fg ${focusRing}`}>{parent.label}</Link>
-                </li>
-                <li className="hidden text-adm-subtle sm:block" aria-hidden>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </li>
-              </>
-            )}
-            <li className="truncate font-medium text-adm-fg" aria-current="page">{label}</li>
-          </ol>
-        </nav>
-      </div>
-
-      <div className="flex shrink-0 items-center gap-2">
-        <span className="hidden items-center gap-1.5 text-[13px] text-adm-muted xl:inline-flex">
-          <CalendarDays className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-          {today}
-        </span>
-        <span className="hidden h-4 w-px bg-adm-line xl:block" aria-hidden />
-
-        <div className="flex items-center gap-1">
-          <a href="/" target="_blank" rel="noopener noreferrer" aria-label="Lihat website" title="Lihat website" className={`${iconBtn} max-sm:hidden`}>
-            <Eye className="h-[18px] w-[18px]" strokeWidth={1.75} />
-          </a>
+    // Pembungkus menempel di atas (layar lg: ikut menutup gutter 8px & sudut lengkung dengan warna kanvas), jadi konten
+    // yang digulir tidak pernah tampak di atas atau di sudut topbar. Topbar sendiri padat (tanpa transparansi/blur) dan
+    // di layar lg membawa garis tepi panel konten (ring) karena tepi panel di belakangnya tertutup pembungkus.
+    <div className="sticky top-0 z-20 shrink-0 lg:-mt-2 lg:bg-adm-canvas lg:pt-2">
+      <header className="flex h-14 items-center justify-between gap-3 border-b border-adm-line bg-adm-surface px-3 sm:px-6 lg:rounded-t-[20px] lg:border-b-0 lg:ring-1 lg:ring-inset lg:ring-adm-line">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
-            onClick={toggleTheme}
-            aria-label={theme === 'light' ? 'Ganti ke mode gelap' : 'Ganti ke mode terang'}
-            title={theme === 'light' ? 'Mode gelap' : 'Mode terang'}
-            className={iconBtn}
+            onClick={() => toggleMobileSidebar(true)}
+            aria-label="Buka menu"
+            aria-expanded={isMobileSidebarOpen}
+            className={`${iconBtn} lg:hidden`}
           >
-            {theme === 'light' ? <Moon className="h-[18px] w-[18px]" strokeWidth={1.75} /> : <Sun className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+            <Menu className="h-5 w-5" strokeWidth={1.75} />
           </button>
-          {/* Notifikasi dokumen proyek (persetujuan, jatuh tempo): src/features/project-docs/notifications */}
-          <NotificationBell variant="admin" />
 
-          <div ref={menuRef} className="relative ml-1">
+          <nav aria-label="Breadcrumb" className="min-w-0 text-[13px]">
+            <ol className="flex min-w-0 items-center gap-1.5">
+              <li className="hidden text-adm-muted sm:block">
+                <Link to="/admin" className={`rounded-md hover:text-adm-fg ${focusRing}`}>Admin</Link>
+              </li>
+              <li className="hidden text-adm-subtle sm:block" aria-hidden>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </li>
+              {parent && (
+                <>
+                  <li className="hidden truncate text-adm-muted sm:block">
+                    <Link to={parent.path} className={`rounded-md hover:text-adm-fg ${focusRing}`}>{parent.label}</Link>
+                  </li>
+                  <li className="hidden text-adm-subtle sm:block" aria-hidden>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </li>
+                </>
+              )}
+              <li className="truncate font-medium text-adm-fg" aria-current="page">{label}</li>
+            </ol>
+          </nav>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden items-center gap-1.5 text-[13px] text-adm-muted xl:inline-flex">
+            <CalendarDays className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            {today}
+          </span>
+          <span className="hidden h-4 w-px bg-adm-line xl:block" aria-hidden />
+
+          <div className="flex items-center gap-1">
+            <a href="/" target="_blank" rel="noopener noreferrer" aria-label="Lihat website" title="Lihat website" className={`${iconBtn} max-sm:hidden`}>
+              <Eye className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </a>
             <button
               type="button"
-              onClick={() => setIsMenuOpen((o) => !o)}
-              aria-haspopup="menu"
-              aria-expanded={isMenuOpen}
-              aria-label="Menu profil"
-              className={`flex h-10 items-center gap-2 rounded-full p-1 ring-1 ring-inset ring-adm-line transition-colors hover:bg-adm-hover max-sm:h-9 sm:pr-3 ${focusRing}`}
+              onClick={toggleTheme}
+              aria-label={theme === 'light' ? 'Ganti ke mode gelap' : 'Ganti ke mode terang'}
+              title={theme === 'light' ? 'Mode gelap' : 'Mode terang'}
+              className={iconBtn}
             >
-              {avatar('h-8 w-8 max-sm:h-7 max-sm:w-7')}
-              <span className="hidden min-w-0 text-left sm:block">
-                <span className="block max-w-[150px] truncate text-[13px] font-semibold leading-tight text-adm-fg">{name}</span>
-                <span className="block text-[11px] leading-tight text-adm-subtle">{roleLabel}</span>
-              </span>
-              <ChevronDown className={`hidden h-4 w-4 text-adm-subtle transition-transform sm:block ${isMenuOpen ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+              {theme === 'light' ? <Moon className="h-[18px] w-[18px]" strokeWidth={1.75} /> : <Sun className="h-[18px] w-[18px]" strokeWidth={1.75} />}
             </button>
+            {/* Notifikasi dokumen proyek (persetujuan, jatuh tempo): src/features/project-docs/notifications */}
+            <NotificationBell variant="admin" />
 
-            <AnimatePresence>
-              {isMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                  role="menu"
-                  className="profile-dropdown absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl bg-adm-surface p-2 shadow-float ring-1 ring-inset ring-adm-line"
-                >
-                  <div className="mb-1 flex items-center gap-3 rounded-xl bg-adm-hover px-3 py-2.5">
-                    {avatar('h-9 w-9')}
-                    <div className="min-w-0">
-                      <p className="truncate text-[13px] font-semibold text-adm-fg">{name}</p>
-                      <p className="truncate text-xs text-adm-subtle">{currentUser?.email || 'admin@garudanexa.com'}</p>
+            <div ref={menuRef} className="relative ml-1">
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={isMenuOpen}
+                aria-label="Menu profil"
+                className={`flex h-10 items-center gap-2 rounded-full p-1 ring-1 ring-inset ring-adm-line transition-colors hover:bg-adm-hover max-sm:h-9 sm:pr-3 ${focusRing}`}
+              >
+                {avatar('h-8 w-8 max-sm:h-7 max-sm:w-7')}
+                <span className="hidden min-w-0 text-left sm:block">
+                  <span className="block max-w-[150px] truncate text-[13px] font-semibold leading-tight text-adm-fg">{name}</span>
+                  <span className="block text-[11px] leading-tight text-adm-subtle">{roleLabel}</span>
+                </span>
+                <ChevronDown className={`hidden h-4 w-4 text-adm-subtle transition-transform sm:block ${isMenuOpen ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+              </button>
+
+              <AnimatePresence>
+                {isMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    role="menu"
+                    className="profile-dropdown absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl bg-adm-surface p-2 shadow-float ring-1 ring-inset ring-adm-line"
+                  >
+                    <div className="mb-1 flex items-center gap-3 rounded-xl bg-adm-hover px-3 py-2.5">
+                      {avatar('h-9 w-9')}
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-adm-fg">{name}</p>
+                        <p className="truncate text-xs text-adm-subtle">{currentUser?.email || 'admin@garudanexa.com'}</p>
+                      </div>
                     </div>
-                  </div>
-                  <button type="button" role="menuitem" onClick={() => { navigate('/admin/profile'); setIsMenuOpen(false); }} className={`${menuItem} text-adm-fg hover:bg-adm-hover`}>
-                    <User className="h-[18px] w-[18px] text-adm-subtle" strokeWidth={1.75} /> Edit profil
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => { navigate('/admin/help'); setIsMenuOpen(false); }} className={`${menuItem} text-adm-fg hover:bg-adm-hover`}>
-                    <HelpCircle className="h-[18px] w-[18px] text-adm-subtle" strokeWidth={1.75} /> Catatan perubahan
-                  </button>
-                  <a href="/" target="_blank" rel="noopener noreferrer" role="menuitem" className={`${menuItem} text-adm-fg hover:bg-adm-hover sm:hidden`}>
-                    <Eye className="h-[18px] w-[18px] text-adm-subtle" strokeWidth={1.75} /> Lihat website
-                  </a>
-                  <div className="my-1 h-px bg-adm-line" />
-                  <button type="button" role="menuitem" onClick={handleLogout} className={`${menuItem} text-adm-danger-fg hover:bg-adm-danger-soft`}>
-                    <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} /> Keluar
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <button type="button" role="menuitem" onClick={() => { navigate('/admin/profile'); setIsMenuOpen(false); }} className={`${menuItem} text-adm-fg hover:bg-adm-hover`}>
+                      <User className="h-[18px] w-[18px] text-adm-subtle" strokeWidth={1.75} /> Edit profil
+                    </button>
+                    <button type="button" role="menuitem" onClick={() => { navigate('/admin/help'); setIsMenuOpen(false); }} className={`${menuItem} text-adm-fg hover:bg-adm-hover`}>
+                      <HelpCircle className="h-[18px] w-[18px] text-adm-subtle" strokeWidth={1.75} /> Catatan perubahan
+                    </button>
+                    <a href="/" target="_blank" rel="noopener noreferrer" role="menuitem" className={`${menuItem} text-adm-fg hover:bg-adm-hover sm:hidden`}>
+                      <Eye className="h-[18px] w-[18px] text-adm-subtle" strokeWidth={1.75} /> Lihat website
+                    </a>
+                    <div className="my-1 h-px bg-adm-line" />
+                    <button type="button" role="menuitem" onClick={handleLogout} className={`${menuItem} text-adm-danger-fg hover:bg-adm-danger-soft`}>
+                      <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} /> Keluar
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </div>
   );
 };
 

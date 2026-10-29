@@ -48,9 +48,6 @@ const AdminLayout: React.FC = () => {
       >
         Lewati ke konten
       </a>
-      {/* Penutup gutter atas agar konten yang digulir tidak tampak di atas topbar */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-30 hidden h-2 bg-adm-canvas lg:block" aria-hidden />
-
       <Sidebar />
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-adm-surface lg:min-h-[calc(100vh-16px)] lg:rounded-[20px] lg:ring-1 lg:ring-inset lg:ring-adm-line">
