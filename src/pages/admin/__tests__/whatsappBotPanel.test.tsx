@@ -130,8 +130,17 @@ describe('WhatsAppBotPanel', () => {
     render(<WhatsAppBotPanel notify={notify} />);
     await screen.findByText('API key tersimpan: ••••abcd');
 
+    // Menandai hapus dikonfirmasi dulu (sama dengan kunci AI); Batal = tidak ada yang berubah
     fireEvent.click(screen.getByRole('button', { name: 'Hapus API key tersimpan' }));
-    expect(screen.getByText('API key tersimpan akan dihapus saat pengaturan disimpan.')).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: 'Hapus API key WAHA?' });
+    expect(dialog).toHaveTextContent('API key tersimpan ••••abcd dihapus dari server saat kamu klik Simpan pengaturan WhatsApp.');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Batal' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByText('API key tersimpan: ••••abcd')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus API key tersimpan' }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Hapus API key WAHA?' })).getByRole('button', { name: 'Ya, hapus' }));
+    expect(await screen.findByText('API key tersimpan akan dihapus saat pengaturan disimpan.')).toBeInTheDocument();
+    expect(notify).toHaveBeenCalledWith('info', 'API key WAHA akan dihapus.', 'Klik Simpan pengaturan WhatsApp untuk menghapusnya dari server.');
     fireEvent.click(screen.getByRole('button', { name: 'Simpan pengaturan WhatsApp' }));
     await waitFor(() => expect(posts).toHaveLength(2));
     expect(posts[1]).toMatchObject({ action: 'waha_save_config', key: null });

@@ -1181,7 +1181,7 @@ const SiteSettings: React.FC = () => {
             </Panel>
 
             {/* Bot WhatsApp (WAHA) memakai penyedia AI di atas; tersimpan lewat tombolnya sendiri */}
-            <WhatsAppBotPanel notify={showNotify} />
+            <WhatsAppBotPanel notify={notify} />
           </div>
         );
 

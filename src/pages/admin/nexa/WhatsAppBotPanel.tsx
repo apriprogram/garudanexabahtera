@@ -5,7 +5,20 @@
 // webhook tidak pernah lewat sini: hanya WAHA_HMAC_KEY di .env server.
 import { useCallback, useEffect, useState } from 'react';
 import { Check, Copy, MessageCircle, RotateCw, Save, Send } from 'lucide-react';
-import { Badge, Button, ErrorState, Field, Input, LoadingState, Notice, Panel, PanelHeader, PasswordInput, Switch } from '../../../components/admin/ui';
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  ErrorState,
+  Field,
+  Input,
+  LoadingState,
+  Notice,
+  Panel,
+  PanelHeader,
+  PasswordInput,
+  Switch,
+} from '../../../components/admin/ui';
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
 import {
   formatHandoffTime,
@@ -48,6 +61,7 @@ export function WhatsAppBotPanel({ notify }: { notify: WhatsAppNotify }) {
   const [busy, setBusy] = useState<'' | 'save' | 'test' | `close:${string}`>('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
+  const [confirmClearKey, setConfirmClearKey] = useState(false);
   const webhookUrl = `${typeof window === 'undefined' ? '' : window.location.origin}/api.php?action=waha_webhook`;
 
   const apply = useCallback((data: unknown, resetDraft: boolean) => {
@@ -270,11 +284,24 @@ export function WhatsAppBotPanel({ notify }: { notify: WhatsAppNotify }) {
         <button
           type="button"
           className="text-xs font-medium text-adm-muted underline-offset-2 hover:underline"
-          onClick={() => set({ clearKey: !draft.clearKey, key: '' })}
+          // Menandai hapus dikonfirmasi dulu (sama dengan kunci AI di atas), membatalkan tanda tidak
+          onClick={() => (draft.clearKey ? set({ clearKey: false }) : setConfirmClearKey(true))}
         >
           {draft.clearKey ? 'Batal menghapus API key' : 'Hapus API key tersimpan'}
         </button>
       )}
+      <ConfirmDialog
+        open={confirmClearKey}
+        onClose={() => setConfirmClearKey(false)}
+        onConfirm={() => {
+          set({ clearKey: true, key: '' });
+          setConfirmClearKey(false);
+          notify('info', 'API key WAHA akan dihapus.', 'Klik Simpan pengaturan WhatsApp untuk menghapusnya dari server.');
+        }}
+        tone="danger"
+        title="Hapus API key WAHA?"
+        description={`API key tersimpan ${config.key_masked} dihapus dari server saat kamu klik Simpan pengaturan WhatsApp.`}
+      />
 
       <Field
         label="Alamat webhook untuk WAHA"

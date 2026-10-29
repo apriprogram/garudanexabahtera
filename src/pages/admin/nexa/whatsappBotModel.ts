@@ -2,8 +2,8 @@
 // ditampilkan. Backend: backend/modules/waha.php = waha.js (docs/platform/WHATSAPP-BOT-SPEC.md).
 import type { Tone } from '../../../components/admin/ui/styles';
 
-/** Toast halaman Pengaturan website (showNotify), sama dengan GuidesNotify. */
-export type WhatsAppNotify = (type: 'success' | 'error' | 'warning', message: string, description: string) => void;
+/** Toast halaman Pengaturan website (`show` dari useToast). */
+export type WhatsAppNotify = (tone: 'success' | 'error' | 'info' | 'warning', message: string, description?: string) => void;
 
 /** Konfigurasi dari waha_get_config: isian tersimpan, nilai .env sebagai petunjuk (tanpa kunci), dan yang berlaku. */
 export interface WahaConfig {
