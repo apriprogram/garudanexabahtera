@@ -38,6 +38,7 @@ import {
   TONE_CLASS,
   cn,
 } from '../../../components/admin/ui';
+import { refreshAdminNavBadges } from '../../../components/admin/useAdminNavBadges';
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
 import { formatRupiah, formatTanggal, type Order, type OrderStatus, type Renewal, type Site } from '../../../types/platform';
 import type { SiteAddonOrder, SiteAddonState } from '../../../types/siteAddons';
@@ -356,6 +357,8 @@ function OrderDetail({
   const afterChange = () => {
     detail.reload();
     onChanged();
+    // Angka "Order Masuk" / "Input Domain" di sidebar ikut berubah
+    refreshAdminNavBadges();
   };
 
   /** Keadaan fitur dari respons admin_set_site_addon langsung tampil; riwayat tagihan & log dimuat ulang. */

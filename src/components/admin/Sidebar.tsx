@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, LogOut, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { logout } from '../../lib/auth';
 import { LogoMark } from '../ui/LogoMark';
-import { ADMIN_NAV, getActiveNavItem, isNavActive, type AdminNavItem } from './nav';
+import { ADMIN_NAV, getActiveChild, getActiveNavItem, isNavActive, isNavItemActive, type AdminNavItem } from './nav';
+import { useAdminNavBadges, type AdminNavBadges } from './useAdminNavBadges';
 
 const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt';
 
@@ -17,18 +18,35 @@ const itemClass = (active: boolean, collapsed: boolean) =>
     focusRing,
   ].join(' ');
 
+/** Angka notifikasi di kanan menu; `corner` = gelembung di pojok ikon saat sidebar diciutkan. */
+const NavBadge: React.FC<{ count: number; corner?: boolean }> = ({ count, corner = false }) =>
+  count > 0 ? (
+    <span
+      className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold leading-none tabular-nums text-white ${
+        corner ? 'absolute -right-2 -top-1.5 ring-2 ring-adm-surface' : 'ml-auto shrink-0'
+      }`}
+    >
+      <span aria-hidden>{count > 99 ? '99+' : count}</span>
+      {/* Mode pojok: teks pembaca layar ditaruh di label (setelah nama menu), lihat NavGroupItem */}
+      {!corner && <span className="sr-only">, {count} perlu ditindaklanjuti</span>}
+    </span>
+  ) : null;
+
 interface SidebarContentProps {
   collapsed?: boolean;
+  badges?: AdminNavBadges;
   onToggle?: () => void;
   onClose?: () => void;
   onNavigate?: () => void;
 }
 
-const SidebarContent: React.FC<SidebarContentProps> = ({ collapsed = false, onToggle, onClose, onNavigate }) => {
+const SidebarContent: React.FC<SidebarContentProps> = ({ collapsed = false, badges = {}, onToggle, onClose, onNavigate }) => {
   const location = useLocation();
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
   const isAdmin = currentUser?.role === 'admin';
-  const items = ADMIN_NAV.filter((item) => !item.adminOnly || isAdmin);
+  const items = ADMIN_NAV.filter((item) => !item.adminOnly || isAdmin).map((item) =>
+    item.children ? { ...item, children: item.children.filter((c) => !c.adminOnly || isAdmin) } : item,
+  );
   const groups = [...new Set(items.map((item) => item.group))];
   // Satu item aktif saja: yang paling spesifik (/admin/proyek/pengaturan bukan juga /admin/proyek)
   const activePath = getActiveNavItem(location.pathname)?.path;
@@ -85,7 +103,14 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ collapsed = false, onTo
                 .filter((item) => item.group === group)
                 .map((item) =>
                   item.children ? (
-                    <NavGroupItem key={item.path} item={item} collapsed={collapsed} onNavigate={onNavigate} pathname={location.pathname} />
+                    <NavGroupItem
+                      key={item.path}
+                      item={item}
+                      collapsed={collapsed}
+                      badges={badges}
+                      onNavigate={onNavigate}
+                      pathname={location.pathname}
+                    />
                   ) : (
                     <li key={item.path}>
                       <Link
@@ -131,13 +156,18 @@ const SidebarContent: React.FC<SidebarContentProps> = ({ collapsed = false, onTo
 const NavGroupItem: React.FC<{
   item: AdminNavItem;
   collapsed: boolean;
+  badges: AdminNavBadges;
   pathname: string;
   onNavigate?: () => void;
-}> = ({ item, collapsed, pathname, onNavigate }) => {
-  const active = isNavActive(pathname, item);
+}> = ({ item, collapsed, badges, pathname, onNavigate }) => {
+  const active = isNavItemActive(pathname, item);
   const [open, setOpen] = useState(active);
   // Bila path induk sama dengan salah satu anak (Pesanan Template = Order Masuk), aria-current cukup di anak
   const pageIsChild = item.children?.some((c) => c.path === item.path) ?? false;
+  // Satu anak aktif saja: yang paling spesifik (/admin/proyek/pengaturan bukan juga Dashboard proyek)
+  const activeChildPath = getActiveChild(pathname, item)?.path;
+  const childCount = (key?: keyof AdminNavBadges) => (key ? badges[key] ?? 0 : 0);
+  const total = item.children!.reduce((sum, c) => sum + childCount(c.badge), 0);
 
   // Buka submenu otomatis saat pindah ke salah satu halamannya (penyesuaian state saat render, tanpa effect)
   const [wasActive, setWasActive] = useState(active);
@@ -152,12 +182,20 @@ const NavGroupItem: React.FC<{
         <Link
           to={item.path}
           onClick={onNavigate}
-          title={collapsed ? item.label : undefined}
+          title={collapsed ? (total > 0 ? `${item.label} (${total})` : item.label) : undefined}
           aria-current={!pageIsChild && isNavActive(pathname, { path: item.path, end: true }) ? 'page' : undefined}
           className={`${itemClass(active, collapsed)} min-w-0 flex-1`}
         >
-          <item.icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-cobalt' : 'text-adm-subtle'}`} strokeWidth={1.75} aria-hidden />
-          <span className={collapsed ? 'sr-only' : 'truncate'}>{item.label}</span>
+          <span className="relative flex shrink-0">
+            <item.icon className={`h-[18px] w-[18px] ${active ? 'text-cobalt' : 'text-adm-subtle'}`} strokeWidth={1.75} aria-hidden />
+            {collapsed && <NavBadge count={total} corner />}
+          </span>
+          <span className={collapsed ? 'sr-only' : 'truncate'}>
+            {item.label}
+            {collapsed && total > 0 && `, ${total} perlu ditindaklanjuti`}
+          </span>
+          {/* Submenu terbuka: angka tampil per anak, jadi induk tidak mengulangnya */}
+          {!collapsed && !open && <NavBadge count={total} />}
         </Link>
         {!collapsed && (
           <button
@@ -181,27 +219,25 @@ const NavGroupItem: React.FC<{
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="ml-[21px] overflow-hidden border-l border-adm-line pl-3"
           >
-            {item.children!.map((child) => (
-              <li key={child.path} className="pt-0.5">
-                <NavLink
-                  to={child.path}
-                  end={child.end}
-                  onClick={onNavigate}
-                  className={({ isActive }) =>
-                    `flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] transition-colors ${focusRing} ${
+            {item.children!.map((child) => {
+              const isActive = child.path === activeChildPath;
+              return (
+                <li key={child.path} className="pt-0.5">
+                  <Link
+                    to={child.path}
+                    onClick={onNavigate}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] transition-colors ${focusRing} ${
                       isActive ? 'bg-adm-hover font-semibold text-adm-fg' : 'font-medium text-adm-muted hover:bg-adm-hover/70 hover:text-adm-fg'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <child.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-cobalt' : 'text-adm-subtle'}`} strokeWidth={1.75} aria-hidden />
-                      <span className="truncate">{child.label}</span>
-                    </>
-                  )}
-                </NavLink>
-              </li>
-            ))}
+                    }`}
+                  >
+                    <child.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-cobalt' : 'text-adm-subtle'}`} strokeWidth={1.75} aria-hidden />
+                    <span className="truncate">{child.label}</span>
+                    <NavBadge count={childCount(child.badge)} />
+                  </Link>
+                </li>
+              );
+            })}
           </motion.ul>
         )}
       </AnimatePresence>
@@ -216,6 +252,8 @@ const NavGroupItem: React.FC<{
 const Sidebar: React.FC = () => {
   const { isSidebarCollapsed, toggleSidebar, isMobileSidebarOpen, toggleMobileSidebar } = useStore();
   const location = useLocation();
+  // Dimuat sekali di sini, dipakai sidebar desktop dan drawer HP
+  const badges = useAdminNavBadges();
   const close = () => toggleMobileSidebar(false);
 
   useEffect(() => {
@@ -244,7 +282,7 @@ const Sidebar: React.FC = () => {
           isSidebarCollapsed ? 'w-[68px]' : 'w-[248px]'
         }`}
       >
-        <SidebarContent collapsed={isSidebarCollapsed} onToggle={toggleSidebar} />
+        <SidebarContent collapsed={isSidebarCollapsed} badges={badges} onToggle={toggleSidebar} />
       </aside>
 
       <AnimatePresence>
@@ -269,7 +307,7 @@ const Sidebar: React.FC = () => {
               aria-label="Menu admin"
               className="absolute bottom-[max(8px,env(safe-area-inset-bottom))] left-[max(8px,env(safe-area-inset-left))] top-[max(8px,env(safe-area-inset-top))] w-[272px] max-w-[85vw] rounded-[20px] shadow-float"
             >
-              <SidebarContent onClose={close} onNavigate={close} />
+              <SidebarContent badges={badges} onClose={close} onNavigate={close} />
             </motion.div>
           </div>
         )}

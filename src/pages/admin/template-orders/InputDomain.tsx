@@ -20,6 +20,7 @@ import {
   SkeletonText,
   cn,
 } from '../../../components/admin/ui';
+import { refreshAdminNavBadges } from '../../../components/admin/useAdminNavBadges';
 import { ApiError, apiPost, errorMessage } from '../../../lib/api';
 import { formatRupiah, formatTanggal, type Order, type Site } from '../../../types/platform';
 import { useApiQuery, useToast, type ToastTone } from './shared/hooks';
@@ -42,6 +43,7 @@ export default function InputDomain() {
     setActivated((prev) => [result, ...prev.filter((a) => a.order.id !== result.order.id)]);
     show('success', `Template aktif & CMS terbuka untuk ${result.site.domain}.`);
     list.reload();
+    refreshAdminNavBadges();
   };
 
   return (

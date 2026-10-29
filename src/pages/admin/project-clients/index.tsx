@@ -31,6 +31,7 @@ import {
   Tr,
   cn,
 } from '../../../components/admin/ui';
+import { refreshAdminNavBadges } from '../../../components/admin/useAdminNavBadges';
 import { apiPost, errorMessage } from '../../../lib/api';
 import { useApiQuery, useToast } from '../template-orders/shared/hooks';
 import { Toast } from '../template-orders/shared/OrderUi';
@@ -147,6 +148,8 @@ export default function ProjectClients() {
   const handleSaved = (isEdit: boolean, name: string) => {
     closeForm();
     projectsQuery.reload();
+    // Status pesanan custom dari website bisa berubah: angka "Project Clients" di sidebar ikut dimuat ulang
+    refreshAdminNavBadges();
     show('success', isEdit ? `Proyek "${name}" berhasil diperbarui.` : `Proyek "${name}" berhasil ditambahkan.`);
   };
 
@@ -159,6 +162,7 @@ export default function ProjectClients() {
       setToDelete(null);
       if (viewing?.id === toDelete.id) setViewOpen(false);
       projectsQuery.reload();
+      refreshAdminNavBadges();
     } catch (err) {
       show('error', `Gagal menghapus proyek: ${errorMessage(err, 'kesalahan tidak diketahui')}`);
     } finally {
