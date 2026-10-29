@@ -133,7 +133,7 @@ export const sparringContent: SiteContent = {
     eyebrow: 'Turnamen',
     title: 'Turnamen bulan ini',
     subtitle: 'Format Americano, Mexicano, dan liga ganda untuk berbagai level.',
-    image: sparringPhoto('match'),
+    image: sparringPhoto('match-v2'),
     button_label: 'Daftar',
     note: 'Jadwal turnamen contoh; pendaftaran dikonfirmasi admin lewat WhatsApp.',
     items: [
@@ -189,12 +189,12 @@ export const sparringContent: SiteContent = {
     title: 'Suasana di lapangan',
     subtitle: '',
     items: [
-      { image: sparringPhoto('galeri-smash'), caption: 'Smash di Court 3' },
+      { image: sparringPhoto('galeri-smash-v2'), caption: 'Smash di Court 3' },
       { image: sparringPhoto('galeri-blur'), caption: 'Reli malam di lapangan indoor' },
       { image: sparringPhoto('galeri-mabar'), caption: 'Jeda di net sebelum set berikutnya' },
       { image: sparringPhoto('galeri-rally'), caption: 'Mabar Jumat malam' },
       { image: sparringPhoto('galeri-bola'), caption: 'Bola siap untuk kelas pemula' },
-      { image: sparringPhoto('galeri-serve'), caption: 'Servis pembuka' },
+      { image: sparringPhoto('galeri-serve-v2'), caption: 'Servis pembuka' },
     ],
   },
   faq: {

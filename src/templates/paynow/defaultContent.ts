@@ -66,7 +66,7 @@ export const paynowContent: SiteContent = {
     secondary_url: '',
     header_label: 'Daftar merchant',
     header_url: '',
-    image: paynowPhoto('hero'),
+    image: paynowPhoto('hero-v2'),
     chips: [{ label: 'PIN & biometrik' }, { label: 'Notifikasi real-time' }, { label: 'Bantuan 24 jam' }],
     app_greeting: 'Halo, Rani',
     balance_label: 'Saldo PayNow',
@@ -179,7 +179,7 @@ export const paynowContent: SiteContent = {
     eyebrow: 'Keamanan',
     title: 'Setiap transaksi dijaga berlapis',
     subtitle: 'Kunci akun tetap di tangan Anda, dan setiap gerakan saldo langsung terlihat.',
-    image: paynowPhoto('keamanan'),
+    image: paynowPhoto('keamanan-v2'),
     badge: 'Masuk dengan sidik jari',
     items: [
       { title: 'PIN 6 digit', text: 'Diminta di setiap pembayaran dan transfer.' },

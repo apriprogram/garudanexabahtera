@@ -1,8 +1,8 @@
 // Registry foto demo SmashHall (GOR SmashHall, GOR & klub badminton FIKTIF di Bandung). Semua foto asli dari Unsplash
 // (Unsplash License, bukan Unsplash+), WebP teroptimasi, kredit di public/assets/templates/photos/CREDITS.md (section
-// "SmashHall"). Logo merek, bendera, dan papan tulisan di foto hero & anak dihapus dengan retus klon (tanpa noda blur);
-// di foto lain tulisan spanduk/logo yang masih terbaca dikaburkan saat dipotong. Foto hero dicerminkan agar pemain
-// berada di sisi kanan (teks hero di kiri).
+// "SmashHall"). Logo merek, bendera, dan papan tulisan di foto hero, anak, dan galeri latihan, serta spanduk di dinding
+// foto lapangan dan galeri latihan dihapus dengan retus klon (tanpa noda blur); di foto lain tulisan/logo kecil yang
+// masih terbaca dikaburkan saat dipotong. Foto hero dicerminkan agar pemain berada di sisi kanan (teks hero di kiri).
 //
 // Konvensi file (kit/photos.ts):
 //   hero          → `<kunci>-1920.webp` + `-1280.webp` + `-800.webp` (16:9 1920×1080)
@@ -19,7 +19,7 @@ const HERO: readonly KitPhotoSpec[] = [
 
 const BASE = definePhotos({
   scenes: [
-    ['smashhall-lapangan', 1200, 900, 'Deretan lapangan bulu tangkis indoor berlantai biru dengan net terpasang di gedung berdinding biru muda'],
+    ['smashhall-lapangan-v2', 1200, 900, 'Deretan lapangan bulu tangkis indoor berlantai biru dengan net terpasang di gedung berdinding biru muda'],
     ['smashhall-anak-v2', 1200, 900, 'Dua anak laki-laki memegang raket bersiap bermain bulu tangkis di lapangan hijau'],
     ['smashhall-remaja', 1200, 900, 'Remaja putri berkacamata menjangkau kok dengan raket di lapangan bulu tangkis indoor'],
     ['smashhall-dewasa', 1200, 900, 'Empat orang dewasa bermain ganda bulu tangkis di lapangan biru dalam gedung'],
@@ -31,7 +31,7 @@ const BASE = definePhotos({
     ['smashhall-galeri-smash', 1600, 900, 'Pemain bulu tangkis melompat tinggi untuk smash di lapangan indoor yang gelap'],
     ['smashhall-galeri-raket', 1200, 800, 'Dua pemain muda di lapangan hijau terlihat dari balik bingkai raket'],
     ['smashhall-galeri-net', 1200, 800, 'Kok putih tersangkut di bibir net dengan lapangan biru di latar belakang'],
-    ['smashhall-galeri-latihan', 1200, 800, 'Pemain pria menjangkau kok di atas kepala saat latihan di gedung bulu tangkis'],
+    ['smashhall-galeri-latihan-v2', 1200, 800, 'Pemain pria menjangkau kok di atas kepala saat latihan di gedung bulu tangkis'],
     ['smashhall-galeri-senar', 1200, 800, 'Tangan menggenggam raket bulu tangkis merah di atas lantai kayu lapangan'],
   ],
 });

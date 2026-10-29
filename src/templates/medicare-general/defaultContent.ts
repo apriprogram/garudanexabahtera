@@ -130,7 +130,7 @@ export const medicareContent: SiteContent = {
         title: 'Radiologi',
         text: 'Rontgen dan USG dengan surat permintaan dari dokter.',
         hours: 'Senin–Sabtu 07.00–21.00',
-        image: medicarePhoto('radiologi'),
+        image: medicarePhoto('radiologi-v2'),
       },
       {
         title: 'Farmasi',
@@ -148,7 +148,7 @@ export const medicareContent: SiteContent = {
     call_label: 'Telepon IGD',
     ambulance_label: 'Ambulans',
     note: 'Nomor darurat nasional: 119. Bila sempat, telepon dulu agar petugas bersiap.',
-    image: medicarePhoto('igd'),
+    image: medicarePhoto('igd-v2'),
     steps: [
       { title: 'Telepon IGD', text: 'Sebutkan kondisi pasien dan lokasi Anda.' },
       { title: 'Datang langsung', text: 'Pintu IGD di sisi timur, dekat parkir depan.' },
@@ -178,13 +178,13 @@ export const medicareContent: SiteContent = {
         name: 'Kelas 1',
         capacity: '2 pasien per kamar',
         facilities: 'Kamar mandi dalam · AC · TV · Tirai pemisah · Kursi penunggu',
-        image: medicarePhoto('kamar-kelas-1'),
+        image: medicarePhoto('kamar-kelas-1-v2'),
       },
       {
         name: 'Kelas 2',
         capacity: '3 pasien per kamar',
         facilities: 'Kamar mandi dalam · AC · Tirai pemisah · Kursi penunggu',
-        image: medicarePhoto('kamar-kelas-2'),
+        image: medicarePhoto('kamar-kelas-2-v2'),
       },
       {
         name: 'Kelas 3',

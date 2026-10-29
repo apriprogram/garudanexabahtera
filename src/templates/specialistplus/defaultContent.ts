@@ -189,7 +189,7 @@ export const specialistplusContent: SiteContent = {
         name: 'CT scan 128 irisan',
         text: 'Pencitraan cepat untuk kepala, dada, perut, dan pembuluh darah.',
         specs: 'Irisan: 128\nDurasi: 5–15 menit\nLokasi: Lt. 1 · Radiologi',
-        image: spxPhoto('ct'),
+        image: spxPhoto('ct-v2'),
       },
       {
         code: 'CATH',
@@ -210,7 +210,7 @@ export const specialistplusContent: SiteContent = {
         name: 'Lab otomatis',
         text: 'Analisis kimia darah dan hematologi dengan alat otomatis.',
         specs: 'Kapasitas: 400 tes/jam\nJenis tes: 120+\nLokasi: Lt. 1 · Laboratorium',
-        image: spxPhoto('lab'),
+        image: spxPhoto('lab-v2'),
       },
     ],
   },

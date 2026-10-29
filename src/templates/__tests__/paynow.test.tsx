@@ -181,7 +181,7 @@ describe('PayNow: skema & konten bawaan', () => {
     expect(c.brand.logo).toBe('');
     expect(c.brand.accent_color).toBe('#4B3FE4');
     expect(c.contact.whatsapp).toBe('081234567890');
-    expect(c.hero.image).toBe('/assets/templates/photos/paynow-hero-1920.webp');
+    expect(c.hero.image).toBe('/assets/templates/photos/paynow-hero-v2-1920.webp');
     for (const s of def.sections) if (s.key !== 'brand') expect(c[s.key].enabled, s.key).toBe(true);
     const photos = JSON.stringify(c).match(/\/assets\/templates\/photos\/[a-z0-9-]+\.webp/g) ?? [];
     for (const src of photos) expect(PAYNOW_PHOTOS.asset(src), src).not.toBeNull();
@@ -219,7 +219,7 @@ describe('PayNow: skema & konten bawaan', () => {
 
   it('foto demo ringan: hero 800/1280/1920, WebP ≤ 140 KB per file, 800w ≤ 90 KB, total ≤ 2,5 MB', () => {
     expect(PAYNOW_PHOTOS.asset(def.defaultContent.hero.image as string)!.srcSet).toBe(
-      '/assets/templates/photos/paynow-hero-800.webp 800w, /assets/templates/photos/paynow-hero-1280.webp 1280w, /assets/templates/photos/paynow-hero-1920.webp 1920w',
+      '/assets/templates/photos/paynow-hero-v2-800.webp 800w, /assets/templates/photos/paynow-hero-v2-1280.webp 1280w, /assets/templates/photos/paynow-hero-v2-1920.webp 1920w',
     );
     let total = 0;
     for (const key of PAYNOW_PHOTOS.keys) {
@@ -565,7 +565,7 @@ describe('PayNow: demo', () => {
     expect(text(hero.querySelector('h1'))).toBe('Bayar apa saja, cukup dari satu aplikasi');
     expect(text(hero.querySelector('h1 span'))).toBe('satu aplikasi');
     const img = hero.querySelector<HTMLImageElement>('img[fetchpriority="high"]')!;
-    expect(img.getAttribute('src')).toBe('/assets/templates/photos/paynow-hero-1920.webp');
+    expect(img.getAttribute('src')).toBe('/assets/templates/photos/paynow-hero-v2-1920.webp');
     expect(img.getAttribute('srcset')).toContain(' 800w');
     expect(img.getAttribute('srcset')).toContain(' 1280w');
     expect(img.getAttribute('srcset')).toContain(' 1920w');
@@ -605,7 +605,7 @@ describe('PayNow: demo', () => {
     expect(within(hero).getByRole('link', { name: 'Unduh aplikasi' })).toHaveAttribute('href', '#download');
     expect(within(hero).getByRole('link', { name: 'Untuk merchant' })).toHaveAttribute('href', '#fees');
     const eager = Array.from(container.querySelectorAll('img')).filter((i) => i.getAttribute('loading') !== 'lazy');
-    expect(eager.map((i) => i.getAttribute('src'))).toEqual(['/assets/templates/photos/paynow-hero-1920.webp']);
+    expect(eager.map((i) => i.getAttribute('src'))).toEqual(['/assets/templates/photos/paynow-hero-v2-1920.webp']);
     expect(container.querySelectorAll('img[fetchpriority="high"]')).toHaveLength(1);
   });
 

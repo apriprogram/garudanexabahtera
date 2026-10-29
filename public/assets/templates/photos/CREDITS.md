@@ -774,9 +774,13 @@ tegak 4:5 `-960.webp` + `-800.webp`; komunitas 16:9 `-1600.webp` + `-800.webp`. 
 Unsplash (Unsplash License, bukan Unsplash+/premium, URL di images.unsplash.com) 2026-10-28, lalu dipotong dan
 dikompres ke WebP. Suntingan: merek yang terbaca dihapus — muka raket "WIP" pada `sparring-padel-hero-*` dan
 `sparring-padel-court-classic-*` ditutup bidang raket polos gelap berlubang (digambar ulang, tepi & tulisan bingkai
-dikaburkan), muka raket pada `sparring-padel-galeri-serve-*` dikaburkan (juga teks di bingkai & gagang raket); spanduk
-"VPC", sablon celana, dan tulisan di tiang pada `sparring-padel-galeri-smash-*`; raket bergaris tiga, sablon kaus, dan
-logo kecil di kaus pada `sparring-padel-match-*`; tulisan di tiga bola pada `sparring-padel-galeri-bola-*`. Hero
+dikaburkan); tulisan di tiga bola pada `sparring-padel-galeri-bola-*`. Tulisan "WIP"/"PERA" dan logo di bingkai raket
+pada `sparring-padel-galeri-serve-v2-*`; spanduk "VPC"/"WTF!", sablon celana, dan tulisan di tiang pada
+`sparring-padel-galeri-smash-v2-*`; serta raket bergaris tiga, sablon kaus, dan logo kecil di kaus pada
+`sparring-padel-match-v2-*` dihapus dengan retus klon (ditambal tekstur dari foto yang sama, tanpa blur; menggantikan
+blur sebelumnya, 2026-10-29; disimpan dengan nama baru `-v2` karena Cloudflare menyimpan file lama per URL selama 30
+hari; `sparring-padel-match-*`, `sparring-padel-galeri-smash-*`, dan `sparring-padel-galeri-serve-*` lama tetap ada
+untuk konten situs yang masih menautnya). Muka raket `sparring-padel-galeri-serve-v2-*` (pola tanpa tulisan) tetap. Hero
 1920 sedikit dihaluskan (blur 1px) agar ringan. Tepi hitam kanan `sparring-padel-court-panorama-*` dipotong. Nama klub,
 alamat, harga, jadwal, turnamen, angka, dan orang di demo fiktif dan tidak berhubungan dengan orang atau tempat di foto.
 
@@ -787,11 +791,11 @@ alamat, harga, jadwal, turnamen, angka, dan orang di demo fiktif dan tidak berhu
 | `sparring-padel-court-classic-*` | Pemain padel pria bersiap memukul bola di lapangan indoor biru | https://unsplash.com/photos/aYTK2HNocNw | Vincenzo Morelli |
 | `sparring-padel-court-open-*` | Lapangan padel outdoor biru berdinding kaca dan jaring | https://unsplash.com/photos/1qI31edeY4M | Marija Zaric |
 | `sparring-padel-court-rooftop-*` | Lapangan padel merah beratap membran di atap gedung kota | https://unsplash.com/photos/z1txOkkTgGQ | Fiqih Alfarish |
-| `sparring-padel-match-*` | Empat pemain padel bersalaman di net setelah pertandingan | https://unsplash.com/photos/Gqr4pHQXRQU | Fiqih Alfarish |
+| `sparring-padel-match-v2-*` | Empat pemain padel bersalaman di net setelah pertandingan (sablon kaus, logo kaus, dan tiga garis di raket dihapus dengan retus klon) | https://unsplash.com/photos/Gqr4pHQXRQU | Fiqih Alfarish |
 | `sparring-padel-rental-*` | Bola kuning di lantai biru dengan bayangan jaring | https://unsplash.com/photos/8iZbdNevfhY | Ahmed |
 | `sparring-padel-night-*` | Deretan lapangan padel biru dilihat dari udara pada malam hari | https://unsplash.com/photos/qUp58N3O1GI | P-squared Padel |
-| `sparring-padel-galeri-smash-*` | Pemain padel melompat untuk smash di lapangan indoor | https://unsplash.com/photos/OjbTWGZGX28 | erjola qerimi |
-| `sparring-padel-galeri-serve-*` | Pemain padel melempar bola untuk servis di depan net | https://unsplash.com/photos/ScuN2Puav48 | Vincenzo Morelli |
+| `sparring-padel-galeri-smash-v2-*` | Pemain padel melompat untuk smash di lapangan indoor (tulisan spanduk, tiang, dan celana dihapus dengan retus klon) | https://unsplash.com/photos/OjbTWGZGX28 | erjola qerimi |
+| `sparring-padel-galeri-serve-v2-*` | Pemain padel melempar bola untuk servis di depan net (tulisan dan logo di bingkai raket dihapus dengan retus klon) | https://unsplash.com/photos/ScuN2Puav48 | Vincenzo Morelli |
 | `sparring-padel-galeri-rally-*` | Gerak kabur pemain padel berlari di lapangan biru | https://unsplash.com/photos/7k96cUzHI1o | Olegs Jonins |
 | `sparring-padel-galeri-blur-*` | Pemain padel bergerak cepat di lapangan indoor pada malam hari | https://unsplash.com/photos/EtJ71uksmyU | Olegs Jonins |
 | `sparring-padel-galeri-mabar-*` | Dua pemain padel berdiri di dekat net dengan raket dan bola | https://unsplash.com/photos/n0Vu98G14iQ | Andrew Jooste |
@@ -807,15 +811,24 @@ sepatu dihapus dengan retus klon (ditambal motif kain, kulit, dan lantai dari fo
 logo dan tulisan sponsor di kedua kaus, bendera, lencana dan logo celana, serta dua papan tulisan di dinding juga
 dihapus dengan retus klon (2026-10-29, menggantikan blur sebelumnya; disimpan dengan nama baru `smashhall-hero-v2-*` dan
 `smashhall-anak-v2-*` karena Cloudflare menyimpan file lama per URL selama 30 hari; `smashhall-hero-*` dan `smashhall-anak-*` lama
-berisi foto yang sama untuk konten situs yang masih menautnya). Spanduk merek di dinding (lapangan), logo celana
-dan spanduk (galeri latihan), papan tulisan dan logo kaus (galeri raket), logo pada wristband (galeri senar), serta sisa
-tulisan spanduk di tribun (kejuaraan, dipotong ke sisi kiri panorama) dikaburkan (blur). Nama GOR, pelatih, juara
-turnamen, dan pelanggan di demo fiktif dan tidak berhubungan dengan orang atau tempat di foto.
+berisi foto yang sama untuk konten situs yang masih menautnya). Spanduk merek di dinding foto lapangan juga dihapus
+dengan retus klon (ditambal dinding dari foto yang sama, tanpa blur). Di foto galeri latihan, spanduk acara, orang
+yang berdiri di depannya, latar terang di tepi kanan, net yang tergantung di tiang net (jaring dan pita atasnya),
+serta tiang tipis berikut pangkalnya di atas balok putih kecil di kiri tiang net dihapus dengan retus klon (ditambal
+dinding, lantai, dan permukaan balok dari foto yang sama, tanpa blur); tiang net digambar ulang di posisi semula dan
+tepi atas balok putih itu dibentuk ulang lurus dari bagian balok yang bersih. Logo merek di celana dan tulisan pada
+papan di tepi kiri juga dihapus dengan retus klon (ditambal motif kain dan permukaan papan), sehingga foto galeri
+latihan tidak lagi memakai blur. Foto lapangan dan galeri latihan disunting 2026-10-29 (menggantikan blur sebelumnya)
+dan disimpan dengan nama baru `smashhall-lapangan-v2-*` dan `smashhall-galeri-latihan-v2-*`; `smashhall-lapangan-*`
+dan `smashhall-galeri-latihan-*` lama tetap ada untuk konten situs yang masih menautnya. Papan tulisan dan logo kaus
+(galeri raket), logo pada wristband (galeri senar), serta sisa tulisan spanduk di tribun (kejuaraan, dipotong ke sisi
+kiri panorama) dikaburkan (blur). Nama GOR, pelatih, juara turnamen, dan pelanggan di demo fiktif dan tidak
+berhubungan dengan orang atau tempat di foto.
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
 | `smashhall-hero-v2-*` | Pemain bulu tangkis menjangkau kok di lapangan hijau yang terang (dicerminkan, logo diretus) | https://unsplash.com/photos/rl1XrMSfkAo | Dmitriy Ignatenko |
-| `smashhall-lapangan-*` | Lapangan bulu tangkis indoor berlantai biru di gedung berdinding biru | https://unsplash.com/photos/AILEpOyczIk | Palak Pitroda |
+| `smashhall-lapangan-v2-*` | Lapangan bulu tangkis indoor berlantai biru di gedung berdinding biru (spanduk merek di dinding dihapus dengan retus klon) | https://unsplash.com/photos/AILEpOyczIk | Palak Pitroda |
 | `smashhall-anak-v2-*` | Dua anak bersiap bermain bulu tangkis di lapangan hijau (logo dan papan tulisan diretus) | https://unsplash.com/photos/LHs86rqXEZI | Irish83 |
 | `smashhall-remaja-*` | Remaja putri menjangkau kok di lapangan indoor | https://unsplash.com/photos/TaPJ1bff2PM | Yoyo Hins Itta |
 | `smashhall-dewasa-*` | Empat orang bermain ganda di lapangan biru | https://unsplash.com/photos/0Zq9PQJvEv8 | Evan Marvell |
@@ -827,7 +840,7 @@ turnamen, dan pelanggan di demo fiktif dan tidak berhubungan dengan orang atau t
 | `smashhall-galeri-smash-*` | Pemain melompat untuk smash di lapangan indoor gelap | https://unsplash.com/photos/rjWfNR_AC5g | Muktasim Azlan |
 | `smashhall-galeri-raket-*` | Dua pemain muda terlihat dari balik bingkai raket | https://unsplash.com/photos/pRUw9c66zJA | Irish83 |
 | `smashhall-galeri-net-*` | Kok di bibir net dengan lapangan biru | https://unsplash.com/photos/VePgmkq3hHI | Stephan Rothe |
-| `smashhall-galeri-latihan-*` | Pemain menjangkau kok di atas kepala saat latihan | https://unsplash.com/photos/ek-J1s7qlTs | Irish83 |
+| `smashhall-galeri-latihan-v2-*` | Pemain menjangkau kok di atas kepala saat latihan (spanduk acara, orang di depannya, net, tiang tipis, logo celana, dan tulisan papan dihapus dengan retus klon) | https://unsplash.com/photos/ek-J1s7qlTs | Irish83 |
 | `smashhall-galeri-senar-*` | Tangan menggenggam raket merah di atas lantai kayu | https://unsplash.com/photos/d1fFfk3bqMA | Mustafa Fatemi |
 
 ## PayNow (merek dompet digital & payment gateway fiktif)
@@ -835,19 +848,23 @@ turnamen, dan pelanggan di demo fiktif dan tidak berhubungan dengan orang atau t
 Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (tampil di bawah lapisan gradasi indigo yang pekat); foto tegak 4:5
 `-960.webp` + `-800.webp`; mendatar 3:2 `-1200.webp` + `-800.webp`; potret 1:1 `-480.webp` + `-240.webp`. Dicek
 lisensinya di halaman foto (Unsplash License, bukan Unsplash+) 2026-10-28, lalu dipotong dan dikompres ke WebP lewat
-CDN Unsplash. Suntingan: tulisan beraksara Thai di kaus pria latar belakang foto hero dikaburkan; foto warung dipotong agar papan nama gerobak di kanan tidak ikut; foto pedagang pasar dipotong
-agar kemasan bermerek yang tergantung di atas tidak ikut; potret dipotong persegi di wajah. Tidak ada kode QR atau logo
-bank/e-wallet/kartu yang terbaca. Merek PayNow, nama merchant, dan nama orang di cerita merchant demo fiktif dan tidak
-berhubungan dengan orang, usaha, atau tempat di foto.
+CDN Unsplash. Suntingan: tulisan beraksara Thai di kaus pria latar belakang foto hero dihapus dengan retus klon
+(ditambal kain dari foto yang sama, tanpa blur; menggantikan blur sebelumnya), begitu juga ikon aplikasi musik di widget
+layar HP foto keamanan (2026-10-29; disimpan dengan nama baru `paynow-hero-v2-*` dan `paynow-keamanan-v2-*` karena
+Cloudflare menyimpan file lama per URL selama 30 hari; `paynow-hero-*` dan `paynow-keamanan-*` lama tetap ada untuk
+konten situs yang masih menautnya); foto warung dipotong agar papan nama gerobak di kanan tidak ikut; foto pedagang
+pasar dipotong agar kemasan bermerek yang tergantung di atas tidak ikut; potret dipotong persegi di wajah. Tidak ada
+kode QR atau logo bank/e-wallet/kartu yang terbaca. Merek PayNow, nama merchant, dan nama orang di cerita merchant demo
+fiktif dan tidak berhubungan dengan orang, usaha, atau tempat di foto.
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
-| `paynow-hero-*` | Perempuan memeriksa ponsel di depan kios makanan yang terang pada malam hari (dipotong 16:9; tulisan di kaus pria latar belakang dikaburkan) | https://unsplash.com/photos/teBBORo5O1o | aung swam nyi |
+| `paynow-hero-v2-*` | Perempuan memeriksa ponsel di depan kios makanan yang terang pada malam hari (dipotong 16:9; tulisan di kaus pria latar belakang dihapus dengan retus klon) | https://unsplash.com/photos/teBBORo5O1o | aung swam nyi |
 | `paynow-qris-*` | Perempuan berkemeja putih mendekatkan ponsel ke mesin pembayaran di kafe (dipotong 4:5) | https://unsplash.com/photos/vXJGcIkmEH8 | Mark OFlynn |
 | `paynow-transfer-*` | Empat perempuan berkerudung melihat satu ponsel bersama (dipotong 4:5) | https://unsplash.com/photos/wCtv8Lxmvbw | Khanh Nguyen |
 | `paynow-tagihan-*` | Perempuan berkacamata duduk santai memegang ponsel di depan rak buku (dipotong 4:5) | https://unsplash.com/photos/EWA-t7oSHEY | Khanh Do |
 | `paynow-topup-*` | Perempuan berkemeja putih tertawa melihat ponselnya (dipotong 4:5) | https://unsplash.com/photos/R6dSBkz32B8 | Ghen Mar Cuaño |
-| `paynow-keamanan-*` | Tangan memegang ponsel dengan layar kunci menyala, lampu kota malam (dipotong 4:5) | https://unsplash.com/photos/ZLG6zrR9mXg | Wasis Riyan |
+| `paynow-keamanan-v2-*` | Tangan memegang ponsel dengan layar kunci menyala, lampu kota malam (dipotong 4:5; ikon aplikasi musik di layar dihapus dengan retus klon) | https://unsplash.com/photos/ZLG6zrR9mXg | Wasis Riyan |
 | `paynow-unduh-*` | Perempuan berkerudung tersenyum memegang ponsel dan minuman di bawah lampion merah (dipotong 4:5) | https://unsplash.com/photos/8yviKG3x8G4 | Ainur Iman |
 | `paynow-kopi-*` | Barista menuangkan susu ke gelas kopi di samping mesin espreso | https://unsplash.com/photos/gYsjG6_cTL4 | Yasamine June |
 | `paynow-warung-*` | Perempuan berkerudung makan dan membayar di warung pinggir jalan (dipotong 3:2; papan nama gerobak tidak ikut) | https://unsplash.com/photos/KgCdm9326Tc | Hobi industri |
@@ -861,24 +878,29 @@ berhubungan dengan orang, usaha, atau tempat di foto.
 
 Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; foto lain mendatar 3:2 `-1200.webp` + `-800.webp`. Dicek lisensinya
 di halaman foto (Unsplash License, bukan Unsplash+) 2026-10-28, lalu dipotong dan dikompres ke WebP. Suntingan: papan
-iklan di luar jendela, papan nama pintu, dan kertas pengumuman di dinding selasar (hero) dikaburkan; lambang layanan
-ambulans, logo kendaraan, pelat nomor, dan daun maple pada ambulans (igd) dikaburkan; nama merek dan logo pada mesin &
-meja pasien (radiologi) dikaburkan; merek pada ranjang pasien (kamar kelas 1 & 2) dan pada UPS (lab) dikaburkan; papan
-nama kecil di pintu masuk gedung dikaburkan. Nama rumah sakit, dokter, penjamin, dan orang di demo fiktif dan tidak
-berhubungan dengan orang, tempat, atau lembaga di foto; dokter di demo tidak memakai foto.
+iklan di luar jendela, papan nama pintu, dan kertas pengumuman di dinding selasar (hero) dikaburkan; merek pada UPS
+(lab) dan papan nama kecil di pintu masuk gedung dikaburkan. Lambang layanan ambulans, logo kendaraan, tulisan pelat
+nomor, dan daun maple pada ambulans (`medicare-general-igd-v2-*`); nama merek dan logo pada mesin & meja pasien
+(`medicare-general-radiologi-v2-*`); serta merek pada ranjang pasien (`medicare-general-kamar-kelas-1-v2-*` dan
+`medicare-general-kamar-kelas-2-v2-*`) dihapus dengan retus klon (ditambal permukaan dari foto yang sama, tanpa blur;
+menggantikan blur sebelumnya, 2026-10-29; disimpan dengan nama baru `-v2` karena Cloudflare menyimpan file lama per URL
+selama 30 hari; `medicare-general-igd-*`, `medicare-general-radiologi-*`, `medicare-general-kamar-kelas-1-*`, dan
+`medicare-general-kamar-kelas-2-*` lama tetap ada untuk konten situs yang masih menautnya). Nama rumah sakit, dokter,
+penjamin, dan orang di demo fiktif dan tidak berhubungan dengan orang, tempat, atau lembaga di foto; dokter di demo
+tidak memakai foto.
 
 | File | Isi | Halaman foto | Fotografer |
 | --- | --- | --- | --- |
 | `medicare-general-hero-*` | Selasar rumah sakit yang terang dengan dinding kaca melengkung dan kursi tunggu biru muda | https://unsplash.com/photos/ruHzyEwwZgo | Arturo Esparza |
 | `medicare-general-pendaftaran-*` | Ruang tunggu dengan sofa biru toska dan jendela loket | https://unsplash.com/photos/B_sK_xgzwVA | Benyamin Bohlouli |
-| `medicare-general-igd-*` | Ambulans putih bergaris oranye dan biru melaju di jalan kota | https://unsplash.com/photos/V5nq6u-Ce_U | Jonnica Hill |
+| `medicare-general-igd-v2-*` | Ambulans putih bergaris oranye dan biru melaju di jalan kota (lambang layanan ambulans, logo kendaraan, tulisan pelat nomor, dan daun maple dihapus dengan retus klon) | https://unsplash.com/photos/V5nq6u-Ce_U | Jonnica Hill |
 | `medicare-general-kamar-vvip-*` | Kamar rawat inap dengan ranjang pasien, meja kerja, dan lukisan | https://unsplash.com/photos/_fdWqec7VRo | Zoshua Colah |
 | `medicare-general-kamar-vip-*` | Kamar satu ranjang dengan sofa biru untuk penunggu | https://unsplash.com/photos/KF-h9HMxRKg | Martha Dominguez de Gouveia |
-| `medicare-general-kamar-kelas-1-*` | Kamar rawat inap dengan ranjang pasien dan monitor di dinding | https://unsplash.com/photos/3EIraOmufG4 | Irshad Pathan |
-| `medicare-general-kamar-kelas-2-*` | Ruang rawat inap dengan tiga ranjang pasien dan lantai biru | https://unsplash.com/photos/cTH0dAHdqtQ | Irshad Pathan |
+| `medicare-general-kamar-kelas-1-v2-*` | Kamar rawat inap dengan ranjang pasien dan monitor di dinding (merek di panel kaki ranjang, pelat logo, dan logo timbul di ranjang dihapus dengan retus klon) | https://unsplash.com/photos/3EIraOmufG4 | Irshad Pathan |
+| `medicare-general-kamar-kelas-2-v2-*` | Ruang rawat inap dengan tiga ranjang pasien dan lantai biru (merek di panel ranjang dan stiker merek di rangka ranjang dihapus dengan retus klon) | https://unsplash.com/photos/cTH0dAHdqtQ | Irshad Pathan |
 | `medicare-general-kamar-kelas-3-*` | Bangsal rawat inap dengan deretan ranjang dan tirai merah muda | https://unsplash.com/photos/zbpgmGe27p8 | Adhy Savala |
 | `medicare-general-lab-*` | Laboratorium dengan deretan alat analisis dan petugas berjas putih | https://unsplash.com/photos/oCLuFi9GYNA | National Cancer Institute |
-| `medicare-general-radiologi-*` | Ruang pemeriksaan dengan mesin pemindai berbentuk cincin | https://unsplash.com/photos/QTP8UKW_PgI | Accuray |
+| `medicare-general-radiologi-v2-*` | Ruang pemeriksaan dengan mesin pemindai berbentuk cincin (nama merek dan logo pada mesin & meja pasien dihapus dengan retus klon) | https://unsplash.com/photos/QTP8UKW_PgI | Accuray |
 | `medicare-general-farmasi-*` | Apoteker mengambil kotak obat dari rak | https://unsplash.com/photos/byGTytEGjBo | National Cancer Institute |
 | `medicare-general-gedung-*` | Gedung rumah sakit bata merah dengan kanopi pintu masuk | https://unsplash.com/photos/1c8sj2IO2I4 | National Cancer Institute |
 
@@ -918,10 +940,13 @@ alamat di demo fiktif dan tidak berhubungan dengan orang, ruangan, atau tempat d
 Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (foto latar selebar hero; dipotong lewat object-position, di ponsel
 hanya bagian tengah); foto alat & klinik 4:3 `-1200.webp` + `-800.webp` (1200×900); foto lobi 3:2 `-1200.webp` +
 `-800.webp` (1200×800). Dicek lisensinya di halaman foto (foto gratis di bawah Unsplash License, bukan Unsplash+)
-2026-10-28, lalu dipotong dan dikompres ke WebP. Suntingan (blur lokal saat dipotong, tanpa inpaint): tulisan merek pada
-mesin MRI, merek injektor kontras, lambang di jaket petugas, dan nomor gelang pasien di foto CT scan, tiga tulisan/logo
-merek di ruang kateterisasi (lengan C, meja, monitor), serta label merek alat dan pemindai di foto lab otomatis
-dikaburkan; foto lain hanya dipotong. Tidak ada pasien dalam keadaan darurat, darah, atau jarum yang tampil dekat.
+2026-10-28, lalu dipotong dan dikompres ke WebP. Suntingan: tulisan merek pada mesin MRI dan tiga tulisan/logo merek di
+ruang kateterisasi (lengan C, meja, monitor) dikaburkan (blur lokal saat dipotong); merek injektor kontras, lambang di
+jaket petugas, dan nomor gelang pasien di foto CT scan, serta label merek alat dan logo pemindai di foto lab otomatis
+dihapus dengan retus klon (ditambal permukaan dari foto yang sama, tanpa blur; menggantikan blur sebelumnya, 2026-10-29;
+disimpan dengan nama baru `specialistplus-ct-v2-*` dan `specialistplus-lab-v2-*` karena Cloudflare menyimpan file lama
+per URL selama 30 hari; `specialistplus-ct-*` dan `specialistplus-lab-*` lama tetap ada untuk konten situs yang masih
+menautnya); foto lain hanya dipotong. Tidak ada pasien dalam keadaan darurat, darah, atau jarum yang tampil dekat.
 Nama klinik, dokter, pasien di testimoni, jadwal, dan harga di demo fiktif dan tidak berhubungan dengan orang, rumah
 sakit, atau produsen alat di foto.
 
@@ -929,10 +954,10 @@ sakit, atau produsen alat di foto.
 | --- | --- | --- | --- |
 | `specialistplus-hero-*` | Ruang terapi modern dengan mesin pencitraan putih, lengan penunjuk, dan meja pasien (dipotong 16:9) | https://unsplash.com/photos/MhM8LiIzmZw | Accuray |
 | `specialistplus-mri-*` | Mesin MRI di ruang radiologi dengan lampu di langit-langit (tulisan merek pada gantry dikaburkan) | https://unsplash.com/photos/U9IriDpTcg4 | David Trinks |
-| `specialistplus-ct-*` | Petugas menyiapkan pasien berbaring di meja CT scan (merek injektor, lambang jaket, dan nomor gelang dikaburkan) | https://unsplash.com/photos/-N1bumMrRX0 | Navy Medicine |
+| `specialistplus-ct-v2-*` | Petugas menyiapkan pasien berbaring di meja CT scan (merek injektor, lambang jaket, dan nomor gelang dihapus dengan retus klon) | https://unsplash.com/photos/-N1bumMrRX0 | Navy Medicine |
 | `specialistplus-cathlab-*` | Ruang kateterisasi dengan lengan C, meja pasien, dan deretan monitor (tulisan & logo merek dikaburkan) | https://unsplash.com/photos/d7BwTSp3uQs | sandro porfirio |
 | `specialistplus-mammografi-*` | Petugas tersenyum mendampingi pasien di mesin mammografi | https://unsplash.com/photos/0izFVmwJ5pw | National Cancer Institute |
-| `specialistplus-lab-*` | Alat analisis laboratorium otomatis berpenutup bening dengan monitor (label merek dikaburkan) | https://unsplash.com/photos/6XVdhgyls-k | Mezidi Zineb |
+| `specialistplus-lab-v2-*` | Alat analisis laboratorium otomatis berpenutup bening dengan monitor (label merek alat dan logo pemindai dihapus dengan retus klon) | https://unsplash.com/photos/6XVdhgyls-k | Mezidi Zineb |
 | `specialistplus-jantung-*` | Kertas rekaman EKG dengan garis irama jantung | https://unsplash.com/photos/eqTmD-baDkU | Joachim Schnürle |
 | `specialistplus-ortopedi-*` | Model tulang belakang dengan bantalan sendi berwarna | https://unsplash.com/photos/5thrMBqG5E0 | Julius Toltesi |
 | `specialistplus-onkologi-*` | Mesin terapi radiasi dan meja pasien di ruang berlantai kayu | https://unsplash.com/photos/mBrfAiw_CZA | National Cancer Institute |

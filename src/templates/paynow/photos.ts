@@ -1,6 +1,7 @@
 // Registry foto demo PayNow (dompet digital & payment gateway fiktif). Semua foto asli dari Unsplash (Unsplash License,
-// bukan Unsplash+), WebP teroptimasi, kredit di public/assets/templates/photos/CREDITS.md (section "PayNow"). Merek
-// bank/e-wallet/kartu dan kode QR asli yang masih terbaca dikaburkan atau dipotong; foto TIDAK diubah ke SVG.
+// bukan Unsplash+), WebP teroptimasi, kredit di public/assets/templates/photos/CREDITS.md (section "PayNow"). Tulisan
+// di kaus (hero) dan ikon aplikasi musik di layar HP (keamanan) dihapus dengan retus klon (tanpa noda blur); merek
+// bank/e-wallet/kartu dan kode QR asli yang masih terbaca dipotong; foto TIDAK diubah ke SVG.
 //
 // Konvensi file (kit/photos.ts):
 //   hero          → `<kunci>-1920.webp` + `-1280.webp` + `-800.webp` (16:9 1920×1080, latar di bawah lapisan gradasi)
@@ -12,7 +13,7 @@ import { definePhotos, type KitPhotoSpec, type PhotoSet } from '../kit/photos';
 
 const DIR = '/assets/templates/photos';
 
-const HERO: readonly KitPhotoSpec[] = [['paynow-hero', 1920, 1080, 'Perempuan memeriksa ponsel di depan kios makanan yang terang pada malam hari']];
+const HERO: readonly KitPhotoSpec[] = [['paynow-hero-v2', 1920, 1080, 'Perempuan memeriksa ponsel di depan kios makanan yang terang pada malam hari']];
 
 const BASE = definePhotos({
   scenes: [
@@ -20,7 +21,7 @@ const BASE = definePhotos({
     ['paynow-transfer', 960, 1200, 'Empat perempuan berkerudung melihat layar ponsel bersama-sama'],
     ['paynow-tagihan', 960, 1200, 'Perempuan berkacamata duduk santai di kursi sambil memegang ponsel di depan rak buku'],
     ['paynow-topup', 960, 1200, 'Perempuan berkacamata tertawa sambil melihat layar ponselnya di luar ruangan'],
-    ['paynow-keamanan', 960, 1200, 'Tangan memegang ponsel dengan layar kunci menyala di tengah lampu kota malam hari'],
+    ['paynow-keamanan-v2', 960, 1200, 'Tangan memegang ponsel dengan layar kunci menyala di tengah lampu kota malam hari'],
     ['paynow-unduh', 960, 1200, 'Perempuan berkerudung tersenyum memegang ponsel dan minuman di bawah lampion merah'],
     ['paynow-kopi', 1200, 800, 'Barista menuangkan susu ke gelas kopi di samping mesin espreso'],
     ['paynow-warung', 1200, 800, 'Beberapa perempuan berkerudung makan dan membayar di warung makan pinggir jalan'],
@@ -60,5 +61,5 @@ export const PAYNOW_PHOTOS: PhotoSet = Object.freeze({
   keys: Object.freeze([...HERO.map((spec) => spec[0]), ...BASE.keys]),
 });
 
-/** Path foto demo untuk defaultContent, mis. `paynowPhoto('hero')` → `/assets/templates/photos/paynow-hero-1920.webp`. */
+/** Path foto demo untuk defaultContent, mis. `paynowPhoto('hero-v2')` → `/assets/templates/photos/paynow-hero-v2-1920.webp`. */
 export const paynowPhoto = (name: string): string => PAYNOW_PHOTOS.src(`paynow-${name}`);

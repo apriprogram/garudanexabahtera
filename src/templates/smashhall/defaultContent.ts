@@ -70,7 +70,7 @@ export const smashhallContent: SiteContent = {
     eyebrow: 'Fasilitas',
     title: 'Lapangan terang, lantai empuk, istirahat nyaman',
     subtitle: 'Delapan lapangan karpet vinyl dengan jarak aman antarlapangan.',
-    image: smashhallPhoto('lapangan'),
+    image: smashhallPhoto('lapangan-v2'),
     stats: [
       { value: '8', label: 'Lapangan karpet vinyl' },
       { value: '12 m', label: 'Tinggi plafon' },
@@ -217,7 +217,7 @@ export const smashhallContent: SiteContent = {
       { image: smashhallPhoto('galeri-smash'), caption: 'Smash di sesi sparing malam' },
       { image: smashhallPhoto('galeri-raket'), caption: 'Pemanasan sebelum latihan ganda' },
       { image: smashhallPhoto('galeri-net'), caption: 'Kok tersangkut di bibir net' },
-      { image: smashhallPhoto('galeri-latihan'), caption: 'Latihan pukulan atas' },
+      { image: smashhallPhoto('galeri-latihan-v2'), caption: 'Latihan pukulan atas' },
       { image: smashhallPhoto('galeri-senar'), caption: 'Siap menerima servis' },
     ],
   },

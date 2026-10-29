@@ -78,10 +78,10 @@ const lab = (patch: Partial<LabForm> = {}): LabForm => ({ ...EMPTY_LAB, reg: 'LA
 const PHOTO_KEYS = [
   'specialistplus-hero',
   'specialistplus-mri',
-  'specialistplus-ct',
+  'specialistplus-ct-v2',
   'specialistplus-cathlab',
   'specialistplus-mammografi',
-  'specialistplus-lab',
+  'specialistplus-lab-v2',
   'specialistplus-jantung',
   'specialistplus-ortopedi',
   'specialistplus-onkologi',
