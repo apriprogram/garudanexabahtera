@@ -2,11 +2,11 @@
 // Jalankan: npx vitest run src/templates/__tests__/paynow.test.tsx
 // PayNow (landing page dompet digital & payment gateway, batch 2026-10-28): skema CMS & konten demo, foto, salinan
 // jujur (tanpa klaim izin/pengawasan/sertifikasi, baris legal fiktif, "Contoh tarif"), helper model (palet gradasi dari
-// satu warna, menu, tujuan tautan, simulasi biaya dengan pembulatan, formulir merchant → pesan WhatsApp, pewarnaan kode),
-// demo (urutan section, hero wallet, header + menu HP, tab fitur & tab kode dengan papan ketik, simulasi biaya, salin
-// kode, akordeon, formulir), datar tanpa bayangan, gerak (pratinjau CMS diam, CSS pn- bergerbang data-tpl-motion), warna
-// tema, SEO situs pembeli, judul & gambar & tautan, konten opsional kosong, editor CMS, data katalog (migrasi 043 +
-// pratinjau), halaman katalog, dan konten aneh.
+// satu warna, menu, tujuan tautan, simulasi biaya dengan pembulatan, formulir merchant → pesan WhatsApp, pewarnaan kode,
+// kotak kartu notifikasi HP), demo (urutan section, hero wallet, header + menu HP, tab fitur & tab kode dengan papan
+// ketik, simulasi biaya, salin kode, akordeon, formulir), datar tanpa bayangan, gerak (pratinjau CMS diam, CSS pn-
+// bergerbang data-tpl-motion), warna tema, SEO situs pembeli, judul & gambar & tautan, konten opsional kosong, editor
+// CMS, data katalog (migrasi 043 + pratinjau), halaman katalog, dan konten aneh.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react';
@@ -42,6 +42,7 @@ import {
   merchantMessage,
   methodTone,
   navItems,
+  noteSlot,
   parseAmount,
   parsePercent,
   parseRate,
@@ -552,6 +553,35 @@ describe('PayNow: helper model', () => {
     ).toEqual(['coffee', 'food', 'basket', 'pill', 'wrench', 'shirt', 'scissors', 'bag', 'food', 'fruit', 'printer', 'school', 'store']);
     expect(['PIN 6 digit', 'Biometrik', 'Notifikasi real-time', 'Enkripsi data', 'Lainnya'].map(securityIcon)).toEqual(['pin', 'fingerprint', 'bell', 'lock', 'shield']);
   });
+
+  it('kotak kartu notifikasi HP: dari atas panel transaksi sampai baris utuh, tanpa sisa baris/panel yang menyembul', () => {
+    // px relatif kotak HP: tepi atas panel 100, blok di atasnya berakhir 85,5 (jarak panel 1,1em); bawah tiap baris,
+    // yang terakhir = tepi bawah panel
+    const slot = (rowBottoms: number[], need = 58, aboveBottom = 85.5) => noteSlot({ listTop: 100, aboveBottom, rowBottoms, need });
+    const check = (s: { top: number; height: number }, top: number, height: number) => {
+      expect(s.top).toBeCloseTo(top, 6);
+      expect(s.height).toBeCloseTo(height, 6);
+    };
+    // Judul daftar + baris 1 (isi contoh): tepi atas 2,5px di atas panel, tepi bawah 2,5px melewati garis pemisah
+    check(slot([168.3, 211.5, 254.7]), 97.5, 73.3);
+    // Tanpa judul daftar: baris 1 saja terlalu pendek → kartu naik ke ruang kosong di atas panel (≥ 6px dari blok di atas)
+    check(slot([149.4, 192.6, 235.8]), 93.9, 58);
+    // … ruang di atas panel tidak cukup → baris 2 ikut tertutup
+    check(slot([149.4, 192.6, 235.8], 58, 95), 97.5, 97.6);
+    // Satu baris: kartu sampai melewati tepi bawah panel; daftar hanya judul / baris habis → setinggi isinya
+    check(slot([174.9]), 97.5, 79.9);
+    check(slot([]), 97.5, 58);
+    check(slot([149.4], 70, 95), 97.5, 70);
+    // Aturannya: tepi atas tidak di bawah tepi atas panel, isi kartu muat, tepi bawah melewati bawah baris/panel yang
+    // tertutup (2,5px) atau di bawah semua baris
+    for (const [rows, need, above] of [[[168.3, 211.5, 254.7], 58, 85.5], [[149.4, 192.6, 235.8], 90, 85.5], [[149.4, 192.6], 140, 60], [[160, 200], 61, 85.5]] as const) {
+      const s = slot([...rows], need, above);
+      const bottom = s.top + s.height;
+      expect(s.top).toBeLessThanOrEqual(97.5);
+      expect(s.height).toBeGreaterThanOrEqual(need);
+      expect(rows.some((row) => Math.abs(bottom - row - 2.5) < 1e-9) || bottom > rows[rows.length - 1]).toBe(true);
+    }
+  });
 });
 
 describe('PayNow: demo', () => {
@@ -601,6 +631,38 @@ describe('PayNow: demo', () => {
     expect(items.map((li) => li.style.getPropertyValue('--pn-at'))).toEqual(['0.9s', '1.4s', '1.9s']);
     expect(items[0].className).not.toMatch(/(^|\s)hidden(\s|$)/);
     for (const li of items.slice(1)) expect(li.className).toContain('hidden @5xl:block');
+    // HP: kartu menutup judul + baris pertama transaksi utuh. Top & tinggi minimum dari ukuran mockup (--pn-note-top /
+    // --pn-note-h, ./hooks useNoteSlot + noteSlot di atas; jsdom tanpa tata letak → nilai em cadangan = isi contoh),
+    // teks satu baris, isi kartu dalam px (tidak ikut ukuran huruf peramban); tepinya ring tinta 1px, bukan bayangan
+    expect(phone.querySelector('[data-pn-app] > [data-pn-list] > ul > li')).not.toBeNull();
+    expect((phone as HTMLElement).style.getPropertyValue('--pn-note-top')).toBe('');
+    expect(items[0].className).toMatch(/(^|\s)top-\[var\(--pn-note-top,[\d.]+em\)\](\s|$)/);
+    expect(items[0].className).not.toMatch(/(^|\s)(@3xl:)?top-\[\d+%\]/);
+    const card = items[0].firstElementChild!;
+    expect(card.className).toMatch(/(^|\s)min-h-\[var\(--pn-note-h,[\d.]+em\)\] .*@5xl:min-h-0/);
+    expect(card.className).toMatch(/(^|\s)ring-1 ring-inset ring-\[#0E0F2C\]\//);
+    const cardClasses = [card, ...card.querySelectorAll('*')].map((el) => el.getAttribute('class') ?? '').join(' ');
+    expect(cardClasses).not.toMatch(/(^|\s)(p|px|py|gap|h|w|mt)-\d/);
+    // Teks: HP satu baris, layar lebar maks. dua baris (kartu tidak menumpuk ke kartu di bawahnya)
+    for (const line of card.querySelectorAll('span.min-w-0 > span')) expect(line.className).toContain('@max-5xl:truncate @5xl:line-clamp-2');
+    // Layar lebar: kartu di kiri HP hanya menimpa bingkai + tepi kosong layar, berhenti ≥ 2px sebelum konten layar
+    // (bingkai 0,6em + padding layar 1,1em = 1,7em dari kiri kotak HP; em = ukuran huruf HP di breakpoint itu), dan pada
+    // wadah tersempit (1024px, kolom teks berakhir 200px di kiri kotak HP) tidak masuk kolom teks
+    for (const li of items) {
+      for (const bp of ['@5xl', '@7xl']) {
+        const em = Number(new RegExp(`${bp}:text-\\[([\\d.]+)px\\]`).exec(phone.className)?.[1]);
+        const left = Number(new RegExp(`${bp}:left-\\[(-?\\d+)px\\]`).exec(li.className)?.[1]);
+        const width = Number(new RegExp(`${bp}:w-\\[(\\d+)px\\]`).exec(li.className)?.[1]);
+        expect(left + width, `${bp} ${li.textContent}`).toBeLessThanOrEqual(1.7 * em - 2);
+        if (bp === '@5xl') expect(left, `${bp} ${li.textContent}`).toBeGreaterThanOrEqual(-200);
+      }
+    }
+    // … juga selama muncul: pn-notif tanpa geser mendatar dan tanpa membesar (skala dari tengah ≤ 1), jadi selama animasi
+    // kotak kartu tidak pernah keluar dari kotak diamnya ke arah layar HP
+    const notifFrom = /@keyframes pn-notif\s*\{\s*from\s*\{([^}]*)\}/.exec(readFileSync(resolve(DIR, 'paynow.css'), 'utf8'))![1];
+    expect(notifFrom).toMatch(/transform:\s*translate3d\(0(px)?,/);
+    expect(Number(/scale\(([\d.]+)\)/.exec(notifFrom)?.[1] ?? 1)).toBeLessThanOrEqual(1);
+    expect(notifFrom).not.toMatch(/translateX|translate\(|rotate|skew/);
     expect(Array.from(hero.querySelectorAll('ul')).find((ul) => ul.textContent === 'PIN & biometrikNotifikasi real-timeBantuan 24 jam')).toBeDefined();
     expect(within(hero).getByRole('link', { name: 'Unduh aplikasi' })).toHaveAttribute('href', '#download');
     expect(within(hero).getByRole('link', { name: 'Untuk merchant' })).toHaveAttribute('href', '#fees');

@@ -1,9 +1,11 @@
 // Hook kecil PayNow: section yang sedang dibaca (garis aktif di menu), "sudah digulir" (header transparan → malam
-// indigo), dan angka hasil simulasi yang bergulir pelan (≤ 400 ms, hanya bila gerak menyala). Tanpa
-// IntersectionObserver / requestAnimationFrame (perayap, jsdom lama) → nilai akhir langsung, tanpa error. Ditulis di
-// folder ini (pola sama dengan jumantara/hooks.ts, tidak diimpor dari sana).
-import { useEffect, useRef, useState, type RefObject } from 'react';
+// indigo), angka hasil simulasi yang bergulir pelan (≤ 400 ms, hanya bila gerak menyala), dan kotak kartu notifikasi
+// HP hero yang diukur dari mockup. Tanpa IntersectionObserver / requestAnimationFrame / ResizeObserver / tata letak
+// (perayap, jsdom lama) → nilai akhir atau cadangan langsung, tanpa error. Ditulis di folder ini (pola sama dengan
+// jumantara/hooks.ts, tidak diimpor dari sana).
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { useSiteData } from '../shared/siteData';
+import { noteSlot, type NoteSlot } from './model';
 
 /** Kunci section yang sedang di tengah layar (dari daftar `keys`), atau null. */
 export function useActiveSection(anchor: RefObject<HTMLElement | null>, keys: string[]): string | null {
@@ -82,4 +84,59 @@ export function useTween(target: number, enabled: boolean, duration = 360): numb
     return () => window.cancelAnimationFrame(frame);
   }, [target, enabled, duration]);
   return enabled ? shown : target;
+}
+
+/**
+ * Kotak kartu notifikasi pertama di HP hero (< @5xl; ./model noteSlot), diukur dari mockup yang benar-benar tergambar
+ * di `box` (kotak HP): tepi atas panel transaksi [data-pn-list] dan bawah tiap barisnya, bawah blok di atas panel, dan
+ * tinggi isi kartu. Jadi ikut isi CMS (sapaan, saldo, tombol, atau judul daftar dikosongkan), huruf
+ * yang baru termuat, dan ukuran huruf peramban. Diukur tiap render dan saat ukuran mockup/teks kartu berubah
+ * (ResizeObserver; yang diamati tidak ikut berubah oleh hasilnya). Tanpa tata letak (jsdom, pra-render) → null: kelas
+ * kartu memakai nilai em cadangan untuk isi contoh.
+ */
+export function useNoteSlot(box: RefObject<HTMLElement | null>): NoteSlot | null {
+  const [slot, setSlot] = useState<NoteSlot | null>(null);
+
+  // Tiap render (isi CMS berubah) dan saat ukuran mockup atau teks kartu berubah (huruf termuat, wadah melewati
+  // breakpoint); nilai yang sama tidak menggambar ulang
+  useLayoutEffect(() => {
+    const el = box.current;
+    const app = el?.querySelector<HTMLElement>('[data-pn-app]');
+    const card = el?.querySelector<HTMLElement>('[data-pn-notif] > div');
+    if (!el || !app || !card) return;
+    const measure = () => {
+      if (!el.offsetHeight) return;
+      // Posisi tata letak relatif kotak HP: animasi naik masuk menggeser kotak & isinya bersama; pratinjau yang
+      // diperkecil (zoom CSS atau transform) dibagi skalanya
+      const base = el.getBoundingClientRect();
+      const scale = Math.abs(base.height - el.offsetHeight) > 1 ? base.height / el.offsetHeight : 1;
+      const y = (v: number) => (v - base.top) / scale;
+      const shown = (n: Element) => n.getClientRects().length > 0;
+      const blocks = Array.from(app.children).filter((n) => shown(n) && getComputedStyle(n).position !== 'absolute');
+      const list = blocks.find((n) => n.hasAttribute('data-pn-list'));
+      // Blok di atas panel (atau blok terakhir bila daftar kosong); tidak ada → bilah status
+      const above = (list ? blocks[blocks.indexOf(list) - 1] : blocks.at(-1)) ?? app.previousElementSibling ?? app;
+      const aboveBottom = y(above.getBoundingClientRect().bottom);
+      const rowBottoms = list ? Array.from(list.querySelectorAll('li')).filter(shown).map((li) => y(li.getBoundingClientRect().bottom)) : [];
+      // Baris terakhir sampai tepi bawah panel: padding bawah panel tidak boleh menyembul di bawah kartu
+      if (list && rowBottoms.length) rowBottoms[rowBottoms.length - 1] = y(list.getBoundingClientRect().bottom);
+      const pad = getComputedStyle(card);
+      const next = noteSlot({
+        // Tanpa daftar transaksi: kartu di bawah blok terakhir, berjarak seperti panel (mt 1,1em)
+        listTop: list ? y(list.getBoundingClientRect().top) : aboveBottom + 1.1 * parseFloat(getComputedStyle(app).fontSize),
+        aboveBottom,
+        rowBottoms,
+        // Isi kartu (ikon / teks) + padding; offsetHeight dibulatkan → +1px
+        need: Math.max(...Array.from(card.children, (n) => (n as HTMLElement).offsetHeight)) + parseFloat(pad.paddingTop) + parseFloat(pad.paddingBottom) + 1,
+      });
+      setSlot((prev) => (prev && Math.abs(prev.top - next.top) < 0.05 && Math.abs(prev.height - next.height) < 0.05 ? prev : next));
+    };
+    measure();
+    if (typeof ResizeObserver !== 'function') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(app);
+    if (card.lastElementChild) observer.observe(card.lastElementChild);
+    return () => observer.disconnect();
+  });
+  return slot;
 }

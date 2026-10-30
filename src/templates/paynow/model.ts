@@ -1,8 +1,9 @@
 // Turunan konten PayNow (fungsi murni, tanpa React): warna tema (malam indigo, gradasi biru → indigo → ungu, lavender,
 // warna terang di atas gelap), section tampil & item yang dirender, menu, tujuan tautan, simulasi biaya (contoh tarif
-// dari CMS), formulir pendaftaran merchant → pesan WhatsApp, dan contoh kode API. Semua tahan konten mentah (null,
-// angka, list rusak). JUJUR: template ini halaman pemasaran — tidak memproses pembayaran, tidak menyimpan saldo, dan
-// formulir hanya MENYUSUN pesan (tidak ada data yang dikirim ke server atau disimpan di website).
+// dari CMS), formulir pendaftaran merchant → pesan WhatsApp, contoh kode API, dan kotak kartu notifikasi HP hero (dari
+// ukuran mockup yang diukur). Semua tahan konten mentah (null, angka, list rusak). JUJUR: template ini halaman
+// pemasaran — tidak memproses pembayaran, tidak menyimpan saldo, dan formulir hanya MENYUSUN pesan (tidak ada data yang
+// dikirim ke server atau disimpan di website).
 import type { CSSProperties } from 'react';
 import type { ListItem, SectionContent, SiteContent } from '../types';
 import { SOCIAL_FIELDS } from '../shared/social';
@@ -526,6 +527,33 @@ export const greetingInitial = (greeting: string): string => {
   const name = (greeting || '').split(',').pop()?.trim() || greeting || '';
   return (Array.from(name.replace(/[^\p{L}\p{N}]/gu, ''))[0] ?? 'P').toUpperCase();
 };
+
+/** Kotak kartu notifikasi HP hero (px, relatif kotak HP). */
+export interface NoteSlot {
+  top: number;
+  height: number;
+}
+
+/** Tepi kartu melewati tepi atas panel transaksi / garis pemisah baris (px); jarak minimum ke blok di atas panel (px). */
+const NOTE_EDGE = 2.5;
+const NOTE_GAP = 6;
+
+/**
+ * Kotak kartu notifikasi HP (< @5xl) dari geometri mockup yang diukur (px, relatif kotak HP; ./hooks useNoteSlot):
+ * menutup panel transaksi dari tepi atasnya (judul daftar ikut) sampai baris utuh, tepinya `NOTE_EDGE` melewati tepi
+ * panel & garis pemisah (ikon baris berikutnya masih ≥ 4px di bawahnya). `rowBottoms` = bawah tiap baris, yang terakhir
+ * = tepi bawah panel. Isi kartu (`need`) belum muat → tepi atas naik dulu ke ruang kosong di atas panel (≥ `NOTE_GAP`
+ * dari blok di atasnya), baru baris berikutnya ikut ditutup. Baris habis → setinggi isinya (di bawahnya kosong).
+ */
+export function noteSlot({ listTop, aboveBottom, rowBottoms, need }: { listTop: number; aboveBottom: number; rowBottoms: readonly number[]; need: number }): NoteSlot {
+  const top = listTop - NOTE_EDGE;
+  for (const row of rowBottoms) {
+    const bottom = row + NOTE_EDGE;
+    if (bottom - top >= need) return { top, height: bottom - top };
+    if (bottom - need >= aboveBottom + NOTE_GAP) return { top: bottom - need, height: need };
+  }
+  return { top, height: need };
+}
 
 // ─── Model ────────────────────────────────────────────────────────────────────
 

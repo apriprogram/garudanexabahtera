@@ -3,7 +3,8 @@
 // kanan (8/12) PAPAN biru-malam radius 14: dua tab (Senin–Jumat / akhir pekan) dengan garis neon yang meluncur ke tab
 // aktif dan berkilau sekali saat berganti, lalu baris sesi: nama sesi (chip mono neon), jam Saira, catatan kecil, harga
 // per jam, dan tombol "Book" yang membuka WhatsApp berisi sesi itu. Tab: role=tablist, panah kiri/kanan, Home/End.
-// Hanya satu daftar terisi → tanpa tab. HP: bertumpuk; baris sesi dua tingkat (jam & nama, lalu harga + Book).
+// Hanya satu daftar terisi → tanpa tab. HP: bertumpuk; baris sesi dua tingkat (jam & nama, lalu harga + Book); bila
+// harga + Book tidak muat satu baris (mis. HP 320–360), Book turun ke bawah harga alih-alih menimpa satuan "/jam".
 import { ArrowRight, Info } from 'lucide-react';
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { Reveal } from '../shared/Animated';
@@ -25,8 +26,8 @@ function Rows({ m, rows, dayLabel }: { m: SparringModel; rows: ListItem[]; dayLa
         const label = field(row, 'label');
         const hint = field(row, 'hint');
         return (
-          <li key={`${label}-${field(row, 'time')}-${i}`} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 px-5 py-5 @3xl:grid-cols-[minmax(0,1fr)_auto_auto] @3xl:gap-x-8 @3xl:px-7">
-            <div className="col-span-2 min-w-0 @3xl:col-span-1">
+          <li key={`${label}-${field(row, 'time')}-${i}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-5 @3xl:grid @3xl:grid-cols-[minmax(0,1fr)_auto_auto] @3xl:gap-x-8 @3xl:px-7">
+            <div className="min-w-0 basis-full">
               <p className="flex flex-wrap items-center gap-2">
                 {label && <span className={`${MONO_LABEL} text-[11px] text-(--sp-neon)`}>{label}</span>}
                 {hint && <span className="rounded-full px-2 py-0.5 text-[11.5px] font-semibold text-white ring-1 ring-inset ring-(--sp-neon)/60">{hint}</span>}
@@ -38,7 +39,7 @@ function Rows({ m, rows, dayLabel }: { m: SparringModel; rows: ListItem[]; dayLa
               {unit && <span className="ml-1 text-[14px] text-white/65">{unit}</span>}
             </p>
             {action && bookLabel ? (
-              <span className="justify-self-end @3xl:justify-self-auto">
+              <span>
                 <BookLink action={action} label={bookLabel} session={[dayLabel, label, field(row, 'time')].filter(Boolean).join(' ')} />
               </span>
             ) : null}

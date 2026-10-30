@@ -5,10 +5,19 @@
 // abu), legenda, catatan "contoh data", dan tautan ke jadwal lengkap.
 // HP & tablet (< 64rem): foto tetap LATAR di belakang teks. Kotak foto setinggi --sh-photo di puncak hero (pemain
 // terlihat jelas di "jendela" --sh-win teratas), lapisan tinta menggelap ke bawah (≥ 0,86 di bawah teks) lalu menyatu
-// dengan latar tinta hero; teks putih, kata sorot --sh-bright, tombol penuh-lebar, strip putih (4 × 2 lapangan) di dasar.
-// Gerak khas (./smashhall.css): kok "di-smash" melengkung lalu mendarat di ikon strip (sekali, 1,4 dtk; tablet &
-// layar lebar dari kanan atas di atas foto, HP dari tepi kiri menyeberangi celah kosong di atas strip, tidak pernah
-// melintasi teks), lalu pil terisi bergelombang. Foto hero (LCP) TIDAK pernah disembunyikan atau dianimasikan.
+// dengan latar tinta hero; teks putih, kata sorot --sh-bright, tombol selebar kolom, strip putih (4 × 2 lapangan) di
+// dasar. Tombol WhatsApp melayang Shell: demo & layar < 640 px 48px, 16px dari tepi; situs ≥ 640 px 56px, 32px dari
+// tepi. HP (< 48rem): lajur kanan --sh-lane dibiarkan kosong sampai 8px di kiri tombol itu (3,25rem; ≥ 36rem 4,75rem;
+// ≥ 42rem, tepi kontainer 32px, 4rem) — judul, deskripsi, tombol, judul/legenda/tautan/catatan strip, lencana kok, dan
+// di layar pendek (≤ 32rem) juga label hero berhenti di kiri lajur, jadi di layar pertama HP tidak ada teks atau tombol
+// hero yang tertutup tombol WhatsApp, berapa pun tinggi layarnya dan sependek apa pun isi hero (hanya kisi pil
+// dekoratif strip yang bisa lewat di bawahnya). Tablet & layar lebar: lencana kok 64px dari tepi strip (≥ 8px di kiri
+// tombol situs) dan baris judul/legenda/tautan strip berhenti di kiri lencana, jadi juga tidak tertutup (demo maupun
+// situs).
+// Gerak khas (./smashhall.css): kok "di-smash" melengkung dari kiri lalu mendarat di ikon strip (sekali, 1,4 dtk; HP
+// dari tepi kiri menyeberangi celah kosong di atas strip, tablet & layar lebar dari atas foto di kanan kolom teks —
+// tablet: kolom teks ≤ 31rem — seluruh lintasan di dalam layar dan tidak pernah melintasi teks), lalu pil terisi
+// bergelombang. Foto hero (LCP) TIDAK pernah disembunyikan atau dianimasikan.
 import type { CSSProperties } from 'react';
 import { Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
@@ -20,6 +29,13 @@ import { slotKey, type SmashModel } from './model';
 import { SMASHHALL_PHOTOS } from './photos';
 import { C, DISPLAY, TYPE_S } from './styles';
 import { ButtonLink, Highlighted, SectionLabel, TextLink } from './ui';
+
+/** Rentang jam di deskripsi ("07.00–23.00") tidak dipatah di tanda pisah: dibungkus nowrap, teksnya tetap sama. */
+function keepRanges(value: string) {
+  return value
+    .split(/(\d{1,2}[.:]\d{2} ?[–-] ?\d{1,2}[.:]\d{2})/)
+    .map((part, i) => (i % 2 ? <span key={i} className="whitespace-nowrap">{part}</span> : part));
+}
 
 /** Strip kaca ketersediaan hari ini (data dari section Ketersediaan). Tanpa lapangan/jam/hari → tidak dirender. */
 function HeroStrip({ m }: { m: SmashModel }) {
@@ -35,10 +51,11 @@ function HeroStrip({ m }: { m: SmashModel }) {
   return (
     <div data-sh-strip="" className="relative rounded-[20px] bg-white p-4 @5xl:bg-white/[0.88] ring-1 ring-[#171512]/[0.08] backdrop-blur-md @3xl:p-5 @5xl:px-6 @5xl:pt-7">
       {/* Tempat mendarat kok yang "di-smash" (gerak khas): lencana bulat di tepi atas kanan strip, di atas foto, jadi
-          lintasan kok tidak melewati teks hero. Diam = kok tegak di dalam lencana. */}
+          lintasan kok tidak melewati teks hero; selalu di kiri tombol WhatsApp (HP: di kiri lajur; tablet & layar lebar:
+          64px dari tepi strip). Diam = kok tegak di dalam lencana. */}
       <span
         aria-hidden
-        className="sh-slot absolute -top-5 right-5 flex h-11 w-11 items-center justify-center rounded-full bg-white ring-1 ring-[#171512]/10 @5xl:-top-6 @5xl:right-8 @5xl:h-12 @5xl:w-12"
+        className="sh-slot absolute -top-5 right-(--sh-lane) flex h-11 w-11 items-center justify-center rounded-full bg-white ring-1 ring-[#171512]/10 @3xl:right-16 @5xl:-top-6 @5xl:h-12 @5xl:w-12"
       >
         <span className="sh-fly absolute inset-0 flex items-center justify-center">
           <span className="sh-fly-y flex items-center justify-center">
@@ -46,14 +63,17 @@ function HeroStrip({ m }: { m: SmashModel }) {
           </span>
         </span>
       </span>
-      {/* HP: baris 1 judul (sisi kanan untuk lencana kok), baris 2 legenda + tautan; layar lebar: satu baris */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5">
-        <p className={`flex min-h-6 w-full min-w-0 items-center gap-2.5 pr-12 text-[15px] @3xl:w-auto @3xl:pr-0 ${C.ink}`}>
+      {/* HP: baris 1 judul (sisi kanan untuk lencana kok), baris 2 legenda + tautan (tautan pindah ke baris sendiri bila
+          tidak muat di kiri lajur WhatsApp); tablet & layar lebar: satu baris yang berhenti di kiri lencana (88px dari
+          tepi dalam strip; label CMS panjang turun baris, tidak menyentuh lencana), jadi legenda & tautan tidak di bawah
+          tombol WhatsApp melayang (demo 48px/16px, situs 56px/32px dari tepi). */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 @3xl:pr-22">
+        <p className={`flex min-h-6 w-full min-w-0 items-center gap-2.5 pr-[calc(var(--sh-lane)+28px)] text-[15px] @3xl:w-auto @3xl:pr-0 ${C.ink}`}>
           <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-(--tpl-accent)" />
           {title && <span className={`${DISPLAY} font-semibold`}>{title}</span>}
           {day && <span className={C.muted}>{title ? `· ${day}` : day}</span>}
         </p>
-        <div className="flex w-full flex-wrap items-center justify-between gap-x-4 @3xl:contents">
+        <div className="flex w-full flex-wrap items-center justify-between gap-x-4 pr-(--sh-lane) @3xl:contents">
           <ul className={`flex items-center gap-4 text-[13px] ${C.muted}`}>
             <li className="flex items-center gap-1.5">
               <span aria-hidden className="h-2 w-4 rounded-full bg-(--tpl-accent)" />
@@ -85,7 +105,8 @@ function HeroStrip({ m }: { m: SmashModel }) {
           </div>
         ))}
       </div>
-      {note && <p className={`mt-3 text-[12.5px] leading-snug ${C.muted}`}>{note}</p>}
+      {/* HP: catatan juga berhenti di kiri lajur WhatsApp (isi hero pendek → strip naik ke layar pertama) */}
+      {note && <p className={`mt-3 pr-(--sh-lane) text-[12.5px] leading-snug ${C.muted}`}>{note}</p>}
     </div>
   );
 }
@@ -103,7 +124,7 @@ export function Hero({ m }: { m: SmashModel }) {
     <TemplateSection
       sectionKey="hero"
       data-hero-layout="rally"
-      className="relative isolate grid grid-cols-1 grid-rows-[auto_auto] overflow-hidden bg-[#171512] [--sh-photo:540px] [--sh-win:272px] @3xl:[--sh-photo:660px] @3xl:[--sh-win:340px] @5xl:min-h-[max(640px,min(calc(100svh-76px),800px))] @5xl:grid-rows-[1fr_auto] @5xl:bg-white"
+      className="relative isolate grid grid-cols-1 grid-rows-[auto_auto] overflow-hidden bg-[#171512] [--sh-lane:3.25rem] [--sh-photo:540px] [--sh-win:272px] @xl:[--sh-lane:4.75rem] @2xl:[--sh-lane:4rem] @3xl:[--sh-lane:0px] @3xl:[--sh-photo:660px] @3xl:[--sh-win:340px] @5xl:min-h-[max(640px,min(calc(100svh-76px),800px))] @5xl:grid-rows-[1fr_auto] @5xl:bg-white"
     >
       {/* Foto latar = LCP: eager + fetchpriority high, tanpa reveal/zoom/parallax. HP/tablet: kotak setinggi --sh-photo
           di puncak hero (pemain di jendela atas, sisanya di bawah lapisan tinta); layar lebar: latar seluruh hero di
@@ -122,22 +143,28 @@ export function Hero({ m }: { m: SmashModel }) {
 
       <div className="sh-hero-copy relative col-start-1 row-start-1 @5xl:flex @5xl:items-center">
         <div className={`${CONTAINER} pt-(--sh-win) @5xl:py-14`}>
-          <div className="min-w-0 @5xl:max-w-[min(600px,46%)] @min-[96rem]:max-w-[660px]">
+          {/* Tablet: kolom teks ≤ 31rem (judul 14ch & deskripsi 44ch sudah di dalamnya; label panjang & tombol ikut),
+              jadi lintasan kok di kanannya tidak pernah melewati teks */}
+          <div className="min-w-0 @3xl:max-w-[31rem] @5xl:max-w-[min(600px,46%)] @min-[96rem]:max-w-[660px]">
+            {/* Label selebar kolom (label bawaan satu baris mulai 375 px); hanya di layar pendek (≤ 32rem, mis. HP
+                mendatar) tombol WhatsApp turun sampai baris label, jadi di situ label juga berhenti di kiri lajur */}
             {eyebrow && (
-              <Reveal variant="fade">
+              <Reveal variant="fade" className="[@media(max-height:32rem)]:pr-(--sh-lane)">
                 <SectionLabel label={eyebrow} tone="photo" />
               </Reveal>
             )}
-            <Reveal as="h1" delay={80} className={`${eyebrow ? 'mt-5 @5xl:mt-6' : ''} max-w-[14ch] ${TYPE_S.h1} text-white @5xl:text-[#171512]`}>
+            {/* HP: judul, deskripsi, dan tombol berhenti di kiri lajur WhatsApp (--sh-lane). Rentang jam di deskripsi
+                tidak dipatah. */}
+            <Reveal as="h1" delay={80} className={`${eyebrow ? 'mt-5 @5xl:mt-6' : ''} max-w-[min(14ch,calc(100%-var(--sh-lane)))] ${TYPE_S.h1} text-white @5xl:text-[#171512]`}>
               <Highlighted title={title} highlight={text(hero, 'highlight')} tone="photo" />
             </Reveal>
             {subtitle && (
-              <Reveal as="p" delay={160} className={`mt-5 max-w-[44ch] text-pretty ${TYPE_S.lead} text-white/80 @5xl:text-[#5A564F]`}>
-                {subtitle}
+              <Reveal as="p" delay={160} className={`mt-5 max-w-[min(44ch,calc(100%-var(--sh-lane)))] text-pretty ${TYPE_S.lead} text-white/80 @5xl:text-[#5A564F]`}>
+                {keepRanges(subtitle)}
               </Reveal>
             )}
             {(primaryLabel || secondaryLabel) && (
-              <Reveal delay={240} className="mt-7 flex flex-col gap-3 @xl:flex-row @xl:items-center @5xl:mt-9">
+              <Reveal delay={240} className="mt-7 flex flex-col gap-3 pr-(--sh-lane) @xl:flex-row @xl:flex-wrap @xl:items-center @5xl:mt-9">
                 <ButtonLink action={m.primaryAction} label={primaryLabel} className="w-full @xl:w-auto" />
                 <ButtonLink action={m.secondaryAction} label={secondaryLabel} variant="ghostPhoto" className="w-full @xl:w-auto" />
               </Reveal>

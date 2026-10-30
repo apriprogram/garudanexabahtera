@@ -160,10 +160,12 @@
   }
 }
 
+/* Kartu notifikasi naik masuk tanpa geser mendatar: di layar lebar kartu berdiri di kiri HP, jadi selama muncul pun
+   tidak melewati posisi diamnya ke arah isi layar HP (skala 0,96 dari tengah justru memperkecil kotaknya) */
 @keyframes pn-notif {
   from {
     opacity: 0;
-    transform: translate3d(16px, 8px, 0) scale(0.96);
+    transform: translate3d(0, 10px, 0) scale(0.96);
   }
   to {
     opacity: 1;

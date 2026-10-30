@@ -33,8 +33,11 @@ export const C = {
 export const LABEL = `${FONT_DISPLAY} text-[12px] font-semibold uppercase tracking-[0.14em]`;
 
 export const TYPE_S = {
-  /** H1 hero: 34 → 46 → 58 → 66px */
-  h1: `${FONT_DISPLAY} font-bold text-balance text-[34px] leading-[1.06] tracking-[-0.035em] @2xl:text-[46px] @5xl:text-[58px] @5xl:leading-[1.03] @7xl:text-[66px]`,
+  /**
+   * H1 hero: 34 → 46 → 56 → 58 → 66px. HP < 22rem 30px (kolom di kiri lajur WhatsApp ±228px) dan 56px di kolom 46%
+   * layar 1024–1151px, agar judul bawaan tetap tiga baris tanpa kata yatim.
+   */
+  h1: `${FONT_DISPLAY} font-bold text-balance text-[34px] leading-[1.06] tracking-[-0.035em] @max-[22rem]:text-[30px] @2xl:text-[46px] @5xl:text-[56px] @5xl:leading-[1.03] @6xl:text-[58px] @7xl:text-[66px]`,
   /** H2 section: 28 → 36 → 44px */
   h2: `${FONT_DISPLAY} font-bold text-balance text-[28px] leading-[1.1] tracking-[-0.03em] @3xl:text-[36px] @6xl:text-[44px]`,
   /** Judul kartu: 18 → 20px */

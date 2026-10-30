@@ -98,8 +98,8 @@ export const paynowSections: TemplateSection[] = [
         'Kartu notifikasi',
         'Notifikasi',
         [
-          t('title', 'Judul', { placeholder: 'mis. Pembayaran QRIS berhasil', maxLength: 40 }),
-          t('text', 'Keterangan', { placeholder: 'mis. Rp45.000 ke Kopi Senja', maxLength: 48 }),
+          t('title', 'Judul', { placeholder: 'mis. Pembayaran QRIS berhasil', maxLength: 40, help: 'Di HP tampil satu baris (± 26 huruf), di layar lebar maks. dua baris; sisanya dipotong.' }),
+          t('text', 'Keterangan', { placeholder: 'mis. Rp45.000 ke Kopi Senja', maxLength: 48, help: 'Di HP tampil satu baris (± 28 huruf), di layar lebar maks. dua baris; sisanya dipotong.' }),
         ],
         3,
       ),

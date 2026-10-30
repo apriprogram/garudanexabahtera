@@ -494,6 +494,42 @@ describe('SmashHall: demo', () => {
     expect(hero.className).toContain('@5xl:bg-white');
     expect(hero.querySelector('h1')!.className).toMatch(/(^|\s)text-white\s.*@5xl:text-\[#171512\]/);
     expect(img.getAttribute('sizes')).toBe('(min-width: 1024px) 100vw, (min-width: 768px) 1180px, 960px');
+    // HP: lajur kanan --sh-lane (tombol WhatsApp melayang Shell) dibiarkan kosong — judul, deskripsi, tombol, tautan &
+    // catatan strip, dan lencana kok berhenti di kirinya (isi hero pendek → strip naik ke layar pertama); lajur sampai
+    // 8px di kiri tombol (≥ 36rem untuk tombol situs 56px 32px dari tepi, ≥ 42rem tepi kontainer 32px); tablet & layar
+    // lebar tanpa lajur, lencana 64px dari tepi strip
+    expect(hero.className).toMatch(/\[--sh-lane:3\.25rem\].*@xl:\[--sh-lane:4\.75rem\].*@2xl:\[--sh-lane:4rem\].*@3xl:\[--sh-lane:0px\]/);
+    expect(hero.querySelector('h1')!.className).toContain('max-w-[min(14ch,calc(100%-var(--sh-lane)))]');
+    expect(hero.querySelector('h1 + p')!.className).toContain('max-w-[min(44ch,calc(100%-var(--sh-lane)))]');
+    expect(within(hero).getByRole('link', { name: 'Cek Lapangan' }).parentElement!.className).toContain('pr-(--sh-lane)');
+    expect(within(hero).getByRole('link', { name: 'Lihat semua jadwal' }).parentElement!.className).toContain('pr-(--sh-lane)');
+    expect(within(hero).getByText(String(def.defaultContent.hero.strip_note)).className).toMatch(/(^|\s)pr-\(--sh-lane\)(\s|$)/);
+    // Label hero selebar kolom; hanya di layar pendek (≤ 32rem, tombol WhatsApp turun sampai barisnya) ikut lajur
+    const label = within(hero).getByText(String(def.defaultContent.hero.eyebrow)).closest('[data-reveal-variant]')!;
+    expect(label.className).toMatch(/(^|\s)\[@media\(max-height:32rem\)\]:pr-\(--sh-lane\)(\s|$)/);
+    expect(label.className).not.toMatch(/(^|\s)pr-\(--sh-lane\)/);
+    expect(hero.querySelector('.sh-slot')!.className).toMatch(/(^|\s)right-\(--sh-lane\)\s.*@3xl:right-16(\s|$)/);
+    expect(hero.querySelector('.sh-slot')!.className).not.toMatch(/@5xl:right-/);
+    // Lajur, lencana, & jarak tautan strip dihitung dari tombol WhatsApp Shell (demo 48px 16px dari tepi; situs < 640 px
+    // sama, ≥ 640 px 56px 32px dari tepi): bila ukuran tombol itu berubah, hitung ulang semuanya
+    const shell = readFileSync(resolve(ROOT, 'src/templates/shared/Shell.tsx'), 'utf8');
+    expect(shell).toContain('absolute bottom-4 right-4 h-12 w-12');
+    expect(shell).toMatch(/right-\[max\(16px,env\(safe-area-inset-right\)\)\] z-40 h-12 w-12 sm:bottom-8 sm:right-8 sm:h-14 sm:w-14/);
+    // Judul bawaan tiga baris tanpa kata yatim: HP tersempit 30px (di kiri lajur), layar 1024–1151px 56px (kolom 46%);
+    // tombol hero turun baris bila tidak muat sebaris
+    expect(hero.querySelector('h1')!.className).toMatch(/(^|\s)text-\[34px\]\s.*@max-\[22rem\]:text-\[30px\]\s.*@5xl:text-\[56px\]\s.*@6xl:text-\[58px\]\s/);
+    expect(within(hero).getByRole('link', { name: 'Cek Lapangan' }).parentElement!.className).toMatch(/(^|\s)@xl:flex-row\s.*@xl:flex-wrap(\s|$)/);
+    // Rentang jam di deskripsi tidak dipatah di tanda pisah; teksnya tetap utuh
+    expect(hero.querySelector('h1 + p')!.textContent).toBe(String(def.defaultContent.hero.subtitle));
+    expect(Array.from(hero.querySelectorAll('h1 + p .whitespace-nowrap'), (s) => s.textContent)).toEqual(['07.00–23.00']);
+    // Tablet: kolom teks ≤ 31rem (lintasan kok di kanannya); tablet & layar lebar: baris judul/legenda/tautan strip
+    // berhenti di kiri lencana (88px dari tepi dalam strip; label panjang turun baris), di luar tombol WhatsApp
+    expect(hero.querySelector('h1')!.parentElement!.className).toMatch(/(^|\s)@3xl:max-w-\[31rem\]\s.*@5xl:max-w-\[min\(600px,46%\)\]/);
+    const stripLink = within(hero).getByRole('link', { name: 'Lihat semua jadwal' });
+    expect(stripLink.parentElement!.parentElement!.className).toMatch(/(^|\s)@3xl:pr-22(\s|$)/);
+    expect(stripLink.parentElement!.parentElement!.className).not.toMatch(/@5xl:p[rx]-/);
+    expect(stripLink.className).toMatch(/(^|\s)@3xl:ml-auto(\s|$)/);
+    expect(stripLink.className).not.toMatch(/(^|\s)(@[\w-]+:)?m[rx]-/);
     const eager = Array.from(container.querySelectorAll('img')).filter((i) => i.getAttribute('loading') !== 'lazy');
     expect(eager.map((i) => i.getAttribute('src'))).toEqual(['/assets/templates/photos/smashhall-hero-v2-1920.webp']);
     expect(within(hero).getByRole('link', { name: 'Cek Lapangan' })).toHaveAttribute('href', '#availability');
@@ -915,6 +951,12 @@ describe('SmashHall: gerak', () => {
     for (const [, seconds] of css.matchAll(/animation:\s*sh-[a-z-]+\s+([\d.]+)s/g)) expect(Number(seconds)).toBeLessThanOrEqual(1.6);
     for (const [, seconds] of css.matchAll(/transition:\s*[a-z-]+\s+([\d.]+)s/g)) expect(Number(seconds)).toBeLessThanOrEqual(1);
     expect(css).not.toMatch(/infinite/);
+    // Kok selalu terbang dari kiri lencana (dicerminkan) di semua lebar, seluruh lintasan di dalam layar: HP mulai 36px
+    // dari tepi kiri (tepi kontainer 20px, ≥ 42rem 32px), tablet 80px di kiri lencana (di kanan kolom teks ≤ 31rem),
+    // layar lebar 360px di kiri lencana
+    const starts = Array.from(css.matchAll(/--sh-fx:\s*([^;]+);/g), ([, fx]) => fx);
+    expect(starts).toEqual(['calc(4.875rem + var(--sh-lane, 0px) - 100cqw)', 'calc(5.625rem + var(--sh-lane, 0px) - 100cqw)', '-80px', '-360px']);
+    expect(css).not.toMatch(/--sh-rs:\s*1\b/);
   });
 });
 
@@ -1245,6 +1287,13 @@ describe('SmashHall: konten aneh', () => {
       expect(empty.querySelector('[data-tpl-root]')).not.toBeNull();
       cleanup();
     }
+  });
+
+  it('deskripsi hero: rentang jam CMS format lain (titik dua, spasi di tanda pisah, dua rentang) tidak dipatah; harga bukan rentang jam', () => {
+    const subtitle = 'Buka 7:00–22:00, Sabtu 06.00 - 23.00. Sewa Rp45.000–65.000/jam.';
+    const hero = section(demo({ hero: { subtitle } }), 'hero');
+    expect(hero.querySelector('h1 + p')!.textContent).toBe(subtitle);
+    expect(Array.from(hero.querySelectorAll('h1 + p .whitespace-nowrap'), (s) => s.textContent)).toEqual(['7:00–22:00', '06.00 - 23.00']);
   });
 
   it('semua section mati → tidak ada [data-tpl-section] dan tanpa footer', () => {

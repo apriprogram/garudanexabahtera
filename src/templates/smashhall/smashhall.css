@@ -47,20 +47,29 @@
     }
   }
 
-  /* Titik awal kok relatif ke lencana strip (kanan atas), tidak pernah melintasi teks hero. HP: dari tepi KIRI
-     menyeberangi celah kosong 76 px di atas strip dengan lengkung rendah (--sh-rs -1 = kok dicerminkan, gabus di depan);
-     tablet: lengkung tinggi dari kanan di sisi kanan (kolom teks di kiri); layar lebar: dari kanan atas di atas foto. */
+  /* Titik awal kok relatif ke lencana strip (kanan atas), selalu dari KIRI (--sh-rs -1 = kok dicerminkan, gabus di
+     depan) dan seluruh lintasan di dalam layar, tidak pernah melintasi teks hero. HP: mulai 36 px dari tepi kiri
+     (lencana di tepi kontainer 20 px + --sh-lane + 22 px dari tepi kanan; ≥ 42rem tepinya 32 px) dan 20 px di atas
+     lencana (di atas judul strip), menyeberangi celah kosong 76 px di atas strip dengan lengkung rendah; tablet:
+     lengkung tinggi mulai 80 px di kiri lencana, di atas foto di kanan kolom teks (kolom ≤ 31rem → teks ≤ 528 px
+     dari kiri, pusat lencana ≥ 650 px); layar lebar: mulai 360 px di kiri lencana, di kanan kolom teks (≤ 46% lebar),
+     puncak 400 px di atas lencana agar tetap di dalam hero terpendek (640 px, lencana ±440 px dari atas). */
   .sh-slot {
-    --sh-fx: -76cqw;
-    --sh-fy0: -6px;
+    --sh-fx: calc(4.875rem + var(--sh-lane, 0px) - 100cqw);
+    --sh-fy0: -20px;
     --sh-fyp: -40px;
     --sh-rs: -1;
   }
 
+  @container (min-width: 42rem) {
+    .sh-slot {
+      --sh-fx: calc(5.625rem + var(--sh-lane, 0px) - 100cqw);
+    }
+  }
+
   @container (min-width: 48rem) {
     .sh-slot {
-      --sh-rs: 1;
-      --sh-fx: 14cqw;
+      --sh-fx: -80px;
       --sh-fy0: -300px;
       --sh-fyp: -370px;
     }
@@ -68,9 +77,9 @@
 
   @container (min-width: 64rem) {
     .sh-slot {
-      --sh-fx: 16cqw;
-      --sh-fy0: -500px;
-      --sh-fyp: -580px;
+      --sh-fx: -360px;
+      --sh-fy0: -330px;
+      --sh-fyp: -400px;
     }
   }
 
@@ -170,7 +179,7 @@
     }
   }
 }
-/* Mendatar: lurus dari kanan ke tempat mendarat; muncul pelan di awal */
+/* Mendatar: lurus dari kiri ke tempat mendarat; muncul pelan di awal */
 @keyframes sh-fly-x {
   0% {
     opacity: 0;
@@ -200,9 +209,9 @@
   }
 }
 
-/* Gabus selalu di depan: menghadap kiri-atas saat naik, kiri-bawah saat jatuh, lalu tegak di strip (HP: --sh-rs -1 →
-   dicerminkan, kok terbang ke kanan). Selama terbang kok tampil lebih besar (terlihat jelas di atas foto), lalu
-   mengecil ke ukuran lencana saat mendarat. */
+/* Gabus selalu di depan: kok terbang ke kanan (--sh-rs -1 = putaran dicerminkan), jadi gabus menghadap kanan-atas saat
+   naik, kanan-bawah saat jatuh, lalu tegak di strip. Selama terbang kok tampil lebih besar (terlihat jelas di atas
+   foto), lalu mengecil ke ukuran lencana saat mendarat. */
 @keyframes sh-spin {
   0% {
     transform: rotate(calc(125deg * var(--sh-rs, 1))) scale(1.9);

@@ -3,16 +3,17 @@
 // lebih tipis di sisi HP, plus kilau gradasi dekoratif. Layar lebar: kolom kiri chip label kaca, H1 dengan kata glow,
 // deskripsi, tombol pil putih "Unduh aplikasi" + pil garis "Untuk merchant", tiga chip; kolom kanan mockup HP dari
 // CSS/HTML (sapaan, kartu saldo bergradasi dengan angka berjalan, empat tombol fitur, transaksi terakhir) dan tiga kartu
-// notifikasi bertumpuk di kirinya. HP 390: teks lalu HP lebih kecil yang terpotong tepi bawah hero, dua notifikasi
-// melayang di atasnya. Gerak khas (./paynow.css): kilau bergeser sekali, HP naik masuk, notifikasi muncul berurutan lalu
-// diam. Foto hero TIDAK pernah dianimasikan.
+// notifikasi bertumpuk di kirinya. HP 390: teks lalu HP lebih kecil yang terpotong tepi bawah hero, satu notifikasi
+// menutup judul + baris pertama transaksinya. Gerak khas (./paynow.css): kilau bergeser sekali, HP naik masuk,
+// notifikasi muncul berurutan lalu diam. Foto hero TIDAK pernah dianimasikan.
 import { Bell, CircleCheck, Download, Eye, History, House, QrCode, Store, TicketPercent, UserRound } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { useRef, type CSSProperties } from 'react';
 import { CountUp, Reveal } from '../shared/Animated';
 import { CONTAINER } from '../shared/layout';
 import { TemplateSection } from '../shared/Shell';
 import { field, text } from '../shared/utils';
 import { KitPhoto } from '../kit/Photo';
+import { useNoteSlot } from './hooks';
 import { paymentIcon } from './icons';
 import { greetingInitial, isCredit, type PaynowModel } from './model';
 import { PAYNOW_PHOTOS } from './photos';
@@ -23,13 +24,19 @@ import { AutoIcon, ButtonLink, Highlighted, PhoneFrame } from './ui';
 const NOTIF_DELAYS = [0.9, 1.4, 1.9] as const;
 
 /**
- * Posisi kartu notifikasi relatif ke kotak HP. Wadah sempit (< @5xl): SATU kartu melayang di tengah, di atas daftar
- * transaksi (HP terpotong tepi bawah hero); layar lebar: tiga kartu bertumpuk di kiri HP, hanya menimpa bingkainya.
+ * Posisi kartu notifikasi relatif ke kotak HP. Wadah sempit (< @5xl): SATU kartu di tengah yang menutup judul + baris
+ * pertama daftar transaksi (HP terpotong tepi bawah hero). Top & tinggi minimumnya diukur dari mockup (./hooks
+ * useNoteSlot → --pn-note-top / --pn-note-h): tepi atas tepat di atas panel transaksi, tepi bawah melewati garis
+ * pemisah baris terakhir yang tertutup, tanpa ikon/teks yang mengintip, juga bila blok di atas daftar dikosongkan
+ * di CMS; nilai em cadangan (pra-render) = isi contoh. Layar lebar: tiga kartu sejajar di kiri HP, tepi
+ * kanannya 17px ke dalam kotak HP (@5xl & @7xl), jadi hanya menimpa bingkai + tepi kosong layar (konten layar mulai
+ * 1,7em: 24,65px di @5xl, 27,2px di @7xl), juga selama muncul (./paynow.css pn-notif tanpa geser mendatar). Pada wadah
+ * 1024px tepi kirinya 5px di kanan kolom teks.
  */
 const NOTIF_POS = [
-  'left-1/2 top-[58%] w-[252px] -translate-x-1/2 @3xl:top-[56%] @5xl:left-[-182px] @5xl:top-[20%] @5xl:w-[212px] @5xl:translate-x-0 @7xl:left-[-226px] @7xl:w-[248px]',
-  'hidden @5xl:block @5xl:left-[-172px] @5xl:top-[40%] @5xl:w-[212px] @7xl:left-[-216px] @7xl:w-[248px]',
-  'hidden @5xl:block @5xl:left-[-188px] @5xl:top-[60%] @5xl:w-[212px] @7xl:left-[-232px] @7xl:w-[248px]',
+  'left-1/2 top-[var(--pn-note-top,17.2em)] w-[252px] -translate-x-1/2 @5xl:left-[-195px] @5xl:top-[20%] @5xl:w-[212px] @5xl:translate-x-0 @7xl:left-[-231px] @7xl:w-[248px]',
+  'hidden @5xl:block @5xl:left-[-195px] @5xl:top-[40%] @5xl:w-[212px] @7xl:left-[-231px] @7xl:w-[248px]',
+  'hidden @5xl:block @5xl:left-[-195px] @5xl:top-[60%] @5xl:w-[212px] @7xl:left-[-231px] @7xl:w-[248px]',
 ] as const;
 
 /** Ikon bilah navigasi bawah aplikasi (dekoratif, tanpa teks). */
@@ -42,7 +49,7 @@ function AppHome({ m }: { m: PaynowModel }) {
   const balance = text(hero, 'balance');
   const listTitle = text(hero, 'transactions_title');
   return (
-    <div className="px-[1.1em] pb-[1.2em]">
+    <div data-pn-app="" className="px-[1.1em] pb-[1.2em]">
       {greeting && (
         <div className="mt-[0.6em] flex items-center justify-between gap-[0.6em]">
           <span className="flex min-w-0 items-center gap-[0.55em]">
@@ -60,7 +67,8 @@ function AppHome({ m }: { m: PaynowModel }) {
             <span className="truncate">{balanceLabel}</span>
             <Eye aria-hidden className="h-[1.2em] w-[1.2em] shrink-0" strokeWidth={2} />
           </p>
-          {balance && <p className={`mt-[0.2em] text-[1.6em] font-bold leading-tight tracking-[-0.02em] tabular-nums ${DISPLAY}`}>{<CountUp value={balance} duration={1400} />}</p>}
+          {/* Satu baris: saldo 16 huruf yang realistis (mis. "Rp 12.500.000,00") paling lebar ±4px masuk padding kartu */}
+          {balance && <p className={`mt-[0.2em] whitespace-nowrap text-[1.6em] font-bold leading-tight tracking-[-0.02em] tabular-nums ${DISPLAY}`}>{<CountUp value={balance} duration={1400} />}</p>}
         </div>
       )}
       {m.actions.length > 0 && (
@@ -79,8 +87,8 @@ function AppHome({ m }: { m: PaynowModel }) {
         </ul>
       )}
       {m.transactions.length > 0 && (
-        <div className="mt-[1.1em] rounded-[1.1em] bg-white px-[0.9em] py-[0.5em] ring-1 ring-inset ring-[#0E0F2C]/[0.06]">
-          {listTitle && <p className={`pb-[0.2em] pt-[0.35em] text-[0.7em] font-semibold ${C.muted}`}>{listTitle}</p>}
+        <div data-pn-list="" className="mt-[1.1em] rounded-[1.1em] bg-white px-[0.9em] py-[0.5em] ring-1 ring-inset ring-[#0E0F2C]/[0.06]">
+          {listTitle && <p className={`truncate pb-[0.2em] pt-[0.35em] text-[0.7em] font-semibold ${C.muted}`}>{listTitle}</p>}
           <ul className="divide-y divide-[#0E0F2C]/[0.07]">
             {m.transactions.map((item, i) => {
               const title = field(item, 'title');
@@ -128,14 +136,18 @@ function Notifications({ m }: { m: PaynowModel }) {
           style={{ '--pn-at': `${NOTIF_DELAYS[i]}s` } as CSSProperties}
           className={`pn-notif absolute z-10 ${NOTIF_POS[i]}`}
         >
-          {/* Putih pekat: kartu menumpuk di atas baris transaksi mockup, teks di belakangnya tidak boleh tembus */}
-          <div className="flex items-start gap-2.5 rounded-[18px] bg-white p-3 ring-1 ring-inset ring-white/60">
-            <span aria-hidden className="pn-grad flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white">
-              <CircleCheck className="h-4 w-4" strokeWidth={2.4} />
+          {/* Putih pekat + ring tinta 1px (tanpa bayangan): kartu menumpuk di atas baris transaksi mockup, teks di belakangnya
+              tidak boleh tembus dan tepinya tetap terlihat di atas panel putih. Ukuran isi dalam px seperti teksnya (tidak ikut
+              ukuran huruf peramban). Wadah sempit: tinggi minimum dari mockup (--pn-note-h), teks satu baris, padding atas-bawah
+              10px agar tanpa judul daftar kartu tetap muat menutup satu baris. Layar lebar: judul & keterangan maks. dua baris,
+              jadi kartu paling tinggi ±96px dan tidak menumpuk ke kartu di bawahnya */}
+          <div className="flex min-h-[var(--pn-note-h,5.5em)] items-center gap-[10px] rounded-[18px] bg-white px-[12px] py-[10px] ring-1 ring-inset ring-[#0E0F2C]/[0.12] @5xl:min-h-0 @5xl:items-start @5xl:py-[12px]">
+            <span aria-hidden className="pn-grad flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full text-white">
+              <CircleCheck className="h-[16px] w-[16px]" strokeWidth={2.4} />
             </span>
             <span className="min-w-0">
-              <span className={`block text-[13px] font-semibold leading-snug ${C.ink}`}>{field(item, 'title')}</span>
-              {field(item, 'text') && <span className={`mt-0.5 block text-[12.5px] leading-snug ${C.muted}`}>{field(item, 'text')}</span>}
+              <span className={`block text-[13px] font-semibold leading-snug @max-5xl:truncate @5xl:line-clamp-2 ${C.ink}`}>{field(item, 'title')}</span>
+              {field(item, 'text') && <span className={`mt-[2px] block text-[12.5px] leading-snug @max-5xl:truncate @5xl:line-clamp-2 ${C.muted}`}>{field(item, 'text')}</span>}
             </span>
           </div>
         </li>
@@ -152,6 +164,8 @@ export function Hero({ m }: { m: PaynowModel }) {
   const image = text(hero, 'image');
   const primaryLabel = m.primaryAction ? text(hero, 'primary_label') : '';
   const secondaryLabel = m.secondaryAction ? text(hero, 'secondary_label') : '';
+  const phoneBox = useRef<HTMLDivElement>(null);
+  const slot = useNoteSlot(phoneBox);
 
   return (
     <TemplateSection sectionKey="hero" data-hero-layout="wallet" data-tpl-tone="inverse" className="relative isolate overflow-hidden bg-(--pn-night) text-white">
@@ -203,8 +217,14 @@ export function Hero({ m }: { m: PaynowModel }) {
           </div>
 
           <div className="mt-12 min-w-0 @5xl:col-span-6 @5xl:mt-0 @7xl:col-span-5 @7xl:col-start-8">
-            {/* Kotak HP = acuan posisi notifikasi. HP: terpotong tepi bawah hero; layar lebar: utuh, rata kanan */}
-            <div data-pn-phone="hero" className="pn-phone-in relative mx-auto w-max text-[13.2px] @3xl:text-[15px] @5xl:ml-auto @5xl:mr-2 @5xl:text-[14.5px] @7xl:text-[16px]">
+            {/* Kotak HP = acuan posisi notifikasi (kotak kartu HP dari ukuran mockup). HP: terpotong tepi bawah hero; layar
+                lebar: utuh, rata kanan */}
+            <div
+              ref={phoneBox}
+              data-pn-phone="hero"
+              style={slot ? ({ '--pn-note-top': `${slot.top.toFixed(2)}px`, '--pn-note-h': `${slot.height.toFixed(2)}px` } as CSSProperties) : undefined}
+              className="pn-phone-in relative mx-auto w-max text-[13.2px] @3xl:text-[15px] @5xl:ml-auto @5xl:mr-2 @5xl:text-[14.5px] @7xl:text-[16px]"
+            >
               <div className="h-[390px] overflow-hidden @3xl:h-[470px] @5xl:h-auto @5xl:overflow-visible">
                 <PhoneFrame label="Contoh tampilan aplikasi">
                   <AppHome m={m} />
