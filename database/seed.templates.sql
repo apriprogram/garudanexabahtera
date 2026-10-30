@@ -550,4 +550,94 @@ Cocok untuk developer perumahan, agen properti, dan tim pemasaran klaster. Simul
    '["/assets/templates/homenest-1.webp","/assets/templates/homenest-2.webp"]',
    'homenest', NULL, 'published', 31);
 
+-- Lajur (2026-10-29, Travel & Transportasi; DB lama: migrasi 2026-10-29_049). Demo: Lajur Trans Wisata, PO sewa bus pariwisata di Semarang (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('lajur',
+   'Lajur',
+   'Travel & Transportasi',
+   'Template website sewa bus pariwisata: hero foto dengan bilah minta penawaran, armada bergambar bus, kalkulator rombongan, film perjalanan saat digulir, dan tujuan favorit ke WhatsApp.',
+   'Lajur membantu PO dan usaha rental bus menjawab pertanyaan rombongan sejak halaman pertama. Foto jalan pegunungan selebar layar menjadi latar judul dan bilah minta penawaran: pengunjung mengisi jumlah peserta, tanggal berangkat, tujuan, dan lama sewa, lalu langsung melihat rekomendasi armada. Di bawahnya ada tab armada dengan gambar bus berlivery warna Anda, denah kursi, fasilitas, dan harga mulai; kalkulator rombongan yang menyusun kombinasi bus; film sehari perjalanan yang bergerak saat digulir; kartu tujuan favorit; daftar biaya termasuk dan belum termasuk; cara sewa; testimoni; galeri; tanya jawab; serta kontak garasi dengan Google Maps.
+
+Cocok untuk PO bus pariwisata, rental bus, dan biro perjalanan berarmada sendiri. Formulir hanya menyusun pesan WhatsApp; harga final dan ketersediaan armada dikonfirmasi admin. Tidak ada pembayaran online, e-tiket, ketersediaan armada real-time, akun member, atau pelacakan GPS. Armada, harga, rute, teks, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero foto selebar layar dengan bilah minta penawaran dan rekomendasi armada","Armada bertab: gambar bus SVG berlivery, denah kursi, fasilitas, harga mulai","Kalkulator rombongan: kombinasi bus, sisa kursi, perkiraan harga","Film sehari perjalanan yang bergerak saat halaman digulir","Tujuan favorit dengan harga mulai per bus dan tombol WhatsApp","Daftar biaya termasuk & belum termasuk, cara sewa, testimoni, FAQ","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/lajur-preview.webp',
+   '["/assets/templates/lajur-1.webp","/assets/templates/lajur-2.webp"]',
+   'lajur', NULL, 'published', 32);
+
+-- Nusaline (2026-10-29, Travel & Transportasi; DB lama: migrasi 2026-10-29_050). Demo: Nusaline, PO bus malam Jakarta–Denpasar dengan kantor pusat di Jakarta Timur (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('nusaline',
+   'Nusaline',
+   'Travel & Transportasi',
+   'Template website PO bus antarkota & bus malam: kartu cari jadwal, tabel jadwal dengan tombol Pesan ke WhatsApp, kelas dengan denah kursi, film perjalanan semalam, rute & titik naik.',
+   'Nusaline membuat website PO bus Anda terasa seperti papan keberangkatan malam: foto jalan tol malam selebar layar, judul besar, kartu cari jadwal (dari, ke, tanggal, jumlah penumpang), dan papan keberangkatan mini. Di bawahnya tabel jadwal dengan jam berangkat, jam tiba dan tanda +1 yang dihitung otomatis dari lama perjalanan, kelas, harga mulai, saringan rute dan kelas, serta tombol Pesan yang menyusun pesan WhatsApp lengkap. Bagian kelas menampilkan denah kursi tampak atas yang dibuat otomatis dari konfigurasi 2-2, 2-1, atau 1-1 kabin tidur, lalu film perjalanan semalam yang bergerak saat digulir: bus potongan samping melaju dari malam sampai matahari terbit dengan jam dan penghitung km. Ada juga diagram rute dengan agen per kota, fasilitas kabin, cara pesan, cerita penumpang, tanya jawab, dan kontak dengan Google Maps.
+
+Cocok untuk PO bus antarkota, operator bus malam, dan agen tiket bus. Pemesanan hanya menyusun pesan WhatsApp ke admin: tidak ada pembayaran online, e-tiket, atau pilihan kursi real-time, dan jadwal serta harga dikonfirmasi admin. Jadwal, kelas, rute, teks, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero foto malam dengan kartu cari jadwal dan papan keberangkatan","Tabel jadwal: jam tiba & +1 otomatis, saringan rute dan kelas","Tombol Pesan menyusun pesan WhatsApp (rute, tanggal, jam, kelas, penumpang)","Kelas dengan denah kursi otomatis 2-2, 2-1, dan kabin tidur 1-1","Film perjalanan semalam yang bergerak saat digulir","Rute & titik naik per kota, fasilitas kabin, FAQ, dan kontak","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1790000.00,
+   '/assets/templates/nusaline-preview.webp',
+   '["/assets/templates/nusaline-1.webp","/assets/templates/nusaline-2.webp"]',
+   'nusaline', NULL, 'published', 33);
+
+-- Lawatan (2026-10-29, Travel & Transportasi; DB lama: migrasi 2026-10-29_051). Demo: Lawatan Tour & Travel, biro perjalanan rombongan di Yogyakarta (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('lawatan',
+   'Lawatan',
+   'Travel & Transportasi',
+   'Template website tour & travel rombongan bergaya kartu pos: paket wisata bersaringan, itinerary bergerak saat digulir, hitung biaya, dan pesan ke WhatsApp.',
+   'Lawatan menampilkan biro perjalanan rombongan Anda seperti kumpulan kartu pos: foto pemandangan selebar layar dengan panel kartu pos berisi judul dan pilihan jenis trip (study tour, gathering kantor, keluarga, ziarah) yang langsung menyaring paket. Setiap kartu paket memuat foto, perangko harga mulai per orang, durasi, minimal peserta, yang termasuk, itinerary per hari, serta tombol pesan lewat WhatsApp dan hitung biaya. Bagian itinerary bergerak seperti film saat digulir: bus kecil melaju di garis rute dan kartu pos tiap tempat bergeser bergantian. Di bawahnya ada daftar yang termasuk, formulir hitung & rancang trip dengan estimasi biaya, testimoni, galeri foto, tanya jawab, serta kontak dengan Google Maps.
+
+Cocok untuk biro tour & travel, penyedia study tour sekolah, gathering kantor, dan wisata religi. Formulir hanya menyusun pesan WhatsApp; harga paket contoh dan bisa berubah; kuota, hotel dan jadwal dikonfirmasi admin; tidak ada pembayaran online. Paket, harga, itinerary, teks, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero foto pemandangan selebar layar dengan panel kartu pos dan chip jenis trip","Paket wisata bersaringan jenis trip dengan perangko harga mulai per orang","Itinerary per hari di setiap paket","Film itinerary yang bergerak saat digulir: rute, bus, dan kartu pos tiap tempat","Formulir hitung & rancang trip dengan estimasi biaya ke WhatsApp","Yang termasuk, testimoni, galeri, tanya jawab, dan Google Maps","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1690000.00,
+   '/assets/templates/lawatan-preview.webp',
+   '["/assets/templates/lawatan-1.webp","/assets/templates/lawatan-2.webp"]',
+   'lawatan', NULL, 'published', 34);
+
+-- Kemudi (2026-10-29, Travel & Transportasi; DB lama: migrasi 2026-10-29_052). Demo: Kemudi Rent Car, rental mobil di Bandung (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('kemudi',
+   'Kemudi',
+   'Travel & Transportasi',
+   'Template website rental mobil lepas kunci & dengan sopir: kartu pesan dengan perkiraan harga, armada per kelas, film proses saat digulir, tabel harga, syarat sewa, dan antar-jemput.',
+   'Kemudi membantu usaha rental mobil menjawab pertanyaan pelanggan sebelum mereka chat: foto udara selebar layar dengan kartu pesan di sampingnya, tempat pengunjung memilih lepas kunci atau dengan sopir, mobil, serta tanggal dan jam ambil-kembali, lalu langsung melihat perkiraan harganya. Daftar armada bersaringan kelas menampilkan ilustrasi mobil per kelas atau foto Anda, kursi, transmisi, bahan bakar, bagasi, dan harga. Di bawahnya ada film proses yang berjalan saat halaman digulir, tabel harga 12 jam, 24 jam, dengan sopir, dan luar kota, syarat sewa per layanan, zona antar-jemput dengan peta ilustrasi, cara sewa, ulasan, tanya jawab, serta garasi dengan Google Maps.
+
+Cocok untuk rental mobil harian, rent car dengan sopir, dan layanan antar ke stasiun atau bandara. Pemesanan hanya menyusun pesan WhatsApp; ketersediaan dan harga final dikonfirmasi admin; tidak ada pembayaran online; dokumen tidak diunggah atau disimpan di website. Mobil, harga, teks, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero foto selebar layar dengan kartu pesan dan perkiraan harga","Armada bersaringan kelas dengan ilustrasi mobil per kelas","Hitung sewa otomatis: blok 24 jam, 12 jam, dan dengan sopir","Film proses yang berjalan saat halaman digulir","Tabel harga, syarat sewa, dan zona antar-jemput dengan peta","Pesanan tersusun otomatis ke WhatsApp","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/kemudi-preview.webp',
+   '["/assets/templates/kemudi-1.webp","/assets/templates/kemudi-2.webp"]',
+   'kemudi', NULL, 'published', 35);
+
+-- Pesiar (2026-10-29, Travel & Transportasi; DB lama: migrasi 2026-10-29_053). Demo: Pesiar Bali, private tour & sewa mobil dengan sopir di Denpasar (fiktif).
+INSERT IGNORE INTO templates
+  (slug, name, category, short_description, description, features, price,
+   preview_image, gallery, template_code, demo_url, status, sort_order)
+VALUES
+  ('pesiar',
+   'Pesiar',
+   'Travel & Transportasi',
+   'Template website private tour & sewa mobil dengan sopir: tur sehari, rancang tur sendiri dengan harga per mobil, film peta Bali, antar-jemput bandara, dan pemesanan lewat WhatsApp.',
+   'Pesiar menampilkan usaha private tour Anda seperti majalah perjalanan: foto Bali selebar layar dengan judul besar di tengah, lalu kartu tur sehari berisi lama tur, tempat yang dikunjungi, dan harga mulai per mobil. Tamu bisa merancang tur sendiri dengan memilih hingga lima tempat, area jemput, tanggal, dan mobil; panel di sampingnya menghitung perkiraan durasi dan harga per mobil, lalu menyusun pesan WhatsApp. Saat digulir, film peta Bali memperlihatkan sehari perjalanan bersama sopir: mobil menyusuri rute, jam berjalan, dan foto muncul di tiap perhentian. Ada juga tabel harga antar-jemput bandara per area dan formulirnya, kelas mobil dengan gambar garis, daftar sopir, isi harga, cerita tamu, tanya jawab, serta kontak dengan Google Maps.
+
+Cocok untuk usaha tur, rental mobil dengan sopir, dan layanan antar-jemput bandara. Harga yang tampil adalah contoh per mobil yang Anda atur sendiri; formulir hanya menyusun pesan WhatsApp dan data tidak disimpan di website. Tidak ada pembayaran online, e-tiket, ketersediaan mobil real-time, atau pelacakan penerbangan otomatis. Teks, harga, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.',
+   '["Hero foto selebar layar dengan judul di tengah dan dua tombol","Kartu tur sehari dengan harga per mobil dan tombol pesan WhatsApp","Rancang tur sendiri: perkiraan durasi dan harga per mobil","Film peta Bali yang bergerak saat digulir","Tabel harga dan formulir antar-jemput bandara ke WhatsApp","Kelas mobil dengan gambar garis, daftar sopir, dan isi harga","Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)"]',
+   1590000.00,
+   '/assets/templates/pesiar-preview.webp',
+   '["/assets/templates/pesiar-1.webp","/assets/templates/pesiar-2.webp"]',
+   'pesiar', NULL, 'published', 36);
+
 SELECT id, slug, name, price, status, sort_order FROM templates ORDER BY sort_order, id;

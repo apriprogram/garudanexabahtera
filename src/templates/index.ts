@@ -13,12 +13,17 @@ import { glowstory } from './glowstory';
 import { healthlink } from './healthlink';
 import { homenest } from './homenest';
 import { jumantara } from './jumantara';
+import { kemudi } from './kemudi';
+import { lajur } from './lajur';
+import { lawatan } from './lawatan';
 import { madani } from './madani';
 import { medicareGeneral } from './medicare-general';
 import { momkid } from './momkid';
 import { nawasena } from './nawasena';
+import { nusaline } from './nusaline';
 import { nusaniaga } from './nusaniaga';
 import { paynow } from './paynow';
+import { pesiar } from './pesiar';
 import { portline } from './portline';
 import { pradipta } from './pradipta';
 import { puncakgear } from './puncakgear';
@@ -58,6 +63,8 @@ import type { ListItem, SectionContent, SiteContent, TemplateDefinition } from '
 // Batch 2026-10-28 (8 template, hero berlatar foto): Sparring Padel (booking padel + komunitas), SmashHall (GOR badminton),
 // PayNow (landing page dompet digital), MediCare General (RS umum), MomKid Hospital (RS ibu & anak), SpecialistPlus (klinik
 // spesialis & diagnostik), HealthLink (telemedicine), HomeNest (katalog & penjualan rumah); detail di komentar komponen root.
+// Batch 2026-10-29 (5 template travel & transportasi, wadah penuh + film gulir): Lajur (sewa bus pariwisata), Nusaline (PO bus
+// antarkota), Lawatan (tour & travel rombongan), Kemudi (rental mobil), Pesiar (private tour & sewa mobil dengan sopir).
 export const TEMPLATES: Record<string, TemplateDefinition> = {
   [corporateNexa.code]: corporateNexa,
   [startupClean.code]: startupClean,
@@ -90,6 +97,11 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
   [specialistplus.code]: specialistplus,
   [healthlink.code]: healthlink,
   [homenest.code]: homenest,
+  [lajur.code]: lajur,
+  [nusaline.code]: nusaline,
+  [lawatan.code]: lawatan,
+  [kemudi.code]: kemudi,
+  [pesiar.code]: pesiar,
 };
 
 /** Daftar template untuk pilihan (mis. select "Kode template" di admin). */

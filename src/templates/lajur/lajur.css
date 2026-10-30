@@ -1,0 +1,785 @@
+/*
+ * CSS lokal Lajur (diimpor ./Lajur.tsx): lapisan tinta foto hero, marka lajur, penggeser rombongan, buka-tutup, dan
+ * ADEGAN FILM. Adegan digambar dari dua angka di panggung: --p (waktu 0 → 1, ditulis hook saat digulir; poster diam
+ * memakai 0,55) dan --d (jarak tempuh, turunan --p berpotongan dengan dua perhentian). Posisi lapisan = fungsi --p/--d
+ * (keadaan, bukan animasi), jadi berlaku juga untuk poster. Semua yang BERGERAK sendiri (animation/transition) dan jalur
+ * tinggi + panggung sticky hanya bila root ber-data-tpl-motion="on"; prefers-reduced-motion & cetak → diam (dan
+ * komponen film merender poster statis). Hanya transform/opacity/clip yang berubah. Tanpa bayangan apa pun.
+ */
+
+@layer components {
+  /* ─── Hero ─────────────────────────────────────────────────────────────────── */
+
+  /* Tinta dari kiri (teks ≥ 80% tinta: putih ≥ 9:1, amber ≥ 5:1 di piksel foto paling terang) + bawah (bilah) */
+  .lj-hero-scrim {
+    background:
+      linear-gradient(90deg, rgb(20 22 26 / 0.86) 0%, rgb(20 22 26 / 0.8) 36%, rgb(20 22 26 / 0.5) 54%, rgb(20 22 26 / 0) 72%),
+      linear-gradient(0deg, rgb(20 22 26 / 0.6) 0%, rgb(20 22 26 / 0) 32%);
+  }
+
+  /* HP & tablet: foto bersih di atas, teks di bagian bawah di atas tinta ≥ 84% */
+  @container (max-width: 1023px) {
+    .lj-hero-scrim {
+      background: linear-gradient(
+        180deg,
+        rgb(20 22 26 / 0.22) 0%,
+        rgb(20 22 26 / 0.06) 16%,
+        rgb(20 22 26 / 0.62) 32%,
+        rgb(20 22 26 / 0.86) 46%,
+        rgb(20 22 26 / 0.9) 100%
+      );
+    }
+  }
+
+  /* Marka lajur amber di tepi atas bilah penawaran */
+  .lj-lane-dash {
+    background: repeating-linear-gradient(90deg, var(--tpl-accent) 0 28px, transparent 28px 44px);
+  }
+
+  [data-tpl-motion='on'] .lj-lane-draw[data-reveal='pending'] .lj-lane-dash {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  [data-tpl-motion='on'] .lj-lane-draw[data-reveal='shown'] .lj-lane-dash {
+    animation: lj-wipe 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.35s both;
+  }
+
+  /* Ikon bus rekomendasi muncul bergiliran saat susunannya berubah */
+  [data-tpl-motion='on'] .lj-pop {
+    animation: lj-pop 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--lj-delay, 0ms);
+  }
+
+  /* ─── Armada ───────────────────────────────────────────────────────────────── */
+
+  .lj-lane-line {
+    background: repeating-linear-gradient(90deg, rgb(20 22 26 / 0.3) 0 18px, transparent 18px 30px);
+  }
+
+  .lj-wheel {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  [data-tpl-motion='on'] .lj-drive[data-moved='true'] {
+    animation: lj-drive 600ms cubic-bezier(0.16, 0.84, 0.3, 1) both;
+  }
+
+  [data-tpl-motion='on'] .lj-drive[data-moved='true'] .lj-wheel {
+    animation: lj-spin 600ms cubic-bezier(0.16, 0.84, 0.3, 1) both;
+  }
+
+  /* Buka-tutup (denah kursi, FAQ): 0fr → 1fr */
+  .lj-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .lj-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .lj-collapse {
+    transition: grid-template-rows 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  [data-tpl-motion='on'] .lj-acc {
+    transition: rotate 240ms ease;
+  }
+
+  /* ─── Rombongan ────────────────────────────────────────────────────────────── */
+
+  .lj-asphalt {
+    background:
+      repeating-linear-gradient(90deg, rgb(237 235 228 / 0.85) 0 22px, transparent 22px 40px) 0 50% / 100% 2px no-repeat,
+      #2b2e35;
+  }
+
+  [data-tpl-motion='on'] .lj-slide {
+    animation: lj-slide 300ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--lj-delay, 0ms);
+  }
+
+  /* Penggeser: trek 6px (terisi warna tema sampai kenop), kenop persegi tinta berbingkai aksen; tanpa bayangan */
+  .lj-range {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+  }
+
+  .lj-range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--tpl-accent) 0 var(--lj-fill, 50%), rgb(20 22 26 / 0.14) var(--lj-fill, 50%));
+  }
+
+  .lj-range::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--tpl-accent) 0 var(--lj-fill, 50%), rgb(20 22 26 / 0.14) var(--lj-fill, 50%));
+  }
+
+  .lj-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    margin-top: -11px;
+    border: 3px solid var(--tpl-accent);
+    border-radius: 7px;
+    background: #14161a;
+    cursor: grab;
+  }
+
+  .lj-range::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--tpl-accent);
+    border-radius: 7px;
+    background: #14161a;
+    cursor: grab;
+  }
+
+  .lj-range:focus-visible {
+    outline: 2px solid var(--lj-ink);
+    outline-offset: 4px;
+  }
+
+  /* ─── Cara sewa: garis lajur yang tergambar sekali ─────────────────────────── */
+
+  .lj-steps-line {
+    background: repeating-linear-gradient(90deg, rgb(20 22 26 / 0.32) 0 14px, transparent 14px 24px);
+  }
+
+  @container (max-width: 1023px) {
+    .lj-steps-line {
+      background: repeating-linear-gradient(180deg, rgb(20 22 26 / 0.32) 0 12px, transparent 12px 22px);
+    }
+  }
+
+  [data-tpl-motion='on'] .lj-steps-draw[data-reveal='pending'] .lj-steps-line {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  [data-tpl-motion='on'] .lj-steps-draw[data-reveal='shown'] .lj-steps-line {
+    animation: lj-wipe 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both;
+  }
+
+  @container (max-width: 1023px) {
+    [data-tpl-motion='on'] .lj-steps-draw[data-reveal='pending'] .lj-steps-line {
+      clip-path: inset(0 0 100% 0);
+    }
+
+    [data-tpl-motion='on'] .lj-steps-draw[data-reveal='shown'] .lj-steps-line {
+      animation-name: lj-wipe-down;
+    }
+  }
+
+  /* ─── Galeri: keterangan muncul saat disorot / difokus (perangkat ber-hover) ─ */
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    [data-tpl-motion='on'] .lj-shot:not(:hover):not(:focus-visible) .lj-shot-cap {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0);
+    }
+  }
+
+  [data-tpl-motion='on'] .lj-shot-cap {
+    transition:
+      opacity 250ms ease,
+      transform 250ms ease;
+  }
+
+  /* ─── Film: jalur tinggi + panggung sticky (HANYA gerak menyala) ───────────── */
+
+  [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-track {
+    position: relative;
+    height: calc(var(--film-vh, 100svh) * 3.2);
+  }
+
+  @container (max-width: 767px) {
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-track {
+      height: calc(var(--film-vh, 100svh) * 2.4);
+    }
+  }
+
+  [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-stage {
+    position: sticky;
+    top: var(--tpl-sticky-top, 0px);
+    display: flex;
+    flex-direction: column;
+    height: var(--film-vh, 100svh);
+    overflow: hidden;
+  }
+
+  /* Bilah atas: di bawah header template (68 / 76px) dengan jarak ±24–32px */
+  [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-top {
+    padding-top: 92px;
+    padding-bottom: 16px;
+  }
+
+  @container (min-width: 1024px) {
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-top {
+      padding-top: 108px;
+      padding-bottom: 22px;
+    }
+  }
+
+  /* Layar pendek (HP mendatar, jendela laptop rendah ≤ 520px): bilah atas dirampingkan — kalimat pengantar & teks bab
+     disembunyikan (tetap di daftar bab <ol> untuk pembaca layar), judul & jam lebih kecil, dua kolom — supaya adegan
+     dan rel bab tetap terlihat di panggung */
+  @media (max-height: 520px) {
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-top {
+      padding-top: 76px;
+      padding-bottom: 10px;
+      align-items: end;
+    }
+
+    /* Kalimat pengantar: tersembunyi secara visual saja (tetap dibacakan pembaca layar) */
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-sub {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-cap-text {
+      display: none;
+    }
+
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-h2 {
+      max-width: none !important;
+      font-size: 20px !important;
+    }
+
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-clock {
+      font-size: 32px !important;
+    }
+
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-caps {
+      min-height: 24px !important;
+    }
+
+    @container (min-width: 640px) {
+      [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-top {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      }
+    }
+  }
+
+  .lj-rail-track {
+    background: rgb(255 255 255 / 0.16);
+  }
+
+  .lj-rail-fill {
+    background: var(--lj-bright);
+    transform-origin: left center;
+    transform: scaleX(var(--p, 0));
+  }
+
+  /* Keterangan bab: berganti BERURUTAN lewat jendela progres — yang lama pudar habis tepat di batas bab (keluar ke
+     atas), yang baru mulai muncul di batas itu (masuk dari bawah); tidak pernah dua keterangan bertumpuk */
+  .lj-cap {
+    --cin: clamp(0, (var(--p, 0) - var(--s)) / 0.02, 1);
+    --cout: clamp(0, (var(--e) - var(--p, 0)) / 0.02, 1);
+    opacity: min(var(--cin), var(--cout));
+    transform: translate3d(0, calc((1 - var(--cin)) * 10px - (1 - var(--cout)) * 10px), 0);
+  }
+
+  /* ─── Adegan (gerak menyala & poster diam) ─────────────────────────────────── */
+
+  .lj-screen {
+    container-type: size;
+    overflow: hidden;
+    background: #14161a;
+    /* Jarak tempuh: jalan → berhenti di rest area (0,24–0,36) → jalan → parkir di tujuan (0,50–0,66) → pulang */
+    --t1: clamp(0, (var(--p, 0) - 0.035) / 0.205, 1);
+    --t2: clamp(0, (var(--p, 0) - 0.36) / 0.14, 1);
+    --t3: clamp(0, (var(--p, 0) - 0.66) / 0.3, 1);
+    --d: calc(
+      0.35 * var(--t1) * var(--t1) * (3 - 2 * var(--t1)) + 0.27 * var(--t2) * var(--t2) * (3 - 2 * var(--t2)) + 0.38 * var(--t3) * var(--t3) *
+        (3 - 2 * var(--t3))
+    );
+    /* Skala dunia mengikuti bus: 1 unit gambar bus (lebar 400) dalam px */
+    --bus-w: 38cqw;
+    --u: calc(var(--bus-w) / 400);
+  }
+
+  /* HP: bus lebih besar (dunia ikut, --u) — lihat juga blok "HP: dunia diangkat" di bawah */
+  @container (max-width: 767px) {
+    .lj-screen {
+      --bus-w: 62cqw;
+    }
+  }
+
+  .lj-scene > * {
+    position: absolute;
+  }
+
+  .lj-sky {
+    inset: 0;
+  }
+
+  .lj-sky-dawn {
+    background: linear-gradient(180deg, #2e3354 0%, #8d6a8e 34%, #e89a86 58%, #f6c59b 78%, #f9ddb9 100%);
+  }
+
+  .lj-sky-day {
+    background: linear-gradient(180deg, #3f7dd6 0%, #7db6f5 42%, #9ccbff 72%, #d3e8ff 100%);
+    opacity: clamp(0, (var(--p, 0) - 0.12) / 0.14, 1);
+  }
+
+  .lj-sky-dusk {
+    background: linear-gradient(180deg, #332a57 0%, #93466f 36%, #e8735c 60%, #ff9f6e 80%, #ffc48a 100%);
+    opacity: clamp(0, (var(--p, 0) - 0.62) / 0.12, 1);
+  }
+
+  .lj-sky-night {
+    background: linear-gradient(180deg, #070a17 0%, #11162e 48%, #1c2340 78%, #2a3152 100%);
+    opacity: clamp(0, (var(--p, 0) - 0.8) / 0.12, 1);
+  }
+
+  .lj-stars {
+    inset: 0 0 auto;
+    width: 100%;
+    height: 72%;
+    opacity: clamp(0, (var(--p, 0) - 0.86) / 0.08, 1);
+  }
+
+  /* Matahari & bulan di busur elips sekitar titik tengah cakrawala */
+  .lj-orb {
+    left: 50%;
+    top: 66%;
+    width: clamp(36px, 15cqh, 104px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) translate(calc(44cqw * sin(var(--a))), calc(-58cqh * cos(var(--a))));
+  }
+
+  .lj-sun {
+    --a: calc(-90deg + var(--p, 0) * 230deg);
+    background: radial-gradient(circle, #fff8dc 0 33%, #ffe08a 45%, rgb(255 214 120 / 0.32) 57%, rgb(255 214 120 / 0) 71%);
+    opacity: clamp(0, (0.86 - var(--p, 0)) / 0.06, 1);
+  }
+
+  .lj-sun-warm {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffe0b0 0 33%, #ff9f5a 45%, rgb(255 140 80 / 0.34) 57%, rgb(255 140 80 / 0) 71%);
+    opacity: max(clamp(0, (0.16 - var(--p, 0)) / 0.12, 1), clamp(0, (var(--p, 0) - 0.56) / 0.14, 1));
+  }
+
+  /* Bulan baru tampak setelah naik melewati punggung gunung (tidak membayang di balik gunung transparan saat senja) */
+  .lj-moon {
+    --a: calc(90deg + var(--p, 0) * 230deg);
+    width: clamp(24px, 9cqh, 60px);
+    background: radial-gradient(circle at 70% 32%, #141a33 0 42%, transparent 43%), #f1eedf;
+    opacity: clamp(0, (var(--p, 0) - 0.84) / 0.06, 1);
+  }
+
+  /* Awan (HP saja, lihat blok HP di bawah): bergeser pelan (lebih lambat dari gunung) dan ikut warna langit — merah
+     muda saat fajar & senja, putih siang, hilang saat malam (bintang & bulan mengisi langit) */
+  .lj-clouds {
+    display: none;
+    inset: 0;
+    transform: translate3d(calc(var(--d) * -14cqw - var(--p, 0) * 6cqw), 0, 0);
+  }
+
+  .lj-cloud {
+    position: absolute;
+    left: calc(var(--cx) * 1cqw);
+    top: calc(var(--cy) * 1cqh);
+    height: calc(var(--ch) * 1cqh);
+    width: auto;
+  }
+
+  .lj-cloud-warm {
+    opacity: calc(
+      max(clamp(0, (0.2 - var(--p, 0)) / 0.08, 1), min(clamp(0, (var(--p, 0) - 0.62) / 0.1, 1), clamp(0, (0.9 - var(--p, 0)) / 0.08, 1))) * 0.62
+    );
+  }
+
+  .lj-cloud-day {
+    opacity: calc(min(clamp(0, (var(--p, 0) - 0.12) / 0.1, 1), clamp(0, (0.72 - var(--p, 0)) / 0.1, 1)) * 0.9);
+  }
+
+  .lj-far {
+    left: 0;
+    bottom: 24%;
+    width: 112%;
+    height: 44%;
+    transform: translate3d(calc(var(--d) * -10.714%), 0, 0);
+    will-change: transform;
+  }
+
+  .lj-mid {
+    left: 0;
+    bottom: 15%;
+    width: 140%;
+    height: 34%;
+    transform: translate3d(calc(var(--d) * -28.571%), 0, 0);
+    will-change: transform;
+  }
+
+  .lj-night-tint {
+    opacity: clamp(0, (var(--p, 0) - 0.7) / 0.16, 0.86);
+  }
+
+  /* Kota tujuan pulang: hanya tampak sejak senja (siang tidak ada siluet gedung gelap di poster) */
+  .lj-city {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    height: 70%;
+    opacity: clamp(0, (var(--p, 0) - 0.66) / 0.1, 1);
+  }
+
+  .lj-city-lights {
+    opacity: clamp(0, (var(--p, 0) - 0.8) / 0.1, 1);
+  }
+
+  .lj-verge {
+    inset: auto 0 14% 0;
+    height: 6%;
+    background: linear-gradient(180deg, #2a4031, #1d2e24);
+  }
+
+  .lj-asphalt-film {
+    inset: auto 0 0 0;
+    height: 14%;
+    background:
+      linear-gradient(180deg, rgb(226 222 212 / 0.55) 0 2px, transparent 2px) 0 0 / 100% 100% no-repeat,
+      linear-gradient(0deg, #3b4048 0 22%, #2b2e35 22% 100%);
+  }
+
+  /* Dunia dekat & lajur: 4,5× lebar layar, −3,5 layar sepanjang perjalanan */
+  .lj-near,
+  .lj-lane {
+    left: 0;
+    bottom: 0;
+    width: 450%;
+    height: 100%;
+    transform: translate3d(calc(var(--d) * -77.7778%), 0, 0);
+  }
+
+  .lj-near {
+    will-change: transform;
+  }
+
+  .lj-near > *,
+  .lj-lane > * {
+    position: absolute;
+  }
+
+  .lj-actor {
+    bottom: 18.5%;
+    left: calc((var(--x) + var(--at) * 3.5) / 4.5 * 100%);
+  }
+
+  @container (max-width: 767px) {
+    .lj-actor {
+      left: calc((var(--xp) + var(--at) * 3.5) / 4.5 * 100%);
+    }
+
+    .lj-actor-park {
+      display: none;
+    }
+  }
+
+  .lj-actor-rest {
+    height: calc(124 * var(--u));
+  }
+
+  .lj-actor-gate {
+    height: calc(200 * var(--u));
+  }
+
+  /* Matahari siang (busur .lj-orb) lewat di kiri-atas mahkota gerbang, tidak menancap di puncaknya. HP: gerbang lebih kecil agar muat di kanan bus, di dalam layar */
+  @container (max-width: 767px) {
+    .lj-actor-gate {
+      height: calc(180 * var(--u));
+    }
+  }
+
+  .lj-actor-park {
+    height: calc(92 * var(--u));
+  }
+
+  /* Sisi pintu bus (trotoar depan): halte & rombongan berdiri di tepi bawah */
+  .lj-lane .lj-actor {
+    bottom: 1.2%;
+  }
+
+  .lj-actor-stop {
+    height: calc(96 * var(--u));
+  }
+
+  .lj-actor-people {
+    height: calc(54 * var(--u));
+  }
+
+  .lj-person-out {
+    opacity: clamp(0, (0.008 + var(--i) * 0.007 - var(--p, 0)) / 0.006, 1);
+  }
+
+  .lj-person-in {
+    opacity: clamp(0, (var(--p, 0) - 0.962 - var(--i) * 0.007) / 0.006, 1);
+  }
+
+  .lj-rail-posts {
+    inset: auto 0 16.5% 0;
+    height: calc(26 * var(--u));
+    background:
+      linear-gradient(#9aa1aa, #9aa1aa) 0 28% / 100% max(2px, calc(2.4 * var(--u))) no-repeat,
+      repeating-linear-gradient(90deg, #4c535c 0 calc(4 * var(--u)), transparent calc(4 * var(--u)) calc(92 * var(--u)));
+  }
+
+  /* Tiang listrik + kabel berulang (gambar SVG di ./scenes, gaya inline): satu tiang tiap 400 unit bus */
+  .lj-poles {
+    inset: auto 0 18% 0;
+    height: calc(220 * var(--u));
+    background-position: 0 100%;
+    background-size: calc(400 * var(--u)) 100%;
+    background-repeat: repeat-x;
+  }
+
+  /* Warung di titik turun: lampunya menyala saat malam */
+  .lj-actor-warung {
+    height: calc(100 * var(--u));
+  }
+
+  .lj-lit {
+    opacity: clamp(0, (var(--p, 0) - 0.78) / 0.08, 1);
+  }
+
+  /* Garis laju di belakang bus: hanya saat bus bergerak (kecepatan ≈ t·(1−t) tiap ruas jalan) */
+  .lj-speed {
+    position: absolute;
+    left: -14%;
+    bottom: 30%;
+    width: 12%;
+    height: 30%;
+    --v: max(var(--t1) * (1 - var(--t1)) * 4, var(--t2) * (1 - var(--t2)) * 4, var(--t3) * (1 - var(--t3)) * 4);
+    opacity: calc(var(--v) * 0.75);
+    transform: translate3d(calc(var(--v) * -8px), 0, 0);
+  }
+
+  .lj-dashes {
+    inset: auto 0 8.2% 0;
+    height: max(2px, calc(3 * var(--u)));
+    background: repeating-linear-gradient(90deg, rgb(237 235 228 / 0.85) 0 calc(96 * var(--u)), transparent calc(96 * var(--u)) calc(256 * var(--u)));
+  }
+
+  .lj-bus {
+    left: 8%;
+    bottom: 4.6%;
+    width: var(--bus-w);
+    will-change: transform;
+  }
+
+  @container (max-width: 767px) {
+    .lj-bus {
+      left: 3%;
+    }
+  }
+
+  /* HP: dunia diangkat 6% & jalan lebih lebar — layar tegak tidak lagi separuhnya langit kosong; pemandangan + jalan
+     mengisi ± 55% bawah. Tokoh di trotoar dekat (halte, rombongan) tetap di tepi bawah. */
+  @container (max-width: 767px) {
+    .lj-clouds {
+      display: block;
+    }
+
+    .lj-far {
+      bottom: 30%;
+    }
+
+    .lj-mid {
+      bottom: 21%;
+    }
+
+    .lj-verge {
+      bottom: 20%;
+    }
+
+    .lj-asphalt-film {
+      height: 20%;
+    }
+
+    .lj-rail-posts {
+      bottom: 22.5%;
+    }
+
+    .lj-poles {
+      bottom: 24%;
+    }
+
+    .lj-near > .lj-actor {
+      bottom: 24.5%;
+    }
+
+    .lj-dashes {
+      bottom: 11%;
+    }
+  }
+
+  .lj-bus-body {
+    transform: translate3d(0, calc(sin(var(--d) * 260rad) * 1.4px), 0);
+  }
+
+  .lj-film-wheel {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: rotate(calc(var(--d) * 2880deg));
+  }
+
+  .lj-cabin,
+  .lj-beam {
+    opacity: clamp(0, (var(--p, 0) - 0.72) / 0.08, 1);
+  }
+
+  /* Badan bus ikut gelap di malam hari (kaca, lampu, dan roda tetap di atas lapisan ini) */
+  .lj-bus-night {
+    opacity: clamp(0, (var(--p, 0) - 0.72) / 0.18, 0.45);
+  }
+
+  .lj-cabin {
+    fill-opacity: 0.55;
+  }
+
+  .lj-beam {
+    position: absolute;
+    left: 97%;
+    bottom: 13%;
+    width: 62%;
+    height: 26%;
+    background: linear-gradient(90deg, rgb(255 236 190 / 0.55), rgb(255 236 190 / 0));
+    clip-path: polygon(0 42%, 100% 0, 100% 100%, 0 62%);
+  }
+
+  /* ─── Kurangi gerak & cetak: semua diam ─────────────────────────────────────── */
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .lj-lane-draw[data-reveal='shown'] .lj-lane-dash,
+    [data-tpl-motion='on'] .lj-steps-draw[data-reveal='shown'] .lj-steps-line,
+    [data-tpl-motion='on'] .lj-pop,
+    [data-tpl-motion='on'] .lj-slide,
+    [data-tpl-motion='on'] .lj-drive[data-moved='true'],
+    [data-tpl-motion='on'] .lj-drive[data-moved='true'] .lj-wheel {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .lj-lane-draw[data-reveal='pending'] .lj-lane-dash,
+    [data-tpl-motion='on'] .lj-steps-draw[data-reveal='pending'] .lj-steps-line {
+      clip-path: none;
+    }
+
+    [data-tpl-motion='on'] .lj-collapse,
+    [data-tpl-motion='on'] .lj-acc,
+    [data-tpl-motion='on'] .lj-shot-cap {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .lj-shot .lj-shot-cap {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media print {
+    [data-tpl-motion='on'] .lj-lane-draw[data-reveal='shown'] .lj-lane-dash,
+    [data-tpl-motion='on'] .lj-steps-draw[data-reveal='shown'] .lj-steps-line,
+    [data-tpl-motion='on'] .lj-pop,
+    [data-tpl-motion='on'] .lj-slide,
+    [data-tpl-motion='on'] .lj-drive[data-moved='true'],
+    [data-tpl-motion='on'] .lj-drive[data-moved='true'] .lj-wheel {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .lj-lane-draw[data-reveal='pending'] .lj-lane-dash,
+    [data-tpl-motion='on'] .lj-steps-draw[data-reveal='pending'] .lj-steps-line {
+      clip-path: none;
+    }
+
+    /* Film tercetak sebagai satu bingkai: tanpa jalur tinggi, tanpa panggung lengket */
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-track {
+      height: auto;
+    }
+
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-film-stage {
+      position: static;
+      height: auto;
+    }
+
+    [data-tpl-motion='on'] .lj-film[data-film='scroll'] .lj-screen {
+      flex: none;
+      aspect-ratio: 21 / 9;
+    }
+  }
+}
+
+@keyframes lj-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes lj-wipe-down {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes lj-pop {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lj-drive {
+  from {
+    opacity: 0;
+    transform: translate3d(-46%, 0, 0);
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lj-spin {
+  from {
+    transform: rotate(-540deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes lj-slide {
+  from {
+    opacity: 0;
+    transform: translate3d(-24px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,0 +1,738 @@
+/*
+ * CSS lokal Kemudi (diimpor ./Kemudi.tsx): lapisan grafit foto hero, garis biru di bawah kata sorotan H1, panah select,
+ * ibu jari kontrol bersegmen, trek mini kartu pesan, kartu armada setelah saringan, foto tab syarat, rute peta
+ * antar-jemput, garis cara sewa, akordeon, dan FILM yang diputar dengan menggulir. Keadaan bawaan = keadaan akhir /
+ * bingkai poster; gerak hanya bila root template ber-data-tpl-motion="on" (demo & situs live) — film juga butuh
+ * data-film="on" (diisi ./Film.tsx dari useMotionEnabled: mati pada prefers-reduced-motion, pratinjau CMS, jsdom).
+ * Film: section = trek tinggi, panggung sticky; semua lapisan digerakkan var(--p) (0–1, ditulis ./hooks.ts) lewat
+ * calc()/clamp() — hanya transform (translate/scale/rotate), opacity, dan stroke-dashoffset. Tanpa bayangan apa pun.
+ */
+
+@layer components {
+  /* ─── Hero ─────────────────────────────────────────────────────────────── */
+
+  /* Grafit radial di belakang kolom teks (kiri), memudar sebelum mobil di tengah foto; tepi bawah sedikit gelap.
+     Teks putih ≥ 4,5:1: lapisan ≥ 0,62 di area teks (piksel putih terburuk 5,3:1; hijau hutan ≥ 9:1). */
+  .km-hero-scrim {
+    background:
+      radial-gradient(ellipse 58% 78% at 18% 46%, rgb(13 17 23 / 0.8) 0%, rgb(13 17 23 / 0.66) 42%, rgb(13 17 23 / 0.2) 78%, rgb(13 17 23 / 0) 100%),
+      linear-gradient(0deg, rgb(13 17 23 / 0.32) 0%, rgb(13 17 23 / 0) 28%),
+      rgb(13 17 23 / 0.08);
+  }
+
+  /* HP & tablet: teks menutupi sebagian besar foto → lapisan rata yang lebih gelap di tengah */
+  @container (max-width: 1023px) {
+    .km-hero-scrim {
+      background:
+        linear-gradient(180deg, rgb(13 17 23 / 0.6) 0%, rgb(13 17 23 / 0.68) 55%, rgb(13 17 23 / 0.5) 82%, rgb(13 17 23 / 0.3) 100%);
+    }
+  }
+
+  .km-kenburns {
+    transform-origin: 56% 52%;
+  }
+
+  [data-tpl-motion='on'] .km-kenburns {
+    animation: km-kenburns 14s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+
+  /* Garis biru di bawah kata sorotan (dekoratif; tergambar sekali). Latar bergaris, bukan ::after mutlak: sorotan
+     yang panjang boleh terbungkus ke baris berikut (tidak terpotong di HP) dan garisnya ikut di tiap baris. */
+  .km-hl {
+    background-image: linear-gradient(var(--tpl-accent), var(--tpl-accent));
+    background-repeat: no-repeat;
+    background-position: 0.02em calc(100% - 0.02em);
+    background-size: calc(100% - 0.08em) 0.09em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  [data-tpl-motion='on'] .km-hl {
+    animation: km-bar 700ms cubic-bezier(0.65, 0, 0.35, 1) 520ms both;
+  }
+
+  /* Panah select (tinta 60%) */
+  .km-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%230D1117' stroke-opacity='.6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 16px;
+  }
+
+  /* Ibu jari kontrol bersegmen: lebar 1/n, bergeser ke pilihan aktif */
+  .km-seg-thumb {
+    width: calc((100% - 8px) / var(--seg-n, 2));
+    transform: translateX(calc(var(--seg-i, 0) * 100%));
+  }
+
+  [data-tpl-motion='on'] .km-seg-thumb {
+    transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  /* Trek mini: mobil mungil di titik Kembali; melaju dari Ambil tiap jadwal berubah */
+  .km-drive {
+    transform: translateX(100%);
+  }
+
+  [data-tpl-motion='on'] .km-drive {
+    animation: km-drive 700ms cubic-bezier(0.45, 0, 0.2, 1) both;
+  }
+
+  /* ─── Armada, syarat, akordeon ─────────────────────────────────────────── */
+
+  [data-tpl-motion='on'] [data-filtered='true'] > .km-pop {
+    animation: km-pop 250ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--km-delay, 0ms);
+  }
+
+  .km-tab-img {
+    opacity: 0;
+  }
+
+  .km-tab-img[data-active='true'] {
+    opacity: 1;
+  }
+
+  [data-tpl-motion='on'] .km-tab-img {
+    transition: opacity 300ms ease;
+  }
+
+  [data-tpl-motion='on'] .km-panel {
+    animation: km-fade 250ms ease both;
+  }
+
+  .km-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .km-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .km-collapse {
+    transition: grid-template-rows 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  [data-tpl-motion='on'] .km-acc {
+    transition: rotate 240ms ease;
+  }
+
+  /* Bilah header 72 → 60px */
+  [data-tpl-motion='on'] .km-bar {
+    transition: height 200ms ease;
+  }
+
+  .km-scroll-x {
+    scrollbar-width: thin;
+  }
+
+  /* ─── Antar-jemput: rute & pin ─────────────────────────────────────────── */
+
+  .km-route {
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 0;
+  }
+
+  [data-tpl-motion='on'] .km-map[data-seen='false'] .km-route {
+    stroke-dashoffset: 1;
+  }
+
+  [data-tpl-motion='on'] .km-map[data-seen='true'] .km-route {
+    animation: km-route 1.2s cubic-bezier(0.65, 0, 0.35, 1) both;
+  }
+
+  [data-tpl-motion='on'] .km-map[data-seen='false'] .km-pin {
+    opacity: 0;
+  }
+
+  [data-tpl-motion='on'] .km-map[data-seen='true'] .km-pin {
+    animation: km-pin 300ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--km-delay, 0ms);
+  }
+
+  /* ─── Cara sewa: garis penghubung tergambar sekali ─────────────────────── */
+
+  .km-step-fill {
+    transform-origin: center top;
+  }
+
+  [data-tpl-motion='on'] .km-steps[data-seen='false'] .km-step-fill {
+    scale: 1 0;
+  }
+
+  [data-tpl-motion='on'] .km-steps[data-seen='true'] .km-step-fill {
+    animation: km-step-y 420ms cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation-delay: var(--km-delay, 0ms);
+  }
+
+  @container (min-width: 1024px) {
+    .km-step-fill {
+      transform-origin: left center;
+    }
+
+    [data-tpl-motion='on'] .km-steps[data-seen='false'] .km-step-fill {
+      scale: 0 1;
+    }
+
+    [data-tpl-motion='on'] .km-steps[data-seen='true'] .km-step-fill {
+      animation-name: km-step-x;
+    }
+  }
+
+  /* ─── Film: lapisan dasar (= bingkai poster tanpa gerak) ───────────────── */
+
+  /* Posisi panggung di CSS (bukan utilitas Tailwind) agar aturan sticky di bawah bisa menimpanya */
+  .km-stage {
+    position: relative;
+  }
+
+  .km-grid {
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.07) 1px, transparent 1px),
+      linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+    background-size:
+      120px 120px,
+      120px 120px,
+      24px 24px,
+      24px 24px;
+    background-position: center center;
+  }
+
+  .km-vignette {
+    background: radial-gradient(ellipse 80% 75% at 62% 50%, rgb(22 27 34 / 0) 45%, rgb(22 27 34 / 0.88) 100%);
+  }
+
+  .km-draw {
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 0;
+  }
+
+  /* Tebal garis cetak biru dalam satuan gambar (garis ikut skala gambar, lihat ./scenes.tsx): --sw per garis × --km-sw
+     per lebar layar → ± 2px di HP (gambar ± 340px) sampai layar 2560 (gambar ± 1600px) */
+  .km-draw,
+  .km-co-line {
+    stroke-width: calc(var(--sw, 2) * var(--km-sw, 1) * 1px);
+  }
+
+  .km-scene {
+    --km-sw: 1;
+  }
+
+  @container (max-width: 767px) {
+    .km-scene {
+      --km-sw: 2.4;
+    }
+  }
+
+  @container (min-width: 768px) and (max-width: 1023px) {
+    .km-scene {
+      --km-sw: 1.2;
+    }
+  }
+
+  @container (min-width: 1600px) {
+    .km-scene {
+      --km-sw: 0.75;
+    }
+  }
+
+  @container (min-width: 2200px) {
+    .km-scene {
+      --km-sw: 0.55;
+    }
+  }
+
+  .km-bp {
+    opacity: 0.3;
+  }
+
+  .km-ghost,
+  .km-speed,
+  .km-scan,
+  .km-sketch {
+    opacity: 0;
+  }
+
+  .km-wheel,
+  .km-spin,
+  .km-co-dot {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .km-speed {
+    transform-box: fill-box;
+    transform-origin: right center;
+  }
+
+  /* ─── Film: trek tinggi + panggung sticky + babak (gerak menyala) ──────── */
+
+  /* Hanya di layar: cetak (dan kurangi gerak, lewat data-film="off") memakai lapisan dasar = bingkai poster utuh */
+  @media screen {
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-track {
+      height: calc(var(--film-vh, 100svh) * 3);
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-stage {
+      position: sticky;
+      top: var(--tpl-sticky-top, 0px);
+      height: var(--film-vh, 100svh);
+      /* Wadah ukuran: isi panggung menyesuaikan tinggi layar (lihat @container km-stage di bawah) */
+      container: km-stage / size;
+      /* Kemajuan per babak (0–1) dari --p */
+      --t-pull: clamp(0, var(--p, 0) / 0.3, 1);
+      --t-scan: clamp(0, (var(--p, 0) - 0.3) / 0.18, 1);
+      --t-fill: clamp(0, (var(--p, 0) - 0.32) / 0.14, 1);
+      --t-glass: clamp(0, (var(--p, 0) - 0.36) / 0.12, 1);
+      --t-wheel: clamp(0, (var(--p, 0) - 0.38) / 0.12, 1);
+      /* HP: gambar naik ke tempatnya tepat sebelum chip keterangan pertama (0,5) muncul di bawahnya */
+      --t-co: clamp(0, (var(--p, 0) - 0.44) / 0.06, 1);
+      --t-fade: clamp(0, (var(--p, 0) - 0.34) / 0.16, 1);
+      /* BBM = keterangan ke-3 (panel belakang, jendela 0,65–0,725) */
+      --t-fuel: clamp(0, (var(--p, 0) - 0.65) / 0.075, 1);
+      --t-out: clamp(0, (var(--p, 0) - 0.8) / 0.04, 1);
+      --t-go: clamp(0, (var(--p, 0) - 0.8) / 0.15, 1);
+      --t-final: clamp(0, (var(--p, 0) - 0.9) / 0.08, 1);
+    }
+
+    @container (max-width: 767px) {
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-track {
+        height: calc(var(--film-vh, 100svh) * 2.25);
+      }
+    }
+
+    /* Kotak gambar desktop: selebar kolom, tetapi tidak lebih tinggi dari ruang di panggung (kolom kanan) */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-box {
+      width: min(100%, calc((var(--film-vh, 100svh) - 220px) * 1.7143));
+      scale: calc(0.94 + 0.06 * var(--t-pull));
+    }
+
+    /* HP & tablet: judul, lalu GAMBAR di sisa tinggi panggung (baris 1fr), keterangan, bab. Lebar gambar = lebar 12:7
+       terbesar yang muat di .km-frame (--km-box-w diukur ./hooks.ts), bukan tinggi panggung dikurangi konstanta */
+    @container (max-width: 1023px) {
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-film-scene {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-frame {
+        flex: 1 1 0;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+      }
+
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-box {
+        width: var(--km-box-w, 100%);
+      }
+    }
+
+    /* Kamera mundur pelan: grid membesar → normal, bergeser naik (lapisan jauh bergerak sedikit) */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-grid {
+      scale: calc(1.12 - 0.12 * var(--t-pull));
+      translate: 0 calc(var(--p, 0) * -48px);
+      will-change: transform;
+    }
+
+    /* Jendela per elemen: --a (awal) dan --d (lama) inline → --w 0–1 */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-w {
+      --w: clamp(0, (var(--p, 0) - var(--a, 0)) / var(--d, 1), 1);
+    }
+
+    /* Babak 1 — garis tergambar */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-draw {
+      stroke-dashoffset: calc(1 - var(--w));
+      opacity: clamp(0, var(--w) * 40, 1);
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-sketch {
+      opacity: calc(1 - var(--t-pull));
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-bp {
+      opacity: calc((1 - 0.72 * var(--t-fade)) * (1 - 0.55 * var(--t-final)));
+    }
+
+    /* Garis bantu ikut meredup saat teks penutup muncul (tidak memotong kalimatnya) */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-guides {
+      opacity: calc(1 - 0.8 * var(--t-final));
+    }
+
+    /* Babak 2 — pindai, isi warna, kaca, roda */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-scan {
+      opacity: clamp(0, min(var(--t-scan) * 14, (1 - var(--t-scan)) * 14), 1);
+      translate: calc(var(--t-scan) * 1320px - 60px) 0;
+      will-change: transform;
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-fill {
+      opacity: var(--t-fill);
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-glass {
+      opacity: var(--t-glass);
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-wheel {
+      opacity: var(--t-wheel);
+      scale: calc(0.7 + 0.3 * var(--t-wheel));
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-hud-check {
+      transform-origin: left center;
+      scale: var(--t-scan) 1;
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-hud-fuel {
+      transform-origin: left center;
+      scale: calc(0.16 + 0.84 * var(--t-fuel)) 1;
+    }
+
+    /* Babak 3 — keterangan: titik muncul, garis tergambar, label memudar masuk; hilang saat mobil berangkat */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-co {
+      opacity: calc(1 - var(--t-out));
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-dot {
+      scale: clamp(0, var(--w) / 0.3, 1);
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-line {
+      stroke-dasharray: 1 1;
+      stroke-dashoffset: calc(1 - clamp(0, (var(--w) - 0.2) / 0.5, 1));
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-label {
+      opacity: calc(clamp(0, (var(--w) - 0.5) / 0.5, 1) * (1 - var(--t-out)));
+      /* translate dipakai utilitas pemusatan label; geser masuk lewat transform */
+      transform: translateY(calc((1 - clamp(0, (var(--w) - 0.5) / 0.5, 1)) * 8px));
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-badge {
+      opacity: calc(clamp(0, var(--w) / 0.4, 1) * (1 - var(--t-out)));
+      scale: calc(0.6 + 0.4 * clamp(0, var(--w) / 0.4, 1));
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-fill {
+      scale: clamp(0, var(--w) / 0.4, 1);
+    }
+
+    /* HP: chip keterangan di bawah gambar muncul bersama lencananya (bukan semua sejak bingkai pertama); sel grid tetap
+       berukuran sama, jadi tidak ada yang melompat. Daftar diam (gerak mati) selalu utuh. */
+    @container (max-width: 767px) {
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-item {
+        opacity: clamp(0, var(--w) / 0.25, 1);
+        translate: 0 calc((1 - clamp(0, var(--w) / 0.25, 1)) * 6px);
+      }
+    }
+
+    /* Babak 4 — berangkat: mobil melaju ke kanan, roda berputar, garis kecepatan & bayangan gerak */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-car {
+      translate: calc(var(--t-go) * var(--t-go) * 1700px) 0;
+      will-change: transform;
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-spin {
+      rotate: calc(var(--t-go) * var(--t-go) * 1080deg);
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-speed {
+      opacity: clamp(0, min(var(--t-go) * 5, (1 - var(--t-go)) * 6), 1);
+      scale: var(--t-go) 1;
+      will-change: transform;
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-ghost {
+      opacity: calc(var(--g, 0.1) * clamp(0, min(var(--t-go) * 5, (1 - var(--t-go)) * 6), 1));
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-final {
+      opacity: var(--t-final);
+      scale: calc(1.04 - 0.04 * var(--t-final));
+    }
+
+    /* Bingkai akhir bersih: teks bab & daftar keterangan memudar saat kalimat penutup muncul di atas gambar (tetap di DOM) */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-film-chapters,
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-list {
+      opacity: calc(1 - var(--t-final));
+    }
+
+    /* HP & tablet: gambar di tengah ruang bebas, bukan menempel ke judul dengan ruang grafit kosong di bawahnya. Awal
+       film (HP): daftar keterangan di bawah gambar belum muncul → gambar turun setengah tingginya (--km-co-h, diukur
+       ./hooks.ts), lalu naik ke tempatnya sebelum chip pertama. Akhir: keterangan & bab memudar → gambar (garis bantu
+       + kalimat penutup) turun ke tengah ruang sampai rel (--km-tail), sesudah mobil keluar panggung. */
+    @container (max-width: 1023px) {
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-box {
+        translate: 0 calc(var(--km-co-h, 0px) * 0.5 * (1 - var(--t-co)) + var(--km-tail, 0px) * 0.5 * var(--t-final));
+      }
+
+      /* Chip keterangan pergi bersama mobil (seperti lencananya di gambar), jadi kalimat penutup tidak menimpanya */
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-list {
+        opacity: calc(1 - var(--t-out));
+      }
+    }
+
+    /* Bab: semua di DOM, satu tampil bergantian (pudar + geser 10px; jeda pergantian ± 0,02 progres) */
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-chapters {
+      display: grid;
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-chapters > .km-chap {
+      grid-area: 1 / 1;
+      --v: clamp(0, min((var(--p, 0) - var(--a, 0)) / 0.02, (var(--b, 1) - var(--p, 0)) / 0.02), 1);
+      opacity: var(--v);
+      translate: 0 calc((1 - var(--v)) * 10px);
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-rail-fill {
+      transform-origin: left center;
+      scale: var(--p, 0) 1;
+    }
+
+    /* Panggung pendek: HUD dekoratif disembunyikan (laptop 768px, HP) */
+    @container km-stage (max-height: 779px) {
+      .km-hud {
+        display: none !important;
+      }
+    }
+
+    /* HP & tablet pendek: teks tambahan disembunyikan secara visual (tetap terbaca pembaca layar) SEBELUM gambar mengecil:
+       ≤ 760px kalimat pengantar, ≤ 640px isi bab (nama bab tetap), ≤ 560px label section & nomor bab (rel tetap bernomor) */
+    @container km-stage (max-height: 760px) and (max-width: 1023px) {
+      .km-film-intro {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        white-space: nowrap;
+        clip-path: inset(50%);
+      }
+    }
+
+    @container km-stage (max-height: 640px) and (max-width: 1023px) {
+      .km-chap-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        white-space: nowrap;
+        clip-path: inset(50%);
+      }
+    }
+
+    @container km-stage (max-height: 560px) and (max-width: 1023px) {
+      .km-film-tag,
+      .km-chap-num {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        white-space: nowrap;
+        clip-path: inset(50%);
+      }
+    }
+
+    /* HP pendek (≤ 700px): keterangan satu baris yang berganti seperti teks film (satu per jendela), bukan 2 × 2 */
+    @container km-stage (max-height: 700px) and (max-width: 767px) {
+      /* !important: menimpa utilitas grid-cols-2 (lapisan utilities menang atas components) */
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-list {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-co-list > .km-co-item {
+        grid-area: 1 / 1;
+        opacity: clamp(0, min(var(--w) / 0.2, (1 - var(--w)) / 0.12), 1);
+        translate: none;
+      }
+    }
+
+    /* HP: judul film lebih ringkas agar panggung muat */
+    @container (max-width: 767px) {
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-film-title {
+        font-size: 28px;
+      }
+
+      [data-tpl-motion='on'] .km-film[data-film='on'] .km-film-intro {
+        font-size: 14px;
+        line-height: 1.45;
+      }
+    }
+  }
+
+  /* ─── Kurangi gerak & cetak: semua diam di keadaan akhir ───────────────── */
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .km-kenburns,
+    [data-tpl-motion='on'] .km-hl,
+    [data-tpl-motion='on'] .km-drive,
+    [data-tpl-motion='on'] [data-filtered='true'] > .km-pop,
+    [data-tpl-motion='on'] .km-panel,
+    [data-tpl-motion='on'] .km-map[data-seen] .km-route,
+    [data-tpl-motion='on'] .km-map[data-seen] .km-pin,
+    [data-tpl-motion='on'] .km-steps[data-seen] .km-step-fill {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .km-map[data-seen] .km-route {
+      stroke-dashoffset: 0;
+    }
+
+    [data-tpl-motion='on'] .km-map[data-seen] .km-pin {
+      opacity: 1;
+    }
+
+    [data-tpl-motion='on'] .km-steps[data-seen] .km-step-fill {
+      scale: 1 1;
+    }
+
+    [data-tpl-motion='on'] .km-seg-thumb,
+    [data-tpl-motion='on'] .km-tab-img,
+    [data-tpl-motion='on'] .km-collapse,
+    [data-tpl-motion='on'] .km-acc,
+    [data-tpl-motion='on'] .km-bar {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-track,
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-stage {
+      position: relative;
+      height: auto;
+    }
+  }
+
+  /* Cetak: aturan film bergerak hanya berlaku di layar (@media screen di atas) → bingkai poster + semua bab + kalimat
+     penutup (salinan untuk pembaca layar ikut tercetak); lapisan dekoratif video tidak dicetak */
+  @media print {
+    [data-tpl-motion='on'] .km-kenburns,
+    [data-tpl-motion='on'] .km-hl,
+    [data-tpl-motion='on'] .km-drive,
+    [data-tpl-motion='on'] [data-filtered='true'] > .km-pop,
+    [data-tpl-motion='on'] .km-panel,
+    [data-tpl-motion='on'] .km-map[data-seen] .km-route,
+    [data-tpl-motion='on'] .km-map[data-seen] .km-pin,
+    [data-tpl-motion='on'] .km-steps[data-seen] .km-step-fill {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .km-map[data-seen] .km-route {
+      stroke-dashoffset: 0;
+    }
+
+    [data-tpl-motion='on'] .km-map[data-seen] .km-pin {
+      opacity: 1;
+    }
+
+    [data-tpl-motion='on'] .km-steps[data-seen] .km-step-fill {
+      scale: 1 1;
+    }
+
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-track,
+    [data-tpl-motion='on'] .km-film[data-film='on'] .km-stage {
+      position: relative;
+      height: auto;
+    }
+
+    /* !important: menimpa utilitas flex / @5xl:block (lapisan utilities menang atas components) */
+    .km-hud,
+    .km-final,
+    .km-rail {
+      display: none !important;
+    }
+
+    .km-chapters > .km-chap + .km-chap {
+      margin-top: 1rem;
+    }
+  }
+}
+
+@keyframes km-kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes km-bar {
+  from {
+    background-size: 0 0.09em;
+  }
+  to {
+    background-size: calc(100% - 0.08em) 0.09em;
+  }
+}
+
+@keyframes km-drive {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes km-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes km-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes km-route {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes km-pin {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes km-step-y {
+  from {
+    scale: 1 0;
+  }
+  to {
+    scale: 1 1;
+  }
+}
+
+@keyframes km-step-x {
+  from {
+    scale: 0 1;
+  }
+  to {
+    scale: 1 1;
+  }
+}

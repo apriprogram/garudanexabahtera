@@ -20,12 +20,17 @@ import { GLOWSTORY_PHOTOS } from '../glowstory/photos';
 import { HEALTHLINK_PHOTOS } from '../healthlink/photos';
 import { HOMENEST_PHOTOS } from '../homenest/photos';
 import { JUMANTARA_PHOTOS } from '../jumantara/photos';
+import { KEMUDI_PHOTOS } from '../kemudi/photos';
+import { LAJUR_PHOTOS } from '../lajur/photos';
+import { LAWATAN_PHOTOS } from '../lawatan/photos';
 import { MADANI_PHOTOS } from '../madani/photos';
 import { MEDICARE_PHOTOS } from '../medicare-general/photos';
 import { MOMKID_PHOTOS } from '../momkid/photos';
 import { NAWASENA_PHOTOS } from '../nawasena/photos';
+import { NUSALINE_PHOTOS } from '../nusaline/photos';
 import { NUSANIAGA_PHOTOS } from '../nusaniaga/photos';
 import { PAYNOW_PHOTOS } from '../paynow/photos';
+import { PESIAR_PHOTOS } from '../pesiar/photos';
 import { PORTLINE_PHOTOS } from '../portline/photos';
 import { PRADIPTA_PHOTOS } from '../pradipta/photos';
 import { SAUDAGAR_PHOTOS } from '../saudagar/photos';
@@ -53,7 +58,7 @@ interface NewTemplate {
   /** File komponen yang diekspor `index.ts` (stub fondasi; boleh diganti/dipecah engineer) */
   component: string;
   /** Nilai `data-hero-layout` pada `<TemplateSection sectionKey="hero">` (brief §4) */
-  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'diptych' | 'harbor' | 'showroom' | 'triptych' | 'route' | 'slatted' | 'stories' | 'kenburns' | 'thumbs' | 'court' | 'rally' | 'wallet' | 'triage' | 'cradle' | 'console' | 'appcard' | 'estate';
+  heroLayout: 'banner' | 'split' | 'panel' | 'fullbleed' | 'field' | 'summit' | 'inset-card' | 'collage' | 'specsheet' | 'framed-slider' | 'horizon' | 'canvas' | 'diptych' | 'harbor' | 'showroom' | 'triptych' | 'route' | 'slatted' | 'stories' | 'kenburns' | 'thumbs' | 'court' | 'rally' | 'wallet' | 'triage' | 'cradle' | 'console' | 'appcard' | 'estate' | 'coach' | 'departure' | 'postcard' | 'drive' | 'vista';
   photos: PhotoSet;
 }
 
@@ -94,6 +99,13 @@ const NEW_TEMPLATES: NewTemplate[] = [
   { code: 'specialistplus', component: 'SpecialistPlus.tsx', heroLayout: 'console', photos: SPECIALISTPLUS_PHOTOS },
   { code: 'healthlink', component: 'HealthLink.tsx', heroLayout: 'appcard', photos: HEALTHLINK_PHOTOS },
   { code: 'homenest', component: 'HomeNest.tsx', heroLayout: 'estate', photos: HOMENEST_PHOTOS },
+  // Lima template travel & transportasi 2026-10-29 (3 bus, 2 mobil): wadah penuh kiri-kanan, hero foto latar penuh, dan
+  // section film yang diputar dengan menggulir
+  { code: 'lajur', component: 'Lajur.tsx', heroLayout: 'coach', photos: LAJUR_PHOTOS },
+  { code: 'nusaline', component: 'Nusaline.tsx', heroLayout: 'departure', photos: NUSALINE_PHOTOS },
+  { code: 'lawatan', component: 'Lawatan.tsx', heroLayout: 'postcard', photos: LAWATAN_PHOTOS },
+  { code: 'kemudi', component: 'Kemudi.tsx', heroLayout: 'drive', photos: KEMUDI_PHOTOS },
+  { code: 'pesiar', component: 'Pesiar.tsx', heroLayout: 'vista', photos: PESIAR_PHOTOS },
 ];
 
 /** Template lain yang TIDAK boleh diimpor (komponen, kartu, nav tidak dibagi). shared/** dan kit/** boleh. */

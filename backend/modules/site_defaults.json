@@ -90,6 +90,27 @@
     "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
     "posts": true
   },
+  "kemudi": {
+    "company_name": "Kemudi Rent Car",
+    "tagline": "Rental mobil lepas kunci & dengan sopir",
+    "description": "Lepas kunci atau dengan sopir di Bandung. Pilih mobil dan jadwal, lihat perkiraan harganya, lalu pesan langsung lewat WhatsApp.",
+    "logo": "",
+    "posts": false
+  },
+  "lajur": {
+    "company_name": "Lajur Trans Wisata",
+    "tagline": "Sewa bus pariwisata Jawa–Bali",
+    "description": "Big bus, medium bus, dan microbus dengan sopir. Isi jumlah peserta, lihat rekomendasi armada, lalu minta harga lewat WhatsApp.",
+    "logo": "",
+    "posts": false
+  },
+  "lawatan": {
+    "company_name": "Lawatan Tour & Travel",
+    "tagline": "Paket wisata rombongan",
+    "description": "Paket study tour, gathering kantor, wisata keluarga, dan ziarah dengan bus pariwisata. Bus, hotel, makan, dan tiket kami siapkan.",
+    "logo": "",
+    "posts": false
+  },
   "madani": {
     "company_name": "SMA IT Nurul Azka",
     "tagline": "Sekolah Islam Terpadu & Asrama di Bogor",
@@ -118,6 +139,13 @@
     "logo": "/assets/templates/logos/tut-wuri-handayani.svg",
     "posts": true
   },
+  "nusaline": {
+    "company_name": "Nusaline",
+    "tagline": "Bus malam Jakarta–Bali setiap hari",
+    "description": "Bus malam dari Jakarta ke Semarang, Yogyakarta, Surabaya, Malang, dan Denpasar. Pilih kelas, lalu pesan tiket lewat WhatsApp.",
+    "logo": "",
+    "posts": false
+  },
   "nusaniaga": {
     "company_name": "PT Arunika Niaga Internasional",
     "tagline": "Importir Bahan Baku & Mesin",
@@ -129,6 +157,13 @@
     "company_name": "PayNow",
     "tagline": "Dompet Digital & Payment Gateway",
     "description": "Bayar dengan QRIS, kirim uang, lunasi tagihan, dan isi saldo dari satu aplikasi. Merchant menerima pembayaran lewat satu dasbor.",
+    "logo": "",
+    "posts": false
+  },
+  "pesiar": {
+    "company_name": "Pesiar Bali",
+    "tagline": "Private tour & sewa mobil dengan sopir",
+    "description": "Tur sehari keliling Bali dan antar-jemput bandara. Rute Anda yang tentukan, harganya dihitung per mobil, bukan per orang.",
     "logo": "",
     "posts": false
   },

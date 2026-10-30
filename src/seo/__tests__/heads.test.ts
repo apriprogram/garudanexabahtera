@@ -44,6 +44,7 @@ describe('getHead: semua rute index', () => {
     expect(paths).not.toContain(categoryPath('sekolah-pendidikan'));
     expect(paths).not.toContain(categoryPath('kesehatan-rumah-sakit'));
     expect(paths).not.toContain(categoryPath('properti-real-estate'));
+    expect(paths).not.toContain(categoryPath('travel-transportasi'));
   });
 
   it('title ≤ 60 & description 50–155 karakter, keduanya unik', () => {
@@ -256,6 +257,7 @@ describe('penolong', () => {
     expect(categorySlugOf('Yoga & Wellness')).toBe('yoga-wellness');
     expect(categorySlugOf('Kesehatan & Rumah Sakit')).toBe('kesehatan-rumah-sakit');
     expect(categorySlugOf('Properti & Real Estate')).toBe('properti-real-estate');
+    expect(categorySlugOf('Travel & Transportasi')).toBe('travel-transportasi');
     expect(categorySlugOf('Lain-lain')).toBeNull();
   });
 

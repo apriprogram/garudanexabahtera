@@ -1021,3 +1021,153 @@ rumah, harga, agen, dan pembeli di demo fiktif dan tidak berhubungan dengan oran
 | `homenest-tour-kamar-*` | Kamar tidur terang berdinding kayu muda dengan tirai putih | https://unsplash.com/photos/WfFHp6RWvws | Caroline Badran |
 | `homenest-tour-taman-*` | Teras kayu beratap anyaman dengan kursi rotan, ayunan, dan hammock (dipotong mendatar dari foto tegak) | https://unsplash.com/photos/GGx0rUwnSPk | Alef Morais |
 | `homenest-fasilitas-*` | Pohon palem berjajar di taman rumput dengan jalan setapak batu | https://unsplash.com/photos/MT5MkFhSRmE | Alef Morais |
+
+## Lajur (Lajur Trans Wisata, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; kartu tujuan dan galeri tegak 4:5 `-960.webp` + `-800.webp`. Dicek
+lisensinya di halaman foto (Unsplash License, bukan Unsplash+) 2026-10-29, lalu dipotong dan dikompres ke WebP dengan
+Chrome headless. Suntingan: foto hero, `bandung`, `bali`, `jogja`, `dieng`, `malang`, `pantai`, `rombongan-1`,
+`rombongan-2`, dan `istirahat` diambil dari sumber 72–90% lalu diperbesar ke ukuran akhir agar detail rumput/daun muat
+dalam batas berkas; pada `sunset` tulisan papan rute LED, nomor armada, dan logo kecil di badan bus ditutup retus klon dari panel di sekitarnya (bukan blur); pada `interior` logo model bodi di panel samping jendela dan emblem di sisi kursi ditutup retus klon dari panel polos di sebelahnya (bukan blur). Tidak ada nama
+PO bus, pelat nomor, atau logo merek yang terbaca. Nama perusahaan, pelanggan, dan testimoni di demo fiktif dan tidak
+berhubungan dengan orang atau tempat di foto; lokasi asli foto tidak disebut di demo.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `lajur-hero-*` | Jalan beton dua lajur menurun di antara bukit hijau menuju teluk, langit mendung | https://unsplash.com/photos/jTcH0vRm1NQ | Simon Spring |
+| `lajur-bromo-*` | Kaldera Bromo, Batok, dan Semeru saat matahari terbit (dipotong tegak) | https://unsplash.com/photos/uktyDpxvKSg | Nindy Rahmadani |
+| `lajur-jogja-*` | Menara batu kompleks Candi Prambanan di bawah langit cerah (dipotong tegak) | https://unsplash.com/photos/oy0QhRIIfJU | Albertus Gilang Drigantoro Saputro |
+| `lajur-dieng-*` | Candi batu di dataran tinggi berkabut dengan pengunjung kecil di latar (dipotong bagian bawah) | https://unsplash.com/photos/V9k1OKQ9qKw | Pungky Wahyu Arista |
+| `lajur-bali-*` | Gerbang candi bentar Bali dengan bunga merah di depan (dipotong tegak) | https://unsplash.com/photos/QUwLZNchflk | Jeremy Bishop |
+| `lajur-malang-*` | Kampung warna-warni di tepi sungai dilihat dari udara | https://unsplash.com/photos/9cdo9r9Fors | Silas Baisch |
+| `lajur-pantai-*` | Pantai berbukit karang dengan ombak putih di bawah langit biru | https://unsplash.com/photos/RPUdgPGyGRk | Nur Fadhilah Novianti |
+| `lajur-bandung-*` | Asap belerang mengepul dari tebing kawah di atas danau hijau toska (dipotong tegak) | https://unsplash.com/photos/aWrCFCK8hSY | Ludek Pytloun |
+| `lajur-karimunjawa-*` | Dermaga kayu panjang di laut tenang saat matahari terbenam (dipotong tegak) | https://unsplash.com/photos/RJ7Mg_tZlvY | Joris Beugels |
+| `lajur-rombongan-1-*` | Rombongan duduk di bukit berumput menghadap gunung berasap, dilihat dari belakang (dipotong tegak) | https://unsplash.com/photos/-sWQpy6WbZs | Andri Hermawan |
+| `lajur-rombongan-2-*` | Rombongan berjalan di jalan tanah menuju bukit saat sore, dilihat dari belakang (dipotong tegak) | https://unsplash.com/photos/NEqEC7qa9FM | Luke Porter |
+| `lajur-interior-*` | Dua kursi bus reclining berlapis kulit cokelat dengan sandaran kaki (dipotong tegak; logo model bodi di panel samping dan emblem di sisi kursi ditutup retus klon) | https://unsplash.com/photos/EwoyDPlT_H0 | Jonathan Borba |
+| `lajur-istirahat-*` | Tangan memegang cangkir kaleng di atas lembah pegunungan berkabut (dipotong tegak) | https://unsplash.com/photos/vVrDHc8Nf94 | Jisca Lucia |
+| `lajur-sunset-*` | Matahari terbenam di tepi jalan raya dengan siluet bus di kanan (dipotong tegak; tulisan LED, nomor, dan logo bus ditutup retus) | https://unsplash.com/photos/bjFdNatAxrc | A n v e s h |
+
+## Nusaline (PO bus malam Nusaline, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (latar hero selebar layar; dipotong tegak di ponsel lewat
+object-position); foto kelas & kabin 3:2 `-1200.webp` + `-800.webp`; foto kota, camilan, dan bagasi 4:3 `-1000.webp` +
+`-800.webp`. Dicek lisensinya 2026-10-29 (foto gratis di bawah Unsplash License, bukan Unsplash+; data halaman foto:
+free true, plus false, gambar di images.unsplash.com), lalu dipotong dan dikompres ke WebP. Suntingan:
+`nusaline-eksekutif-*` dipotong di sisi kiri (bus lain bercorak logo pariwisata di luar jendela tidak ikut) dan tulisan
+terbalik di kaca belakang ditutup retus klon dari kaca kosong di bawahnya (bukan blur); `nusaline-cabin-*` pelat nomor mobil di depan bus ditutup retus klon dari pintu bagasi di sebelahnya (bukan blur);
+`nusaline-yogyakarta-*` papan nama toko di samping Tugu ditutup dengan latar di sekitarnya (retus klon, bukan blur) dan tepi kanan (papan nama lain) dipotong;
+`nusaline-premium-*` dipotong ke sepasang kursi sisi kiri dan lorong (sesuai kelas Super Eksekutif 2-1 di demo; kursi
+seberang dengan lambang pabrikan timbul di sandaran tangannya tidak ikut); `nusaline-jakarta-*` dan `nusaline-malang-*`
+dihaluskan sangat ringan (blur 0,35–0,5 px) agar ringan; foto lain hanya dipotong. Foto kabin dan kursi tidak semuanya diambil di bus Indonesia (kabin malam di jembatan
+luar negeri); demo tidak menyebut lokasi asli foto itu. Kelas Sleeper (kabin tidur) sengaja tanpa foto: template
+menampilkan ilustrasi kabin SVG, karena tidak ada foto kabin bus tidur asli berlisensi bebas. Nama PO bus, agen,
+penumpang, harga, dan jadwal di demo fiktif dan tidak berhubungan dengan orang, kendaraan, atau perusahaan di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `nusaline-hero-*` | Jejak lampu kendaraan di jalan tol berkelok saat malam, langit gelap dan lampu kota di kaki bukit | https://unsplash.com/photos/W2Z748otS_I | Five STD |
+| `nusaline-cabin-*` | Kabin bus malam dari lorong belakang: deretan kursi, penumpang, dan jalan raya di depan (pelat nomor ditutup retus klon) | https://unsplash.com/photos/E1YwF4momHg | Dhiwagaran Parthiban |
+| `nusaline-eksekutif-*` | Kabin bus dengan deretan kursi hitam-kuning konfigurasi 2-2 dan tirai jendela (dipotong kiri, tulisan kaca ditutup retus klon) | https://unsplash.com/photos/IjqnlHxfmms | Fairuz Naufal Zaki |
+| `nusaline-premium-*` | Sepasang kursi kulit cokelat lebar berpenutup sandaran putih di samping lorong kabin bus (dipotong ke sisi kiri) | https://unsplash.com/photos/LnggkK8864c | Jonathan Borba |
+| `nusaline-snack-*` | Kacang almon dan keripik pisang dalam dua mangkuk kuning di atas selimut abu-abu | https://unsplash.com/photos/GB0eYOVWaUw | An Shved |
+| `nusaline-bagasi-*` | Tangan meraih koper hitam di samping koper perak, cahaya sore | https://unsplash.com/photos/y_cczw0Uc6E | Eminent Luggage |
+| `nusaline-jakarta-*` | Simpang susun jalan layang Jakarta saat senja dengan gedung tinggi dan arus lalu lintas | https://unsplash.com/photos/KvMw3jKXNZE | Afif Ramdhasuma |
+| `nusaline-semarang-*` | Gedung bersejarah bermenara kembar di Semarang saat malam, lampu kuning di jendela | https://unsplash.com/photos/W8CeBMSnpBo | Visual Karsa |
+| `nusaline-yogyakarta-*` | Tugu Yogyakarta saat malam dengan jejak lampu kendaraan (papan nama toko ditutup retus klon) | https://unsplash.com/photos/LhoUx4AzVco | Dhio Gandhi |
+| `nusaline-surabaya-*` | Jembatan di tepi laut Surabaya saat matahari rendah, pesepeda di jalur jembatan | https://unsplash.com/photos/Lo3x103iBew | Andiko Baskoro |
+| `nusaline-malang-*` | Tugu di tengah kolam teratai di bawah pohon rindang, Malang | https://unsplash.com/photos/P1_5UHpxqP0 | Filipe Freitas |
+| `nusaline-bali-*` | Patung dan air mancur di taman kota Denpasar di bawah langit cerah | https://unsplash.com/photos/Pznv5rEzRes | Ari Kurniawan |
+
+## Lawatan (Lawatan Tour & Travel, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (latar hero selebar layar; dipotong tegak di ponsel lewat
+object-position); kartu paket 4:3 `-1200.webp` + `-800.webp`; kartu pos itinerary dan ubin galeri kecil 4:3 `-960.webp` +
+`-800.webp` (rombongan-3 3:2); galeri mendatar 3:2 `-1200.webp` + `-800.webp` dan tegak 4:5 `-960.webp` + `-800.webp`.
+Dicek lisensinya 2026-10-29, tiga foto galeri rombongan-5 sampai -7 pada 2026-10-30 (foto gratis di bawah Unsplash License,
+bukan Unsplash+; data halaman foto: free true, gambar di images.unsplash.com), lalu dipotong dan dikompres ke WebP langsung
+dari CDN Unsplash. Tanpa blur atau inpaint: semua foto hanya dipotong (hero dipotong 16:9 dengan langit dipertahankan,
+foto lain dipotong 4:3 / 3:2 / 4:5 di tengah). Tidak ada nama perusahaan bus, livery, atau pelat nomor yang terbaca (foto
+interior bus: hanya sandaran kursi dan jendela buram). Foto rombongan tidak semuanya diambil di Indonesia dan demo tidak
+menyebut lokasi asli foto rombongan. Nama biro, paket, harga, pemandu, dan pelanggan di demo fiktif dan tidak berhubungan
+dengan orang atau perusahaan di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `lawatan-hero-*` | Gunung Bromo, Batok, dan Semeru di atas lautan kabut saat matahari terbit | https://unsplash.com/photos/VcpMPsf_Ex0 | Thomas Ciszewski |
+| `lawatan-jogja-*` | Kolam dan gerbang Taman Sari Yogyakarta di bawah langit cerah | https://unsplash.com/photos/xYhYTGP2tjQ | Fuad Najib |
+| `lawatan-bromo-*` | Kawah Bromo dan Gunung Semeru berasap di siang hari, dengan kabut di lembah | https://unsplash.com/photos/EYHMtABHYf8 | Alessio Roversi |
+| `lawatan-bali-*` | Pura Ulun Danu Bratan di tepi danau saat cahaya keemasan | https://unsplash.com/photos/Y0UUhY1V7Po | Katarzyna Zygnerska |
+| `lawatan-bandung-*` | Danau kawah berwarna toska di Kawah Putih dengan pengunjung di tepiannya | https://unsplash.com/photos/dcglHArcWKI | Maneesh Shahani |
+| `lawatan-dieng-*` | Bukit berumput dan gunung di kejauhan di bawah langit biru | https://unsplash.com/photos/mZjSvUtky1A | Andri Hermawan |
+| `lawatan-lombok-*` | Pantai berpasir dengan ombak kecil dan bukit hijau di kejauhan | https://unsplash.com/photos/66bJar1rDe8 | Reena Yadav |
+| `lawatan-berangkat-*` | Penumpang duduk di kursi oranye di dalam bus, dilihat dari lorong | https://unsplash.com/photos/gtEarbgbTfg | Speedy Sandy |
+| `lawatan-borobudur-*` | Stupa batu Candi Borobudur dengan pegunungan berkabut saat fajar | https://unsplash.com/photos/8z2WRBSavBY | Rowan Heuvel |
+| `lawatan-malioboro-*` | Andong berjajar di tepi jalan kota Yogyakarta | https://unsplash.com/photos/sHLxeo8is3k | Farhan Abas |
+| `lawatan-prambanan-*` | Menara batu kompleks Candi Prambanan di bawah langit biru berawan | https://unsplash.com/photos/_QTeGT478_8 | Eugenia Clara |
+| `lawatan-hotel-*` | Kamar hotel terang dengan dua ranjang dan jendela lebar ke taman | https://unsplash.com/photos/pe1xVjJJlE4 | Tran Vinh |
+| `lawatan-rombongan-1-*` | Tujuh orang mengangkat tangan menghadap laut di tepi pantai | https://unsplash.com/photos/GZ9BpYyoys4 | yang joe |
+| `lawatan-rombongan-2-*` | Penumpang berkerudung di dek kapal penyeberangan (dipotong tegak) | https://unsplash.com/photos/DhL3MCTYefQ | Levi Meir Clancy |
+| `lawatan-rombongan-3-*` | Siluet enam orang melambai di puncak bukit saat matahari terbenam | https://unsplash.com/photos/Sj0iMtq_Z4w | Chang Duong |
+| `lawatan-rombongan-4-*` | Enam orang duduk berangkulan di tembok tepi laut menghadap kereta gantung (dipotong 4:3) | https://unsplash.com/photos/Cecb0_8Hx-o | Duy Pham |
+| `lawatan-rombongan-5-*` | Rombongan berfoto bersama di lautan pasir Bromo dengan Gunung Batok di belakangnya (dipotong 4:3) | https://unsplash.com/photos/ntfa7WQd2Rc | Afham Hamsyari |
+| `lawatan-rombongan-6-*` | Empat pendaki berpose di puncak bukit berumput dengan gunung di kejauhan (dipotong 4:3) | https://unsplash.com/photos/MRcPr4rCauI | ExnD |
+| `lawatan-rombongan-7-*` | Barisan pendaki di puncak gunung menanti matahari terbit (dipotong 4:3) | https://unsplash.com/photos/lo9-kiRMuWo | liliia |
+
+## Kemudi (Kemudi Rent Car, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp`; foto tegak 4:5 `-960.webp` + `-800.webp`; mendatar 4:3
+`-1200.webp` + `-800.webp`; gambar kecil zona antar 1:1 `-480.webp` + `-240.webp`. Dicek lisensinya di halaman foto
+(Unsplash License, bukan Unsplash+) 2026-10-29 (`kemudi-keluarga`: 2026-10-30), lalu dipotong dan dikompres ke WebP. Suntingan: `kemudi-hero` dipotong
+agar mobil berada sedikit di kanan tengah, dan hutan di luar mobil diberi blur halus (efek tilt-shift) supaya file
+ringan, mobil tetap tajam; `kemudi-bersih` diberi blur halus di luar spons dan tangan; logo pada kunci mobil di
+`kemudi-kunci` disamarkan (ditutup gelap) sehingga merek tidak terbaca; rambu batas kecepatan di `kemudi-keluarga`
+dihapus dengan klon dari bagian foto di dekatnya (bukan blur); `kemudi-kota` dipotong sehingga papan nama gedung tidak
+ikut terlihat. Tidak ada logo, nama merek, papan nama, atau pelat nomor yang terbaca. Mobil, kelas mobil, harga, alamat
+garasi, dan pelanggan di demo fiktif dan tidak berhubungan dengan orang atau kendaraan di foto; foto tidak semuanya
+diambil di Bandung dan demo tidak menyebut lokasi asli foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `kemudi-hero-*` | Mobil putih melaju di jalan aspal yang membelah hutan hijau, dilihat dari atas | https://unsplash.com/photos/y7FXjAxqPF4 | Imago Garage |
+| `kemudi-kunci-*` | Tangan menyerahkan kunci mobil ke tangan penyewa | https://unsplash.com/photos/aboFF2GXb_0 | Mehmet Talha Onuk |
+| `kemudi-sopir-*` | Tangan pengemudi memegang setir di kabin yang terang | https://unsplash.com/photos/DnNvvfgoY40 | Leon Kohle |
+| `kemudi-interior-*` | Kursi mobil berlapis kulit terang di kabin yang bersih | https://unsplash.com/photos/kiH9dMtwM5w | Crosby Hinze |
+| `kemudi-keluarga-*` | Jalan desa yang teduh di antara pohon pisang dan pepohonan tropis, dilihat dari balik kemudi (tanpa wajah) | https://unsplash.com/photos/YQaZxe6W3NE | Lina Bob |
+| `kemudi-bersih-*` | Tangan mencuci badan mobil dengan spons dan busa sabun | https://unsplash.com/photos/phP5Qa0CauQ | Nik |
+| `kemudi-kota-*` | Jalan kota lebar dengan lampu jalan berhias dan gedung lama | https://unsplash.com/photos/FBqffvtnMho | Abdul Ridwan |
+| `kemudi-stasiun-*` | Dinding gedung stasiun berjendela lengkung saat senja | https://unsplash.com/photos/ieezkS6zh7U | Bayu Prahara |
+| `kemudi-bandara-*` | Koper di ban berjalan pengambilan bagasi bandara | https://unsplash.com/photos/S0u5ugYRNFo | Alexander Schimmeck |
+| `kemudi-lembang-*` | Jalan berkelok di antara kebun teh hijau dan perbukitan | https://unsplash.com/photos/3rGkjj9n4H0 | raghul ayyasamy |
+
+## Pesiar (Pesiar Bali, fiktif)
+
+Hero 16:9 `-1920.webp` + `-1280.webp` + `-800.webp` (latar hero selebar layar; dipotong tegak di ponsel lewat
+object-position); kartu tur tegak 4:5 `-960.webp` + `-800.webp`; foto titik perhentian film 4:3 `-1200.webp` +
+`-800.webp`; foto antar-jemput bandara 16:7 `-1200.webp` + `-800.webp`; strip panorama footer 21:6 `-1920.webp` +
+`-800.webp`. Dicek lisensinya 2026-10-29 (foto gratis di bawah Unsplash License, bukan Unsplash+; data halaman foto: free
+true, plus false, gambar di images.unsplash.com), lalu dipotong dan dikompres ke WebP. Tanpa inpaint atau blur penutup:
+foto hanya dipotong, kecuali `pesiar-bandara-*` (stiker "FREE WiFi" di pilar kayu dihapus dengan klon tekstur pilar yang
+sama); foto bertekstur rapat (`pesiar-ubud-*`, `pesiar-seminyak-*`, `pesiar-tegallalang-*`, `pesiar-tirtaempul-*`)
+dihaluskan sangat tipis (blur 0,8–0,9 px) sebelum dikompres agar sesuai batas ukuran file. Perbaikan 2026-10-30:
+`pesiar-ubud-*` dipotong ulang lebih rendah dan sedikit diperbesar (langit berawan dikurangi); `pesiar-bandara-*` diganti
+foto ruang kedatangan bandara di Indonesia (lisensi dicek 2026-10-30: free true, plus false; papan petunjuk di atasnya
+dipotong). Tidak ada nama maskapai, pelat nomor, atau logo yang terbaca.
+Nama usaha, sopir, tamu, harga, dan alamat di demo fiktif dan tidak berhubungan dengan orang atau tempat usaha di foto.
+
+| File | Isi | Halaman foto | Fotografer |
+| --- | --- | --- | --- |
+| `pesiar-hero-*` | Sawah terasering hijau di bawah gunung berkabut saat pagi, Bali | https://unsplash.com/photos/7hww7t6NLcg | Geio Tischler |
+| `pesiar-ubud-*` | Pura dengan gapura bata merah dan kolam teratai di Ubud (dipotong tegak dari foto mendatar, langit dikurangi) | https://unsplash.com/photos/VgsbvYcyCUE | Mitch Hodiono |
+| `pesiar-tanahlot-*` | Pura di atas batu karang berpohon di tengah laut | https://unsplash.com/photos/b-1WTD4fi8c | Pan Species |
+| `pesiar-uluwatu-*` | Pura kecil di puncak tebing karang di atas laut saat sore | https://unsplash.com/photos/MeaTfXW-buc | Polina Kuzovkova |
+| `pesiar-lempuyang-*` | Gapura candi bentar kembar dengan langit biru berawan | https://unsplash.com/photos/if8yGBNCA9Q | Life with the Singh Sisters |
+| `pesiar-seminyak-*` | Kolam renang vila dengan kursi berjemur dan bangunan beratap genteng (dipotong mendatar dari foto tegak) | https://unsplash.com/photos/f-MvFZ6-M3U | Ranjith |
+| `pesiar-celuk-*` | Tangan perajin menyolder perhiasan perak di atas balok kayu (hanya tangan) | https://unsplash.com/photos/oBZ-57helBA | Brian Kairuz |
+| `pesiar-tegallalang-*` | Sawah terasering dan pohon kelapa di Tegallalang | https://unsplash.com/photos/-2WlTWZLnRc | Niklas Weiss |
+| `pesiar-kintamani-*` | Gunung dan danau di kaldera dilihat dari punggung bukit berpohon cemara | https://unsplash.com/photos/8PPBiz9Dvqo | Robin Canfield |
+| `pesiar-tirtaempul-*` | Pengunjung berdoa di bawah pancuran kolam pura mata air | https://unsplash.com/photos/2mCc2JV6oeQ | Ismail Hamzah |
+| `pesiar-senja-*` | Matahari terbenam keemasan di atas pantai berpasir | https://unsplash.com/photos/8WlZ2F4z9d4 | SHAHEN |
+| `pesiar-bandara-*` | Ruang kedatangan bandara berdinding kaca menghadap taman palem dan jalur penjemputan, Indonesia (potongan mendatar 16:7 dari foto tegak; papan petunjuk dipotong, stiker "FREE WiFi" di pilar diretus klon; tanpa pelat nomor atau logo yang terbaca) | https://unsplash.com/photos/NsZ3yUARa3g | Mardanafin |
+| `pesiar-panorama-*` | Langit senja ungu dan ombak di pantai, potongan panorama | https://unsplash.com/photos/P4faKaUdlRs | Stefano Magini |

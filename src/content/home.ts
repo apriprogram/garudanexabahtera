@@ -20,6 +20,7 @@ const NICHE_PHRASE: Record<CategorySlug, string> = {
   'sekolah-pendidikan': 'sekolah',
   'kesehatan-rumah-sakit': 'rumah sakit & klinik',
   'properti-real-estate': 'properti',
+  'travel-transportasi': 'travel & rental kendaraan',
 };
 
 /** "a" / "a dan b" / "a, b, dan c". */

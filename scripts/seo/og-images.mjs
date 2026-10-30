@@ -39,6 +39,7 @@ export const CATEGORY_SLUGS = [
   'sekolah-pendidikan',
   'kesehatan-rumah-sakit',
   'properti-real-estate',
+  'travel-transportasi',
 ];
 
 const BRAND = {

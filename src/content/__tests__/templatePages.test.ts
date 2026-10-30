@@ -13,7 +13,7 @@ import type { Template } from '../../types/platform';
 import { TEMPLATE_PAGES, fillName, templateH1, templatePreviewAlt } from '../templateCopy';
 import type { TemplatePageContent } from '../templates/page.types';
 
-const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline', 'velora', 'dermaga', 'saudagar', 'nusaniaga', 'jumantara', 'nawasena', 'pradipta', 'sparring-padel', 'smashhall', 'paynow', 'medicare-general', 'momkid', 'specialistplus', 'healthlink', 'homenest'];
+const SLUGS = ['corporate-nexa', 'startup-clean', 'arena-club', 'aura-studio', 'finova', 'serenity', 'tanimakmur', 'puncakgear', 'gadgetku', 'glowstory', 'skynusa', 'madani', 'cakrawala', 'bestari', 'altura', 'portline', 'velora', 'dermaga', 'saudagar', 'nusaniaga', 'jumantara', 'nawasena', 'pradipta', 'sparring-padel', 'smashhall', 'paynow', 'medicare-general', 'momkid', 'specialistplus', 'healthlink', 'homenest', 'lajur', 'nusaline', 'lawatan', 'kemudi', 'pesiar'];
 const words = (text: string) => text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 /** Semua teks yang tampil di halaman dari file isi (tanpa alt gambar dan slug panduan). */
@@ -77,7 +77,14 @@ const MOMKID: Template = { ...FIXTURE_TEMPLATES[4], id: 100, slug: 'momkid', nam
 const SPECIALISTPLUS: Template = { ...FIXTURE_TEMPLATES[4], id: 101, slug: 'specialistplus', name: 'SpecialistPlus', category: 'Kesehatan & Rumah Sakit', price: 1890000, template_code: 'specialistplus', sort_order: 29 };
 const HEALTHLINK: Template = { ...FIXTURE_TEMPLATES[4], id: 102, slug: 'healthlink', name: 'HealthLink', category: 'Kesehatan & Rumah Sakit', price: 1690000, template_code: 'healthlink', sort_order: 30 };
 const HOMENEST: Template = { ...FIXTURE_TEMPLATES[4], id: 103, slug: 'homenest', name: 'HomeNest', category: 'Properti & Real Estate', price: 1690000, template_code: 'homenest', sort_order: 31 };
-const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA, DERMAGA, SAUDAGAR, NUSANIAGA, JUMANTARA, NAWASENA, PRADIPTA, SPARRING_PADEL, SMASHHALL, PAYNOW, MEDICARE_GENERAL, MOMKID, SPECIALISTPLUS, HEALTHLINK, HOMENEST].find((t) => t.slug === slug) as Template;
+// Lima template travel & transportasi 2026-10-29 (migrasi 049–053, wadah penuh + film gulir) juga belum ada di fixture
+// prerender bersama; "Travel & Transportasi" kategori baru
+const LAJUR: Template = { ...FIXTURE_TEMPLATES[4], id: 104, slug: 'lajur', name: 'Lajur', category: 'Travel & Transportasi', price: 1690000, template_code: 'lajur', sort_order: 32 };
+const NUSALINE: Template = { ...FIXTURE_TEMPLATES[4], id: 105, slug: 'nusaline', name: 'Nusaline', category: 'Travel & Transportasi', price: 1790000, template_code: 'nusaline', sort_order: 33 };
+const LAWATAN: Template = { ...FIXTURE_TEMPLATES[4], id: 106, slug: 'lawatan', name: 'Lawatan', category: 'Travel & Transportasi', price: 1690000, template_code: 'lawatan', sort_order: 34 };
+const KEMUDI: Template = { ...FIXTURE_TEMPLATES[4], id: 107, slug: 'kemudi', name: 'Kemudi', category: 'Travel & Transportasi', price: 1590000, template_code: 'kemudi', sort_order: 35 };
+const PESIAR: Template = { ...FIXTURE_TEMPLATES[4], id: 108, slug: 'pesiar', name: 'Pesiar', category: 'Travel & Transportasi', price: 1590000, template_code: 'pesiar', sort_order: 36 };
+const bySlug = (slug: string) => [...FIXTURE_TEMPLATES, SERENITY, TANIMAKMUR, PUNCAKGEAR, GADGETKU, GLOWSTORY, SKYNUSA, MADANI, CAKRAWALA, BESTARI, ALTURA, PORTLINE, VELORA, DERMAGA, SAUDAGAR, NUSANIAGA, JUMANTARA, NAWASENA, PRADIPTA, SPARRING_PADEL, SMASHHALL, PAYNOW, MEDICARE_GENERAL, MOMKID, SPECIALISTPLUS, HEALTHLINK, HOMENEST, LAJUR, NUSALINE, LAWATAN, KEMUDI, PESIAR].find((t) => t.slug === slug) as Template;
 
 describe('src/content/templates', () => {
   it('setiap template terbit punya salinan SEO, H1 dan file isi', () => {
@@ -123,6 +130,11 @@ describe('src/content/templates', () => {
       specialistplus: 'SpecialistPlus: Template Website Klinik Spesialis & Laboratorium',
       healthlink: 'HealthLink: Template Website Telemedicine & Konsultasi Online',
       homenest: 'HomeNest: Template Website Properti dan Jual Rumah',
+      lajur: 'Lajur: Template Website Sewa Bus Pariwisata',
+      nusaline: 'Nusaline: Template Website PO Bus Antarkota',
+      lawatan: 'Lawatan: Template Website Tour & Travel Rombongan',
+      kemudi: 'Kemudi: Template Website Rental Mobil',
+      pesiar: 'Pesiar: Template Website Private Tour & Sewa Mobil dengan Sopir',
     });
     const titles = Object.fromEntries(SLUGS.map((slug) => [slug, templateTitle(bySlug(slug))]));
     expect(titles).toEqual({
@@ -157,6 +169,11 @@ describe('src/content/templates', () => {
       specialistplus: 'SpecialistPlus: Template Klinik Spesialis & Lab – Rp1,89 jt',
       healthlink: 'HealthLink: Template Website Telemedicine – Rp1,69 jt',
       homenest: 'HomeNest: Template Website Jual Rumah & Properti – Rp1,69 jt',
+      lajur: 'Lajur: Template Website Sewa Bus Pariwisata – Rp1,69 jt',
+      nusaline: 'Nusaline: Template Website PO Bus Antarkota – Rp1,79 jt',
+      lawatan: 'Lawatan: Template Website Tour & Travel – Rp1,69 jt',
+      kemudi: 'Kemudi: Template Website Rental Mobil – Rp1,59 jt',
+      pesiar: 'Pesiar: Template Website Sewa Mobil & Sopir – Rp1,59 jt',
     });
     for (const slug of SLUGS) {
       const t = bySlug(slug);
@@ -391,6 +408,40 @@ describe('src/content/templates', () => {
     expect(homenest).toMatch(/Tidak ada pembayaran tanda jadi/);
     expect(homenest).toMatch(/fiktif/);
     expect(homenest).not.toMatch(/SHM dijamin|pasti naik|terbaik|nomor 1|#1|100%|garansi|dijamin/i);
+    // Lajur (2026-10-29): sewa bus, formulir hanya pesan WhatsApp, armada ditulis per kelas kursi tanpa merek, tanpa izin trayek
+    const lajur = visibleText(templateContent('lajur') as TemplatePageContent);
+    expect(lajur).toMatch(/Formulir hanya menyusun pesan WhatsApp; harga final dan ketersediaan armada dikonfirmasi admin/);
+    expect(lajur).toMatch(/Tidak ada pembayaran online, e-tiket, ketersediaan armada real-time, akun member, atau pelacakan GPS/);
+    expect(lajur).toMatch(/tidak ada merek atau model kendaraan/);
+    expect(lajur).toMatch(/fiktif/);
+    expect(lajur).not.toMatch(/izin trayek|Kemenhub|Dishub|terdaftar resmi|IPOMI|PAWIBA|uji KIR|\bISO\b|Jasa Raharja|bersertifikat|terbaik|termurah/i);
+    // Nusaline (2026-10-29): PO bus antarkota, pemesanan hanya pesan WhatsApp, denah kursi bukan kursi kosong
+    const nusaline = visibleText(templateContent('nusaline') as TemplatePageContent);
+    expect(nusaline).toMatch(/Pemesanan hanya menyusun pesan WhatsApp/);
+    expect(nusaline).toMatch(/tidak ada pembayaran online, e-tiket, atau pilihan kursi real-time/);
+    expect(nusaline).toMatch(/bukan kursi yang masih kosong/);
+    expect(nusaline).toMatch(/fiktif/);
+    expect(nusaline).not.toMatch(/izin trayek|Kemenhub|Dishub|terdaftar resmi|IPOMI|uji KIR|\bISO\b|Jasa Raharja|bersertifikat|terbaik|termurah/i);
+    // Lawatan (2026-10-29): tour rombongan, estimasi biaya bukan penawaran final, kuota/hotel/jadwal dikonfirmasi admin
+    const lawatan = visibleText(templateContent('lawatan') as TemplatePageContent);
+    expect(lawatan).toMatch(/Formulir hitung biaya hanya menyusun pesan WhatsApp; data tidak disimpan di website/);
+    expect(lawatan).toMatch(/Tidak ada pembayaran online, e-tiket, atau cek kuota real-time, dan estimasi biaya bukan penawaran final/);
+    expect(lawatan).toMatch(/izin usaha hanya sesuai dokumen yang benar-benar Anda miliki/);
+    expect(lawatan).toMatch(/fiktif/);
+    expect(lawatan).not.toMatch(/\bASITA\b|\bPPIU\b|terdaftar resmi|bersertifikat|terbaik|termurah/i);
+    // Kemudi (2026-10-29): rental mobil, dokumen tidak diunggah, mobil per kelas tanpa merek/tipe, tanpa GPS
+    const kemudi = visibleText(templateContent('kemudi') as TemplatePageContent);
+    expect(kemudi).toMatch(/Pemesanan hanya menyusun pesan WhatsApp; ketersediaan dan harga final dikonfirmasi admin; tidak ada pembayaran online/);
+    expect(kemudi).toMatch(/dokumen tidak diunggah atau disimpan di website/);
+    expect(kemudi).toMatch(/Tidak ada ketersediaan mobil real-time dan tidak ada pelacakan GPS/);
+    expect(kemudi).toMatch(/fiktif/);
+    expect(kemudi).not.toMatch(/Toyota|Avanza|Innova|Xenia|Daihatsu|Honda|Suzuki|Mitsubishi|Pajero|Fortuner|Alphard|Hiace|terbaik|termurah/i);
+    // Pesiar (2026-10-29): private tour Bali, harga contoh per mobil, tanpa pelacakan penerbangan otomatis
+    const pesiar = visibleText(templateContent('pesiar') as TemplatePageContent);
+    expect(pesiar).toMatch(/hanya menyusun pesan WhatsApp; data tidak disimpan di website/);
+    expect(pesiar).toMatch(/Tidak ada pembayaran online, e-tiket, ketersediaan mobil real-time, atau pelacakan penerbangan otomatis/);
+    expect(pesiar).toMatch(/fiktif/);
+    expect(pesiar).not.toMatch(/berlisensi|\bHPI\b|\bASITA\b|terdaftar resmi|bersertifikat|terbaik|termurah/i);
   });
 
   it('TaniMakmur: kata kunci "template website toko pertanian" di judul, meta, H1, dan pembuka; turunannya di isi', () => {

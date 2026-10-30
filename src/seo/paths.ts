@@ -35,6 +35,7 @@ export const CATEGORY_SLUGS = [
   'sekolah-pendidikan',
   'kesehatan-rumah-sakit',
   'properti-real-estate',
+  'travel-transportasi',
 ] as const;
 
 export type CategorySlug = (typeof CATEGORY_SLUGS)[number];

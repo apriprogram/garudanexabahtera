@@ -1,0 +1,496 @@
+/*
+ * CSS lokal Pesiar (diimpor ./Pesiar.tsx): lapisan gelap foto hero, gradasi kartu tur & strip panorama, huruf & pin peta
+ * Bali, dan gerak khas: Ken Burns pelan pada WADAH foto hero (skala 1 → 1,06 selama 14 dtk, sekali; foto/LCP tidak
+ * pernah disembunyikan), garis petunjuk gulir tergambar sekali, FILM peta yang digerakkan gulir (lapisan kamera, awan,
+ * kabut pagi, cahaya senja, kartu perhentian, rel progres — semua dari var(--p) yang ditulis ./hooks), daftar rute
+ * bergeser masuk, garis mobil tergambar sekali (stroke-dashoffset 1,4 dtk), kutipan & akordeon berganti halus. Keadaan
+ * bawaan = keadaan akhir; gerak hanya bila root template ber-data-tpl-motion="on" (demo & situs live). Pratinjau CMS,
+ * prefers-reduced-motion, dan cetak → statis (film menjadi poster di ./Film.tsx). Tanpa bayangan apa pun; satu-satunya
+ * "garis tepi" teks peta adalah stroke berwarna laut (paint-order), bukan bayangan.
+ */
+
+@layer components {
+  /*
+   * Lapisan foto hero (hijau tua #17332B): atas untuk menu transparan (menu putih 14,5px ≥ 4,5:1 di langit berkabut),
+   * elips lembut di belakang judul & tombol, bawah di belakang bilah kaca. Teks putih ≥ 4,5:1 di area teks pada foto
+   * demo (diperiksa pada piksel tangkapan layar).
+   */
+  .ps-hero-scrim {
+    background:
+      linear-gradient(180deg, rgb(23 51 43 / 0.7) 0, rgb(23 51 43 / 0.55) 72px, rgb(23 51 43 / 0) 200px),
+      radial-gradient(ellipse 46% 46% at 50% 47%, rgb(23 51 43 / 0.68) 0%, rgb(23 51 43 / 0.62) 55%, rgb(23 51 43 / 0.32) 82%, rgb(23 51 43 / 0) 100%),
+      linear-gradient(0deg, rgb(23 51 43 / 0.72) 0%, rgb(23 51 43 / 0) 32%),
+      linear-gradient(rgb(23 51 43 / 0.14), rgb(23 51 43 / 0.14));
+  }
+
+  /* HP / tablet sempit: teks memenuhi tinggi layar → lapisan lebih rata */
+  @container (max-width: 767px) {
+    .ps-hero-scrim {
+      background:
+        linear-gradient(180deg, rgb(23 51 43 / 0.7) 0, rgb(23 51 43 / 0.55) 64px, rgb(23 51 43 / 0) 180px),
+        radial-gradient(ellipse 100% 46% at 50% 46%, rgb(23 51 43 / 0.7) 0%, rgb(23 51 43 / 0.62) 55%, rgb(23 51 43 / 0.3) 85%, rgb(23 51 43 / 0) 100%),
+        linear-gradient(0deg, rgb(23 51 43 / 0.82) 0%, rgb(23 51 43 / 0) 30%),
+        linear-gradient(rgb(23 51 43 / 0.18), rgb(23 51 43 / 0.18));
+    }
+  }
+
+  .ps-kenburns {
+    transform-origin: 50% 55%;
+  }
+
+  .ps-cue {
+    transform-origin: 50% 0;
+  }
+
+  /* Kartu tur: gradasi hijau tua di bawah foto untuk nama, tempat, dan harga (≥ 4,5:1) */
+  .ps-card-fade {
+    background: linear-gradient(0deg, rgb(23 51 43 / 0.94) 0%, rgb(23 51 43 / 0.82) 28%, rgb(23 51 43 / 0.56) 46%, rgb(23 51 43 / 0.18) 60%, rgb(23 51 43 / 0) 70%);
+  }
+
+  /* Strip panorama footer melebur ke hijau tua */
+  .ps-pano-fade {
+    background: linear-gradient(0deg, #17332b 0%, rgb(23 51 43 / 0) 45%);
+  }
+
+  /* ─── Peta Bali (film & poster) ─────────────────────────────────────────── */
+  .ps-map-town {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+  }
+
+  .ps-map-mark {
+    font-family: var(--tpl-font-display);
+    font-size: 19px;
+    font-style: italic;
+  }
+
+  .ps-map-stop {
+    fill: #f5efe6;
+    font-family: var(--tpl-font-display);
+    font-size: 28px;
+    font-style: italic;
+    font-weight: 500;
+    paint-order: stroke;
+    stroke: #17332b;
+    stroke-width: 6px;
+    stroke-linejoin: round;
+  }
+
+  /* Poster diam: peta lebih kecil di layar → label sedikit lebih besar */
+  .ps-poster .ps-map-town {
+    font-size: 16px;
+  }
+
+  .ps-poster .ps-map-stop {
+    font-size: 32px;
+  }
+
+  .ps-pin-dot {
+    fill: #17332b;
+    stroke: #f5efe6;
+  }
+
+  .ps-pin-ring {
+    opacity: 0;
+    stroke: var(--ps-bright);
+  }
+
+  .ps-pin[data-state='visited'] .ps-pin-dot {
+    fill: var(--ps-bright);
+    stroke: #17332b;
+  }
+
+  .ps-pin[data-state='active'] .ps-pin-dot {
+    fill: var(--tpl-accent);
+    stroke: #ffffff;
+  }
+
+  .ps-pin[data-state='active'] .ps-pin-ring {
+    opacity: 0.85;
+  }
+
+  @container (max-width: 767px) {
+    .ps-map-town {
+      font-size: 19px;
+    }
+
+    .ps-map-mark {
+      font-size: 24px;
+    }
+
+    .ps-map-stop {
+      font-size: 36px;
+      stroke-width: 8px;
+    }
+
+    /* Layar sempit: kota kecil disembunyikan agar label tidak berdesakan */
+    .ps-map-minor {
+      display: none;
+    }
+
+    .ps-poster .ps-map-town {
+      font-size: 32px;
+    }
+
+    .ps-poster .ps-map-mark {
+      display: none;
+    }
+
+    .ps-poster .ps-map-stop {
+      font-size: 50px;
+      stroke-width: 11px;
+    }
+
+    .ps-poster .ps-pin-dot {
+      r: 17px;
+    }
+  }
+
+  /* Rel progres film: titik perhentian */
+  .ps-tick {
+    background: rgb(245 239 230 / 0.45);
+  }
+
+  .ps-tick[data-on='true'] {
+    background: var(--ps-bright);
+  }
+
+  /* ─── Film (hanya ada bila gerak menyala; semua digerakkan var(--p)) ────── */
+  [data-tpl-motion='on'] .ps-cam {
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  /* Rute, pin, dan mobil di lapisan sendiri: perubahan garis/mobil tidak menggambar ulang peta dasar */
+  [data-tpl-motion='on'] .ps-route {
+    will-change: transform;
+  }
+
+  /* Awan = lapisan dekat: melintas lebih cepat dari peta */
+  [data-tpl-motion='on'] .ps-clouds {
+    transform: translate3d(calc(var(--p, 0) * -50%), 0, 0);
+    will-change: transform;
+  }
+
+  [data-tpl-motion='on'] .ps-cloud {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.06) 55%, rgb(255 255 255 / 0));
+  }
+
+  /* Kabut pagi (hilang di awal) dan cahaya senja (muncul di akhir) = perubahan suasana */
+  [data-tpl-motion='on'] .ps-haze {
+    background: radial-gradient(ellipse 70% 60% at 70% 30%, rgb(255 244 222 / 0.32), rgb(255 244 222 / 0) 70%);
+    opacity: max(0, calc(1 - var(--p, 0) * 8));
+  }
+
+  /*
+   * Senja: satu cahaya hangat dicampur soft-light (bukan lapisan peach/merah muda biasa yang membuat hijau tua keruh):
+   * hijau tetap hijau, terang menjadi hangat; air danau tetap gelap.
+   */
+  [data-tpl-motion='on'] .ps-dusk {
+    background: radial-gradient(ellipse 100% 90% at 88% 0%, rgb(255 184 128 / 1), rgb(255 184 128 / 0.45) 40%, rgb(255 184 128 / 0) 72%);
+    mix-blend-mode: soft-light;
+    opacity: clamp(0, calc((var(--p, 0) - 0.7) * 3.4), 0.9);
+  }
+
+  /*
+   * Peta DISAMARKAN (mask, bukan sekadar digelapkan) di belakang teks & rel: tidak ada nama tempat setengah terlihat di
+   * belakang judul, jam, atau keterangan rel. HP: pita jam di atas + rel di bawah (kartu di bawah sudah padat).
+   */
+  [data-tpl-motion='on'] .ps-cam-mask {
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, transparent 150px, #000 205px), linear-gradient(0deg, transparent 0, transparent 84px, #000 150px);
+    mask-image: linear-gradient(180deg, transparent 0, transparent 150px, #000 205px), linear-gradient(0deg, transparent 0, transparent 84px, #000 150px);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+
+  /* Tablet: jam 64px → pita atas lebih tinggi */
+  @container (min-width: 48rem) and (max-width: 63.99rem) {
+    [data-tpl-motion='on'] .ps-cam-mask {
+      -webkit-mask-image: linear-gradient(180deg, transparent 0, transparent 190px, #000 248px), linear-gradient(0deg, transparent 0, transparent 90px, #000 160px);
+      mask-image: linear-gradient(180deg, transparent 0, transparent 190px, #000 248px), linear-gradient(0deg, transparent 0, transparent 90px, #000 160px);
+    }
+  }
+
+  /* Layar lebar: kolom teks kiri (34% panggung) + rel bawah; peta mulai terlihat di area peta (36% → 46%) */
+  @container (min-width: 64rem) {
+    [data-tpl-motion='on'] .ps-cam-mask {
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, transparent 34%, #000 46%), linear-gradient(0deg, transparent 0, transparent 80px, #000 150px);
+      mask-image: linear-gradient(90deg, transparent 0, transparent 34%, #000 46%), linear-gradient(0deg, transparent 0, transparent 80px, #000 150px);
+    }
+  }
+
+  /* Lapisan baca (nada, di atas awan/kabut/senja): kolom teks kiri + rel bawah (layar lebar); atas + bawah (HP/tablet) */
+  [data-tpl-motion='on'] .ps-film-scrim {
+    background:
+      linear-gradient(90deg, rgb(23 51 43 / 0.9) 0%, rgb(23 51 43 / 0.78) 30%, rgb(23 51 43 / 0.3) 40%, rgb(23 51 43 / 0) 48%),
+      linear-gradient(0deg, rgb(23 51 43 / 0.9) 0, rgb(23 51 43 / 0) 150px);
+  }
+
+  [data-tpl-motion='on'] .ps-rail-fill {
+    transform: scaleX(var(--p, 0));
+  }
+
+  /* Kartu perhentian: HP/tablet menempel di bawah (di atas rel); layar lebar di samping pin (titik fokus kamera) */
+  [data-tpl-motion='on'] .ps-card {
+    left: 20px;
+    right: 76px;
+    bottom: 78px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(14px) scale(0.97);
+    transition:
+      opacity 280ms ease,
+      transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  [data-tpl-motion='on'] .ps-stage[data-dwell='true'] .ps-card {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  [data-tpl-motion='on'] .ps-chapter {
+    opacity: 0;
+    transition: opacity 240ms ease;
+  }
+
+  [data-tpl-motion='on'] .ps-chapter[data-active='true'] {
+    opacity: 1;
+  }
+
+  [data-tpl-motion='on'] .ps-card-photo {
+    opacity: 0;
+    transform: scale(1.05);
+    transition:
+      opacity 300ms ease,
+      transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  [data-tpl-motion='on'] .ps-card-photo[data-on='true'] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Kartu menggantikan label pin yang sedang disinggahi (label tidak tertutup kartu) */
+  [data-tpl-motion='on'] .ps-pin .ps-map-stop {
+    transition: opacity 200ms ease;
+  }
+
+  [data-tpl-motion='on'] .ps-stage[data-dwell='true'] .ps-pin[data-state='active'] .ps-map-stop {
+    opacity: 0;
+  }
+
+  [data-tpl-motion='on'] .ps-pin[data-state='active'] .ps-pin-ring {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ps-pulse 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  @container (min-width: 64rem) {
+    /* Kanan pin; di layar ± 1024–1150px ditahan 24px dari tepi kanan panggung (tidak terpotong) */
+    [data-tpl-motion='on'] .ps-card {
+      left: min(calc(var(--ps-fx, 60%) + 52px), calc(100% - 324px));
+      right: auto;
+      top: calc(var(--ps-fy, 50%) - 170px);
+      bottom: auto;
+      width: 300px;
+    }
+  }
+
+  @container (max-width: 63.99rem) {
+    [data-tpl-motion='on'] .ps-film-scrim {
+      background:
+        linear-gradient(180deg, rgb(23 51 43 / 0.9) 0, rgb(23 51 43 / 0.75) 140px, rgb(23 51 43 / 0) 240px),
+        linear-gradient(0deg, rgb(23 51 43 / 0.9) 0, rgb(23 51 43 / 0) 170px);
+    }
+  }
+
+  /* ─── Hero ─────────────────────────────────────────────────────────────── */
+  [data-tpl-motion='on'] .ps-kenburns {
+    animation: ps-kenburns 14s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+
+  [data-tpl-motion='on'] .ps-cue {
+    animation: ps-cue 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.9s both;
+  }
+
+  /* ─── Rancang tur: tempat baru bergeser masuk, bilah durasi ─────────────── */
+  [data-tpl-motion='on'] .ps-stop {
+    animation: ps-slide 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  [data-tpl-motion='on'] .ps-bar {
+    transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  /* ─── Mobil: garis tergambar sekali saat kartunya masuk layar, panel warna menyusul ─ */
+  .ps-draw g path,
+  .ps-draw g circle {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  [data-tpl-motion='on'] [data-reveal='pending'] .ps-draw g path,
+  [data-tpl-motion='on'] [data-reveal='pending'] .ps-draw g circle {
+    stroke-dashoffset: 1;
+  }
+
+  [data-tpl-motion='on'] [data-reveal='pending'] .ps-car-panel {
+    opacity: 0;
+  }
+
+  [data-tpl-motion='on'] [data-reveal='shown'] .ps-draw g path,
+  [data-tpl-motion='on'] [data-reveal='shown'] .ps-draw g circle {
+    animation: ps-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both;
+  }
+
+  [data-tpl-motion='on'] [data-reveal='shown'] .ps-car-panel {
+    animation: ps-fade 600ms ease 700ms both;
+  }
+
+  /* ─── Cerita tamu & tanya jawab ─────────────────────────────────────────── */
+  [data-tpl-motion='on'] .ps-quote {
+    animation: ps-fade 300ms ease both;
+  }
+
+  .ps-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .ps-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .ps-collapse {
+    transition: grid-template-rows 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  [data-tpl-motion='on'] .ps-acc {
+    transition: rotate 240ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .ps-kenburns,
+    [data-tpl-motion='on'] .ps-cue,
+    [data-tpl-motion='on'] .ps-stop,
+    [data-tpl-motion='on'] .ps-quote,
+    [data-tpl-motion='on'] .ps-pin[data-state='active'] .ps-pin-ring,
+    [data-tpl-motion='on'] [data-reveal='shown'] .ps-draw g path,
+    [data-tpl-motion='on'] [data-reveal='shown'] .ps-draw g circle,
+    [data-tpl-motion='on'] [data-reveal='shown'] .ps-car-panel {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] [data-reveal='pending'] .ps-draw g path,
+    [data-tpl-motion='on'] [data-reveal='pending'] .ps-draw g circle {
+      stroke-dashoffset: 0;
+    }
+
+    [data-tpl-motion='on'] [data-reveal='pending'] .ps-car-panel {
+      opacity: 1;
+    }
+
+    [data-tpl-motion='on'] .ps-card,
+    [data-tpl-motion='on'] .ps-pin .ps-map-stop,
+    [data-tpl-motion='on'] .ps-chapter,
+    [data-tpl-motion='on'] .ps-card-photo,
+    [data-tpl-motion='on'] .ps-bar,
+    [data-tpl-motion='on'] .ps-collapse,
+    [data-tpl-motion='on'] .ps-acc {
+      transition: none;
+    }
+  }
+
+  @media print {
+    [data-tpl-motion='on'] .ps-kenburns,
+    [data-tpl-motion='on'] .ps-cue,
+    [data-tpl-motion='on'] .ps-stop,
+    [data-tpl-motion='on'] .ps-quote,
+    [data-tpl-motion='on'] [data-reveal='shown'] .ps-draw g path,
+    [data-tpl-motion='on'] [data-reveal='shown'] .ps-draw g circle,
+    [data-tpl-motion='on'] [data-reveal='shown'] .ps-car-panel {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] [data-reveal='pending'] .ps-draw g path,
+    [data-tpl-motion='on'] [data-reveal='pending'] .ps-draw g circle {
+      stroke-dashoffset: 0;
+    }
+
+    [data-tpl-motion='on'] [data-reveal='pending'] .ps-car-panel {
+      opacity: 1;
+    }
+
+    /* Cadangan bila versi diam belum sempat dipasang (./Film.tsx usePrinting): satu panggung, tanpa jalur tinggi */
+    [data-tpl-motion='on'] .ps-track {
+      height: auto;
+    }
+
+    [data-tpl-motion='on'] .ps-stage {
+      position: relative;
+    }
+  }
+}
+
+@keyframes ps-kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes ps-cue {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes ps-slide {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ps-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ps-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ps-pulse {
+  from {
+    opacity: 0.85;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}

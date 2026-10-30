@@ -43,7 +43,7 @@ export interface CategoryMeta {
  * Ubah setiap kali teksnya diubah.
  */
 export const CATALOG_UPDATED = '2026-10-25';
-export const CATEGORIES_UPDATED = '2026-10-28';
+export const CATEGORIES_UPDATED = '2026-10-29';
 
 export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
   'company-profile': {
@@ -168,6 +168,23 @@ export const CATEGORIES: Readonly<Record<CategorySlug, CategoryMeta>> = {
     descriptionNoPrice:
       'Template website properti untuk developer perumahan & agen: listing berfilter, virtual tour, simulasi KPR, hubungi agen via WhatsApp. Lihat demonya.',
     niche: 'properti & perumahan',
+    hasGuide: true,
+    guides: ['template-vs-jasa-website-custom', 'biaya-website-company-profile'],
+  },
+  // Travel & transportasi (2026-10-29): Lajur (sewa bus pariwisata), Nusaline (PO bus antarkota), Lawatan (tour & travel
+  // rombongan), Kemudi (rental mobil) dan Pesiar (private tour & sewa mobil dengan sopir), kategori DB "Travel &
+  // Transportasi". Landing page saja: pemesanan lewat pesan WhatsApp, tanpa pembayaran online, e-tiket, atau
+  // ketersediaan kursi/armada real-time.
+  'travel-transportasi': {
+    slug: 'travel-transportasi',
+    name: 'Travel & transportasi',
+    h1: 'Template website travel & transportasi',
+    title: 'Template Website Travel, Rental Mobil & Bus | Garuda Nexa',
+    description:
+      'Template website tour & travel, sewa bus pariwisata, PO bus & rental mobil: armada, jadwal, harga, pesan via WhatsApp. Mulai {harga_min}.',
+    descriptionNoPrice:
+      'Template website tour & travel, sewa bus pariwisata, PO bus & rental mobil: armada, jadwal, harga, pesan via WhatsApp. Lihat demonya.',
+    niche: 'travel & transportasi',
     hasGuide: true,
     guides: ['template-vs-jasa-website-custom', 'biaya-website-company-profile'],
   },

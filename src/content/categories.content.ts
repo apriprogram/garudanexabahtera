@@ -618,4 +618,81 @@ export const CATEGORY_CONTENT: Readonly<Record<CategorySlug, CategoryPageContent
       },
     ],
   },
+  // Landing page usaha travel & transportasi: pemesanan = pesan WhatsApp, tanpa pembayaran online, e-tiket, atau
+  // ketersediaan kursi/armada real-time; tanpa klaim status lembaga (2026-10-29)
+  'travel-transportasi': {
+    intro:
+      'Calon penumpang dan panitia rombongan membuka website travel untuk memastikan tiga hal: kendaraan apa yang tersedia, berapa kira-kira biayanya, dan bagaimana cara memesannya. Template di kategori ini menyusun informasi itu untuk usaha sewa bus pariwisata, PO bus antarkota, tour & travel rombongan, rental mobil, dan sewa mobil dengan sopir. Formulir penawaran dan pemesanan menyusun pesan WhatsApp untuk admin Anda; template ini bukan sistem tiket, tidak menampilkan ketersediaan kursi secara real-time, dan tidak memiliki pembayaran online.',
+    guideIntro:
+      'Orang yang memesan kendaraan atau paket perjalanan ingin kepastian sebelum mengirim pesan: armadanya seperti apa, harganya sudah termasuk apa saja, dan siapa yang akan menjemput. Siapkan isi berikut agar website menjawab pertanyaan itu lebih dulu, baik Anda punya puluhan bus maupun beberapa mobil. Halaman yang lengkap juga membantu usaha Anda ditemukan saat orang mencari sewa bus, rental mobil, atau paket wisata di kota mereka.',
+    checklist: [
+      {
+        title: 'Armada dengan kapasitas yang jelas',
+        text: 'Tulis jenis kendaraan beserta jumlah kursi, konfigurasi tempat duduk, dan fasilitas seperti AC, toilet, port USB, atau ruang bagasi. Panitia rombongan menghitung kebutuhan dari jumlah peserta, jadi angka kapasitas lebih membantu daripada sebutan seperti bus besar atau mobil luas.',
+      },
+      {
+        title: 'Harga mulai dan apa yang sudah termasuk',
+        text: 'Cantumkan harga mulai per hari, per orang, atau per perjalanan, lalu pisahkan dengan tegas komponen yang sudah termasuk dan yang belum, misalnya sopir, bahan bakar, tol, parkir, tiket masuk, makan kru, dan penginapan. Pertanyaan yang paling sering diulang di chat biasanya justru soal ini.',
+      },
+      {
+        title: 'Jadwal dan rute yang mudah dibaca',
+        text: 'Untuk bus antarkota atau travel antar-jemput, tampilkan jam berangkat, perkiraan tiba, kelas layanan, dan titik naik di setiap kota. Tandai jadwal sebagai contoh bila kursi tetap harus dikonfirmasi admin, agar penumpang tidak mengira tiketnya sudah aman.',
+      },
+      {
+        title: 'Alur pemesanan dalam beberapa langkah',
+        text: 'Jelaskan urutannya: kirim data perjalanan, terima penawaran, bayar uang muka sesuai kesepakatan, lalu kendaraan dijemput atau diantar. Sebutkan data yang perlu dikirim, misalnya tanggal, jumlah penumpang, tujuan, dan lama sewa, supaya pesan pertama sudah lengkap.',
+      },
+      {
+        title: 'Syarat sewa yang ditulis di depan',
+        text: 'Rental mobil lepas kunci biasanya meminta identitas, SIM yang masih berlaku, dan jaminan tertentu. Tulis syarat itu dengan jelas di website, lalu periksa dokumennya langsung saat serah terima kendaraan, bukan dengan meminta foto dokumen pribadi lewat formulir umum.',
+      },
+      {
+        title: 'Kebijakan perubahan dan pembatalan',
+        text: 'Calon pelanggan ingin tahu apa yang terjadi bila tanggal bergeser, peserta berkurang, atau perjalanan batal. Tulis batas waktu perubahan, besaran uang muka yang bisa dikembalikan, dan aturan bila perjalanan melewati jam yang disepakati.',
+      },
+      {
+        title: 'Paket perjalanan dengan itinerary',
+        text: 'Untuk tour dan private trip, tampilkan rencana perjalanan per hari atau per jam, destinasi yang dikunjungi, durasi, dan jumlah peserta minimal. Itinerary yang rinci membantu sekolah atau kantor meminta persetujuan dari pimpinan sebelum memesan.',
+      },
+      {
+        title: 'Area layanan dan titik jemput',
+        text: 'Sebutkan kota asal, wilayah yang dilayani, serta biaya tambahan untuk penjemputan di luar kota, bandara, atau stasiun. Peta lokasi garasi atau kantor juga membantu pelanggan yang ingin melihat kendaraan sebelum menyewa.',
+      },
+      {
+        title: 'Foto yang sesuai dengan kenyataan',
+        text: 'Gunakan foto kendaraan, interior, dan perjalanan milik Anda sendiri. Beri keterangan bila gambar berupa ilustrasi, dan jangan memakai foto armada perusahaan lain, karena pelanggan akan membandingkannya saat kendaraan datang menjemput.',
+      },
+      {
+        title: 'Kontak yang aktif saat dibutuhkan',
+        text: 'Tampilkan nomor WhatsApp admin, jam layanan, dan nomor yang bisa dihubungi selama perjalanan berlangsung. Penumpang yang menunggu jemputan perlu jawaban cepat, jadi pastikan nomor di website memang dipegang orang yang bertugas.',
+      },
+    ],
+    faq: [
+      {
+        question: 'Apakah template travel bisa menjual tiket bus secara online?',
+        answer:
+          'Tidak. Template ini bukan sistem tiket dan tidak memiliki pembayaran online. Pengunjung memilih rute, tanggal, dan jumlah penumpang, lalu tombol pesan menyusun pesan WhatsApp ke admin Anda. Kursi, harga akhir, dan cara pembayaran dikonfirmasi lewat chat.',
+      },
+      {
+        question: 'Apakah ketersediaan kursi atau armada tampil secara real-time?',
+        answer:
+          'Tidak. Jadwal, harga, dan jumlah armada ditulis lewat CMS sebagai informasi, bukan hasil sambungan ke sistem pemesanan. Ketersediaan kursi atau kendaraan tetap Anda pastikan saat membalas pesan pelanggan.',
+      },
+      {
+        question: 'Bisakah saya mengganti ilustrasi kendaraan dengan foto armada sendiri?',
+        answer:
+          'Bisa. Ilustrasi kendaraan bawaan template otomatis mengikuti warna merek Anda, dan setiap kendaraan atau kelas punya kolom foto di CMS. Begitu foto armada Anda diunggah, foto itu menggantikan ilustrasinya.',
+      },
+      {
+        question: 'Apakah data pelanggan dari formulir tersimpan di website?',
+        answer:
+          'Tidak. Isi formulir penawaran, pemesanan, atau antar-jemput hanya dipakai untuk menyusun pesan WhatsApp di perangkat pengunjung; tidak ada data yang disimpan di server website.',
+      },
+      {
+        question: 'Apakah harga, jadwal, dan paket bisa saya ubah sendiri?',
+        answer:
+          'Bisa. Armada, jadwal, rute, paket, dan harga diubah lewat CMS tanpa menyentuh kode, jadi Anda bisa memperbaruinya setiap kali tarif berubah atau ada rute baru.',
+      },
+    ],
+  },
 };

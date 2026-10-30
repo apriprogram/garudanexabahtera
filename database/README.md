@@ -46,7 +46,12 @@ database/
 │   ├── 2026-10-28_045_momkid_template.sql          # data: katalog MomKid Hospital (rumah sakit ibu & anak), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-28_046_specialistplus_template.sql  # data: katalog SpecialistPlus (klinik spesialis & laboratorium), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-28_047_healthlink_template.sql      # data: katalog HealthLink (telemedicine), jalankan SETELAH deploy kodenya
-│   └── 2026-10-28_048_homenest_template.sql        # data: katalog HomeNest (katalog & penjualan rumah), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-28_048_homenest_template.sql        # data: katalog HomeNest (katalog & penjualan rumah), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-29_049_lajur_template.sql           # data: katalog Lajur (sewa bus pariwisata), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-29_050_nusaline_template.sql        # data: katalog Nusaline (PO bus antarkota), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-29_051_lawatan_template.sql         # data: katalog Lawatan (tour & travel rombongan), jalankan SETELAH deploy kodenya
+│   ├── 2026-10-29_052_kemudi_template.sql          # data: katalog Kemudi (rental mobil), jalankan SETELAH deploy kodenya
+│   └── 2026-10-29_053_pesiar_template.sql          # data: katalog Pesiar (private tour & sewa mobil dengan sopir), jalankan SETELAH deploy kodenya
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -278,6 +283,21 @@ dengan 028: menjalankan ulang MENIMPA perubahan admin pada baris itu. Semua hero
 Jalankan masing-masing setelah kode yang mendaftarkan `template_code`-nya ter-deploy; halaman dua kategori baru ikut kode
 yang sama. DB baru cukup `seed.templates.sql`.
 
+`2026-10-29_049` s/d `2026-10-29_053` (data saja) membuat/menyamakan lima baris katalog travel & transportasi
+berdasarkan slug, pola sama dengan 028: menjalankan ulang MENIMPA perubahan admin pada baris itu. Kelimanya memakai wadah
+selebar layar, hero foto latar penuh, dan satu bagian "film" yang bergerak mengikuti gulir:
+
+| Versi | Slug | Isi | Kategori | Harga | sort_order |
+| --- | --- | --- | --- | --- | --- |
+| 049 | `lajur` | sewa bus pariwisata | Travel & Transportasi (baru) | Rp1.690.000 | 32 |
+| 050 | `nusaline` | PO bus antarkota (bus malam) | Travel & Transportasi | Rp1.790.000 | 33 |
+| 051 | `lawatan` | tour & travel rombongan | Travel & Transportasi | Rp1.690.000 | 34 |
+| 052 | `kemudi` | rental mobil lepas kunci & dengan sopir | Travel & Transportasi | Rp1.590.000 | 35 |
+| 053 | `pesiar` | private tour Bali, sewa mobil dengan sopir & antar-jemput bandara | Travel & Transportasi | Rp1.590.000 | 36 |
+
+Jalankan masing-masing setelah kode yang mendaftarkan `template_code`-nya ter-deploy; halaman kategori barunya ikut kode
+yang sama. DB baru cukup `seed.templates.sql`.
+
 DB lokal sudah memakai 004 + `seed.templates.sql` (backup sebelumnya: `backups/db_local_2026-10-20_00-00-56_pre-004.sql`).
 
 Koneksi DB lokal di `.env` (root XAMPP tanpa password), dibaca `api.php` di setiap request dan oleh
@@ -468,3 +488,8 @@ kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin per
 | 2026-10-28_046 | Data saja: baris katalog `specialistplus` (klinik spesialis & laboratorium, kategori "Kesehatan & Rumah Sakit", Rp1.890.000, sort_order 29), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `specialistplus` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-28_047 | Data saja: baris katalog `healthlink` (telemedicine, kategori "Kesehatan & Rumah Sakit", Rp1.690.000, sort_order 30), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `healthlink` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-28_048 | Data saja: baris katalog `homenest` (katalog & penjualan rumah, kategori baru "Properti & Real Estate", Rp1.690.000, sort_order 31), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `homenest` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-29_049 | Data saja: baris katalog `lajur` (sewa bus pariwisata, kategori baru "Travel & Transportasi", Rp1.690.000, sort_order 32), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `lajur` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-29_050 | Data saja: baris katalog `nusaline` (PO bus antarkota, kategori "Travel & Transportasi", Rp1.790.000, sort_order 33), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `nusaline` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-29_051 | Data saja: baris katalog `lawatan` (tour & travel rombongan, kategori "Travel & Transportasi", Rp1.690.000, sort_order 34), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `lawatan` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-29_052 | Data saja: baris katalog `kemudi` (rental mobil, kategori "Travel & Transportasi", Rp1.590.000, sort_order 35), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `kemudi` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-10-29_053 | Data saja: baris katalog `pesiar` (private tour & sewa mobil dengan sopir, kategori "Travel & Transportasi", Rp1.590.000, sort_order 36), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `pesiar` ter-deploy. DB baru cukup `seed.templates.sql`. |

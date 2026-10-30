@@ -1,0 +1,611 @@
+/*
+ * CSS lokal Nusaline (diimpor ./Nusaline.tsx). Isi:
+ * - lapisan midnight foto hero, Ken Burns pelan pada WADAH foto (1 → 1,05 selama 14 dtk, sekali; foto/LCP tidak pernah
+ *   disembunyikan), papan keberangkatan split-flap (huruf membalik sekali saat dimuat, ≤ 1,2 dtk);
+ * - baris jadwal muncul ulang setelah saringan diganti (≤ 220 ms), panel kelas/kota memudar (250 ms), kursi denah muncul
+ *   berurutan (≤ 600 ms total), garis rute tergambar sekali (1,2 dtk) + titik kota muncul, akordeon FAQ, sobekan tiket;
+ * - FILM: geometri panggung (berlaku juga untuk bingkai poster statis) yang digerakkan variabel --p (progres gulir 0–1)
+ *   → --nl-d (jarak tempuh: bus berhenti saat naik p 0–0,05, istirahat p --nl-rest … +0,05, tiba p 0,88–1; angka sama
+ *   dengan FILM di ./model.ts). Trek tinggi, panggung sticky, will-change, keterangan bab yang bergantian, dan rel progres
+ *   HANYA bila root template ber-data-tpl-motion="on" (demo & situs live).
+ * Keadaan bawaan = keadaan akhir/diam. Pratinjau CMS (motion off), prefers-reduced-motion, dan cetak → statis. Hanya
+ * transform/opacity/stroke-dashoffset yang dianimasikan. Tanpa bayangan apa pun, tanpa animasi tanpa akhir.
+ */
+
+@layer components {
+  /* ─── Hero ───────────────────────────────────────────────────────────────── */
+
+  /* Midnight di belakang teks (kiri pekat, kanan tipis), atas untuk header transparan, bawah melebur ke section berikut */
+  .nl-hero-scrim {
+    background:
+      linear-gradient(180deg, rgb(11 16 38 / 0.72) 0, rgb(11 16 38 / 0) 170px),
+      linear-gradient(90deg, rgb(11 16 38 / 0.94) 0%, rgb(11 16 38 / 0.84) 30%, rgb(11 16 38 / 0.5) 52%, rgb(11 16 38 / 0.2) 72%, rgb(11 16 38 / 0.12) 100%),
+      linear-gradient(0deg, rgb(11 16 38 / 0.7) 0%, rgb(11 16 38 / 0) 24%);
+  }
+
+  /* HP & tablet: foto hanya ± 740px teratas. Teks di langit gelap (≥ 0,6 midnight → putih ≥ 4,9:1 bahkan di piksel putih),
+     jejak lampu jalan terlihat jelas di pita 64–87% (di antara tombol dan kartu), lalu melebur penuh ke midnight. */
+  @container (max-width: 1023px) {
+    .nl-hero-scrim {
+      background:
+        linear-gradient(180deg, rgb(11 16 38 / 0.64) 0, rgb(11 16 38 / 0.5) 120px, rgb(11 16 38 / 0.62) 46%, rgb(11 16 38 / 0.5) 62%, rgb(11 16 38 / 0.16) 74%, rgb(11 16 38 / 0.32) 87%, #0b1026 100%);
+    }
+  }
+
+  .nl-kenburns {
+    transform-origin: 62% 58%;
+  }
+
+  [data-tpl-motion='on'] .nl-kenburns {
+    animation: nl-kenburns 14s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+
+  /* Ubin papan keberangkatan: garis belah di tengah (seperti papan split-flap) */
+  .nl-flap {
+    background-image: linear-gradient(
+      180deg,
+      transparent calc(50% - 0.5px),
+      rgb(11 16 38 / 0.6) calc(50% - 0.5px),
+      rgb(11 16 38 / 0.6) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    );
+  }
+
+  /* Membalik sekali saat dimuat: baris 120 ms, huruf 24 ms bertahap; huruf terakhir selesai ± 1,1 dtk */
+  [data-tpl-motion='on'] .nl-flap {
+    animation: nl-flap 380ms cubic-bezier(0.3, 1.35, 0.5, 1) both;
+    animation-delay: calc(200ms + var(--nl-r, 0) * 120ms + var(--nl-i, 0) * 24ms);
+  }
+
+  /* ─── Jadwal, kelas, rute ────────────────────────────────────────────────── */
+
+  [data-tpl-motion='on'] [data-filtered='true'] > .nl-row {
+    animation: nl-rise 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--nl-delay, 0ms);
+  }
+
+  [data-tpl-motion='on'] .nl-panel {
+    animation: nl-fade 250ms ease both;
+  }
+
+  .nl-seat {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  [data-tpl-motion='on'] [data-seats='pop'] .nl-seat {
+    animation: nl-seat 240ms cubic-bezier(0.3, 1.3, 0.5, 1) both;
+    animation-delay: calc(var(--i, 0) * var(--nl-step, 10ms));
+  }
+
+  /* Garis rute (SVG garis tebal tetap): tumbuh dari titik pertama saat <Reveal> wadahnya "shown" — mendatar di layar
+     lebar, tegak di HP. Keadaan diam = utuh. */
+  .nl-route-svg {
+    transform-origin: left center;
+  }
+
+  [data-tpl-motion='on'] .nl-route[data-reveal='pending'] .nl-route-svg {
+    transform: scaleX(0);
+  }
+
+  [data-tpl-motion='on'] .nl-route[data-reveal='shown'] .nl-route-svg {
+    animation: nl-grow-x 1.2s cubic-bezier(0.65, 0, 0.35, 1) both;
+  }
+
+  @container (max-width: 47.99rem) {
+    .nl-route-svg {
+      transform-origin: center top;
+    }
+
+    [data-tpl-motion='on'] .nl-route[data-reveal='pending'] .nl-route-svg {
+      transform: scaleY(0);
+    }
+
+    [data-tpl-motion='on'] .nl-route[data-reveal='shown'] .nl-route-svg {
+      animation: nl-grow-y 1.2s cubic-bezier(0.65, 0, 0.35, 1) both;
+    }
+  }
+
+  [data-tpl-motion='on'] .nl-route[data-reveal='pending'] .nl-stop-dot {
+    transform: scale(0);
+  }
+
+  [data-tpl-motion='on'] .nl-route[data-reveal='shown'] .nl-stop-dot {
+    animation: nl-pop 300ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+    animation-delay: calc(240ms + var(--nl-i, 0) * 140ms);
+  }
+
+  /* Sobekan tiket: takik setengah lingkaran di kiri & kanan */
+  .nl-ticket {
+    -webkit-mask:
+      radial-gradient(circle at 0 50%, transparent 11px, #000 11.5px) left / 51% 100% no-repeat,
+      radial-gradient(circle at 100% 50%, transparent 11px, #000 11.5px) right / 51% 100% no-repeat;
+    mask:
+      radial-gradient(circle at 0 50%, transparent 11px, #000 11.5px) left / 51% 100% no-repeat,
+      radial-gradient(circle at 100% 50%, transparent 11px, #000 11.5px) right / 51% 100% no-repeat;
+  }
+
+  /* Akordeon FAQ: 0fr → 1fr, transisi hanya bila gerak menyala */
+  .nl-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .nl-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .nl-collapse {
+    transition: grid-template-rows 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  [data-tpl-motion='on'] .nl-acc {
+    transition: rotate 240ms ease;
+  }
+
+  /* ─── Film: geometri panggung (juga bingkai poster statis, --p tetap 0,45) ──────────────────────────────── */
+
+  .nl-scene {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    container-type: size;
+    background: #0b1026;
+    --nl-pp: var(--p, 0.45);
+    --nl-d: clamp(
+      0,
+      (var(--nl-pp) - clamp(0, var(--nl-pp), 0.05) - clamp(0, var(--nl-pp) - var(--nl-rest, 2), 0.05) - clamp(0, var(--nl-pp) - 0.88, 0.12)) /
+        var(--nl-dn, 0.83),
+      1
+    );
+    /* Satuan bus: --nl-bus-w = 800 satuan (bodi bus; kotak SVG 1000 satuan); semua lapisan diukur dengan satuan ini
+       (proporsi sama di desktop & HP). --nl-fit-w / --nl-fit-x (px) ditulis ./hooks di panggung yang bergerak bila teks
+       panggung menghalangi bus (model fitFilmBus). */
+    --nl-bus-w: var(--nl-fit-w, min(92cqw, 76cqh));
+    --nl-u: calc(var(--nl-bus-w) / 800);
+    --nl-ground: max(14cqh, calc(var(--nl-u) * 120));
+    --nl-bus-x: var(--nl-fit-x, 50%);
+  }
+
+  /* HP: bus sedikit lebih kecil dan bergeser ke kiri (tombol WhatsApp & kembali-ke-atas melayang di kanan bawah),
+     bulan lebih kecil. HP kecil (< 384px): lebih kecil & lebih ke kiri lagi agar moncong bus tidak di bawah tombol
+     melayang. Angka sama dengan fitFilmBus di ./model.ts. */
+  @container (max-width: 47.99rem) {
+    .nl-scene {
+      --nl-bus-w: var(--nl-fit-w, min(80cqw, 76cqh));
+      --nl-bus-x: var(--nl-fit-x, 45%);
+    }
+  }
+
+  @container (max-width: 23.99rem) {
+    .nl-scene {
+      --nl-bus-w: var(--nl-fit-w, min(72cqw, 76cqh));
+      --nl-bus-x: var(--nl-fit-x, 41%);
+    }
+  }
+
+  /* Langit: pita 400% malam → subuh → matahari terbit, bergeser naik */
+  .nl-sky {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 400%;
+    background: linear-gradient(
+      180deg,
+      #070b1d 0%,
+      #0d1433 14%,
+      #1a2050 25%,
+      #121a47 40%,
+      #1b2463 55%,
+      #2b2d6c 68%,
+      #3d3779 78%,
+      #7d4f8f 86%,
+      #d9718a 92%,
+      #f59a74 96%,
+      #ffd08a 100%
+    );
+    transform: translateY(calc(var(--nl-pp) * -75%));
+  }
+
+  .nl-celestial,
+  .nl-far,
+  .nl-mid,
+  .nl-near,
+  .nl-bus {
+    position: absolute;
+    display: block;
+    max-width: none;
+  }
+
+  .nl-celestial {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .nl-stars {
+    opacity: clamp(0, calc(1 - (var(--nl-pp) - 0.7) / 0.16), 1);
+    transform: translateX(calc(var(--nl-pp) * -40px));
+  }
+
+  /* Bulan turun pelan ke kanan lalu memudar menjelang subuh — tetap di atas lampu jalan & papan rest area */
+  .nl-moon {
+    opacity: clamp(0, calc(1 - (var(--nl-pp) - 0.74) / 0.14), 1);
+    transform: translate(calc(var(--nl-pp) * 90px), calc(var(--nl-pp) * 260px));
+  }
+
+  /* HP: bulan lebih kecil. Bingkai poster persegi: tinggi di langit, di atas lampu jalan. Panggung bergerak (tegak, teks
+     bertumpuk di atas): di pojok kanan atas di samping judul, bergeser pelan lalu memudar saat subuh — tidak pernah
+     "terbenam" di belakang atap bus atau mengintip di bawah kartu bab. */
+  @container (max-width: 47.99rem) {
+    .nl-moon {
+      transform-box: fill-box;
+      transform-origin: center;
+      transform: translate(calc(-150px + var(--nl-pp) * 40px), calc(130px + var(--nl-pp) * 60px)) scale(0.6);
+    }
+
+    [data-tpl-motion='on'] .nl-stage .nl-moon {
+      transform: translate(calc(30px + var(--nl-pp) * 10px), calc(var(--nl-pp) * 20px)) scale(0.6);
+    }
+  }
+
+  /* Tablet tegak (panggung bergerak 768–1023px): jam besar ada di kanan atas, tepat di atas bulan — bulan mulai lebih
+     rendah (di bawah dasbor) lalu turun pelan, tetap di atas atap bus dan lampu jalan */
+  @container (min-width: 48rem) and (max-width: 63.99rem) {
+    [data-tpl-motion='on'] .nl-stage .nl-moon {
+      transform: translate(calc(var(--nl-pp) * 90px), calc(100px + var(--nl-pp) * 200px));
+    }
+  }
+
+  .nl-sun {
+    opacity: clamp(0, calc((var(--nl-pp) - 0.76) / 0.16), 1);
+    transform: translateY(calc((1 - clamp(0, (var(--nl-pp) - 0.76) / 0.24, 1)) * 300px));
+  }
+
+  .nl-far {
+    left: 0;
+    width: 100%;
+    bottom: calc(var(--nl-ground) + var(--nl-u) * 40);
+    height: calc(var(--nl-u) * 260);
+  }
+
+  .nl-mountains {
+    transform: translateX(calc(var(--nl-d) * -260px));
+  }
+
+  /* Kota asal keluar di awal (jarak 0 → 0,25), kota singgah (Semarang, lebar 2000 satuan) lewat di tengah malam (jarak
+     0,32 → 0,68, ± p 0,31–0,57: babak tengah film tidak datar; poster p 0,45 tepat di kota), kota tujuan masuk di akhir
+     (0,75 → 1) */
+  .nl-city-a {
+    transform: translateX(calc(min(var(--nl-d) * 4, 1) * -1700px));
+  }
+
+  .nl-city-m {
+    transform: translateX(calc(clamp(-1, 1 - (var(--nl-d) - 0.32) * 5.5, 1) * 1900px));
+  }
+
+  .nl-city-b {
+    transform: translateX(calc((1 - clamp(0, (var(--nl-d) - 0.75) * 4, 1)) * 1700px));
+  }
+
+  /* Bukit & sawah: titik 0 di tengah panggung, bergeser 2400 satuan selama perjalanan */
+  .nl-mid {
+    left: 50%;
+    bottom: calc(var(--nl-ground) + var(--nl-u) * 40);
+    width: calc(var(--nl-u) * 5200);
+    height: calc(var(--nl-u) * 200);
+    transform: translateX(calc(var(--nl-u) * -1400 - var(--nl-d) * var(--nl-u) * 2400));
+  }
+
+  .nl-ground {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--nl-ground) - var(--nl-u) * 38 + 1px);
+    background: #080c1e;
+  }
+
+  /* Jalan, lampu, terminal, rest area: bergeser 8000 satuan (≈ 3,3× lebih cepat dari bukit → kedalaman) */
+  .nl-near {
+    left: 50%;
+    bottom: calc(var(--nl-ground) - var(--nl-u) * 38);
+    width: calc(var(--nl-u) * 10800);
+    height: calc(var(--nl-u) * 380);
+    transform: translateX(calc(var(--nl-u) * -1400 - var(--nl-d) * var(--nl-u) * 8000));
+  }
+
+  /* Bus di tengah panggung (pusat bodi x 405 dari 1000 satuan), roda menapak garis tanah */
+  .nl-bus {
+    left: calc(var(--nl-bus-x, 50%) - var(--nl-u) * 405);
+    bottom: calc(var(--nl-ground) - var(--nl-u) * 8);
+    width: calc(var(--nl-u) * 1000);
+    height: calc(var(--nl-u) * 270);
+    overflow: visible;
+  }
+
+  .nl-wheel {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: rotate(calc(var(--nl-d) * 2880deg));
+  }
+
+  /* Lampu kabin (amber): hangat saat naik, meredup biru TEPAT sebelum bab "Lampu kabin diredupkan" (--nl-dim dari
+     ./Film.tsx, ± 22.05 → 22.58), biru semalaman, hangat sebentar saat istirahat, hangat lagi menjelang tiba */
+  .nl-cabin-warm {
+    opacity: calc(
+      clamp(
+          0,
+          max(
+            1 - (var(--nl-pp) - var(--nl-dim, 0.24)) * 16,
+            (var(--nl-pp) - 0.8) * 12.5,
+            min(var(--nl-pp) - var(--nl-rest, 2), var(--nl-rest, 2) + 0.05 - var(--nl-pp)) * 40
+          ),
+          1
+        ) *
+        0.8
+    );
+  }
+
+  .nl-beam {
+    opacity: clamp(0, calc(1 - (var(--nl-pp) - 0.84) * 10), 1);
+  }
+
+  /* ─── Film: trek, panggung sticky, keterangan bab, rel (HANYA bila gerak menyala) ───────────────────────── */
+
+  [data-tpl-motion='on'] .nl-film-track {
+    height: calc(var(--film-vh, 100svh) * 2.55);
+  }
+
+  @container (min-width: 48rem) {
+    [data-tpl-motion='on'] .nl-film-track {
+      height: calc(var(--film-vh, 100svh) * 3.4);
+    }
+  }
+
+  [data-tpl-motion='on'] .nl-stage {
+    position: sticky;
+    top: var(--tpl-sticky-top, 0px);
+    height: var(--film-vh, 100svh);
+    overflow: hidden;
+  }
+
+  [data-tpl-motion='on'] .nl-stage .nl-sky,
+  [data-tpl-motion='on'] .nl-stage .nl-mid,
+  [data-tpl-motion='on'] .nl-stage .nl-near,
+  [data-tpl-motion='on'] .nl-stage .nl-bus {
+    will-change: transform;
+  }
+
+  /* Panggung pendek (HP kecil, bingkai HP demo, HP mendatar; ./hooks fitFilmStage menulis data-fit): teks pendukung
+     disembunyikan secara VISUAL bertahap — tetap dibacakan — agar bus tidak tertutup: 1 = kalimat pengantar,
+     2 = + label, 3 = + kalimat bab dan petunjuk gulir. */
+  [data-tpl-motion='on'] .nl-stage:is([data-fit='1'], [data-fit='2'], [data-fit='3']) .nl-fit-1,
+  [data-tpl-motion='on'] .nl-stage:is([data-fit='2'], [data-fit='3']) .nl-fit-2,
+  [data-tpl-motion='on'] .nl-stage[data-fit='3'] .nl-fit-3 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Suspensi: goyang 1,2px mengikuti jarak (tanpa sin() → tanpa goyang) */
+  [data-tpl-motion='on'] .nl-stage .nl-bus {
+    translate: 0 calc(sin(var(--nl-d) * 97) * 1.2px);
+  }
+
+  /* Keterangan bab (bertumpuk dalam satu kartu): tampil di jendela progres [--a, --b]; di tiap batas bab yang lama
+     memudar habis dulu (± 0,03 p) lalu yang baru naik masuk — teks dua bab tidak pernah tampil bertumpuk. --k =
+     kemiringan pudar (32, lebih curam untuk jendela sempit: ./Film.tsx), jadi setiap bab sempat terbaca penuh. */
+  [data-tpl-motion='on'] .nl-chapter {
+    --nl-o: clamp(0, min((var(--p, 0) - var(--a)) * var(--k, 32), (var(--b) - var(--p, 0)) * var(--k, 32)), 1);
+    grid-area: 1 / 1;
+    opacity: var(--nl-o);
+    transform: translateY(calc((1 - var(--nl-o)) * 10px));
+  }
+
+  [data-tpl-motion='on'] .nl-scroll-hint {
+    opacity: clamp(0, calc(1 - var(--p, 0) * 14), 1);
+  }
+
+  /* Layar lebar: kalimat pengantar memudar begitu film diputar (teks tetap di DOM) — panggung tidak ramai teks. HP: teks
+     bertumpuk satu kolom dan sudah diringkas fitFilmStage bila perlu; memudar di sana hanya meninggalkan celah. */
+  @container (min-width: 48rem) {
+    [data-tpl-motion='on'] .nl-stage .nl-fit-1 {
+      opacity: clamp(0, calc(1 - var(--p, 0) * 12), 1);
+    }
+  }
+
+  [data-tpl-motion='on'] .nl-rail-fill {
+    transform: scaleX(var(--p, 0));
+  }
+
+  .nl-tick {
+    background: #6b708a;
+  }
+
+  .nl-tick[data-on='true'] {
+    background: var(--nl-neon);
+  }
+
+  [data-tpl-motion='on'] .nl-tick {
+    transition: background-color 200ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .nl-kenburns,
+    [data-tpl-motion='on'] .nl-flap,
+    [data-tpl-motion='on'] [data-filtered='true'] > .nl-row,
+    [data-tpl-motion='on'] .nl-panel,
+    [data-tpl-motion='on'] [data-seats='pop'] .nl-seat,
+    [data-tpl-motion='on'] .nl-route[data-reveal='shown'] .nl-route-svg,
+    [data-tpl-motion='on'] .nl-route[data-reveal='shown'] .nl-stop-dot {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .nl-route[data-reveal='pending'] .nl-route-svg,
+    [data-tpl-motion='on'] .nl-route[data-reveal='pending'] .nl-stop-dot {
+      transform: none;
+    }
+
+    [data-tpl-motion='on'] .nl-collapse,
+    [data-tpl-motion='on'] .nl-acc,
+    [data-tpl-motion='on'] .nl-tick {
+      transition: none;
+    }
+
+    [data-tpl-motion='on'] .nl-stage .nl-bus {
+      translate: none;
+    }
+  }
+
+  @media print {
+    [data-tpl-motion='on'] .nl-kenburns,
+    [data-tpl-motion='on'] .nl-flap,
+    [data-tpl-motion='on'] [data-filtered='true'] > .nl-row,
+    [data-tpl-motion='on'] .nl-panel,
+    [data-tpl-motion='on'] [data-seats='pop'] .nl-seat,
+    [data-tpl-motion='on'] .nl-route[data-reveal='shown'] .nl-route-svg,
+    [data-tpl-motion='on'] .nl-route[data-reveal='shown'] .nl-stop-dot {
+      animation: none;
+    }
+
+    /* Film bergerak tercetak sebagai papan cerita: teks (judul, dasbor, SEMUA bab) lalu satu bingkai adegan */
+    [data-tpl-motion='on'] .nl-film-track {
+      height: auto;
+    }
+
+    [data-tpl-motion='on'] .nl-stage {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+      overflow: visible;
+    }
+
+    /* Bingkai adegan 9 cm di bawah teks; ukuran bus standar (penyesuaian layar --nl-fit-* tidak berlaku di kertas) */
+    [data-tpl-motion='on'] .nl-stage .nl-scene {
+      position: relative;
+      order: 2;
+      height: 9cm;
+      --nl-bus-w: min(92cqw, 76cqh);
+      --nl-bus-x: 50%;
+    }
+
+    [data-tpl-motion='on'] .nl-film-overlay {
+      height: auto;
+    }
+
+    [data-tpl-motion='on'] .nl-chapters {
+      gap: 12px;
+    }
+
+    [data-tpl-motion='on'] .nl-chapter {
+      grid-area: auto;
+      opacity: 1;
+      transform: none;
+    }
+
+    [data-tpl-motion='on'] .nl-stage :is(.nl-fit-1, .nl-fit-2, .nl-fit-3),
+    [data-tpl-motion='on'] .nl-stage[data-fit] :is(.nl-fit-1, .nl-fit-2, .nl-fit-3) {
+      position: static;
+      width: auto;
+      height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
+      white-space: normal;
+      opacity: 1;
+    }
+
+    [data-tpl-motion='on'] .nl-rail {
+      display: none;
+    }
+  }
+}
+
+@keyframes nl-kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes nl-flap {
+  0% {
+    transform: perspective(160px) rotateX(-90deg);
+    opacity: 0.25;
+  }
+  60% {
+    transform: perspective(160px) rotateX(14deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes nl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nl-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nl-seat {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nl-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes nl-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes nl-pop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: none;
+  }
+}

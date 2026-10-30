@@ -1,0 +1,391 @@
+/*
+ * CSS lokal Lawatan (diimpor ./Lawatan.tsx): motif kartu pos (garis airmail, perangko berlubang lewat topeng radial),
+ * lapisan foto hero, perangko hero yang mendarat sekali, film itinerary (trek tinggi, panggung lengket, pita rute, rel
+ * kartu pos yang digerakkan variabel --p dari hooks useFilmProgress), kartu paket yang muncul ulang setelah saringan,
+ * akordeon, dan kartu testimoni miring. Keadaan bawaan = keadaan akhir / papan cerita statis; gerak hanya bila root
+ * template ber-data-tpl-motion="on" (demo & situs live). Pratinjau CMS, prefers-reduced-motion, dan cetak → statis.
+ * Animasi hanya transform / opacity; tanpa bayangan apa pun.
+ */
+
+@layer components {
+  /* Garis airmail: diagonal hijau tema · krem · tinta 20% · krem (pita tipis 4–6px) */
+  .lw-airmail {
+    background: repeating-linear-gradient(-45deg, var(--tpl-accent) 0 9px, #fbf6ee 9px 13px, #cfccc5 13px 22px, #fbf6ee 22px 26px);
+  }
+
+  /*
+   * Perangko berlubang: lapisan topeng 1 = kotak isi (padding = pinggiran kertas), lapisan 2 = petak berlubang bundar
+   * yang berpusat tepat di tepi elemen (posisi −½ petak, ulang `round`), digabung (add) → tepi bergerigi rapi.
+   */
+  .lw-perf {
+    --lw-hole: 2.6px;
+    --lw-step: 8.5px;
+    padding: 4px;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      radial-gradient(circle var(--lw-hole), #0000 96%, #000) calc(var(--lw-step) / -2) calc(var(--lw-step) / -2) / var(--lw-step) var(--lw-step) round;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      radial-gradient(circle var(--lw-hole), #0000 96%, #000) calc(var(--lw-step) / -2) calc(var(--lw-step) / -2) / var(--lw-step) var(--lw-step) round;
+  }
+
+  .lw-perf-lg {
+    --lw-hole: 5px;
+    --lw-step: 15px;
+    padding: 8px;
+  }
+
+  /* Hero: scrim tinta tipis hanya di bagian bawah foto (chip keterangan, tepi panel) */
+  .lw-hero-scrim {
+    background: linear-gradient(0deg, rgb(29 35 32 / 0.34) 0%, rgb(29 35 32 / 0.08) 30%, rgb(29 35 32 / 0) 46%);
+  }
+
+  /* Perangko hero: diam miring −4°; gerak menyala → "mendarat" sekali (skala 1,25 → 1, putar −8° → −4°) */
+  .lw-stamp-land {
+    transform: rotate(-4deg);
+    transform-origin: 60% 40%;
+  }
+
+  [data-tpl-motion='on'] .lw-stamp-land {
+    animation: lw-stamp 600ms cubic-bezier(0.2, 0.8, 0.2, 1) 300ms both;
+  }
+
+  /* Kartu paket setelah saringan diganti: muncul bertahap (opacity + skala), 250 ms */
+  [data-tpl-motion='on'] [data-filtered='true'] > .lw-pop {
+    animation: lw-pop 250ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--lw-delay, 0ms);
+  }
+
+  /* Buka-tutup akordeon: 0fr → 1fr, transisi hanya bila gerak menyala */
+  .lw-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+  }
+
+  .lw-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+
+  [data-tpl-motion='on'] .lw-collapse {
+    transition: grid-template-rows 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  [data-tpl-motion='on'] .lw-acc {
+    transition: rotate 240ms ease;
+  }
+
+  /* Kartu testimoni miring (statis), tegak saat disorot */
+  .lw-tilt {
+    transform: rotate(var(--lw-tilt, 0deg));
+  }
+
+  .lw-tilt:hover {
+    transform: none;
+  }
+
+  [data-tpl-motion='on'] .lw-tilt {
+    transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  /* ─── Film itinerary ─────────────────────────────────────────────────────── */
+
+  /* Jalan titik-titik selebar layar */
+  .lw-road {
+    background: radial-gradient(circle, rgb(29 35 32 / 0.34) 1.5px, transparent 1.9px) 0 50% / 10px 4px repeat-x;
+  }
+
+  /* Papan cerita statis: garis tempuh penuh, bus di tujuan, semua titik terisi */
+  .lw-route-done {
+    transform-origin: 0 50%;
+  }
+
+  .lw-bus-run {
+    transform: translate3d(100%, 0, 0);
+  }
+
+  /*
+   * Trek: 4 × tinggi layar terlihat (HP 3 ×); panggung LENGKET setinggi layar terlihat (--film-vh ditulis hooks).
+   * Lebar kartu pos mengikuti tinggi panggung agar kartu + pita rute + penghitung selalu muat (bagian tetap panggung
+   * 294px, HP 230px; kartu = foto + 123px teks & bingkai, ruang napas 40px):
+   *   biasa  : foto 4:3 → w ≤ (vh − 445px) × 1,333; HP foto persegi (kartu mengisi layar tinggi) → w ≤ vh − 377px
+   *   compact: kalimat kartu disembunyikan (−42px), foto 4:3, dipasang hooks bila panggung pendek (model filmSize)
+   * Batas: 200–440px (wadah ≥ 2240px: 680px; HP 72cqw, maks. 320px).
+   */
+  [data-tpl-motion='on'] .lw-film-track {
+    height: calc(var(--film-vh, 100svh) * 4);
+  }
+
+  [data-tpl-motion='on'] .lw-film-stage {
+    position: sticky;
+    top: var(--tpl-sticky-top, 0px);
+    height: var(--film-vh, 100svh);
+    overflow: hidden;
+    --lw-photo-ar: 4 / 3;
+    --lw-card-w: clamp(200px, min(62cqw, calc((var(--film-vh, 100svh) - 445px) * 1.333)), 440px);
+    --lw-gap: clamp(20px, 3cqw, 44px);
+  }
+
+  [data-tpl-motion='on'] .lw-film-stage[data-size='compact'] {
+    --lw-card-w: clamp(190px, min(62cqw, calc((var(--film-vh, 100svh) - 403px) * 1.333)), 440px);
+  }
+
+  /*
+   * Layar sangat lebar (wadah ≥ 2240px, mis. 2560×1300): batas kartu 440 → 680px, jadi rel mengisi panggung tinggi dan
+   * tidak menyisakan pita krem kosong besar di atas/bawahnya. Rumus tinggi yang sama tetap menjaga kartu + pita rute muat
+   * (2240×1000: kartu ± 650px). Lebar lain tidak berubah.
+   */
+  @container (min-width: 2240px) {
+    [data-tpl-motion='on'] .lw-film-stage:not([data-size='compact']) {
+      --lw-card-w: clamp(200px, min(62cqw, calc((var(--film-vh, 100svh) - 445px) * 1.333)), 680px);
+    }
+  }
+
+  /* Kalimat kartu di panggung pendek: tersembunyi secara visual, tetap dibaca pembaca layar */
+  [data-tpl-motion='on'] .lw-film-stage[data-size='compact'] .lw-card-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /*
+   * Suasana waktu (bab aktif) untuk SELURUH section film (kepala + panggung, tanpa sambungan warna): pagi persik, siang
+   * segar, sore keemasan, malam lembayung — teks tetap ≥ 4,5:1. Tanpa bab: krem.
+   */
+  [data-tpl-motion='on'] .lw-film {
+    background-color: #fbf6ee;
+    transition: background-color 700ms ease;
+  }
+
+  [data-tpl-motion='on'] .lw-film[data-daypart='pagi'] {
+    background-color: #fbf1e4;
+  }
+
+  [data-tpl-motion='on'] .lw-film[data-daypart='siang'] {
+    background-color: #f3f5ec;
+  }
+
+  [data-tpl-motion='on'] .lw-film[data-daypart='sore'] {
+    background-color: #faeedf;
+  }
+
+  [data-tpl-motion='on'] .lw-film[data-daypart='malam'] {
+    background-color: #eeebf1;
+  }
+
+  /*
+   * Rel kartu pos: kartu pertama di tengah pada p = 0, terakhir pada p = 1 (--reel-shift diukur hooks useReelShift).
+   * Digerakkan --q (model reelProgress): rel DIAM di sekitar setiap titik dan bergeser halus di antaranya, jadi kartu aktif
+   * selalu berhenti utuh; bus, garis tempuh, titik, bukit, roda & km tetap mengikuti --p.
+   */
+  [data-tpl-motion='on'] .lw-reel {
+    display: flex;
+    align-items: center;
+    gap: var(--lw-gap);
+    width: max-content;
+    padding-inline: calc(50% - var(--lw-card-w) / 2);
+    transform: translate3d(calc(var(--q, var(--p, 0)) * -1 * var(--reel-shift, 0px)), 0, 0);
+    will-change: transform;
+  }
+
+  /* Kartu: --d = jarak (dalam kartu) dari tengah; tengah tegak & paling besar, lainnya miring ±3°, turun, mengecil */
+  [data-tpl-motion='on'] .lw-reel-card {
+    --d: calc(var(--q, var(--p, 0)) * var(--lw-n1, 1) - var(--i, 0));
+    --a: min(1, max(var(--d), calc(var(--d) * -1)));
+    flex: none;
+    width: var(--lw-card-w);
+    transform: translate3d(0, calc(var(--a) * 16px), 0) rotate(calc(clamp(-1, var(--d), 1) * -3deg)) scale(calc(1 - var(--a) * 0.07));
+    transform-origin: 50% 85%;
+  }
+
+  /* Kartu yang sudah dilewati "dicap pos" */
+  [data-tpl-motion='on'] .lw-reel-card .lw-card-mark {
+    opacity: clamp(0, calc(var(--d) * 5 + 1), 1);
+    transform: scale(calc(1.3 - 0.3 * clamp(0, calc(var(--d) * 5 + 1), 1)));
+    transform-origin: 50% 50%;
+  }
+
+  [data-tpl-motion='on'] .lw-film-stage .lw-route-done {
+    transform: scaleX(var(--p, 0));
+  }
+
+  [data-tpl-motion='on'] .lw-film-stage .lw-bus-run {
+    transform: translate3d(calc(var(--p, 0) * 100%), 0, 0);
+  }
+
+  [data-tpl-motion='on'] .lw-film-stage .lw-wheel {
+    transform: rotate(calc(var(--p, 0) * 1440deg));
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+  }
+
+  [data-tpl-motion='on'] .lw-film-stage .lw-stop-fill {
+    opacity: clamp(0, calc((var(--p, 0) - var(--t, 0)) * 40 + 1), 1);
+  }
+
+  [data-tpl-motion='on'] .lw-film-stage .lw-hills {
+    transform: translate3d(calc(var(--p, 0) * -18%), 0, 0);
+    will-change: transform;
+  }
+
+  [data-tpl-motion='on'] .lw-stop-label {
+    transition: opacity 240ms ease;
+  }
+
+  /* Penghitung hari & jam berganti: naik-memudar 320 ms */
+  [data-tpl-motion='on'] .lw-tick {
+    animation: lw-tick 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  /*
+   * HP: trek 3 × layar, kartu 72cqw (maks. 320px) berfoto persegi (compact: 4:3 tanpa kalimat); nama tempat di pita rute
+   * hanya yang aktif (film) / hanya awal & akhir (papan cerita) agar tidak bertumpuk.
+   */
+  @container (max-width: 767px) {
+    [data-tpl-motion='on'] .lw-film-track {
+      height: calc(var(--film-vh, 100svh) * 3);
+    }
+
+    [data-tpl-motion='on'] .lw-film-stage {
+      --lw-photo-ar: 1 / 1;
+      --lw-card-w: clamp(200px, min(72cqw, calc(var(--film-vh, 100svh) - 377px)), 320px);
+    }
+
+    [data-tpl-motion='on'] .lw-film-stage[data-size='compact'] {
+      --lw-photo-ar: 4 / 3;
+      --lw-card-w: clamp(190px, min(72cqw, calc((var(--film-vh, 100svh) - 339px) * 1.333)), 320px);
+    }
+
+    /*
+     * Kartu aktif rata kiri di tepi wadah (20px, sejajar penghitung) dan kartu berikutnya mengintip di kanan: tepi kanan
+     * kartu aktif (20px + 72cqw) tetap kiri dari kolom tombol melayang Shell (WhatsApp & "Kembali ke atas", 64px kanan).
+     */
+    [data-tpl-motion='on'] .lw-reel {
+      padding-inline: var(--lw-reel-start, 20px) calc(100% - var(--lw-card-w) - var(--lw-reel-start, 20px));
+    }
+
+    [data-tpl-motion='on'] .lw-film-stage .lw-stop-label[data-active='false'],
+    .lw-poster .lw-stop-label[data-edge='false'] {
+      opacity: 0;
+    }
+  }
+
+  /* HP lebar (wadah 672–767px): tepi WRAP 32px */
+  @container (min-width: 672px) and (max-width: 767px) {
+    [data-tpl-motion='on'] .lw-reel {
+      --lw-reel-start: 32px;
+    }
+  }
+
+  /* Tablet tegak (wadah ≥ 768px, layar potret): panggung tinggi → foto persegi juga (kartu = w + 107px → w ≤ vh − 441px) */
+  @media (orientation: portrait) {
+    @container (min-width: 768px) {
+      [data-tpl-motion='on'] .lw-film-stage:not([data-size='compact']) {
+        --lw-photo-ar: 1 / 1;
+        --lw-card-w: clamp(200px, min(62cqw, calc(var(--film-vh, 100svh) - 441px)), 440px);
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-tpl-motion='on'] .lw-stamp-land,
+    [data-tpl-motion='on'] [data-filtered='true'] > .lw-pop,
+    [data-tpl-motion='on'] .lw-tick {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .lw-collapse,
+    [data-tpl-motion='on'] .lw-acc,
+    [data-tpl-motion='on'] .lw-tilt,
+    [data-tpl-motion='on'] .lw-stop-label,
+    [data-tpl-motion='on'] .lw-film {
+      transition: none;
+    }
+  }
+
+  /* Cetak: film jadi papan cerita (tanpa trek tinggi, tanpa lengket, kartu berjajar membungkus, rute utuh) */
+  @media print {
+    [data-tpl-motion='on'] .lw-stamp-land,
+    [data-tpl-motion='on'] [data-filtered='true'] > .lw-pop,
+    [data-tpl-motion='on'] .lw-tick {
+      animation: none;
+    }
+
+    [data-tpl-motion='on'] .lw-film-track {
+      height: auto;
+    }
+
+    [data-tpl-motion='on'] .lw-film-stage {
+      position: static;
+      height: auto;
+      overflow: visible;
+    }
+
+    [data-tpl-motion='on'] .lw-reel {
+      width: auto;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding-inline: 32px;
+      transform: none;
+    }
+
+    [data-tpl-motion='on'] .lw-reel-card,
+    [data-tpl-motion='on'] .lw-film-stage .lw-hills,
+    [data-tpl-motion='on'] .lw-film-stage .lw-route-done {
+      transform: none;
+    }
+
+    [data-tpl-motion='on'] .lw-reel-card .lw-card-mark,
+    [data-tpl-motion='on'] .lw-film-stage .lw-stop-fill {
+      opacity: 1;
+      transform: none;
+    }
+
+    [data-tpl-motion='on'] .lw-film-stage .lw-bus-run {
+      transform: translate3d(100%, 0, 0);
+    }
+
+    [data-tpl-motion='on'] .lw-film-stage[data-size='compact'] .lw-card-text {
+      position: static;
+      width: auto;
+      height: auto;
+      clip-path: none;
+      white-space: normal;
+    }
+  }
+}
+
+@keyframes lw-stamp {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) scale(1.25);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-4deg) scale(1);
+  }
+}
+
+@keyframes lw-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lw-tick {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -75,6 +75,7 @@ describe('paths', () => {
       'sekolah-pendidikan',
       'kesehatan-rumah-sakit',
       'properti-real-estate',
+      'travel-transportasi',
     ]);
     expect(PLANNED_ARTICLE_SLUGS).toEqual([
       'biaya-website-company-profile',

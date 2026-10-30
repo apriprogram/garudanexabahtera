@@ -139,11 +139,15 @@ describe('beranda', () => {
       { ...FIXTURE_TEMPLATES[0], slug: 'medicare-general', category: 'Kesehatan & Rumah Sakit' },
       { ...FIXTURE_TEMPLATES[0], slug: 'healthlink', category: 'Kesehatan & Rumah Sakit' },
       { ...FIXTURE_TEMPLATES[0], slug: 'homenest', category: 'Properti & Real Estate' },
+      // Kategori 2026-10-29 (5 template travel & transportasi)
+      { ...FIXTURE_TEMPLATES[0], slug: 'lajur', category: 'Travel & Transportasi' },
+      { ...FIXTURE_TEMPLATES[0], slug: 'kemudi', category: 'Travel & Transportasi' },
     ];
-    expect(nichePhrases(batch)).toEqual(['rumah sakit & klinik', 'properti']);
+    expect(nichePhrases(batch)).toEqual(['rumah sakit & klinik', 'properti', 'travel & rental kendaraan']);
     expect(categoryTiles(batch).map((t) => [t.slug, t.count, t.path])).toEqual([
       ['kesehatan-rumah-sakit', 2, '/template/kategori/kesehatan-rumah-sakit'],
       ['properti-real-estate', 1, '/template/kategori/properti-real-estate'],
+      ['travel-transportasi', 2, '/template/kategori/travel-transportasi'],
     ]);
   });
 

@@ -36,8 +36,8 @@ const data = (templates: Template[]): SeoData => ({
 });
 
 describe('src/content/categories', () => {
-  it('memetakan nama kategori di DB ke 9 slug (aturan sama dengan categorySlugOf & seo.php)', () => {
-    expect(CATEGORY_LIST).toHaveLength(9);
+  it('memetakan nama kategori di DB ke 10 slug (aturan sama dengan categorySlugOf & seo.php)', () => {
+    expect(CATEGORY_LIST).toHaveLength(10);
     expect(CATEGORY_LIST.map((c) => c.slug)).toEqual([...CATEGORY_SLUGS]);
     expect(categoryOf('Company Profile')?.slug).toBe('company-profile');
     expect(categoryOf('Kecantikan & Klinik')?.slug).toBe('kecantikan-klinik');
@@ -50,6 +50,8 @@ describe('src/content/categories', () => {
     // Batch 2026-10-28: MediCare General, MomKid Hospital, SpecialistPlus, HealthLink; HomeNest
     expect(categoryOf('Kesehatan & Rumah Sakit')?.slug).toBe('kesehatan-rumah-sakit');
     expect(categoryOf('Properti & Real Estate')?.slug).toBe('properti-real-estate');
+    // Batch 2026-10-29: Lajur, Nusaline, Lawatan, Kemudi, Pesiar
+    expect(categoryOf('Travel & Transportasi')?.slug).toBe('travel-transportasi');
     expect(categoryOf(' company profile ')?.slug).toBe('company-profile');
     expect(categoryOf('Kuliner')).toBeNull();
     expect(categoryOf('')).toBeNull();
@@ -119,12 +121,16 @@ describe('src/content/categories', () => {
       template_code: 'medicare-general',
     };
     const properti: Template = { ...FIXTURE_TEMPLATES[4], id: 44, slug: 'homenest', name: 'HomeNest', category: 'Properti & Real Estate', template_code: 'homenest' };
-    const full = data([...FIXTURE_TEMPLATES, toko, sekolah, rs, properti]);
-    for (const slug of ['toko-online', 'sekolah-pendidikan', 'kesehatan-rumah-sakit', 'properti-real-estate'] as const) {
+    // Batch 2026-10-29 (travel & transportasi) juga belum ada di fixture bersama
+    const travel: Template = { ...FIXTURE_TEMPLATES[4], id: 45, slug: 'kemudi', name: 'Kemudi', category: 'Travel & Transportasi', template_code: 'kemudi' };
+    const full = data([...FIXTURE_TEMPLATES, toko, sekolah, rs, properti, travel]);
+    for (const slug of ['toko-online', 'sekolah-pendidikan', 'kesehatan-rumah-sakit', 'properti-real-estate', 'travel-transportasi'] as const) {
       expect(getHead(categoryPath(slug), data(FIXTURE_TEMPLATES)).robots, slug).toBe('noindex,follow');
     }
     expect(templatesInCategory(full.templates ?? [], 'properti-real-estate').map((t) => t.slug)).toEqual(['homenest']);
     expect(isCategoryIndexable(CATEGORIES['properti-real-estate'], 1)).toBe(true);
+    expect(templatesInCategory(full.templates ?? [], 'travel-transportasi').map((t) => t.slug)).toEqual(['kemudi']);
+    expect(isCategoryIndexable(CATEGORIES['travel-transportasi'], 1)).toBe(true);
     for (const slug of CATEGORY_SLUGS) {
       const head = getHead(categoryPath(slug), full);
       expect(head.robots, slug).toBe('index,follow');
@@ -156,7 +162,7 @@ describe('src/content/categories', () => {
     ]);
     const routes = Object.fromEntries((CategorySeo.routes?.(full) ?? []).map((e) => [e.path, e.lastmod]));
     expect(routes['/template/kategori/olahraga-komunitas']).toBe('2026-11-02');
-    expect(routes['/template/kategori/company-profile']).toBe('2026-10-28');
+    expect(routes['/template/kategori/company-profile']).toBe('2026-10-29');
   });
 
   it('kesehatan & properti (2026-10-28): jujur soal fitur, tanpa klaim mutlak atau status lembaga', () => {
@@ -182,5 +188,18 @@ describe('src/content/categories', () => {
     }
     expect(CATEGORIES['properti-real-estate'].guides.every((slug) => (PLANNED_ARTICLE_SLUGS as readonly string[]).includes(slug))).toBe(true);
     expect(CATEGORIES['kesehatan-rumah-sakit'].guides.every((slug) => (PLANNED_ARTICLE_SLUGS as readonly string[]).includes(slug))).toBe(true);
+  });
+
+  it('travel & transportasi (2026-10-29): pesan WhatsApp, bukan sistem tiket, tanpa klaim mutlak atau status lembaga', () => {
+    const meta = CATEGORIES['travel-transportasi'];
+    const c = CATEGORY_CONTENT['travel-transportasi'];
+    const text = [meta.name, meta.h1, meta.title, meta.description, meta.descriptionNoPrice, c.intro, guideText('travel-transportasi'), ...c.faq.flatMap((f) => [f.question, f.answer])].join(' ');
+    expect(text).not.toMatch(/dijamin|garansi|terbaik|#1|termurah|izin|lisensi|terdaftar|berizin|sertifikat|asuransi|100%|termasuk domain/i);
+    // Nama template dan merek kendaraan tidak ditulis di teks kategori
+    expect(text).not.toMatch(/Lajur|Nusaline|Lawatan|Kemudi|Pesiar|Toyota|Hino|Mercedes|Avanza|Innova|HiAce/i);
+    for (const phrase of ['pesan WhatsApp', 'bukan sistem tiket', 'tidak menampilkan ketersediaan kursi secara real-time', 'tidak memiliki pembayaran online']) {
+      expect(text).toContain(phrase);
+    }
+    expect(meta.guides.every((slug) => (PLANNED_ARTICLE_SLUGS as readonly string[]).includes(slug))).toBe(true);
   });
 });
