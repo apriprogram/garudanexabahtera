@@ -45,6 +45,10 @@ const AFTER = ['routes', 'onboard', 'steps', 'testimonials', 'faq', 'contact'];
  * "Lewati animasi": tersembunyi sampai difokus (papan ketik), melompat ke section berikutnya yang tampil. ActionLink
  * memanggil onNavigate SEBELUM menggulir; fokus pindah ke H2 section tujuan (tabIndex −1, tanpa menggulir ulang), jadi
  * Tab dan pembaca layar melanjutkan dari sana, bukan dari dalam film.
+ * Saat difokus tampil di PITA KOSONG paling atas section (8px dari tepinya, rata kiri dengan WRAP): film bergerak = langit
+ * di atas teks panggung (label mulai 92px), film statis = padding atas 64px+ — jadi tidak pernah menutupi label & H2
+ * (dulu 96px dari atas, tepat di atas "Satu malam di dalam Nusaline"). scroll-margin menjaganya di bawah bilah demo +
+ * header lengket saat browser menggulir ke tautan yang difokus (juga Shift+Tab dari section sesudahnya).
  */
 function SkipLink({ m }: { m: NusalineModel }) {
   const next = AFTER.find((key) => m.shown(key));
@@ -63,7 +67,8 @@ function SkipLink({ m }: { m: NusalineModel }) {
     <ActionLink
       action={{ kind: 'section', target: next }}
       onNavigate={moveFocus}
-      className="sr-only focus:not-sr-only focus:absolute focus:left-5 focus:top-24 focus:z-20 focus:rounded-full focus:bg-white focus:px-5 focus:py-3 focus:text-[15px] focus:font-semibold focus:text-[#0E1230]"
+      // focus:not-sr-only menolkan padding → padding ditulis ulang SETELAHNYA (urutan utilitas Tailwind)
+      className="sr-only left-5 top-2 z-20 scroll-mt-[calc(var(--tpl-sticky-top,0px)+96px)] @2xl:left-8 @5xl:left-12 @min-[96rem]:left-16 focus:not-sr-only focus:absolute focus:rounded-full focus:bg-white focus:px-5 focus:py-3 focus:text-[15px] focus:font-semibold focus:text-[#0E1230]"
     >
       Lewati animasi
     </ActionLink>

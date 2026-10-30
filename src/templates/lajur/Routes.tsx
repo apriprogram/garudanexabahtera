@@ -37,12 +37,16 @@ function RouteCard({ m, route, origin, unit, ask }: { m: LajurModel; route: Rout
           )}
         </div>
         <span aria-hidden className="lj-lane-line mt-4 block h-[2px]" />
-        {/* 8 kolom (@min-[150rem], kartu ±263px): baris harga tidak boleh patah (angka 15px) — garis jalur & harga sebaris di semua kartu */}
+        {/* Jumlah baris harga SAMA di semua kartu, jadi garis jalur & harga sejajar: di kartu sempit (rel HP, kartu 78%, dan
+            4 kolom 1024–1279px, kartu 214–278px) "Mulai" selalu baris sendiri dan angka + satuan di baris kedua — dulu
+            harga 8 digit turun 2–3 baris sementara 7 digit 1–2 baris, jadi garis jalur meleset 21px di 1024 & 1216–1248px.
+            Angka 15px di 4 kolom sempit: "Rp19.500.000 / bus" (±164px) muat sebaris di isi kartu 174px (1024px).
+            2 kolom & 4 kolom ≥ 1280px: satu baris. 8 kolom (@min-[150rem], kartu ±263px): satu baris tanpa patah (angka 15px). */}
         <p className={`mt-4 flex flex-wrap items-baseline gap-x-1.5 @min-[150rem]:flex-nowrap @min-[150rem]:gap-x-1 ${C.ink}`}>
           {route.price > 0 ? (
             <>
-              <span className={`${LABEL_SM} ${C.muted}`}>Mulai</span>
-              <span className={`${DISPLAY} text-[16px] font-bold tabular-nums tracking-[-0.01em] @3xl:text-[17px] @min-[150rem]:text-[15px]`}>{formatRupiah(route.price)}</span>
+              <span className={`${LABEL_SM} ${C.muted} basis-full @2xl:basis-auto @5xl:basis-full @min-[80rem]:basis-auto`}>Mulai</span>
+              <span className={`${DISPLAY} text-[16px] font-bold tabular-nums tracking-[-0.01em] @3xl:text-[17px] @5xl:text-[15px] @min-[80rem]:text-[17px] @min-[150rem]:text-[15px]`}>{formatRupiah(route.price)}</span>
               {unit && <span className={`text-[14px] ${C.muted}`}>{unit.split(' ').join(NBSP)}</span>}
             </>
           ) : (

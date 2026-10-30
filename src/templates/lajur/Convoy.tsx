@@ -165,10 +165,13 @@ export function Convoy({ m }: { m: LajurModel }) {
               </p>
             )}
             {action && label && (
-              // Label boleh terlipat di HP sempit (tanpa terpotong): tombol tumbuh ke bawah
+              // Label boleh terlipat di HP sempit (tanpa terpotong): tombol tumbuh ke bawah. `!` wajib: BUTTON sudah membawa
+              // whitespace-nowrap dan di CSS hasil build kelas itu MENANG atas whitespace-normal (urutan utilitas), jadi dulu
+              // "Minta penawaran untuk 120 peserta" keluar 21px dari tombol di HP 320px (label CMS lebih panjang → halaman
+              // bergeser ke samping).
               <ActionLink
                 action={action}
-                className={`${BTN.primary} min-h-12 w-full whitespace-normal px-6 py-3 text-center leading-snug @3xl:min-h-14 @5xl:w-auto @5xl:whitespace-nowrap`}
+                className={`${BTN.primary} min-h-12 w-full whitespace-normal! px-6 py-3 text-center leading-snug @3xl:min-h-14 @5xl:w-auto @5xl:whitespace-nowrap!`}
               >
                 <WhatsAppIcon className="h-5 w-5 shrink-0" />
                 <span>

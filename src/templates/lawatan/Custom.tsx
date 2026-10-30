@@ -9,7 +9,7 @@
 // disusun: begitu isian berubah (di formulir, chip jenis trip di hero, atau "Hitung biaya" di kartu paket) panel kembali
 // ke ringkasan + tombol susun, jadi pesan yang dikirim tidak pernah berisi data lama.
 import { Check, ChevronDown, CircleAlert, Copy, Minus, PencilLine, Plus } from 'lucide-react';
-import { useId, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react';
+import { useId, useRef, useState, type CSSProperties, type FormEvent, type ReactNode, type RefObject } from 'react';
 import { Reveal } from '../shared/Animated';
 import { WhatsAppIcon } from '../shared/icons';
 import { useMotionEnabled } from '../shared/motion';
@@ -98,10 +98,15 @@ export function Custom({
   const estimate = planEstimate(pkg, people);
   const total = estimate?.total ?? 0;
   useTween(finalRef, runRef, total, formatRupiah, motion);
-  // Total Rp100 juta ke atas dikecilkan agar tetap di dalam panel: HP 320 px dan kolom 5/12 di layar 1024 px
+  // Total panjang dikecilkan agar SELALU satu baris di dalam panel. @3xl ke atas: langkah kelas (kolom 5/12 di 1024px
+  // sudah pas). HP (panel selebar layar): ukuran langkah (38/30/26px) dibatasi lebar isi panel = 100cqi − 5,5rem (tepi
+  // WRAP 1,25rem + padding panel 1,5rem, dua sisi) ÷ ±0,6em per karakter angka Bricolage — dulu total ≥ Rp100 juta
+  // ("Rp437.500.000", 500 peserta) patah di tengah angka ("Rp437.500.00" / "0") di HP 320px bila ukuran huruf bawaan
+  // browser 20px (rem membesar, isi panel tinggal 210px); total 11 karakter 38px nyaris selebar panel 232px.
   const totalChars = formatRupiah(total).length;
-  const totalSize =
-    totalChars > 13 ? 'text-[26px] @3xl:text-[36px]' : totalChars > 11 ? 'text-[30px] @3xl:text-[40px]' : 'text-[38px] @3xl:text-[48px]';
+  const totalStep = totalChars > 13 ? 26 : totalChars > 11 ? 30 : 38;
+  const totalSize = totalChars > 13 ? '@3xl:text-[36px]' : totalChars > 11 ? '@3xl:text-[40px]' : '@3xl:text-[48px]';
+  const totalFit = { '--lw-total': `min(${totalStep}px, calc((100cqi - 5.5rem) / ${(totalChars * 0.6).toFixed(1)}))` } as CSSProperties;
   const below = pkg && pkg.minPeople > 0 && people > 0 && people < pkg.minPeople;
   const note = text(custom, 'note') || 'Estimasi saja. Harga final, kuota hotel, dan jadwal dikonfirmasi admin lewat WhatsApp; tidak ada pembayaran online.';
   const hasWhatsapp = !!whatsappHref(m.whatsapp);
@@ -264,7 +269,7 @@ export function Custom({
               <div className="px-6 pb-6 pt-7 @3xl:px-8 @3xl:pt-8">
                 <p className={`${LABEL} ${C.onDarkMuted}`}>Perkiraan total</p>
                 {estimate ? (
-                  <p className={`mt-3 grid ${TYPE.money} ${totalSize} leading-none text-white [overflow-wrap:anywhere]`}>
+                  <p className={`mt-3 grid ${TYPE.money} text-(length:--lw-total) ${totalSize} leading-none text-white [overflow-wrap:anywhere]`} style={totalFit}>
                     <span ref={finalRef} className="col-start-1 row-start-1">
                       {formatRupiah(estimate.total)}
                     </span>

@@ -183,7 +183,9 @@ export function QuoteBar({
   const footer = (recommendation || note) && (
     <div className={`flex flex-col gap-3 border-t px-3 py-3.5 @sm:px-4 @5xl:flex-row @5xl:items-center @5xl:justify-between @5xl:gap-8 @7xl:px-5 ${C.line}`}>
       {recommendation}
-      {note && <p className={`text-[12.5px] leading-snug @5xl:max-w-[60ch] @5xl:text-right ${C.muted}`}>{note}</p>}
+      {/* Layar lebar: catatan rata kanan berhenti 32px sebelum tepi bilah, jadi ujung kalimatnya tidak di bawah tombol WhatsApp
+          melayang situs (56px @ 32px dari tepi layar) saat baris ini jatuh di dasar layar pertama */}
+      {note && <p className={`text-[12.5px] leading-snug @5xl:mr-8 @5xl:max-w-[60ch] @5xl:text-right ${C.muted}`}>{note}</p>}
     </div>
   );
 

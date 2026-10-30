@@ -2277,3 +2277,11 @@ describe('Pesiar: konten aneh', () => {
     expect(container.querySelector('footer')).toBeNull();
   });
 });
+
+describe('Pesiar: perbaikan tinjauan live 2026-10-31', () => {
+  it('footer: hak cipta & tagline berhenti di kiri tombol WhatsApp melayang juga di HP (72px dari tepi; 576–767px 96px) — dulu tagline 320px tertutup di dasar halaman', () => {
+    const footer = demo().querySelector('footer')!;
+    const bottom = Array.from(footer.querySelectorAll('p')).find((p) => p.textContent?.startsWith('©'))!.parentElement!;
+    expect(bottom.className.split(/\s+/)).toEqual(expect.arrayContaining(['pr-13', '@xl:pr-19', '@2xl:pr-16', '@3xl:pr-[72px]']));
+  });
+});

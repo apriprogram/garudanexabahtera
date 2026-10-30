@@ -47,7 +47,10 @@ function DepartureBoard({ m }: { m: NusalineModel }) {
         </span>
         {title}
       </p>
-      <ul aria-label={title} className="mt-3 grid gap-2">
+      {/* Tablet (@3xl–@5xl): papan selebar layar di dasar hero, jadi di layar pertama (mis. 820×1180) ujung kanannya tepat di
+          tombol WhatsApp melayang situs (56px @ 32px dari tepi). Lajur kanan 44px: label kelas rata kanan berhenti ≥ 8px
+          di kiri tombol itu (tepi 32 + padding kartu 20 + 44 = 96px). */}
+      <ul aria-label={title} className="mt-3 grid gap-2 @3xl:pr-11 @5xl:pr-0">
         {m.board.map((row, r) => (
           <li key={`${row.time}-${r}`} className={`relative min-w-0 items-center gap-2.5 overflow-hidden @3xl:gap-3 ${r >= 2 ? 'hidden @3xl:flex' : 'flex'}`}>
             <span className="sr-only">{row.spoken}</span>

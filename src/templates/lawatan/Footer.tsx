@@ -120,7 +120,9 @@ export function Footer({ m }: { m: LawatanModel }) {
           )}
         </div>
 
-        <div className={`mt-14 flex flex-col gap-2 border-t border-[#FBF6EE]/15 pt-6 text-[13px] @3xl:flex-row @3xl:items-center @3xl:justify-between ${C.onDarkMuted}`}>
+        {/* Ujung kanan dikosongkan sampai ≥ 8px di kiri tombol WhatsApp melayang Shell (demo & < 640px: 48px @ 16px dari tepi
+            → 72px; situs ≥ 640px: 56px @ 32px → 96px dari tepi layar): tagline di dasar halaman tidak tertutup tombol itu */}
+        <div className={`mt-14 flex flex-col gap-2 border-t border-[#FBF6EE]/15 pt-6 pr-13 text-[13px] @xl:pr-19 @2xl:pr-16 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:pr-[72px] ${C.onDarkMuted}`}>
           <p>{copyright}</p>
           {m.tagline && <p>{m.tagline}</p>}
         </div>

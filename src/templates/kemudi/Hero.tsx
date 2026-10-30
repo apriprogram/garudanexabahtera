@@ -80,12 +80,15 @@ const keep = (s: string) => s.split(' ').join(NBSP);
 const dateRange = (b: Booking): string => `${keep(formatShortDate(b.pickupDate) || '—')}${NBSP}→ ${keep(formatShortDate(b.returnDate) || '—')}`;
 
 /**
- * Baris rincian harga: tinggi dicadangkan di HP (2 baris; 3 baris di bawah 352px, tempat "4 blok 12 jam × Rp650.000"
- * patah tiga) supaya tinggi kartu tidak ikut layanan — kontrol "Harga untuk layanan" di section armada tersinkron dengan
- * kartu ini, jadi mengganti layanan dari sana tidak boleh menggeser halaman di bawah jempol. Dari @md semua rincian
- * satu baris.
+ * Baris rincian harga: tinggi dicadangkan di SEMUA lebar (2 baris; 3 baris di bawah 352px, tempat "4 blok 12 jam ×
+ * Rp650.000" patah tiga) supaya tinggi kartu tidak ikut layanan atau mobil — kontrol "Harga untuk layanan" di section
+ * armada tersinkron dengan kartu ini, jadi mengganti layanan dari sana tidak boleh menggeser halaman di bawah jempol.
+ * Dulu dari @md dianggap selalu satu baris, padahal di kolom 5/12 layar 1024–1090px (kartu ±368px) rincian sopir patah
+ * dua baris → kartu & hero bertambah 20px saat ganti "Lepas kunci" ↔ "Dengan sopir". Teks rata bawah (flex items-end):
+ * rincian satu baris tetap menempel di atas tanggal, ruang cadangan di atasnya (baris hasil hanya ±6px lebih tinggi
+ * karena kolom harga di kanannya sudah ±48px).
  */
-const BREAKDOWN = 'block min-h-[2lh] @max-[22rem]:min-h-[3lh] @md:min-h-0';
+const BREAKDOWN = 'flex min-h-[2lh] items-end @max-[22rem]:min-h-[3lh]';
 
 function BookingCard({ m, booking, setBooking, formRef }: { m: KemudiModel; booking: Booking; setBooking: (b: Booking) => void; formRef: RefObject<HTMLFormElement | null> }) {
   const { hero } = m;
@@ -220,8 +223,10 @@ function BookingCard({ m, booking, setBooking, formRef }: { m: KemudiModel; book
 
       <Track booking={booking} quote={quote} motion={motion} />
 
-      {/* Hasil: rincian + hari ambil → kembali (sekali), total perkiraan di kanan */}
-      <div className="mt-3 flex items-end justify-between gap-4 border-t border-[#0D1117]/10 pt-3">
+      {/* Hasil: rincian + hari ambil → kembali (sekali), total perkiraan di kanan. Tablet (@2xl–@5xl, kartu selebar layar
+          yang baris totalnya jatuh di dasar layar pertama, mis. 768×1024): lajur kanan 40px — total berhenti ≥ 8px di kiri
+          tombol WhatsApp melayang situs (56px @ 32px dari tepi; tepi 32 + padding kartu 24 + 40 = 96px). */}
+      <div className="mt-3 flex items-end justify-between gap-4 border-t border-[#0D1117]/10 pt-3 @2xl:pr-10 @5xl:pr-0">
         <p className={`min-w-0 text-[13px] leading-snug ${C.muted}`}>
           {quote ? (
             <>
@@ -237,8 +242,11 @@ function BookingCard({ m, booking, setBooking, formRef }: { m: KemudiModel; book
             'Lengkapi jadwal untuk melihat perkiraan harga.'
           )}
         </p>
+        {/* Layar lebar (@5xl, kartu di kolom 5/12 ±368–475px): kolom total selebar total 8 digit ("Rp10.000.000", 6,2em)
+            apa pun angkanya, jadi lebar kolom rincian & tanggal di kirinya tetap — dulu total 6 digit (lepas kunci) vs 7
+            digit (dengan sopir) memindahkan patahan baris tanggal di 1024px dan tinggi kartu berubah 17px. */}
         <p className="shrink-0 text-right">
-          <span className={`grid text-[28px] leading-none ${TYPE.price}`}>
+          <span className={`grid text-[28px] leading-none ${TYPE.price} @5xl:min-w-[6.2em]`}>
             <span ref={finalRef} className="col-start-1 row-start-1">
               {quote ? formatRupiah(quote.total) : '—'}
             </span>
@@ -262,7 +270,9 @@ function BookingCard({ m, booking, setBooking, formRef }: { m: KemudiModel; book
           <span className="truncate">{buttonLabel}</span>
         </button>
       )}
-      {note && <p className={`mt-3 text-center text-[12.5px] leading-snug ${C.muted}`}>{note}</p>}
+      {/* Layar lebar: catatan rata tengah dipersempit 24px tiap sisi, jadi ujung kanannya tidak di bawah tombol WhatsApp
+          melayang situs saat catatan jatuh di dasar layar pertama (1024×768, 1366×768) */}
+      {note && <p className={`mt-3 text-center text-[12.5px] leading-snug @5xl:px-6 ${C.muted}`}>{note}</p>}
     </form>
   );
 }

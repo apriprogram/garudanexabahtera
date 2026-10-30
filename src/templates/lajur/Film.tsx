@@ -26,11 +26,11 @@ import { SectionHead, SectionLabel } from './ui';
 const windowOf = (i: number, starts: number[]): CSSProperties =>
   ({ '--s': i === 0 ? -1 : starts[i], '--e': i === starts.length - 1 ? 2 : starts[i + 1] }) as CSSProperties;
 
-/** Posisi "Lewati animasi" saat difokus. Film bergulir: di bawah @5xl bilah atas satu kolom (tidak ada ruang kosong di
- *  samping judul), jadi tautan ikut alur sebagai baris pertama bilah atas — label & judul turun selama tautan difokus,
- *  tidak ada yang tertutup; mulai @5xl kanan atas sejajar label (kolom kanan kosong di atas jam). Film statis: di
- *  padding atas section, di atas label. */
-const SKIP_SCROLL = 'focus:static focus:w-max @5xl:focus:absolute @5xl:focus:right-12 @5xl:focus:top-[108px] @min-[96rem]:focus:right-16';
+/** Posisi "Lewati animasi" saat difokus. Film bergulir: tautan ikut alur sebagai baris pertama bilah atas (@5xl: baris
+ *  penuh 12 kolom) — label, judul, jam & keterangan turun selama tautan difokus, tidak ada yang tertutup. Dulu mulai
+ *  @5xl di kanan atas sejajar label; sejak keterangan bab boleh lebih tinggi (kolom kanan sempit di 1024–1100px), judul
+ *  bab terakhir naik ke tempat itu dan tertutup tautan. Film statis: di padding atas section, di atas label. */
+const SKIP_SCROLL = 'focus:static focus:w-max @5xl:focus:col-span-12';
 const SKIP_STATIC = 'focus:absolute focus:left-5 focus:top-3 @2xl:focus:left-8 @5xl:focus:left-12 @min-[96rem]:focus:left-16';
 
 /** "Lewati animasi": tersembunyi sampai difokus (keyboard), menuju section sesudah film. */
@@ -78,13 +78,17 @@ function ScrollFilm({ m, chapters }: { m: LajurModel; chapters: Chapter[] }) {
             )}
             {subtitle && <p className={`lj-film-sub mt-2 max-w-[60ch] text-[14px] leading-snug @3xl:text-[15px] ${C.onInkMuted}`}>{subtitle}</p>}
           </div>
+          {/* Jam + keterangan bab tidak pernah melebihi kolomnya: keterangan menyusut (maks. 300px) dan tidak didorong keluar
+              ke kiri — di 1024–1100px kolom 5/12 lebih sempit dari jam + 300px, dulu jam menimpa kalimat pengantar.
+              Keterangan bertumpuk di SATU sel grid (rata bawah): tinggi baris = keterangan terpanjang, jadi teks bab yang
+              turun 3–4 baris (HP sempit, teks CMS panjang) mendorong bilah atas, tidak naik menimpa kalimat pengantar. */}
           <div aria-hidden className="flex min-w-0 items-end gap-4 @3xl:gap-6 @5xl:col-span-5 @5xl:justify-end">
             <p ref={clock} className={`lj-clock shrink-0 ${DISPLAY} text-[40px] font-bold leading-[0.9] tabular-nums tracking-[-0.03em] text-(--lj-bright) @3xl:text-[56px] @6xl:text-[68px]`}>
               {clockAt(0, range)}
             </p>
-            <div className="lj-caps relative min-h-[58px] min-w-0 flex-1 self-stretch @5xl:max-w-[300px] @5xl:flex-none @5xl:basis-[300px]">
+            <div className="lj-caps grid min-h-[58px] min-w-0 flex-1 self-stretch @5xl:max-w-[300px]">
               {chapters.map((c, i) => (
-                <div key={`${c.title}-${i}`} className="lj-cap absolute inset-x-0 bottom-0" style={windowOf(i, starts)}>
+                <div key={`${c.title}-${i}`} className="lj-cap col-start-1 row-start-1 min-w-0 self-end" style={windowOf(i, starts)}>
                   <p className={`${DISPLAY} text-[15px] font-medium leading-tight text-white @3xl:text-[18px]`}>{c.title}</p>
                   {c.text && <p className={`lj-cap-text mt-1 text-[13px] leading-snug @3xl:text-[14px] ${C.onInkMuted}`}>{c.text}</p>}
                 </div>
@@ -105,10 +109,12 @@ function ScrollFilm({ m, chapters }: { m: LajurModel; chapters: Chapter[] }) {
             {chapters.map((c, i) => {
               const on = i === active;
               return (
-                <li key={`${c.title}-${i}`} aria-current={on ? 'step' : undefined} className="relative min-w-0 pr-2 pt-5">
+                <li key={`${c.title}-${i}`} aria-current={on ? 'step' : undefined} className="relative min-w-0 pr-1 pt-5 @3xl:pr-2">
                   <span aria-hidden className={`absolute left-0 top-[1px] h-[10px] w-[10px] rounded-[2px] ring-2 ring-[#14161A] transition-colors duration-300 ${on ? 'bg-(--lj-bright)' : 'bg-white/40'}`} />
-                  {/* Kolom selebar jendela bab (bisa sempit): judul bab ikut tampil mulai @7xl, di bawahnya jam saja */}
-                  <span className={`block truncate ${DISPLAY} text-[12px] font-medium tabular-nums @3xl:text-[13px] ${on ? 'text-white' : 'text-white/60'}`}>
+                  {/* Kolom selebar jendela bab (bisa sempit): judul bab ikut tampil mulai @7xl, di bawahnya jam saja. Jarak kanan
+                      4px dan jam 11px di bawah 360px: "13.00" di jendela bab tersempit (±45px di layar 320px) utuh, tidak
+                      terpotong jadi "13…", dan tidak menempel ke jam berikutnya */}
+                  <span className={`block truncate ${DISPLAY} text-[11px] font-medium tabular-nums @min-[22.5rem]:text-[12px] @3xl:text-[13px] ${on ? 'text-white' : 'text-white/60'}`}>
                     {c.time}
                     <span className={`hidden font-sans font-semibold @7xl:inline ${on ? 'text-white' : 'text-white/60'}`}> · {c.title}</span>
                   </span>

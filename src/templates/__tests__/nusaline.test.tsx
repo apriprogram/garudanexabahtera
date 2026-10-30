@@ -1271,7 +1271,8 @@ describe('Nusaline: demo', () => {
       expect(film.querySelector('.nl-film-track')).toBeNull();
       expect(film.querySelector('[data-film-progress]')).toBeNull();
       expect(film.querySelector('.nl-stage')).toBeNull();
-      expect(film.innerHTML).not.toMatch(/sticky/);
+      // Tanpa kelas `sticky` (scroll-margin "Lewati animasi" boleh menyebut var(--tpl-sticky-top))
+      expect(film.innerHTML).not.toMatch(/[\s"]sticky[\s"]|position:\s*sticky/);
       const poster = Array.from(film.querySelectorAll<HTMLElement>('[style]')).find((el) => el.style.getPropertyValue('--p'))!;
       expect(poster.style.getPropertyValue('--p')).toBe('0.45');
       expect(poster.style.getPropertyValue('--nl-rest')).toBe('0.6192');
@@ -2096,5 +2097,47 @@ describe('Nusaline: konten aneh', () => {
     const container = demo(off);
     expect(container.querySelectorAll('[data-tpl-section]')).toHaveLength(0);
     expect(container.querySelector('footer')).toBeNull();
+  });
+});
+
+describe('Nusaline: perbaikan tinjauan live 2026-10-31', () => {
+  const cls = (el: Element) => (el.getAttribute('class') ?? '').split(/\s+/);
+
+  it('jadwal di HP: kelas & harga melintasi kolom tengah (lebar kolom jam tidak ikut chip kelas), harga baris sendiri di bawah 24rem — di 320px durasi tidak menimpa jam tiba dan harga tidak keluar kartu', () => {
+    const schedule = section(demo(), 'schedule');
+    const rows = Array.from(schedule.querySelectorAll('tr[role="row"]')).filter((tr) => tr.querySelector('td'));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const tr of rows) {
+      expect(cls(tr)).toEqual(expect.arrayContaining(['grid-cols-[auto_minmax(0,1fr)_auto]', 'gap-x-2', '@min-[24rem]:gap-x-3', '@3xl:table-row']));
+      const tds = Array.from(tr.querySelectorAll(':scope > td'));
+      const [, , , , klass, price, book] = tds;
+      expect(cls(klass)).toEqual(expect.arrayContaining(['col-span-2', 'col-start-1', 'row-start-3', 'min-w-0', 'justify-self-start']));
+      // ≥ 24rem: harga di kolom 3 saja (chip kelas kolom 1–2, dipotong di sana); < 24rem: baris sendiri selebar kartu
+      expect(cls(price)).toEqual(expect.arrayContaining(['col-start-3', 'row-start-3', 'justify-self-end', '@max-[24rem]:col-span-3', '@max-[24rem]:col-start-1', '@max-[24rem]:row-start-4', '@max-[24rem]:justify-self-start']));
+      expect(cls(price)).not.toContain('col-span-2');
+      expect(cls(book)).toEqual(expect.arrayContaining(['row-start-4', '@max-[24rem]:row-start-5']));
+      const chip = klass.querySelector('span');
+      if (chip) {
+        expect(cls(chip)).toContain('max-w-full');
+        expect(chip.querySelector('.truncate')).not.toBeNull();
+      }
+    }
+    expect(rows[0].textContent).toContain('Super Eksekutif');
+  });
+
+  it('"Lewati animasi" di pita kosong paling atas section (8px), bukan di atas label & H2 film; scroll-margin di bawah header lengket', () => {
+    const film = section(demo(), 'film');
+    const skip = within(film).getByRole('link', { name: 'Lewati animasi' });
+    expect(cls(skip)).toEqual(expect.arrayContaining(['sr-only', 'left-5', 'top-2', '@2xl:left-8', '@5xl:left-12', '@min-[96rem]:left-16', 'scroll-mt-[calc(var(--tpl-sticky-top,0px)+96px)]', 'focus:not-sr-only', 'focus:absolute']));
+    expect(skip.className).not.toContain('focus:top-24');
+  });
+
+  it('papan keberangkatan: lajur kanan 44px di tablet (label kelas tidak di bawah tombol WhatsApp situs); footer: tagline berhenti di kiri tombol WhatsApp di semua lebar', () => {
+    const container = demo();
+    const board = within(section(container, 'hero')).getAllByRole('list').find((ul) => ul.getAttribute('aria-label')?.toLowerCase().includes('berangkat'))!;
+    expect(cls(board)).toEqual(expect.arrayContaining(['@3xl:pr-11', '@5xl:pr-0']));
+    const footer = container.querySelector('footer')!;
+    const bottom = Array.from(footer.querySelectorAll('p')).find((p) => p.textContent?.startsWith('©'))!.parentElement!;
+    expect(cls(bottom)).toEqual(expect.arrayContaining(['pr-13', '@xl:pr-19', '@2xl:pr-16', '@3xl:pr-[72px]']));
   });
 });

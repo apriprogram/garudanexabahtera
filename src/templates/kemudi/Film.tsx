@@ -66,16 +66,21 @@ export function Film({ m, next }: { m: KemudiModel; next: LinkAction | null }) {
 
   return (
     <TemplateSection sectionKey="film" data-tpl-tone="inverse" data-film={on ? 'on' : 'off'} className="km-film relative bg-[#161B22] text-white">
+      {/* "Lewati animasi" saat difokus: di PITA KOSONG paling atas section (8px dari tepinya, rata kiri dengan WRAP) — film
+          bergerak: di atas kepala panggung (label mulai 84/100px), storyboard diam: di padding atas 64px+. Dulu 84px dari
+          atas panggung, tepat di atas label "02 Proses" dan H2. scroll-margin menjaganya di bawah bilah demo + header
+          lengket saat browser menggulir ke tautan yang difokus. */}
+      {next && (
+        <ActionLink
+          action={next}
+          // focus:not-sr-only menolkan padding → padding ditulis ulang SETELAHNYA (urutan utilitas Tailwind)
+          className="sr-only left-5 top-2 z-20 scroll-mt-[calc(var(--tpl-sticky-top,0px)+96px)] @2xl:left-8 @5xl:left-12 @min-[96rem]:left-16 focus:not-sr-only focus:absolute focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-xl focus:bg-white focus:px-4 focus:text-[14px] focus:font-semibold focus:text-[#0D1117]"
+        >
+          Lewati animasi
+        </ActionLink>
+      )}
       <div ref={track} className="km-track">
         <div ref={stage} data-film-progress="" className="km-stage overflow-hidden">
-          {next && (
-            <ActionLink
-              action={next}
-              className="sr-only focus:not-sr-only focus:absolute focus:left-5 focus:top-[84px] focus:z-20 focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-xl focus:bg-white focus:px-4 focus:text-[14px] focus:font-semibold focus:text-[#0D1117]"
-            >
-              Lewati animasi
-            </ActionLink>
-          )}
           <div aria-hidden className="km-grid pointer-events-none absolute -inset-[12%]" />
           <div aria-hidden className="km-vignette pointer-events-none absolute inset-0" />
 

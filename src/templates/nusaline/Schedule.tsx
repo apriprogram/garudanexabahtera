@@ -257,7 +257,11 @@ export function Schedule({
                       key={d.index}
                       role="row"
                       tabIndex={-1}
-                      className={`nl-row relative focus:outline-none ${limited && i >= PREVIEW_PHONE ? 'hidden' : 'grid'} grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 rounded-[18px] bg-[#F2F4FA] p-4 @3xl:table-row @3xl:rounded-none @3xl:border-b @3xl:bg-transparent @3xl:p-0 ${C.line}`}
+                      // HP: kolom 1 selebar jam berangkat saja — chip kelas (baris 3) melintasi kolom tengah (1fr), jadi tidak ikut
+                      // menentukan lebar kolom itu; di bawah 24rem harga juga melintasi semua kolom (baris sendiri). Dulu chip kelas
+                      // ("Super Eksekutif", ±130px) melebarkan kolom 1 dan harga kolom 2–3, kolom durasi menyempit sampai 0 di HP
+                      // 320px: "26j 00m" menimpa jam tiba dan "Rp760.000" keluar dari kartu.
+                      className={`nl-row relative focus:outline-none ${limited && i >= PREVIEW_PHONE ? 'hidden' : 'grid'} grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3 rounded-[18px] bg-[#F2F4FA] p-4 @min-[24rem]:gap-x-3 @3xl:table-row @3xl:rounded-none @3xl:border-b @3xl:bg-transparent @3xl:p-0 ${C.line}`}
                       style={{ '--nl-delay': `${Math.min(i, 8) * 28}ms` } as CSSProperties}
                     >
                       <td role="cell" className={`col-start-1 row-start-1 ${MONO} text-[24px] font-semibold leading-none tracking-[-0.02em] ${C.ink} @3xl:py-5 @3xl:pr-4 @3xl:text-[26px]`}>
@@ -296,14 +300,17 @@ export function Schedule({
                           <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-(--tpl-accent)" />
                         </span>
                       </td>
-                      <td role="cell" className="col-start-1 row-start-3 @3xl:py-5 @3xl:pr-4">
+                      <td role="cell" className="col-span-2 col-start-1 row-start-3 min-w-0 justify-self-start @3xl:py-5 @3xl:pr-4">
                         {d.cls && (
-                          <span className="inline-flex h-7 items-center whitespace-nowrap rounded-full bg-white px-2.5 font-mono text-[12px] font-medium text-[#0E1230] ring-1 ring-inset ring-[#0E1230]/15 @3xl:bg-[#F2F4FA] @3xl:ring-0">
-                            {d.cls}
+                          <span className="inline-flex h-7 max-w-full items-center whitespace-nowrap rounded-full bg-white px-2.5 font-mono text-[12px] font-medium text-[#0E1230] ring-1 ring-inset ring-[#0E1230]/15 @3xl:bg-[#F2F4FA] @3xl:ring-0">
+                            <span className="truncate">{d.cls}</span>
                           </span>
                         )}
                       </td>
-                      <td role="cell" className="col-span-2 col-start-2 row-start-3 text-right @3xl:py-5 @3xl:pr-4 @3xl:text-left">
+                      {/* HP < 24rem (320–383px): kelas dan harga tidak muat sebaris (±130 + 140px di kartu 248px) → harga baris
+                          sendiri di bawah chip kelas. ≥ 24rem sebaris: harga di kolom 3 saja (kolom jam tiba selebar harga),
+                          chip kelas di kolom 1–2 dan dipotong (…) di sana — nama kelas CMS yang panjang tidak menimpa harga */}
+                      <td role="cell" className="col-start-3 row-start-3 justify-self-end text-right @max-[24rem]:col-span-3 @max-[24rem]:col-start-1 @max-[24rem]:row-start-4 @max-[24rem]:justify-self-start @max-[24rem]:text-left @3xl:py-5 @3xl:pr-4 @3xl:text-left">
                         {d.price > 0 ? (
                           <span className="inline-flex items-baseline gap-1.5">
                             <span className={`text-[12px] ${C.muted} @3xl:hidden`}>mulai</span>
@@ -313,7 +320,7 @@ export function Schedule({
                           <span className={`text-[14px] ${C.muted}`}>Tanya admin</span>
                         )}
                       </td>
-                      <td role="cell" className="col-span-3 row-start-4 @3xl:py-4 @3xl:text-right">
+                      <td role="cell" className="col-span-3 row-start-4 @max-[24rem]:row-start-5 @3xl:py-4 @3xl:text-right">
                         {action && (
                           <ActionLink
                             action={action}

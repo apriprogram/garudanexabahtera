@@ -1860,3 +1860,48 @@ describe('Lawatan: konten aneh', () => {
     expect(container.querySelector('footer')).toBeNull();
   });
 });
+
+describe('Lawatan: perbaikan tinjauan live 2026-10-31', () => {
+  const cls = (el: Element) => (el.getAttribute('class') ?? '').split(/\s+/);
+
+  it('"Perkiraan total" selalu satu baris: HP dibatasi lebar isi panel (100cqi − 5,5rem ÷ ±0,6em per karakter, juga dengan huruf bawaan 20px), @3xl tetap langkah kelas', () => {
+    const custom = section(demo(), 'custom');
+    const form = within(custom).getByRole('form', { name: 'Hitung & rancang trip' });
+    const ticket = custom.querySelector<HTMLElement>('[data-tpl-tone="inverse"]')!;
+    const total = () => Array.from(ticket.querySelectorAll('p')).find((p) => p.textContent?.trim() === 'Perkiraan total')!.nextElementSibling as HTMLElement;
+    const people = within(form).getByLabelText('Jumlah peserta') as HTMLInputElement;
+    const cases: [string, string, string][] = [
+      // peserta → total → batas ukuran HP; ukuran @3xl
+      ['1', 'Rp875.000', 'min(38px, calc((100cqi - 5.5rem) / 5.4))'],
+      ['10', 'Rp8.750.000', 'min(38px, calc((100cqi - 5.5rem) / 6.6))'],
+      ['40', 'Rp35.000.000', 'min(30px, calc((100cqi - 5.5rem) / 7.2))'],
+      ['500', 'Rp437.500.000', 'min(30px, calc((100cqi - 5.5rem) / 7.8))'],
+    ];
+    for (const [n, text, fit] of cases) {
+      fireEvent.change(people, { target: { value: n } });
+      expect(within(ticket).getByText(text)).toBeInTheDocument();
+      expect(cls(total())).toContain('text-(length:--lw-total)');
+      expect(total().style.getPropertyValue('--lw-total')).toBe(fit);
+    }
+    // @3xl: langkah kelas (kolom 5/12 di 1024px sudah pas); tidak ada ukuran HP tetap yang melebihi panel
+    expect(cls(total())).toContain('@3xl:text-[40px]');
+    expect(total().className).not.toMatch(/(^|\s)text-\[(26|30|38)px\]/);
+  });
+
+  it('hero HP: kalimat, tombol, tautan & chip berhenti di kiri tombol WhatsApp melayang (lajur kanan --lw-lane, 0 mulai @3xl); judul tetap selebar panel', () => {
+    const hero = section(demo(), 'hero');
+    const lead = Array.from(hero.querySelectorAll('p')).find((p) => p.textContent?.startsWith('Paket study tour'))!;
+    expect(cls(lead)).toContain('max-w-[min(60ch,calc(100%-var(--lw-lane)))]');
+    const panel = lead.parentElement!;
+    expect(cls(panel)).toEqual(expect.arrayContaining(['[--lw-lane:2rem]', '@xl:[--lw-lane:3.5rem]', '@2xl:[--lw-lane:2.75rem]', '@3xl:[--lw-lane:0px]']));
+    const actions = Array.from(panel.children).find((el) => el.querySelector('a'))!;
+    expect(cls(actions)).toContain('pr-(--lw-lane)');
+    expect(hero.querySelector('h1')!.className).not.toContain('--lw-lane');
+  });
+
+  it('footer: hak cipta & tagline berhenti di kiri tombol WhatsApp melayang di semua lebar', () => {
+    const footer = demo().querySelector('footer')!;
+    const bottom = Array.from(footer.querySelectorAll('p')).find((p) => p.textContent?.startsWith('©'))!.parentElement!;
+    expect(cls(bottom)).toEqual(expect.arrayContaining(['pr-13', '@xl:pr-19', '@2xl:pr-16', '@3xl:pr-[72px]']));
+  });
+});

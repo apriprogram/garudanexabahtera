@@ -58,7 +58,9 @@ export function Footer({ m }: { m: LajurModel }) {
       <div className={`${WRAP} pt-14 @3xl:pt-16`}>
         <div className="grid gap-x-8 gap-y-10 @2xl:grid-cols-2 @5xl:grid-cols-12 @7xl:gap-x-12">
           <div className="min-w-0 @2xl:col-span-2 @5xl:col-span-4">
-            <ActionLink action={{ kind: 'section', target: 'hero' }} className="inline-flex min-h-11 items-center" aria-label={`${m.companyName}, ke awal halaman`}>
+            {/* max-w-full + min-w-0: nama usaha CMS yang panjang dipotong (…) di dalam kolom; dulu tautan inline-flex
+                selebar namanya sehingga di HP 320–390px nama ±35 huruf melebarkan halaman (bisa digeser ke samping) */}
+            <ActionLink action={{ kind: 'section', target: 'hero' }} className="inline-flex min-h-11 min-w-0 max-w-full items-center" aria-label={`${m.companyName}, ke awal halaman`}>
               <Logo m={m} tone="dark" />
             </ActionLink>
             {description && <p className={`mt-5 max-w-[46ch] text-[15px] leading-relaxed ${C.onInkMuted}`}>{description}</p>}
@@ -130,8 +132,10 @@ export function Footer({ m }: { m: LajurModel }) {
           )}
         </div>
 
-        {/* Ujung kanan dikosongkan ≥ 88px dari tepi layar (@3xl): tombol WhatsApp melayang Shell tidak menutupi tagline */}
-        <div className="mt-14 flex flex-col gap-2 border-t border-white/15 py-6 text-[13px] text-white/60 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:pr-14">
+        {/* Ujung kanan dikosongkan sampai ≥ 8px di kiri tombol WhatsApp melayang Shell (demo & < 640px: 48px @ 16px dari tepi
+            → 72px; situs ≥ 640px: 56px @ 32px → 96px dari tepi layar), jadi hak cipta & tagline di dasar halaman tidak
+            tertutup tombol itu saat digulir sampai habis (@3xl dulu 56px: tagline tepat di tepi tombol di 768–1023px) */}
+        <div className="mt-14 flex flex-col gap-2 border-t border-white/15 py-6 pr-13 text-[13px] text-white/60 @xl:pr-19 @2xl:pr-16 @3xl:flex-row @3xl:items-center @3xl:justify-between">
           <p className="flex items-center gap-3">
             <LiveryBars className="h-3 w-[22px]" fill="fill-(--lj-bright)" />
             {copyright}

@@ -128,8 +128,9 @@ export function Footer({ m }: { m: KemudiModel }) {
           )}
         </div>
 
-        {/* @3xl:pr-[72px]: tagline rata kanan berhenti sebelum tombol WhatsApp melayang di pojok kanan bawah */}
-        <div className={`mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-[13px] @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:pr-[72px] ${C.onDarkMuted}`}>
+        {/* Tagline (rata kanan @3xl; di HP baris kedua) berhenti ≥ 8px di kiri tombol WhatsApp melayang di pojok kanan bawah:
+            HP 72px dari tepi (tombol 48px @ 16px), 576–767px 96px (situs ≥ 640px: 56px @ 32px), @3xl 72px + tepi 32px */}
+        <div className={`mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 pr-13 text-[13px] @xl:pr-19 @2xl:pr-16 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:pr-[72px] ${C.onDarkMuted}`}>
           <p>{copyright}</p>
           {m.tagline && <p>{m.tagline}</p>}
         </div>

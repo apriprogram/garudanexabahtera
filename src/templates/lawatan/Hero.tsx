@@ -87,7 +87,11 @@ export function Hero({ m, type, onType, onShow }: { m: LawatanModel; type: strin
 
           <div className="relative overflow-hidden rounded-[18px] bg-[#FBF6EE] ring-1 ring-inset ring-[#1D2320]/10">
             <div aria-hidden className="lw-airmail h-1.5" />
-            <div className="p-5 pt-7 @3xl:p-10 @5xl:p-12 @5xl:pt-11">
+            {/* HP (< 48rem): lajur kanan --lw-lane di dalam panel dibiarkan kosong sampai 8px di kiri tombol WhatsApp
+                melayang Shell (demo & < 640px 48px @ 16px dari tepi; situs ≥ 640px 56px @ 32px): kalimat, tombol, tautan,
+                dan chip jenis trip berhenti di kirinya, jadi di layar pertama HP pendek (360×640, 375×667) ujung kalimat
+                tidak tertutup tombol itu. Judul tetap selebar panel (letaknya di atas). */}
+            <div className="p-5 pt-7 [--lw-lane:2rem] @xl:[--lw-lane:3.5rem] @2xl:[--lw-lane:2.75rem] @3xl:p-10 @3xl:[--lw-lane:0px] @5xl:p-12 @5xl:pt-11">
               {eyebrow && (
                 <Reveal variant="fade" className="@3xl:pr-36">
                   <StampTag label={eyebrow} />
@@ -117,12 +121,12 @@ export function Hero({ m, type, onType, onShow }: { m: LawatanModel; type: strin
                 )}
               </Reveal>
               {subtitle && (
-                <Reveal as="p" delay={160} className={`mt-4 max-w-[60ch] text-pretty @3xl:mt-5 ${TYPE.lead} ${C.muted}`}>
+                <Reveal as="p" delay={160} className={`mt-4 max-w-[min(60ch,calc(100%-var(--lw-lane)))] text-pretty @3xl:mt-5 ${TYPE.lead} ${C.muted}`}>
                   {subtitle}
                 </Reveal>
               )}
               {/* < @xl: tombol dulu (order-1), chip sesudahnya (order-2); ≥ @xl urutan DOM (chip → tombol) */}
-              <Reveal delay={240} className="mt-6 flex flex-col @xl:block @3xl:mt-8">
+              <Reveal delay={240} className="mt-6 flex flex-col @xl:block pr-(--lw-lane) @3xl:mt-8">
                 {packagesShown && m.types.length > 0 && (
                   <div className="order-2 mb-0 mt-6 @xl:order-none @xl:mb-5 @xl:mt-0 @3xl:mb-6">
                     <p id={legendId} className={`mb-2.5 ${LABEL_SM} ${C.muted}`}>

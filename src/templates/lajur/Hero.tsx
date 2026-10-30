@@ -59,9 +59,18 @@ export function Hero({
         <div aria-hidden className="lj-hero-scrim absolute inset-0" />
 
         <div
-          className={`${WRAP} relative flex min-h-[max(600px,calc(100svh-var(--tpl-sticky-top,0px)-68px))] flex-col justify-end pb-[88px] pt-28 @3xl:min-h-[max(520px,min(calc(100svh-var(--tpl-sticky-top,0px)-76px-72px),820px))] @3xl:pb-[124px] @5xl:justify-center @5xl:pb-[112px] @5xl:pt-10`}
+          // Layar lebar (@5xl, bilah satu baris): hero 40px lebih pendek dari layar dikurangi header & bilah, jadi baris isian
+          // + tombol "Minta penawaran" selesai ≥ 16px di atas tombol WhatsApp melayang (situs: 56px @ 32px dari tepi) di
+          // laptop pendek 1024×768–1440×900; dulu tombol itu menutupi sudut kanan-bawah tombol bilah. Layar ≥ 1080px:
+          // tetap dibatasi 820px.
+          className={`${WRAP} relative flex min-h-[max(600px,calc(100svh-var(--tpl-sticky-top,0px)-68px))] flex-col justify-end pb-[88px] pt-28 @3xl:min-h-[max(520px,min(calc(100svh-var(--tpl-sticky-top,0px)-76px-72px),820px))] @3xl:pb-[124px] @5xl:min-h-[max(520px,min(calc(100svh-var(--tpl-sticky-top,0px)-76px-112px),820px))] @5xl:justify-center @5xl:pb-[112px] @5xl:pt-10`}
         >
-          <div className="max-w-[640px] @5xl:max-w-[50%] @7xl:max-w-[46%]">
+          {/* HP (< 48rem): lajur kanan --lj-lane dibiarkan kosong sampai 8px di kiri tombol WhatsApp melayang Shell (demo &
+              layar < 640px 48px @ 16px dari tepi; situs ≥ 640px 56px @ 32px): kalimat & tombol hero berhenti di kirinya. Di
+              HP pendek (tinggi < ±720px) hero lebih tinggi dari layar (min. 600px), jadi ujung kalimat dan tombol jatuh
+              tepat di baris tombol itu pada layar pertama (320×568: "lalu minta harga" tertutup). Tablet & layar lebar:
+              kolom teks maks. 640px / 50%, sudah ≥ 96px dari tepi kanan. */}
+          <div className="max-w-[640px] [--lj-lane:3.25rem] @xl:[--lj-lane:4.75rem] @2xl:[--lj-lane:4rem] @3xl:[--lj-lane:0px] @5xl:max-w-[50%] @7xl:max-w-[46%]">
             {eyebrow && (
               <Reveal
                 as="p"
@@ -86,12 +95,12 @@ export function Hero({
             {subtitle && (
               // Layar lebar: lebar baris mengikuti kolom tapi dibatasi 52ch (± 68 huruf) → kalimat 120–140 huruf tetap dua
               // baris di 1366–2560px, tidak menjadi satu baris panjang di layar sangat lebar
-              <Reveal as="p" delay={160} className={`mt-5 max-w-[46ch] text-pretty text-white/90 @5xl:max-w-[52ch] ${TYPE.lead}`}>
+              <Reveal as="p" delay={160} className={`mt-5 max-w-[min(46ch,calc(100%-var(--lj-lane)))] text-pretty text-white/90 @5xl:max-w-[52ch] ${TYPE.lead}`}>
                 {subtitle}
               </Reveal>
             )}
             {(primary || secondary) && (
-              <Reveal delay={240} className="mt-7 flex flex-col gap-3 @xl:flex-row @xl:flex-wrap">
+              <Reveal delay={240} className="mt-7 flex flex-col gap-3 pr-(--lj-lane) @xl:flex-row @xl:flex-wrap">
                 <ButtonLink action={primary} label={text(hero, 'primary_label')} />
                 <ButtonLink
                   action={secondary}

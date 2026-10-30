@@ -1940,3 +1940,38 @@ describe('Kemudi: konten aneh', () => {
     expect(container.querySelector('footer')).toBeNull();
   });
 });
+
+describe('Kemudi: perbaikan tinjauan live 2026-10-31', () => {
+  const cls = (el: Element) => (el.getAttribute('class') ?? '').split(/\s+/);
+
+  it('"Lewati animasi" di pita kosong paling atas section film (8px), di luar panggung — tidak lagi di atas label "02 Proses" & H2; scroll-margin di bawah header lengket', () => {
+    for (const make of [() => demo(), () => still()]) {
+      const film = section(make(), 'film');
+      const skip = within(film).getByRole('link', { name: 'Lewati animasi' });
+      expect(skip.parentElement).toBe(film);
+      expect(film.querySelector('[data-film-progress]')!.contains(skip)).toBe(false);
+      expect(cls(skip)).toEqual(expect.arrayContaining(['sr-only', 'left-5', 'top-2', '@2xl:left-8', '@5xl:left-12', '@min-[96rem]:left-16', 'scroll-mt-[calc(var(--tpl-sticky-top,0px)+96px)]', 'focus:not-sr-only', 'focus:absolute']));
+      expect(skip.className).not.toContain('focus:top-[84px]');
+      cleanup();
+    }
+  });
+
+  it('kartu pesan hero: tinggi tidak ikut layanan/mobil — rincian selalu 2 baris dicadangkan (rata bawah), kolom total selebar 8 digit di layar lebar; lajur kanan tablet & catatan dipersempit (tombol WhatsApp situs)', () => {
+    const hero = readFileSync(resolve(ROOT, 'src/templates/kemudi/Hero.tsx'), 'utf8');
+    expect(hero).toContain("const BREAKDOWN = 'flex min-h-[2lh] items-end @max-[22rem]:min-h-[3lh]';");
+    expect(hero).not.toContain('@md:min-h-0');
+    const form = section(demo(), 'hero').querySelector('form')!;
+    const result = Array.from(form.querySelectorAll('div')).find((el) => el.className.includes('border-t') && el.className.includes('justify-between'))!;
+    expect(cls(result)).toEqual(expect.arrayContaining(['@2xl:pr-10', '@5xl:pr-0']));
+    const total = result.querySelector('p.shrink-0 > span')!;
+    expect(cls(total)).toEqual(expect.arrayContaining(['grid', 'text-[28px]', '@5xl:min-w-[6.2em]']));
+    const note = Array.from(form.querySelectorAll('p')).find((p) => p.textContent === 'Harga perkiraan; ketersediaan dikonfirmasi admin. Tidak ada pembayaran online.')!;
+    expect(cls(note)).toEqual(expect.arrayContaining(['text-center', '@5xl:px-6']));
+  });
+
+  it('footer: hak cipta & tagline berhenti di kiri tombol WhatsApp melayang di semua lebar (HP 72px, 576–767px 96px dari tepi)', () => {
+    const footer = demo().querySelector('footer')!;
+    const bottom = Array.from(footer.querySelectorAll('div')).find((el) => el.textContent?.startsWith('©'))!;
+    expect(cls(bottom)).toEqual(expect.arrayContaining(['pr-13', '@xl:pr-19', '@2xl:pr-16', '@3xl:pr-[72px]']));
+  });
+});

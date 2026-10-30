@@ -118,8 +118,9 @@ export function Footer({ m }: { m: PesiarModel }) {
           )}
         </div>
 
-        {/* ≥ 768px: ruang kanan 72px untuk tombol WhatsApp yang melayang (56px, 32px dari tepi) — tagline tidak tertutup */}
-        <div className={`mt-12 flex flex-col gap-2 border-t border-[#F5EFE6]/15 pt-6 text-[13px] @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:pr-[72px] ${C.onDeepMuted}`}>
+        {/* Ruang kanan untuk tombol WhatsApp yang melayang — tagline tidak tertutup: HP 52px (+ tepi 20px; tombol 48px @ 16px),
+            576–767px 96px dari tepi (situs ≥ 640px: 56px @ 32px), ≥ 768px 72px + tepi 32px */}
+        <div className={`mt-12 flex flex-col gap-2 border-t border-[#F5EFE6]/15 pt-6 pr-13 text-[13px] @xl:pr-19 @2xl:pr-16 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:pr-[72px] ${C.onDeepMuted}`}>
           <p>{copyright}</p>
           {m.tagline && <p>{m.tagline}</p>}
         </div>

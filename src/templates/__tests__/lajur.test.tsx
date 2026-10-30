@@ -1530,9 +1530,11 @@ describe('Lajur: demo', () => {
     expect(within(footer).getByRole('link', { name: 'Minta penawaran' })).toHaveAttribute('href', '#beranda');
     expect(footer.textContent).toContain(`© ${new Date().getFullYear()} Lajur Trans Wisata`);
     expect(footer.textContent).toContain('Sewa bus pariwisata Jawa–Bali');
-    // Bilah hak cipta: ujung kanan bebas dari tombol WhatsApp melayang (≥ 88px dari tepi layar di @3xl)
+    // Bilah hak cipta: ujung kanan ≥ 8px di kiri tombol WhatsApp melayang di semua lebar — HP 20 + 52 = 72px dari tepi
+    // (tombol 48px @ 16px), 576–671px 20 + 76 = 96px, 672px ke atas 32/48 + 64px ≥ 96px (situs: 56px @ 32px)
     const bottom = Array.from(footer.querySelectorAll('p')).find((p) => p.textContent === 'Sewa bus pariwisata Jawa–Bali')!.parentElement!;
-    expect(bottom.className).toContain('@3xl:pr-14');
+    expect(bottom.className.split(/\s+/)).toEqual(expect.arrayContaining(['pr-13', '@xl:pr-19', '@2xl:pr-16']));
+    expect(bottom.className).not.toContain('@3xl:pr-14');
     // Penutup: garis warna tema 4px polos (bukan pita belang amber/hitam)
     expect(footer.lastElementChild!.className).toBe('h-1 bg-(--tpl-accent)');
     expect(footer.innerHTML).not.toContain('repeating-linear-gradient');
@@ -2010,5 +2012,70 @@ describe('Lajur: konten aneh', () => {
     const container = demo(off);
     expect(container.querySelectorAll('[data-tpl-section]')).toHaveLength(0);
     expect(container.querySelector('footer')).toBeNull();
+  });
+});
+
+describe('Lajur: perbaikan tinjauan live 2026-10-31', () => {
+  const cls = (el: Element) => (el.getAttribute('class') ?? '').split(/\s+/);
+
+  it('film bergerak: keterangan bab bertumpuk di satu sel grid (tidak naik menimpa kalimat pengantar di HP 320px), kolom jam tidak meluber ke kiri di 1024–1100px, jam rel utuh, "Lewati animasi" ikut alur', () => {
+    const film = section(demo(), 'film');
+    expect(film).toHaveAttribute('data-film', 'scroll');
+    const caps = film.querySelector('.lj-caps')!;
+    // grid satu sel: tinggi baris = keterangan terpanjang; menyusut (maks. 300px), bukan basis 300px yang mendorong jam
+    expect(cls(caps)).toEqual(expect.arrayContaining(['grid', 'min-w-0', 'flex-1', '@5xl:max-w-[300px]']));
+    expect(cls(caps)).not.toEqual(expect.arrayContaining(['@5xl:flex-none']));
+    expect(cls(caps)).not.toContain('@5xl:basis-[300px]');
+    for (const cap of film.querySelectorAll('.lj-cap')) {
+      expect(cls(cap)).toEqual(expect.arrayContaining(['col-start-1', 'row-start-1', 'self-end']));
+      expect(cls(cap)).not.toContain('absolute');
+    }
+    // Rel: jarak kanan 4px + jam 11px di bawah 360px ("13.00" di jendela bab ±45px tidak jadi "13…")
+    const rail = within(film).getByRole('list', { name: 'Bab perjalanan' });
+    for (const li of rail.querySelectorAll(':scope > li')) {
+      expect(cls(li)).toEqual(expect.arrayContaining(['pr-1', '@3xl:pr-2']));
+      expect(cls(li.querySelector('.truncate')!)).toEqual(expect.arrayContaining(['text-[11px]', '@min-[22.5rem]:text-[12px]', '@3xl:text-[13px]']));
+    }
+    const skip = within(film).getByRole('link', { name: 'Lewati animasi' });
+    expect(cls(skip)).toEqual(expect.arrayContaining(['focus:static', '@5xl:focus:col-span-12']));
+    expect(skip.className).not.toMatch(/focus:absolute|focus:right-|focus:top-/);
+  });
+
+  it('tujuan favorit: "Mulai" baris sendiri di kartu sempit (rel HP & 4 kolom 1024–1279px) dan angka 15px di 4 kolom sempit — jumlah baris harga sama di semua kartu, garis jalur sejajar', () => {
+    const list = within(section(demo(), 'routes')).getByRole('list', { name: 'Tujuan favorit' });
+    const rows = Array.from(list.querySelectorAll('.lj-lane-line')).map((line) => line.nextElementSibling!);
+    expect(rows).toHaveLength(8);
+    for (const row of rows) {
+      const [label, price] = Array.from(row.children);
+      expect(label.textContent).toBe('Mulai');
+      expect(cls(label)).toEqual(expect.arrayContaining(['basis-full', '@2xl:basis-auto', '@5xl:basis-full', '@min-[80rem]:basis-auto']));
+      expect(cls(price)).toEqual(expect.arrayContaining(['text-[16px]', '@3xl:text-[17px]', '@5xl:text-[15px]', '@min-[80rem]:text-[17px]', '@min-[150rem]:text-[15px]']));
+    }
+  });
+
+  it('hero: lajur kanan HP untuk kalimat & tombol (tombol WhatsApp melayang 48px @ 16px / situs 56px @ 32px), hero layar lebar 40px lebih pendek, catatan bilah 32px dari tepi', () => {
+    const hero = section(demo(), 'hero');
+    const lead = Array.from(hero.querySelectorAll('p')).find((p) => p.textContent?.startsWith('Big bus, medium bus'))!;
+    expect(cls(lead)).toContain('max-w-[min(46ch,calc(100%-var(--lj-lane)))]');
+    const column = lead.parentElement!;
+    expect(cls(column)).toEqual(expect.arrayContaining(['[--lj-lane:3.25rem]', '@xl:[--lj-lane:4.75rem]', '@2xl:[--lj-lane:4rem]', '@3xl:[--lj-lane:0px]']));
+    const buttons = Array.from(column.children).find((el) => el.querySelector('a'))!;
+    expect(cls(buttons)).toContain('pr-(--lj-lane)');
+    // Judul tidak ikut menyempit (letaknya jauh di atas tombol WhatsApp)
+    expect(hero.querySelector('h1')!.className).not.toContain('--lj-lane');
+    const inner = column.parentElement!;
+    expect(cls(inner)).toContain('@5xl:min-h-[max(520px,min(calc(100svh-var(--tpl-sticky-top,0px)-76px-112px),820px))]');
+    expect(cls(inner)).toContain('@3xl:min-h-[max(520px,min(calc(100svh-var(--tpl-sticky-top,0px)-76px-72px),820px))]');
+    const note = Array.from(hero.querySelectorAll('p')).find((p) => p.textContent?.startsWith('Formulir hanya menyusun pesan WhatsApp'))!;
+    expect(cls(note)).toEqual(expect.arrayContaining(['@5xl:mr-8', '@5xl:text-right']));
+  });
+
+  it('kalkulator: label tombol "Minta penawaran untuk N peserta" boleh terlipat di HP (whitespace-normal! mengalahkan whitespace-nowrap tombol), sebaris mulai @5xl; footer: nama usaha panjang dipotong di dalam kolom', () => {
+    const container = demo();
+    const button = Array.from(section(container, 'convoy').querySelectorAll('a')).find((a) => /untuk \d+ peserta/.test(a.textContent ?? ''))!;
+    expect(cls(button)).toEqual(expect.arrayContaining(['whitespace-normal!', '@5xl:whitespace-nowrap!']));
+    expect(cls(button)).not.toContain('whitespace-normal');
+    const brand = within(container.querySelector('footer')!).getByRole('link', { name: `${BRAND}, ke awal halaman` });
+    expect(cls(brand)).toEqual(expect.arrayContaining(['min-w-0', 'max-w-full']));
   });
 });
