@@ -233,7 +233,9 @@ export function Schedule({
         </Reveal>
 
         {rows.length > 0 ? (
-          <Reveal className="mt-6 @3xl:mt-8">
+          // Tablet & layar lebar: tabel asli; nama rute/kelas CMS yang panjang membuatnya bergulir di wadahnya sendiri,
+          // bukan melebarkan halaman (di 768px tabel ±870px dulu menggeser seluruh halaman ke samping)
+          <Reveal className="mt-6 @3xl:mt-8 @3xl:overflow-x-auto">
             <table role="table" className="block w-full border-collapse text-left @3xl:table">
               <caption className="sr-only">Jadwal keberangkatan: {filterSummary(filter)}</caption>
               <thead role="rowgroup" className="hidden @3xl:table-header-group">
@@ -300,7 +302,9 @@ export function Schedule({
                           <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-(--tpl-accent)" />
                         </span>
                       </td>
-                      <td role="cell" className="col-span-2 col-start-1 row-start-3 min-w-0 justify-self-start @3xl:py-5 @3xl:pr-4">
+                      {/* Sel kelas mengisi kolom 1–2 (tanpa justify-self-start): lebarnya pasti, jadi max-w-full chip benar-benar
+                          memotong nama kelas panjang (…) sebelum kolom harga — sel yang menyusut ke isinya ikut melebar */}
+                      <td role="cell" className="col-span-2 col-start-1 row-start-3 min-w-0 @3xl:py-5 @3xl:pr-4">
                         {d.cls && (
                           <span className="inline-flex h-7 max-w-full items-center whitespace-nowrap rounded-full bg-white px-2.5 font-mono text-[12px] font-medium text-[#0E1230] ring-1 ring-inset ring-[#0E1230]/15 @3xl:bg-[#F2F4FA] @3xl:ring-0">
                             <span className="truncate">{d.cls}</span>

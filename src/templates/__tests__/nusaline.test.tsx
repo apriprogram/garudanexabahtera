@@ -2111,7 +2111,9 @@ describe('Nusaline: perbaikan tinjauan live 2026-10-31', () => {
       expect(cls(tr)).toEqual(expect.arrayContaining(['grid-cols-[auto_minmax(0,1fr)_auto]', 'gap-x-2', '@min-[24rem]:gap-x-3', '@3xl:table-row']));
       const tds = Array.from(tr.querySelectorAll(':scope > td'));
       const [, , , , klass, price, book] = tds;
-      expect(cls(klass)).toEqual(expect.arrayContaining(['col-span-2', 'col-start-1', 'row-start-3', 'min-w-0', 'justify-self-start']));
+      expect(cls(klass)).toEqual(expect.arrayContaining(['col-span-2', 'col-start-1', 'row-start-3', 'min-w-0']));
+      // sel mengisi kolom 1–2 (lebar pasti) → chip max-w-full memotong nama kelas panjang, tidak menimpa harga
+      expect(cls(klass)).not.toContain('justify-self-start');
       // ≥ 24rem: harga di kolom 3 saja (chip kelas kolom 1–2, dipotong di sana); < 24rem: baris sendiri selebar kartu
       expect(cls(price)).toEqual(expect.arrayContaining(['col-start-3', 'row-start-3', 'justify-self-end', '@max-[24rem]:col-span-3', '@max-[24rem]:col-start-1', '@max-[24rem]:row-start-4', '@max-[24rem]:justify-self-start']));
       expect(cls(price)).not.toContain('col-span-2');
@@ -2123,6 +2125,8 @@ describe('Nusaline: perbaikan tinjauan live 2026-10-31', () => {
       }
     }
     expect(rows[0].textContent).toContain('Super Eksekutif');
+    // Tablet & layar lebar: tabel asli bergulir di wadahnya sendiri bila teks CMS panjang (tidak melebarkan halaman)
+    expect(cls(schedule.querySelector('table')!.parentElement!)).toContain('@3xl:overflow-x-auto');
   });
 
   it('"Lewati animasi" di pita kosong paling atas section (8px), bukan di atas label & H2 film; scroll-margin di bawah header lengket', () => {
