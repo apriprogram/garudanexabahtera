@@ -41,6 +41,10 @@
     <lastmod>2026-10-29</lastmod>
   </url>
   <url>
+    <loc>https://garudanexa.com/template/kategori/travel-transportasi</loc>
+    <lastmod>2026-10-30</lastmod>
+  </url>
+  <url>
     <loc>https://garudanexa.com/harga</loc>
     <lastmod>2026-10-30</lastmod>
   </url>
@@ -315,6 +319,41 @@
     <lastmod>2026-10-29</lastmod>
     <image:image>
       <image:loc>https://garudanexa.com/assets/templates/homenest-preview.webp?v=965c5ab8</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/lajur</loc>
+    <lastmod>2026-10-30</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/lajur-preview.webp?v=1228208d</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/nusaline</loc>
+    <lastmod>2026-10-30</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/nusaline-preview.webp?v=6e699218</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/lawatan</loc>
+    <lastmod>2026-10-30</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/lawatan-preview.webp?v=f27dece1</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/kemudi</loc>
+    <lastmod>2026-10-30</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/kemudi-preview.webp?v=d70bd531</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://garudanexa.com/template/pesiar</loc>
+    <lastmod>2026-10-30</lastmod>
+    <image:image>
+      <image:loc>https://garudanexa.com/assets/templates/pesiar-preview.webp?v=d0587e2c</image:loc>
     </image:image>
   </url>
 </urlset>
