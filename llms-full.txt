@@ -1,16 +1,16 @@
 # Garuda Nexa: informasi lengkap
 > Garuda Nexa (PT Garuda Nexa Bahtera, Indonesia) menjual template website siap pakai yang sudah termasuk setup awal, hosting, dan SSL tahun pertama (domain dipilih saat memesan, mulai Rp50.000/tahun), serta menerima jasa pembuatan website dan aplikasi mobile Android/iOS custom.
 
-Diperbarui 29 Oktober 2026. Versi ringkas: https://garudanexa.com/llms.txt
+Diperbarui 30 Oktober 2026. Versi ringkas: https://garudanexa.com/llms.txt
 
 ## Fakta perusahaan
-Diperbarui 29 Oktober 2026.
+Diperbarui 30 Oktober 2026.
 
 - Nama merek: Garuda Nexa
 - Badan hukum: PT Garuda Nexa Bahtera
 - Situs: https://garudanexa.com/
 - Area layanan: Seluruh Indonesia (online)
-- Harga template: Rp990.000–Rp1.890.000 (per 29 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
+- Harga template: Rp990.000–Rp1.890.000 (per 30 Oktober 2026); tahun ke-2: Hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun).
 - Sudah termasuk: template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama
 - Domain (tidak termasuk harga template; dipilih dan dicek ketersediaannya saat memesan), harga per tahun, sama untuk perpanjangan: .com Rp250.000, .id Rp250.000, .co.id Rp350.000, .my.id Rp50.000, .web.id Rp50.000, .biz.id Rp100.000, .net Rp250.000, .org Rp250.000, .or.id Rp100.000, .sch.id Rp75.000, .ac.id Rp75.000
 - Bayar online via Midtrans; isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -23,12 +23,12 @@ Diperbarui 29 Oktober 2026.
   3. Jasa pembuatan aplikasi mobile Android & iOS: Aplikasi Android dan iOS sesuai alur bisnis, dengan penawaran setelah konsultasi gratis. https://garudanexa.com/jasa-pembuatan-aplikasi-mobile
 
 ## Template website
-Diperbarui 29 Oktober 2026.
+Diperbarui 30 Oktober 2026.
 
 ### Corporate Nexa
 - Halaman: https://garudanexa.com/template/corporate-nexa
 - Kategori: Company Profile
-- Harga: Rp1.500.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.500.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Company profile elegan untuk perusahaan yang ingin tampil profesional dan terpercaya.
 - Fitur: Desain responsif untuk HP, tablet, dan desktop; Ubah teks, gambar, dan warna sendiri lewat CMS; Bagian layanan, keunggulan, dan galeri proyek; Testimoni klien dan angka pencapaian; Kontak lengkap: alamat, email, telepon, WhatsApp, peta; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -39,7 +39,7 @@ Corporate Nexa dirancang untuk perusahaan jasa, konsultan, kontraktor, dan distr
 ### Startup Clean
 - Halaman: https://garudanexa.com/template/startup-clean
 - Kategori: Company Profile
-- Harga: Rp990.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp990.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Company profile modern dan ringan untuk startup, UMKM, dan bisnis digital.
 - Fitur: Tampilan modern dan cepat dibuka di HP; Kelola konten sendiri lewat CMS tanpa coding; Bagian layanan, statistik, dan galeri; Testimoni pelanggan; Tombol WhatsApp dan formulir kontak; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -50,7 +50,7 @@ Startup Clean cocok untuk startup, UMKM, studio kreatif, dan bisnis digital yang
 ### Arena Club
 - Halaman: https://garudanexa.com/template/arena-club
 - Kategori: Olahraga & Komunitas
-- Harga: Rp1.290.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.290.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Website klub olahraga yang enerjik untuk lapangan padel, tenis, futsal, badminton, gym, dan akademi olahraga.
 - Fitur: Desain enerjik dan responsif untuk HP, tablet, dan desktop; Paket membership dengan harga dan benefit yang bisa diubah; Profil pelatih serta jadwal turnamen dan acara klub; Program latihan dan sewa lapangan dalam kartu foto; Tombol pesan lapangan langsung ke WhatsApp; Kelola teks, foto, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -63,7 +63,7 @@ Cocok untuk lapangan padel dan tenis, futsal, badminton, mini soccer, gym, hingg
 ### Aura Studio
 - Halaman: https://garudanexa.com/template/aura-studio
 - Kategori: Kecantikan & Klinik
-- Harga: Rp1.390.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.390.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Website elegan untuk klinik kecantikan, salon, nail art, spa, dan barbershop yang ingin tampil premium dan tepercaya.
 - Fitur: Tampilan elegan dan lembut, nyaman dibuka di HP; Daftar perawatan dengan foto, kategori, dan harga mulai; Sorotan perawatan unggulan beserta tahapannya; Galeri suasana studio dan hasil perawatan; Testimoni pelanggan dengan foto; Tombol reservasi langsung ke WhatsApp; Kelola teks, foto, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -76,7 +76,7 @@ Cocok untuk klinik kecantikan dan estetika, salon rambut, nail art, spa, lash & 
 ### Finova
 - Halaman: https://garudanexa.com/template/finova
 - Kategori: Fintech & Startup
-- Harga: Rp1.790.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.790.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Landing page modern untuk fintech, koperasi, aplikasi pembayaran, konsultan keuangan, dan produk SaaS.
 - Fitur: Bagian pembuka gelap premium dengan foto produk dan bukti sosial; Strip logo mitra dan angka pencapaian; Fitur produk dengan kartu antarmuka yang teksnya bisa diubah; Kartu manfaat bento dan testimoni pengguna; Tanya jawab (FAQ) untuk calon pengguna atau anggota; Footer lengkap dengan tautan unduh aplikasi; Kelola teks, foto, dan dua warna merek sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -89,7 +89,7 @@ Cocok untuk startup fintech, koperasi simpan pinjam, aplikasi pembayaran dan dom
 ### Serenity
 - Halaman: https://garudanexa.com/template/serenity
 - Kategori: Yoga & Wellness
-- Harga: Rp1.290.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.290.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Website tenang dan modern untuk studio yoga, pilates, dan kelas kebugaran yang ingin tampil profesional.
 - Fitur: Hero slider foto selebar layar (hingga 4 slide) dengan menu transparan; Kartu kelas yoga dengan durasi, level, dan tombol tanya jadwal ke WhatsApp; Paket harga dengan paket unggulan yang menonjol; Langkah memulai, cerita peserta, dan tanya jawab (FAQ); Pencarian kelas dan pertanyaan langsung dari menu; Kelola teks, gambar, harga, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -102,7 +102,7 @@ Cocok untuk studio yoga dan pilates, kelas olahraga ringan, instruktur yoga priv
 ### SkyNusa
 - Halaman: https://garudanexa.com/template/skynusa
 - Kategori: Toko Online
-- Harga: Rp1.590.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.590.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Website toko drone yang modern untuk menjual drone foto, wedding, dan pemetaan, lengkap dengan paket, sewa harian, dan layanan servis lokal.
 - Fitur: Hero lembar spesifikasi dengan foto drone dan kartu angka spesifikasi; Kategori per kebutuhan yang memfilter daftar drone; Kartu produk dengan harga coret, label, dan keranjang yang dikirim ke WhatsApp; Paket bundling drone + tas + baterai cadangan dengan label hemat; Kalkulator sewa harian: unit, tanggal, lama sewa, dan potongan; Layanan servis lokal, kelas terbang gratis, cerita pelanggan, dan FAQ; Kelola teks, gambar, harga, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -115,7 +115,7 @@ Cocok untuk toko dan reseller drone, penyedia sewa drone, bengkel servis drone, 
 ### TaniMakmur
 - Halaman: https://garudanexa.com/template/tanimakmur
 - Kategori: Toko Online
-- Harga: Rp1.590.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.590.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Toko online pertanian untuk benih, pupuk, dan alat tani, lengkap dengan paket per tanaman dan konsultasi lewat WhatsApp.
 - Fitur: Hero foto ladang selebar layar dengan kartu angka dan strip keunggulan; Pilih Tanamanmu: paket per jenis tanaman dengan isi, jadwal tanam, dan harga hemat; Produk terlaris dengan rating, harga coret, dan filter kategori; Pesan produk dan paket langsung lewat WhatsApp; Konsultasi penyuluh, panduan urban farming, testimoni, dan FAQ; Pencarian produk dan paket langsung dari menu; Kelola teks, gambar, harga, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -128,7 +128,7 @@ Cocok untuk toko benih, pupuk, dan alat tani, kios saprotan, penjual perlengkapa
 ### PuncakGear
 - Halaman: https://garudanexa.com/template/puncakgear
 - Kategori: Toko Online
-- Harga: Rp1.590.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.590.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Website toko perlengkapan mendaki dengan panduan per gunung dan kalkulator sewa alat untuk pendaki pemula.
 - Fitur: Hero poster foto selebar layar dengan kartu produk; Produk terlaris dengan filter kategori dan tombol pesan ke WhatsApp; Panduan per gunung dengan daftar perlengkapan yang bisa dicentang; Kalkulator sewa alat per hari dengan diskon lama sewa; Tips keselamatan, cerita pendaki, dan tanya jawab (FAQ); Pencarian produk, gunung, dan alat sewa langsung dari menu; Kelola teks, foto, harga, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -141,7 +141,7 @@ Cocok untuk toko outdoor, penyewaan alat camping dan mendaki, maupun basecamp ya
 ### GadgetKu.id
 - Halaman: https://garudanexa.com/template/gadgetku
 - Kategori: Toko Online
-- Harga: Rp1.590.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.590.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website toko aksesoris HP yang bersih dan modern, dengan pencarian aksesoris berdasarkan tipe HP.
 - Fitur: Pencarian aksesoris berdasarkan merek dan tipe HP; Baris produk terbaru dengan harga coret, label diskon otomatis, dan penyaring kategori; Paket bundling hemat dengan potongan harga yang dihitung otomatis; Coba casing custom dengan foto sendiri langsung di browser; Pesan lewat WhatsApp berisi nama produk, harga, dan tipe HP; Kelola produk, harga, tipe HP, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -154,7 +154,7 @@ Cocok untuk toko aksesoris HP di ruko atau mal, penjual online yang juga berjual
 ### GlowStory
 - Halaman: https://garudanexa.com/template/glowstory
 - Kategori: Toko Online
-- Harga: Rp1.590.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.590.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website toko skincare & kosmetik online untuk brand lokal: kuis jenis kulit, pesanan lewat WhatsApp, dan kalkulator langganan isi ulang.
 - Fitur: Kuis jenis kulit dengan hasil rutinitas pagi & malam beserta produknya; Daftar belanja yang dikirim sebagai pesanan WhatsApp lengkap dengan subtotal; Kalkulator langganan isi ulang: harga per kiriman dan hemat setahun; Produk terlaris dengan harga coret, rating, label, dan saringan kategori; Ulasan pelanggan berfoto yang bisa diperbesar; Kelola teks, foto, harga, kuis, dan warna sendiri lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -167,7 +167,7 @@ Tiga fitur mendorong pembelian berulang: kuis jenis kulit yang menyusun rutinita
 ### Madani
 - Halaman: https://garudanexa.com/template/madani
 - Kategori: Sekolah & Pendidikan
-- Harga: Rp1.690.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.690.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website sekolah Islam untuk SMA IT, madrasah aliyah, dan sekolah berasrama: slider foto, profil, berita, agenda, dan PPDB lewat WhatsApp.
 - Fitur: Hero slider foto dengan tombol Daftar PPDB dan kartu info pendaftaran; PPDB: jalur, jadwal, syarat, alur, biaya, dan formulir minat ke WhatsApp; Sambutan kepala sekolah, profil, visi & misi, dan statistik sekolah; Program unggulan, prestasi, fasilitas, dan galeri kegiatan; Berita, pengumuman bertanda Penting, dan agenda kegiatan; Cerita alumni, tanya jawab, dan peta lokasi Google Maps; Warna tema bisa diganti (hijau, biru, atau warna lain) lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -180,7 +180,7 @@ Cocok untuk SMA Islam terpadu, madrasah aliyah, dan sekolah berasrama. Bagian PP
 ### Cakrawala
 - Halaman: https://garudanexa.com/template/cakrawala
 - Kategori: Sekolah & Pendidikan
-- Harga: Rp1.690.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.690.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website SMK dan SMA yang modern: hero slider foto, PPDB dengan formulir ke WhatsApp, berita, pengumuman, alumni, dan BKK.
 - Fitur: Hero slider foto dengan menu pil, pengumuman PPDB, dan kartu info; PPDB bertab: jalur, jadwal, syarat, alur, dan biaya; Formulir pendaftaran singkat yang menyusun pesan WhatsApp untuk panitia; Berita dengan filter kategori, pengumuman bertanggal, dan agenda kegiatan; Sambutan kepala sekolah, profil, visi & misi, program keahlian, dan prestasi; Teaching factory, mitra industri, alumni, dan Bursa Kerja Khusus; Satu warna tema yang bisa diganti, misalnya biru atau hijau; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -193,7 +193,7 @@ Cocok untuk SMK negeri maupun swasta, dan bisa dipakai SMA dengan mengganti prog
 ### Bestari
 - Halaman: https://garudanexa.com/template/bestari
 - Kategori: Sekolah & Pendidikan
-- Harga: Rp1.690.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.690.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website SMA yang modern dan meyakinkan: hero slider foto, navbar transparan, PPDB dengan formulir ke WhatsApp, berita, program, dan guru.
 - Fitur: Hero slider foto selebar layar dengan navbar transparan dan pengumuman PPDB; PPDB bertab: jalur, jadwal, syarat, alur, dan biaya; Formulir pendaftaran SMA yang memeriksa usia calon siswa dan menyusun pesan WhatsApp untuk panitia; Berita dengan filter kategori, pengumuman bertanggal, dan agenda kegiatan; Profil, sambutan kepala sekolah, carousel program unggulan, prestasi, dan guru; Testimoni orang tua & alumni, galeri, dan tanya jawab; Satu warna tema yang bisa diganti, misalnya terakota, hijau, atau biru; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -206,7 +206,7 @@ Cocok untuk SMA swasta maupun negeri, dan bisa dipakai MA dengan mengganti isi p
 ### Altura
 - Halaman: https://garudanexa.com/template/altura
 - Kategori: Company Profile
-- Harga: Rp1.890.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.890.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template company profile berbahasa Inggris untuk developer properti dan perusahaan besar: hero dua panel, proyek unggulan, portofolio berfilter, dan formulir enquiry.
 - Fitur: Hero dua panel: foto menara, judul besar, lingkaran angka, dan pil berfoto ke video atau proyek; Konten demo berbahasa Inggris; semua teks, termasuk label formulir dan pesan galat, bisa diganti lewat CMS; Proyek unggulan berbentuk akordion dan portofolio properti dengan filter kategori; Pita angka raksasa, tiga pilar bernomor, dan keunggulan berikon; Pimpinan, penghargaan, testimoni, dan artikel wawasan; Formulir enquiry yang menyusun pesan WhatsApp atau email, plus daftar kantor dan peta; Satu warna tema yang bisa diganti, warna teks menyesuaikan otomatis; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -219,7 +219,7 @@ Konten demo berbahasa Inggris sehingga cocok untuk perusahaan besar, multinasion
 ### Portline
 - Halaman: https://garudanexa.com/template/portline
 - Kategori: Company Profile
-- Harga: Rp1.890.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.890.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template company profile berbahasa Inggris untuk perusahaan pelayaran, logistik, dan grup multinasional: hero slider berindeks, newsroom bertagar, armada, jaringan global, dan formulir enquiry.
 - Fitur: Konten demo berbahasa Inggris untuk perusahaan besar, multinasional, dan eksportir; Hero slider foto selebar layar dengan indeks 01/02/03 dan deret logo perusahaan grup; Menu dua lapis dengan tombol utilitas dan pilihan bahasa EN | ID yang menaut ke versi bahasa lain Anda; Newsroom mosaik dengan filter tagar, isi berita, dan liputan media; Kartu perusahaan grup, carousel armada, dan jaringan global per kawasan; Formulir enquiry yang menyusun pesan WhatsApp atau email, tanpa menyimpan data; Semua teks, termasuk nama menu, label formulir, dan pesan galat, bisa diganti lewat CMS; satu warna tema yang bisa diganti; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -232,7 +232,7 @@ Konten demo berbahasa Inggris (Quaymoor Group, fiktif) dan bisa diganti seluruhn
 ### Velora
 - Halaman: https://garudanexa.com/template/velora
 - Kategori: Company Profile
-- Harga: Rp1.890.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.890.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template company profile berbahasa Inggris untuk grup otomotif dan perusahaan besar: hero kartu foto, jajaran model berfilter, carousel teknologi, dan formulir test drive ke WhatsApp/email.
 - Fitur: Hero kartu foto lebar dengan menu di dalamnya, judul berpil, dan kartu sorotan yang bisa menautkan video; Jajaran produk atau model dengan tombol filter kategori, harga, dan spesifikasi singkat; Carousel teknologi yang melebar saat dipilih dan angka perusahaan yang menghitung naik; Dinding potret testimoni yang bisa diklik dan newsroom berita perusahaan; Formulir test drive yang menyusun pesan WhatsApp atau email, tanpa menyimpan data; Daftar studio atau dealer dengan Google Maps dan footer dengan newsletter lewat email; Salinan demo berbahasa Inggris; semua teks yang tampil (termasuk label formulir), foto, dan warna aksen bisa diubah lewat CMS; Domain sendiri dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -245,7 +245,7 @@ Salinan demo berbahasa Inggris untuk grup otomotif fiktif Velora Motor Group, co
 ### Dermaga
 - Halaman: https://garudanexa.com/template/dermaga
 - Kategori: Company Profile
-- Harga: Rp1.590.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.590.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template company profile ekspor impor & freight forwarding: hero rute di atas foto terminal, layanan bernomor, pasar & Incoterm, proses kerja, dan formulir penawaran ke WhatsApp.
 - Fitur: Hero rute: foto terminal peti kemas dengan garis rute, label pelabuhan, dan angka ringkas; Layanan bernomor: freight forwarding, konsolidasi LCL, dokumen, trading, pemeriksaan, dan trucking; Pita pasar: kawasan tujuan, pelabuhan, dan Incoterm yang dilayani; Proses kerja lima langkah beserta dokumen di setiap langkah; Formulir permintaan penawaran (produk, volume, Incoterm, negara tujuan/asal) yang menyusun pesan WhatsApp; Klien, galeri, testimoni dengan rute pengiriman, dan tanya jawab; Satu warna aksen yang bisa diganti; pita pasar dan footer ikut menyesuaikan; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -258,7 +258,7 @@ Cocok untuk freight forwarder, perusahaan general trading, eksportir, dan import
 ### Saudagar
 - Halaman: https://garudanexa.com/template/saudagar
 - Kategori: Company Profile
-- Harga: Rp1.690.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.690.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website eksportir kopi, kakao & rempah: hero tiga foto lengkung, tab spesifikasi komoditas, kalender panen, dan formulir penawaran ke WhatsApp.
 - Fitur: Hero tiga foto berbingkai lengkung dengan judul serif dan keterangan asal komoditas; Tab spesifikasi komoditas: grade, asal, kadar air, kemasan, dan minimum pemesanan; Kalender musim panen per bulan untuk setiap komoditas; Langkah mutu bernomor dan daftar dokumen pengapalan; Daerah asal dan pasar tujuan dengan pelabuhan dan Incoterm; Formulir permintaan penawaran (komoditas, volume, Incoterm, negara tujuan) yang menyusun pesan WhatsApp; Galeri, testimoni pembeli, dan tanya jawab; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -271,7 +271,7 @@ Cocok untuk eksportir kopi, kakao, cengkeh, pala, kayu manis, kelapa, dan kopra,
 ### NusaNiaga
 - Halaman: https://garudanexa.com/template/nusaniaga
 - Kategori: Company Profile
-- Harga: Rp1.590.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.590.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template company profile importir & distributor: hero foto berbilah, chip negara asal, layanan, produk bahan baku & mesin, proses impor, jangkauan, dan formulir penawaran ke WhatsApp.
 - Fitur: Hero berbilah: satu foto tegak dipotong menjadi bilah vertikal, dengan chip negara asal yang menuju bagian Jangkauan; Menu atas dengan blok warna aksen untuk tombol permintaan penawaran; Klien dan strip industri yang berjalan pelan; Layanan impor serta produk bahan baku, mesin, dan suku cadang beserta negara asalnya; Proses impor buka-tutup dengan garis alur yang terisi saat digulir; Formulir permintaan penawaran (kebutuhan, produk, volume, negara asal, Incoterm, lokasi pabrik) yang menyusun pesan WhatsApp; Keunggulan dengan angka besar bersatuan, testimoni, tanya jawab, dan peta lokasi; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -284,7 +284,7 @@ Cocok untuk importir bahan baku, supplier mesin industri, agen sourcing, dan dis
 ### Jumantara
 - Halaman: https://garudanexa.com/template/jumantara
 - Kategori: Sekolah & Pendidikan
-- Harga: Rp1.690.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.690.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website sekolah negeri untuk SMA yang rapi dan elegan: slider foto dengan bilah progres, angka sekolah, berita, pengumuman, agenda, dan informasi SPMB.
 - Fitur: Hero slider foto selebar layar dengan bilah progres per slide, tombol jeda, dan pita angka sekolah; Bilah utilitas berisi kontak, jam layanan, dan tautan cepat seperti PPID dan E-Learning; Berita utama berfoto, pengumuman bertanda Penting, dan agenda dengan ubin tanggal; Bagian SPMB bertab (jalur, jadwal, syarat) dengan tautan ke portal provinsi; Formulir tanya panitia yang menyusun pesan WhatsApp, tanpa penyimpanan data; Sambutan kepala sekolah, visi-misi bertab, mapel pilihan, ekstrakurikuler berfilter, fasilitas, guru, alumni, galeri, FAQ, dan peta; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -297,7 +297,7 @@ Cocok untuk SMA negeri maupun swasta. Bagian SPMB menautkan portal provinsi dan 
 ### Nawasena
 - Halaman: https://garudanexa.com/template/nawasena
 - Kategori: Sekolah & Pendidikan
-- Harga: Rp1.690.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.690.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website profil sekolah untuk SMA negeri yang elegan: slider foto latar, strip pengumuman, statistik, berita, agenda, dan informasi SPMB.
 - Fitur: Hero slider foto latar dengan nomor slide vertikal, tombol jeda, dan strip pengumuman; Pita statistik sekolah dengan angka yang menghitung naik; Sambutan kepala sekolah, profil, visi, misi, dan sejarah singkat; Tab paket mata pelajaran pilihan kelas XI–XII dan kokurikuler; Berita, pengumuman bertanggal, dan linimasa agenda; Informasi SPMB: jalur, jadwal, syarat, tautan portal provinsi, dan formulir tanya ke WhatsApp; Ekstrakurikuler, fasilitas, guru, galeri, alumni, dan tanya jawab; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -310,7 +310,7 @@ Cocok untuk SMA negeri maupun swasta. Formulir tanya SPMB hanya menyusun pesan W
 ### Pradipta
 - Halaman: https://garudanexa.com/template/pradipta
 - Kategori: Sekolah & Pendidikan
-- Harga: Rp1.690.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.690.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template landing page SMA negeri yang terang dan rapi: hero slider foto dengan thumbnail, statistik, berita, pengumuman, agenda, info SPMB, dan formulir tanya panitia ke WhatsApp.
 - Fitur: Header putih dengan penunjuk menu yang bergeser mengikuti bagian yang dibaca dan tombol Info SPMB; Hero slider foto selebar layar: judul di kartu putih, thumbnail berbilah progres, jeda, dan geser di HP; Akses cepat ke SPMB, pengumuman, e-learning, dan PPID, statistik dalam gelembung angka, profil, visi, misi, dan nilai sekolah; Kelompok mata pelajaran pilihan, ekstrakurikuler bersaring, linimasa prestasi per tahun, dan kartu fasilitas; Berita berfilter kategori, pengumuman berlabel Penting, dan agenda berbentuk ubin kalender; Info SPMB (tab jalur, jadwal, syarat), tautan portal provinsi, dan formulir tanya tiga langkah yang menyusun pesan WhatsApp; Guru, testimoni orang tua & alumni, galeri, tanya jawab, dan peta lokasi; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -323,7 +323,7 @@ Cocok untuk SMA negeri yang membutuhkan landing page SPMB setiap tahun ajaran da
 ### Sparring Padel
 - Halaman: https://garudanexa.com/template/sparring-padel
 - Kategori: Olahraga & Komunitas
-- Harga: Rp1.390.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.390.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website lapangan padel: hero foto dengan Booking cepat ke WhatsApp, jadwal & harga per jam, lapangan indoor/outdoor, cari lawan main per level, turnamen, dan sewa raket.
 - Fitur: Hero foto aksi dengan garis lapangan neon dan bilah Booking cepat (tanggal, indoor/outdoor, jam, pemain) ke WhatsApp; Papan jadwal & harga per jam untuk hari kerja dan akhir pekan, tombol Book per sesi; Kartu lapangan indoor/outdoor dengan foto dan spesifikasi; Cari lawan main: level 1–7 dan formulir nama, hari, jam ke WhatsApp; Daftar turnamen dengan tanggal, kategori, biaya, kuota, dan tombol Daftar; Harga sewa raket, bola, sepatu, coaching, angka komunitas, galeri, dan FAQ; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -336,7 +336,7 @@ Cocok untuk pengelola lapangan padel, klub padel, dan komunitas yang menerima bo
 ### SmashHall
 - Halaman: https://garudanexa.com/template/smashhall
 - Kategori: Olahraga & Komunitas
-- Harga: Rp1.390.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.390.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website GOR & klub badminton: cek lapangan kosong, booking lewat WhatsApp, member bulanan, latihan, akademi, kejuaraan, dan toko perlengkapan.
 - Fitur: Hero foto GOR dengan strip ketersediaan 8 lapangan dan animasi kok yang mendarat; Tabel lapangan × jam per hari: pilih slot kosong lalu booking lewat WhatsApp; Tiga paket member bulanan dengan pilihan harga bulanan atau 3 bulan; Jadwal latihan, pelatih berinisial, dan kelas akademi per kelompok usia; Garis waktu kejuaraan internal & antarklub beserta status dan hasil; Toko perlengkapan (raket, kok, grip, sepatu) dengan tombol pesan via WhatsApp; Formulir booking & pendaftaran yang menyusun pesan WhatsApp; data tidak disimpan di website; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -349,7 +349,7 @@ Cocok untuk GOR, sport center bulu tangkis, klub, dan akademi. Booking, pendafta
 ### PayNow
 - Halaman: https://garudanexa.com/template/paynow
 - Kategori: Fintech & Startup
-- Harga: Rp1.590.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.590.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template landing page dompet digital & payment gateway: hero foto dengan mockup HP dan notifikasi, fitur bertab, simulasi biaya, keamanan, contoh API, dan pendaftaran merchant ke WhatsApp.
 - Fitur: Hero foto dengan gradasi biru-ungu, mockup HP berisi saldo, dan kartu notifikasi; Fitur bertab (QRIS, transfer, tagihan, isi saldo) dengan layar HP yang berganti; Simulasi biaya dari daftar contoh tarif yang bisa Anda ubah; Bagian developer: daftar endpoint dan contoh kode cURL, Node.js, PHP dengan tombol salin; Keamanan, pita angka, cerita merchant, dan tanya jawab; Formulir pendaftaran merchant yang menyusun pesan WhatsApp dan baris legal di footer; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -362,7 +362,7 @@ Cocok untuk startup dompet digital, penyedia payment gateway, dan aplikasi kasir
 ### MediCare General
 - Halaman: https://garudanexa.com/template/medicare-general
 - Kategori: Kesehatan & Rumah Sakit
-- Harga: Rp1.890.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.890.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website rumah sakit umum: strip IGD 24 jam, ukuran teks yang bisa diperbesar, jadwal dokter tersaring, pendaftaran online ke WhatsApp, poliklinik, rawat inap, dan BPJS.
 - Fitur: Strip IGD 24 jam dengan nomor telepon dan tombol ukuran teks A, A+, A++; Hero foto rumah sakit dengan ubin Daftar Online, Jadwal Dokter, dan IGD 24 Jam; Jadwal dokter yang bisa disaring per poli dan per hari, dengan tombol Daftar; Pendaftaran online tiga langkah yang menyusun pesan WhatsApp (data pasien tidak disimpan); Poliklinik, penunjang medis, pita IGD, dan kelas kamar rawat inap dengan jam besuk; Alur pasien BPJS, asuransi, dan umum dalam tab, plus tanya jawab dan kontak darurat; Satu warna tema yang bisa diganti; merah IGD tetap agar mudah dikenali; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -375,7 +375,7 @@ Cocok untuk rumah sakit umum swasta, rumah sakit daerah, dan klinik utama dengan
 ### MomKid Hospital
 - Halaman: https://garudanexa.com/template/momkid
 - Kategori: Kesehatan & Rumah Sakit
-- Harga: Rp1.790.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.790.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website rumah sakit ibu & anak bernuansa pastel: hero foto ibu dan bayi, paket persalinan, jadwal imunisasi interaktif, dokter anak, klinik laktasi, tur kamar bersalin, dan pendaftaran ke WhatsApp.
 - Fitur: Hero foto latar ibu dan bayi dengan lapisan peach, tepi bergelombang, dan chip pastel; Tahap layanan: kehamilan, persalinan, dan tumbuh kembang dalam tab; Paket persalinan dengan harga mulai untuk dua pilihan kamar; Jadwal imunisasi interaktif sesuai umur si kecil (ringkasan, bisa diedit); Jadwal dokter anak, klinik laktasi, dan tur kamar bersalin; Formulir pendaftaran kunjungan yang menyusun pesan WhatsApp; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -388,7 +388,7 @@ Cocok untuk RSIA, klinik bersalin, klinik anak, dan klinik laktasi. Formulir pen
 ### SpecialistPlus
 - Halaman: https://garudanexa.com/template/specialistplus
 - Kategori: Kesehatan & Rumah Sakit
-- Harga: Rp1.890.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.890.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website klinik spesialis & laboratorium: hero konsol data, jadwal dokter per klinik, tabel paket MCU, permintaan hasil lab via WhatsApp, dan spesifikasi alat.
 - Fitur: Hero konsol data: pilih spesialis untuk melihat jumlah dokter, hari praktik, dan jadwal terdekat; Tab klinik spesialis dengan tabel jadwal dokter dan tombol daftar via WhatsApp; Tabel perbandingan paket medical check-up dengan harga dan tombol pesan; Formulir permintaan hasil lab yang menyusun pesan WhatsApp, plus tautan portal pasien; Kartu spesifikasi alat diagnostik dan batang perkiraan waktu hasil; Testimoni pasien, tanya jawab, jam layanan per unit, dan catatan darurat 119; Satu warna aksen yang bisa diganti; navy header, pita hasil lab, dan footer ikut menyesuaikan; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -401,7 +401,7 @@ Cocok untuk klinik utama, pusat spesialis, laboratorium klinik, klinik medical c
 ### HealthLink
 - Halaman: https://garudanexa.com/template/healthlink
 - Kategori: Kesehatan & Rumah Sakit
-- Harga: Rp1.690.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.690.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website telemedicine bergaya aplikasi: cari dokter online, chat & video call lewat WhatsApp atau aplikasi Anda, resep digital, pengingat kontrol, dan RS mitra.
 - Fitur: Hero kartu aplikasi: foto latar, kolom cari dokter, dan empat ubin layanan besar; Daftar dokter online dengan pencarian keluhan, saringan spesialis, status, harga, dan tombol chat; Resep digital & tebus obat, ilustrasi rekam medis, dan cara konsultasi dengan ilustrasi chat; Pengingat kontrol: file kalender .ics atau Google Calendar, dibuat di perangkat pengunjung; RS mitra, biaya per sesi & langganan keluarga, unduh aplikasi, FAQ, dan kartu darurat 119; Dirancang dari HP dulu dengan bilah aksi bawah; satu warna aksen yang bisa diganti; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -414,7 +414,7 @@ Cocok untuk klinik, jaringan rumah sakit, dan startup kesehatan yang sudah punya
 ### HomeNest
 - Halaman: https://garudanexa.com/template/homenest
 - Kategori: Properti & Real Estate
-- Harga: Rp1.690.000 (per 29 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
+- Harga: Rp1.690.000 (per 30 Oktober 2026), sudah termasuk template website + setup awal, hosting tahun pertama, dan sertifikat SSL (HTTPS) tahun pertama; domain terpisah, mulai Rp50.000/tahun
 - Ringkasan: Template website properti & jual rumah: hero foto besar dengan panel cari rumah, listing bersaringan, tur virtual, simulasi KPR, profil developer, dan jadwal kunjungan ke WhatsApp.
 - Fitur: Hero foto rumah selebar layar dengan panel cari lokasi, tipe, dan harga; Daftar rumah dengan saringan lokasi, tipe, harga, dan urutan; Kartu rumah: harga, luas tanah & bangunan, kamar tidur & mandi, tombol WhatsApp; Simulasi KPR (perkiraan angsuran, bukan penawaran bank); Tur virtual per ruang yang membuka tautan tur Anda; Profil developer, fasilitas kawasan, dan cerita pembeli; Agen per kawasan dan formulir jadwal kunjungan ke WhatsApp; Domain sendiri (dibayar terpisah) dan sertifikat SSL (HTTPS)
 - Pengelolaan isi: Isi website (teks, foto, kontak) diubah sendiri lewat CMS di akun pembeli.
@@ -425,7 +425,7 @@ HomeNest menampilkan rumah yang Anda jual dengan tenang dan elegan: foto rumah s
 Cocok untuk developer perumahan, agen properti, dan tim pemasaran klaster. Simulasi KPR hanya perkiraan dengan bunga tetap, bukan penawaran bank; formulir jadwal kunjungan menyusun pesan WhatsApp dan data tidak disimpan di website. Tidak ada tur 360° bawaan dan tidak ada pembayaran tanda jadi online. Rumah, harga, teks, foto, dan satu warna aksen bisa Anda ubah sendiri lewat CMS tanpa coding.
 
 ## Jasa custom
-Diperbarui 29 Oktober 2026.
+Diperbarui 30 Oktober 2026.
 
 - Jasa pembuatan website custom: Website yang dirancang dari nol sesuai kebutuhan, dengan penawaran setelah konsultasi gratis. https://garudanexa.com/jasa-pembuatan-website
 - Jasa pembuatan aplikasi mobile Android & iOS: Aplikasi Android dan iOS sesuai alur bisnis, dengan penawaran setelah konsultasi gratis. https://garudanexa.com/jasa-pembuatan-aplikasi-mobile
@@ -433,7 +433,7 @@ Diperbarui 29 Oktober 2026.
 - Cara memesan: isi formulir di https://garudanexa.com/pesan-custom atau hubungi WhatsApp +62 851-8800-9152; konsultasi gratis, lalu penawaran dikirim.
 
 ## Tanya jawab
-Diperbarui 29 Oktober 2026.
+Diperbarui 30 Oktober 2026.
 
 ### Berapa harga template website di Garuda Nexa?
 Harga template website Garuda Nexa saat ini Rp990.000–Rp1.890.000, tergantung template yang Anda pilih. Harga itu dibayar di awal dan sudah termasuk setup, hosting, dan SSL tahun pertama, sedangkan domain dipilih saat memesan dengan harga sesuai ekstensinya. Biaya mulai tahun ke-2: hosting & jasa Rp500.000/tahun ditambah perpanjangan domain sesuai ekstensi (mulai Rp50.000/tahun). Pembayaran online lewat Midtrans.
