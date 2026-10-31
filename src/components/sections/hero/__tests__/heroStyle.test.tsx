@@ -39,7 +39,7 @@ import {
   readPromptChips,
   safeChipHref,
 } from '../heroStyle';
-import { GLYPH_ALPHA_MAX } from '../prompt/garudaEngine';
+import { GLYPH_ALPHA_MAX, GLYPH_RGB } from '../prompt/garudaEngine';
 
 const BUILT_AT = '2026-10-29T03:00:00.000Z';
 const KEYWORD_H1 = 'Template website siap pakai, termasuk hosting & SSL';
@@ -298,8 +298,8 @@ describe('kontras teks hero Prompt AI di atas kanvas burung', () => {
   const muted = hexToRgb(COLORS.muted);
   const lum = (color: Rgb) => relativeLuminance(color);
 
-  it('sel glyph paling pekat: judul besar ≥ 3:1; teks kecil di kartu / pill putih 90% ≥ 4,5:1', () => {
-    const cell = compositeRgb(fg, GLYPH_ALPHA_MAX, white);
+  it('sel glyph paling pekat (biru brand tergelap di atas latar hero tergelap brand-100): judul besar ≥ 3:1; teks kecil di kartu / pill putih 90% ≥ 4,5:1', () => {
+    const cell = compositeRgb(GLYPH_RGB, GLYPH_ALPHA_MAX, hexToRgb('#DFDEFF'));
     expect(contrastRatio(lum(fg), lum(cell))).toBeGreaterThanOrEqual(HEADLINE_TARGET);
     const card = compositeRgb(white, 0.9, cell);
     expect(contrastRatio(lum(muted), lum(card))).toBeGreaterThanOrEqual(BODY_TARGET);

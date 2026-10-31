@@ -64,13 +64,19 @@ export const HeroPrompt: React.FC<{ settings: SiteSettings }> = ({ settings }) =
 
   return (
     <section id="beranda" aria-labelledby="hero-title" className="relative isolate overflow-hidden bg-canvas">
-      {/* Latar (pemilik 2026-10-30: jangan putih saja): gradasi biru brand sangat muda dari atas + tiga cahaya biru lembut
-          yang berkelana pelan (.hero-prompt-orb, index.css), lalu pola titik tipis yang memudar ke tepi, lalu burung
-          Garuda ASCII. Semuanya dekoratif dan di belakang teks. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-30 overflow-hidden bg-gradient-to-b from-brand-50 via-canvas to-canvas">
+      {/* Latar (pemilik 2026-10-30 "jangan putih saja", 2026-11-01 "lebih bagus, warna lebih keren"): langit gradasi biru
+          brand, berkas cahaya tipis dari atas, dua aurora & tiga cahaya biru lembut yang berkelana, lantai garis
+          perspektif di bawah, cahaya putih di belakang judul (keterbacaan) — index.css .hero-prompt-*; lalu pola titik
+          tipis, lalu burung Garuda ASCII. Semuanya dekoratif dan di belakang teks. */}
+      <div aria-hidden className="hero-prompt-sky pointer-events-none absolute inset-0 -z-30 overflow-hidden">
+        <span className="hero-prompt-rays" />
+        <span className="hero-prompt-aurora hero-prompt-aurora--a" />
+        <span className="hero-prompt-aurora hero-prompt-aurora--b" />
         <span className="hero-prompt-orb hero-prompt-orb--a" />
         <span className="hero-prompt-orb hero-prompt-orb--b" />
         <span className="hero-prompt-orb hero-prompt-orb--c" />
+        <span className="hero-prompt-floor" />
+        <span className="hero-prompt-halo" />
       </div>
       <div
         aria-hidden

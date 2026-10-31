@@ -1,32 +1,48 @@
 // Mesin kanvas tiga burung Garuda ASCII (GarudaAscii.tsx): memasang kanvas, loop animasi 60 fps (requestAnimationFrame),
-// dan menggambar adegan garudaFlight.ts: partikel, lalu burung-burung (yang jauh dulu, yang dekat paling depan) yang
-// dirasterisasi ulang tiap frame dari modelnya (garudaSprites.ts). Tampilan mengikuti video rujukan dan ascii-sharks
-// (github.com/stackedlol/ascii-sharks, MIT): sel glyph monospace abu-abu tipis di atas latar putih, sel padat lebih gelap,
-// tepi ringan / bergaris menurut arahnya, sel burung diberi "kotak" samar seperti tuts, sedikit kerlip glyph.
-// - Kedalaman: burung jauh = kecil, glyph sedikit lebih kecil & lebih pudar (seperti tertutup udara); dekat = besar,
-//   lebih banyak sel (lebih detail), lebih pekat. Burung yang lewat di belakang judul / kotak prompt diredupkan.
-// - Burung seukuran layar: hanya bagian yang terlihat yang dirasterisasi, dan kotak "tuts" dilewati bila selnya sangat
+// dan menggambar adegan garudaFlight.ts: partikel, dahan tempat bertengger, lalu burung-burung (yang jauh dulu, yang dekat
+// paling depan) yang dirasterisasi ulang tiap frame dari modelnya (garudaSprites.ts). Tampilan mengikuti video rujukan dan
+// ascii-sharks (github.com/stackedlol/ascii-sharks, MIT): sel glyph monospace di atas latar terang, sel padat lebih
+// pekat, tepi ringan / bergaris menurut arahnya, sel burung diberi "kotak" samar seperti tuts, sedikit kerlip glyph.
+// - Warna: gradasi biru brand (design.md: satu aksen biru). Burung dekat biru tua (brand-900), burung jauh biru muda
+//   (brand-400) & lebih pudar, seperti tertutup udara. Burung yang lewat di belakang judul / kotak prompt diredupkan.
+// - Halus: alpha tiap glyph mengikuti kepadatan kontinu selnya (luasan × level), jadi tepi burung memudar mulus saat
+//   bergerak, bukan berkedip muncul-hilang; glyph isi tetap per sel relatif terhadap badan, kerlipnya jarang.
+// - Burung seukuran layar: hanya bagian yang terlihat yang dirasterisasi, dan kotak "tuts" memudar saat selnya sangat
 //   banyak (hemat waktu frame).
 // - Hemat: berhenti saat kanvas tidak terlihat atau tab disembunyikan, DPR maks. 2, reduced motion = satu gambar diam.
-import { contentBox, createScene, stepScene, stillScene, type Bird, type Rect, type Scene } from './garudaFlight';
-import { DIR_GLYPHS, rasterize } from './garudaSprites';
+import { contentBox, createScene, stepScene, stillScene, type Bird, type Perch, type Rect, type Scene } from './garudaFlight';
+import { DIR_GLYPHS, rasterize, type Pt, type Shape } from './garudaSprites';
 
-/** --site-fg (#121620): semua sel memakai warna teks utama dengan alpha rendah, jadi abu-abu di atas putih. */
-const FG = '18, 22, 32';
-/** Alpha glyph per kepadatan 0..4 (design.md: komposisi netral, tanpa warna lain di latar). */
-const ALPHA = [0, 0.18, 0.3, 0.44, 0.58];
-/** Sel paling pekat: warna teks utama dengan alpha ini di atas putih (untuk cek kontras teks hero di atas kanvas). */
-export const GLYPH_ALPHA_MAX = ALPHA[4];
+type Rgb = readonly [number, number, number];
+
+/** brand-900 (#121083): burung terdekat. Paling pekat = warna ini dengan alpha GLYPH_ALPHA_MAX (cek kontras teks hero). */
+export const GLYPH_RGB: Rgb = [18, 16, 131];
+/** brand-400 (#6C6AFF): burung terjauh (perspektif udara). */
+const FAR_RGB: Rgb = [108, 106, 255];
+/** brand-800 (#1614A8): dahan; brand-500 (#3E3CFF): daun & kilau. */
+const WOOD_RGB: Rgb = [22, 20, 168];
+const LEAF_RGB: Rgb = [62, 60, 255];
+/** Alpha sel terpadat; sel lain mengikuti kepadatan kontinunya. */
+export const GLYPH_ALPHA_MAX = 0.58;
 /** Glyph isi burung per kepadatan: tepi ringan → isi padat. */
 const GLYPHS = ['', ".'`,", ':;=+', '%SXt', '@#8&'];
+const LEAF_GLYPHS = ['', ".,'", ':;*', '*%&', '&%@'];
 const CELL_ASPECT = 1.5;
 const MAX_DT = 0.05;
-const SHIMMER_SECONDS = 0.35;
+const SHIMMER_SECONDS = 0.6;
+/** Tingkat alpha untuk menggambar per kelompok (satu fillStyle per tingkat). */
+const ALPHA_STEPS = 24;
 /** Kotak "tuts" memudar antara jumlah sel ini (burung seukuran layar: tanpa kotak, hemat waktu frame). */
 const BOX_FADE_CELLS: readonly [number, number] = [1800, 3200];
 const FONT_STACK = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+/** Campuran dua warna sebagai "r, g, b" untuk rgba(). */
+const mixRgb = (a: Rgb, b: Rgb, t: number): string => `${Math.round(a[0] + (b[0] - a[0]) * t)}, ${Math.round(a[1] + (b[1] - a[1]) * t)}, ${Math.round(a[2] + (b[2] - a[2]) * t)}`;
+const SPARK = mixRgb(LEAF_RGB, LEAF_RGB, 0);
+const FEATHER = mixRgb(GLYPH_RGB, GLYPH_RGB, 0);
+const WOOD = mixRgb(WOOD_RGB, WOOD_RGB, 0);
+const LEAF = SPARK;
 
 /** Lebar sel (px) untuk lebar hero `w`: 7 px di HP sampai 9 px di layar lebar. */
 export const cellWidth = (w: number): number => clamp(Math.round(w / 170), 7, 9);
@@ -43,7 +59,7 @@ const hash = (c: number, r: number, seed: number): number => {
 };
 
 const font = (cellH: number) => `500 ${(cellH * 0.82).toFixed(2)}px ${FONT_STACK}`;
-const rgba = (alpha: number) => `rgba(${FG}, ${alpha.toFixed(3)})`;
+const rgba = (rgb: string, alpha: number) => `rgba(${rgb}, ${alpha.toFixed(3)})`;
 
 /** Kotak elemen hero bertanda data-garuda-avoid (judul, kotak prompt, chip) relatif terhadap kanvas. */
 function measureAvoid(canvas: HTMLCanvasElement): Rect[] {
@@ -54,6 +70,47 @@ function measureAvoid(canvas: HTMLCanvasElement): Rect[] {
     const r = el.getBoundingClientRect();
     return { l: r.left - base.left, t: r.top - base.top, r: r.right - base.left, b: r.bottom - base.top };
   }).filter((r) => r.r > r.l && r.b > r.t);
+}
+
+/**
+ * Bentuk dahan tempat bertengger (px layar): dari luar tepi layar ke sedikit melewati kaki, menyempit, melentur di ujung
+ * (`bend` di titik kaki), dengan ranting kecil dan gerombol daun di ujungnya.
+ */
+function branchShapes(perch: Perch, L0: number, w: number): { wood: Shape[]; leaves: Shape[] } {
+  const body = L0 * perch.s;
+  const thick = body * 0.07;
+  const edge = perch.side < 0 ? -40 : w + 40;
+  const tip = perch.x + perch.inward * body * 0.36;
+  const atFeet = (perch.x - edge) / (tip - edge);
+  const n = 10;
+  const top: Pt[] = [];
+  const bottom: Pt[] = [];
+  const centre = (u: number): Pt => {
+    const width = thick * (1.7 - 1.2 * u);
+    const sag = perch.bend * Math.pow(u / atFeet, 1.5);
+    return [edge + (tip - edge) * u, perch.y + sag + width * 0.42];
+  };
+  for (let i = 0; i <= n; i++) {
+    const u = i / n;
+    const [x, y] = centre(u);
+    const half = (thick * (1.7 - 1.2 * u)) / 2;
+    top.push([x, y - half]);
+    bottom.unshift([x, y + half]);
+  }
+  const [tx, ty] = centre(1);
+  const [kx, ky] = centre(0.82);
+  const twigTip: Pt = [kx + perch.inward * body * 0.05, ky - body * 0.16];
+  const twigW = thick * 0.25;
+  return {
+    wood: [
+      { kind: 'poly', points: [...top, ...bottom], level: 4 },
+      { kind: 'poly', points: [[kx - twigW, ky], [twigTip[0], twigTip[1]], [kx + twigW, ky]], level: 3 },
+    ],
+    leaves: [
+      { kind: 'circle', cx: tx + perch.inward * thick * 0.5, cy: ty - thick * 0.25, r: thick * 0.75, level: 3 },
+      { kind: 'circle', cx: twigTip[0], cy: twigTip[1], r: thick * 0.6, level: 3 },
+    ],
+  };
 }
 
 /** Pasang animasi di `canvas` (mengisi kotak induknya). Mengembalikan fungsi untuk melepasnya. */
@@ -78,6 +135,8 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
   let last = 0;
   /** Redup per burung saat lewat di belakang konten (berubah halus). */
   let fades: number[] = [];
+  /** Indeks sel per tingkat alpha (dipakai ulang tiap frame). */
+  const buckets: number[][] = Array.from({ length: ALPHA_STEPS + 1 }, () => []);
 
   const drawParticles = () => {
     if (!scene || !scene.particles.length) return;
@@ -86,22 +145,54 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
       const t = p.age / p.life;
       const life = Math.min(1, p.age / 0.12) * (1 - t * t);
       let glyph: string;
-      let alpha: number;
       if (p.kind === 'spark') {
         // Kilau: bintang → plus → titik, sesekali berkedip
         glyph = Math.floor(p.age * 14 + p.seed * 7) % 5 === 0 ? "'" : t < 0.3 ? '*' : t < 0.65 ? '+' : '.';
-        alpha = 0.4;
+        ctx.fillStyle = rgba(SPARK, 0.42 * life);
+      } else if (p.kind === 'call') {
+        // Suara teriakan: lengkung ke arah paruh menghadap, memudar
+        glyph = p.vx >= 0 ? ')' : '(';
+        ctx.fillStyle = rgba(FEATHER, 0.5 * life);
       } else {
         // Bulu berayun: condong ke arah ayunannya
         const sway = Math.cos(p.phase);
         glyph = sway > 0.35 ? ')' : sway < -0.35 ? '(' : '~';
-        alpha = 0.36;
+        ctx.fillStyle = rgba(FEATHER, 0.36 * life);
       }
-      ctx.fillStyle = rgba(alpha * life);
       ctx.setTransform(dpr * p.size, 0, 0, dpr * p.size, dpr * p.x, dpr * p.y);
       ctx.fillText(glyph, 0, 0);
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+
+  /** Dahan tempat bertengger di grid glyph layar: kayu bergaris mengikuti arahnya, daun renggang di ujung. */
+  const drawBranch = () => {
+    const perch = scene?.perch;
+    if (!scene || !perch || perch.show <= 0.01) return;
+    const { wood, leaves } = branchShapes(perch, scene.L0, w);
+    ctx.font = font(ch);
+    const anchor: Pt = [cw / 2, ch / 2];
+    for (const [shapes, rgb, isLeaf] of [[wood, WOOD, false], [leaves, LEAF, true]] as const) {
+      const sprite = rasterize(shapes, cw, ch, anchor);
+      for (let i = 0; i < sprite.cells.length; i++) {
+        let level = sprite.cells[i];
+        if (!level) continue;
+        const c = i % sprite.cols;
+        const r = (i - c) / sprite.cols;
+        const base = hash(c + sprite.c0, r + sprite.r0, 5);
+        let glyph: string;
+        if (isLeaf) {
+          if (base % 4 === 0) continue;
+          if (level >= 2 && base % 3 === 0) level--;
+          const set = LEAF_GLYPHS[level];
+          glyph = set[base % set.length];
+        } else {
+          glyph = DIR_GLYPHS[sprite.dirs[i]] || (level >= 3 ? (base % 9 === 0 ? 'o' : '=') : '-');
+        }
+        ctx.fillStyle = rgba(rgb, GLYPH_ALPHA_MAX * (isLeaf ? 0.55 : 0.75) * Math.pow(sprite.dens[i], 0.8) * perch.show);
+        ctx.fillText(glyph, (c + sprite.c0) * cw + cw / 2, (r + sprite.r0) * ch + ch / 2 + 0.5);
+      }
+    }
   };
 
   const drawBird = (bird: Bird, now: number, dt: number) => {
@@ -109,7 +200,7 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
     if (!scene || !geo) return;
     const bodyPx = scene.L0 * bird.s;
     if (bodyPx < 4) return;
-    // Jauh: glyph sedikit lebih kecil & pudar; dekat: lebih besar & pekat (sel per panjang badan tetap bertambah)
+    // Jauh: glyph sedikit lebih kecil, lebih muda & pudar; dekat: lebih besar & pekat (sel per panjang badan bertambah)
     const near = clamp((bird.s - 0.2) / 1, 0, 1);
     const scale = 0.86 + 0.24 * near;
     const bcw = cw * scale;
@@ -132,53 +223,47 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
     const fade = prev + (target - prev) * clamp(dt * 5, 0, 1);
     fades[bird.index] = fade;
     const alphaK = (0.55 + 0.45 * near) * fade;
+    const rgb = mixRgb(FAR_RGB, GLYPH_RGB, near);
 
-    const { cells, dirs, marks, cols } = sprite;
-    // Kotak samar di belakang glyph (tampilan "tuts" seperti video rujukan), satu path per kepadatan; memudar saat
-    // burung sangat besar
+    const { cells, dirs, dens, marks, cols } = sprite;
+    for (const bucket of buckets) bucket.length = 0;
+    for (let i = 0; i < cells.length; i++) {
+      if (!cells[i]) continue;
+      buckets[Math.round(Math.min(1, Math.pow(dens[i], 0.8)) * ALPHA_STEPS)].push(i);
+    }
+    // Kotak samar di belakang glyph (tampilan "tuts" seperti video rujukan); memudar saat burung sangat besar
     const boxK = clamp((BOX_FADE_CELLS[1] - cells.length) / (BOX_FADE_CELLS[1] - BOX_FADE_CELLS[0]), 0, 1);
     if (boxK > 0) {
-      for (let level = 1; level <= 4; level++) {
+      for (let k = 1; k <= ALPHA_STEPS; k++) {
+        const bucket = buckets[k];
+        if (!bucket.length) continue;
         ctx.beginPath();
-        let any = false;
-        for (let i = 0; i < cells.length; i++) {
-          if (cells[i] !== level) continue;
+        for (const i of bucket) {
           const c = i % cols;
           const r = (i - c) / cols;
           ctx.rect(left + c * bcw + 0.5, top + r * bch + 0.5, bcw - 1, bch - 1);
-          any = true;
         }
-        if (any) {
-          ctx.fillStyle = rgba(0.028 * level * alphaK * boxK);
-          ctx.fill();
-        }
+        ctx.fillStyle = rgba(rgb, 0.11 * (k / ALPHA_STEPS) * alphaK * boxK);
+        ctx.fill();
       }
     }
     ctx.font = font(bch);
     const shimmer = Math.floor(now / 1000 / SHIMMER_SECONDS);
-    for (let level = 1; level <= 4; level++) {
-      ctx.fillStyle = rgba(ALPHA[level] * alphaK);
-      const set = GLYPHS[level];
-      for (let i = 0; i < cells.length; i++) {
-        if (cells[i] !== level) continue;
+    for (let k = 1; k <= ALPHA_STEPS; k++) {
+      const bucket = buckets[k];
+      if (!bucket.length) continue;
+      ctx.fillStyle = rgba(rgb, GLYPH_ALPHA_MAX * (k / ALPHA_STEPS) * alphaK);
+      for (const i of bucket) {
         const c = i % cols;
         const r = (i - c) / cols;
-        let glyph: string = DIR_GLYPHS[dirs[i]];
+        let glyph: string = marks.get(i) ?? DIR_GLYPHS[dirs[i]];
         if (!glyph) {
           // Glyph per sel relatif terhadap badan (tetap saat terbang); sebagian kecil berganti tiap SHIMMER_SECONDS
+          const set = GLYPHS[cells[i]];
           const base = hash(c + sprite.c0, r + sprite.r0, 3 + bird.index);
-          const pick = base % 7 === 0 ? hash(c + sprite.c0, r + sprite.r0, 3 + bird.index + shimmer) : base;
+          const pick = base % 11 === 0 ? hash(c + sprite.c0, r + sprite.r0, 3 + bird.index + shimmer) : base;
           glyph = set[pick % set.length];
         }
-        ctx.fillText(glyph, left + c * bcw + bcw / 2, top + r * bch + bch / 2 + 0.5);
-      }
-    }
-    // Mata: glyph khusus, sepekat sel terpadat
-    if (marks.size) {
-      ctx.fillStyle = rgba(ALPHA[4] * alphaK);
-      for (const [i, glyph] of marks) {
-        const c = i % cols;
-        const r = (i - c) / cols;
         ctx.fillText(glyph, left + c * bcw + bcw / 2, top + r * bch + bch / 2 + 0.5);
       }
     }
@@ -191,6 +276,7 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     drawParticles();
+    drawBranch();
     // Yang jauh dulu, yang dekat menutupinya
     const birds = [...scene.birds].sort((a, b) => b.pos[2] - a.pos[2]);
     for (const bird of birds) drawBird(bird, now, dt);

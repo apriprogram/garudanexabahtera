@@ -1,6 +1,7 @@
 // Burung Garuda ASCII di latar hero Prompt AI: rasterisasi (kepadatan, garis berarah, pahat, potong, glyph mata), model 3D
-// (detail bertambah saat dekat), kepakan halus, lintasan, dan koreografi tiga burung (formasi, berputar, acak, tukikan
-// seukuran layar; tanpa NaN, skala & posisi berubah halus), adegan diam untuk reduced motion.
+// (detail bertambah saat dekat), kepakan halus, belok terbatas & kurva Hermite, dan koreografi tiga burung (formasi,
+// berputar, acak, tukikan seukuran layar, bertengger setinggi hero di sisi; tanpa NaN, skala & posisi & hadap berubah
+// halus), adegan diam untuk reduced motion.
 // Jalankan: node ../../../node_modules/vitest/vitest.mjs run src/components/sections/hero/prompt
 import { describe, expect, it } from 'vitest';
 import { cellWidth } from '../garudaEngine';
@@ -11,19 +12,21 @@ import {
   MAX_PARTICLES,
   birdLength,
   createScene,
+  PERCH_POSE,
   flapWings,
-  makePath,
-  pathAt,
-  pathTangent,
+  hermite,
+  maxScale,
+  perchLayout,
   restPose,
   stepScene,
   stillScene,
+  turnToward,
   zoomScale,
   type ActKind,
   type FormationStyle,
   type Task,
 } from '../garudaFlight';
-import { CLOSE_UNIT, DETAIL_UNIT, DIR_GLYPHS, bodyFrame, birdGeometry, dirCode, rasterize, spriteToText, type Shape } from '../garudaSprites';
+import { CLOSE_UNIT, DETAIL_UNIT, DIR_GLYPHS, FINE_UNIT, bodyFrame, birdGeometry, dirCode, footOf, rasterize, shapesBounds, spriteToText, type Shape } from '../garudaSprites';
 
 /** Pembangkit acak tetap (LCG) supaya adegan bisa diulang. */
 const lcg = (seed: number) => () => {
@@ -105,7 +108,11 @@ describe('model burung', () => {
     const far = birdGeometry(pose, 5);
     const near = birdGeometry(pose, DETAIL_UNIT + 1);
     const close = birdGeometry(pose, CLOSE_UNIT + 4);
+    const fine = birdGeometry(pose, FINE_UNIT + 1);
     expect(near.shapes.length).toBeGreaterThan(far.shapes.length);
+    // Helai bulu bergaris tepi & paruh rahang atas-bawah mulai FINE_UNIT; guratan terbanyak saat sangat dekat
+    expect(fine.shapes.filter((s) => s.carve).length).toBeGreaterThan(near.shapes.filter((s) => s.carve).length + 8);
+    expect(close.shapes.filter((s) => s.carve).length).toBeGreaterThan(fine.shapes.filter((s) => s.carve).length);
     expect(close.shapes.length).toBeGreaterThan(near.shapes.length);
     expect(far.shapes.some((s) => s.carve)).toBe(false);
     expect(close.shapes.filter((s) => s.carve).length).toBeGreaterThan(20);
@@ -144,19 +151,51 @@ describe('model burung', () => {
 });
 
 describe('lintasan & koreografi', () => {
-  it('lintasan: mulai & berakhir di titik jalan, panjang ≥ jarak lurus, arah awal mengikuti arah burung', () => {
-    const path = makePath(
-      [
-        [0, 0, 500],
-        [300, -100, 800],
-        [600, 50, 600],
-      ],
-      [0, 1, 0],
-    );
-    expect(pathAt(path, 0)).toEqual([0, 0, 500]);
-    pathAt(path, path.total).forEach((v, i) => expect(v).toBeCloseTo([600, 50, 600][i]));
-    expect(path.total).toBeGreaterThanOrEqual(Math.hypot(600, 50, 100) - 1e-6);
-    expect(pathTangent(path, 1)[1]).toBeGreaterThan(0);
+  it('belok terbatas: arah diputar paling banyak sudut yang diizinkan; kurva Hermite mulai & berakhir di titiknya', () => {
+    const h: [number, number, number] = [1, 0, 0];
+    const turned = turnToward(h, [0, 0, 1], 0.2);
+    expect(Math.acos(turned[0])).toBeCloseTo(0.2);
+    expect(Math.hypot(...turned)).toBeCloseTo(1);
+    expect(turnToward(h, [0.99, 0, Math.sqrt(1 - 0.99 ** 2)], 0.5)[0]).toBeCloseTo(0.99);
+    // Tepat berbalik: tetap berputar ke samping, tidak macet
+    expect(Math.acos(turnToward(h, [-1, 0, 0], 0.3)[0])).toBeCloseTo(0.3);
+    const curve = { p0: [0, 0, 500] as [number, number, number], v0: [100, 0, 0] as [number, number, number], p1: [300, -50, 300] as [number, number, number], v1: [0, 50, 0] as [number, number, number], dur: 1 };
+    expect(hermite(curve, 0)).toEqual([0, 0, 500]);
+    hermite(curve, 1).forEach((v, i) => expect(v).toBeCloseTo(curve.p1[i]));
+  });
+
+  it('bertengger: setinggi hero di layar lebar, tetap di ruang samping konten; di HP / layar sempit tidak bertengger', () => {
+    for (const [w, h, l, r, tall] of [
+      [1920, 1080, 600, 1320, 0.78],
+      [1366, 768, 323, 1043, 0.55],
+    ] as const) {
+      const scene = createScene(w, h, { rng: lcg(4), avoid: [{ l, t: h * 0.3, r, b: h * 0.75 }] });
+      for (const side of [-1, 1] as const) {
+        const layout = perchLayout(scene, side)!;
+        expect(layout).not.toBeNull();
+        expect(layout.inward).toBe(-side as 1 | -1);
+        const pose = { ...PERCH_POSE, yaw: side < 0 ? -0.35 : Math.PI + 0.35 };
+        const [x0, y0, x1] = shapesBounds(birdGeometry(pose, 20).shapes);
+        const foot = footOf(pose);
+        const body = scene.L0 * layout.s;
+        // Tinggi burung (kaki → puncak kepala) mendekati tinggi hero, kaki di atas pudar bawah
+        expect((foot[1] - y0) * body).toBeGreaterThan(h * tall);
+        expect(layout.y).toBeLessThan(h - 90);
+        // Badan di sisi luar konten; punggung & ekor paling banyak ±35% keluar dari tepi layar
+        const inner = side < 0 ? layout.x + (x1 - foot[0]) * body : layout.x + (x0 - foot[0]) * body;
+        const outer = side < 0 ? layout.x + (x0 - foot[0]) * body : layout.x + (x1 - foot[0]) * body;
+        if (side < 0) {
+          expect(inner).toBeLessThanOrEqual(l);
+          expect(-outer).toBeLessThanOrEqual((x1 - x0) * body * 0.36);
+        } else {
+          expect(inner).toBeGreaterThanOrEqual(r);
+          expect(outer - w).toBeLessThanOrEqual((x1 - x0) * body * 0.36);
+        }
+        expect(layout.s).toBeLessThanOrEqual(maxScale(scene));
+      }
+    }
+    expect(perchLayout(createScene(375, 640, { rng: lcg(4) }), -1)).toBeNull();
+    expect(perchLayout(createScene(768, 1000, { rng: lcg(4), avoid: [{ l: 24, t: 300, r: 744, b: 700 }] }), -1)).toBeNull();
   });
 
   it('ukuran: sel 7–9 px, burung lebih besar di layar lebar, tukikan ±seukuran layar', () => {
@@ -171,8 +210,10 @@ describe('lintasan & koreografi', () => {
     expect(scene.L0 * zoomScale(scene) * 2).toBeGreaterThan(1366 * 0.85);
   });
 
-  it('3 burung: formasi longgar & rapi, berputar, acak, tukikan seukuran layar lalu kembali; jauh & dekat; halus', () => {
-    const scene = createScene(1366, 768, { rng: lcg(7), cell: 8 });
+  it('3 burung: formasi longgar & rapi, berputar, acak, tukikan, bertengger lalu terbang lagi; jauh & dekat; halus', () => {
+    const scene = createScene(1366, 768, { rng: lcg(7), cell: 8, avoid: [{ l: 323, t: 230, r: 1043, b: 580 }] });
+    const phases = new Set<string>();
+    let footGap = 0;
     const acts = new Set<ActKind>();
     const styles = new Set<FormationStyle>();
     let syncGap = 0;
@@ -190,6 +231,17 @@ describe('lintasan & koreografi', () => {
       stepScene(scene, dt);
       acts.add(scene.act.kind);
       if (scene.act.kind === 'formation') styles.add(scene.act.style);
+      const perch = scene.perch;
+      if (perch) {
+        phases.add(perch.phase);
+        // Bertengger: telapak kaki tepat di dahan (titik kaki + lendutan dahan), kecuali saat melompat kecil berbalik badan
+        if (perch.phase === 'sit' && !perch.turn) {
+          const bird = scene.birds[perch.bird];
+          const foot = footOf(bird.pose);
+          const body = scene.L0 * bird.s;
+          footGap = Math.max(footGap, Math.hypot(bird.x + foot[0] * body - perch.x, bird.y + foot[1] * body - (perch.y + perch.bend)));
+        }
+      }
       scene.birds.forEach((bird, b) => {
         tasks.add(bird.task);
         expect(Number.isFinite(bird.x) && Number.isFinite(bird.y) && Number.isFinite(bird.s) && Number.isFinite(bird.phase)).toBe(true);
@@ -197,9 +249,12 @@ describe('lintasan & koreografi', () => {
         minS = Math.min(minS, bird.s);
         maxS = Math.max(maxS, bird.s);
         if (i > 0) {
-          // Halus: skala berubah < 7% per frame, posisi tidak melompat (relatif terhadap ukuran burung di layar)
+          // Halus: skala berubah < 7% per frame, posisi tidak melompat (relatif terhadap ukuran burung di layar) selama
+          // burung terlihat (di luar layar, mis. keluar dari tukikan, gerak perspektifnya memang cepat & tak terlihat)
           expect(Math.abs(bird.s - prev[b].s) / prev[b].s).toBeLessThan(0.07);
-          expect(Math.hypot(bird.x - prev[b].x, bird.y - prev[b].y)).toBeLessThan(40 + scene.L0 * bird.s * 0.12);
+          const body = scene.L0 * bird.s;
+          const onScreen = bird.x > 0 && bird.x < 1366 && bird.y > -body * 0.3 && bird.y < 768;
+          if (onScreen) expect(Math.hypot(bird.x - prev[b].x, bird.y - prev[b].y)).toBeLessThan(40 + body * 0.12);
           if (i > 60) {
             maxYawStep = Math.max(maxYawStep, Math.abs(Math.atan2(Math.sin(bird.yaw - prev[b].yaw), Math.cos(bird.yaw - prev[b].yaw))));
             maxRollStep = Math.max(maxRollStep, Math.abs(bird.roll - prev[b].roll));
@@ -228,22 +283,26 @@ describe('lintasan & koreografi', () => {
     expect(styles.size).toBeGreaterThan(1);
     expect(syncSamples).toBeGreaterThan(0);
     expect(syncGap / syncSamples).toBeLessThan(0.05);
-    expect([...tasks]).toEqual(expect.arrayContaining(['lead', 'follow', 'orbit', 'wander', 'zoom']));
+    expect([...tasks]).toEqual(expect.arrayContaining(['lead', 'follow', 'orbit', 'wander', 'zoom', 'perch']));
+    expect([...phases]).toEqual(expect.arrayContaining(['approach', 'land', 'sit', 'launch', 'leave']));
+    expect(footGap).toBeLessThan(1);
     expect(minS).toBeLessThan(0.4);
     expect(maxS).toBeGreaterThan(zoomScale(scene) * 0.9);
-    expect(maxS).toBeLessThanOrEqual(zoomScale(scene) * 1.25 + 1e-6);
+    expect(maxS).toBeLessThanOrEqual(maxScale(scene) + 1e-6);
     // Pengikut formasi rata-rata dekat pemimpinnya (bergerombol)
     expect(followGap / followSamples).toBeLessThan(4);
     expect(scene.time).toBeCloseTo(240, 0);
     // Simulasi 240 detik adegan: ±3 detik sendirian, bisa >5 detik saat file tes lain berjalan bersamaan
   }, 30_000);
 
-  it('HP: ukuran burung relatif lebih besar; adegan diam: tiga burung di luar kotak konten', () => {
+  it('HP: ukuran burung relatif lebih besar; adegan diam: satu bertengger di sisi, tiga burung di luar kotak konten', () => {
     const mobile = createScene(375, 640, { rng: lcg(3) });
     expect(mobile.L0 / 375).toBeGreaterThan(0.15);
     const avoid = [{ l: 323, t: 230, r: 1043, b: 580 }];
     const still = stillScene(1366, 768, { avoid });
     expect(still.birds).toHaveLength(BIRDS);
+    expect(still.perch?.phase).toBe('sit');
+    expect(still.perch?.show).toBe(1);
     for (const bird of still.birds) {
       expect(bird.geometry).not.toBeNull();
       const inside = bird.x > 323 && bird.x < 1043 && bird.y > 230 && bird.y < 580;

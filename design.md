@@ -215,19 +215,23 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
   tampilan") + rail langkah Pilih template → Bayar via Midtrans → Domain aktif → Kelola lewat CMS (bisa diklik & dijeda;
   tombol jeda "Jeda tayangan" + `aria-pressed`; keempat label tampil mulai 1280px).
 - **Gaya hero** (`hero/heroStyle.ts`, setting `hero_style`, pemilik 2026-10-29): `classic` (bawaan) = hero di atas,
-  tidak diubah; `prompt` = `hero/HeroPrompt.tsx` mengikuti video rujukan pemilik: latar gradasi `brand-50` → putih +
-  tiga cahaya biru brand lembut yang berkelana pelan (`.hero-prompt-orb`, pola `.cta-orb`; diam & lebih kecil di HP dan
-  reduced motion) + `grid-dots` tipis yang memudar ke tepi, judul besar di tengah (`text-[30px] → sm:52px → lg:60px`,
+  tidak diubah; `prompt` = `hero/HeroPrompt.tsx` mengikuti video rujukan pemilik: latar langit gradasi `brand-100` →
+  `brand-50` → putih dengan berkas cahaya tipis dari atas, dua aurora & tiga cahaya biru brand yang berkelana pelan,
+  lantai garis perspektif tipis di bawah, dan cahaya putih di belakang judul (`.hero-prompt-*` di `index.css`; diam &
+  lebih kecil di HP dan reduced motion) + `grid-dots` tipis yang memudar ke tepi, judul besar di tengah (`text-[30px] → sm:52px → lg:60px`,
   `font-medium`), kotak prompt
   `max-w-[720px] rounded-[24px] bg-surface/90 ring-line backdrop-blur-sm` (textarea, catatan "Dijawab Nexa AI", tombol
   kirim `bg-fg`), chip rekomendasi `chip-site` (tautan dari admin), lalu H1 kata kunci kecil dalam pill putih bila judul
   admin tanpa frasa "template website" (SEO seperti hero klasik). Enter / kirim → panel Nexa terbuka dan pesan terkirim
   (`layout/nexa/nexaBridge.ts`); widget Nexa mati → `/pesan-custom?brief=…`. Latar: burung Garuda dari karakter ASCII
   (`hero/prompt/`: model burung 3D prosedural dirasterisasi ulang tiap frame ke grid glyph monospace, ide dari
-  ascii-sharks MIT): tiga burung bergantian terbang dalam formasi, berputar-putar, dan acak, menjauh (kecil) dan mendekat
-  (besar, makin detail), sesekali menukik sampai seukuran layar lalu keluar dan kembali; kepakan downstroke/upstroke
-  halus + meluncur, partikel kilau & bulu; abu-abu `fg` alpha ≤ 0,58, diredupkan di belakang judul/kotak prompt, 60 fps,
-  berhenti saat tak terlihat, reduced motion = satu gambar diam. Kontras teks di atas kanvas: judul besar ≥ 3:1, teks kecil di kartu/pill putih ≥ 4,5:1.
+  ascii-sharks MIT; bentuk elang Jawa berjambul): tiga burung bergantian terbang dalam formasi (longgar / rapi),
+  berputar-putar, dan acak dengan belok lengkung (steering), menjauh (kecil) dan mendekat (besar, makin detail: helai
+  bulu, paruh berkait, jambul, mata), sering menukik sampai seukuran layar lalu keluar dan kembali; sesekali satu burung
+  bertengger setinggi hero di dahan sisi kiri / kanan (desktop), berteriak & mengepakkan sayap lalu terbang lagi; kepakan
+  downstroke/upstroke halus + meluncur, partikel kilau, bulu & "suara"; warna gradasi biru brand (`brand-900` dekat →
+  `brand-400` jauh), alpha ≤ 0,58, diredupkan di belakang judul/kotak prompt, 60 fps, berhenti saat tak terlihat,
+  reduced motion = satu gambar diam. Kontras teks di atas kanvas: judul besar ≥ 3:1, teks kecil di kartu/pill putih ≥ 4,5:1.
 - **Latar hero** (`Hero.tsx`, `hero/heroBgConfig.ts`, `hero/HeroMedia.tsx`): setting `hero_bg_mode` (dicocokkan persis)
   - `default` (juga kosong/tidak dikenal) → `HeroBackground` (kanvas di atas). Hanya latar yang aktif yang dipasang, jadi
     loop kanvas tidak berjalan di mode lain. Sebelum setting dimuat tidak ada latar sama sekali (tanpa kedip).

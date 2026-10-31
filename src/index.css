@@ -642,10 +642,58 @@
   }
 
   /*
-   * Latar hero gaya Prompt AI (hero/HeroPrompt.tsx), permintaan pemilik 2026-10-30 "jangan putih saja": tiga cahaya biru
-   * brand lembut yang berkelana pelan (pola .cta-orb) di atas gradasi brand-50 → putih; pola titik dan burung ASCII di
-   * atasnya. Tetap satu aksen (biru brand), tanpa blok gelap; di HP dan reduced motion cahayanya diam dan lebih kecil.
+   * Latar hero gaya Prompt AI (hero/HeroPrompt.tsx), permintaan pemilik 2026-10-30 "jangan putih saja" & 2026-11-01
+   * "ubah background lebih bagus, warna lebih keren": langit gradasi biru brand (brand-100 → brand-50 → putih), berkas
+   * cahaya biru tipis dari atas yang bergoyang sangat pelan, dua aurora biru brand yang melayang, tiga cahaya lembut yang
+   * berkelana (pola .cta-orb), lantai garis perspektif tipis yang bergerak pelan (kesan terbang maju, serasi dengan burung
+   * jauh-dekat), dan cahaya putih di belakang judul supaya teks tetap terbaca. Tetap satu aksen (biru brand), tanpa blok
+   * gelap; di HP dan reduced motion semuanya diam dan lebih kecil.
    */
+  .hero-prompt-sky {
+    background: linear-gradient(to bottom, var(--color-brand-100) 0%, var(--color-brand-50) 34%, var(--color-canvas) 74%, var(--color-canvas) 100%);
+  }
+  .hero-prompt-rays {
+    position: absolute;
+    inset: -45% -25% 25%;
+    background: repeating-conic-gradient(
+      from 0deg at 50% 0%,
+      color-mix(in srgb, var(--color-brand-300) 20%, transparent) 0deg 3deg,
+      transparent 3deg 11deg
+    );
+    mask-image: radial-gradient(70% 85% at 50% 0%, #000 0%, transparent 72%);
+    transform-origin: 50% 0%;
+    opacity: 0.6;
+    animation: hero-rays 50s ease-in-out infinite alternate;
+  }
+  .hero-prompt-aurora {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(56px);
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-brand-400) 34%, transparent) 28%,
+      color-mix(in srgb, var(--color-brand-200) 60%, transparent) 62%,
+      transparent
+    );
+  }
+  .hero-prompt-aurora--a {
+    width: 78%;
+    height: 150px;
+    left: -12%;
+    top: 14%;
+    rotate: -11deg;
+    animation: hero-aurora 22s ease-in-out infinite alternate;
+  }
+  .hero-prompt-aurora--b {
+    width: 70%;
+    height: 130px;
+    right: -16%;
+    top: 34%;
+    rotate: 9deg;
+    animation: hero-aurora 28s ease-in-out infinite alternate-reverse;
+  }
   .hero-prompt-orb {
     position: absolute;
     border-radius: 9999px;
@@ -657,7 +705,7 @@
     height: 560px;
     left: 6%;
     top: -160px;
-    background: rgba(156, 154, 255, 0.42);
+    background: color-mix(in srgb, var(--color-brand-300) 45%, transparent);
     animation: cta-drift 16s ease-in-out infinite alternate;
   }
   .hero-prompt-orb--b {
@@ -665,7 +713,7 @@
     height: 480px;
     right: 4%;
     top: 20px;
-    background: rgba(62, 60, 255, 0.16);
+    background: color-mix(in srgb, var(--color-brand-500) 22%, transparent);
     animation: cta-drift 20s ease-in-out infinite alternate-reverse;
   }
   .hero-prompt-orb--c {
@@ -673,8 +721,34 @@
     height: 620px;
     left: 32%;
     bottom: -320px;
-    background: rgba(194, 193, 255, 0.5);
+    background: color-mix(in srgb, var(--color-brand-200) 55%, transparent);
     animation: cta-drift 24s ease-in-out infinite alternate;
+  }
+  .hero-prompt-floor {
+    position: absolute;
+    left: -30%;
+    right: -30%;
+    bottom: -12%;
+    height: 58%;
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--color-brand-300) 40%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-brand-300) 40%, transparent) 1px, transparent 1px);
+    background-size: 64px 64px;
+    transform: perspective(520px) rotateX(62deg);
+    transform-origin: 50% 100%;
+    mask-image: linear-gradient(to top, #000 0%, rgb(0 0 0 / 0.55) 35%, transparent 82%);
+    opacity: 0.55;
+    animation: hero-floor 9s linear infinite;
+  }
+  .hero-prompt-halo {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      44% 36% at 50% 52%,
+      color-mix(in srgb, var(--color-canvas) 88%, transparent) 0%,
+      color-mix(in srgb, var(--color-canvas) 45%, transparent) 55%,
+      transparent 100%
+    );
   }
 
   /* Chip filter (kategori, tab ringan). Aktif = aria-pressed="true" atau aria-selected="true" */
@@ -740,6 +814,20 @@
 @keyframes cta-drift {
   from { transform: translate3d(0, 0, 0) scale(1); }
   to { transform: translate3d(120px, 60px, 0) scale(1.15); }
+}
+
+/* Latar hero Prompt AI: berkas cahaya bergoyang, aurora melayang, lantai garis bergerak maju */
+@keyframes hero-rays {
+  from { transform: rotate(-5deg); }
+  to { transform: rotate(5deg); }
+}
+@keyframes hero-aurora {
+  from { translate: -4% 0; scale: 1 0.9; }
+  to { translate: 7% 4%; scale: 1.12 1.2; }
+}
+@keyframes hero-floor {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 0 0, 0 64px; }
 }
 
 /* Maskot Nexa: lompatan kecil elastis saat ganti ekspresi atau disorot (NexaChat) */
@@ -841,7 +929,10 @@
   }
   /* Cahaya CTA & hero Prompt AI diam (dan lebih kecil); angkat saat hover tidak relevan di layar sentuh */
   .cta-orb,
-  .hero-prompt-orb {
+  .hero-prompt-orb,
+  .hero-prompt-rays,
+  .hero-prompt-aurora,
+  .hero-prompt-floor {
     animation: none;
   }
   .hero-prompt-orb--a,
@@ -850,6 +941,10 @@
     width: 320px;
     height: 320px;
     filter: blur(56px);
+  }
+  .hero-prompt-aurora {
+    height: 90px;
+    filter: blur(40px);
   }
   .lift:hover {
     transform: none;
@@ -875,7 +970,10 @@
   }
   /* .step-progress tetap jalan (hanya isian bar); tayangan hero tidak berputar otomatis untuk pengguna ini */
   .cta-orb,
-  .hero-prompt-orb {
+  .hero-prompt-orb,
+  .hero-prompt-rays,
+  .hero-prompt-aurora,
+  .hero-prompt-floor {
     animation: none;
   }
 }
