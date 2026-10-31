@@ -1,1 +1,0 @@
-import{Tr as e}from"./index-Ci4v8jhm.js";import{r as t,t as n}from"./ServicePage-BK_JucTc.js";var r=e();function i(){return(0,r.jsx)(n,{service:t})}export{i as default};

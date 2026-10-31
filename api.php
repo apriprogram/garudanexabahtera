@@ -75,6 +75,9 @@ const ADMIN_ACTIONS = [
     'admin_get_guides', 'admin_save_guide', 'admin_delete_guide',
     'admin_set_site_addon',
     'waha_get_config', 'waha_save_config', 'waha_test', 'waha_close_handoff',
+    // Menu Generate: invoice & proposal super admin (backend/modules/admin_generate.php)
+    'gen_invoices_list', 'gen_invoice_get', 'gen_invoice_save', 'gen_invoice_delete',
+    'gen_proposals_list', 'gen_proposal_get', 'gen_proposal_save', 'gen_proposal_delete', 'gen_voice_parse',
 ];
 const STAFF_ROLES = ['admin', 'user'];
 const USER_ROLES = ['admin', 'user', 'customer'];
@@ -138,6 +141,9 @@ require_once __DIR__ . '/modules/site_stats.php';
 // Masuk & daftar pembeli dengan Google: client ID publik + verifikasi ID token Google (handle_google_auth_action,
 // docs/platform/GOOGLE-LOGIN.md)
 require_once __DIR__ . '/modules/google_auth.php';
+// Menu admin Generate: invoice & proposal super admin, riwayat, dan rapikan transkrip suara lewat Nexa AI
+// (handle_generate_action; tabel admin_invoices/admin_invoice_items/admin_proposals, migrasi 055)
+require_once __DIR__ . '/modules/admin_generate.php';
 
 load_env_file();
 
@@ -242,6 +248,11 @@ if (handle_site_stats_action($conn, $action, $input, $authUser)) {
 // Bot WhatsApp: waha_webhook publik (HMAC), waha_get_config/waha_save_config/waha_test/waha_close_handoff admin
 // (backend/modules/waha.php)
 if (handle_waha_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
+// Menu Generate (admin saja): gen_invoice(s)_*, gen_proposal(s)_*, gen_voice_parse (backend/modules/admin_generate.php)
+if (handle_generate_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }
