@@ -23,6 +23,9 @@ website atau aplikasi Anda'),
   ('site_logo',        '/assets/logo/logogarudanexa.png'),
   ('hero_logos',       '[]'),
   ('hero_images',      '[]'),
+  -- Gaya hero: 'classic' (tampilan selama ini) atau 'prompt' (kotak prompt AI + burung Garuda ASCII); kunci
+  -- hero_prompt_* opsional (src/components/sections/hero/heroStyle.ts)
+  ('hero_style',       'classic'),
   ('disabled_sections','[]');
 
 -- Project documents defaults (same values as migration 2026-10-21_006, docs/platform/PROJECT-DOCS-SPEC.md §3).

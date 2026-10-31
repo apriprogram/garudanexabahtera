@@ -6,13 +6,27 @@ import { heroBackgroundKey, parseHeroBackground, parseHeroText } from './hero/he
 import { HeroIntro } from './hero/HeroIntro';
 import { HeroMedia } from './hero/HeroMedia';
 import { HERO_NAV_DEFAULT, setHeroNavState } from './hero/heroNavState';
+import { HeroPrompt } from './hero/HeroPrompt';
 import { HeroShowcase } from './hero/HeroShowcase';
+import { parseHeroStyle } from './hero/heroStyle';
 import { PromoBanner } from './hero/PromoBanner';
 import { loadShowcase, peekShowcase, type HeroMode, type ShowcaseData } from './hero/showcase';
 import { useHeroLegibility } from './hero/useHeroLegibility';
 
 /**
- * Hero beranda gaya BELAJAR CPNS (terang):
+ * Hero beranda: gaya dari setting admin `hero_style` (Pengaturan website → Hero → "Gaya hero", hero/heroStyle.ts):
+ * - classic (bawaan, juga sebelum setting dimuat): HeroClassic di bawah, tampilan yang ada selama ini, tidak diubah;
+ * - prompt: HeroPrompt (judul + kotak prompt AI di tengah, latar putih dengan burung Garuda ASCII), hanya setelah
+ *   setting dimuat. Di HTML prerender setting sudah ada dari preload, jadi gaya yang dipilih langsung dirender.
+ */
+const Hero: React.FC = () => {
+  const { settings, loaded } = useSiteSettings();
+  if (loaded && parseHeroStyle(settings.hero_style) === 'prompt') return <HeroPrompt settings={settings} />;
+  return <HeroClassic />;
+};
+
+/**
+ * Hero beranda gaya BELAJAR CPNS (terang), gaya "Klasik":
  * - latar dari setting admin `hero_bg_mode` (Pengaturan website → Hero → "Latar hero", lihat hero/heroBgConfig.ts):
  *   Bawaan = kanvas medan titik interaktif + cahaya biru brand yang mengikuti kursor; Gambar (1 statis / 2+ bergantian)
  *   atau Video = HeroMedia. Setting tidak lengkap/tidak aman → Bawaan. Sebelum setting dimuat tidak ada latar sama
@@ -33,7 +47,7 @@ import { useHeroLegibility } from './hero/useHeroLegibility';
  * tombol mode Template tidak lagi menuju #templates yang tidak ada.
  * Saat digulir, isi sedikit memudar & visual sedikit miring (desktop saja, tidak untuk reduced motion).
  */
-const Hero: React.FC = () => {
+const HeroClassic: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const { settings, loaded } = useSiteSettings();
   const templatesHidden = getHiddenSections(settings).has('templates');

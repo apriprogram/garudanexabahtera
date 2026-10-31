@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { NexaChat } from './nexa/NexaChat';
+import { dropNexaRequest, onNexaRequest, setNexaAvailable } from './nexa/nexaBridge';
 
 interface FloatingWhatsAppProps {
   href: string;
@@ -28,6 +29,18 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ href, backTo
   const [chatOpen, setChatOpen] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const changeChatOpen = useCallback((next: boolean) => setChatOpen(next), []);
+  // Kotak prompt hero (nexa/nexaBridge.ts): widget ini yang menjawab selama chat hidup; permintaan baru membuka panel,
+  // NexaChat lalu mengirim pertanyaannya
+  useEffect(() => {
+    setNexaAvailable(chat);
+    const stop = chat ? onNexaRequest(() => setChatOpen(true)) : () => {};
+    return () => {
+      stop();
+      setNexaAvailable(false);
+      // Widget dilepas (halaman tanpa Nexa): permintaan yang belum terkirim tidak boleh menunggu widget berikutnya
+      dropNexaRequest();
+    };
+  }, [chat]);
 
   useEffect(() => {
     if (!backToTop) return undefined;

@@ -1,6 +1,7 @@
 // Formulir pesanan jasa custom (website / aplikasi mobile) → submit_custom_order (SPEC §6).
 // Validasi per field (saat keluar field, lalu langsung setelah percobaan kirim), error server per field,
-// honeypot "website" tersembunyi, tombol kirim dengan status memuat. `?layanan=website|mobile` memilih jenis layanan.
+// honeypot "website" tersembunyi, tombol kirim dengan status memuat. `?layanan=website|mobile` memilih jenis layanan;
+// `?brief=<teks>` (kotak prompt hero saat widget Nexa dimatikan) mengisi "Kebutuhan".
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useHydrated } from '../../../lib/preload';
@@ -45,9 +46,12 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
   const [searchParams] = useSearchParams();
   const hydrated = useHydrated();
   const layanan = serviceFromParam(hydrated ? searchParams.get('layanan') : null);
+  // Kotak prompt hero gaya Prompt AI saat widget Nexa dimatikan: /pesan-custom?brief=<teks> → isian "Kebutuhan" terisi
+  const brief = hydrated ? (searchParams.get('brief') ?? '').trim().slice(0, LIMITS.description) : '';
   const [values, setValues] = useState<CustomOrderValues>(() => ({
     ...EMPTY_VALUES,
     service_type: layanan,
+    ...(brief ? { description: brief } : {}),
     ...initialValues,
   }));
   const [errors, setErrors] = useState<CustomOrderErrors>({});
@@ -63,6 +67,12 @@ export function CustomOrderForm({ initialValues, onSuccess }: CustomOrderFormPro
       setValues((prev) => ({ ...prev, service_type: layanan }));
       setErrors((prev) => ({ ...prev, service_type: undefined }));
     }
+  }
+  // ?brief= baru terbaca setelah hidrasi (initializer di atas sudah lewat): isi "Kebutuhan" bila masih kosong
+  const [seenBrief, setSeenBrief] = useState(brief);
+  if (brief !== seenBrief) {
+    setSeenBrief(brief);
+    if (brief) setValues((prev) => (prev.description.trim() !== '' ? prev : { ...prev, description: brief }));
   }
 
   const hasDraft = values.description.trim().length > 0 || values.project_name.trim().length > 0;

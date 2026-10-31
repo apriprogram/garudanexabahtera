@@ -10,7 +10,6 @@ import {
   DocumentEditor,
   Documents,
   HelpCenter,
-  HeroSettings,
   InputDomain,
   KelolaTemplate,
   LayoutFallback,
@@ -55,24 +54,8 @@ export const adminRoutes = (
     <Route path="proyek/:id" element={page(<ProjectWorkspace />)} />
     <Route path="proyek/:id/dokumen/:docId" element={page(<DocumentEditor />)} />
     <Route path="klien" element={page(<ClientManager />)} />
-    <Route
-      path="hero"
-      element={page(
-        <HeroSettings
-          settings={{}}
-          heroImages={[]}
-          setHeroImages={() => {}}
-          heroLogos={[]}
-          setHeroLogos={() => {}}
-          heroBgMode="default"
-          setHeroBgMode={() => {}}
-          heroVideo=""
-          setHeroVideo={() => {}}
-          heroVideoPoster=""
-          setHeroVideoPoster={() => {}}
-        />,
-      )}
-    />
+    {/* Halaman Hero lama (tanpa tombol simpan): isinya kini tab Hero di Pengaturan website */}
+    <Route path="hero" element={<Navigate to="/admin/settings" replace />} />
     <Route path="services" element={page(<ServicesManager />)} />
     <Route path="product-manager" element={page(<ProductManager />)} />
     <Route path="documents" element={page(<Documents />)} />

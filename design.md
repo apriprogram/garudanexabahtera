@@ -214,6 +214,18 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
   pratinjau template dari `get_templates` (cadangan `/assets/templates/*-preview.svg`; mode Custom berlabel "Contoh
   tampilan") + rail langkah Pilih template → Bayar via Midtrans → Domain aktif → Kelola lewat CMS (bisa diklik & dijeda;
   tombol jeda "Jeda tayangan" + `aria-pressed`; keempat label tampil mulai 1280px).
+- **Gaya hero** (`hero/heroStyle.ts`, setting `hero_style`, pemilik 2026-10-29): `classic` (bawaan) = hero di atas,
+  tidak diubah; `prompt` = `hero/HeroPrompt.tsx` mengikuti video rujukan pemilik: latar gradasi `brand-50` → putih +
+  tiga cahaya biru brand lembut yang berkelana pelan (`.hero-prompt-orb`, pola `.cta-orb`; diam & lebih kecil di HP dan
+  reduced motion) + `grid-dots` tipis yang memudar ke tepi, judul besar di tengah (`text-[30px] → sm:52px → lg:60px`,
+  `font-medium`), kotak prompt
+  `max-w-[720px] rounded-[24px] bg-surface/90 ring-line backdrop-blur-sm` (textarea, catatan "Dijawab Nexa AI", tombol
+  kirim `bg-fg`), chip rekomendasi `chip-site` (tautan dari admin), lalu H1 kata kunci kecil dalam pill putih bila judul
+  admin tanpa frasa "template website" (SEO seperti hero klasik). Enter / kirim → panel Nexa terbuka dan pesan terkirim
+  (`layout/nexa/nexaBridge.ts`); widget Nexa mati → `/pesan-custom?brief=…`. Latar: burung Garuda dari karakter ASCII
+  (`hero/prompt/`: sprite parametrik dirasterisasi ke grid glyph monospace, ide dari ascii-sharks MIT) terbang melintas,
+  singgah di dahan `=`, lepas landas lagi; abu-abu `fg` alpha ≤ 0,58, 1–3 burung, ±30 fps, berhenti saat tak terlihat,
+  reduced motion = satu gambar diam. Kontras teks di atas kanvas: judul besar ≥ 3:1, teks kecil di kartu/pill putih ≥ 4,5:1.
 - **Latar hero** (`Hero.tsx`, `hero/heroBgConfig.ts`, `hero/HeroMedia.tsx`): setting `hero_bg_mode` (dicocokkan persis)
   - `default` (juga kosong/tidak dikenal) → `HeroBackground` (kanvas di atas). Hanya latar yang aktif yang dipasang, jadi
     loop kanvas tidak berjalan di mode lain. Sebelum setting dimuat tidak ada latar sama sekali (tanpa kedip).
@@ -310,6 +322,9 @@ Gaya "Calm Workspace" dari BELAJAR CPNS (`E:\_____________\WEBSITE\GARUDANEXA\Be
 - **Input**: `h-11 rounded-xl border border-adm-line bg-adm-surface text-[15px] max-sm:text-[16px] focus:border-cobalt focus:ring-1 focus:ring-cobalt`.
 - **Pill status**: `h-6 rounded-full px-2.5 text-xs font-medium` + tint: sukses `bg-mint-50 text-mint-700`, proses `bg-cobalt-50 text-cobalt-700`, menunggu `bg-warning-50 text-warning-700`, gagal `bg-danger-50 text-danger-700`, draf `bg-mist-50 text-mist-700`.
 - **Modal**: overlay `bg-obsidian/30` tanpa blur, panel `rounded-[24px] shadow-float`; di HP jadi bottom-sheet.
+- **Pengaturan website → tab Hero → "Gaya hero"**: kontrol segmen Klasik / Prompt AI (`hero_style`). Prompt AI
+  menampilkan `hero/HeroPromptField.tsx` (judul, placeholder, daftar chip label + tautan dengan validasi tautan, saklar
+  animasi Garuda) dan menyembunyikan isian Klasik (tetap terpasang, nilainya ikut tersimpan).
 - **Pengaturan website → tab Hero → "Latar hero"**: kontrol segmen Bawaan / Gambar / Video (`hero_bg_mode`). Grid
   "Gambar slider" hanya di mode Gambar (gambar dikecilkan ke maks. 1920×1080 di browser, maks. 10 MB per file; 2+ gambar
   berganti tiap 6 detik). Mode Video: unggah MP4/WebM maks. 30 MB (`upload_hero_video`, dengan progres), poster dibuat

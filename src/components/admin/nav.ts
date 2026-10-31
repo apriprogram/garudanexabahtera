@@ -82,7 +82,6 @@ export const ADMIN_NAV: AdminNavItem[] = [
 const EXTRA_PAGES: Record<string, string> = {
   '/admin/profile': 'Profil saya',
   '/admin/help': 'Catatan perubahan',
-  '/admin/hero': 'Hero',
   '/admin/services': 'Layanan',
   '/admin/product-manager': 'Kelola produk',
 };

@@ -292,6 +292,14 @@ menjawab objek JSON `{ <setting_key>: <setting_value> }`, juga `{}` (bukan `[]`)
 Node memakai `S3_PUBLIC_URL` (atau `S3_ENDPOINT/S3_BUCKET`) tanpa garis miring di akhir, jadi URL upload baru tidak
 pernah berisi `//`.
 
+**Gaya hero** (pemilik 2026-10-29; `src/components/sections/hero/heroStyle.ts`, dinormalkan modul yang sama di
+`update_settings`): `hero_style` (`classic` = tampilan selama ini, bawaan & nilai tak dikenal | `prompt` = judul besar +
+kotak prompt AI di atas animasi burung Garuda ASCII, `HeroPrompt.tsx`), `hero_prompt_title` & `hero_prompt_placeholder`
+(satu baris ≤ 160 karakter, `''` = teks bawaan situs), `hero_prompt_chips` (JSON array `{label, href}` ≤ 6; label 1–40
+karakter; `href` path situs / URL http(s) / `#anchor`, entri lain dibuang; bukan JSON array → disimpan apa adanya, situs
+memakai chip bawaan), `hero_prompt_garuda` (`'1'` bawaan | `'0'` animasi mati). Kotak prompt mengirim pesan ke chat Nexa
+(`nexa_chat`, lewat `layout/nexa/nexaBridge.ts`); bila `nexa_enabled` = `'0'` pengunjung dibawa ke `/pesan-custom?brief=<teks>`.
+
 `update_settings` untuk kunci hero:
 - Body boleh berisi `hero_media_base: { video, poster }` di **tingkat atas** (bukan di dalam `settings`, jadi tidak
   pernah disimpan sebagai setting) = nilai `hero_bg_video` / `hero_bg_video_poster` yang dimuat halaman admin. Bila

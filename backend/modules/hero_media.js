@@ -11,6 +11,15 @@
 //   hero_overlay          overlay behind the hero text in percent, applied exactly as stored (never raised by the site;
 //                         0 = no overlay, the image/video shows uncovered), an integer 0..80 as a string (default 0):
 //                         a number or plain decimal text ("55", " 40.6") is rounded and clamped, anything else → '0'
+//   hero_style            'classic' (today's hero, default) | 'prompt' (big title + AI prompt box over an ASCII Garuda
+//                         animation, src/components/sections/hero/HeroPrompt.tsx); anything else is saved as 'classic'
+//   hero_prompt_title     one line of text of the prompt hero (runs of whitespace collapsed, trimmed, at most 160
+//                         characters; '' = the site's default text); hero_prompt_placeholder the same
+//   hero_prompt_chips     JSON array of {label, href} recommendation chips under the prompt box, at most 6 in the order
+//                         sent: label 1..40 characters, href a site path ('/…', not '//host'), an absolute http(s) URL
+//                         or '#anchor'; other entries are dropped. Not a JSON array → saved as sent (the site then
+//                         shows its default chips)
+//   hero_prompt_garuda    '1' (default) | '0' = the ASCII Garuda animation behind the prompt hero is off
 //
 // upload_hero_video (POST /api.php?action=upload_hero_video, staff token): the body is the raw file, not JSON, base64
 // or multipart, so express.json leaves the request stream unread for this module. The type comes from the magic bytes
@@ -49,6 +58,27 @@ export const HERO_OVERLAY_DEFAULT = 0;
 export const HERO_OVERLAY_MAX = 80;
 // Plain decimal number with spaces/tabs/newlines around it: no sign other than '-', no exponent, no thousands separator
 const OVERLAY_NUMBER = /^[ \t\n\r]*(-?[0-9]+(?:\.[0-9]+)?)[ \t\n\r]*$/;
+// hero_style values and the prompt hero limits (HERO_STYLES / HERO_PROMPT_* in src/components/sections/hero/heroStyle.ts)
+export const HERO_STYLES = Object.freeze(['classic', 'prompt']);
+export const PROMPT_TEXT_MAX = 160;
+export const PROMPT_LABEL_MAX = 40;
+export const PROMPT_MAX_CHIPS = 6;
+const PROMPT_HASH_LINK = /^#[a-z0-9-]+$/i;
+// Control characters and backslashes: browsers drop or read them as "/" ("/\host" = "//host"), see safeMediaUrl()
+const LINK_UNSAFE = /[\x00-\x1f\x7f\\]/;
+// The characters PHP's trim() removes, so both backends keep the same text. Trimmed with a linear scan: an
+// end-anchored regex ([...]+$) backtracks quadratically on a long run of these characters, enough to stall the event
+// loop for minutes with one 1 MB value.
+const PHP_TRIM_CHARS = ' \t\n\r\0\x0B';
+
+/** PHP trim() with its default character set, in linear time. */
+export function phpTrim(value) {
+  let start = 0;
+  let end = value.length;
+  while (start < end && PHP_TRIM_CHARS.includes(value[start])) start++;
+  while (end > start && PHP_TRIM_CHARS.includes(value[end - 1])) end--;
+  return value.slice(start, end);
+}
 // ISO-BMFF major brands of MP4 files that browsers play; 'qt  ' (QuickTime .mov) is deliberately not one of them
 export const MP4_BRANDS = Object.freeze(['isom', 'iso2', 'iso3', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'dash', 'M4V ', 'mmp4', 'MSNV']);
 // Names this module gives its files (file name only, directly in assets/bg/); the sweep deletes nothing else
@@ -253,6 +283,67 @@ export function heroOverlay(value) {
   return String(Math.min(HERO_OVERLAY_MAX, Math.max(0, Math.round(number))) || 0);
 }
 
+/** hero_style as stored: one of HERO_STYLES, anything else (missing, empty, unknown, not a string) → 'classic'. */
+export function heroStyle(value) {
+  return typeof value === 'string' && HERO_STYLES.includes(value) ? value : 'classic';
+}
+
+/** hero_prompt_garuda as stored: '0' (also the number 0 and false) = off, anything else → '1'. */
+export function promptFlag(value) {
+  return value === '0' || value === 0 || value === false ? '0' : '1';
+}
+
+/**
+ * One line of prompt text: runs of space, tab and newline collapsed to one space, trimmed like PHP, at most `max`
+ * characters (code points); not a string → ''. Same as hm_prompt_text() in hero_media.php.
+ */
+export function promptText(value, max) {
+  if (typeof value !== 'string') return '';
+  return Array.from(phpTrim(value.replace(/[ \t\r\n]+/g, ' '))).slice(0, max).join('');
+}
+
+/**
+ * A chip link: '#anchor', a site path ('/…', not '//host') or an absolute http(s) URL, without control characters or
+ * backslashes (safeChipHref() in heroStyle.ts); anything else (data:, javascript:, relative, empty, not a string) → null.
+ */
+export function chipHref(value) {
+  if (typeof value !== 'string') return null;
+  const url = phpTrim(value);
+  if (!url || LINK_UNSAFE.test(url)) return null;
+  if (PROMPT_HASH_LINK.test(url)) return url;
+  if (url.startsWith('/')) return url.startsWith('//') ? null : url;
+  return /^https?:\/\/[^/]/i.test(url) ? url : null;
+}
+
+/**
+ * hero_prompt_chips as stored: a JSON array (or an array) of {label, href} → JSON of the valid chips (label 1..40
+ * characters, href per chipHref(), at most PROMPT_MAX_CHIPS, order kept, other entries dropped); anything else (JSON
+ * object, text, number) → null, the value is then saved as sent. Same JSON as hm_prompt_chips() in hero_media.php.
+ */
+export function promptChips(value) {
+  let items = value;
+  if (typeof value === 'string') {
+    // Only a JSON array text ('[' first): a JSON object with numeric keys must not pass as a list in either backend
+    if (!/^\s*\[/.test(value)) return null;
+    try {
+      items = JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  if (!Array.isArray(items)) return null;
+  const chips = [];
+  for (const item of items) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const label = promptText(item.label, PROMPT_LABEL_MAX);
+    const href = chipHref(item.href);
+    if (!label || href === null) continue;
+    chips.push({ label, href });
+    if (chips.length >= PROMPT_MAX_CHIPS) break;
+  }
+  return JSON.stringify(chips);
+}
+
 const isDataUri = (value) => typeof value === 'string' && /^\s*data:/i.test(value);
 // Text link: not a string → '', javascript:/vbscript:/data: → '' (passThrough in s3-client.js, safe_link in api.php)
 const link = (value) => (typeof value === 'string' ? passThrough(value) : '');
@@ -374,7 +465,9 @@ const removeAll = async (keys) => {
  * Normalizes the hero keys of an update_settings payload in place, before anything is saved: hero_bg_mode → one of
  * HERO_BG_MODES, hero_text_tone → one of HERO_TEXT_TONES, hero_overlay → '0'..'80', hero_bg_video → a link (a data:
  * URI is refused with 400), hero_bg_video_poster → a new data: image is stored as assets/bg/hero_poster_<hex>.<ext>,
- * other values pass the link check, hero_images → stored URLs.
+ * other values pass the link check, hero_images → stored URLs; hero_style → one of HERO_STYLES, hero_prompt_garuda →
+ * '1'/'0', hero_prompt_title / hero_prompt_placeholder → one line of text, hero_prompt_chips → JSON of the valid chips
+ * (see the header).
  * Keys that were not sent stay absent.
  * @param {Record<string, unknown>} settings
  * @param {{ query: Function }} pool - reads the stored hero_bg_video / hero_bg_video_poster
@@ -393,6 +486,16 @@ export async function prepareHeroMediaSettings(settings, pool, base) {
   if (has('hero_bg_mode')) settings.hero_bg_mode = heroBgMode(settings.hero_bg_mode);
   if (has('hero_text_tone')) settings.hero_text_tone = heroTextTone(settings.hero_text_tone);
   if (has('hero_overlay')) settings.hero_overlay = heroOverlay(settings.hero_overlay);
+  // Prompt hero (hero_style = 'prompt'): plain text and links only, nothing is uploaded
+  if (has('hero_style')) settings.hero_style = heroStyle(settings.hero_style);
+  if (has('hero_prompt_garuda')) settings.hero_prompt_garuda = promptFlag(settings.hero_prompt_garuda);
+  for (const key of ['hero_prompt_title', 'hero_prompt_placeholder']) {
+    if (has(key)) settings[key] = promptText(settings[key], PROMPT_TEXT_MAX);
+  }
+  if (has('hero_prompt_chips')) {
+    const chips = promptChips(settings.hero_prompt_chips);
+    if (chips !== null) settings.hero_prompt_chips = chips;
+  }
   let poster = null;
   if (has('hero_bg_video_poster')) {
     if (isDataUri(settings.hero_bg_video_poster)) poster = rasterImage(settings.hero_bg_video_poster, POSTER_EXTS);

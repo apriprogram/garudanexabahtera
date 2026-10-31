@@ -16,8 +16,10 @@ import {
   type NexaMood,
 } from './localAnswer';
 import { adminWhatsappHref } from './adminHandoff';
+import { clearNexaRequest, dropNexaRequest, useNexaRequest } from './nexaBridge';
 import { NexaReply } from './NexaReply';
 import { PROJECT_QUESTION, useNexaCatalog, type NexaCards } from './replyModel';
+import { speechInputAvailable, speechRecognition, type SpeechRecognitionLike } from './speech';
 
 /**
  * Maskot Nexa tanpa latar (dipotong dari gambar pemilik 2026-10-24) dalam 3 lebar; browser memilih sesuai ukuran tampil
@@ -106,31 +108,7 @@ const GREETING =
 
 const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 
-// ── Input suara (Web Speech API; hanya tampil di browser yang mendukungnya, mis. Chrome) ──
-interface SpeechRecognitionLike {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> }) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((event: { error?: string }) => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-}
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-const speechRecognition = (): SpeechRecognitionCtor | null => {
-  if (typeof window === 'undefined') return null;
-  const w = window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-};
-
-/** Mikrofon diizinkan header Permissions-Policy halaman ini (microphone=(self) di .htaccess / nginx.conf)? */
-const microphoneAllowed = (): boolean => {
-  const policy = (document as unknown as { permissionsPolicy?: { allowsFeature(feature: string): boolean } }).permissionsPolicy;
-  return policy ? policy.allowsFeature('microphone') : true;
-};
+// ── Input suara (Web Speech API; hanya tampil di browser yang mendukungnya, mis. Chrome): deteksi di nexa/speech.ts ──
 
 /** Pesan untuk galat input suara (kode `error` Web Speech API); null = tidak perlu diberitahukan. */
 const speechErrorText = (code: string | undefined): string | null => {
@@ -291,7 +269,7 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
   const [greetingLauncher, setGreetingLauncher] = useState(false);
   const idleMood = useIdleMood('netral', true, LAUNCHER_CYCLE);
   // Panel hanya dirender di klien (tidak ada di HTML prerender), jadi deteksi fitur saat render pertama aman
-  const [canListen] = useState(() => speechRecognition() !== null && microphoneAllowed());
+  const [canListen] = useState(() => speechInputAvailable());
 
   // Panel terbuka: muat semua ekspresi sekali, supaya pergantian maskot tidak berkedip
   useEffect(() => {
@@ -358,6 +336,8 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
   /** Tutup dengan animasi (pemilik 2026-10-24): kelas `closing` dipasang dulu, panel dilepas setelah CLOSE_MOTION. */
   const requestClose = (focusLauncher: boolean) => {
     if (closingRef.current) return;
+    // Permintaan dari hero yang belum terkirim (Nexa masih mengetik) ikut dibuang: tidak terkirim sendiri nanti
+    dropNexaRequest();
     closingRef.current = true;
     setClosing(true);
     closeTimer.current = window.setTimeout(() => {
@@ -478,6 +458,20 @@ export const NexaChat: React.FC<NexaChatProps> = ({ whatsappHref, open, onOpenCh
   useEffect(() => {
     submitRef.current = submit;
   });
+  const toggleListeningRef = useRef(toggleListening);
+  useEffect(() => {
+    toggleListeningRef.current = toggleListening;
+  });
+
+  // Permintaan dari luar widget (kotak prompt hero, nexaBridge.ts): begitu panel terbuka dan Nexa tidak sedang mengetik,
+  // pertanyaannya dikirim seperti diketik di sini; permintaan kosong dengan `listen` = mulai input suara
+  const request = useNexaRequest();
+  useEffect(() => {
+    if (!open || !request || typing) return;
+    clearNexaRequest(request.id);
+    if (request.text.trim() !== '') submitRef.current(request.text);
+    else if (request.listen) toggleListeningRef.current();
+  }, [open, request, typing]);
 
   const canSend = draft.trim() !== '' && !typing;
   const onSubmit = (event: React.FormEvent) => {

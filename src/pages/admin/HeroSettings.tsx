@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { X, Plus, Sparkles, Image as ImageIcon, Film } from 'lucide-react';
+import { X, Plus, Sparkles, Image as ImageIcon, Film, LayoutTemplate, MessageSquareText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Chip, ConfirmDialog, Field, Input, Notice, PanelHeader, Segmented, Spinner, Textarea, cn, FOCUS } from '../../components/admin/ui';
 import { HERO_MAX_IMAGES } from '../../components/sections/hero/heroBgConfig';
 import { HERO_OVERLAY_DEFAULT, type HeroTextTone } from '../../components/sections/hero/heroContrast';
+import type { HeroPromptSettings, HeroStyle } from '../../components/sections/hero/heroStyle';
 import HeroLegibilityField from './hero/HeroLegibilityField';
+import HeroPromptField from './hero/HeroPromptField';
 import HeroVideoField from './hero/HeroVideoField';
 import { resizeHeroImage } from './hero/heroImage';
 import {
@@ -30,6 +32,22 @@ const REMOVE_BTN = cn(
   'disabled:cursor-not-allowed disabled:opacity-40',
   FOCUS,
 );
+
+/* Gaya hero di website (hero_style): Klasik = tampilan selama ini (tidak diubah), Prompt AI = judul + kotak prompt. */
+const HERO_STYLES: { value: HeroStyle; label: string; icon: typeof Sparkles; hint: string }[] = [
+  {
+    value: 'classic',
+    label: 'Klasik',
+    icon: LayoutTemplate,
+    hint: 'Toggle Template / Custom, judul dua warna, poin, tombol, dan tayangan template; latar dipilih di bawah.',
+  },
+  {
+    value: 'prompt',
+    label: 'Prompt AI',
+    icon: MessageSquareText,
+    hint: 'Judul besar + kotak prompt di tengah yang terhubung ke chat Nexa AI, di atas latar putih dengan animasi burung Garuda ASCII.',
+  },
+];
 
 /* Pilihan latar hero + keterangan singkat tiap mode. */
 const BG_MODES: { value: HeroBgMode; label: string; icon: typeof Sparkles; hint: string }[] = [
@@ -86,6 +104,14 @@ interface HeroSettingsProps {
   /** hero_overlay: lapisan di belakang teks hero, persen 0-80, dipakai persis di website (0 = tanpa lapisan). */
   heroOverlay?: number;
   setHeroOverlay?: (value: number) => void;
+  /** hero_style: gaya hero di website ('classic' bawaan = tampilan selama ini | 'prompt'). */
+  heroStyle?: HeroStyle;
+  setHeroStyle?: (style: HeroStyle) => void;
+  /** Isian gaya Prompt AI (judul, placeholder, chip, animasi Garuda); tanpa ini isiannya tidak ditampilkan. */
+  heroPrompt?: HeroPromptSettings;
+  setHeroPrompt?: (next: HeroPromptSettings) => void;
+  /** true selama get_settings belum berhasil dimuat: pilihan gaya & isian Prompt AI dikunci supaya tidak tertimpa hasil muat. */
+  loading?: boolean;
 }
 
 const HeroSettings: React.FC<HeroSettingsProps> = ({
@@ -111,6 +137,11 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
   setHeroTextTone,
   heroOverlay = HERO_OVERLAY_DEFAULT,
   setHeroOverlay,
+  heroStyle = 'classic',
+  setHeroStyle,
+  heroPrompt,
+  setHeroPrompt,
+  loading = false,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   // Hapus gambar latar / logo dikonfirmasi dulu (pemilik 2026-10-29); isi dialog dipertahankan selama animasi tutup
@@ -287,7 +318,24 @@ const HeroSettings: React.FC<HeroSettingsProps> = ({
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-8">
+      {/* Gaya hero: Klasik (isian di bawah) atau Prompt AI (isian HeroPromptField). Isian Klasik tetap terpasang
+          (disembunyikan) saat Prompt AI dipilih, jadi nilainya tetap ikut tersimpan dan tidak berubah. */}
+      <div className="space-y-2.5">
+        <p className="text-[13px] font-medium text-adm-fg">Gaya hero</p>
+        <Segmented
+          ariaLabel="Pilih gaya hero"
+          items={HERO_STYLES.map((style) => ({ value: style.value, label: style.label, icon: style.icon, disabled: saving || loading }))}
+          value={heroStyle}
+          onChange={(style) => setHeroStyle?.(style)}
+        />
+        <p className="text-xs leading-relaxed text-adm-muted">{HERO_STYLES.find((style) => style.value === heroStyle)?.hint}</p>
+      </div>
+
+      {heroStyle === 'prompt' && heroPrompt && setHeroPrompt && (
+        <HeroPromptField value={heroPrompt} onChange={setHeroPrompt} disabled={saving || loading} />
+      )}
+
+      <div className={cn('grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-8', heroStyle === 'prompt' && 'hidden')}>
         {/* Left Column: Text Content */}
         <div className="min-w-0 space-y-4 sm:space-y-5">
           <Field label="Teks badge" htmlFor="hero_badge">

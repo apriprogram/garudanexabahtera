@@ -23,6 +23,8 @@ import { NexaCustomProviderCard, type NexaCustomConfig } from './nexa/NexaCustom
 import { WhatsAppBotPanel } from './nexa/WhatsAppBotPanel';
 import { parseHeroOverlay, parseHeroTextTone } from '../../components/sections/hero/heroBgConfig';
 import type { HeroTextTone } from '../../components/sections/hero/heroContrast';
+import { parseHeroStyle, readHeroPromptDraft, type HeroPromptSettings, type HeroStyle } from '../../components/sections/hero/heroStyle';
+import { heroPromptPayload } from './hero/heroPrompt';
 import {
   heroMediaBaseline,
   omitUnchangedHeroMedia,
@@ -369,6 +371,9 @@ const SiteSettings: React.FC = () => {
   // Teks hero di atas gambar/video: warna (hero_text_tone) dan lapisan dalam persen, dipakai persis (hero_overlay)
   const [heroTextTone, setHeroTextTone] = useState<HeroTextTone>('auto');
   const [heroOverlay, setHeroOverlay] = useState(() => parseHeroOverlay(undefined));
+  // Gaya hero (hero_style) dan isian gaya Prompt AI (judul, placeholder, chip, animasi Garuda)
+  const [heroStyle, setHeroStyle] = useState<HeroStyle>('classic');
+  const [heroPrompt, setHeroPrompt] = useState<HeroPromptSettings>(() => readHeroPromptDraft({}));
   // true selama video diunggah sampai sampulnya terpasang (juga setelah tab Hero ditutup): tombol simpan ditahan
   // supaya video setengah jadi atau video tanpa sampulnya tidak ikut tersimpan
   const [heroBusy, setHeroBusy] = useState(false);
@@ -431,6 +436,8 @@ const SiteSettings: React.FC = () => {
       // Dinormalkan sama dengan website & backend (tidak dikenal → Otomatis, bukan angka → 40%)
       setHeroTextTone(parseHeroTextTone(data.hero_text_tone));
       setHeroOverlay(parseHeroOverlay(data.hero_overlay));
+      setHeroStyle(parseHeroStyle(data.hero_style));
+      setHeroPrompt(readHeroPromptDraft(data));
 
       // Load Portfolio tab data
       if (data.portfolio_data) {
@@ -606,6 +613,9 @@ const SiteSettings: React.FC = () => {
       hero_bg_video_poster: heroVideoPoster,
       hero_text_tone: heroTextTone,
       hero_overlay: String(heroOverlay),
+      // Gaya hero + isian gaya Prompt AI (string semua)
+      hero_style: heroStyle,
+      ...heroPromptPayload(heroPrompt),
 
       // Portfolio data
       portfolio_data: JSON.stringify(portfolioList),
@@ -804,6 +814,11 @@ const SiteSettings: React.FC = () => {
             setHeroTextTone={setHeroTextTone}
             heroOverlay={heroOverlay}
             setHeroOverlay={setHeroOverlay}
+            heroStyle={heroStyle}
+            setHeroStyle={setHeroStyle}
+            heroPrompt={heroPrompt}
+            setHeroPrompt={setHeroPrompt}
+            loading={loadState !== 'ready'}
           />
         );
 

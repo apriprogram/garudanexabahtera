@@ -641,6 +641,42 @@
     animation: cta-drift 18s ease-in-out infinite alternate-reverse;
   }
 
+  /*
+   * Latar hero gaya Prompt AI (hero/HeroPrompt.tsx), permintaan pemilik 2026-10-30 "jangan putih saja": tiga cahaya biru
+   * brand lembut yang berkelana pelan (pola .cta-orb) di atas gradasi brand-50 → putih; pola titik dan burung ASCII di
+   * atasnya. Tetap satu aksen (biru brand), tanpa blok gelap; di HP dan reduced motion cahayanya diam dan lebih kecil.
+   */
+  .hero-prompt-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+  .hero-prompt-orb--a {
+    width: 560px;
+    height: 560px;
+    left: 6%;
+    top: -160px;
+    background: rgba(156, 154, 255, 0.42);
+    animation: cta-drift 16s ease-in-out infinite alternate;
+  }
+  .hero-prompt-orb--b {
+    width: 480px;
+    height: 480px;
+    right: 4%;
+    top: 20px;
+    background: rgba(62, 60, 255, 0.16);
+    animation: cta-drift 20s ease-in-out infinite alternate-reverse;
+  }
+  .hero-prompt-orb--c {
+    width: 620px;
+    height: 620px;
+    left: 32%;
+    bottom: -320px;
+    background: rgba(194, 193, 255, 0.5);
+    animation: cta-drift 24s ease-in-out infinite alternate;
+  }
+
   /* Chip filter (kategori, tab ringan). Aktif = aria-pressed="true" atau aria-selected="true" */
   .chip-site {
     @apply relative inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-surface px-4 text-[13px] font-medium text-muted ring-1 ring-inset ring-line transition-colors cursor-pointer select-none;
@@ -803,9 +839,17 @@
       transform 0.7s var(--ease-calm);
     transition-delay: var(--d, 0ms);
   }
-  /* Cahaya CTA diam; angkat saat hover tidak relevan di layar sentuh */
-  .cta-orb {
+  /* Cahaya CTA & hero Prompt AI diam (dan lebih kecil); angkat saat hover tidak relevan di layar sentuh */
+  .cta-orb,
+  .hero-prompt-orb {
     animation: none;
+  }
+  .hero-prompt-orb--a,
+  .hero-prompt-orb--b,
+  .hero-prompt-orb--c {
+    width: 320px;
+    height: 320px;
+    filter: blur(56px);
   }
   .lift:hover {
     transform: none;
@@ -830,7 +874,8 @@
     transition: none;
   }
   /* .step-progress tetap jalan (hanya isian bar); tayangan hero tidak berputar otomatis untuk pengguna ini */
-  .cta-orb {
+  .cta-orb,
+  .hero-prompt-orb {
     animation: none;
   }
 }
