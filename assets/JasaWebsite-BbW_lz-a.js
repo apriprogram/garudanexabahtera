@@ -1,0 +1,1 @@
+import{Tr as e}from"./index--kECUU2R.js";import{r as t,t as n}from"./ServicePage-CyA_grC7.js";var r=e();function i(){return(0,r.jsx)(n,{service:t})}export{i as default};
