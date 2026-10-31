@@ -601,7 +601,7 @@ export async function wahaWebhook(pool, raw, hmac, algorithm, now, ip) {
   try {
     seen = await dbRun(pool, Q_SEEN, [crypto.createHash('sha256').update(event.message.id, 'utf8').digest('hex')]);
   } catch (err) {
-    if (missingTable(err)) throw new WahaError('Tabel bot WhatsApp belum ada: jalankan migrasi 049.', 503, 'WAHA_NOT_READY');
+    if (missingTable(err)) throw new WahaError('Tabel bot WhatsApp belum ada: jalankan migrasi 054.', 503, 'WAHA_NOT_READY');
     throw err;
   }
   if (Number(seen?.affectedRows ?? 0) === 0) return { body: { ignored: 'duplicate' }, job: null };

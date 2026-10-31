@@ -677,7 +677,7 @@ function tableDefinition(sql: string, table: string): string {
 }
 const ADMIN_WAHA_ACTIONS = ['waha_get_config', 'waha_save_config', 'waha_test', 'waha_close_handoff'];
 
-describe('waha: pemasangan (api.php = security.js/server.js, migrasi 049 = schema.sql)', () => {
+describe('waha: pemasangan (api.php = security.js/server.js, migrasi 054 = schema.sql)', () => {
   const API_PHP = read('backend', 'api.php');
   const SECURITY_JS = read('backend', 'security.js');
   const SERVER_JS = read('backend', 'server.js');
@@ -713,8 +713,8 @@ describe('waha: pemasangan (api.php = security.js/server.js, migrasi 049 = schem
     expect(SERVER_JS).toContain('Pengaturan bot WhatsApp hanya bisa diubah lewat tab Tanya Nexa.');
   });
 
-  it('migrasi 049: tanpa ALTER/prosedur/DROP, aman diulang, tabel = schema.sql, baseline, README, .env.example tanpa nilai', () => {
-    const migration = read('database', 'migrations', '2026-10-29_049_waha_whatsapp_bot.sql');
+  it('migrasi 054: tanpa ALTER/prosedur/DROP, aman diulang, tabel = schema.sql, baseline, README, .env.example tanpa nilai', () => {
+    const migration = read('database', 'migrations', '2026-10-31_054_waha_whatsapp_bot.sql');
     const schema = read('database', 'schema.sql');
     const code = migration.replace(/--[^\n]*/g, '');
     // updated_at ... ON UPDATE CURRENT_TIMESTAMP adalah definisi kolom, bukan perubahan data
@@ -724,10 +724,10 @@ describe('waha: pemasangan (api.php = security.js/server.js, migrasi 049 = schem
       'CREATE TABLE IF NOT EXISTS waha_chats',
       'CREATE TABLE IF NOT EXISTS waha_handoffs',
     ]);
-    expect(code).toMatch(/INSERT IGNORE INTO schema_migrations \(version, description\)\s+VALUES \('2026-10-29_049'/);
+    expect(code).toMatch(/INSERT IGNORE INTO schema_migrations \(version, description\)\s+VALUES \('2026-10-31_054'/);
     for (const table of ['waha_seen', 'waha_chats', 'waha_handoffs']) expect(tableDefinition(migration, table)).toBe(tableDefinition(schema, table));
-    expect(schema).toMatch(/\('2026-10-29_049', 'baseline: waha_seen, waha_chats, waha_handoffs/);
-    expect(read('database', 'README.md')).toContain('2026-10-29_049_waha_whatsapp_bot.sql');
+    expect(schema).toMatch(/\('2026-10-31_054', 'baseline: waha_seen, waha_chats, waha_handoffs/);
+    expect(read('database', 'README.md')).toContain('2026-10-31_054_waha_whatsapp_bot.sql');
     const env = read('.env.example');
     for (const key of ['WAHA_HMAC_KEY', 'WAHA_URL', 'WAHA_API_KEY', 'WAHA_SESSION', 'WAHA_ADMIN_NUMBER', 'WAHA_DAILY_LIMIT']) {
       expect(env).toMatch(new RegExp(`^${key}=$`, 'm'));

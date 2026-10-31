@@ -614,7 +614,7 @@ function waha_webhook(mysqli $conn, string $raw, string $hmac, string $algorithm
     try {
         db_run($conn, WAHA_Q_SEEN, [hash('sha256', $event['message']['id'])]);
     } catch (mysqli_sql_exception $e) {
-        if ($e->getCode() === 1146) throw new ApiError('Tabel bot WhatsApp belum ada: jalankan migrasi 049.', 503, 'WAHA_NOT_READY');
+        if ($e->getCode() === 1146) throw new ApiError('Tabel bot WhatsApp belum ada: jalankan migrasi 054.', 503, 'WAHA_NOT_READY');
         throw $e;
     }
     if (db_affected_rows() === 0) return ['body' => ['ignored' => 'duplicate'], 'job' => null];
@@ -761,7 +761,7 @@ function waha_handoff_out(array $r): array {
     ];
 }
 
-/** Konfigurasi + 30 log alih ke admin terbaru; tables_ready false bila migrasi 049 belum dijalankan. */
+/** Konfigurasi + 30 log alih ke admin terbaru; tables_ready false bila migrasi 054 belum dijalankan. */
 function waha_admin_state(mysqli $conn): array {
     $out = ['config' => waha_config_out(waha_config_rows($conn), waha_env()), 'handoffs' => [], 'tables_ready' => true];
     try {

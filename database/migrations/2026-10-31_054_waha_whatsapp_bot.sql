@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration 2026-10-29_049 — waha_seen + waha_chats + waha_handoffs: chatbot WhatsApp lewat WAHA
+-- Migration 2026-10-31_054 — waha_seen + waha_chats + waha_handoffs: chatbot WhatsApp lewat WAHA
 -- ============================================================================
 -- Permintaan pemilik 2026-10-29 (docs/platform/WHATSAPP-BOT-SPEC.md): pesan klien ke nomor WhatsApp bisnis yang
 -- terhubung ke WAHA (WhatsApp HTTP API) dijawab otomatis oleh Nexa AI. Bila AI mati/gagal, klien minta admin, atau AI
@@ -20,7 +20,7 @@
 -- Skema saja, aman dijalankan ulang (CREATE TABLE IF NOT EXISTS, INSERT IGNORE; tanpa ALTER, tanpa prosedur, tanpa
 -- information_schema), jadi bisa diimpor lewat phpMyAdmin. Tidak bergantung pada migrasi lain. Boleh dijalankan
 -- sebelum atau sesudah deploy kodenya:
---   C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-29_049_waha_whatsapp_bot.sql
+--   C:/xampp/mysql/bin/mysql.exe -u root --default-character-set=utf8mb4 db_garudanexabahtera < database/migrations/2026-10-31_054_waha_whatsapp_bot.sql
 -- ============================================================================
 
 SET NAMES utf8mb4;
@@ -70,4 +70,4 @@ CREATE TABLE IF NOT EXISTS waha_handoffs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO schema_migrations (version, description)
-VALUES ('2026-10-29_049', 'waha_seen, waha_chats, waha_handoffs: chatbot WhatsApp lewat WAHA (dedup, jeda bot, log alih ke admin)');
+VALUES ('2026-10-31_054', 'waha_seen, waha_chats, waha_handoffs: chatbot WhatsApp lewat WAHA (dedup, jeda bot, log alih ke admin)');

@@ -26,7 +26,7 @@ klien ──WhatsApp──▶ nomor bisnis (session WAHA) ──POST event──
       minta admin / AI mati / AI gagal / AI [[ADMIN]] / batas pesan → ALIH KE ADMIN · selain itu → JAWABAN AI
 ```
 
-## 2. Data (migrasi `2026-10-29_049_waha_whatsapp_bot.sql`)
+## 2. Data (migrasi `2026-10-31_054_waha_whatsapp_bot.sql`)
 
 - `waha_seen (message_key CHAR(64) PK, created_at)`: sha256 dari `payload.id` WAHA. Yang disimpan hash, bukan id-nya,
   karena id WhatsApp memuat nomor telepon. `INSERT IGNORE` yang tidak menambah baris berarti pesan ganda. Retry WAHA,
@@ -186,7 +186,7 @@ server tidak terjangkau, API key ditolak (401), session tidak ada (404), atau se
 
 ## 8. Pemasangan
 
-1. Jalankan migrasi 049 (phpMyAdmin atau `mysql < database/migrations/2026-10-29_049_waha_whatsapp_bot.sql`).
+1. Jalankan migrasi 054 (phpMyAdmin atau `mysql < database/migrations/2026-10-31_054_waha_whatsapp_bot.sql`).
 2. `.env` server: isi `WAHA_HMAC_KEY` (kunci dari pemilik; jangan di-commit). Opsional: `WAHA_URL`, `WAHA_API_KEY`,
    `WAHA_SESSION`, `WAHA_ADMIN_NUMBER`. Isian non-rahasia juga bisa lewat tab Tanya Nexa.
 3. Session WAHA (dasbor WAHA atau `POST /api/sessions` / `PUT /api/sessions/{session}`):

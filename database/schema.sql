@@ -1117,7 +1117,7 @@ CREATE TABLE IF NOT EXISTS site_visitors (
   PRIMARY KEY (site_id, day, visitor)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- WhatsApp bot through WAHA (migration 049, docs/platform/WHATSAPP-BOT-SPEC.md). waha_seen: processed message markers
+-- WhatsApp bot through WAHA (migration 054, docs/platform/WHATSAPP-BOT-SPEC.md). waha_seen: processed message markers
 -- (sha256 of the WAHA message id, never the id itself, which contains a phone number), rows older than 3 days removed by
 -- the code. waha_chats: per-chat bot pause, hand-off status and the last 12 messages for the AI. waha_handoffs: log of
 -- chats handed to a human admin (admin tab Tanya Nexa).
@@ -1186,7 +1186,7 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-26_029', 'baseline: site_posts, site_post_views, site_seo (school news & announcements, customer site SEO)'),
   ('2026-10-27_030', 'baseline: site_addon_orders (paid add-on features: news & announcements; no sites to inherit)'),
   ('2026-10-27_031', 'baseline: site_visit_stats, site_visitors (customer site visit statistics, daily aggregates, no IP)'),
-  ('2026-10-29_049', 'baseline: waha_seen, waha_chats, waha_handoffs (WhatsApp bot through WAHA)');
+  ('2026-10-31_054', 'baseline: waha_seen, waha_chats, waha_handoffs (WhatsApp bot through WAHA)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

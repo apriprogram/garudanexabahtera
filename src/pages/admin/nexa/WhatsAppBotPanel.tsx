@@ -184,7 +184,7 @@ export function WhatsAppBotPanel({ notify }: { notify: WhatsAppNotify }) {
       )}
       {!state.tables_ready && (
         <Notice tone="warning" title="Tabel bot WhatsApp belum ada">
-          Jalankan migrasi database/migrations/2026-10-29_049_waha_whatsapp_bot.sql, lalu muat ulang tab ini.
+          Jalankan migrasi database/migrations/2026-10-31_054_waha_whatsapp_bot.sql, lalu muat ulang tab ini.
         </Notice>
       )}
 
