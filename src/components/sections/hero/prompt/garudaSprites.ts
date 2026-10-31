@@ -25,12 +25,14 @@ type V3 = [number, number, number];
 
 /**
  * Bentuk 2D untuk rasterisasi: poligon (genap-ganjil) atau lingkaran. Bentuk `carve` memahat: kepadatan di dalamnya
- * dibatasi paling tinggi `level` (0 = lubang), diterapkan setelah semua bentuk padat (tulang bulu, batas bulu). `glyph`
- * (lingkaran) = sel di pusatnya digambar dengan glyph itu (mata).
+ * dibatasi paling tinggi `level` (0 = lubang), diterapkan setelah semua bentuk padat (tulang bulu, batas bulu, dada
+ * pucat). Bentuk `ink` = tinta: dipasang paling akhir (setelah pahatan), jadi garis gelap tetap terlihat di bagian yang
+ * dipucatkan (gurat dada, palang ekor, alis, kumis, paruh gelap). `glyph` (lingkaran) = sel di pusatnya digambar dengan
+ * glyph itu (mata).
  */
 export type Shape =
-  | { kind: 'poly'; points: Pt[]; level: Level; carve?: boolean; dir?: number }
-  | { kind: 'circle'; cx: number; cy: number; r: number; level: Level; carve?: boolean; glyph?: string };
+  | { kind: 'poly'; points: Pt[]; level: Level; carve?: boolean; ink?: boolean; dir?: number }
+  | { kind: 'circle'; cx: number; cy: number; r: number; level: Level; carve?: boolean; ink?: boolean; glyph?: string };
 
 export interface Sprite {
   cols: number;
@@ -229,8 +231,6 @@ export interface BirdGeometry {
   shapes: Shape[];
   /** Ujung kedua sayap di layar (satuan panjang badan): asal partikel kilau. */
   tips: [Pt, Pt];
-  /** Ujung paruh di layar (satuan panjang badan): asal "suara" saat berteriak. */
-  beak: Pt;
 }
 
 /** Mulai berapa sel per panjang badan model memakai detail (bulu terpisah, mata) dan detail sangat dekat. */
@@ -263,8 +263,8 @@ export function birdGeometry(pose: BirdPose, unit: number): BirdGeometry {
     const [cx, cy] = P(p);
     shapes.push({ kind: 'circle', cx, cy, r, level, carve });
   };
-  /** Garis tebal 2D dari `a` ke `b` (lebar `w0` → `w1`), untuk kaki & cakar; `carve` = guratan. */
-  const strip = (a: Vec3, b: Vec3, w0: number, w1: number, level: Level, carve = false) => {
+  /** Garis tebal 2D dari `a` ke `b` (lebar `w0` → `w1`), untuk kaki & cakar; `carve` = guratan, `ink` = tinta. */
+  const strip = (a: Vec3, b: Vec3, w0: number, w1: number, level: Level, carve = false, ink = false) => {
     const pa = P(a);
     const pb = P(b);
     const dx = pb[0] - pa[0];
@@ -282,14 +282,24 @@ export function birdGeometry(pose: BirdPose, unit: number): BirdGeometry {
       ],
       level,
       carve,
+      ink,
     });
   };
-  /** Guratan: garis pahat selebar ±1 sel, arahnya ikut dicatat supaya sel yang tertutup penuh pun bergaris. */
-  const groove = (a: Vec3, b: Vec3, level: Level) => {
-    strip(a, b, line, line, level, true);
+  /** Arah garis terakhir dicatat supaya sel yang tertutup penuh pun digambar sebagai garis. */
+  const markDir = (a: Vec3, b: Vec3) => {
     const pa = P(a);
     const pb = P(b);
     (shapes[shapes.length - 1] as Extract<Shape, { kind: 'poly' }>).dir = dirCode(pb[0] - pa[0], pb[1] - pa[1]);
+  };
+  /** Guratan: garis pahat (lebih terang) selebar ±1 sel. */
+  const groove = (a: Vec3, b: Vec3, level: Level) => {
+    strip(a, b, line, line, level, true);
+    markDir(a, b);
+  };
+  /** Tinta: garis gelap (minimal ±1 sel) di atas bagian yang dipucatkan. */
+  const inkLine = (a: Vec3, b: Vec3, w0: number, w1: number, level: Level) => {
+    strip(a, b, Math.max(w0, line), Math.max(w1, line * 0.8), level, false, true);
+    markDir(a, b);
   };
 
   // Badan & leher
@@ -301,12 +311,22 @@ export function birdGeometry(pose: BirdPose, unit: number): BirdGeometry {
     for (const [a, c, r] of BODY.slice(0, 3)) circle([a, 0, c - 0.5 * r], 0.62 * r, 2, true);
   }
   if (fine) {
-    // Guratan bulu dada & perut: baris-baris garis pendek mengarah ke belakang (lebih rapat saat sangat dekat)
-    for (let a = 0.17; a > -0.16; a -= close ? 0.055 : 0.08) {
-      for (const b of [-0.05, 0, 0.05]) {
-        const c = -0.075 + Math.abs(b) * 0.4;
-        groove([a, b + 0.012, c], [a - 0.035, b, c - 0.006], 3);
+    // Dada elang Jawa: gurat-gurat gelap memanjang (tetesan) di dada atas, palang / chevron rapat di perut & sisi
+    const surface = (a: number) => -(a > 0.05 ? 0.088 : a > -0.08 ? 0.094 : 0.074);
+    const cols = close ? [-0.05, -0.025, 0, 0.025, 0.05] : [-0.04, 0, 0.04];
+    let row = 0;
+    for (let a = 0.19; a > 0.01; a -= close ? 0.036 : 0.05, row++) {
+      for (const b0 of cols) {
+        const b = b0 + (row % 2) * 0.012;
+        const c = surface(a) + Math.abs(b) * 0.35;
+        inkLine([a, b, c], [a - 0.032, b, c - 0.005], 0.016, 0.006, 4);
       }
+    }
+    for (let a = -0.01; a > -0.2; a -= close ? 0.03 : 0.045) {
+      const c = surface(a);
+      // Chevron: dua sisi menurun ke tengah perut
+      inkLine([a + 0.008, -0.06, c + 0.02], [a - 0.008, 0, c], 0.012, 0.012, 3);
+      inkLine([a - 0.008, 0, c], [a + 0.008, 0.06, c + 0.02], 0.012, 0.012, 3);
     }
   }
 
@@ -322,100 +342,116 @@ export function birdGeometry(pose: BirdPose, unit: number): BirdGeometry {
     const z1 = x * hs + z * hp;
     return [NECK[0] + x1 * yc - b * ys, x1 * ys + b * yc, NECK[2] + z1];
   };
-  circle(head(0.335, 0, 0.05), 0.068, 4);
-  // Wajah & pipi pucat (kepala elang Jawa kecokelatan muda), mahkota & jambul tetap gelap
-  if (fine) circle(head(0.352, 0, 0.034), 0.05, 3, true);
+  circle(head(0.338, 0, 0.054), 0.08, 4);
+  // Bulu tengkuk: helai runcing di belakang kepala, menyatu ke leher
+  for (const b of detail ? [-0.03, 0, 0.03] : [0]) strip(head(0.3, b, 0.08), head(0.25, b * 1.2, 0.035), 0.05, 0.012, 4);
+  // Wajah, pipi & tenggorokan pucat (elang Jawa: kepala cokelat muda), mahkota tetap gelap
+  if (fine) {
+    circle(head(0.36, 0, 0.032), 0.052, 2, true);
+    circle(head(0.35, 0, 0.005), 0.04, 2, true);
+  }
   /** Tiap titik kepala diproyeksikan; hull = bentuk paruh yang tetap utuh dari sudut mana pun. */
   const headHull = (pts: V3[], level: Level) => shapes.push({ kind: 'poly', points: hull(pts.map(P)), level });
   // Sisi kepala yang menghadap kamera (mata, lubang hidung, alis)
   const camSide = toCam(fr, head(0.35, 0.05, 0.06))[2] < toCam(fr, head(0.35, -0.05, 0.06))[2] ? 1 : -1;
 
-  // Jambul (khas elang Jawa, Garuda): beberapa helai panjang di belakang kepala, berujung gelap; tegak saat bertengger
-  // (makin tegak saat berteriak / mengepak), rebah ke belakang saat terbang
+  // Jambul (khas elang Jawa, Garuda): 2–3 helai di puncak belakang kepala, ±1,2× jari-jari kepala, berujung hitam;
+  // tegak saat bertengger (sedikit lebih tegak saat berteriak / mengepak), rebah ke belakang saat terbang
   {
-    const n = close ? 5 : detail ? 3 : 2;
-    const raise = clamp01(smooth(0.3, 0.9, pose.pitch) + 0.5 * pose.crest);
+    const n = detail ? 3 : 2;
+    const raise = clamp01(smooth(0.3, 0.9, pose.pitch) + 0.3 * pose.crest);
     for (let k = 0; k < n; k++) {
-      const b = (k - (n - 1) / 2) * 0.014;
-      const elev = deg(14 + 50 * raise + 7 * k);
-      const len = (0.24 - 0.025 * k) * (1 + 0.2 * pose.crest);
-      const a0 = 0.318 - 0.014 * k;
-      const c0 = 0.106 - 0.005 * k;
+      // Helai berdempet jadi satu jumbai runcing (bukan mahkota berduri): sebaran ke samping kecil
+      const b = (k - (n - 1) / 2) * 0.006;
+      const elev = deg(14 + 34 * raise + 12 * pose.crest + 9 * k);
+      const len = (0.095 - 0.014 * k) * (1 + 0.1 * pose.crest);
+      const a0 = 0.3 - 0.008 * k;
+      const c0 = 0.116 - 0.008 * k;
       const base = head(a0, b, c0);
       // Sedikit melengkung ke belakang: titik tengah lebih tegak dari ujung
-      const mid = head(a0 - len * 0.5 * Math.cos(elev + 0.12), b * 1.3, c0 + len * 0.5 * Math.sin(elev + 0.12));
-      const tip = head(a0 - len * Math.cos(elev), b * 1.6, c0 + len * Math.sin(elev));
-      strip(base, mid, 0.044 - 0.003 * k, 0.026, detail ? 3 : 4);
-      strip(mid, tip, 0.026, 0.008, 4);
+      const mid = head(a0 - len * 0.55 * Math.cos(elev + 0.15), b * 1.2, c0 + len * 0.55 * Math.sin(elev + 0.15));
+      const tip = head(a0 - len * Math.cos(elev), b * 1.4, c0 + len * Math.sin(elev));
+      strip(base, mid, 0.03 - 0.003 * k, 0.018, detail ? 3 : 4);
+      strip(mid, tip, 0.018, 0.005, 4);
     }
   }
 
-  // Paruh bengkok khas elang
+  // Paruh elang: gelap, tebal di pangkal, punggung paruh melengkung turun ke kait tajam; rahang bawah lebih tipis
   if (fine) {
-    // Rahang atas tebal dengan kait di ujung (lebih terang dari kepala, kait gelap), rahang bawah lebih tipis yang
-    // membuka saat berteriak (berputar di sudut mulut), celah mulut di antaranya; tenggorokan pucat di bawahnya
-    headHull([head(0.385, 0, 0.084), head(0.39, 0.028, 0.055), head(0.39, -0.028, 0.055), head(0.44, 0, 0.078), head(0.474, 0, 0.054), head(0.484, 0, 0.032), head(0.4, 0, 0.034)], 2);
-    strip(head(0.478, 0, 0.036), head(0.466, 0, -0.002), 0.024, 0.008, 4);
-    const open = deg(30) * clamp01(pose.beak);
+    const headInk = (pts: V3[], level: Level) => shapes.push({ kind: 'poly', points: hull(pts.map(P)), level, ink: true });
+    headInk([head(0.384, 0, 0.09), head(0.39, 0.03, 0.058), head(0.39, -0.03, 0.058), head(0.428, 0, 0.09), head(0.462, 0, 0.078), head(0.49, 0, 0.046), head(0.4, 0, 0.036)], 4);
+    // Kait: ujung rahang atas melengkung ke bawah melewati rahang bawah
+    inkLine(head(0.486, 0, 0.05), head(0.474, 0, 0.008), 0.028, 0.008, 4);
+    // Rahang bawah membuka saat berteriak (berputar di sudut mulut); celahnya = rongga mulut yang terang
+    const open = deg(44) * clamp01(pose.beak);
     const jaw = (a: number, b: number, c: number): V3 => {
       const x = a - 0.395;
-      const z = c - 0.032;
-      return head(0.395 + x * Math.cos(open) + z * Math.sin(open), b, 0.032 - x * Math.sin(open) + z * Math.cos(open));
+      const z = c - 0.034;
+      return head(0.395 + x * Math.cos(open) + z * Math.sin(open), b, 0.034 - x * Math.sin(open) + z * Math.cos(open));
     };
-    headHull([jaw(0.396, 0, 0.016), jaw(0.392, 0.022, 0.03), jaw(0.392, -0.022, 0.03), jaw(0.452, 0, 0.022), jaw(0.44, 0, 0.012)], 2);
-    if (pose.beak > 0.1) shapes.push({ kind: 'poly', points: [P(head(0.398, 0, 0.032)), P(head(0.47, 0, 0.032)), P(jaw(0.452, 0, 0.026))], level: 1, carve: true });
-    else groove(head(0.398, 0, 0.031), head(0.458, 0, 0.026), 1);
-    circle(head(0.35, 0, 0.012), 0.034, 2, true);
+    headInk([jaw(0.398, 0, 0.016), jaw(0.394, 0.024, 0.03), jaw(0.394, -0.024, 0.03), jaw(0.458, 0, 0.026), jaw(0.444, 0, 0.012)], 4);
+    // Mulut terbuka = rongga kosong di antara kedua rahang; tertutup = garis mulut
+    if (pose.beak > 0.15) shapes.push({ kind: 'poly', points: [P(head(0.39, 0, 0.034)), P(head(0.476, 0, 0.036)), P(jaw(0.456, 0, 0.026))], level: 0, carve: true });
+    else groove(head(0.398, 0, 0.034), head(0.462, 0, 0.028), 2);
   } else {
-    headHull([head(0.39, 0, 0.078), head(0.44, 0, 0.074), head(0.478, 0, 0.034), head(0.468, 0, 0.006), head(0.4, 0, 0.018), head(0.392, 0.026, 0.05), head(0.392, -0.026, 0.05)], 3);
+    headHull([head(0.39, 0, 0.08), head(0.44, 0, 0.08), head(0.484, 0, 0.038), head(0.47, 0, 0.002), head(0.4, 0, 0.018), head(0.392, 0.026, 0.05), head(0.392, -0.026, 0.05)], 4);
   }
-  if (close) {
-    // Sera (pangkal paruh yang berdaging) lebih terang, lubang hidung, alis di atas mata
-    strip(head(0.388, 0, 0.084), head(0.392, 0, 0.034), 0.016, 0.016, 2, true);
-    circle(head(0.408, camSide * 0.02, 0.064), 0.008, 1, true);
-    groove(head(0.322, camSide * 0.05, 0.098), head(0.372, camSide * 0.047, 0.088), 2);
+  if (fine) {
+    // Garis "kumis" gelap dari sudut mulut ke pipi, garis tengah tenggorokan, gurat halus di mahkota
+    inkLine(head(0.385, camSide * 0.04, 0.03), head(0.328, camSide * 0.05, -0.012), 0.016, 0.01, 4);
+    inkLine(head(0.37, 0, -0.004), head(0.312, 0, -0.04), 0.012, 0.01, 3);
+    if (close) for (const a of [0.3, 0.33, 0.36]) groove(head(a, camSide * 0.03, 0.118 - (a - 0.3) * 0.4), head(a - 0.03, camSide * 0.035, 0.1 - (a - 0.3) * 0.4), 3);
   }
   if (detail) {
-    // Mata di sisi yang menghadap kamera: lingkar mata, rongga terang, glyph mata di tengahnya
-    const eye = head(0.352, camSide * 0.047, 0.066);
-    if (close) circle(eye, 0.03, 2, true);
+    // Mata besar di sisi yang menghadap kamera: lingkar terang (iris), glyph mata; alis gelap menonjol di atasnya
+    const eye = head(0.356, camSide * 0.05, 0.07);
+    if (fine) circle(eye, close ? 0.034 : 0.03, 2, true);
     const [ex, ey] = P(eye);
-    shapes.push({ kind: 'circle', cx: ex, cy: ey, r: close ? 0.02 : 0.017, level: 1, carve: true, glyph: pose.blink > 0.5 ? '-' : close ? '@' : 'o' });
+    shapes.push({ kind: 'circle', cx: ex, cy: ey, r: close ? 0.022 : 0.018, level: 1, carve: true, glyph: pose.blink > 0.5 ? '-' : close ? '@' : 'o' });
+    if (fine) inkLine(head(0.33, camSide * 0.056, 0.098), head(0.384, camSide * 0.048, 0.09), 0.016, 0.01, 4);
   }
 
-  // Ekor kipas: menunduk `tailPitch`, makin lebar saat mengembang; detail = lekuk antar-bulu
+  // Ekor kipas: menunduk `tailPitch`, makin lebar saat mengembang
   {
     const root: V3 = [-0.24, 0, 0.012];
     const dir: V3 = [-Math.cos(pose.tailPitch), 0, -Math.sin(pose.tailPitch)];
     const half = lerp(0.055, 0.16, clamp01(pose.tail));
-    const n = close ? 12 : detail ? 8 : 4;
-    const pts: V3[] = [[root[0], -0.032, root[2]]];
-    for (let k = 0; k <= n; k++) {
-      const b = lerp(-half, half, k / n);
-      const len = 0.28 * (1 - 0.12 * (b / half) ** 2) - (detail && k % 2 === 1 ? 0.014 : 0);
-      pts.push([root[0] + dir[0] * len, b, root[2] + dir[2] * len]);
-    }
-    pts.push([root[0], 0.032, root[2]]);
-    poly(pts, 3);
-    if (fine) {
-      // Ekor bergaris melintang (khas elang Jawa)
-      for (const f of [0.42, 0.64, 0.86]) {
-        const w = lerp(0.032, half, f) * 0.95;
-        const at = (b: number): V3 => [root[0] + dir[0] * 0.28 * f, b, root[2] + dir[2] * 0.28 * f];
-        groove(at(-w), at(w), 2);
+    const LEN = 0.29;
+    const at = (f: number, b: number): V3 => [root[0] + dir[0] * LEN * f, b, root[2] + dir[2] * LEN * f];
+    if (!fine) {
+      const n = detail ? 8 : 4;
+      const pts: V3[] = [[root[0], -0.032, root[2]]];
+      for (let k = 0; k <= n; k++) {
+        const b = lerp(-half, half, k / n);
+        pts.push(at(1 - 0.12 * (b / half) ** 2 - (detail && k % 2 === 1 ? 0.05 : 0), b));
       }
-      // Batas antar-helai ekor: dari pangkal ke tiap lekuk di ujung ekor
-      for (let k = 1; k < n; k += 2) {
-        const end = pts[k + 1];
-        groove([root[0] + dir[0] * 0.06, end[1] * 0.35, root[2] + dir[2] * 0.06], [lerp(root[0], end[0], 0.97), end[1] * 0.98, lerp(root[2], end[2], 0.97)], 2);
+      pts.push([root[0], 0.032, root[2]]);
+      poly(pts, 3);
+    } else {
+      // Helai ekor satu per satu: menyebar dari pangkal, ujung membulat (tepi ekor bergelombang), saling menumpuk
+      const n = close ? 12 : 8;
+      const width = ((2 * half) / n) * 1.55;
+      for (let k = 0; k < n; k++) {
+        const t = (k + 0.5) / n;
+        const b = lerp(-half, half, t);
+        const f = 1 - 0.1 * (b / half) ** 2;
+        const b0 = b * 0.28;
+        const side = (u: number, s: number): V3 => {
+          const bb = lerp(b0, b, u);
+          const w = lerp(width * 0.55, width, u) / 2;
+          return at(f * u, bb + s * w);
+        };
+        poly([side(0, -1), side(0.86, -1), at(f * 0.97, b - width * 0.22), at(f, b), at(f * 0.97, b + width * 0.22), side(0.86, 1), side(0, 1)], 3);
+        // Batas helai & tulang bulu
+        if (k > 0) groove(at(0.12, lerp(b0, b, 0.12) - width * 0.5), at(f * 0.9, b - width * 0.5), 2);
+        if (close) groove(at(0.1, lerp(b0, b, 0.1)), at(f * 0.85, b), 2);
       }
-    }
-    if (close) {
-      // Tulang bulu ekor: dari pangkal ke tiap ujung bulu
-      for (let k = 2; k < n; k += 2) {
-        const end = pts[k + 1];
-        groove([root[0] + dir[0] * 0.05, end[1] * 0.3, root[2] + dir[2] * 0.05], [lerp(root[0], end[0], 0.9), end[1] * 0.92, lerp(root[2], end[2], 0.9)], 2);
+      // Palang gelap melintang (khas elang Jawa) & ujung ekor pucat
+      for (const f of close ? [0.3, 0.5, 0.7, 0.88] : [0.38, 0.62, 0.86]) {
+        const w = lerp(0.032 * 0.6, half, f) * 1.02;
+        inkLine(at(f, -w), at(f, w), close ? 0.026 : 0.03, close ? 0.026 : 0.03, 4);
       }
+      strip(at(0.96, -half), at(0.96, half), 0.03, 0.03, 2, true);
     }
   }
 
@@ -525,7 +561,7 @@ export function birdGeometry(pose: BirdPose, unit: number): BirdGeometry {
     }
   }
 
-  return { shapes, tips: [tips[0], tips[1]], beak: P(head(0.484, 0, 0.03)) };
+  return { shapes, tips: [tips[0], tips[1]] };
 }
 
 /* ─── Rasterisasi ─────────────────────────────────────────────────────────── */
@@ -666,8 +702,9 @@ export function rasterize(shapes: readonly Shape[], cellW: number, cellH: number
   if (scratch.length < n) scratch = new Uint8Array(Math.ceil(n * 1.5));
   const buf = scratch;
   buf.fill(0, 0, n);
-  for (const shape of shapes) if (!shape.carve) paint(shape, buf, left, top, sw, sh, subCols, subRows);
+  for (const shape of shapes) if (!shape.carve && !shape.ink) paint(shape, buf, left, top, sw, sh, subCols, subRows);
   for (const shape of shapes) if (shape.carve) paint(shape, buf, left, top, sw, sh, subCols, subRows);
+  for (const shape of shapes) if (shape.ink) paint(shape, buf, left, top, sw, sh, subCols, subRows);
 
   const cells = new Uint8Array(cols * rows);
   const dens = new Float32Array(cols * rows);
@@ -736,7 +773,7 @@ export function rasterize(shapes: readonly Shape[], cellW: number, cellH: number
   }
   // Guratan berarah: sel yang pusatnya di dalam guratan (tertutup penuh, tanpa arah dari sebaran sampel) ikut bergaris
   for (const shape of shapes) {
-    if (shape.kind !== 'poly' || !shape.carve || !shape.dir) continue;
+    if (shape.kind !== 'poly' || !(shape.carve || shape.ink) || !shape.dir) continue;
     const [x0, y0, x1, y1] = bounds(shape);
     const ca = Math.max(0, Math.floor((x0 - left) / cellW));
     const cb = Math.min(cols - 1, Math.floor((x1 - left) / cellW));

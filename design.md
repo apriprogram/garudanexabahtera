@@ -228,8 +228,10 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
   ascii-sharks MIT; bentuk elang Jawa berjambul): tiga burung bergantian terbang dalam formasi (longgar / rapi),
   berputar-putar, dan acak dengan belok lengkung (steering), menjauh (kecil) dan mendekat (besar, makin detail: helai
   bulu, paruh berkait, jambul, mata), sering menukik sampai seukuran layar lalu keluar dan kembali; sesekali satu burung
-  bertengger setinggi hero di dahan sisi kiri / kanan (desktop), berteriak & mengepakkan sayap lalu terbang lagi; kepakan
-  downstroke/upstroke halus + meluncur, partikel kilau, bulu & "suara"; warna gradasi biru brand (`brand-900` dekat →
+  bertengger setinggi hero di dahan sisi kiri / kanan (desktop; menghadap ¾ ke kamera, kepala di bawah navbar & banner
+  promo `data-garuda-ceiling`), berteriak (paruh terbuka lebar, jambul pendek berdiri) & mengepakkan sayap lalu terbang
+  lagi; dada bergurat, perut bergaris, ekor per helai berpalang; kepakan downstroke/upstroke halus + meluncur, partikel
+  kilau & bulu; warna gradasi biru brand (`brand-900` dekat →
   `brand-400` jauh), alpha ≤ 0,58, diredupkan di belakang judul/kotak prompt, 60 fps, berhenti saat tak terlihat,
   reduced motion = satu gambar diam. Kontras teks di atas kanvas: judul besar ≥ 3:1, teks kecil di kartu/pill putih ≥ 4,5:1.
 - **Latar hero** (`Hero.tsx`, `hero/heroBgConfig.ts`, `hero/HeroMedia.tsx`): setting `hero_bg_mode` (dicocokkan persis)

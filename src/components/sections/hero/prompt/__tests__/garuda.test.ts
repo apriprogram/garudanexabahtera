@@ -174,7 +174,8 @@ describe('lintasan & koreografi', () => {
         const layout = perchLayout(scene, side)!;
         expect(layout).not.toBeNull();
         expect(layout.inward).toBe(-side as 1 | -1);
-        const pose = { ...PERCH_POSE, yaw: side < 0 ? -0.35 : Math.PI + 0.35 };
+        // Hadap ¾ ke kamera, menghadap halaman (sama dengan garudaFlight)
+        const pose = { ...PERCH_POSE, yaw: side < 0 ? 0.6 : Math.PI - 0.6 };
         const [x0, y0, x1] = shapesBounds(birdGeometry(pose, 20).shapes);
         const foot = footOf(pose);
         const body = scene.L0 * layout.s;
@@ -193,6 +194,14 @@ describe('lintasan & koreografi', () => {
         }
         expect(layout.s).toBeLessThanOrEqual(maxScale(scene));
       }
+    }
+    // Navbar + banner promo di atas hero: kepala & jambul tetap di bawahnya
+    {
+      const scene = createScene(1920, 1080, { rng: lcg(4), avoid: [{ l: 600, t: 320, r: 1320, b: 810 }], ceiling: 130 });
+      const layout = perchLayout(scene, 1)!;
+      const pose = { ...PERCH_POSE, yaw: Math.PI - 0.6 };
+      const [, y0] = shapesBounds(birdGeometry(pose, 20).shapes);
+      expect(layout.y - (footOf(pose)[1] - y0) * scene.L0 * layout.s).toBeGreaterThanOrEqual(130);
     }
     expect(perchLayout(createScene(375, 640, { rng: lcg(4) }), -1)).toBeNull();
     expect(perchLayout(createScene(768, 1000, { rng: lcg(4), avoid: [{ l: 24, t: 300, r: 744, b: 700 }] }), -1)).toBeNull();

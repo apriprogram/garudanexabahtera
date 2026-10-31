@@ -23,8 +23,7 @@
 //   dipercepat, lalu kembali ke babak. Di HP / layar sempit tidak bertengger (tidak ada ruang di samping konten).
 // - Kepakan: downstroke (lebih lama) → upstroke dengan easing kosinus, ujung sayap menyusul lengan (gelombang), sayap
 //   setengah terlipat & tersapu ke belakang saat upstroke; meluncur dengan peralihan halus; menukik = sayap dilipat.
-// - Partikel (halus, sedikit): kilau dari ujung sayap, bulu yang lepas saat melintas sangat dekat / mendarat / mengepak,
-//   lengkung "suara" dari paruh saat berteriak.
+// - Partikel (halus, sedikit): kilau dari ujung sayap, bulu yang lepas saat melintas sangat dekat / mendarat / mengepak.
 import { FLAT_X, FLAT_Z, UP, birdGeometry, footOf, shapesBounds, type BirdGeometry, type BirdPose, type Vec3 } from './garudaSprites';
 
 type V3 = [number, number, number];
@@ -36,7 +35,7 @@ export interface Rect {
   b: number;
 }
 
-export type ParticleKind = 'spark' | 'feather' | 'call';
+export type ParticleKind = 'spark' | 'feather';
 
 export interface Particle {
   kind: ParticleKind;
@@ -108,7 +107,7 @@ export interface Perch {
   yaw: number;
   crouch: number;
   turn: { from: number; to: number; t: number } | null;
-  action: { kind: 'scream' | 'spread' | 'flick'; t: number; dur: number; calls: number; shed: boolean } | null;
+  action: { kind: 'scream' | 'spread' | 'flick'; t: number; dur: number; shed: boolean } | null;
   /** Teriakan pertama setelah mendarat sudah terjadi. */
   called: boolean;
   actionIn: number;
@@ -183,6 +182,8 @@ export interface Scene {
   cell: number;
   /** Kotak konten tengah (judul, kotak prompt, chip): burung yang lewat di belakangnya diredupkan mesin. */
   content: Rect;
+  /** Batas atas ruang bertengger (px dari atas kanvas): bawah navbar & banner promo, supaya kepala tidak tertutup. */
+  ceiling: number;
   birds: Bird[];
   particles: Particle[];
   act: Act;
@@ -255,7 +256,7 @@ export const restPose = (): BirdPose => ({
 });
 
 /** Bertengger (elang Jawa): badan hampir tegak ±74°, kepala datar, jambul berdiri, sayap terlipat, ekor menjuntai lurus. */
-export const PERCH_POSE: BirdPose = { ...restPose(), pitch: deg(74), arm: deg(-78), hand: deg(-78), fold: 1, tail: 0.05, tailPitch: deg(10), grip: 1, headPitch: deg(-70), crest: 0.3 };
+export const PERCH_POSE: BirdPose = { ...restPose(), pitch: deg(74), arm: deg(-78), hand: deg(-78), fold: 1, tail: 0.05, tailPitch: deg(10), grip: 1, headPitch: deg(-58), crest: 0.3 };
 /** Saat menyentuh dahan: sayap terangkat tinggi & maju, ekor mengembang menunduk, kaki menapak, sedikit jongkok. */
 const TOUCHDOWN: BirdPose = { ...restPose(), pitch: deg(50), arm: deg(56), hand: deg(68), fold: 0, sweep: deg(14), tail: 1, tailPitch: deg(28), legs: 1, grip: 1, crouch: 0.35, headPitch: deg(-42) };
 /** Akhir jongkok sebelum melompat dari dahan (= awal kurva lepas landas). */
@@ -412,6 +413,8 @@ export interface SceneOptions {
   avoid?: readonly Rect[];
   /** Lebar sel glyph (px). */
   cell?: number;
+  /** Bawah elemen bertanda data-garuda-ceiling (px, relatif kanvas): navbar & banner promo di atas hero. */
+  ceiling?: number;
 }
 
 /**
@@ -440,6 +443,7 @@ export function createScene(w: number, h: number, options: SceneOptions = {}): S
     L0,
     cell: options.cell ?? 8,
     content: contentBox(w, h, options.avoid ?? []),
+    ceiling: options.ceiling ?? 0,
     birds: [],
     particles: [],
     act: { kind: 'formation', until: 0, leader: 0, style: 'loose', centre: [0, 0, 1], spin: 1 },
@@ -621,9 +625,13 @@ function startAct(scene: Scene, kind: ActKind): void {
 
 /* ─── Bertengger ──────────────────────────────────────────────────────────── */
 
-/** Hadap saat bertengger menghadap halaman (sedikit ke kamera), dan saat mendarat menghadap tepi. */
-const inwardYaw = (inward: 1 | -1) => (inward > 0 ? -0.35 : Math.PI + 0.35);
-const outwardYaw = (inward: 1 | -1) => (inward > 0 ? Math.PI + 0.35 : -0.35);
+/**
+ * Hadap saat bertengger: menghadap halaman, dan saat mendarat menghadap tepi; keduanya ¾ ke arah kamera (seperti foto
+ * elang bertengger) supaya dada bergurat, perut bergaris, wajah & paruh terlihat. Berbalik melewati hadap depan.
+ */
+const PERCH_TURN = 0.6;
+const inwardYaw = (inward: 1 | -1) => (inward > 0 ? PERCH_TURN : Math.PI - PERCH_TURN);
+const outwardYaw = (inward: 1 | -1) => (inward > 0 ? Math.PI - PERCH_TURN : PERCH_TURN);
 
 /**
  * Tempat bertengger di sisi `side`: telapak kaki di atas pudar bawah hero, skala supaya tinggi burung ≈ tinggi hero
@@ -640,7 +648,10 @@ export function perchLayout(scene: Scene, side: 1 | -1): Pick<Perch, 'side' | 'i
   const [x0, y0, x1] = shapesBounds(birdGeometry(pose, 20).shapes);
   const foot = footOf(pose);
   const footY = h - 104;
-  const bodyPx = Math.min((footY - h * 0.03) / (foot[1] - y0), (room * 1.55) / (x1 - x0), L0 * maxScale(scene) * 0.95);
+  // Puncak kepala & jambul di bawah navbar / banner promo (sedikit jarak untuk kepala yang mendongak saat berteriak)
+  const top = Math.max(h * 0.03, scene.ceiling + 14);
+  if (footY - top < 240) return null;
+  const bodyPx = Math.min((footY - top) / (foot[1] - y0), (room * 1.55) / (x1 - x0), L0 * maxScale(scene) * 0.95);
   const left = (x0 - foot[0]) * bodyPx;
   const right = (x1 - foot[0]) * bodyPx;
   let x: number;
@@ -1019,9 +1030,9 @@ function stepPerching(scene: Scene, bird: Bird, dt: number): void {
     if (perch.actionIn <= 0) {
       perch.actionIn = rand(rng, 1.4, 2.8);
       const roll = rng();
-      if (!perch.called || roll < 0.42) perch.action = { kind: 'scream', t: 0, dur: 1.7, calls: 0, shed: false };
-      else if (roll < 0.84) perch.action = { kind: 'spread', t: 0, dur: 2.6, calls: 0, shed: false };
-      else perch.action = { kind: 'flick', t: 0, dur: 0.5, calls: 0, shed: false };
+      if (!perch.called || roll < 0.42) perch.action = { kind: 'scream', t: 0, dur: 1.8, shed: false };
+      else if (roll < 0.84) perch.action = { kind: 'spread', t: 0, dur: 2.6, shed: false };
+      else perch.action = { kind: 'flick', t: 0, dur: 0.5, shed: false };
       perch.called = true;
     }
   }
@@ -1039,19 +1050,18 @@ function stepPerching(scene: Scene, bird: Bird, dt: number): void {
   let hop = 0;
 
   const action = perch.action;
-  let calling = false;
   if (action) {
     action.t += dt;
     const tau = clamp01(action.t / action.dur);
     const env = smooth(0, 0.18, tau) * (1 - smooth(0.82, 1, tau));
     if (action.kind === 'scream') {
-      // Berteriak: kepala mendongak & lurus ke depan, paruh terbuka bergetar, jambul berdiri, badan condong ke depan
+      // Berteriak: kepala mendongak & lurus ke depan, paruh terbuka lebar (sedikit bergetar), jambul berdiri, badan
+      // condong ke depan
       pose.headYaw = lerp(pose.headYaw, 0, env);
-      pose.headPitch += 0.45 * env;
-      pose.beak = env * (0.82 + 0.18 * Math.sin(action.t * 2 * Math.PI * 7));
+      pose.headPitch += 0.4 * env;
+      pose.beak = env * (0.92 + 0.08 * Math.sin(action.t * 2 * Math.PI * 6));
       pose.crest = Math.max(pose.crest, env);
       pose.pitch -= deg(7) * env;
-      calling = tau > 0.2 && tau < 0.85;
     } else if (action.kind === 'spread') {
       // Mengepakkan sayap di dahan: sayap terbentang ke atas lalu dikepakkan beberapa kali, ekor mengembang
       const beat = Math.cos(action.t * 2 * Math.PI * 1.8);
@@ -1104,17 +1114,6 @@ function stepPerching(scene: Scene, bird: Bird, dt: number): void {
   bird.pos = perchCentre(scene, perch, pose, hop);
   bird.vel = [0, 0, 0];
   place(scene, bird, dt);
-  // "Suara" teriakan: lengkung-lengkung kecil keluar dari paruh, makin besar & memudar
-  if (calling && action && dt > 0) {
-    const due = Math.floor(action.t / 0.22);
-    if (due > action.calls) {
-      action.calls = due;
-      const body = scene.L0 * bird.s;
-      const [bx, by] = bird.geometry!.beak;
-      const dir = bx >= 0 ? 1 : -1;
-      emit(scene, { kind: 'call', x: bird.x + bx * body, y: bird.y + by * body, vx: dir * body * 0.32, vy: -body * 0.05, life: 0.9, size: clamp(bird.s * 0.35, 1, 3), phase: 0, freq: 0, amp: 0, fall: 0 });
-    }
-  }
   if (perch.crouch >= 1) beginLaunch(scene, bird, perch);
 }
 
@@ -1161,10 +1160,6 @@ function stepParticles(scene: Scene, dt: number): void {
     if (p.kind === 'spark') {
       p.vx *= 1 - clamp01(dt * 1.6);
       p.vy += 14 * dt;
-    } else if (p.kind === 'call') {
-      // Suara: melambat sambil membesar
-      p.vx *= 1 - clamp01(dt * 1.2);
-      p.size += dt * 1.6;
     } else {
       // Bulu: jatuh pelan sambil berayun; melambat di ujung ayunan
       p.phase += p.freq * dt;

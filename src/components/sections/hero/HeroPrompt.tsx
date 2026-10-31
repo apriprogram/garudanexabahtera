@@ -90,7 +90,8 @@ export const HeroPrompt: React.FC<{ settings: SiteSettings }> = ({ settings }) =
       {/* Pudar bawah: menyatu dengan strip layanan di bawah hero */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-b from-transparent to-canvas" />
 
-      <div className="container-site relative pt-[calc(var(--nav-offset)+0.5rem)]">
+      {/* data-garuda-ceiling: burung bertengger menaruh kepalanya di bawah navbar & banner ini */}
+      <div data-garuda-ceiling className="container-site relative pt-[calc(var(--nav-offset)+0.5rem)]">
         <PromoBanner />
       </div>
 

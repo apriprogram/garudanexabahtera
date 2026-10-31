@@ -72,6 +72,13 @@ function measureAvoid(canvas: HTMLCanvasElement): Rect[] {
   }).filter((r) => r.r > r.l && r.b > r.t);
 }
 
+/** Bawah elemen bertanda data-garuda-ceiling (navbar + banner promo) relatif terhadap kanvas; 0 bila tidak ada. */
+function measureCeiling(canvas: HTMLCanvasElement): number {
+  const el = canvas.closest('section')?.querySelector('[data-garuda-ceiling]');
+  if (!el) return 0;
+  return Math.max(0, el.getBoundingClientRect().bottom - canvas.getBoundingClientRect().top);
+}
+
 /**
  * Bentuk dahan tempat bertengger (px layar): dari luar tepi layar ke sedikit melewati kaki, menyempit, melentur di ujung
  * (`bend` di titik kaki), dengan ranting kecil dan gerombol daun di ujungnya.
@@ -149,10 +156,6 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
         // Kilau: bintang → plus → titik, sesekali berkedip
         glyph = Math.floor(p.age * 14 + p.seed * 7) % 5 === 0 ? "'" : t < 0.3 ? '*' : t < 0.65 ? '+' : '.';
         ctx.fillStyle = rgba(SPARK, 0.42 * life);
-      } else if (p.kind === 'call') {
-        // Suara teriakan: lengkung ke arah paruh menghadap, memudar
-        glyph = p.vx >= 0 ? ')' : '(';
-        ctx.fillStyle = rgba(FEATHER, 0.5 * life);
       } else {
         // Bulu berayun: condong ke arah ayunannya
         const sway = Math.cos(p.phase);
@@ -309,11 +312,13 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
     const height = Math.round(rect.height);
     if (width < 1 || height < 1) return;
     const avoid = measureAvoid(canvas);
-    const key = avoid.map((r) => `${Math.round(r.l / 8)},${Math.round(r.t / 8)},${Math.round(r.r / 8)},${Math.round(r.b / 8)}`).join('|');
+    const ceiling = measureCeiling(canvas);
+    const key = `${Math.round(ceiling / 8)};` + avoid.map((r) => `${Math.round(r.l / 8)},${Math.round(r.t / 8)},${Math.round(r.r / 8)},${Math.round(r.b / 8)}`).join('|');
     if (!force && width === w && height === h && key === contentKey) return;
     contentKey = key;
     if (!force && scene && width === w && height === h) {
       scene.content = contentBox(w, h, avoid);
+      scene.ceiling = ceiling;
       if (reduced) draw(0, 0);
       return;
     }
@@ -326,7 +331,7 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
       cw = cellWidth(w);
       ch = Math.round(cw * CELL_ASPECT);
     }
-    scene = reduced ? stillScene(w, h, { avoid, cell: cw }) : createScene(w, h, { avoid, cell: cw });
+    scene = reduced ? stillScene(w, h, { avoid, ceiling, cell: cw }) : createScene(w, h, { avoid, ceiling, cell: cw });
     fades = [];
     if (reduced) draw(0, 0);
     else kick();
