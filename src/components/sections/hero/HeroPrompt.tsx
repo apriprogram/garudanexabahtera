@@ -19,8 +19,9 @@ const HERO_PROMPT_MAX_LENGTH = 500;
 /**
  * Hero beranda gaya "Prompt AI" (Pengaturan website → Hero → Gaya hero), mengikuti video rujukan pemilik 2026-10-29:
  * latar terang (gradasi biru brand sangat muda + cahaya biru lembut yang berkelana, pola titik tipis), judul besar di
- * tengah, kotak prompt lebar dengan placeholder, tombol kirim, dan chip rekomendasi; di belakangnya burung Garuda ASCII
- * terbang melintas dan singgah (prompt/GarudaAscii.tsx).
+ * tengah, kotak prompt lebar dengan placeholder, tombol kirim, dan chip rekomendasi; di belakangnya tiga burung Garuda
+ * ASCII terbang sinematik jauh-dekat (prompt/GarudaAscii.tsx). Burung meredup saat lewat di belakang elemen bertanda
+ * data-garuda-avoid (judul, kotak prompt, chip).
  * - Isi dari setting admin (heroStyle.ts): judul, placeholder, chip (label + tautan), saklar animasi.
  * - Kotak prompt TERHUBUNG ke chat Nexa (layout/nexa/nexaBridge.ts): Enter / tombol kirim membuka panel Nexa dan
  *   mengirim pesannya; Nexa menjawab dengan rekomendasi template (kartu), harga, atau tautan form pesan custom, dan
@@ -92,6 +93,7 @@ export const HeroPrompt: React.FC<{ settings: SiteSettings }> = ({ settings }) =
           // Pill putih: H1 kecil tetap terbaca saat burung lewat di belakangnya
           <h1
             id="hero-title"
+            data-garuda-avoid
             className="mb-5 inline-flex max-w-full items-center rounded-full bg-surface/90 px-3.5 py-1.5 text-[12px] font-semibold leading-snug text-muted ring-1 ring-inset ring-line sm:mb-6 sm:text-[13px]"
           >
             {headline.keywordH1}
@@ -99,13 +101,14 @@ export const HeroPrompt: React.FC<{ settings: SiteSettings }> = ({ settings }) =
         )}
         <Title
           id={headline.isH1 ? 'hero-title' : undefined}
+          data-garuda-avoid
           className="max-w-[18ch] text-[30px] font-medium leading-[1.12] tracking-[-0.03em] text-fg sm:text-[52px] sm:leading-[1.06] lg:text-[60px]"
         >
           {prompt.title}
         </Title>
 
         {/* Kotak prompt: kartu putih tembus (burung di belakangnya tampak buram), tanpa bayangan */}
-        <div className="mt-7 w-full max-w-[720px] rounded-[24px] bg-surface/90 p-3.5 text-left ring-1 ring-inset ring-line backdrop-blur-sm transition-[box-shadow] focus-within:ring-2 focus-within:ring-primary sm:mt-10 sm:p-4">
+        <div data-garuda-avoid className="mt-7 w-full max-w-[720px] rounded-[24px] bg-surface/90 p-3.5 text-left ring-1 ring-inset ring-line backdrop-blur-sm transition-[box-shadow] focus-within:ring-2 focus-within:ring-primary sm:mt-10 sm:p-4">
           <label htmlFor="hero-prompt" className="sr-only">
             Ceritakan kebutuhan website atau aplikasi kamu untuk Nexa
           </label>
@@ -157,7 +160,7 @@ export const HeroPrompt: React.FC<{ settings: SiteSettings }> = ({ settings }) =
         </div>
 
         {prompt.chips.length > 0 && (
-          <ul aria-label="Rekomendasi" className="mt-4 flex flex-wrap justify-center gap-2 sm:mt-5">
+          <ul aria-label="Rekomendasi" data-garuda-avoid className="mt-4 flex flex-wrap justify-center gap-2 sm:mt-5">
             {prompt.chips.map((chip, index) => (
               <li key={`${chip.href}-${index}`}>
                 <SmartLink href={chip.href} className="chip-site">

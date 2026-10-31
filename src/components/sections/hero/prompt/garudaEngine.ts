@@ -1,12 +1,15 @@
-// Mesin kanvas burung Garuda ASCII (GarudaAscii.tsx): memasang kanvas, loop animasi, dan menggambar adegan
-// garudaFlight.ts dengan sprite garudaSprites.ts. Tampilan mengikuti video rujukan dan ascii-sharks
-// (github.com/stackedlol/ascii-sharks, MIT): sel glyph monospace abu-abu tipis di atas latar putih, sel padat lebih
-// gelap dan tepi ringan, tiap sel diberi "kotak" samar seperti tuts, sedikit kerlip glyph, titik riak di belakang burung;
-// dahan = deretan '=' di bawah burung yang hinggap. Ringan: ±30 fps (24 fps di HP), berhenti saat kanvas tidak terlihat
-// atau tab disembunyikan, DPR maks. 2, reduced motion = satu gambar diam. Sprite dirasterisasi dicicil per potongan
-// idle (bukan di dalam frame), burung yang spritenya belum siap belum digambar (ia masih di luar layar).
-import { LAND_SECONDS, TAKEOFF_SECONDS, createScene, stepScene, stillScene, type Bird, type Scene } from './garudaFlight';
-import { FLAP_FRAMES, mirrorSprite, spriteSetSteps, type Sprite, type SpriteSet } from './garudaSprites';
+// Mesin kanvas tiga burung Garuda ASCII (GarudaAscii.tsx): memasang kanvas, loop animasi 60 fps (requestAnimationFrame),
+// dan menggambar adegan garudaFlight.ts: partikel, lalu burung-burung (yang jauh dulu, yang dekat paling depan) yang
+// dirasterisasi ulang tiap frame dari modelnya (garudaSprites.ts). Tampilan mengikuti video rujukan dan ascii-sharks
+// (github.com/stackedlol/ascii-sharks, MIT): sel glyph monospace abu-abu tipis di atas latar putih, sel padat lebih gelap,
+// tepi ringan / bergaris menurut arahnya, sel burung diberi "kotak" samar seperti tuts, sedikit kerlip glyph.
+// - Kedalaman: burung jauh = kecil, glyph sedikit lebih kecil & lebih pudar (seperti tertutup udara); dekat = besar,
+//   lebih banyak sel (lebih detail), lebih pekat. Burung yang lewat di belakang judul / kotak prompt diredupkan.
+// - Burung seukuran layar: hanya bagian yang terlihat yang dirasterisasi, dan kotak "tuts" dilewati bila selnya sangat
+//   banyak (hemat waktu frame).
+// - Hemat: berhenti saat kanvas tidak terlihat atau tab disembunyikan, DPR maks. 2, reduced motion = satu gambar diam.
+import { contentBox, createScene, stepScene, stillScene, type Bird, type Rect, type Scene } from './garudaFlight';
+import { DIR_GLYPHS, rasterize } from './garudaSprites';
 
 /** --site-fg (#121620): semua sel memakai warna teks utama dengan alpha rendah, jadi abu-abu di atas putih. */
 const FG = '18, 22, 32';
@@ -14,34 +17,43 @@ const FG = '18, 22, 32';
 const ALPHA = [0, 0.18, 0.3, 0.44, 0.58];
 /** Sel paling pekat: warna teks utama dengan alpha ini di atas putih (untuk cek kontras teks hero di atas kanvas). */
 export const GLYPH_ALPHA_MAX = ALPHA[4];
-/** Glyph per kepadatan: tepi ringan → isi padat. */
+/** Glyph isi burung per kepadatan: tepi ringan → isi padat. */
 const GLYPHS = ['', ".'`,", ':;=+', '%SXt', '@#8&'];
 const CELL_ASPECT = 1.5;
 const MAX_DT = 0.05;
 const SHIMMER_SECONDS = 0.35;
-const BRANCH_GLYPH = '=';
-/** Lama maksimal satu potongan rasterisasi sprite (ms) sebelum menyerahkan kembali ke browser. */
-const BUILD_SLICE_MS = 8;
+/** Kotak "tuts" memudar antara jumlah sel ini (burung seukuran layar: tanpa kotak, hemat waktu frame). */
+const BOX_FADE_CELLS: readonly [number, number] = [1800, 3200];
+const FONT_STACK = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 /** Lebar sel (px) untuk lebar hero `w`: 7 px di HP sampai 9 px di layar lebar. */
 export const cellWidth = (w: number): number => clamp(Math.round(w / 170), 7, 9);
 
-/** Hash 32-bit deterministik per sel: glyph yang sama untuk sel yang sama (tanpa kedip), kecuali yang sengaja berkerlip. */
-const hash = (c: number, r: number, seed: number): number =>
-  (Math.imul(c + 1, 73856093) ^ Math.imul(r + 1, 19349663) ^ Math.imul(seed + 1, 83492791)) >>> 0;
-
-/** Jalankan `callback` saat browser senggang (requestIdleCallback; Safari: setTimeout). */
-const whenIdle = (callback: () => void): void => {
-  const w = window as Window & { requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number };
-  if (typeof w.requestIdleCallback === 'function') w.requestIdleCallback(callback, { timeout: 250 });
-  else window.setTimeout(callback, 16);
+/**
+ * Hash 32-bit deterministik per sel: glyph yang sama untuk sel yang sama (tanpa kedip), kecuali yang sengaja berkerlip.
+ * Diaduk ulang (avalanche) supaya sisa bagi kecil tidak berpola berulang di burung besar.
+ */
+const hash = (c: number, r: number, seed: number): number => {
+  let x = Math.imul(c + 1, 73856093) ^ Math.imul(r + 1, 19349663) ^ Math.imul(seed + 1, 83492791);
+  x = Math.imul(x ^ (x >>> 15), 0x2c1b3c6d);
+  x = Math.imul(x ^ (x >>> 12), 0x297a2d39);
+  return (x ^ (x >>> 15)) >>> 0;
 };
 
-interface Sprites {
-  right: SpriteSet;
-  left: SpriteSet;
+const font = (cellH: number) => `500 ${(cellH * 0.82).toFixed(2)}px ${FONT_STACK}`;
+const rgba = (alpha: number) => `rgba(${FG}, ${alpha.toFixed(3)})`;
+
+/** Kotak elemen hero bertanda data-garuda-avoid (judul, kotak prompt, chip) relatif terhadap kanvas. */
+function measureAvoid(canvas: HTMLCanvasElement): Rect[] {
+  const host = canvas.closest('section');
+  if (!host) return [];
+  const base = canvas.getBoundingClientRect();
+  return Array.from(host.querySelectorAll('[data-garuda-avoid]'), (el) => {
+    const r = el.getBoundingClientRect();
+    return { l: r.left - base.left, t: r.top - base.top, r: r.right - base.left, b: r.bottom - base.top };
+  }).filter((r) => r.r > r.l && r.b > r.t);
 }
 
 /** Pasang animasi di `canvas` (mengisi kotak induknya). Mengembalikan fungsi untuk melepasnya. */
@@ -52,9 +64,11 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
 
   let w = 0;
   let h = 0;
+  let dpr = 1;
   let cw = 8;
   let ch = 12;
   let scene: Scene | null = null;
+  let contentKey = '';
   let raf = 0;
   // Kanvas di dalam viewport (IntersectionObserver) DAN tab terlihat: keduanya dipegang terpisah, karena ganti tab
   // tidak memicu IntersectionObserver dan loop tidak boleh jalan lagi untuk hero yang masih di luar layar
@@ -62,140 +76,134 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
   let visible = true;
   let disposed = false;
   let last = 0;
-  let lastDraw = 0;
-  const spritesByUnit = new Map<number, Sprites>();
-  const building = new Set<number>();
+  /** Redup per burung saat lewat di belakang konten (berubah halus). */
+  let fades: number[] = [];
 
-  /** Rasterisasi set sprite `unit` dicicil per potongan idle; setelah siap burungnya mulai digambar. */
-  const buildSprites = (unit: number) => {
-    const { steps, done } = spriteSetSteps(unit, CELL_ASPECT);
-    let next = 0;
-    const slice = () => {
-      if (disposed) return;
-      const started = performance.now();
-      while (next < steps.length && performance.now() - started < BUILD_SLICE_MS) steps[next++]();
-      if (next < steps.length) {
-        whenIdle(slice);
-        return;
+  const drawParticles = () => {
+    if (!scene || !scene.particles.length) return;
+    ctx.font = font(ch);
+    for (const p of scene.particles) {
+      const t = p.age / p.life;
+      const life = Math.min(1, p.age / 0.12) * (1 - t * t);
+      let glyph: string;
+      let alpha: number;
+      if (p.kind === 'spark') {
+        // Kilau: bintang → plus → titik, sesekali berkedip
+        glyph = Math.floor(p.age * 14 + p.seed * 7) % 5 === 0 ? "'" : t < 0.3 ? '*' : t < 0.65 ? '+' : '.';
+        alpha = 0.4;
+      } else {
+        // Bulu berayun: condong ke arah ayunannya
+        const sway = Math.cos(p.phase);
+        glyph = sway > 0.35 ? ')' : sway < -0.35 ? '(' : '~';
+        alpha = 0.36;
       }
-      const right = done();
-      spritesByUnit.set(unit, {
-        right,
-        left: {
-          flap: right.flap.map(mirrorSprite),
-          glide: mirrorSprite(right.glide),
-          flare: mirrorSprite(right.flare),
-          perch: mirrorSprite(right.perch),
-        },
-      });
-      building.delete(unit);
-      if (reduced) draw(0);
-    };
-    whenIdle(slice);
-  };
-
-  /** Sprite burung ini, atau null bila masih dirasterisasi (burung dilewati dulu; ia mulai dari luar layar). */
-  const spritesFor = (bird: Bird, current: Scene): Sprites | null => {
-    const unit = Math.max(10, Math.round((bird.size * current.length) / cw));
-    const sprites = spritesByUnit.get(unit);
-    if (sprites) return sprites;
-    if (!building.has(unit)) {
-      building.add(unit);
-      buildSprites(unit);
+      ctx.fillStyle = rgba(alpha * life);
+      ctx.setTransform(dpr * p.size, 0, 0, dpr * p.size, dpr * p.x, dpr * p.y);
+      ctx.fillText(glyph, 0, 0);
     }
-    return null;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
 
-  const spriteOf = (bird: Bird, set: SpriteSet): Sprite => {
-    if (bird.state === 'land' || bird.state === 'takeoff') return set.flare;
-    if (bird.state === 'perch') return set.perch;
-    if (bird.gliding) return set.glide;
-    // Indeks aman untuk fase di luar 0..1 (tidak pernah negatif setelah dt dibatasi, tapi jangan sampai undefined)
-    const frame = ((Math.floor(bird.phase * FLAP_FRAMES) % FLAP_FRAMES) + FLAP_FRAMES) % FLAP_FRAMES;
-    return set.flap[frame];
-  };
+  const drawBird = (bird: Bird, now: number, dt: number) => {
+    const geo = bird.geometry;
+    if (!scene || !geo) return;
+    const bodyPx = scene.L0 * bird.s;
+    if (bodyPx < 4) return;
+    // Jauh: glyph sedikit lebih kecil & pudar; dekat: lebih besar & pekat (sel per panjang badan tetap bertambah)
+    const near = clamp((bird.s - 0.2) / 1, 0, 1);
+    const scale = 0.86 + 0.24 * near;
+    const bcw = cw * scale;
+    const bch = ch * scale;
+    // Bagian yang terlihat saja (satuan panjang badan, relatif pusat badan)
+    const clip = [(-bird.x - bcw) / bodyPx, (-bird.y - bch) / bodyPx, (w - bird.x + bcw) / bodyPx, (h - bird.y + bch) / bodyPx] as const;
+    const sprite = rasterize(geo.shapes, bcw / bodyPx, bch / bodyPx, [0, 0], clip);
+    if (!sprite.cols) return;
+    const left = bird.x - sprite.ax * bcw;
+    const top = bird.y - sprite.ay * bch;
+    const width = sprite.cols * bcw;
+    const height = sprite.rows * bch;
 
-  const drawSprite = (sprite: Sprite, x: number, y: number, bank: number, seed: number, shimmer: number) => {
-    ctx.save();
-    ctx.translate(x, y);
-    if (bank) ctx.rotate(bank);
-    const left = -sprite.ax * cw;
-    const top = -sprite.ay * ch;
-    for (let r = 0; r < sprite.rows; r++) {
-      for (let c = 0; c < sprite.cols; c++) {
-        const level = sprite.cells[r * sprite.cols + c];
-        if (!level) continue;
-        const px = left + c * cw;
-        const py = top + r * ch;
-        const base = hash(c, r, seed);
-        // Kotak samar di belakang glyph (tampilan "tuts" seperti video rujukan)
-        ctx.fillStyle = `rgba(${FG}, ${(0.028 * level).toFixed(3)})`;
-        ctx.fillRect(px + 0.5, py + 0.5, cw - 1, ch - 1);
-        const set = GLYPHS[level];
-        // Sebagian kecil sel berganti glyph tiap SHIMMER_SECONDS: tekstur hidup tanpa kedip menyeluruh
-        const pick = base % 7 === 0 ? hash(c, r, seed + shimmer) : base;
-        ctx.fillStyle = `rgba(${FG}, ${ALPHA[level]})`;
-        ctx.fillText(set[pick % set.length], px + cw / 2, py + ch / 2 + 0.5);
+    // Redup saat melintas di belakang judul / kotak prompt (keterbacaan), berubah halus
+    const { content } = scene;
+    const ox = Math.max(0, Math.min(left + width, content.r) - Math.max(left, content.l));
+    const oy = Math.max(0, Math.min(top + height, content.b) - Math.max(top, content.t));
+    const target = 1 - 0.35 * ((ox * oy) / (width * height));
+    const prev = fades[bird.index] ?? target;
+    const fade = prev + (target - prev) * clamp(dt * 5, 0, 1);
+    fades[bird.index] = fade;
+    const alphaK = (0.55 + 0.45 * near) * fade;
+
+    const { cells, dirs, marks, cols } = sprite;
+    // Kotak samar di belakang glyph (tampilan "tuts" seperti video rujukan), satu path per kepadatan; memudar saat
+    // burung sangat besar
+    const boxK = clamp((BOX_FADE_CELLS[1] - cells.length) / (BOX_FADE_CELLS[1] - BOX_FADE_CELLS[0]), 0, 1);
+    if (boxK > 0) {
+      for (let level = 1; level <= 4; level++) {
+        ctx.beginPath();
+        let any = false;
+        for (let i = 0; i < cells.length; i++) {
+          if (cells[i] !== level) continue;
+          const c = i % cols;
+          const r = (i - c) / cols;
+          ctx.rect(left + c * bcw + 0.5, top + r * bch + 0.5, bcw - 1, bch - 1);
+          any = true;
+        }
+        if (any) {
+          ctx.fillStyle = rgba(0.028 * level * alphaK * boxK);
+          ctx.fill();
+        }
       }
     }
-    ctx.restore();
+    ctx.font = font(bch);
+    const shimmer = Math.floor(now / 1000 / SHIMMER_SECONDS);
+    for (let level = 1; level <= 4; level++) {
+      ctx.fillStyle = rgba(ALPHA[level] * alphaK);
+      const set = GLYPHS[level];
+      for (let i = 0; i < cells.length; i++) {
+        if (cells[i] !== level) continue;
+        const c = i % cols;
+        const r = (i - c) / cols;
+        let glyph: string = DIR_GLYPHS[dirs[i]];
+        if (!glyph) {
+          // Glyph per sel relatif terhadap badan (tetap saat terbang); sebagian kecil berganti tiap SHIMMER_SECONDS
+          const base = hash(c + sprite.c0, r + sprite.r0, 3 + bird.index);
+          const pick = base % 7 === 0 ? hash(c + sprite.c0, r + sprite.r0, 3 + bird.index + shimmer) : base;
+          glyph = set[pick % set.length];
+        }
+        ctx.fillText(glyph, left + c * bcw + bcw / 2, top + r * bch + bch / 2 + 0.5);
+      }
+    }
+    // Mata: glyph khusus, sepekat sel terpadat
+    if (marks.size) {
+      ctx.fillStyle = rgba(ALPHA[4] * alphaK);
+      for (const [i, glyph] of marks) {
+        const c = i % cols;
+        const r = (i - c) / cols;
+        ctx.fillText(glyph, left + c * bcw + bcw / 2, top + r * bch + bch / 2 + 0.5);
+      }
+    }
   };
 
-  const drawBranch = (bird: Bird, alpha: number) => {
-    const perch = bird.perch;
-    if (!perch || alpha <= 0) return;
-    const n = Math.round(7 + 5 * bird.size);
-    const x0 = perch.x - (n * cw) / 2;
-    const y = perch.y + ch * 0.55;
-    ctx.fillStyle = `rgba(${FG}, ${(0.3 * alpha).toFixed(3)})`;
-    for (let i = 0; i < n; i++) ctx.fillText(BRANCH_GLYPH, x0 + i * cw + cw / 2, y);
-  };
-
-  const draw = (now: number) => {
+  const draw = (now: number, dt: number) => {
     if (!scene) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    ctx.font = `500 ${Math.round(ch * 0.82)}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const shimmer = Math.floor(now / 1000 / SHIMMER_SECONDS);
-
-    // Riak: titik kecil di grid sel, memudar
-    for (const dot of scene.dots) {
-      const gx = Math.floor(dot.x / cw) * cw + cw / 2;
-      const gy = Math.floor(dot.y / ch) * ch + ch / 2;
-      ctx.fillStyle = `rgba(${FG}, ${(0.35 * (dot.life / dot.max)).toFixed(3)})`;
-      ctx.fillRect(gx - 1, gy - 1, 2, 2);
-    }
-
-    scene.birds.forEach((bird, index) => {
-      if (bird.state === 'gone') return;
-      const sprites = spritesFor(bird, scene!);
-      if (!sprites) return;
-      const sprite = spriteOf(bird, bird.facing > 0 ? sprites.right : sprites.left);
-      if (bird.state === 'land') drawBranch(bird, Math.min(1, bird.stateTime / LAND_SECONDS));
-      else if (bird.state === 'perch') drawBranch(bird, 1);
-      else if (bird.state === 'takeoff') drawBranch(bird, 1 - Math.min(1, bird.stateTime / TAKEOFF_SECONDS));
-      // Mengepak: badan naik-turun sedikit mengikuti fase
-      const bob = bird.state === 'fly' && !bird.gliding ? Math.sin(bird.phase * Math.PI * 2) * ch * 0.25 : 0;
-      drawSprite(sprite, bird.x, bird.y + bob, bird.state === 'fly' ? bird.bank * bird.facing : 0, index, shimmer);
-    });
+    drawParticles();
+    // Yang jauh dulu, yang dekat menutupinya
+    const birds = [...scene.birds].sort((a, b) => b.pos[2] - a.pos[2]);
+    for (const bird of birds) drawBird(bird, now, dt);
   };
 
   const frame = (now: number) => {
     raf = 0;
     if (!visible || !scene) return;
-    // ±30 fps cukup untuk glyph; HP ±24 fps
-    const interval = w < 640 ? 41 : 32;
-    if (now - lastDraw < interval) {
-      raf = requestAnimationFrame(frame);
-      return;
-    }
     // Stempel waktu frame bisa sedikit lebih awal dari performance.now() di kick(): langkah tidak boleh negatif
     const dt = clamp((now - last) / 1000, 0, MAX_DT);
     last = now;
-    lastDraw = now;
     stepScene(scene, dt);
-    draw(now);
+    draw(now, dt);
     raf = requestAnimationFrame(frame);
   };
 
@@ -205,27 +213,36 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
     raf = requestAnimationFrame(frame);
   };
 
-  const resize = () => {
+  /**
+   * Ukuran berubah (jarang: putar layar) → adegan dibangun ulang; hanya kotak konten yang berubah (font selesai dimuat)
+   * → kotaknya saja diperbarui, burung terus terbang.
+   */
+  const layout = (force: boolean) => {
     const rect = canvas.getBoundingClientRect();
     const width = Math.round(rect.width);
     const height = Math.round(rect.height);
     if (width < 1 || height < 1) return;
-    if (width === w && height === h) return;
-    w = width;
-    h = height;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cw = cellWidth(w);
-    ch = Math.round(cw * CELL_ASPECT);
-    spritesByUnit.clear();
-    building.clear();
-    // Ukuran berubah (jarang: putar layar): adegan mulai dari awal supaya dahan & lintasan sesuai ukuran baru
-    scene = reduced ? stillScene(w, h) : createScene(w, h);
-    // Sprite semua ukuran burung mulai dirasterisasi sekarang (per potongan idle), sebelum burung pertama masuk layar
-    for (const bird of scene.birds) spritesFor(bird, scene);
-    if (reduced) draw(0);
+    const avoid = measureAvoid(canvas);
+    const key = avoid.map((r) => `${Math.round(r.l / 8)},${Math.round(r.t / 8)},${Math.round(r.r / 8)},${Math.round(r.b / 8)}`).join('|');
+    if (!force && width === w && height === h && key === contentKey) return;
+    contentKey = key;
+    if (!force && scene && width === w && height === h) {
+      scene.content = contentBox(w, h, avoid);
+      if (reduced) draw(0, 0);
+      return;
+    }
+    if (width !== w || height !== h) {
+      w = width;
+      h = height;
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      cw = cellWidth(w);
+      ch = Math.round(cw * CELL_ASPECT);
+    }
+    scene = reduced ? stillScene(w, h, { avoid, cell: cw }) : createScene(w, h, { avoid, cell: cw });
+    fades = [];
+    if (reduced) draw(0, 0);
     else kick();
   };
 
@@ -238,12 +255,16 @@ export function startGaruda(canvas: HTMLCanvasElement): () => void {
     visible = intersecting && !document.hidden;
     if (visible) kick();
   };
-  const ro = new ResizeObserver(resize);
+  const ro = new ResizeObserver(() => layout(false));
 
-  resize();
+  layout(true);
   ro.observe(canvas);
   io.observe(canvas);
   document.addEventListener('visibilitychange', onVisibility);
+  // Judul memakai font web: setelah selesai dimuat kotaknya bisa berubah (dipakai untuk meredupkan burung)
+  document.fonts?.ready.then(() => {
+    if (!disposed) layout(false);
+  });
 
   return () => {
     disposed = true;

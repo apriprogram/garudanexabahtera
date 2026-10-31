@@ -2,7 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { startGaruda } from './garudaEngine';
 
 /**
- * Latar hero gaya Prompt AI: burung Garuda dari karakter ASCII yang terbang melintas, singgah di dahan, lalu terbang lagi
+ * Latar hero gaya Prompt AI: tiga burung Garuda dari karakter ASCII yang terbang sinematik (formasi, berputar, acak),
+ * menjauh-mendekat, sesekali menukik sampai seukuran layar lalu keluar dan kembali, dengan partikel kilau dan bulu
  * (garudaEngine.ts, garudaFlight.ts, garudaSprites.ts). Dekoratif (aria-hidden), dimuat lazy oleh HeroPrompt hanya saat
  * gaya ini aktif dan animasinya dihidupkan admin. Di HTML prerender hanya kanvas kosong; animasi mulai setelah hidrasi.
  */

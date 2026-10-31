@@ -223,9 +223,11 @@ abu (`alt`); prop `alt` tiap section mengikuti ini. `main.page-chrome > section`
   kirim `bg-fg`), chip rekomendasi `chip-site` (tautan dari admin), lalu H1 kata kunci kecil dalam pill putih bila judul
   admin tanpa frasa "template website" (SEO seperti hero klasik). Enter / kirim → panel Nexa terbuka dan pesan terkirim
   (`layout/nexa/nexaBridge.ts`); widget Nexa mati → `/pesan-custom?brief=…`. Latar: burung Garuda dari karakter ASCII
-  (`hero/prompt/`: sprite parametrik dirasterisasi ke grid glyph monospace, ide dari ascii-sharks MIT) terbang melintas,
-  singgah di dahan `=`, lepas landas lagi; abu-abu `fg` alpha ≤ 0,58, 1–3 burung, ±30 fps, berhenti saat tak terlihat,
-  reduced motion = satu gambar diam. Kontras teks di atas kanvas: judul besar ≥ 3:1, teks kecil di kartu/pill putih ≥ 4,5:1.
+  (`hero/prompt/`: model burung 3D prosedural dirasterisasi ulang tiap frame ke grid glyph monospace, ide dari
+  ascii-sharks MIT): tiga burung bergantian terbang dalam formasi, berputar-putar, dan acak, menjauh (kecil) dan mendekat
+  (besar, makin detail), sesekali menukik sampai seukuran layar lalu keluar dan kembali; kepakan downstroke/upstroke
+  halus + meluncur, partikel kilau & bulu; abu-abu `fg` alpha ≤ 0,58, diredupkan di belakang judul/kotak prompt, 60 fps,
+  berhenti saat tak terlihat, reduced motion = satu gambar diam. Kontras teks di atas kanvas: judul besar ≥ 3:1, teks kecil di kartu/pill putih ≥ 4,5:1.
 - **Latar hero** (`Hero.tsx`, `hero/heroBgConfig.ts`, `hero/HeroMedia.tsx`): setting `hero_bg_mode` (dicocokkan persis)
   - `default` (juga kosong/tidak dikenal) → `HeroBackground` (kanvas di atas). Hanya latar yang aktif yang dipasang, jadi
     loop kanvas tidak berjalan di mode lain. Sebelum setting dimuat tidak ada latar sama sekali (tanpa kedip).
