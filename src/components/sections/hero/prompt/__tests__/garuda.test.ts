@@ -235,7 +235,8 @@ describe('lintasan & koreografi', () => {
     // Pengikut formasi rata-rata dekat pemimpinnya (bergerombol)
     expect(followGap / followSamples).toBeLessThan(4);
     expect(scene.time).toBeCloseTo(240, 0);
-  });
+    // Simulasi 240 detik adegan: ±3 detik sendirian, bisa >5 detik saat file tes lain berjalan bersamaan
+  }, 30_000);
 
   it('HP: ukuran burung relatif lebih besar; adegan diam: tiga burung di luar kotak konten', () => {
     const mobile = createScene(375, 640, { rng: lcg(3) });
