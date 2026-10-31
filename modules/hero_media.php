@@ -12,6 +12,15 @@
 //   hero_overlay          overlay behind the hero text in percent, applied exactly as stored (never raised by the site;
 //                         0 = no overlay, the image/video shows uncovered), an integer 0..80 as a string (default 0):
 //                         a number or plain decimal text ("55", " 40.6") is rounded and clamped, anything else → '0'
+//   hero_style            'classic' (today's hero, default) | 'prompt' (big title + AI prompt box over an ASCII Garuda
+//                         animation, src/components/sections/hero/HeroPrompt.tsx); anything else is saved as 'classic'
+//   hero_prompt_title     one line of text of the prompt hero (runs of whitespace collapsed, trimmed, at most 160
+//                         characters; '' = the site's default text); hero_prompt_placeholder the same
+//   hero_prompt_chips     JSON array of {label, href} recommendation chips under the prompt box, at most 6 in the order
+//                         sent: label 1..40 characters, href a site path ('/…', not '//host'), an absolute http(s) URL
+//                         or '#anchor'; other entries are dropped. Not a JSON array → saved as sent (the site then
+//                         shows its default chips)
+//   hero_prompt_garuda    '1' (default) | '0' = the ASCII Garuda animation behind the prompt hero is off
 //
 // upload_hero_video (POST /api.php?action=upload_hero_video, staff token): the body is the raw file, not JSON, base64
 // or multipart; api.php skips its JSON read for this action and the body is streamed from php://input into a dot
@@ -41,6 +50,14 @@ const HM_OVERLAY_DEFAULT = 0;
 const HM_OVERLAY_MAX = 80;
 // Plain decimal number with spaces/tabs/newlines around it: no sign other than '-', no exponent, no thousands separator
 const HM_OVERLAY_NUMBER = '/^[ \t\n\r]*(-?[0-9]+(?:\.[0-9]+)?)[ \t\n\r]*$/D';
+// hero_style values and the prompt hero limits (HERO_STYLES / HERO_PROMPT_* in src/components/sections/hero/heroStyle.ts)
+const HM_STYLES = ['classic', 'prompt'];
+const HM_PROMPT_TEXT_MAX = 160;
+const HM_PROMPT_LABEL_MAX = 40;
+const HM_PROMPT_MAX_CHIPS = 6;
+const HM_PROMPT_HASH_LINK = '/^#[a-z0-9-]+$/iD';
+// Control characters and backslashes: browsers drop or read them as "/" ("/\host" = "//host"), see safeMediaUrl()
+const HM_LINK_UNSAFE = '/[\x00-\x1f\x7f\\\\]/';
 // ISO-BMFF major brands of MP4 files that browsers play; 'qt  ' (QuickTime .mov) is deliberately not one of them
 const HM_MP4_BRANDS = ['isom', 'iso2', 'iso3', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'dash', 'M4V ', 'mmp4', 'MSNV'];
 // Names this module gives its files (file name only, directly in assets/bg/); the sweep deletes nothing else
@@ -180,6 +197,61 @@ function hm_overlay($value): string {
     return (string)(int)max(0.0, min((float)HM_OVERLAY_MAX, round($number)));
 }
 
+// hero_style as stored: one of HM_STYLES, anything else (missing, empty, unknown, not a string) → 'classic'
+function hm_style($value): string {
+    return (is_string($value) && in_array($value, HM_STYLES, true)) ? $value : 'classic';
+}
+
+// hero_prompt_garuda as stored: '0' (also the number 0, int or float, and false) = off, anything else → '1'
+function hm_prompt_flag($value): string {
+    if ($value === '0' || $value === false) return '0';
+    if ((is_int($value) || is_float($value)) && !is_nan((float)$value) && (float)$value === 0.0) return '0';
+    return '1';
+}
+
+// One line of prompt text: runs of space, tab and newline collapsed to one space, trimmed, at most $max characters
+// (code points); not a string (or not UTF-8) → ''. Same as promptText() in hero_media.js / heroStyle.ts.
+function hm_prompt_text($value, int $max): string {
+    if (!is_string($value)) return '';
+    $text = preg_replace('/[ \t\r\n]+/', ' ', $value);
+    return $text === null ? '' : mb_substr(trim($text), 0, $max, 'UTF-8');
+}
+
+// A chip link: '#anchor', a site path ('/…', not '//host') or an absolute http(s) URL, without control characters or
+// backslashes (safeChipHref() in heroStyle.ts); anything else (data:, javascript:, relative, empty, not a string) → null
+function hm_chip_href($value): ?string {
+    if (!is_string($value)) return null;
+    $url = trim($value);
+    if ($url === '' || preg_match(HM_LINK_UNSAFE, $url)) return null;
+    if (preg_match(HM_PROMPT_HASH_LINK, $url)) return $url;
+    if ($url[0] === '/') return strpos($url, '//') === 0 ? null : $url;
+    return preg_match('#^https?://[^/]#i', $url) ? $url : null;
+}
+
+// hero_prompt_chips as stored: a JSON array (or a list) of {label, href} → JSON of the valid chips (label 1..40
+// characters, href per hm_chip_href(), at most HM_PROMPT_MAX_CHIPS, order kept, other entries dropped); anything else
+// (JSON object, text, number) → null, the value is then saved as sent. Same JSON as promptChips() in hero_media.js.
+function hm_prompt_chips($value): ?string {
+    if (is_array($value)) {
+        $items = $value;
+    } else {
+        // Only a JSON array text ('[' first): a JSON object with numeric keys must not pass as a list in either backend
+        if (!is_string($value) || !preg_match('/^\s*\[/', $value)) return null;
+        $items = json_decode($value, true);
+    }
+    if (!is_array($items) || ($items && array_keys($items) !== range(0, count($items) - 1))) return null;
+    $chips = [];
+    foreach ($items as $item) {
+        if (!is_array($item)) continue;
+        $label = hm_prompt_text($item['label'] ?? null, HM_PROMPT_LABEL_MAX);
+        $href = hm_chip_href($item['href'] ?? null);
+        if ($label === '' || $href === null) continue;
+        $chips[] = ['label' => $label, 'href' => $href];
+        if (count($chips) >= HM_PROMPT_MAX_CHIPS) break;
+    }
+    return json_encode($chips, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+}
+
 function hm_is_data_uri($value): bool {
     return is_string($value) && (bool)preg_match('/^\s*data:/i', $value);
 }
@@ -284,7 +356,9 @@ function hm_write_image(array $image, string $stem, array &$written): string {
 
 // Normalizes the hero keys of an update_settings payload in place, before anything is saved: hero_bg_mode → one of
 // HM_BG_MODES, hero_text_tone → one of HM_TEXT_TONES, hero_overlay → '0'..'80', hero_bg_video → a link (a data: URI is refused with 400), hero_bg_video_poster → a new data: image is
-// stored as /assets/bg/hero_poster_<hex>.<ext>, other values pass the link check, hero_images → stored paths.
+// stored as /assets/bg/hero_poster_<hex>.<ext>, other values pass the link check, hero_images → stored paths;
+// hero_style → one of HM_STYLES, hero_prompt_garuda → '1'/'0', hero_prompt_title / hero_prompt_placeholder → one line
+// of text, hero_prompt_chips → JSON of the valid chips (see the header).
 // Keys that were not sent stay absent. $base: hero_media_base of the request (see hm_check_media), null = no check.
 // Returns function (bool $saved): call it once the request is over, true after a successful save (garbage-collect
 // sweep), false when the request failed after this (removes the files stored here that no saved setting uses).
@@ -297,6 +371,16 @@ function hero_media_prepare_settings(mysqli $conn, array &$settings, $base = nul
     if ($has('hero_bg_mode')) $settings['hero_bg_mode'] = hm_bg_mode($settings['hero_bg_mode']);
     if ($has('hero_text_tone')) $settings['hero_text_tone'] = hm_text_tone($settings['hero_text_tone']);
     if ($has('hero_overlay')) $settings['hero_overlay'] = hm_overlay($settings['hero_overlay']);
+    // Prompt hero (hero_style = 'prompt'): plain text and links only, nothing is uploaded
+    if ($has('hero_style')) $settings['hero_style'] = hm_style($settings['hero_style']);
+    if ($has('hero_prompt_garuda')) $settings['hero_prompt_garuda'] = hm_prompt_flag($settings['hero_prompt_garuda']);
+    foreach (['hero_prompt_title', 'hero_prompt_placeholder'] as $key) {
+        if ($has($key)) $settings[$key] = hm_prompt_text($settings[$key], HM_PROMPT_TEXT_MAX);
+    }
+    if ($has('hero_prompt_chips')) {
+        $chips = hm_prompt_chips($settings['hero_prompt_chips']);
+        if ($chips !== null) $settings['hero_prompt_chips'] = $chips;
+    }
     $poster = null;
     if ($has('hero_bg_video_poster')) {
         if (hm_is_data_uri($settings['hero_bg_video_poster'])) $poster = hm_raster_image($settings['hero_bg_video_poster'], HM_POSTER_EXTS);

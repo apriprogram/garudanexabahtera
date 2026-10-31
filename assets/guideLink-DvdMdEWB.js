@@ -1,0 +1,1 @@
+import{ft as e,ln as t,on as n}from"./index-BZWQg8jp.js";function r(r,i){for(let n of r){let r=e(i,n);if(r)return{href:t(r.slug),label:r.title,article:!0}}return{href:n.guides,label:`Panduan website untuk bisnis`,article:!1}}export{r as t};
