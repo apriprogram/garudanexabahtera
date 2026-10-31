@@ -375,7 +375,9 @@ function gen_voice_parse(mysqli $conn, array $input, ?array $user): array {
 }
 
 function gen_ai_system(string $kind): string {
-    return GEN_AI_INSTRUCTIONS . "\n\n" . ($kind === 'invoice' ? GEN_AI_SCHEMA_INVOICE : GEN_AI_SCHEMA_PROPOSAL);
+    $text = GEN_AI_INSTRUCTIONS . "\n\n" . ($kind === 'invoice' ? GEN_AI_SCHEMA_INVOICE : GEN_AI_SCHEMA_PROPOSAL);
+    // Nowdoc ikut akhir baris file: checkout Windows (autocrlf) memberi CRLF, jadi disamakan ke \n seperti admin_generate.js
+    return str_replace("\r\n", "\n", $text);
 }
 
 function gen_ai_user_message(string $transcript, string $today): string {
