@@ -3,6 +3,7 @@ import {
   BriefcaseBusiness,
   Building2,
   FileCog,
+  FilePlus2,
   FolderKanban,
   FolderOpen,
   Globe,
@@ -45,6 +46,8 @@ export interface AdminNavItem {
 /** Sidebar admin (SPEC §9): Utama · Produk · Custom · Konten · Sistem. */
 export const ADMIN_NAV: AdminNavItem[] = [
   { label: 'Dashboard', path: '/admin', icon: LayoutGrid, group: 'Utama', end: true },
+  // Invoice & proposal super admin (src/pages/admin/generate)
+  { label: 'Generate', path: '/admin/generate', icon: FilePlus2, group: 'Utama', adminOnly: true },
   {
     label: 'Pesanan Template',
     path: '/admin/pesanan-template',

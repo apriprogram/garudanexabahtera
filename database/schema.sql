@@ -1162,6 +1162,80 @@ CREATE TABLE IF NOT EXISTS waha_handoffs (
   KEY idx_waha_handoff_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Admin menu "Generate" (migration 055): invoices and proposals made by the super admin, typed or dictated, and
+-- turned into branded documents in the browser. Numbers INV-YYYYMM-NNN / PRP-YYYYMM-NNN (separate from pd_invoices).
+CREATE TABLE IF NOT EXISTS admin_invoices (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_number   VARCHAR(40) NOT NULL,                  -- INV-YYYYMM-NNN, urut per bulan tanggal invoice
+  invoice_date     DATE NOT NULL,
+  due_date         DATE NULL,                             -- jatuh tempo (opsional)
+  client_name      VARCHAR(150) NOT NULL,
+  client_company   VARCHAR(150) NOT NULL DEFAULT '',
+  client_email     VARCHAR(150) NOT NULL DEFAULT '',
+  client_phone     VARCHAR(40) NOT NULL DEFAULT '',
+  client_address   VARCHAR(1000) NOT NULL DEFAULT '',
+  discount_type    VARCHAR(10) NOT NULL DEFAULT 'amount', -- 'amount' (rupiah) | 'percent'
+  discount_value   DECIMAL(15,2) NOT NULL DEFAULT 0,
+  tax_enabled      TINYINT(1) NOT NULL DEFAULT 0,         -- PPN dipakai
+  tax_rate         DECIMAL(5,2) NOT NULL DEFAULT 11.00,   -- persen PPN
+  subtotal         BIGINT NOT NULL DEFAULT 0,             -- Σ item
+  discount_amount  BIGINT NOT NULL DEFAULT 0,
+  tax_amount       BIGINT NOT NULL DEFAULT 0,
+  total            BIGINT NOT NULL DEFAULT 0,             -- subtotal − diskon + PPN
+  notes            TEXT NULL,
+  payment_info     TEXT NULL,                             -- rekening / cara bayar
+  status           VARCHAR(12) NOT NULL DEFAULT 'draft',  -- 'draft' | 'terkirim' | 'lunas'
+  created_by       INT NULL,                              -- users.id admin pembuat
+  created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_admin_invoice_number (invoice_number),
+  KEY idx_admin_invoice_date (invoice_date),
+  KEY idx_admin_invoice_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_invoice_items (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_id   INT NOT NULL,
+  sort_order   SMALLINT NOT NULL DEFAULT 0,
+  description  VARCHAR(500) NOT NULL,
+  qty          DECIMAL(12,2) NOT NULL DEFAULT 1,
+  unit         VARCHAR(30) NOT NULL DEFAULT '',           -- satuan: paket, bulan, unit, …
+  price        BIGINT NOT NULL DEFAULT 0,                 -- harga satuan
+  subtotal     BIGINT NOT NULL DEFAULT 0,                 -- round(qty × price)
+  KEY idx_admin_invoice_items (invoice_id, sort_order),
+  CONSTRAINT fk_admin_invoice_items_invoice FOREIGN KEY (invoice_id) REFERENCES admin_invoices (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS admin_proposals (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  proposal_number  VARCHAR(40) NOT NULL,                  -- PRP-YYYYMM-NNN, urut per bulan tanggal proposal
+  proposal_date    DATE NOT NULL,
+  valid_until      DATE NULL,                             -- masa berlaku penawaran (opsional)
+  client_name      VARCHAR(150) NOT NULL,
+  client_company   VARCHAR(150) NOT NULL DEFAULT '',
+  client_email     VARCHAR(150) NOT NULL DEFAULT '',
+  client_phone     VARCHAR(40) NOT NULL DEFAULT '',
+  client_address   VARCHAR(1000) NOT NULL DEFAULT '',
+  title            VARCHAR(200) NOT NULL,                 -- judul proyek
+  summary          TEXT NULL,                             -- latar belakang / ringkasan
+  scope            MEDIUMTEXT NULL,                       -- JSON ["fitur", …]: ruang lingkup
+  timeline         MEDIUMTEXT NULL,                       -- JSON [{phase, duration, description}]: tahapan
+  items            MEDIUMTEXT NULL,                       -- JSON [{description, qty, unit, price, subtotal}]: biaya
+  tax_enabled      TINYINT(1) NOT NULL DEFAULT 0,
+  tax_rate         DECIMAL(5,2) NOT NULL DEFAULT 11.00,
+  subtotal         BIGINT NOT NULL DEFAULT 0,
+  tax_amount       BIGINT NOT NULL DEFAULT 0,
+  total            BIGINT NOT NULL DEFAULT 0,
+  terms            TEXT NULL,                             -- syarat & ketentuan
+  status           VARCHAR(12) NOT NULL DEFAULT 'draft',  -- 'draft' | 'terkirim' | 'disetujui' | 'ditolak'
+  created_by       INT NULL,
+  created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_admin_proposal_number (proposal_number),
+  KEY idx_admin_proposal_date (proposal_date),
+  KEY idx_admin_proposal_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- A fresh install already has every migration up to this baseline.
 -- (002, 003, 007 and the navbar/FAQ data steps of 004 only touch existing rows, which a
 --  fresh install does not have; with an empty navbar_menus the frontend uses its
@@ -1186,7 +1260,8 @@ INSERT IGNORE INTO schema_migrations (version, description) VALUES
   ('2026-10-26_029', 'baseline: site_posts, site_post_views, site_seo (school news & announcements, customer site SEO)'),
   ('2026-10-27_030', 'baseline: site_addon_orders (paid add-on features: news & announcements; no sites to inherit)'),
   ('2026-10-27_031', 'baseline: site_visit_stats, site_visitors (customer site visit statistics, daily aggregates, no IP)'),
-  ('2026-10-31_054', 'baseline: waha_seen, waha_chats, waha_handoffs (WhatsApp bot through WAHA)');
+  ('2026-10-31_054', 'baseline: waha_seen, waha_chats, waha_handoffs (WhatsApp bot through WAHA)'),
+  ('2026-11-01_055', 'baseline: admin_invoices, admin_invoice_items, admin_proposals (admin menu Generate)');
 
 -- ----------------------------------------------------------------------------
 -- NOT MANAGED HERE (exist in some databases, never queried by this repo):

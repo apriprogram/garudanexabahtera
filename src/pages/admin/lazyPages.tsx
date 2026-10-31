@@ -25,6 +25,7 @@ export const ProjectWorkspace = lazy(() => import('./project-docs/ProjectWorkspa
 export const DocumentEditor = lazy(() => import('./project-docs/DocumentEditor'));
 export const ClientManager = lazy(() => import('./project-docs/ClientManager'));
 export const DocSettings = lazy(() => import('./project-docs/DocSettings'));
+export const GeneratePage = lazy(() => import('./generate'));
 
 /** Penanda muat saat kerangka panel (sidebar + header) belum terunduh: memenuhi layar dengan latar admin. */
 export const LayoutFallback = () => (

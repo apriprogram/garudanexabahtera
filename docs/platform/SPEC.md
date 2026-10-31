@@ -53,6 +53,10 @@ Peran `users.role`: `admin`, `user` (staf), **`customer`** (baru, pembeli templa
   - Bot WhatsApp lewat WAHA (migrasi 054, docs/platform/WHATSAPP-BOT-SPEC.md): publik `waha_webhook` (POST bertanda
     tangan HMAC `X-Webhook-Hmac`; tanpa tanda tangan sah → 401); admin saja `waha_get_config`, `waha_save_config`,
     `waha_test`, `waha_close_handoff`. Setting `waha_*` tidak ikut `get_settings` dan ditolak `update_settings` (403).
+  - Menu admin Generate (migrasi 055, `backend/modules/admin_generate.php` = `.js`, halaman `/admin/generate`): admin
+    saja, semuanya POST: `gen_invoices_list`, `gen_invoice_get`, `gen_invoice_save`, `gen_invoice_delete`,
+    `gen_proposals_list`, `gen_proposal_get`, `gen_proposal_save`, `gen_proposal_delete`, `gen_voice_parse` (transkrip
+    suara → isian form lewat penyedia Nexa AI di tab Tanya Nexa; 503 `GEN_AI_OFFLINE`/`GEN_AI_UNAVAILABLE` → parser lokal).
   - Selain itu = **aksi staf**: token role `admin` atau `user`. Token `customer` → 403.
   - `ADMIN_ACTIONS` (admin saja): yang lama + `admin_delete_template`.
   - **Nilai kontrak** (`project_client.price`, "Nilai kontrak" dokumen proyek) hanya diisi/diubah admin (keputusan

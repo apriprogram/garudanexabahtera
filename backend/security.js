@@ -75,6 +75,9 @@ export const ADMIN_ACTIONS = new Set([
   'admin_get_guides', 'admin_save_guide', 'admin_delete_guide',
   'admin_set_site_addon',
   'waha_get_config', 'waha_save_config', 'waha_test', 'waha_close_handoff',
+  // Menu Generate: invoice & proposal super admin (backend/modules/admin_generate.js)
+  'gen_invoices_list', 'gen_invoice_get', 'gen_invoice_save', 'gen_invoice_delete',
+  'gen_proposals_list', 'gen_proposal_get', 'gen_proposal_save', 'gen_proposal_delete', 'gen_voice_parse',
 ]);
 
 const STAFF_ROLES = new Set(['admin', 'user']);

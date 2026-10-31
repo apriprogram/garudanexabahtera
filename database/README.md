@@ -52,7 +52,8 @@ database/
 │   ├── 2026-10-29_051_lawatan_template.sql         # data: katalog Lawatan (tour & travel rombongan), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-29_052_kemudi_template.sql          # data: katalog Kemudi (rental mobil), jalankan SETELAH deploy kodenya
 │   ├── 2026-10-29_053_pesiar_template.sql          # data: katalog Pesiar (private tour & sewa mobil dengan sopir), jalankan SETELAH deploy kodenya
-│   └── 2026-10-31_054_waha_whatsapp_bot.sql        # bot WhatsApp lewat WAHA: dedup pesan, jeda bot per chat, log alih ke admin
+│   ├── 2026-10-31_054_waha_whatsapp_bot.sql        # bot WhatsApp lewat WAHA: dedup pesan, jeda bot per chat, log alih ke admin
+│   └── 2026-11-01_055_admin_generate.sql           # menu admin Generate: invoice + item, proposal (riwayat & dokumen)
 └── legacy/
     └── unused_tables.sql   # tabel lama yang masih ada di DB tapi tidak dipakai kode
 ```
@@ -494,3 +495,4 @@ kosong; DB produksi yang sudah ada tidak terpengaruh. Setelah itu buat admin per
 | 2026-10-29_051 | Data saja: baris katalog `lawatan` (tour & travel rombongan, kategori "Travel & Transportasi", Rp1.690.000, sort_order 34), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `lawatan` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-29_052 | Data saja: baris katalog `kemudi` (rental mobil, kategori "Travel & Transportasi", Rp1.590.000, sort_order 35), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `kemudi` ter-deploy. DB baru cukup `seed.templates.sql`. |
 | 2026-10-29_053 | Data saja: baris katalog `pesiar` (private tour & sewa mobil dengan sopir, kategori "Travel & Transportasi", Rp1.590.000, sort_order 36), insert-or-update berdasarkan slug seperti 028; jalankan setelah kode `template_code` `pesiar` ter-deploy. DB baru cukup `seed.templates.sql`. |
+| 2026-11-01_055 | Skema saja: `admin_invoices` + `admin_invoice_items` + `admin_proposals` untuk menu admin **Generate** (invoice & proposal super admin, nomor `INV-YYYYMM-NNN` / `PRP-YYYYMM-NNN`, terpisah dari `pd_invoices`). Aman diulang, boleh sebelum atau sesudah deploy kodenya; tanpa tabel ini halaman Generate menampilkan petunjuk menjalankan migrasi ini. |

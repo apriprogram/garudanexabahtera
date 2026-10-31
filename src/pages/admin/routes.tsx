@@ -9,6 +9,7 @@ import {
   DocSettings,
   DocumentEditor,
   Documents,
+  GeneratePage,
   HelpCenter,
   InputDomain,
   KelolaTemplate,
@@ -62,6 +63,8 @@ export const adminRoutes = (
     <Route path="changelog" element={page(<Changelog />)} />
     <Route path="navbar-manager" element={page(<NavbarManager />)} />
     <Route path="users" element={page(<UserManager />)} />
+    {/* Menu Generate: invoice & proposal super admin (admin saja, lihat ADMIN_ONLY_ROUTES di Layout.tsx) */}
+    <Route path="generate" element={page(<GeneratePage />)} />
     <Route path="settings" element={page(<SiteSettings />)} />
     <Route path="profile" element={page(<ProfileSettings />)} />
     <Route path="help" element={page(<HelpCenter />)} />

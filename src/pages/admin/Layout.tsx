@@ -7,7 +7,7 @@ import { getToken } from '../../lib/auth';
 /** Peran yang boleh membuka panel admin (SPEC §2). `customer` = pembeli template → /akun. */
 const STAFF_ROLES = ['admin', 'user'];
 /** Rute yang hanya boleh dibuka admin; staf biasa diarahkan ke Dashboard. */
-const ADMIN_ONLY_ROUTES = ['/admin/users'];
+const ADMIN_ONLY_ROUTES = ['/admin/users', '/admin/generate'];
 
 /** Profil dari respons `login` yang disimpan setSession() di localStorage. */
 const readStoredRole = (): string | null => {

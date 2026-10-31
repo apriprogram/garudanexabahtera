@@ -52,6 +52,8 @@ import { handleSiteStatsAction } from './modules/site_stats.js';
 // Chatbot WhatsApp lewat WAHA: webhook bertanda tangan HMAC, jawaban Nexa AI, alih ke admin manusia
 // (docs/platform/WHATSAPP-BOT-SPEC.md)
 import { handleWahaAction } from './modules/waha.js';
+// Menu admin Generate: invoice & proposal super admin + rapikan transkrip suara lewat Nexa AI (admin_generate.php = .js)
+import { handleGenerateAction } from './modules/admin_generate.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -176,6 +178,8 @@ app.get('/api.php', async (req, res) => {
   if (await handleSiteStatsAction(action, req.query, req, res, pool)) return;
   // Bot WhatsApp: semua aksinya POST (GET → 405, sama dengan api.php)
   if (await handleWahaAction(action, req.query, req, res, pool)) return;
+  // Menu Generate: semua aksinya POST (GET → 405, sama dengan api.php)
+  if (await handleGenerateAction(action, req.query, req, res, pool)) return;
 
   // Actions via GET
   if (action === 'get_settings') {
@@ -397,6 +401,8 @@ app.post('/api.php', async (req, res) => {
   if (await handleSiteStatsAction(action, req.body, req, res, pool)) return;
   // Bot WhatsApp: WAHA memposting event ke /api.php?action=waha_webhook (backend/modules/waha.js)
   if (await handleWahaAction(action, req.body, req, res, pool)) return;
+  // Menu Generate (admin saja, POST): gen_invoice(s)_*, gen_proposal(s)_*, gen_voice_parse
+  if (await handleGenerateAction(action, req.body, req, res, pool)) return;
   const conn = await pool.getConnection();
 
   try {
