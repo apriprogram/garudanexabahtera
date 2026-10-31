@@ -43,6 +43,8 @@ const PUBLIC_ACTIONS = [
     'google_auth_config', 'customer_google_auth',
     'get_site_seo', 'get_site_posts', 'get_site_post', 'site_post_view',
     'site_visit',
+    // Webhook WAHA: tanpa token, tetapi ditolak tanpa tanda tangan HMAC yang sah (backend/modules/waha.php)
+    'waha_webhook',
 ];
 const ANY_ROLE_ACTIONS = [
     'pd_notifications_list', 'pd_notifications_read', 'pd_file',
@@ -72,6 +74,7 @@ const ADMIN_ACTIONS = [
     'nexa_get_config', 'nexa_save_config',
     'admin_get_guides', 'admin_save_guide', 'admin_delete_guide',
     'admin_set_site_addon',
+    'waha_get_config', 'waha_save_config', 'waha_test', 'waha_close_handoff',
 ];
 const STAFF_ROLES = ['admin', 'user'];
 const USER_ROLES = ['admin', 'user', 'customer'];
@@ -101,6 +104,9 @@ require_once __DIR__ . '/modules/templates.php';
 require_once __DIR__ . '/modules/domains.php';
 // Nexa AI, asisten chat publik beranda: instruksi, data terkini & panggilan Claude (aksi nexa_chat di templates.php)
 require_once __DIR__ . '/modules/nexa.php';
+// Chatbot WhatsApp lewat WAHA: webhook bertanda tangan HMAC, jawaban Nexa AI, alih ke admin manusia, tab admin Tanya
+// Nexa (handle_waha_action, docs/platform/WHATSAPP-BOT-SPEC.md)
+require_once __DIR__ . '/modules/waha.php';
 // Company products, users column (product login accounts) encrypted at rest (handle_list_product_action)
 require_once __DIR__ . '/modules/list_products.php';
 // Client project files: staff-only download, the folder itself is closed to the web (handle_project_file_action)
@@ -233,6 +239,12 @@ if (handle_site_stats_action($conn, $action, $input, $authUser)) {
     $conn->close();
     exit();
 }
+// Bot WhatsApp: waha_webhook publik (HMAC), waha_get_config/waha_save_config/waha_test/waha_close_handoff admin
+// (backend/modules/waha.php)
+if (handle_waha_action($conn, $action, $input, $authUser)) {
+    $conn->close();
+    exit();
+}
 
 switch ($action) {
     case 'migrate_paths':
@@ -298,9 +310,10 @@ switch ($action) {
         $settings = [];
         // nexa_*: kunci API & saklar AI hanya lewat nexa_get_config/nexa_save_config (admin); nexa_enabled tetap publik.
         // domain_markup_percent: markup harga beli DewaBiz, hanya lewat admin_get_domain_pricing (backend/modules/domains.php)
+        // waha_*: alamat, API key & nomor admin bot WhatsApp, hanya lewat waha_get_config (admin)
         foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings
                                 WHERE LEFT(setting_key, 3) <> 'pd_' AND (setting_key = 'nexa_enabled' OR LEFT(setting_key, 5) <> 'nexa_')
-                                  AND setting_key <> 'domain_markup_percent'") as $row) {
+                                  AND LEFT(setting_key, 5) <> 'waha_' AND setting_key <> 'domain_markup_percent'") as $row) {
             // google_client_id: aud yang dipercaya customer_google_auth, hanya lewat database/env (publik lewat google_auth_config)
             if (strcasecmp((string)$row['setting_key'], 'google_client_id') === 0) continue;
             $settings[$row['setting_key']] = $row['setting_value'];
@@ -318,6 +331,11 @@ switch ($action) {
             // Kunci API & saklar AI hanya lewat nexa_save_config (admin); nexa_enabled (saklar widget) boleh di sini
             if (stripos((string)$key, 'nexa_') === 0 && strtolower((string)$key) !== 'nexa_enabled') {
                 throw new ApiError('Pengaturan Nexa AI hanya bisa diubah lewat tab Tanya Nexa.', 403, 'FORBIDDEN');
+            }
+            // Alamat & API key WAHA, nomor admin: hanya lewat waha_save_config (admin), supaya staf tidak bisa
+            // mengarahkan API key atau notifikasi ke tempat lain
+            if (stripos((string)$key, 'waha_') === 0) {
+                throw new ApiError('Pengaturan bot WhatsApp hanya bisa diubah lewat tab Tanya Nexa.', 403, 'FORBIDDEN');
             }
             // Client ID Google = aud yang dipercaya customer_google_auth: staf tidak boleh menggantinya (hanya database/env)
             if (strtolower(trim((string)$key)) === 'google_client_id') {

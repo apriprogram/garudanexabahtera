@@ -756,6 +756,43 @@ function nexa_claude_reply(string $apiKey, array $body): array {
     return ['reply' => $text];
 }
 
+/**
+ * Blok DATA TERKINI dari database untuk satu pertanyaan: template terbit, harga & isi paket, domain, kontak, dan proyek
+ * yang tampil di beranda. Dipakai nexa_chat (widget situs) dan bot WhatsApp (waha.php).
+ */
+function nexa_live_context(mysqli $conn): string {
+    $settings = [];
+    foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings
+                            WHERE setting_key IN ('footer_whatsapp', 'footer_email', 'template_price_includes', 'template_price_note', 'template_hosting_renewal_price')") as $row) {
+        $settings[$row['setting_key']] = (string)$row['setting_value'];
+    }
+    $templates = db_all($conn, "SELECT name, slug, category, price FROM templates WHERE status = 'published' ORDER BY sort_order ASC, id ASC");
+
+    $projects = db_all($conn, "SELECT id, name, service_type, image, description FROM project_client WHERE show_on_website = 1 ORDER BY id DESC LIMIT 60");
+    $showcase = [];
+    foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN ('portfolio_data', 'disabled_sections')") as $row) {
+        $showcase[$row['setting_key']] = (string)$row['setting_value'];
+    }
+    return nexa_live_facts($templates, $settings) . "\n\n"
+        . nexa_showcase_facts($projects, $showcase['portfolio_data'] ?? null, nexa_projects_hidden($showcase['disabled_sections'] ?? null));
+}
+
+/**
+ * Jawaban penyedia aktif (nexa_resolve_provider) untuk riwayat yang sudah bersih: ['reply' => teks] atau
+ * ['error' => alasan untuk log]. $live = blok system kedua (DATA TERKINI, bisa ditambah aturan kanal). Tidak melempar.
+ */
+function nexa_provider_reply(array $active, string $live, array $messages): array {
+    if ($active['provider'] === 'gemini') {
+        $model = env_value('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
+        return nexa_gemini_reply($active['key'], nexa_gemini_models($model), nexa_gemini_body(nexa_knowledge(), $live, $messages));
+    }
+    if ($active['provider'] === 'custom') {
+        return nexa_custom_reply($active['url'], $active['key'], nexa_custom_body($active['model'], nexa_knowledge(), $live, $messages));
+    }
+    $model = env_value('NEXA_MODEL', NEXA_DEFAULT_MODEL);
+    return nexa_claude_reply($active['key'], nexa_request_body($model, nexa_knowledge(), $live, $messages));
+}
+
 // Aksi publik nexa_chat: {messages: [{role, content}]} → {reply}. 503 NEXA_OFFLINE tanpa kunci API,
 // 503 NEXA_UNAVAILABLE bila Claude gagal; 429 bila batas per pengunjung (NEXA_PER_HOUR / NEXA_PER_DAY) atau batas
 // harian semua pengunjung tercapai. Widget menjawab dari data situs pada semua kegagalan itu.
@@ -777,29 +814,7 @@ function pf_nexa_chat(mysqli $conn, array $input, ?array $user): array {
     rate_limit_hit($dayKey, 86400);
     rate_limit_hit('nexa|all', 86400);
 
-    $settings = [];
-    foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings
-                            WHERE setting_key IN ('footer_whatsapp', 'footer_email', 'template_price_includes', 'template_price_note', 'template_hosting_renewal_price')") as $row) {
-        $settings[$row['setting_key']] = (string)$row['setting_value'];
-    }
-    $templates = db_all($conn, "SELECT name, slug, category, price FROM templates WHERE status = 'published' ORDER BY sort_order ASC, id ASC");
-
-    $projects = db_all($conn, "SELECT id, name, service_type, image, description FROM project_client WHERE show_on_website = 1 ORDER BY id DESC LIMIT 60");
-    $showcase = [];
-    foreach (db_all($conn, "SELECT setting_key, setting_value FROM hero_settings WHERE setting_key IN ('portfolio_data', 'disabled_sections')") as $row) {
-        $showcase[$row['setting_key']] = (string)$row['setting_value'];
-    }
-    $live = nexa_live_facts($templates, $settings) . "\n\n"
-        . nexa_showcase_facts($projects, $showcase['portfolio_data'] ?? null, nexa_projects_hidden($showcase['disabled_sections'] ?? null));
-    if ($active['provider'] === 'gemini') {
-        $model = env_value('NEXA_GEMINI_MODEL', NEXA_GEMINI_DEFAULT_MODEL);
-        $result = nexa_gemini_reply($active['key'], nexa_gemini_models($model), nexa_gemini_body(nexa_knowledge(), $live, $messages));
-    } elseif ($active['provider'] === 'custom') {
-        $result = nexa_custom_reply($active['url'], $active['key'], nexa_custom_body($active['model'], nexa_knowledge(), $live, $messages));
-    } else {
-        $model = env_value('NEXA_MODEL', NEXA_DEFAULT_MODEL);
-        $result = nexa_claude_reply($active['key'], nexa_request_body($model, nexa_knowledge(), $live, $messages));
-    }
+    $result = nexa_provider_reply($active, nexa_live_context($conn), $messages);
     if (!isset($result['reply'])) {
         error_log('[nexa] ' . $result['error']);
         throw new ApiError('Nexa AI sedang tidak tersedia.', 503, 'NEXA_UNAVAILABLE');
