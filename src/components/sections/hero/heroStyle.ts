@@ -1,5 +1,5 @@
 // Gaya hero beranda (Pengaturan website → Hero → "Gaya hero", setting `hero_style`):
-// - classic (bawaan, juga kosong / tidak dikenal): tampilan hari ini (Hero.tsx → HeroClassic), tidak diubah sama sekali;
+// - classic (bawaan, juga kosong / tidak dikenal): tampilan hari ini (hero/HeroClassic.tsx, dimuat lazy dari Hero.tsx), tidak diubah sama sekali;
 // - prompt: judul besar + kotak prompt AI di tengah (HeroPrompt.tsx) di atas latar putih dengan animasi burung Garuda
 //   ASCII (prompt/GarudaAscii.tsx). Pesan dari kotak prompt dikirim ke chat Nexa (layout/nexa/nexaBridge.ts); chip
 //   rekomendasi mengarah ke halaman yang dipilih admin.

@@ -4,7 +4,6 @@
 // server gaya prompt, preload LCP, dan kontras teks di atas kanvas burung.
 // Jalankan: node ../../../node_modules/vitest/vitest.mjs run src/components/sections/hero/__tests__/heroStyle.test.tsx
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { renderToString } from 'react-dom/server';
 import { prerender } from 'react-dom/static';
 // react-router-dom (v7) mengekspor ulang react-router; satu specifier = satu instance konteks router di Vitest
 import * as Router from 'react-router-dom';
@@ -227,22 +226,28 @@ describe('HeroPrompt', () => {
 /* ─── Hero memilih gaya ───────────────────────────────────────────────────── */
 
 describe('Hero memilih gaya', () => {
-  const classicHtml = (settings: SiteSettings) => {
+  // HeroClassic dimuat lazy: prerender menunggu chunk-nya (seperti prerender situs), renderToString hanya fallback
+  const classicHtml = async (settings: SiteSettings) => {
     prime(settings);
-    return renderToString(
+    const { prelude } = await prerender(
       <MemoryRouter>
         <Hero />
       </MemoryRouter>,
+      { progressiveChunkSize: Number.POSITIVE_INFINITY },
     );
+    const markup = await new Response(prelude).text();
+    restoreRouterContexts();
+    return markup;
   };
 
-  it('klasik tidak berubah: tanpa setting, "classic", dan nilai tak dikenal menghasilkan HTML yang sama', () => {
-    const base = classicHtml({});
+  it('klasik tidak berubah: tanpa setting, "classic", dan nilai tak dikenal menghasilkan HTML yang sama', async () => {
+    const base = await classicHtml({});
     // Toggle Template / Custom = hero klasik; tidak ada kotak prompt
     expect(base).toContain('role="tablist"');
     expect(base).not.toContain('hero-prompt');
-    expect(classicHtml({ hero_style: 'classic' })).toBe(base);
-    expect(classicHtml({ hero_style: 'PROMPT' })).toBe(base);
+    expect(base).not.toMatch(/<!--\$[!?]-->/);
+    expect(await classicHtml({ hero_style: 'classic' })).toBe(base);
+    expect(await classicHtml({ hero_style: 'PROMPT' })).toBe(base);
   });
 
   it('prompt: HTML server berisi judul, kotak prompt, chip, dan kanvas (lazy selesai), tepat satu H1, tanpa tayangan klasik', async () => {

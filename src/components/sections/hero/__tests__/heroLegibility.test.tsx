@@ -13,7 +13,8 @@ import { renderToString } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import Hero from '../../Hero';
+// Hero gaya klasik (Hero.tsx memuatnya lazy; pemilihan gaya diuji di heroStyle.test.tsx)
+import Hero from '../HeroClassic';
 import { HeroMedia } from '../HeroMedia';
 import { backgroundSample, decideHeroLegibility, hexToRgb, type BackgroundSample, type Rgb } from '../heroContrast';
 import { sampleImage, sampleVideo, type SampleResult } from '../heroSampling';

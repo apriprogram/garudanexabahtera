@@ -210,7 +210,8 @@ describe('Projects (#projects)', () => {
     // Membuka detail (judul) = dilihat, sekali per sesi; dialog modal dengan judul, deskripsi & Pesan Serupa (di baris
     // pembuat dan di penutup, gaya Dribbble)
     fireEvent.click(within(card).getByRole('button', { name: 'Website Perusahaan' }));
-    const dialog = screen.getByRole('dialog', { name: 'Website Perusahaan' });
+    // ProjectDialog dimuat lazy: tunggu chunk-nya
+    const dialog = await screen.findByRole('dialog', { name: 'Website Perusahaan' });
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(dialog).toHaveTextContent(LONG);
     const orders = within(dialog).getAllByRole('link', { name: /Pesan Serupa/ });
@@ -303,7 +304,7 @@ describe('Projects (#projects)', () => {
 
     const title = within(section).getByRole('button', { name: 'Mobile POS App' });
     fireEvent.click(title);
-    const dialog = screen.getByRole('dialog', { name: 'Mobile POS App' });
+    const dialog = await screen.findByRole('dialog', { name: 'Mobile POS App' });
     expect(dialog).toHaveTextContent('RETAIL / ANDROID');
     const tools = within(dialog).getByRole('list', { name: 'Tools yang dipakai' });
     expect(within(tools).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Flutter', 'Laravel']);
@@ -341,7 +342,7 @@ describe('Projects (#projects)', () => {
     renderAt(<Projects />);
     const section = document.getElementById('projects') as HTMLElement;
     fireEvent.click(await within(section).findByRole('button', { name: 'Corporate Website' }));
-    const dialog = screen.getByRole('dialog', { name: 'Corporate Website' });
+    const dialog = await screen.findByRole('dialog', { name: 'Corporate Website' });
     expect(within(dialog).getAllByRole('img').map((img) => [img.getAttribute('alt'), img.getAttribute('src')])).toEqual([
       ['Tampilan Corporate Website', '/assets/product/isantri.png'],
     ]);

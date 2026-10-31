@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { ArrowRight, Eye, Heart, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiGet, peekApiGet } from '../../lib/api';
@@ -8,10 +8,13 @@ import { Reveal } from '../ui/Reveal';
 import { SectionHeading } from '../ui/SectionHeading';
 import { LogoMark } from '../ui/LogoMark';
 import { buildProjectItems, type ProjectCardData } from './projects/projectItems';
-import ProjectDialog, { type Engagement } from './projects/ProjectDialog';
+import type { Engagement } from './projects/ProjectDialog';
 import { shotGrid, TINT } from './templates/catalog';
 import { TemplateShotSkeleton } from './templates/TemplateShot';
 import { compactCount, useEngagement } from './templates/useTemplateEngagement';
+
+// Detail proyek baru dimuat saat kartu dibuka (chunk sendiri, di luar bundel awal halaman publik)
+const ProjectDialog = lazy(() => import('./projects/ProjectDialog'));
 
 type LoadState = { status: 'loading' } | { status: 'done'; projects: PublicProject[] };
 
@@ -300,7 +303,11 @@ const ProjectShot: React.FC<{ item: ProjectCardData; index: number; stat?: Showc
           </div>
         </article>
       </Reveal>
-      {open && <ProjectDialog item={item} engagement={engagement} returnFocusRef={titleRef} onClose={() => setOpen(false)} />}
+      {open && (
+        <Suspense fallback={null}>
+          <ProjectDialog item={item} engagement={engagement} returnFocusRef={titleRef} onClose={() => setOpen(false)} />
+        </Suspense>
+      )}
     </li>
   );
 };

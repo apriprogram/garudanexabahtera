@@ -1,7 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
-import { NexaChat } from './nexa/NexaChat';
 import { dropNexaRequest, onNexaRequest, setNexaAvailable } from './nexa/nexaBridge';
+
+// Chat Nexa (±45 KiB sebelum minify: panel, jawaban lokal, kartu) di chunk sendiri agar bundel awal halaman publik
+// tetap di bawah anggaran (vite.config.ts gn-entry-budget). Prerender (prerenderToNodeStream) menunggu lazy, jadi
+// tombol maskot tetap ada di HTML; saat hidrasi React mempertahankan HTML server sampai chunk ini termuat.
+// Permintaan dari kotak prompt hero menunggu di nexaBridge sampai NexaChat siap.
+const NexaChat = lazy(() => import('./nexa/NexaChat'));
 
 interface FloatingWhatsAppProps {
   href: string;
@@ -77,7 +82,11 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ href, backTo
           <ArrowUp className="h-5 w-5" strokeWidth={2.25} aria-hidden />
         </button>
       )}
-      {chat && <NexaChat whatsappHref={href} open={chatOpen} onOpenChange={changeChatOpen} aboveOrderBar={aboveOrderBar} />}
+      {chat && (
+        <Suspense fallback={null}>
+          <NexaChat whatsappHref={href} open={chatOpen} onOpenChange={changeChatOpen} aboveOrderBar={aboveOrderBar} />
+        </Suspense>
+      )}
     </div>
   );
 };

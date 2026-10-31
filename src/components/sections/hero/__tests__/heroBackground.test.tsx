@@ -602,7 +602,8 @@ const renderHero = async (settings: Promise<SiteSettings> | SiteSettings) => {
     }),
   );
   vi.resetModules();
-  const { default: Hero } = await import('../../Hero');
+  // Hero gaya klasik (Hero.tsx memuatnya lazy; pemilihan gaya diuji di heroStyle.test.tsx)
+  const { default: Hero } = await import('../HeroClassic');
   const view = render(
     <MemoryRouter>
       <Hero />

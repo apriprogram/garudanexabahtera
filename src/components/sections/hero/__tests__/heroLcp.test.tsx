@@ -8,7 +8,8 @@ import { versionedAsset } from '../../../../seo/assetVersion';
 import { getHead } from '../../../../seo/routes';
 import type { SeoData } from '../../../../seo/types';
 import type { Template } from '../../../../types/platform';
-import Hero from '../../Hero';
+// Hero gaya klasik (Hero.tsx memuatnya lazy; pemilihan gaya diuji di heroStyle.test.tsx)
+import Hero from '../HeroClassic';
 import { HeroShowcase } from '../HeroShowcase';
 import { heroPreloadImage } from '../heroPreload';
 import { firstShowcaseImage, peekShowcase, showcaseFromTemplates } from '../showcase';

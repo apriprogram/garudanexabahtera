@@ -149,11 +149,19 @@ const NavbarManager = () => {
         // include_inactive: menu nonaktif tetap tampil di sini agar bisa diaktifkan lagi (default API hanya menu aktif)
         body: JSON.stringify({ action: 'get_navbar_menus', include_inactive: true })
       });
-      const data = await res.json();
-      setMenus(data || []);
-    } catch (err) { console.error(err); }
+      const data = await res.json().catch(() => null);
+      // Galat server (mis. HTTP 500 {error}) bukan array: daftar lama dipertahankan, bukan dibuang lalu crash di .filter
+      if (!res.ok || !Array.isArray(data)) {
+        const message = data && typeof data === 'object' && 'error' in data ? String(data.error) : `HTTP ${res.status}`;
+        show('error', 'Gagal memuat menu navbar.', message);
+        return;
+      }
+      setMenus(data);
+    } catch (err) {
+      show('error', 'Gagal memuat menu navbar.', errorMessage(err, 'Periksa koneksi lalu coba lagi.'));
+    }
     finally { setLoading(false); }
-  }, []);
+  }, [show]);
 
   useEffect(() => {
     // loading=true sudah menjadi state awal; loadMenus baru memanggil setState setelah await,

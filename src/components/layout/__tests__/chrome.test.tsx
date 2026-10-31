@@ -62,6 +62,15 @@ afterEach(() => {
 
 const renderAt = (node: React.ReactNode, entry = '/') => render(<MemoryRouter initialEntries={[entry]}>{node}</MemoryRouter>);
 
+/** Dok Nexa: NexaChat dimuat lazy (chunk sendiri), jadi tunggu modulnya termuat & maskot dirender (juga dengan timer palsu). */
+const renderDock = async (node: React.ReactNode, entry = '/') => {
+  const result = renderAt(node, entry);
+  await act(async () => {
+    await import('../nexa/NexaChat');
+  });
+  return result;
+};
+
 describe('Navbar', () => {
   it('hanya bahasa Indonesia: tidak ada sakelar bahasa', () => {
     renderAt(<Navbar />);
@@ -283,8 +292,8 @@ describe('Footer', () => {
 });
 
 describe('FloatingWhatsApp', () => {
-  it('dok hanya tombol Nexa (WhatsApp melayang dihapus), selalu tampil di semua ukuran, tanpa lencana "AI"', () => {
-    renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" />);
+  it('dok hanya tombol Nexa (WhatsApp melayang dihapus), selalu tampil di semua ukuran, tanpa lencana "AI"', async () => {
+    await renderDock(<FloatingWhatsApp href="https://wa.me/6285188009152" />);
     const launcher = screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' });
     const dock = launcher.parentElement as HTMLElement;
     // Tidak pernah disembunyikan di HP (pemilik 2026-10-24: tampil di semua ukuran)
@@ -297,8 +306,8 @@ describe('FloatingWhatsApp', () => {
     expect(label.className).toContain('right-full');
   });
 
-  it('bar pesan /template/:slug tampil (aboveOrderBar): dok & panel naik 5.5rem di bawah lg, tidak menutupi tombol Pesan', () => {
-    const { rerender } = renderAt(<FloatingWhatsApp href="https://wa.me/6285188009152" />);
+  it('bar pesan /template/:slug tampil (aboveOrderBar): dok & panel naik 5.5rem di bawah lg, tidak menutupi tombol Pesan', async () => {
+    const { rerender } = await renderDock(<FloatingWhatsApp href="https://wa.me/6285188009152" />);
     const launcher = screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' });
     const dock = launcher.parentElement as HTMLElement;
     expect(dock.className).not.toContain('translate-y');
@@ -415,8 +424,8 @@ describe('Nexa AI', () => {
     return posts;
   };
 
-  const openPanel = () => {
-    renderAt(<FloatingWhatsApp href={WA} />);
+  const openPanel = async () => {
+    await renderDock(<FloatingWhatsApp href={WA} />);
     fireEvent.click(screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' }));
     return screen.getByRole('dialog', { name: 'Tanya Nexa AI' });
   };
@@ -427,7 +436,7 @@ describe('Nexa AI', () => {
   };
 
   it('tombol maskot membuka panel percakapan non-modal; fokus ke kolom pesan; Esc menutup & fokus kembali', async () => {
-    renderAt(<FloatingWhatsApp href={WA} />);
+    await renderDock(<FloatingWhatsApp href={WA} />);
     const launcher = screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' });
     expect(launcher).toHaveAttribute('aria-expanded', 'false');
     expect(launcher).not.toHaveAttribute('aria-controls');
@@ -468,7 +477,7 @@ describe('Nexa AI', () => {
 
   it('topik cepat dijawab teks tetap tanpa AI; AI belum aktif -> jawaban bawaan dari tanya jawab situs', async () => {
     const posts = mockNexa(() => json(503, { error: 'Nexa AI belum aktif.', code: 'NEXA_OFFLINE' }));
-    const panel = openPanel();
+    const panel = await openPanel();
 
     // Chip tetap di DOM (fokus keyboard tidak hilang), hanya aria-disabled selama Nexa mengetik; chip di luar role=log
     const chip = within(panel).getByRole('button', { name: 'Berapa harganya?' });
@@ -522,7 +531,7 @@ describe('Nexa AI', () => {
 
   it('chip "Hubungi admin": tautan WhatsApp berisi pesan awal yang dialihkan bot ke admin manusia (tanpa AI)', async () => {
     const posts = mockNexa(() => json(503, { error: 'Nexa AI belum aktif.', code: 'NEXA_OFFLINE' }));
-    const panel = openPanel();
+    const panel = await openPanel();
     fireEvent.click(within(panel).getByRole('button', { name: 'Hubungi admin' }));
     const link = await within(panel).findByRole('link', { name: /Chat admin di WhatsApp/ }, { timeout: 2000 });
     expect(link).toHaveAttribute('href', `${WA}?text=${encodeURIComponent(NEXA_ADMIN_WA_TEXT)}`);
@@ -542,7 +551,7 @@ describe('Nexa AI', () => {
       if (action === 'get_templates') return json(200, { success: true, templates: [], categories: [] });
       return json(200, []);
     });
-    const panel = openPanel();
+    const panel = await openPanel();
     // Setting termuat dulu (biaya hosting & jasa dibaca saat pertanyaan dikirim)
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -566,7 +575,7 @@ describe('Nexa AI', () => {
           })
         : json(429, { error: 'Terlalu banyak percobaan. Coba lagi dalam 5 menit.' }),
     );
-    const panel = openPanel();
+    const panel = await openPanel();
     ask(panel, 'Template untuk klinik kecantikan?');
     // Label ramah: path template → nama template, /harga → "halaman Harga", wa.me → "WhatsApp"
     const toTemplate = await within(panel).findByRole('link', { name: 'Aura Studio' }, { timeout: 2000 });
@@ -597,10 +606,10 @@ describe('Nexa AI', () => {
     expect(posts[1].messages).toHaveLength(3);
   });
 
-  it('maskot hidup: tombol berganti ekspresi sendiri tiap beberapa detik lalu kembali netral', () => {
+  it('maskot hidup: tombol berganti ekspresi sendiri tiap beberapa detik lalu kembali netral', async () => {
     vi.useFakeTimers();
     try {
-      renderAt(<FloatingWhatsApp href={WA} />);
+      await renderDock(<FloatingWhatsApp href={WA} />);
       const launcher = () => screen.getByRole('button', { name: 'Tanya Nexa, asisten AI' });
       expect(launcher().querySelector('img')).toHaveAttribute('src', '/assets/nexa/nexa-128.webp');
       act(() => vi.advanceTimersByTime(5100));
@@ -619,7 +628,7 @@ describe('Nexa AI', () => {
     FakeRecognition.instances = [];
     vi.stubGlobal('SpeechRecognition', FakeRecognition);
     mockNexa(() => json(503, { error: 'Nexa AI belum aktif.', code: 'NEXA_OFFLINE' }));
-    const panel = openPanel();
+    const panel = await openPanel();
     fireEvent.click(within(panel).getByRole('button', { name: /Bicara/ }));
     const rec = FakeRecognition.instances.at(-1) as FakeRecognition;
     expect(rec.started).toBe(true);
@@ -662,7 +671,7 @@ describe('Nexa AI', () => {
         ],
       },
     );
-    const panel = openPanel();
+    const panel = await openPanel();
     ask(panel, 'Template untuk klinik?');
     const templates = await within(panel).findByRole('list', { name: 'Template yang disebut' }, { timeout: 2000 });
     const card = within(templates).getByRole('link', { name: /Aura Studio/ });
@@ -696,7 +705,7 @@ describe('Nexa AI', () => {
         { id: 8, name: 'Aplikasi Kasir', service_type: 'mobile_app', image: '/p8.jpg', description: `${LONG} Versi aplikasi.` },
       ],
     });
-    const panel = openPanel();
+    const panel = await openPanel();
     ask(panel, 'Boleh lihat proyek yang sudah kalian kerjakan?');
     const projects = await within(panel).findByRole('list', { name: 'Proyek yang sudah dikerjakan' }, { timeout: 2000 });
     expect(within(projects).getAllByRole('link').map((a) => a.textContent)).toEqual(['Website PerusahaanWebsite', 'Aplikasi KasirAplikasi Mobile']);
@@ -709,7 +718,7 @@ describe('Nexa AI', () => {
   it('riwayat ke nexa_chat: jawaban AI panjang dipotong 4000 karakter, jadi percakapan tetap sah di backend', async () => {
     const long = 'Panjang. '.repeat(600);
     const posts = mockNexa(() => json(200, { success: true, reply: long }));
-    const panel = openPanel();
+    const panel = await openPanel();
     ask(panel, 'Ceritakan semua layanan');
     await waitFor(() => expect(within(panel).getByRole('log')).toHaveTextContent(/Panjang\. Panjang\./), { timeout: 2000 });
     ask(panel, 'Lanjut');
