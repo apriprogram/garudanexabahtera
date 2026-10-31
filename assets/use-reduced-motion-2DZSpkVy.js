@@ -1,1 +1,0 @@
-import{Ni as e,zi as t}from"./index--az58mqe.js";import{a as n,o as r,s as i}from"./proxy-DcnUUQSP.js";var a=t(e(),1);function o(){!r.current&&n();let[e]=(0,a.useState)(i.current);return e}export{o as t};
